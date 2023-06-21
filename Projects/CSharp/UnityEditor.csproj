@@ -6701,6 +6701,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\BasePackageVersion.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\BasePackageVersion.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\BaseVersionList.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\BaseVersionList.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\DictionaryExtensions.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\DictionaryExtensions.cs</Link>
     </Compile>
@@ -6788,11 +6791,11 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\DisableCondition.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\DisableCondition.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\DowngradeAction.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\DowngradeAction.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\DownloadActionBase.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\DownloadActionBase.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\DownloadAction.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\DownloadAction.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\DownloadNewAction.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\DownloadNewAction.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\DownloadUpdateAction.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\DownloadUpdateAction.cs</Link>
@@ -6800,8 +6803,14 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\GitUpdateAction.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\GitUpdateAction.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\ImportAction.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\ImportAction.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\ImportActionBase.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\ImportActionBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\ImportNewAction.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\ImportNewAction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\ImportUpdateAction.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\ImportUpdateAction.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\PackageAction.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\PackageAction.cs</Link>

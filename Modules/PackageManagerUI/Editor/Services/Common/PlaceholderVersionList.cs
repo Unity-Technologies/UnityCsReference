@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -11,49 +10,25 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class PlaceholderVersionList : IVersionList
+    internal class PlaceholderVersionList : BaseVersionList
     {
         [SerializeField]
         private PlaceholderPackageVersion[] m_Versions;
 
-        public IEnumerable<IPackageVersion> key => m_Versions;
+        public override IPackageVersion latest => m_Versions[0];
 
-        public IPackageVersion installed => null;
+        public override IPackageVersion recommended => m_Versions[0];
 
-        public IPackageVersion latest => m_Versions[0];
-
-        public IPackageVersion importAvailable => null;
-
-        public IPackageVersion recommended => m_Versions[0];
-
-        public IPackageVersion primary => m_Versions[0];
-
-        public IPackageVersion lifecycleVersion => null;
-
-        public bool isNonLifecycleVersionInstalled => false;
-
-        public bool hasLifecycleVersion => false;
-
-        public int numUnloadedVersions => 0;
-
-        public IPackageVersion GetUpdateTarget(IPackageVersion version)
-        {
-            return recommended;
-        }
+        public override IPackageVersion primary => m_Versions[0];
 
         public PlaceholderVersionList(PlaceholderPackageVersion version)
         {
             m_Versions = new[] { version };
         }
 
-        public IEnumerator<IPackageVersion> GetEnumerator()
+        public override IEnumerator<IPackageVersion> GetEnumerator()
         {
             return m_Versions.Cast<IPackageVersion>().GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return m_Versions.GetEnumerator();
         }
     }
 }

@@ -32,7 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override IEnumerable<PageFilters.Status> supportedStatusFilters => k_SupportedStatusFilters;
         public override IEnumerable<PageSortOption> supportedSortOptions => k_SupportedSortOptions;
-        public override RefreshOptions refreshOptions => RefreshOptions.Purchased | RefreshOptions.ImportedAssets;
+        public override RefreshOptions refreshOptions => RefreshOptions.Purchased | RefreshOptions.ImportedAssets | RefreshOptions.LocalInfo;
         public override PageCapability capability => PageCapability.RequireNetwork | PageCapability.RequireUserLoggedIn;
 
         [SerializeField]

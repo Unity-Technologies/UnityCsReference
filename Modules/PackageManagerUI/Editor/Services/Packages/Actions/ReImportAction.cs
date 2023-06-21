@@ -2,42 +2,23 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-using System.Linq;
-
 namespace UnityEditor.PackageManager.UI.Internal;
 
-internal class ReImportAction : PackageAction
+internal class ReImportAction : ImportActionBase
 {
-    private readonly PackageOperationDispatcher m_OperationDispatcher;
-    private readonly AssetStoreDownloadManager m_AssetStoreDownloadManager;
-    private readonly AssetStoreCache m_AssetStoreCache;
-    private readonly ApplicationProxy m_Application;
-    public ReImportAction(PackageOperationDispatcher operationDispatcher,
-        AssetStoreDownloadManager assetStoreDownloadManager,
-        AssetStoreCache assetStoreCache,
-        ApplicationProxy application)
+    public ReImportAction(PackageOperationDispatcher operationDispatcher, AssetStoreDownloadManager assetStoreDownloadManager, ApplicationProxy application)
+        : base(operationDispatcher, assetStoreDownloadManager, application)
     {
-        m_OperationDispatcher = operationDispatcher;
-        m_AssetStoreDownloadManager = assetStoreDownloadManager;
-        m_AssetStoreCache = assetStoreCache;
-        m_Application = application;
     }
 
-    protected override bool TriggerActionImplementation(IPackageVersion version)
-    {
-        m_OperationDispatcher.Import(version.package);
-        PackageManagerWindowAnalytics.SendEvent("importAgain", version);
-        return true;
-    }
+    protected override string analyticEventName => "importAgain";
 
+    // Re-import action covers all the `import` scenarios that's not covered by `ImportNew` and `ImportUpdate` actions
     public override bool IsVisible(IPackageVersion version)
     {
-        return version?.HasTag(PackageTag.LegacyFormat) == true
-               && version.isAvailableOnDisk
-               && version.package.progress == PackageProgress.None
-               && m_AssetStoreDownloadManager.GetDownloadOperation(version.package.product?.id)?.isProgressVisible != true
-               && version.importedAssets?.Any() == true;
+        var versions = version.package.versions;
+        return base.IsVisible(version) && versions.imported != null &&
+               (versions.importAvailable.uploadId != versions.recommended?.uploadId || versions.importAvailable.uploadId == versions.imported.uploadId);
     }
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
@@ -47,21 +28,9 @@ internal class ReImportAction : PackageAction
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        var localInfoVersionString = m_AssetStoreCache.GetLocalInfo(version.package.product?.id)?.versionString;
-        if (string.IsNullOrEmpty(localInfoVersionString))
+        var importAvailableVersionString = version.package.versions.importAvailable?.versionString;
+        if (string.IsNullOrEmpty(importAvailableVersionString))
             return L10n.Tr("Re-import");
-        return string.Format(localInfoVersionString == version.versionString ? L10n.Tr("Re-import {0}") : L10n.Tr("Import {0}"), localInfoVersionString);
-    }
-
-    public override bool IsInProgress(IPackageVersion version) => false;
-
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
-    {
-        yield return new DisableIfCompiling(m_Application);
-    }
-
-    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
-    {
-        yield return new DisableIfPackageDisabled(version);
+        return string.Format(importAvailableVersionString == version.versionString ? L10n.Tr("Re-import {0}") : L10n.Tr("Import {0}"), importAvailableVersionString);
     }
 }

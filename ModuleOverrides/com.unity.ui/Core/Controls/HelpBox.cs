@@ -85,7 +85,7 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private string text;
+            [SerializeField, MultilineTextField] private string text;
             [SerializeField] private HelpBoxMessageType messageType;
             #pragma warning restore 649
 

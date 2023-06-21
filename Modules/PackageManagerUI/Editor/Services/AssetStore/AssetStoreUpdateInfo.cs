@@ -10,117 +10,53 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class CheckUpdateInfoArgs
     {
-        internal class Entry
+        public long[] productIds;
+
+        public CheckUpdateInfoArgs(IEnumerable<long> productIds)
         {
-            public long productId;
-            public long uploadId;
-            public long versionId;
-            public string versionString;
-            public string packagePath;
-
-            public Entry(AssetStoreLocalInfo info)
-            {
-                productId = info.productId;
-                uploadId = info.uploadId;
-                versionId = info.versionId;
-                versionString = info.versionString;
-                packagePath = info.packagePath;
-            }
-
-            public Dictionary<string, string> ToDictionary()
-            {
-                return new Dictionary<string, string>
-                {
-                    ["local_path"] = packagePath ?? string.Empty,
-                    ["id"] = productId.ToString(),
-                    ["upload_id"] = uploadId.ToString(),
-                    ["version_id"] = versionId.ToString(),
-                    ["version"] = versionString ?? string.Empty
-                };
-            }
-        }
-
-        public Entry[] entries;
-
-        public CheckUpdateInfoArgs(IEnumerable<AssetStoreLocalInfo> localInfos)
-        {
-            entries = localInfos.Select(info => new Entry(info)).ToArray();
+            this.productIds = productIds.ToArray();
         }
 
         public override string ToString()
         {
-            return Json.Serialize(entries.Select(entry => entry?.ToDictionary() ?? new Dictionary<string, string>()).ToList());
+            return $"?productIds={string.Join(',', productIds)}";
         }
     }
 
     [Serializable]
     internal class AssetStoreUpdateInfo
     {
-        internal enum Status
-        {
-            None = 0,
-            CanUpdate,
-            CanDowngrade
-        }
-
         public long productId;
-        public long uploadId;
-
-        public Status status;
-        public bool canUpdateOrDowngrade => status != Status.None;
-        public bool canDowngrade => status == Status.CanDowngrade;
-        public bool canUpdate => status == Status.CanUpdate;
+        public string recommendedMinUnityVersion;
+        public long recommendedUploadId;
     }
 
     internal partial class JsonParser
     {
-        public virtual List<AssetStoreUpdateInfo> ParseUpdateInfos(CheckUpdateInfoArgs args, IDictionary<string, object> rawList)
+        public virtual List<AssetStoreUpdateInfo> ParseUpdateInfos(IDictionary<string, object> rawList)
         {
-            var resultsList = rawList.GetDictionary("result")?.GetList<IDictionary<string, object>>("results");
-            if (resultsList == null)
-                return null;
-
-            var entriesByProductId = args.entries.ToDictionary(item => item.productId, item => item);
-            var newUpdateInfos = new List<AssetStoreUpdateInfo>();
-            foreach (var updateDetail in resultsList)
+            var result = new List<AssetStoreUpdateInfo>();
+            foreach(var entry in rawList)
             {
-                var productId = updateDetail.GetStringAsLong("id");
-                var uploadId = entriesByProductId.Get(productId)?.uploadId ?? 0;
-                entriesByProductId.Remove(productId);
-
-                var status = AssetStoreUpdateInfo.Status.None;
-                if (updateDetail.Get("can_update", 0L) != 0)
+                if(!long.TryParse(entry.Key, out var productId))
+                    continue;
+                try
                 {
-                    var recommendVersionCompare = updateDetail.Get("recommend_version_compare", 0L);
-                    if (recommendVersionCompare < 0)
-                        status = AssetStoreUpdateInfo.Status.CanDowngrade;
-                    else
-                        status = AssetStoreUpdateInfo.Status.CanUpdate;
+                    var data = (IDictionary<string,object>)entry.Value;
+                    if (data == null)
+                        continue;
+                    result.Add(new AssetStoreUpdateInfo
+                    {
+                        productId = productId,
+                        recommendedUploadId = data.GetStringAsLong("recommended_upload_id"),
+                        recommendedMinUnityVersion = data.GetString("recommended_min_unity_version")
+                    });
                 }
-
-                var newUpdateInfo = new AssetStoreUpdateInfo
+                catch (InvalidCastException)
                 {
-                    productId = productId,
-                    uploadId = uploadId,
-                    status = status
-                };
-                newUpdateInfos.Add(newUpdateInfo);
+                }
             }
-
-            // If an asset store package is disabled, we won't get properly update info from the server (the id field will be transformed to something else)
-            // in the past we consider this case as `updateInfo` not checked and that causes the Package Manager to check update indefinitely.
-            // Now we want to mark all packages that we called `CheckUpdate` on as updateInfoFetched to avoid unnecessary calls on disabled packages.
-            foreach (var entry in entriesByProductId.Values)
-            {
-                var newUpdateInfo = new AssetStoreUpdateInfo
-                {
-                    productId = entry.productId,
-                    uploadId = entry.uploadId,
-                    status = AssetStoreUpdateInfo.Status.None
-                };
-                newUpdateInfos.Add(newUpdateInfo);
-            }
-            return newUpdateInfos;
+            return result;
         }
     }
 }

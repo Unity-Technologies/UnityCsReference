@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private string label;
+            [SerializeField, MultilineTextField] private string label;
             [ImageFieldValueDecorator]
             [SerializeField, UxmlAttribute("icon-image")] private Object iconImageReference;
             [SerializeField] private bool closeable;

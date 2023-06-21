@@ -79,6 +79,14 @@ namespace UnityEditor
             EverythingChanged = 0xffffffff
         }
 
+        [NativeType(Header = k_NativeHeader)]
+        internal enum ExplicitLoggingState
+        {
+            NotSet,
+            Enabled,
+            Disabled
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         [NativeHeader(k_NativeHeader)]
         [RequiredByNativeCode(GenerateProxy = true)]
@@ -482,6 +490,29 @@ namespace UnityEditor
             s_RemainingTime = TimeSpan.Zero;
             s_LastRemainingTimeUpdate = DateTime.Now;
         }
+
+        internal static ExplicitLoggingState errorLoggingState
+        {
+            get => GetExplicitErrorLoggingState();
+            set => SetExplicitErrorLoggingState(value);
+        }
+        internal static ExplicitLoggingState warningLoggingState
+        {
+            get => GetExplicitWarningLoggingState();
+            set => SetExplicitWarningLoggingState(value);
+        }
+
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = false, Name = "Editor::Progress::Internal_GetExplicitErrorLoggingState")]
+        static extern ExplicitLoggingState GetExplicitErrorLoggingState();
+
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = false, Name = "Editor::Progress::Internal_GetExplicitWarningLoggingState")]
+        static extern ExplicitLoggingState GetExplicitWarningLoggingState();
+
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = false, Name = "Editor::Progress::Internal_SetExplicitErrorLoggingState")]
+        static extern void SetExplicitErrorLoggingState(ExplicitLoggingState state);
+
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = false, Name = "Editor::Progress::Internal_SetExplicitWarningLoggingState")]
+        static extern void SetExplicitWarningLoggingState(ExplicitLoggingState state);
     }
 
     static class ProgressEnumExtensions

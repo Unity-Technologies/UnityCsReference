@@ -179,11 +179,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var activePage = m_PageManager.activePage;
-            if (activePage.filters.status == PageFilters.Status.UpdateAvailable || activePage.id == InProjectPage.k_Id && m_AssetStoreCache.importedPackages.Any())
-            {
-                m_AssetStoreClient.RefreshLocal();
+            if (activePage.id == MyAssetsPage.k_Id && activePage.filters.status == PageFilters.Status.UpdateAvailable)
                 CheckUpdateForUncheckedLocalInfos();
-            }
 
             foreach (var fetchStatus in m_FetchStatusTracker.fetchStatuses)
                 if (fetchStatus.GetFetchError(FetchType.ProductInfo)?.error.errorCode == UIErrorCode.UserNotSignedIn)
@@ -349,9 +346,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 PushToCheckUpdateStack(productId, forceCheckUpdate);
         }
 
-        public virtual void ForceCheckUpdateForAllLocalInfos()
+        public virtual void ForceCheckUpdateAllCachedAndImportedPackages()
         {
-            PushToCheckUpdateStack(m_AssetStoreCache.localInfos.Select(info => info.productId), true);
+            var productIdsToCheck = m_AssetStoreCache.localInfos.Select(i => i.productId)
+                .Concat(m_AssetStoreCache.importedPackages.Select(i => i.productId)).ToHashSet();
+            PushToCheckUpdateStack(productIdsToCheck, true);
         }
 
         public virtual void CancelCheckUpdates()
@@ -362,14 +361,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void CheckUpdateForUncheckedLocalInfos()
         {
-            var missingLocalInfos = m_AssetStoreCache.localInfos
+            var idsWithNoUpdateInfo = m_AssetStoreCache.localInfos
                 .Where(info => m_AssetStoreCache.GetUpdateInfo(info?.productId) == null)
                 .Select(info => info.productId).ToArray();
 
-            if (!missingLocalInfos.Any())
+            if (idsWithNoUpdateInfo.Length == 0)
                 return;
 
-            PushToCheckUpdateStack(missingLocalInfos);
+            PushToCheckUpdateStack(idsWithNoUpdateInfo);
             m_RefreshAfterCheckUpdates = true;
         }
 

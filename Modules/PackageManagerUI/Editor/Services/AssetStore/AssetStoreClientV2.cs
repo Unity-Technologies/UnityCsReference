@@ -24,8 +24,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreListOperation m_ListOperation;
 
         [NonSerialized]
-        private UnityConnectProxy m_UnityConnect;
-        [NonSerialized]
         private AssetStoreCache m_AssetStoreCache;
         [NonSerialized]
         private AssetStoreRestAPI m_AssetStoreRestAPI;
@@ -39,16 +37,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private LocalInfoHandler m_LocalInfoHandler;
 
         [ExcludeFromCodeCoverage]
-        public void ResolveDependencies(UnityConnectProxy unityConnect,
-            AssetStoreCache assetStoreCache,
-            AssetStoreUtils assetStoreUtils,
+        public void ResolveDependencies(AssetStoreCache assetStoreCache,
             AssetStoreRestAPI assetStoreRestAPI,
             FetchStatusTracker fetchStatusTracker,
             AssetDatabaseProxy assetDatabase,
             OperationFactory operationFactory,
             LocalInfoHandler localInfoHandler)
         {
-            m_UnityConnect = unityConnect;
             m_AssetStoreCache = assetStoreCache;
             m_AssetStoreRestAPI = assetStoreRestAPI;
 
@@ -128,10 +123,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual void ListPurchases(PurchasesQueryArgs queryArgs)
         {
             CancelListPurchases();
-            RefreshLocal();
-
             m_ListOperation ??= m_OperationFactory.CreateAssetStoreListOperation();
-
             m_ListOperation.onOperationSuccess += op =>
             {
                 var result = m_ListOperation.result;
@@ -171,11 +163,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void RefreshLocal()
         {
-            if (!m_UnityConnect.isUserLoggedIn)
-                return;
-
-            var localInfos = m_LocalInfoHandler.GetParsedLocalInfos();
-            m_AssetStoreCache.SetLocalInfos(localInfos);
+            m_AssetStoreCache.SetLocalInfos(m_LocalInfoHandler.GetParsedLocalInfos());
         }
 
         public virtual void FetchUpdateInfos(IEnumerable<long> productIds, Action doneCallback = null)
@@ -183,8 +171,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (productIds?.Any() != true)
                 return;
 
-            var localInfos = productIds.Select(id => m_AssetStoreCache.GetLocalInfo(id)).Where(info => info != null);
-            m_AssetStoreRestAPI.GetUpdateDetail(new CheckUpdateInfoArgs(localInfos),
+            m_AssetStoreRestAPI.GetUpdateDetail(new CheckUpdateInfoArgs(productIds),
                 updateInfos =>
                 {
                     m_AssetStoreCache.SetUpdateInfos(updateInfos);

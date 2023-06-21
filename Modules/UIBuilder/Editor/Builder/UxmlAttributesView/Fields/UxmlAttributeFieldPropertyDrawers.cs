@@ -57,7 +57,7 @@ namespace UnityEditor.UIElements
             var field = new Toggle(property.displayName);
 
             field.AddToClassList(Toggle.alignedFieldUssClassName);
-            field.BindProperty(property);
+            field.bindingPath = property.propertyPath;
             field.RegisterCallback<ChangeEvent<bool>>(OnMultilineToggleValueChange);
 
             return field;
@@ -84,6 +84,20 @@ namespace UnityEditor.UIElements
 
             var valueAttributeString = valueProperty.stringValue;
             valueFieldInInspector.SetValueWithoutNotify(valueAttributeString);
+        }
+    }
+
+    [CustomPropertyDrawer(typeof(MultilineTextFieldAttribute))]
+    class MultilineTextFieldAttributePropertyDrawer : PropertyDrawer
+    {
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            return new TextField
+            {
+                label = property.localizedDisplayName,
+                multiline = true,
+                bindingPath = property.propertyPath
+            };
         }
     }
 

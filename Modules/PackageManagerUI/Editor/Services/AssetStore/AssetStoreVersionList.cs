@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -11,76 +10,75 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class AssetStoreVersionList : IVersionList
+    internal class AssetStoreVersionList : BaseVersionList
     {
         [SerializeField]
         private List<AssetStorePackageVersion> m_Versions;
 
-        public IEnumerable<IPackageVersion> key => m_Versions;
+        public override IPackageVersion latest => m_Versions.Count > 0 ? m_Versions[^1] : null;
 
-        public IPackageVersion installed => null;
+        [SerializeField]
+        private int m_ImportAvailableIndex;
+        public override IPackageVersion importAvailable => m_ImportAvailableIndex < 0 ? null : m_Versions[m_ImportAvailableIndex];
 
-        public IPackageVersion latest => m_Versions.LastOrDefault();
+        [SerializeField]
+        private int m_ImportedIndex;
+        public override IPackageVersion imported => m_ImportedIndex < 0 ? null : m_Versions[m_ImportedIndex];
 
-        public IPackageVersion importAvailable => m_Versions.FirstOrDefault(v => v.isAvailableOnDisk);
+        [SerializeField]
+        private int m_RecommendedIndex = -1;
+        public override IPackageVersion recommended => m_RecommendedIndex < 0 ? null : m_Versions[m_RecommendedIndex];
 
-        public IPackageVersion recommended => latest;
+        public override IPackageVersion primary => imported ?? importAvailable ?? latest;
 
-        public IPackageVersion primary => importAvailable ?? latest;
-
-        public IPackageVersion lifecycleVersion => null;
-
-        public bool isNonLifecycleVersionInstalled => false;
-
-        public bool hasLifecycleVersion => false;
-
-        public int numUnloadedVersions => 0;
-
-        public IPackageVersion GetUpdateTarget(IPackageVersion version)
-        {
-            return recommended;
-        }
-
-        public AssetStoreVersionList()
-        {
-            m_Versions = new List<AssetStorePackageVersion>();
-        }
-
-        public AssetStoreVersionList(IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null, AssetStoreUpdateInfo updateInfo = null, AssetStoreImportedPackage importedPackage = null)
+        public AssetStoreVersionList(AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null, AssetStoreImportedPackage importedPackage = null, AssetStoreUpdateInfo updateInfo = null)
         {
             m_Versions = new List<AssetStorePackageVersion>();
 
-            // The version we get from productInfo is the latest on the server.
-            // The version we get from localInfo is the version publisher set when uploading the .unitypackage file.
-            // The publisher could've updated the version on the server but NOT upload a new .unitypackage file, that will
-            // result in a case where localInfo and productInfo have different version numbers but no update is available.
-            // Because of this, we prefer showing version from the server (even when localInfo version is different)
-            // and we only want to show the localInfo version when `localInfo.canUpdate` is set to true
-            if (localInfo != null && updateInfo?.canUpdate == true)
-            {
-                m_Versions.Add(new AssetStorePackageVersion(ioProxy, productInfo, localInfo, importedPackage));
-                m_Versions.Add(new AssetStorePackageVersion(ioProxy, productInfo));
-            }
-            else
-            {
-                var version = new AssetStorePackageVersion(ioProxy, productInfo, importedPackage: importedPackage);
-                if (localInfo != null)
-                {
-                    version.SetLocalPath(ioProxy, localInfo.packagePath);
-                    version.AddDowngradeWarningIfApplicable(localInfo, updateInfo);
-                }
-                m_Versions.Add(version);
-            }
+            CreateAndAddToSortedVersions(productInfo, localInfo, importedPackage, localInfo?.uploadId);
+            CreateAndAddToSortedVersions(productInfo, localInfo, importedPackage, importedPackage?.uploadId);
+            CreateAndAddToSortedVersions(productInfo, localInfo, importedPackage, updateInfo?.recommendedUploadId);
+
+            if (m_Versions.Count == 0)
+                m_Versions.Add(new AssetStorePackageVersion(productInfo));
+
+            m_ImportAvailableIndex = localInfo == null ? -1 : m_Versions.FindIndex(v => v.uploadId == localInfo.uploadId);
+            m_ImportedIndex = importedPackage == null ? -1 : m_Versions.FindIndex(v => v.uploadId == importedPackage.uploadId);
+            m_RecommendedIndex = updateInfo == null ? -1 : m_Versions.FindIndex(v => v.uploadId == updateInfo.recommendedUploadId);
         }
 
-        public IEnumerator<IPackageVersion> GetEnumerator()
+        private void CreateAndAddToSortedVersions(AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo, AssetStoreImportedPackage importedPackage, long? uploadId)
+        {
+            if (uploadId == null)
+                return;
+
+            var insertIndex = m_Versions.Count;
+            for (var i = 0; i < m_Versions.Count; i++)
+            {
+                var version = m_Versions[i];
+                // We need to check duplicates here because it's possible that for localInfo, importedPackage and updateInfo to have the same uploadId
+                if (version.uploadId == uploadId)
+                    return;
+
+                if (version.uploadId < uploadId)
+                    continue;
+
+                insertIndex = i;
+                break;
+            }
+
+            m_Versions.Insert(insertIndex, new AssetStorePackageVersion
+            (
+                productInfo,
+                uploadId.Value,
+                localInfo: uploadId == localInfo?.uploadId ? localInfo : null,
+                importedPackage: uploadId == importedPackage?.uploadId ? importedPackage : null
+            ));
+        }
+
+        public override IEnumerator<IPackageVersion> GetEnumerator()
         {
             return m_Versions.Cast<IPackageVersion>().GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return m_Versions.GetEnumerator();
         }
     }
 }

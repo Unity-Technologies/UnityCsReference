@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                                           PackageOperationDispatcher operationDispatcher,
                                           UnityConnectProxy unityConnect,
                                           ApplicationProxy application)
-            : base(new DownloadUpdateAction(operationDispatcher, assetStoreDownloadManager, assetStoreCache, unityConnect, application),
+            : base(new DownloadUpdateAction(operationDispatcher, assetStoreDownloadManager, unityConnect, application),
                    new CancelDownloadAction(operationDispatcher, assetStoreDownloadManager, application))
         {
             mainFoldout.headerTextTemplate = L10n.Tr("Download update for {0}");

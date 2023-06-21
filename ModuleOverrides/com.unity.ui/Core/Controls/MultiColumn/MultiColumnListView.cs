@@ -95,7 +95,7 @@ namespace UnityEngine.UIElements
         public new MultiColumnListViewController viewController => base.viewController as MultiColumnListViewController;
 
         /// <summary>
-        /// If a column is clicked to change sorting, this event is raised to allow users to sort the tree view items.
+        /// If a column is clicked to change sorting, this event is raised to allow users to sort the list view items.
         /// </summary>
         public event Action columnSortingChanged;
 

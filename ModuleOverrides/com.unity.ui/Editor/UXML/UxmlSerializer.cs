@@ -15,7 +15,12 @@ namespace UnityEditor.UIElements
 {
     internal class UxmlSerializedAttributeDescription : UxmlAttributeDescription
     {
+        // Lazy loaded fields that are mostly used in the UI BUilder.
         IList<Type> m_UxmlObjectAcceptedTypes;
+        object m_ObjectField;
+        bool? m_IsUnityObject;
+        bool? m_IsList;
+        bool? m_IsUxmlObject;
 
         public new Type type { get; set; }
 
@@ -27,7 +32,38 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// The field/property value for the VisualElement/UxmlObject.
         /// </summary>
-        public object objectField { get; set; }
+        public object objectField
+        {
+            get
+            {
+                if (m_ObjectField == null)
+                {
+                    var fieldName = serializedField.Name;
+
+                    const BindingFlags publicFlags = BindingFlags.Instance | BindingFlags.Public;
+
+                    // First check for a public version of the field/property.
+                    m_ObjectField = elementType.GetProperty(fieldName, publicFlags) ?? (object)elementType.GetField(fieldName, publicFlags);
+                    if (m_ObjectField != null)
+                        return m_ObjectField;
+
+                    // If we did not find a public version of the field/property, check for a private version.
+                    // We need to walk through the type hierarchy to find the field/property as we can not get base private properties using GetProperty/GetField.
+                    const BindingFlags privateFlags = BindingFlags.Instance | BindingFlags.NonPublic;
+
+                    // We need to walk through the type hierarchy to find the field/property as we can not get base private properties using GetProperty/GetField.
+                    var oType = elementType;
+                    while (m_ObjectField == null && oType != null)
+                    {
+                        m_ObjectField = oType.GetProperty(fieldName, privateFlags) ?? (object)oType.GetField(fieldName, privateFlags);
+
+                        if (m_ObjectField == null)
+                            oType = oType.BaseType;
+                    }
+                }
+                return m_ObjectField;
+            }
+        }
 
         public object defaultValue { get; set; }
 
@@ -35,11 +71,37 @@ namespace UnityEditor.UIElements
 
         public override string defaultValueAsString => defaultValue?.ToString() ?? "";
 
-        public bool isUnityObject => typeof(Object).IsAssignableFrom(type);
+        public bool isUnityObject
+        {
+            get
+            {
+                m_IsUnityObject ??= typeof(Object).IsAssignableFrom(type);
+                return m_IsUnityObject.Value;
+            }
+        }
 
-        public bool isUxmlObject => serializedField.GetCustomAttribute<UxmlObjectReferenceAttribute>() != null;
+        public bool isUxmlObject
+        {
+            get
+            {
+                m_IsUxmlObject ??= serializedField.GetCustomAttribute<UxmlObjectReferenceAttribute>() != null;
+                return m_IsUxmlObject.Value;
+            }
+        }
 
-        public bool isList => typeof(IList).IsAssignableFrom(type) && (type.IsArray || type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>));
+        public bool isList
+        {
+            get
+            {
+                m_IsList ??= typeof(IList).IsAssignableFrom(type) && (type.IsArray || type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>));
+                return m_IsList.Value;
+            }
+        }
+
+        /// <summary>
+        /// The type of element or object that this attribute belongs to.
+        /// </summary>
+        public Type elementType { get; set; }
 
         /// <summary>
         /// The UxmlObject types that can be applied to this attribute.
@@ -48,47 +110,55 @@ namespace UnityEditor.UIElements
         {
             get
             {
-                if (m_UxmlObjectAcceptedTypes != null)
-                    return m_UxmlObjectAcceptedTypes;
-
-                // Were the types set in the UxmlObjectAttribute?
-                var attribute = serializedField.GetCustomAttribute<UxmlObjectReferenceAttribute>();
-                if (attribute.types != null)
+                if (m_UxmlObjectAcceptedTypes == null)
                 {
-                    m_UxmlObjectAcceptedTypes = attribute.types;
-                    return m_UxmlObjectAcceptedTypes;
+                    // Were the types set in the UxmlObjectAttribute?
+                    var attribute = serializedField.GetCustomAttribute<UxmlObjectReferenceAttribute>();
+                    if (attribute.types != null)
+                    {
+                        m_UxmlObjectAcceptedTypes = attribute.types;
+                        return m_UxmlObjectAcceptedTypes;
+                    }
+
+                    var acceptedTypes = new List<Type>();
+
+                    void AddType(Type type)
+                    {
+                        if (type.IsAbstract || type.IsGenericType)
+                            return;
+
+                        // We only accept UxmlObjectAttribute types.
+                        if (type.GetCustomAttribute<UxmlObjectAttribute>() == null)
+                            return;
+
+                        var uxmlSerializedDataType = type.GetNestedType(nameof(UxmlSerializedData));
+                        if (uxmlSerializedDataType == null)
+                            return;
+                        
+                        acceptedTypes.Add(uxmlSerializedDataType);
+                    }
+
+                    // We need to query the source data as the type may be an interface which we dont store in the serialized data.
+                    Type uxmlObjectType = null;
+                    if (objectField is PropertyInfo propertyField)
+                        uxmlObjectType = propertyField.PropertyType;
+                    else if (objectField is FieldInfo fieldInfo)
+                        uxmlObjectType = fieldInfo.FieldType;
+
+                    if (isList)
+                        uxmlObjectType = uxmlObjectType.GetArrayOrListElementType();
+
+                    var foundTypes = TypeCache.GetTypesDerivedFrom(uxmlObjectType);
+
+                    AddType(uxmlObjectType); // Add the base type
+                    foreach (var t in foundTypes)
+                    {
+                        AddType(t);
+                    }
+
+                    m_UxmlObjectAcceptedTypes = acceptedTypes;
                 }
 
-                var acceptedTypes = new List<Type>();
-
-                void AddType(Type type)
-                {
-                    var declaringType = type.DeclaringType;
-                    if (declaringType.IsAbstract || declaringType.IsGenericType)
-                        return;
-
-                    // We only accept UxmlObjectAttribute types.
-                    if (declaringType.GetCustomAttribute<UxmlObjectAttribute>() == null)
-                        return;
-
-                    acceptedTypes.Add(type);
-                }
-
-                var uxmlObjectType = type;
-                if (isList)
-                {
-                    uxmlObjectType = type.GetArrayOrListElementType();
-                }
-
-                var foundTypes = TypeCache.GetTypesDerivedFrom(uxmlObjectType);
-
-                AddType(uxmlObjectType); // Add the base type
-                foreach (var t in foundTypes)
-                {
-                    AddType(t);
-                }
-
-                m_UxmlObjectAcceptedTypes = acceptedTypes;
                 return m_UxmlObjectAcceptedTypes;
             }
         }
@@ -160,24 +230,6 @@ namespace UnityEditor.UIElements
             }
         }
 
-        object ExtractObjectField(object objInstance)
-        {
-            var fieldName = serializedField.Name;
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-            object oField = null;
-            var oType = objInstance.GetType();
-            while (oField == null && oType != null)
-            {
-                oField = oType.GetProperty(fieldName, flags) ?? (object)oType.GetField(fieldName, flags);
-
-                if (oField == null)
-                    oType = oType.BaseType;
-            }
-
-            return oField;
-        }
-
         public bool TryGetValueFromObject(object objInstance, out object value)
         {
             try
@@ -185,8 +237,6 @@ namespace UnityEditor.UIElements
                 value = null;
                 if (objInstance == null)
                     return false;
-
-                objectField ??= ExtractObjectField(objInstance);
 
                 if (objectField is PropertyInfo propertyField)
                 {
@@ -213,8 +263,6 @@ namespace UnityEditor.UIElements
         {
             try
             {
-                objectField ??= ExtractObjectField(objInstance);
-
                 if (objectField is PropertyInfo propertyField)
                 {
                     propertyField.SetValue(objInstance, value);

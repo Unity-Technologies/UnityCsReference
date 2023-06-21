@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Unity.CommandStateObserver;
 
@@ -37,28 +36,6 @@ static class ListUtilities
             {
                 dest.Add(element);
             }
-        }
-    }
-
-    /// <summary>
-    /// Adds <paramref name="count"/> elements <paramref name="value"/> to the list.
-    /// </summary>
-    /// <param name="dest">The list to modify.</param>
-    /// <param name="value">The value to add.</param>
-    /// <param name="count">The number of values to add.</param>
-    /// <typeparam name="T">The type of value.</typeparam>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="dest"/> is null.</exception>
-    public static void Fill<T>(this List<T> dest, T value, int count)
-    {
-        if (dest == null)
-        {
-            throw new ArgumentNullException(nameof(dest));
-        }
-
-        dest.Capacity = Math.Max(dest.Capacity, dest.Count + count);
-        while (count-- > 0)
-        {
-            dest.Add(value);
         }
     }
 

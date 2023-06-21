@@ -180,6 +180,8 @@ namespace UnityEditor.UIElements
             if (fieldInfo.GetCustomAttribute<UxmlIgnoreAttribute>() != null)
                 return null;
 
+            var elementType = defaultObject != null ? defaultObject.GetType() : fieldInfo.DeclaringType.DeclaringType;
+
             if (fieldInfo.GetCustomAttribute<UxmlObjectReferenceAttribute>() is { } objectReferenceAttribute)
             {
                 uxmlAttributeDescription = new UxmlSerializedUxmlObjectAttributeDescription { rootName = objectReferenceAttribute.name };
@@ -188,7 +190,6 @@ namespace UnityEditor.UIElements
             {
                 if (!IsValidAttributeType(fieldInfo.FieldType))
                 {
-                    var elementType = defaultObject != null ? defaultObject.GetType() : fieldInfo.DeclaringType.DeclaringType;
                     if (!InternalEditorUtility.IsUnityAssembly(elementType))
                     {
                         Debug.LogError($"[UxmlElement] '{elementType.Name}' has a [UxmlAttribute] '{GetUxmlName(fieldInfo)}' of an unknown type '{fieldInfo.FieldType.Name}'.\n" +
@@ -203,6 +204,7 @@ namespace UnityEditor.UIElements
             uxmlAttributeDescription.name = GetUxmlName(fieldInfo);
             uxmlAttributeDescription.type = fieldInfo.FieldType;
             uxmlAttributeDescription.serializedField = fieldInfo;
+            uxmlAttributeDescription.elementType = elementType;
 
             // Type are not serializable. They are serialized as string with a UxmlTypeReferenceAttribute.
             if (fieldInfo.GetCustomAttribute<UxmlTypeReferenceAttribute>() != null)

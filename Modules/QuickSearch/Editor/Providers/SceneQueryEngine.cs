@@ -25,6 +25,12 @@ namespace UnityEditor.Search.Providers
         public SceneQueryEngineFilterAttribute(string token, string[] supportedOperators = null)
             : base(token, supportedOperators) {}
 
+        internal SceneQueryEngineFilterAttribute(string token, string[] supportedOperators, string propositionReplacement)
+            : base(token, supportedOperators)
+        {
+            this.propositionReplacement = propositionReplacement;
+        }
+
         /// <summary>
         /// Create a filter with the corresponding token, string comparison options and supported operators.
         /// </summary>
@@ -67,7 +73,7 @@ namespace UnityEditor.Search.Providers
     {
         private List<SearchProposition> m_PropertyPrositions;
 
-        static Regex SerializedPropertyRx = new Regex(@"#([\w\d\.]+)");
+        static Regex SerializedPropertyRx = new Regex(@"#([\w\d\.\[\]]+)");
 
         public SceneQueryEngine(IEnumerable<GameObject> gameObjects)
             : base(gameObjects)

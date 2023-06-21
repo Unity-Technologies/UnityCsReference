@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
-using UnityEditor.Utils;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -68,7 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_LocalInfoHandler = localInfoHandler;
 
             foreach (var operation in m_DownloadOperations.Values)
-                operation.ResolveDependencies(assetStoreUtils, assetStoreRestAPI, m_AssetStoreCache, m_AssetStoreCachePathProxy, m_LocalInfoHandler);
+                operation.ResolveDependencies(m_IOProxy, m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCache, m_AssetStoreCachePathProxy, m_LocalInfoHandler);
         }
 
         // The AssetStoreDownloadManager implementation requires the help of a ScriptableObject to dispatch download progress event.
@@ -153,7 +152,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             onBeforeDownloadStart?.Invoke(productId);
 
             var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
-            operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCache, m_AssetStoreCachePathProxy, m_LocalInfoHandler, productId, localInfo?.packagePath);
+            operation = new AssetStoreDownloadOperation(m_IOProxy, m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCache, m_AssetStoreCachePathProxy, m_LocalInfoHandler, productId, localInfo?.packagePath);
             SetupDownloadOperation(operation);
             operation.Download(false);
         }
@@ -188,19 +187,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_DownloadOperations[operation.productId] = operation;
             operation.onOperationError += (_, error) => onDownloadError?.Invoke(operation, error);
-            operation.onOperationFinalized += (_) => OnDownloadFinalized(operation);
-            operation.onOperationProgress += (_) => onDownloadProgress?.Invoke(operation);
-            operation.onDownloadStateChanged += (_) => onDownloadStateChanged?.Invoke(operation);
+            operation.onOperationFinalized += _ => OnDownloadFinalized(operation);
+            operation.onOperationProgress += _ => onDownloadProgress?.Invoke(operation);
+            operation.onDownloadStateChanged += _ => onDownloadStateChanged?.Invoke(operation);
         }
 
         private void OnDownloadFinalized(AssetStoreDownloadOperation operation)
         {
             onDownloadFinalized?.Invoke(operation);
-            if (operation.state == DownloadState.Completed &&
-                !string.IsNullOrEmpty(operation.packageOldPath) && operation.packageNewPath.NormalizePath() != operation.packageOldPath.NormalizePath())
-            {
-                m_IOProxy.DeleteIfExists(operation.packageOldPath);
-            }
         }
 
         private void RemoveDownloadOperation(long productId)
@@ -280,6 +274,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_Application.onPlayModeStateChanged -= OnPlayModeStateChanged;
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
+            m_AssetStoreCachePathProxy.onConfigChanged -= OnAssetStoreCacheConfigChange;
             UnRegisterDownloadDelegate();
         }
 

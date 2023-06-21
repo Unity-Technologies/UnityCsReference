@@ -47,11 +47,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual void Install(long productId, bool interactiveInstall = false)
         {
             var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
-            if (localInfo == null)
-                return;
+            try
+            {
+                if (string.IsNullOrEmpty(localInfo?.packagePath) || !m_IOProxy.FileExists(localInfo.packagePath))
+                    return;
 
-            var assetOrigin = new AssetOrigin((int)localInfo.productId, localInfo.title, localInfo.versionString, (int)localInfo.uploadId);
-            m_AssetDatabase.ImportPackage(localInfo.packagePath, assetOrigin, interactiveInstall);
+                var assetOrigin = new AssetOrigin((int)localInfo.productId, localInfo.title, localInfo.versionString, (int)localInfo.uploadId);
+                m_AssetDatabase.ImportPackage(localInfo.packagePath, assetOrigin, interactiveInstall);
+            }
+            catch (System.IO.IOException e)
+            {
+                Debug.Log($"[Package Manager Window] Cannot import package {localInfo?.title}: {e.Message}");
+            }
         }
 
         private void RemoveAssetsAndCleanUpEmptyFolders(IEnumerable<Asset> assets)

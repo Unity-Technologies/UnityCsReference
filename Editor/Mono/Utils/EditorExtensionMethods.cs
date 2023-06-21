@@ -45,7 +45,7 @@ namespace UnityEditor
             {
                 return listType.GetElementType();
             }
-            else if (listType.IsGenericType && listType.GetGenericTypeDefinition() == typeof(List<>))
+            else if (listType.IsGenericType)
             {
                 return listType.GetGenericArguments()[0];
             }

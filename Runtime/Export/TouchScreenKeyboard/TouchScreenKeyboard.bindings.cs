@@ -122,10 +122,14 @@ namespace UnityEngine
             {
                 if (disableInPlaceEditing)
                     return false;
-                return false;
+
+                // Editing text in-place, i.e. selecting/modifying text within a given edit control, sometimes
+                // depends on the specific device the app is running on; query this value from the platform.
+                return IsInPlaceEditingAllowed();
             }
         }
 
+        extern private static bool IsInPlaceEditingAllowed();
 
         // Opens the native keyboard provided by OS on the screen.
         public static TouchScreenKeyboard Open(string text, [DefaultValue("TouchScreenKeyboardType.Default")]  TouchScreenKeyboardType keyboardType, [DefaultValue("true")]  bool autocorrection, [DefaultValue("false")]  bool multiline, [DefaultValue("false")]  bool secure, [DefaultValue("false")]  bool alert, [DefaultValue("\"\"")]  string textPlaceholder, [DefaultValue("0")]  int characterLimit)

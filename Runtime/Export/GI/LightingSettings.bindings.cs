@@ -98,15 +98,6 @@ namespace UnityEngine
             // No filter
             None = 2
         }
-        internal enum TiledBaking
-        {
-            Disabled = -1,
-            Auto = 0,
-            Quarter = 1,
-            Sixtenth = 2,
-            SixtyFourth = 3,
-            TwoHundredFiftySixth = 4
-        }
 
         [NativeName("AutoGenerate")]
         [Obsolete("LightingSettings.autoGenerate is obsolete.", false)]
@@ -239,10 +230,6 @@ namespace UnityEngine
         // Is view prioritisation enabled?
         [NativeName("PVRCulling")]
         public extern bool prioritizeView { get; set; }
-
-        // Force Tiled baking
-        [NativeName("TiledBaking")]
-        internal extern TiledBaking tiledBaking { get; set; }
 
         // Which path tracer filtering mode is used.
         [NativeName("PVRFilteringMode")]

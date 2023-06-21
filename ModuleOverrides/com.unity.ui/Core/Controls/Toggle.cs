@@ -27,7 +27,7 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BaseBoolField.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private string text;
+            [SerializeField, MultilineTextField] private string text;
             #pragma warning restore 649
 
             public override object CreateInstance() => new Toggle();

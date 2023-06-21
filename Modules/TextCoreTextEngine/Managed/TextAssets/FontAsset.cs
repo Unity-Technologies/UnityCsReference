@@ -1560,6 +1560,18 @@ namespace UnityEngine.TextCore.Text
         }
 
         /// <summary>
+        /// Get the glyph index for the given Unicode.
+        /// This overload of GetGlyphIndex does not return the success status.
+        /// </summary>
+        /// <param name="unicode">The Unicode value to get the glyph index for.</param>
+        /// <returns>The glyph index for the given Unicode.</returns>
+        internal uint GetGlyphIndex(uint unicode)
+        {
+            bool success;
+            return GetGlyphIndex(unicode, out success);
+        }
+
+        /// <summary>
         /// Internal function used to get the glyph index for the given Unicode.
         /// </summary>
         /// <param name="unicode"></param>

@@ -260,6 +260,7 @@ namespace UnityEngine.UIElements
     /// By adding the <see cref="UxmlObjectAttribute"/> attribute to a class, you can declare a UXML object.
     /// You can use these UXML objects to associate complex data with a field,
     /// surpassing the capabilities of a single <see cref="UxmlAttributeAttribute"/>.
+    /// The field type must be a UXML object or an interface. When using an interface, only UXML Object types are valid for UXML serialization.
     /// </remarks>
     /// <example>
     /// The following example shows a common use case for the UxmlObjectReferenceAttribute. It uses the attribute to associate a list of UXML objects with a field or property:
@@ -278,6 +279,10 @@ namespace UnityEngine.UIElements
     /// <example>
     /// Example UXML:
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlObject_InheritanceExample.uxml"/>
+    /// </example>
+    /// <example>
+    /// You can also use an interface and any UXML objects that implement it.
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlObject_InterfaceExample.cs"/>
     /// </example>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = false)]
     public class UxmlObjectReferenceAttribute : Attribute

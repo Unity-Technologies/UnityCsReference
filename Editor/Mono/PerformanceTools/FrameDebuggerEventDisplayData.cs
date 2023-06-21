@@ -766,16 +766,16 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             bool hasAccelerationName = curEventData.m_RayTracingShaderAccelerationStructureName.Length > 0;
             string rayTracingMaxRecursionDepth     = $"{curEventData.m_RayTracingShaderMaxRecursionDepth}";
             string rayTracingDispatchSize          = $"{curEventData.m_RayTracingShaderWidth} x {curEventData.m_RayTracingShaderHeight} x {curEventData.m_RayTracingShaderDepth}";
-            string rayTracingAccelerationStructure = hasAccelerationName ? curEventData.m_RayTracingShaderAccelerationStructureName : k_NotAvailableString;
+            string rayTracingAccelerationStructure = hasAccelerationName ? $"{curEventData.m_RayTracingShaderAccelerationStructureName} ({curEventData.m_RayTracingShaderAccelerationStructureSize} KB)" : k_NotAvailableString;
             string rayTracingMissShaderCount       = $"{curEventData.m_RayTracingShaderMissShaderCount}";
             string rayTracingCallableShaderCount   = $"{curEventData.m_RayTracingShaderCallableShaderCount}";
             string rayTracingPassName              = $"{curEventData.m_RayTracingShaderPassName}";
             m_RayTracingShaderName                 = $"{curEventData.m_RayTracingShaderName}";
             m_RayTracingGenerationShaderName       = $"{curEventData.m_RayTracingShaderRayGenShaderName}";
 
-            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Max Recursion Depth", rayTracingMaxRecursionDepth).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Max. Recursion Depth", rayTracingMaxRecursionDepth).AppendLine();
             m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Dispatch Size", rayTracingDispatchSize).AppendLine();
-            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Acceleration Structure", rayTracingAccelerationStructure).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Accel. Structure", rayTracingAccelerationStructure).AppendLine();
             m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Miss Shader Count", rayTracingMissShaderCount).AppendLine();
             m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Callable Shader Count", rayTracingCallableShaderCount).AppendLine();
             m_DetailsStringBuilder.AppendLine();

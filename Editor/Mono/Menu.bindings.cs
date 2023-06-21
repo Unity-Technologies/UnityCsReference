@@ -42,6 +42,9 @@ namespace UnityEditor
         [NativeMethod("MenuController::GetEnabled", true)]
         public static extern bool GetEnabled(string menuPath);
 
+        [NativeMethod("MenuController::UpdateContextMenu", true)]
+        internal static extern void UpdateContextMenu(UnityEngine.Object[] context, int userData);
+
         [NativeMethod("MenuController::GetEnabledWithContext", true)]
         internal static extern bool GetEnabledWithContext(string menuPath, UnityEngine.Object[] context);
 

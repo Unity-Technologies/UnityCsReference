@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
@@ -32,6 +31,15 @@ internal class LocalInfoHandler
         return localInfos;
     }
 
+    public virtual AssetStoreLocalInfo GetParsedLocalInfo(string productPath)
+    {
+        if (string.IsNullOrEmpty(productPath))
+            return null;
+        var localInfo = AssetStoreLocalInfo.ParseLocalInfo(m_AssetStoreUtils.GetLocalPackageInfo(productPath));
+        ReadExtraInfoFromCacheIfNeeded(localInfo);
+        return localInfo;
+    }
+
     private void ReadExtraInfoFromCacheIfNeeded(AssetStoreLocalInfo localInfo)
     {
         if (localInfo == null || localInfo.productId == 0 || localInfo.uploadId != 0) return;
@@ -55,10 +63,9 @@ internal class LocalInfoHandler
     {
         if (string.IsNullOrEmpty(productPath) || downloadInfo == null || downloadInfo.uploadId == 0) return;
 
-        var localInfo = m_AssetStoreUtils.GetLocalPackageInfo(productPath);
-        var parsedLocalInfo = AssetStoreLocalInfo.ParseLocalInfo(localInfo);
-        var extraInfoCacheFilePath = GetExtraInfoCacheFilePath(parsedLocalInfo?.packagePath);
-        if (parsedLocalInfo?.uploadId != 0)
+        var localInfo = AssetStoreLocalInfo.ParseLocalInfo(m_AssetStoreUtils.GetLocalPackageInfo(productPath));
+        var extraInfoCacheFilePath = GetExtraInfoCacheFilePath(productPath);
+        if (localInfo?.uploadId != 0)
         {
             m_IOProxy.DeleteIfExists(extraInfoCacheFilePath);
             return;

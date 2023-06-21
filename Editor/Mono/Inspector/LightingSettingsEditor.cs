@@ -135,18 +135,6 @@ namespace UnityEditor
             public static readonly int[] lightmapMaxSizeValues = { 32, 64, 128, 256, 512, 1024, 2048, 4096 };
             public static readonly GUIContent[] lightmapMaxSizeStrings = Array.ConvertAll(lightmapMaxSizeValues, (x) => new GUIContent(x.ToString()));
 
-            // Keep in sync with GI/Progressive/LightmapTilingMode.h
-            public static readonly int[] tiledBakingValues = { 0, 1, 2, 3, 4, -1 };
-            public static readonly GUIContent[] tiledBakingStrings =
-            {
-                EditorGUIUtility.TrTextContent("Auto"),
-                EditorGUIUtility.TrTextContent("4 Tiles"),
-                EditorGUIUtility.TrTextContent("16 Tiles"),
-                EditorGUIUtility.TrTextContent("64 Tiles"),
-                EditorGUIUtility.TrTextContent("256 Tiles"),
-                EditorGUIUtility.TrTextContent("Disabled"),
-            };
-
             // must match LightmapMixedBakeMode
             public static readonly int[] mixedModeValues = { 0, 1, 2 };
             public static readonly GUIContent[] mixedModeStrings =
@@ -222,7 +210,6 @@ namespace UnityEditor
             public static readonly GUIContent lightmapSizeFixed = EditorGUIUtility.TrTextContent("Fixed Lightmap Size", "Forces all lightmap textures to use the same size. These can be no larger than Max Lightmap Size.");
             public static readonly GUIContent useMipmapLimits = EditorGUIUtility.TrTextContent("Use Mipmap Limits", "Whether lightmap textures use the Global Mipmap limit defined in Quality Settings. Disable this to ensure lightmaps are available at the full mipmap resolution.");
             public static readonly GUIContent lightmapCompression = EditorGUIUtility.TrTextContent("Lightmap Compression", "Compresses baked lightmaps created using this Lighting Settings Asset. Lower quality compression reduces memory and storage requirements, at the cost of more visual artifacts. Higher quality compression requires more memory and storage, but provides better visual results.");
-            public static readonly GUIContent tiledBaking = EditorGUIUtility.TrTextContent("Tiled baking", "Determines the tiled baking mode. Auto: Memory status triggers tiling. If Auto is not enabled, bakes may fail. Disabled: Never use tiling.");
             public static readonly GUIContent ambientOcclusion = EditorGUIUtility.TrTextContent("Ambient Occlusion", "Specifies whether to include ambient occlusion or not in the baked lightmap result. Enabling this results in simulating the soft shadows that occur in cracks and crevices of objects when light is reflected onto them.");
             public static readonly GUIContent ambientOcclusionContribution = EditorGUIUtility.TrTextContent("Indirect Contribution", "Adjusts the contrast of ambient occlusion applied to indirect lighting. The larger the value, the more contrast is applied to the ambient occlusion for indirect lighting.");
             public static readonly GUIContent ambientOcclusionContributionDirect = EditorGUIUtility.TrTextContent("Direct Contribution", "Adjusts the contrast of ambient occlusion applied to the direct lighting. The larger the value is, the more contrast is applied to the ambient occlusion for direct lighting. This effect is not physically accurate.");

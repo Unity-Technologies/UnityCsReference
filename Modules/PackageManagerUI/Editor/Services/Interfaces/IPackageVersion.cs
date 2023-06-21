@@ -62,7 +62,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         bool isInvalidSemVerInManifest { get; }
 
-        long versionId { get; }
+        long uploadId { get; }
 
         DateTime? publishedDate { get; }
 
@@ -80,8 +80,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         // A version is fully fetched when the information isn't derived from another version (therefore may be inaccurate)
         bool isFullyFetched { get; }
-
-        bool isAvailableOnDisk { get; }
 
         bool isDirectDependency { get; }
 

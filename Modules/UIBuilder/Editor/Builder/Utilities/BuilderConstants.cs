@@ -216,13 +216,13 @@ namespace Unity.UI.Builder
         public static readonly string UnnamedValue = "<No Name>";
 
         // Tooltip Messages
-        public static readonly string FieldStatusIndicatorDefaultTooltip = "Default value";
-        public static readonly string FieldStatusIndicatorInlineTooltip = "Inline value";
-        public static readonly string FieldStatusIndicatorInheritedTooltip = "Inherited value";
-        public static readonly string FieldStatusIndicatorLocalTooltip = "Local value";
-        public static readonly string FieldStatusIndicatorFromSelectorTooltip = "Selector";
-        public static readonly string FieldStatusIndicatorVariableTooltip = "Variable";
-        public static readonly string FieldStatusIndicatorUnresolvedVariableTooltip = "Unresolved variable";
+        public static readonly string FieldStatusIndicatorDefaultTooltip = "Default Value";
+        public static readonly string FieldStatusIndicatorInlineTooltip = "Inline Value\n\nValue is set directly from the property field.";
+        public static readonly string FieldStatusIndicatorInheritedTooltip = "Inherited Value\n\nParent: {0} {1}";
+        public static readonly string FieldStatusIndicatorLocalTooltip = "Local Value\n\nValue is set directly from the property field.";
+        public static readonly string FieldStatusIndicatorFromSelectorTooltip = "Selector Value\n\nSelector: {0}\nSheet: {1}";
+        public static readonly string FieldStatusIndicatorVariableTooltip = "Variable Value\n\nVariable: {0}\nSheet: {1}";
+        public static readonly string FieldStatusIndicatorUnresolvedVariableTooltip = "Unresolved variable\n\nVariable or Sheet is missing.";
         public static readonly string FieldStatusIndicatorResolvedBindingTooltip = "Resolved binding";
         public static readonly string FieldStatusIndicatorUnresolvedBindingTooltip = "Unresolved binding\nEdit binding for more details.";
         public static readonly string FieldStatusIndicatorUnhandledBindingTooltip = "Unhandled binding (resolution pending)";

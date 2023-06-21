@@ -176,6 +176,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         public string m_RayTracingShaderPassName;
         public string m_RayTracingShaderRayGenShaderName;
         public string m_RayTracingShaderAccelerationStructureName;
+        public int m_RayTracingShaderAccelerationStructureSize;
         public int m_RayTracingShaderMaxRecursionDepth;
         public int m_RayTracingShaderWidth;
         public int m_RayTracingShaderHeight;

@@ -46,7 +46,7 @@ namespace UnityEngine.TextCore.Text
         [Ignore] public int[] triangles;
 
         [Ignore] public VertexDataLayout vertexDataLayout;
-        
+
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal GlyphRenderMode glyphRenderMode;
 
@@ -54,13 +54,16 @@ namespace UnityEngine.TextCore.Text
         /// Function to pre-allocate vertex attributes for a mesh of size X.
         /// </summary>
         /// <param name="size"></param>
-        public MeshInfo(int size, VertexDataLayout layout) : this()
+        public MeshInfo(int size, VertexDataLayout layout, bool isIMGUI) : this()
         {
             vertexDataLayout = layout;
             material = null;
 
-            // Limit the mesh to less than 65535 vertices which is the limit for Unity's Mesh.
-            size = Mathf.Min(size, 16383);
+            if (isIMGUI)
+            {
+                // Limit the mesh to less than 65535 vertices which is the limit for Unity's Mesh.
+                size = Mathf.Min(size, 16383);
+            }
 
             int sizeX4 = size * 4;
             int sizeX6 = size * 6;
@@ -115,10 +118,13 @@ namespace UnityEngine.TextCore.Text
         /// Function to resized the content of MeshData and re-assign normals, tangents and triangles.
         /// </summary>
         /// <param name="size"></param>
-        internal void ResizeMeshInfo(int size)
+        internal void ResizeMeshInfo(int size, bool isIMGUI)
         {
-            // Limit the mesh to less than 65535 vertices which is the limit for Unity's Mesh.
-            size = Mathf.Min(size, 16383);
+            if (isIMGUI)
+            {
+                // Limit the mesh to less than 65535 vertices which is the limit for Unity's Mesh.
+                size = Mathf.Min(size, 16383);
+            }
 
             int sizeX4 = size * 4;
             int sizeX6 = size * 6;
@@ -174,7 +180,7 @@ namespace UnityEngine.TextCore.Text
                 Array.Clear(vertices, 0, vertices.Length);
                 vertexBufferSize = vertices.Length;
             }
-            
+
             vertexCount = 0;
         }
 

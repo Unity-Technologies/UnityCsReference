@@ -153,11 +153,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (package?.versions.primary.HasTag(PackageTag.LegacyFormat) != true)
                 return;
 
-            var path = package.versions.primary.localPath;
             try
             {
-                if (m_IOProxy.FileExists(path))
-                    m_AssetStorePackageInstaller.Install(package.product.id, true);
+                m_AssetStorePackageInstaller.Install(package.product.id, true);
             }
             catch (System.IO.IOException e)
             {

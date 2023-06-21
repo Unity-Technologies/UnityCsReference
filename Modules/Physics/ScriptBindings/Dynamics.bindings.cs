@@ -991,7 +991,7 @@ namespace UnityEngine
     [StaticAccessor("GetPhysicsManager()", StaticAccessorType.Dot)]
     public partial class Physics
     {
-        // PX_MAX_F32_MINUS_EPS; currently used in e.g., EnforceJointLimitsConsistency()
+        //Matches kFloatMaxMinusEpsilon in PhysicsConstants.h; currently used in e.g., EnforceJointLimitsConsistency()
         internal const float k_MaxFloatMinusEpsilon = 340282326356119260000000000000000000000f;
 
         public const int IgnoreRaycastLayer = 1 << 2;

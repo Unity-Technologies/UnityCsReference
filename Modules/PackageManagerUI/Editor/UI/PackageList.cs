@@ -332,7 +332,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnActivePageChanged(IPage page)
         {
-            if (m_PageManager.lastActivePage?.id == MyAssetsPage.k_Id)
+            if (m_PageManager.lastActivePage != null)
                 m_PageRefreshHandler.CancelRefresh(m_PageManager.lastActivePage.refreshOptions);
 
             if (UpdateListVisibility())

@@ -11,6 +11,57 @@ using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    static class JointEditorUtil
+    {
+        internal static void DrawInspector(Editor editor)
+        {
+            using (new LocalizationGroup(editor.target))
+            {
+                SerializedObject serializedObject = editor.serializedObject;
+                EditorGUI.BeginChangeCheck();
+
+                serializedObject.UpdateIfRequiredOrScript();
+
+                // Loop through properties and create one field (including children) for each top level property.
+                SerializedProperty property = serializedObject.GetIterator();
+                bool expanded = true;
+                while (property.NextVisible(expanded))
+                {
+                    expanded = false;
+
+                    if(property.propertyPath == "m_ConnectedAnchor")
+                    {
+                        var isAutoConf = serializedObject.FindProperty("m_AutoConfigureConnectedAnchor").boolValue;
+                        using (new EditorGUI.DisabledScope(isAutoConf))
+                        {
+                            if (isAutoConf)
+                            {
+                                var joint = editor.target as Joint;
+                                Vector3 local = Vector3.zero;
+                                Vector3 global = Vector3.zero;
+
+                                EditorGUILayout.Vector3Field(EditorGUIUtility.TempContent(property.localizedDisplayName, property.tooltip), joint.connectedAnchor);
+                                editor.Repaint();
+                            }
+                            else
+                            {
+                                EditorGUILayout.PropertyField(property, true);
+                            }
+                        }
+
+                        continue;
+                    }
+
+                    EditorGUILayout.PropertyField(property, true);
+                }
+
+                serializedObject.ApplyModifiedProperties();
+
+                EditorGUI.EndChangeCheck();
+            }
+        }
+    }
+
     class JointCommonEditor : Editor
     {
         public static void CheckConnectedBody(Editor editor)
@@ -66,7 +117,7 @@ namespace UnityEditor
         {
             CheckConnectedBody(this);
             DrawObjectFieldForBody(this);
-            base.OnInspectorGUI();
+            JointEditorUtil.DrawInspector(this);
         }
     }
 
@@ -89,7 +140,7 @@ namespace UnityEditor
             JointCommonEditor.CheckConnectedBody(this);
             DoInspectorEditButtons();
             JointCommonEditor.DrawObjectFieldForBody(this);
-            base.OnInspectorGUI();
+            JointEditorUtil.DrawInspector(this);
         }
 
         protected void DoInspectorEditButtons()

@@ -193,10 +193,26 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnFocusChanged(bool focus)
         {
-            var canRefresh = !EditorApplication.isPlaying && !EditorApplication.isCompiling;
-            if (focus && canRefresh &&
-                m_PageManager.activePage.id is MyAssetsPage.k_Id or InProjectPage.k_Id)
-                m_PageRefreshHandler.Refresh(RefreshOptions.PurchasedOffline);
+            if (focus)
+                RescanLocalInfos();
+        }
+
+        private void OnAssetStoreCacheConfigChange(AssetStoreCachePathConfig config)
+        {
+            if (config.status == AssetStoreConfigStatus.Success || config.status == AssetStoreConfigStatus.ReadOnly)
+                RescanLocalInfos();
+        }
+
+        private void RescanLocalInfos()
+        {
+            if (m_PageRefreshHandler.GetRefreshTimestamp(RefreshOptions.LocalInfo) == 0)
+                return;
+            m_PageRefreshHandler.SetRefreshTimestampSingleFlag(RefreshOptions.LocalInfo, 0);
+            // We don't trigger a refresh right away for all pages because if a non-active page's refresh options contain LocalInfo,
+            // a refresh will be triggered once the user switches to that page. This way we delay the refresh to when it's needed.
+            // If the user never switches to that page then a local info refresh would never be triggerred.
+            if (m_PageManager.activePage.refreshOptions.Contains(RefreshOptions.LocalInfo))
+                m_PageRefreshHandler.Refresh(RefreshOptions.LocalInfo);
         }
 
         public void OnDisable()
@@ -219,12 +235,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Selection.onSelectionChanged -= RefreshSelectedInInspectorClass;
 
             m_PackageManagerPrefs.splitterFlexGrow = leftColumnContainer.resolvedStyle.flexGrow;
-        }
-
-        private void OnAssetStoreCacheConfigChange(AssetStoreCachePathConfig config)
-        {
-            if ((config.status == AssetStoreConfigStatus.Success || config.status == AssetStoreConfigStatus.ReadOnly) && m_PageRefreshHandler.GetRefreshTimestamp(m_PageManager.GetPage(MyAssetsPage.k_Id)) > 0)
-                m_PageRefreshHandler.Refresh(RefreshOptions.PurchasedOffline);
         }
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)

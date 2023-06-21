@@ -2,51 +2,23 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-
 namespace UnityEditor.PackageManager.UI.Internal;
 
-internal class ReDownloadAction : PackageAction
+internal class ReDownloadAction : DownloadActionBase
 {
-    private readonly PackageOperationDispatcher m_OperationDispatcher;
-    private readonly AssetStoreDownloadManager m_AssetStoreDownloadManager;
-    private readonly AssetStoreCache m_AssetStoreCache;
-    private readonly UnityConnectProxy m_UnityConnect;
-    private readonly ApplicationProxy m_Application;
     public ReDownloadAction(PackageOperationDispatcher operationDispatcher,
-        AssetStoreDownloadManager assetStoreDownloadManager, AssetStoreCache assetStoreCache,
+        AssetStoreDownloadManager assetStoreDownloadManager,
         UnityConnectProxy unityConnect,
-        ApplicationProxy application)
+        ApplicationProxy application) : base(operationDispatcher, assetStoreDownloadManager, unityConnect, application)
     {
-        m_OperationDispatcher = operationDispatcher;
-        m_AssetStoreDownloadManager = assetStoreDownloadManager;
-        m_AssetStoreCache = assetStoreCache;
-        m_UnityConnect = unityConnect;
-        m_Application = application;
     }
 
-    protected override bool TriggerActionImplementation(IPackageVersion version)
-    {
-        var canDownload = m_OperationDispatcher.Download(version.package);
-        if (canDownload)
-            PackageManagerWindowAnalytics.SendEvent("startReDownload", version);
-        return canDownload;
-    }
+    protected override string analyticEventName => "startReDownload";
 
+    // Re-download action covers all the `download` scenarios that's not covered by `DownloadNew` and `DownloadUpdate` actions
     public override bool IsVisible(IPackageVersion version)
     {
-        if (!m_UnityConnect.isUserLoggedIn)
-            return false;
-
-        if (version?.HasTag(PackageTag.LegacyFormat) != true)
-            return false;
-
-        var productId = version.package.product?.id;
-        var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
-        var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
-        var operation = m_AssetStoreDownloadManager.GetDownloadOperation(productId);
-        return localInfo != null && updateInfo?.canUpdateOrDowngrade != true && (operation == null ||
-            operation.state == DownloadState.DownloadRequested || !operation.isProgressVisible);
+        return base.IsVisible(version) && IsUpToDateOrNoUpdateFound(version);
     }
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
@@ -58,29 +30,19 @@ internal class ReDownloadAction : PackageAction
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        var localInfoVersionString = m_AssetStoreCache.GetLocalInfo(version.package.product?.id)?.versionString;
-        return !string.IsNullOrEmpty(localInfoVersionString) ? string.Format(L10n.Tr("Re-download {0}"), localInfoVersionString) : L10n.Tr("Re-download");
+        var importAvailableVersionString = version.package.versions.importAvailable?.versionString;
+        return !string.IsNullOrEmpty(importAvailableVersionString) ? string.Format(L10n.Tr("Re-download {0}"), importAvailableVersionString) : L10n.Tr("Re-download");
     }
 
     public override bool IsInProgress(IPackageVersion version)
     {
-        var productId = version?.package.product?.id;
-        var operation = m_AssetStoreDownloadManager.GetDownloadOperation(productId);
-        var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
-        var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
-        return localInfo != null && updateInfo?.canUpdateOrDowngrade != true && operation?.isInProgress == true;
+        return base.IsInProgress(version) && IsUpToDateOrNoUpdateFound(version);
     }
 
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
+    private static bool IsUpToDateOrNoUpdateFound(IPackageVersion version)
     {
-        yield return new DisableIfNoNetwork(m_Application);
-        yield return new DisableIfCompiling(m_Application);
+        var recommended = version.package.versions?.recommended;
+        var importAvailable = version.package.versions?.importAvailable;
+        return importAvailable != null && (recommended == null || recommended.uploadId == importAvailable.uploadId);
     }
-
-    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
-    {
-        yield return new DisableIfPackageDisabled(version);
-    }
-
-    protected override bool IsHiddenWhenInProgress(IPackageVersion version) => true;
 }

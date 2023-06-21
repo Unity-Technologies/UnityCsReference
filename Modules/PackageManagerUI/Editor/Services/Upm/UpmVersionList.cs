@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -12,16 +11,16 @@ using UnityEditor.Scripting.ScriptCompilation;
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class UpmVersionList : IVersionList, ISerializationCallbackReceiver
+    internal class UpmVersionList : BaseVersionList, ISerializationCallbackReceiver
     {
         [SerializeField]
         private List<UpmPackageVersion> m_Versions;
 
         [SerializeField]
         private int m_NumUnloadedVersions;
-        public int numUnloadedVersions => m_NumUnloadedVersions;
+        public override int numUnloadedVersions => m_NumUnloadedVersions;
 
-        public IEnumerable<IPackageVersion> key
+        public override IEnumerable<IPackageVersion> key
         {
             get
             {
@@ -90,7 +89,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private int m_InstalledIndex;
-        public IPackageVersion installed { get { return m_InstalledIndex < 0 ? null : m_Versions[m_InstalledIndex]; } }
+        public override IPackageVersion installed => m_InstalledIndex < 0 ? null : m_Versions[m_InstalledIndex];
 
         [SerializeField]
         private string m_LifecycleVersionString;
@@ -98,7 +97,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal string lifecycleVersionString => m_LifecycleVersionString;
 
         // the lifeCycle version from the Editor manifest, if it exists
-        public IPackageVersion lifecycleVersion
+        public override IPackageVersion lifecycleVersion
         {
             get
             {
@@ -149,9 +148,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             SemVersionParser.TryParse(m_LifecycleNextVersionString, out m_LifecycleNextVersion);
         }
 
-        public IPackageVersion latest => m_Versions.LastOrDefault();
+        public override IPackageVersion latest => m_Versions.LastOrDefault();
 
-        public IPackageVersion recommended
+        public override IPackageVersion recommended
         {
             get
             {
@@ -183,11 +182,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public IPackageVersion primary => installed ?? recommended ?? latest;
+        public override IPackageVersion primary => installed ?? recommended ?? latest;
 
-        public IPackageVersion importAvailable => null;
 
-        public bool isNonLifecycleVersionInstalled => CheckIsNonLifecycleVersionInstalled(installed, lifecycleVersion);
+        public override bool isNonLifecycleVersionInstalled => CheckIsNonLifecycleVersionInstalled(installed, lifecycleVersion);
 
         // If the user installs a local, git or embedded package with the same version string as the lifecycle version, it is consider as a non lifecycle version
         // We also consider that installation as the `lifecycle` version. Patches of lifecycle version are also considered lifecycle version.
@@ -197,9 +195,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             return installed != null && lifecycleVersion != null && (installed.HasTag(PackageTag.Custom | PackageTag.Git) || installed.version?.IsEqualOrPatchOf(lifecycleVersion.version) != true);
         }
 
-        public bool hasLifecycleVersion => m_LifecycleVersion != null || m_LifecycleNextVersion != null;
+        public override bool hasLifecycleVersion => m_LifecycleVersion != null || m_LifecycleNextVersion != null;
 
-        public IPackageVersion GetUpdateTarget(IPackageVersion version)
+        public override IPackageVersion GetUpdateTarget(IPackageVersion version)
         {
             if (version?.isInstalled == true && version != recommended)
                 return key.LastOrDefault() ?? version;
@@ -295,14 +293,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 SemVersionParser.TryParse(m_LifecycleNextVersionString, out m_LifecycleNextVersion);
         }
 
-        public IEnumerator<IPackageVersion> GetEnumerator()
+        public override IEnumerator<IPackageVersion> GetEnumerator()
         {
             return m_Versions.Cast<IPackageVersion>().GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return m_Versions.GetEnumerator();
         }
     }
 }

@@ -59,6 +59,7 @@ namespace UnityEditor.Actions
         public static void AddMenuItemsForType(DropdownMenu menu, Type type, IEnumerable<Object> targets, string submenu = "")
         {
             var componentName = type.Name;
+            Menu.UpdateContextMenu(ToArray(targets), 0);
             AddMenuItems(menu, componentName, Menu.GetMenuItems($"CONTEXT/{componentName}/", false, true), targets, submenu);
         }
 
@@ -94,6 +95,8 @@ namespace UnityEditor.Actions
                 var type = editor.target.GetType();
                 if (type == typeof(GameObject) || type == typeof(Material))
                     continue;
+
+                Menu.UpdateContextMenu(editor.targets, 0);
 
                 var items = Menu.GetMenuItems($"CONTEXT/{type.Name}/", false, true);
                 if (items.Length == 0)

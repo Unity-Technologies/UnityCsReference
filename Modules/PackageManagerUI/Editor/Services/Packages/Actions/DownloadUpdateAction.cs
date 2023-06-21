@@ -2,66 +2,26 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-using System.Linq;
-
 namespace UnityEditor.PackageManager.UI.Internal;
 
-internal class DownloadUpdateAction : PackageAction
+internal class DownloadUpdateAction : DownloadActionBase
 {
-    private readonly PackageOperationDispatcher m_OperationDispatcher;
-    private readonly AssetStoreDownloadManager m_AssetStoreDownloadManager;
-    private readonly AssetStoreCache m_AssetStoreCache;
-    private readonly UnityConnectProxy m_UnityConnect;
-    private readonly ApplicationProxy m_Application;
     public DownloadUpdateAction(PackageOperationDispatcher operationDispatcher,
         AssetStoreDownloadManager assetStoreDownloadManager,
-        AssetStoreCache assetStoreCache,
         UnityConnectProxy unityConnect,
-        ApplicationProxy application)
+        ApplicationProxy application) : base(operationDispatcher, assetStoreDownloadManager, unityConnect, application)
     {
-        m_OperationDispatcher = operationDispatcher;
-        m_AssetStoreDownloadManager = assetStoreDownloadManager;
-        m_AssetStoreCache = assetStoreCache;
-        m_UnityConnect = unityConnect;
-        m_Application = application;
     }
+
+    protected override string analyticEventName => "startDownloadUpdate";
 
     public override bool isRecommended => true;
 
     public override Icon icon => Icon.Download;
 
-    protected override bool TriggerActionImplementation(IList<IPackageVersion> versions)
-    {
-        var canDownload = m_OperationDispatcher.Download(versions.Select(v => v.package));
-        if (canDownload)
-            PackageManagerWindowAnalytics.SendEvent("startDownloadUpdate", versions);
-        return true;
-    }
-
-    protected override bool TriggerActionImplementation(IPackageVersion version)
-    {
-        var canDownload = m_OperationDispatcher.Download(version.package);
-        if (canDownload)
-            PackageManagerWindowAnalytics.SendEvent("startDownloadUpdate", version);
-        return canDownload;
-    }
-
     public override bool IsVisible(IPackageVersion version)
     {
-        if (!m_UnityConnect.isUserLoggedIn)
-            return false;
-
-        if (version?.HasTag(PackageTag.LegacyFormat) != true)
-            return false;
-
-        var productId = version.package.product?.id;
-        var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
-        if (updateInfo?.canUpdate != true)
-            return false;
-
-        var operation = m_AssetStoreDownloadManager.GetDownloadOperation(productId);
-        return operation == null || operation.state == DownloadState.DownloadRequested || !operation.isProgressVisible;
+        return base.IsVisible(version) && IsUpdateAvailable(version);
     }
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
@@ -69,24 +29,18 @@ internal class DownloadUpdateAction : PackageAction
         if (isInProgress)
             return L10n.Tr("The download request has been sent. Please wait for the download to start.");
 
-        var result = string.Format(L10n.Tr("Click to download the latest version of this {0}."), version.GetDescriptor());
-        var latestVersionString = version.package.versions.latest?.versionString;
-        var localInfo = m_AssetStoreCache.GetLocalInfo(version.package.product?.id);
-        if (latestVersionString == localInfo?.versionString)
+        var result = string.Format(L10n.Tr("Click to download the recommended version of this {0}."), version.GetDescriptor());
+        if (IsAdaptedPackageUpdate(version.package.versions?.recommended, version.package.versions?.importAvailable))
             result += L10n.Tr("\n*This package update has been adapted for this current version of Unity.");
         return result;
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        var latestVersionString = version?.package.versions.latest?.versionString;
-        if (string.IsNullOrEmpty(latestVersionString))
+        var recommended = version.package.versions.recommended;
+        if (string.IsNullOrEmpty(recommended?.versionString))
             return L10n.Tr("Download update");
-
-        var localInfo = m_AssetStoreCache.GetLocalInfo(version?.package.product?.id);
-        // We add * for the edge case where we recommend the user to update to a version that has the same version string and explain it in the tooltip
-        // this happens because publisher are able to publish multiple packages labelled the same version for different Unity versions
-        return string.Format(latestVersionString == localInfo?.versionString ? L10n.Tr("Download update {0}*") : L10n.Tr("Download update {0}"), latestVersionString);
+        return string.Format(IsAdaptedPackageUpdate(recommended, version.package.versions.importAvailable) ? L10n.Tr("Download update {0}*") : L10n.Tr("Download update {0}"), recommended.versionString);
     }
 
     public override string GetMultiSelectText(IPackageVersion version, bool isInProgress)
@@ -96,22 +50,20 @@ internal class DownloadUpdateAction : PackageAction
 
     public override bool IsInProgress(IPackageVersion version)
     {
-        var productId = version?.package.product?.id;
-        var operation = m_AssetStoreDownloadManager.GetDownloadOperation(productId);
-        var updateInfo =  m_AssetStoreCache.GetUpdateInfo(productId);
-        return updateInfo?.canUpdate == true && operation?.isInProgress == true;
+        return base.IsInProgress(version) && IsUpdateAvailable(version);
     }
 
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
+    // Adapted package update refers to the edge case where a publisher can publish different packages for different unity versions, resulting us
+    // sometimes recommending user to update to a package with the same version string (or even lower version string)
+    private static bool IsAdaptedPackageUpdate(IPackageVersion recommended, IPackageVersion importAvailable)
     {
-        yield return new DisableIfNoNetwork(m_Application);
-        yield return new DisableIfCompiling(m_Application);
+        return recommended?.versionString == importAvailable?.versionString || recommended?.uploadId < importAvailable?.uploadId;
     }
 
-    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
+    private static bool IsUpdateAvailable(IPackageVersion version)
     {
-        yield return new DisableIfPackageDisabled(version);
+        var importAvailable = version.package.versions.importAvailable;
+        var recommended = version.package.versions.recommended;
+        return importAvailable != null && recommended != null && recommended.uploadId != importAvailable.uploadId;
     }
-
-    protected override bool IsHiddenWhenInProgress(IPackageVersion version) => true;
 }

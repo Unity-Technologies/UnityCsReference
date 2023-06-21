@@ -22,7 +22,7 @@ internal class InProjectPage : SimplePage
     private PageFilters.Status[] m_SupportedStatusFilters = Array.Empty<PageFilters.Status>();
     public override IEnumerable<PageFilters.Status> supportedStatusFilters => m_SupportedStatusFilters;
 
-    public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.ImportedAssets;
+    public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.ImportedAssets | RefreshOptions.LocalInfo;
     public override PageCapability capability => PageCapability.DynamicEntitlementStatus | PageCapability.SupportLocalReordering;
 
     public InProjectPage(PackageDatabase packageDatabase) : base(packageDatabase) {}

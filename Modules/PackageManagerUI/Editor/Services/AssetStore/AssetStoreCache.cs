@@ -189,13 +189,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             httpRequest.Begin();
         }
 
-        public virtual void ClearCache()
+        public virtual void ClearOnlineCache()
         {
             m_Categories.Clear();
-
             m_PurchaseInfos.Clear();
             m_ProductInfos.Clear();
-            m_LocalInfos.Clear();
             m_UpdateInfos.Clear();
         }
 
@@ -281,18 +279,35 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (oldInfo != null)
                     oldLocalInfos.Remove(info.productId);
 
-                var localInfoUpdated = oldInfo == null || oldInfo.versionId != info.versionId ||
-                    oldInfo.versionString != info.versionString || oldInfo.packagePath != info.packagePath;
-                if (localInfoUpdated)
-                {
-                    addedOrUpdatedLocalInfos.Add(info);
-                    // When local info gets updated, we want to remove the cached update info so that we check update
-                    // for the new local info
-                    m_UpdateInfos.Remove(info.productId);
-                }
+                if (!IsLocalInfoUpdated(oldInfo, info))
+                    continue;
+
+                addedOrUpdatedLocalInfos.Add(info);
+                // When local info gets updated, we want to remove the cached update info so that we check update for the new local info
+                m_UpdateInfos.Remove(info.productId);
             }
             if (addedOrUpdatedLocalInfos.Any() || oldLocalInfos.Any())
                 onLocalInfosChanged?.Invoke(addedOrUpdatedLocalInfos, oldLocalInfos.Values);
+        }
+
+        public virtual void SetLocalInfo(AssetStoreLocalInfo localInfo)
+        {
+            var productId = localInfo?.productId ?? 0;
+            if (productId <= 0)
+                return;
+            var oldInfo = m_LocalInfos.Get(productId);
+            m_LocalInfos[productId] = localInfo;
+            if (IsLocalInfoUpdated(oldInfo, localInfo))
+                onLocalInfosChanged?.Invoke(new []{ localInfo }, Enumerable.Empty<AssetStoreLocalInfo>());
+        }
+
+        private static bool IsLocalInfoUpdated(AssetStoreLocalInfo oldInfo, AssetStoreLocalInfo newInfo)
+        {
+            return oldInfo == null
+                   || oldInfo.versionId != newInfo.versionId
+                   || oldInfo.uploadId != newInfo.uploadId
+                   || oldInfo.versionString != newInfo.versionString
+                   || oldInfo.packagePath != newInfo.packagePath;
         }
 
         public virtual void SetUpdateInfos(IEnumerable<AssetStoreUpdateInfo> updateInfos)
@@ -300,11 +315,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             var updateInfosChanged = new List<AssetStoreUpdateInfo>();
             foreach (var info in updateInfos)
             {
-                var oldUpdateInfoStatus = GetUpdateInfo(info.productId)?.status ?? AssetStoreUpdateInfo.Status.None;
-                m_UpdateInfos[info.productId] = info;
-
-                if (oldUpdateInfoStatus != info.status)
+                m_UpdateInfos.TryGetValue(info.productId, out var cachedUpdateInfo);
+                if (info.recommendedUploadId != cachedUpdateInfo?.recommendedUploadId)
                     updateInfosChanged.Add(info);
+                m_UpdateInfos[info.productId] = info;
             }
 
             if (updateInfosChanged.Any())

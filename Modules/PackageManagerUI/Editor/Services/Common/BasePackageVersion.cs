@@ -101,11 +101,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract string author { get; }
         public abstract bool isInstalled { get; }
         public abstract bool isFullyFetched { get; }
-        public abstract bool isAvailableOnDisk { get; }
         public abstract bool isDirectDependency { get; }
         public abstract string localPath { get; }
         public abstract string versionString { get; }
-        public abstract long versionId { get; }
+        public abstract long uploadId { get; }
 
         public bool IsDifferentVersionThanRequested
             => !string.IsNullOrEmpty(versionInManifest) && !HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom) &&

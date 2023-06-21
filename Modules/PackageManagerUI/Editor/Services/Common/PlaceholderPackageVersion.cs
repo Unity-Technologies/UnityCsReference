@@ -30,15 +30,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool isFullyFetched => true;
 
-        public override bool isAvailableOnDisk => false;
-
         public override bool isDirectDependency => true;
 
         public override string localPath => string.Empty;
 
         public override string versionString => m_VersionString;
 
-        public override long versionId => 0;
+        public override long uploadId => 0;
 
         public PlaceholderPackageVersion(string uniqueId, string displayName, string versionString = "", PackageTag tag = PackageTag.None, UIError error = null)
         {

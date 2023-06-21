@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.Utils;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -87,6 +88,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public AssetStoreDownloadInfo downloadInfo => m_DownloadInfo;
 
         [NonSerialized]
+        private IOProxy m_IOProxy;
+        [NonSerialized]
         private AssetStoreUtils m_AssetStoreUtils;
         [NonSerialized]
         private AssetStoreRestAPI m_AssetStoreRestAPI;
@@ -96,12 +99,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreCachePathProxy m_AssetStoreCachePathProxy;
         [NonSerialized]
         private LocalInfoHandler m_LocalInfoHandler;
-        public void ResolveDependencies(AssetStoreUtils assetStoreUtils,
+        public void ResolveDependencies(IOProxy ioProxy,
+            AssetStoreUtils assetStoreUtils,
             AssetStoreRestAPI assetStoreRestAPI,
             AssetStoreCache assetStoreCache,
             AssetStoreCachePathProxy assetStoreCachePathProxy,
             LocalInfoHandler localInfoHandler)
         {
+            m_IOProxy = ioProxy;
             m_AssetStoreUtils = assetStoreUtils;
             m_AssetStoreRestAPI = assetStoreRestAPI;
             m_AssetStoreCache = assetStoreCache;
@@ -109,9 +114,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_LocalInfoHandler = localInfoHandler;
         }
 
-        public AssetStoreDownloadOperation(AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, AssetStoreCache assetStoreCache, AssetStoreCachePathProxy assetStoreCachePathProxy, LocalInfoHandler localInfoHandler, long productId, string oldPath)
+        public AssetStoreDownloadOperation(IOProxy ioProxy, AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, AssetStoreCache assetStoreCache, AssetStoreCachePathProxy assetStoreCachePathProxy, LocalInfoHandler localInfoHandler, long productId, string oldPath)
         {
-            ResolveDependencies(assetStoreUtils, assetStoreRestAPI, assetStoreCache, assetStoreCachePathProxy, localInfoHandler);
+            ResolveDependencies(ioProxy, assetStoreUtils, assetStoreRestAPI, assetStoreCache, assetStoreCachePathProxy, localInfoHandler);
 
             m_ProductId = productId;
             m_ProductOldPath = oldPath;
@@ -123,7 +128,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 case "ok":
                     state = DownloadState.Completed;
-                    m_LocalInfoHandler.UpdateExtraInfoInCacheIfNeeded(m_ProductNewPath, downloadInfo);
+                    ProcessDownloadResult();
                     onOperationSuccess?.Invoke(this);
                     onOperationFinalized?.Invoke(this);
                     break;
@@ -159,6 +164,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             onOperationProgress?.Invoke(this);
+        }
+
+        private void ProcessDownloadResult()
+        {
+            m_LocalInfoHandler.UpdateExtraInfoInCacheIfNeeded(m_ProductNewPath, m_DownloadInfo);
+            if (!string.IsNullOrEmpty(m_ProductOldPath) && m_ProductNewPath?.NormalizePath() != m_ProductOldPath.NormalizePath())
+                m_IOProxy.DeleteIfExists(m_ProductOldPath);
+            m_AssetStoreCache.SetLocalInfo(m_LocalInfoHandler.GetParsedLocalInfo(m_ProductNewPath));
         }
 
         private void OnErrorMessage(string message, int operationErrorCode = -1, UIError.Attribute attr = UIError.Attribute.None)

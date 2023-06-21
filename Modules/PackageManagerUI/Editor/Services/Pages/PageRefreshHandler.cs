@@ -120,6 +120,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             if (options.Contains(RefreshOptions.UpmListOffline))
                 m_UpmClient.List(true);
+            if (options.Contains(RefreshOptions.LocalInfo))
+                RefreshLocalInfos();
             if (options.Contains(RefreshOptions.Purchased))
             {
                 var page = m_PageManager.GetPage(MyAssetsPage.k_Id);
@@ -127,8 +129,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var queryArgs = new PurchasesQueryArgs(0, numItems, page.trimmedSearchText, page.filters);
                 m_AssetStoreClient.ListPurchases(queryArgs);
             }
-            if (options.Contains(RefreshOptions.PurchasedOffline))
-                m_AssetStoreClient.RefreshLocal();
             if (options.Contains(RefreshOptions.ImportedAssets))
                 RefreshImportedAssets();
         }
@@ -141,19 +141,32 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (RefreshImportedAssets())
                 return;
 
+            SetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets, DateTime.Now.Ticks);
             m_AssetStoreClient.OnPostProcessAllAssets(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
         }
 
         // returns true if a full scan was done, false if not
         private bool RefreshImportedAssets()
         {
-            if (GetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets) == 0)
-            {
-                m_AssetStoreClient.RefreshImportedAssets();
-                SetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets, DateTime.Now.Ticks);
-                return true;
-            }
-            return false;
+            if (GetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets) != 0)
+                return false;
+
+            // We set the timestamp before the actual operation because the results are retrieved synchronously, if we set the timestamp after
+            // we will encounter an issue where the results are back but the UI still thinks the refresh is in progress
+            SetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets, DateTime.Now.Ticks);
+            m_AssetStoreClient.RefreshImportedAssets();
+            return true;
+        }
+
+        private void RefreshLocalInfos()
+        {
+            if (GetRefreshTimestampSingleFlag(RefreshOptions.LocalInfo) != 0)
+                return;
+
+            // We set the timestamp before the actual operation because the results are retrieved synchronously, if we set the timestamp after
+            // we will encounter an issue where the results are back but the UI still thinks the refresh is in progress
+            SetRefreshTimestampSingleFlag(RefreshOptions.LocalInfo, DateTime.Now.Ticks);
+            m_AssetStoreClient.RefreshLocal();
         }
 
         public virtual void CancelRefresh(RefreshOptions options)

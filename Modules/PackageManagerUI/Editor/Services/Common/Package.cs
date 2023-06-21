@@ -60,7 +60,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (numErrors > 0 && numWarnings == numErrors || isDeprecated)
                     return PackageState.Warning;
 
-                var recommended = versions.recommended;
                 var latestKeyVersion = versions.key.LastOrDefault();
                 if (primary.HasTag(PackageTag.Custom))
                     return PackageState.InDevelopment;
@@ -68,7 +67,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (primary.isInstalled && !primary.isDirectDependency)
                     return PackageState.InstalledAsDependency;
 
-                if (primary != recommended && ((primary.isInstalled && primary != latestKeyVersion) || primary.HasTag(PackageTag.LegacyFormat)) && !primary.HasTag(PackageTag.Local))
+                var recommended = versions.recommended;
+                if (recommended != null && primary != recommended && ((primary.isInstalled && primary != latestKeyVersion) || primary.HasTag(PackageTag.LegacyFormat)) && !primary.HasTag(PackageTag.Local))
                     return PackageState.UpdateAvailable;
 
                 if (primary.importedAssets?.Any() == true)

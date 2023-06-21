@@ -14,7 +14,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ApplicationProxy m_Application;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private AssetStoreCache m_AssetStoreCache;
         private UpmCache m_UpmCache;
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
@@ -26,7 +25,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             var container = ServicesContainer.instance;
             m_Application = container.Resolve<ApplicationProxy>();
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
-            m_AssetStoreCache = container.Resolve<AssetStoreCache>();
             m_UpmCache = container.Resolve<UpmCache>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
@@ -92,7 +90,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 new PackageToolBarSimpleButton(new RemoveAction(m_OperationDispatcher, m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_PageManager)),
                 new PackageToolBarSimpleButton(new RemoveCustomAction(m_OperationDispatcher, m_Application)),
                 new PackageToolBarButtonWithIcon(new ResetAction(m_OperationDispatcher, m_Application, m_PackageDatabase, m_PageManager)),
-                new LegacyFormatDropdownButton(m_OperationDispatcher, m_AssetStoreDownloadManager, m_AssetStoreCache, m_UnityConnect, m_Application)
+                new LegacyFormatDropdownButton(m_OperationDispatcher, m_AssetStoreDownloadManager, m_UnityConnect, m_Application)
             };
 
             foreach (var button in m_BuiltInToolBarButtons)

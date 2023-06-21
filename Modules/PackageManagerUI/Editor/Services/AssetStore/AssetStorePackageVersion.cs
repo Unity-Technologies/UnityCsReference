@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -13,22 +12,16 @@ using UnityEditor.Scripting.ScriptCompilation;
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class AssetStorePackageVersion : BasePackageVersion, ISerializationCallbackReceiver
+    internal class AssetStorePackageVersion : BasePackageVersion
     {
-        public static readonly string k_IncompatibleWarningMessage = L10n.Tr("The downloaded version of this package is intended for Unity {0} and higher." +
-            " This version might not work with your current version of Unity." +
-            " Click Update to download a compatible version of the package.");
-
         [SerializeField]
         private string m_Category;
         [SerializeField]
         private List<UIError> m_Errors;
         [SerializeField]
-        private bool m_IsAvailableOnDisk;
-        [SerializeField]
         private string m_LocalPath;
         [SerializeField]
-        private long m_VersionId;
+        private long m_UploadId;
         [SerializeField]
         private List<SemVersion> m_SupportedUnityVersions;
         [SerializeField]
@@ -49,7 +42,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string packageId => string.Empty;
 
-        public override string uniqueId => $"{package.uniqueId}@{versionId}";
+        public override string uniqueId => $"{package.uniqueId}@{uploadId}";
 
         public override bool isInstalled => false;
 
@@ -57,15 +50,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override IEnumerable<UIError> errors => m_Errors;
 
-        public override bool isAvailableOnDisk => m_IsAvailableOnDisk;
-
         public override bool isDirectDependency => true;
 
         public override string localPath => m_LocalPath;
 
         public override string versionString => m_VersionString;
 
-        public override long versionId => m_VersionId;
+        public override long uploadId => m_UploadId;
 
         public override SemVersion? supportedVersion => m_SupportedUnityVersion;
 
@@ -75,21 +66,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override IEnumerable<Asset> importedAssets => m_ImportedPackage;
 
-        public void SetLocalPath(IOProxy ioProxy, string path)
-        {
-            m_LocalPath = path ?? string.Empty;
-            try
-            {
-                m_IsAvailableOnDisk = !string.IsNullOrEmpty(m_LocalPath) && ioProxy.FileExists(m_LocalPath);
-            }
-            catch (System.IO.IOException e)
-            {
-                Debug.Log($"[Package Manager Window] Cannot determine local path for {package.uniqueId}: {e.Message}");
-                m_IsAvailableOnDisk = false;
-            }
-        }
-
-        public AssetStorePackageVersion(IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null, AssetStoreImportedPackage importedPackage = null)
+        public AssetStorePackageVersion(AssetStoreProductInfo productInfo, long uploadId = 0, AssetStoreLocalInfo localInfo = null, AssetStoreImportedPackage importedPackage = null)
         {
             m_Errors = new List<UIError>();
             m_Tag = PackageTag.LegacyFormat;
@@ -103,7 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PublishNotes = localInfo?.publishNotes ?? string.Empty;
 
             m_VersionString = importedPackage?.versionString ?? localInfo?.versionString ?? productInfo?.versionString ?? string.Empty;
-            m_VersionId = localInfo?.versionId ?? productInfo?.versionId ?? 0;
+            m_UploadId = uploadId;
             SemVersionParser.TryParse(m_VersionString.Trim(), out m_Version);
 
             m_ImportedPackage = importedPackage;
@@ -113,7 +90,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DisplayName = !string.IsNullOrEmpty(productInfo?.displayName) ? productInfo.displayName : importedPackage?.displayName ?? string.Empty;
 
             m_SupportedUnityVersions = new List<SemVersion>();
-            if (localInfo != null)
+            if (!string.IsNullOrEmpty(localInfo?.supportedVersion))
             {
                 var simpleVersion = Regex.Replace(localInfo.supportedVersion, @"(?<major>\d+)\.(?<minor>\d+).(?<patch>\d+)[abfp].+", "${major}.${minor}.${patch}");
                 SemVersionParser.TryParse(simpleVersion.Trim(), out m_SupportedUnityVersion);
@@ -121,16 +98,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else if (productInfo?.supportedVersions?.Any() ?? false)
             {
-                foreach (var supportedVersion in productInfo.supportedVersions)
-                {
-                    SemVersion? version;
-                    bool isVersionParsed = SemVersionParser.TryParse(supportedVersion, out version);
+                foreach (var v in productInfo.supportedVersions)
+                    if (SemVersionParser.TryParse(v, out var parsedSemVer))
+                        m_SupportedUnityVersions.Add(parsedSemVer.Value);
 
-                    if (isVersionParsed)
-                        m_SupportedUnityVersions.Add((SemVersion)version);
-                }
-
-                m_SupportedUnityVersions.Sort((left, right) => (left).CompareTo(right));
+                m_SupportedUnityVersions.Sort((left, right) => left.CompareTo(right));
                 m_SupportedUnityVersion = m_SupportedUnityVersions.LastOrDefault();
                 m_SupportedUnityVersionString = m_SupportedUnityVersion?.ToString();
             }
@@ -144,16 +116,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             else if (state.Equals("disabled", StringComparison.InvariantCultureIgnoreCase))
                 m_Tag |= PackageTag.Disabled;
 
-            SetLocalPath(ioProxy, localInfo?.packagePath);
-        }
-
-        public void AddDowngradeWarningIfApplicable(AssetStoreLocalInfo localInfo, AssetStoreUpdateInfo updateInfo)
-        {
-            if (updateInfo?.canUpdate == true)
-            {
-                var warningMessage = string.Format(k_IncompatibleWarningMessage, localInfo.supportedVersion);
-                m_Errors.Add(new UIError(UIErrorCode.AssetStorePackageError, warningMessage, UIError.Attribute.Warning));
-            }
+            m_LocalPath = localInfo?.packagePath ?? string.Empty;
         }
 
         public override void OnAfterDeserialize()

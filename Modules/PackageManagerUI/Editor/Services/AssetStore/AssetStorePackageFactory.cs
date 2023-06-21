@@ -25,8 +25,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private FetchStatusTracker m_FetchStatusTracker;
         [NonSerialized]
-        private IOProxy m_IOProxy;
-        [NonSerialized]
         private BackgroundFetchHandler m_BackgroundFetchHandler;
         public void ResolveDependencies(UniqueIdMapper uniqueIdMapper,
             UnityConnectProxy unityConnect,
@@ -35,7 +33,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             AssetStoreDownloadManager assetStoreDownloadManager,
             PackageDatabase packageDatabase,
             FetchStatusTracker fetchStatusTracker,
-            IOProxy ioProxy,
             BackgroundFetchHandler backgroundFetchHandler)
         {
             m_UniqueIdMapper = uniqueIdMapper;
@@ -45,7 +42,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_PackageDatabase = packageDatabase;
             m_FetchStatusTracker = fetchStatusTracker;
-            m_IOProxy = ioProxy;
             m_BackgroundFetchHandler = backgroundFetchHandler;
         }
 
@@ -92,7 +88,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (loggedIn)
                 return;
 
-            m_AssetStoreCache.ClearCache();
+            m_AssetStoreCache.ClearOnlineCache();
             m_FetchStatusTracker.ClearCache();
 
             // We only regenerate and remove packages from the Asset Store that are of Legacy format. We handle the UPM format in UpmPackageFactory.
@@ -172,12 +168,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnDownloadFinalized(AssetStoreDownloadOperation operation)
         {
-            // We want to call RefreshLocal() before calling GetPackage(operation.packageUniqueId),
-            // because if we call GetPackage first, we might get an old instance of the package.
-            // This is due to RefreshLocal potentially replacing the instance in the database with a new one.
-            if (operation.state == DownloadState.Completed)
-                m_AssetStoreClient.RefreshLocal();
-
             var package = m_PackageDatabase.GetPackage(operation.packageUniqueId) as Package;
             if (package == null)
                 return;
@@ -284,7 +274,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var isDeprecated = productInfo?.state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase) ?? false;
                 var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
                 var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
-                var versionList = new AssetStoreVersionList(m_IOProxy, productInfo, localInfo, updateInfo, importedPackage);
+                var versionList = new AssetStoreVersionList(productInfo, localInfo, importedPackage, updateInfo);
                 var package = CreatePackage(string.Empty, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated);
                 if (m_AssetStoreDownloadManager.GetDownloadOperation(productId)?.isInProgress == true)
                     SetProgress(package, PackageProgress.Downloading);

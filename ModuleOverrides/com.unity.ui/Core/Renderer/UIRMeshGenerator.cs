@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements.UIR
     {
         VisualElement currentElement { get; set; }
         UITKTextJobSystem textJobSystem { get; set; }
-        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes, int meshInfoCount);
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes);
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font);
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams);
         public void DrawBorder(MeshGenerator.BorderParams borderParams);
@@ -596,9 +596,9 @@ namespace UnityEngine.UIElements.UIR
             if (style.borderBottomWidth >= 1.0f && style.borderBottomColor.a >= 1.0f) { rect.height -= 0.5f; }
         }
 
-        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes, int meshInfoCount)
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes)
         {
-            DrawTextInfo(vertices, indices, materials, renderModes, meshInfoCount);
+            DrawTextInfo(vertices, indices, materials, renderModes);
         }
 
         TextInfo m_TextInfo = new TextInfo(VertexDataLayout.VBO);
@@ -628,59 +628,60 @@ namespace UnityEngine.UIElements.UIR
 
             TextCore.Text.TextGenerator.GenerateText(m_Settings, m_TextInfo);
 
-            var meshInfoCount = m_TextInfo.meshInfo.Length;
-
-            for (int i = 0; i < meshInfoCount; i++)
+            for (int i = 0, meshInfoCount = m_TextInfo.meshInfo.Length; i < meshInfoCount; i++)
             {
                 var meshInfo = m_TextInfo.meshInfo[i];
-                int vertexCount = LimitTextVertices(meshInfo.vertexCount);
-                int quadCount = vertexCount / 4;
-                int indexCount = quadCount * 6;
+                Debug.Assert((meshInfo.vertexCount & 0b11) == 0); // Quads only
+                int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
 
-                if (i >= m_Materials.Count)
-                    m_Materials.Add(meshInfo.material);
-                else
-                    m_Materials[i] = meshInfo.material;
-
-                if (i >= m_RenderModes.Count)
-                    m_RenderModes.Add(meshInfo.glyphRenderMode);
-                else
-                    m_RenderModes[i] = meshInfo.glyphRenderMode;
-
-                m_MeshGenerationContext.AllocateTempMesh(quadCount * 4, indexCount, out var vertices, out var indices);
-
-                for (int q = 0, v = 0, j = 0; q < quadCount; ++q, v += 4, j += 6)
+                int remainingVertexCount = meshInfo.vertexCount;
+                int vSrc = 0;
+                while (remainingVertexCount > 0)
                 {
-                    vertices[v + 0] = ConvertTextVertexToUIRVertex(meshInfo, v + 0, pos);
-                    vertices[v + 1] = ConvertTextVertexToUIRVertex(meshInfo, v + 1, pos);
-                    vertices[v + 2] = ConvertTextVertexToUIRVertex(meshInfo, v + 2, pos);
-                    vertices[v + 3] = ConvertTextVertexToUIRVertex(meshInfo, v + 3, pos);
+                    int vertexCount = Mathf.Min(remainingVertexCount, verticesPerAlloc);
+                    int quadCount = vertexCount >> 2;
+                    int indexCount = quadCount * 6;
 
-                    indices[j + 0] = (ushort)(v + 0);
-                    indices[j + 1] = (ushort)(v + 1);
-                    indices[j + 2] = (ushort)(v + 2);
-                    indices[j + 3] = (ushort)(v + 2);
-                    indices[j + 4] = (ushort)(v + 3);
-                    indices[j + 5] = (ushort)(v + 0);
+                    m_Materials.Add(meshInfo.material);
+                    m_RenderModes.Add(meshInfo.glyphRenderMode);
+
+                    m_MeshGenerationContext.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
+
+                    for (int vDst = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 4, j += 6)
+                    {
+                        vertices[vDst + 0] = ConvertTextVertexToUIRVertex(meshInfo, vSrc + 0, pos);
+                        vertices[vDst + 1] = ConvertTextVertexToUIRVertex(meshInfo, vSrc + 1, pos);
+                        vertices[vDst + 2] = ConvertTextVertexToUIRVertex(meshInfo, vSrc + 2, pos);
+                        vertices[vDst + 3] = ConvertTextVertexToUIRVertex(meshInfo, vSrc + 3, pos);
+
+                        indices[j + 0] = (ushort)(vDst + 0);
+                        indices[j + 1] = (ushort)(vDst + 1);
+                        indices[j + 2] = (ushort)(vDst + 2);
+                        indices[j + 3] = (ushort)(vDst + 2);
+                        indices[j + 4] = (ushort)(vDst + 3);
+                        indices[j + 5] = (ushort)(vDst + 0);
+                    }
+
+                    m_VerticesArray.Add(vertices);
+                    m_IndicesArray.Add(indices);
+
+                    remainingVertexCount -= vertexCount;
                 }
 
-                if (i >= m_VerticesArray.Count)
-                    m_VerticesArray.Add(vertices);
-                else
-                    m_VerticesArray[i] = vertices;
-
-                if (i >= m_IndicesArray.Count)
-                    m_IndicesArray.Add(indices);
-                else
-                    m_IndicesArray[i] = indices;
+                Debug.Assert(remainingVertexCount == 0);
             }
 
-            DrawTextInfo(m_VerticesArray, m_IndicesArray, m_Materials, m_RenderModes, meshInfoCount);
+            DrawTextInfo(m_VerticesArray, m_IndicesArray, m_Materials, m_RenderModes);
+
+            m_VerticesArray.Clear();
+            m_IndicesArray.Clear();
+            m_Materials.Clear();
+            m_RenderModes.Clear();
         }
 
-        void DrawTextInfo(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes, int meshInfoCount)
+        void DrawTextInfo(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes)
         {
-            for (int i = 0; i < meshInfoCount; i++)
+            for (int i = 0, drawCount = vertices.Count; i < drawCount; i++)
             {
                 if (vertices[i].Length == 0)
                     continue;
@@ -726,32 +727,20 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        static readonly int s_MaxTextMeshVertices = 0xC000; // Max 48k vertices. We leave room for masking, borders, background, etc.
-
-        internal static Vertex ConvertTextVertexToUIRVertex(MeshInfo info, int index, Vector2 offset, bool isDynamicColor = false)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vertex ConvertTextVertexToUIRVertex(MeshInfo info, int index, Vector2 posOffset, bool isDynamicColor = false)
         {
             float dilate = 0.0f;
             // If Bold, dilate the shape (this value is hardcoded, should be set from the font actual bold weight)
             if (info.vertexData[index].uv2.y < 0.0f) dilate = 1.0f;
             return new Vertex
             {
-                position = new Vector3(info.vertexData[index].position.x + offset.x, info.vertexData[index].position.y + offset.y, UIRUtility.k_MeshPosZ),
+                position = new Vector3(info.vertexData[index].position.x + posOffset.x, info.vertexData[index].position.y + posOffset.y, UIRUtility.k_MeshPosZ),
                 uv = new Vector2(info.vertexData[index].uv0.x, info.vertexData[index].uv0.y),
                 tint = info.vertexData[index].color,
                 // TODO: Don't set the flags here. The mesh conversion should perform these changes
                 flags = new Color32(0, (byte)(dilate * 255), 0, isDynamicColor ? (byte)1 : (byte)0)
             };
-        }
-
-        internal static int LimitTextVertices(int vertexCount, bool logTruncation = true)
-        {
-            if (vertexCount <= s_MaxTextMeshVertices)
-                return vertexCount;
-
-            if (logTruncation)
-                Debug.LogWarning($"Generated text will be truncated because it exceeds {s_MaxTextMeshVertices} vertices.");
-
-            return s_MaxTextMeshVertices;
         }
 
         void MakeText(Texture texture, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, bool isSdf, float sdfScale, float sharpness)

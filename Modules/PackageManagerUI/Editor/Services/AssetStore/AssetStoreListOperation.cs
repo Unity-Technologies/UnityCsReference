@@ -131,7 +131,21 @@ namespace UnityEditor.PackageManager.UI.Internal
                     break;
                 case PageFilters.Status.UpdateAvailable:
                     m_AdjustedQueryArgs.status = PageFilters.Status.None;
-                    m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Where(info => m_AssetStoreCache.GetUpdateInfo(info?.productId)?.canUpdate == true).Select(info => info.productId).ToList();
+                    var productIdsToCheck = m_AssetStoreCache.localInfos.Select(i => i.productId)
+                        .Concat(m_AssetStoreCache.importedPackages.Select(i => i.productId)).ToHashSet();
+                    m_AdjustedQueryArgs.productIds = productIdsToCheck.Where(id =>
+                    {
+                        var updateInfo = m_AssetStoreCache.GetUpdateInfo(id);
+                        if (updateInfo == null)
+                            return false;
+
+                        var localInfo = m_AssetStoreCache.GetLocalInfo(id);
+                        if (localInfo != null && localInfo.uploadId != updateInfo.recommendedUploadId)
+                            return true;
+
+                        var importedPackage = m_AssetStoreCache.GetImportedPackage(id);
+                        return importedPackage != null && importedPackage.uploadId != updateInfo.recommendedUploadId;
+                    }).ToList();
                     break;
             }
         }

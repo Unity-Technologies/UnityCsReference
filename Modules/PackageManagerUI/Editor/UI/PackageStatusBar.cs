@@ -204,7 +204,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var menu = new DropdownMenu();
                 menu.AppendAction(L10n.Tr("Check for updates"),
-                    _ => m_BackgroundFetchHandler.ForceCheckUpdateForAllLocalInfos(),
+                    _ => m_BackgroundFetchHandler.ForceCheckUpdateAllCachedAndImportedPackages(),
                     _ => m_BackgroundFetchHandler.isCheckUpdateInProgress ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
                 refreshButton.menu = menu;
             }

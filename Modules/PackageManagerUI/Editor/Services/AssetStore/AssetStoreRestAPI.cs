@@ -13,7 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_PurchasesUri = "/-/api/purchases";
         private const string k_TaggingsUri = "/-/api/taggings";
         private const string k_ProductInfoUri = "/-/api/product";
-        private const string k_UpdateInfoUri = "/-/api/legacy-package-update-info";
+        private const string k_UpdateInfoUri = "/-/api/product-update-info";
         private const string k_DownloadInfoUri = "/-/api/legacy-package-download-info";
         private const string k_TermsCheckUri = "/-/api/terms/check";
 
@@ -108,16 +108,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void GetProductDetail(long productId, Action<AssetStoreProductInfo> successCallback, Action<UIError> errorCallback)
         {
-            var parseProductInfo = (Dictionary<string, object> result) => m_JsonParser.ParseProductInfo(assetStoreUrl, productId, result);
-            var parseDictionary = CreateParseDictionaryCallback(parseProductInfo, L10n.Tr("Error parsing product details."), successCallback, errorCallback);
+            AssetStoreProductInfo ParseProductInfo(Dictionary<string, object> result) => m_JsonParser.ParseProductInfo(assetStoreUrl, productId, result);
+            var parseDictionary = CreateParseDictionaryCallback(ParseProductInfo, L10n.Tr("Error parsing product details."), successCallback, errorCallback);
             HandleHttpRequest($"{k_ProductInfoUri}/{productId}", parseDictionary, errorCallback, tag: $"GetProductDetail{productId}", abortPreviousRequest: true);
         }
 
         public virtual void GetUpdateDetail(CheckUpdateInfoArgs args, Action<List<AssetStoreUpdateInfo>> successCallback = null, Action<UIError> errorCallback = null)
         {
-            var parseUpdateInfo = (Dictionary<string, object> result) => m_JsonParser.ParseUpdateInfos(args, result);
-            var parseDictionary = CreateParseDictionaryCallback(parseUpdateInfo, L10n.Tr("Error parsing update details."), successCallback, errorCallback);
-            HandleHttpRequest(k_UpdateInfoUri, parseDictionary, errorCallback, postData: args.ToString());
+            var queryString = args.ToString();
+            var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParseUpdateInfos, L10n.Tr("Error parsing update details."), successCallback, errorCallback);
+            HandleHttpRequest($"{k_UpdateInfoUri}{queryString}", parseDictionary, errorCallback, tag: $"GetUpdateDetail{queryString}");
         }
 
         public virtual void CheckTermsAndConditions(Action<bool> successCallback, Action<UIError> errorCallback)
@@ -150,7 +150,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Action<T> successCallback,
             Action<UIError> errorCallback) where T : class
         {
-            return (Dictionary<string, object> result) =>
+            return result =>
             {
                 var parsedResult = parseFunc?.Invoke(result);
                 if (parsedResult == null)

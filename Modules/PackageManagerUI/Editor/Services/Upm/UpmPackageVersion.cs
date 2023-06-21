@@ -82,8 +82,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool installedFromPath => HasTag(PackageTag.Local | PackageTag.Custom | PackageTag.Git);
 
-        public override bool isAvailableOnDisk => m_IsFullyFetched && !string.IsNullOrEmpty(m_ResolvedPath);
-
         [SerializeField]
         private string m_ResolvedPath;
         public override string localPath => m_ResolvedPath;
@@ -92,14 +90,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string m_VersionInManifest;
         public override string versionInManifest => m_VersionInManifest;
 
-
         public override string versionString => isInvalidSemVerInManifest ? versionInManifest : m_VersionString;
 
         // When packages are installed from path (git, local, custom) versionInManifest behaves differently so we don't consider them to have invalid SemVer
         public override bool isInvalidSemVerInManifest => !string.IsNullOrEmpty(versionInManifest) && !installedFromPath &&
                                                           (!SemVersionParser.TryParse(versionInManifest, out var semVersion) || semVersion?.ToString() != versionInManifest);
 
-        public override long versionId => 0;
+        public override long uploadId => 0;
 
         [SerializeField]
         private string m_DeprecationMessage;

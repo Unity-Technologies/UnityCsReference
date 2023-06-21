@@ -27,7 +27,6 @@ namespace UnityEngine.UIElements
             public List<NativeSlice<Vertex>> vertices;
             public List<NativeSlice<ushort>> indices;
             public bool prepareSuccess;
-            public int meshInfoCount;
 
             public void Release()
             {
@@ -61,26 +60,25 @@ namespace UnityEngine.UIElements
         {
             var inst = new List<Material>();
             return inst;
-        }, null, null, null, false);
+        }, null, list => list.Clear(), null, false);
 
         static UnityEngine.Pool.ObjectPool<List<GlyphRenderMode>> s_RenderModesPool = new(() =>
         {
             var inst = new List<GlyphRenderMode>();
             return inst;
-        }, null, null, null, false);
+        }, null, list => list.Clear(), null, false);
 
         static UnityEngine.Pool.ObjectPool<List<NativeSlice<Vertex>>> s_VerticesPool = new(() =>
         {
             var inst = new List<NativeSlice<Vertex>>();
             return inst;
-        }, null, null, null, false);
+        }, null, list => list.Clear(), null, false);
 
         static UnityEngine.Pool.ObjectPool<List<NativeSlice<ushort>>> s_IndicesPool = new(() =>
         {
             var inst = new List<NativeSlice<ushort>>();
             return inst;
-        }, null, null, null, false);
-
+        }, null, list => list.Clear(), null, false);
 
         private static void OnGetManagedJob(ManagedJobData managedJobData)
         {
@@ -201,7 +199,7 @@ namespace UnityEngine.UIElements
                 }
                 var textInfo = visualElement.uitkTextHandle.UpdateFontAssetPrepared();
                 var meshInfos = (textInfo).meshInfo;
-                
+
                 List<Material> materials = null;
                 List<NativeSlice<Vertex>> verticesArray = null;
                 List<NativeSlice<ushort>> indicesArray = null;
@@ -209,7 +207,6 @@ namespace UnityEngine.UIElements
 
                 ConvertMeshInfoToUIRVertex(meshInfos, alloc, visualElement, ref materials, ref verticesArray, ref indicesArray, ref renderModes);
 
-                managedJobData.meshInfoCount = meshInfos.Length;
                 managedJobData.materials = materials;
                 managedJobData.vertices = verticesArray;
                 managedJobData.indices = indicesArray;
@@ -245,49 +242,47 @@ namespace UnityEngine.UIElements
             for (int i = 0; i < meshInfos.Length; i++)
             {
                 var meshInfo = meshInfos[i];
-                int vertexCount = MeshGenerator.LimitTextVertices(meshInfo.vertexCount);
-                int quadCount = vertexCount / 4;
-                int indexCount = quadCount * 6;
+                Debug.Assert((meshInfo.vertexCount & 0b11) == 0); // Quads only
+                int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
 
-                if (i >= materials.Count)
-                    materials.Add(meshInfo.material);
-                else
-                    materials[i] = meshInfo.material;
-
-                if (i >= renderModes.Count)
-                    renderModes.Add(meshInfo.glyphRenderMode);
-                else
-                    renderModes[i] = meshInfo.glyphRenderMode;
-
-                bool hasGradientScale = meshInfo.glyphRenderMode != GlyphRenderMode.SMOOTH && meshInfo.glyphRenderMode != GlyphRenderMode.COLOR;
-                bool isDynamicColor = !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
-
-                alloc.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
-
-                for (ushort q = 0, v = 0, j = 0; q < quadCount; ++q, v += 4, j += 6)
+                int remainingVertexCount = meshInfo.vertexCount;
+                int vSrc = 0;
+                while (remainingVertexCount > 0)
                 {
-                    vertices[v + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo, v + 0, pos, isDynamicColor);
-                    vertices[v + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo, v + 1, pos, isDynamicColor);
-                    vertices[v + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo, v + 2, pos, isDynamicColor);
-                    vertices[v + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo, v + 3, pos, isDynamicColor);
+                    int vertexCount = Mathf.Min(remainingVertexCount, verticesPerAlloc);
+                    int quadCount = vertexCount >> 2;
+                    int indexCount = quadCount * 6;
 
-                    indices[j + 0] = (ushort)(v + 0);
-                    indices[j + 1] = (ushort)(v + 1);
-                    indices[j + 2] = (ushort)(v + 2);
-                    indices[j + 3] = (ushort)(v + 2);
-                    indices[j + 4] = (ushort)(v + 3);
-                    indices[j + 5] = (ushort)(v + 0);
+                    materials.Add(meshInfo.material);
+                    renderModes.Add(meshInfo.glyphRenderMode);
+
+                    bool hasGradientScale = meshInfo.glyphRenderMode != GlyphRenderMode.SMOOTH && meshInfo.glyphRenderMode != GlyphRenderMode.COLOR;
+                    bool isDynamicColor = !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
+
+                    alloc.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
+
+                    for (int vDst = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 4, j += 6)
+                    {
+                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo, vSrc + 0, pos, isDynamicColor);
+                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo, vSrc + 1, pos, isDynamicColor);
+                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo, vSrc + 2, pos, isDynamicColor);
+                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo, vSrc + 3, pos, isDynamicColor);
+
+                        indices[j + 0] = (ushort)(vDst + 0);
+                        indices[j + 1] = (ushort)(vDst + 1);
+                        indices[j + 2] = (ushort)(vDst + 2);
+                        indices[j + 3] = (ushort)(vDst + 2);
+                        indices[j + 4] = (ushort)(vDst + 3);
+                        indices[j + 5] = (ushort)(vDst + 0);
+                    }
+
+                    verticesArray.Add(vertices);
+                    indicesArray.Add(indices);
+
+                    remainingVertexCount -= vertexCount;
                 }
 
-                if (i >= verticesArray.Count)
-                    verticesArray.Add(vertices);
-                else
-                    verticesArray[i] = vertices;
-
-                if (i >= indicesArray.Count)
-                    indicesArray.Add(indices);
-                else
-                    indicesArray[i] = indices;
+                Debug.Assert(remainingVertexCount == 0);
             }
         }
 
@@ -297,7 +292,7 @@ namespace UnityEngine.UIElements
             var managedJobDatas = (List<ManagedJobData>)textData.managedJobDataHandle.Target;
             foreach (var managedJobData in managedJobDatas)
             {
-                if (managedJobData.vertices == null || managedJobData.vertices[0] == null)
+                if (managedJobData.vertices == null || managedJobData.vertices.Count == 0)
                 {
                     managedJobData.Release();
                     continue;
@@ -306,7 +301,7 @@ namespace UnityEngine.UIElements
                 mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.visualElement);
 
                 managedJobData.visualElement.uitkTextHandle.HandleLinkAndATagCallbacks();
-                mgc.meshGenerator.DrawText(managedJobData.vertices, managedJobData.indices, managedJobData.materials, managedJobData.renderModes, managedJobData.meshInfoCount);
+                mgc.meshGenerator.DrawText(managedJobData.vertices, managedJobData.indices, managedJobData.materials, managedJobData.renderModes);
                 managedJobData.visualElement.OnGenerateTextOver(mgc);
 
                 mgc.End();

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using UnityEngine.UIElements;
 
@@ -16,7 +17,6 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
     private readonly DropdownButton m_DropdownButton;
 
     private readonly IList<PackageAction> m_Actions;
-
     public override event Action onActionTriggered
     {
         add
@@ -33,7 +33,6 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
 
     public LegacyFormatDropdownButton(PackageOperationDispatcher operationDispatcher,
         AssetStoreDownloadManager assetStoreDownloadManager,
-        AssetStoreCache assetStoreCache,
         UnityConnectProxy unityConnect,
         ApplicationProxy application)
     {
@@ -42,13 +41,13 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
         // because it was added first to the list.
         m_Actions = new PackageAction[]
         {
-            new DowngradeAction(operationDispatcher, assetStoreDownloadManager, assetStoreCache, unityConnect, application),
-            new DownloadAction(operationDispatcher, assetStoreDownloadManager, assetStoreCache, unityConnect, application),
-            new DownloadUpdateAction(operationDispatcher, assetStoreDownloadManager, assetStoreCache, unityConnect, application),
-            new ImportAction(operationDispatcher, assetStoreDownloadManager, application),
-            new ReImportAction(operationDispatcher, assetStoreDownloadManager, assetStoreCache, application),
+            new DownloadNewAction(operationDispatcher, assetStoreDownloadManager, unityConnect, application),
+            new DownloadUpdateAction(operationDispatcher, assetStoreDownloadManager, unityConnect, application),
+            new ImportNewAction(operationDispatcher, assetStoreDownloadManager, application),
+            new ImportUpdateAction(operationDispatcher, assetStoreDownloadManager, application),
+            new ReImportAction(operationDispatcher, assetStoreDownloadManager, application),
             new RemoveImportedAction(operationDispatcher, application),
-            new ReDownloadAction(operationDispatcher, assetStoreDownloadManager, assetStoreCache, unityConnect, application),
+            new ReDownloadAction(operationDispatcher, assetStoreDownloadManager, unityConnect, application),
         };
 
         name = "legacyFormatDropdownButton";
@@ -141,6 +140,7 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
         return -1;
     }
 
+    [ExcludeFromCodeCoverage]
     public override void Refresh(IEnumerable<IPackageVersion> versions)
     {
         // Do nothing since this button is not available for multi-select

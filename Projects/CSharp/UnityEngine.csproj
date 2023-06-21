@@ -2684,12 +2684,6 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\FastAction.cs">
       <Link>Modules\TextCoreTextEngine\Managed\FastAction.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\FontAsset.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\FontAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\FontAssetUtilities.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\FontAssetUtilities.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\FontFeatureCommon.cs">
       <Link>Modules\TextCoreTextEngine\Managed\FontFeatureCommon.cs</Link>
     </Compile>
@@ -2714,20 +2708,35 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\MeshInfo.cs">
       <Link>Modules\TextCoreTextEngine\Managed\MeshInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\SpriteAsset.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\SpriteAsset.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\SpriteCharacter.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\SpriteCharacter.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAssetUtilities.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAssetUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\SpriteGlyph.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\SpriteGlyph.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\SpriteAsset.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\SpriteAsset.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAsset.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\TextAsset.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\SpriteCharacter.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\SpriteCharacter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextColorGradient.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\TextColorGradient.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\SpriteGlyph.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\SpriteGlyph.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\TextAsset.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\TextAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\TextColorGradient.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\TextColorGradient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\TextSettings.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\TextSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\TextStyle.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\TextStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\TextStyleSheet.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\TextStyleSheet.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextElement.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextElement.cs</Link>
@@ -2741,11 +2750,32 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGeneratorCommon.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\TextGeneratorCommon.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextGenerationSettings.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextGenerationSettings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGeneratorUtilities.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\TextGeneratorUtilities.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorCommon.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorCommon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorHtmlTagValidation.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorHtmlTagValidation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorInternal.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorInternal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorLayout.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorLayout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorParsing.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorParsing.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorPreferredValues.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorPreferredValues.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorPrepare.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorPrepare.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorUtilities.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextGeneratorUtilities.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextHandle.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextHandle.cs</Link>
@@ -2765,17 +2795,8 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextResourcesManager.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextResourcesManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextSettings.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\TextSettings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextShaderUtilities.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextShaderUtilities.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextStyle.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\TextStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextStyleSheet.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\TextStyleSheet.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextUtilities.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextUtilities.cs</Link>

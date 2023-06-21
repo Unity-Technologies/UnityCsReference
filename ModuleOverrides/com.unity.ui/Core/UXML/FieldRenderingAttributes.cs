@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
 
 namespace UnityEngine.UIElements
 {
@@ -13,6 +12,7 @@ namespace UnityEngine.UIElements
     class ImageFieldValueDecoratorAttribute : PropertyAttribute { }
     class FixedItemHeightDecoratorAttribute : PropertyAttribute { }
     class MultilineDecoratorAttribute : PropertyAttribute { }
+    class MultilineTextFieldAttribute : PropertyAttribute { }
     class LayerDecoratorAttribute : PropertyAttribute { }
     class BindingModeDrawerAttribute : PropertyAttribute { }
     class DataSourceDrawerAttribute : PropertyAttribute { }

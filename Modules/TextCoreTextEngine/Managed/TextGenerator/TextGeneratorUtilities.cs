@@ -1396,7 +1396,7 @@ namespace UnityEngine.TextCore.Text
 
             // Check to make sure our current mesh buffer allocations can hold these new Quads.
             if (indexX4 >= textInfo.meshInfo[materialIndex].vertexBufferSize)
-                textInfo.meshInfo[materialIndex].ResizeMeshInfo(Mathf.NextPowerOfTwo((indexX4 + 4) / 4));
+                textInfo.meshInfo[materialIndex].ResizeMeshInfo(Mathf.NextPowerOfTwo((indexX4 + 4) / 4), generationSettings.isIMGUI);
 
             TextElementInfo[] textElementInfoArray = textInfo.textElementInfo;
             textInfo.textElementInfo[i].vertexIndex = indexX4;
@@ -1911,7 +1911,7 @@ namespace UnityEngine.TextCore.Text
             return true;
         }
 
-                internal static bool IsEmoji(uint c)
+        internal static bool IsEmoji(uint c)
         {
             return /*c == 0x23 || c == 0x2A || c >= 0x30 && c <= 0x39 || c == 0xA9 || c == 0xAE || */
                    c == 0x200D || c == 0x203C || c == 0x2049 || c == 0x20E3 || c == 0x2122 || c == 0x2139 || c >= 0x2194 && c <= 0x2199 || c >= 0x21A9 && c <= 0x21AA || c >= 0x231A && c <= 0x231B || c == 0x2328 || c == 0x2388 || c == 0x23CF || c >= 0x23E9 && c <= 0x23F3 || c >= 0x23F8 && c <= 0x23FA || c == 0x24C2 || c >= 0x25AA && c <= 0x25AB || c == 0x25B6 || c == 0x25C0 || c >= 0x25FB && c <= 0x25FE || c >= 0x2600 && c <= 0x2605 || c >= 0x2607 && c <= 0x2612 || c >= 0x2614 && c <= 0x2685 || c >= 0x2690 && c <= 0x2705 || c >= 0x2708 && c <= 0x2712 || c == 0x2714 || c == 0x2716 || c == 0x271D || c == 0x2721 || c == 0x2728 || c >= 0x2733 && c <= 0x2734 || c == 0x2744 || c == 0x2747 || c == 0x274C || c == 0x274E || c >= 0x2753 && c <= 0x2755 || c == 0x2757 || c >= 0x2763 && c <= 0x2767 || c >= 0x2795 && c <= 0x2797 || c == 0x27A1 || c == 0x27B0 || c == 0x27BF || c >= 0x2934 && c <= 0x2935 || c >= 0x2B05 && c <= 0x2B07 || c >= 0x2B1B && c <= 0x2B1C || c == 0x2B50 || c == 0x2B55 ||

@@ -1380,7 +1380,7 @@ namespace Unity.UI.Builder
             BuilderInspector.UpdateFieldStatusIconAndStyling(currentElement, fieldElement, valueInfo);
 
             if (currentFieldSource == AttributeFieldSource.UxmlTraits)
-                BuilderInspector.UpdateFieldTooltip(fieldElement, valueInfo);
+                BuilderInspector.UpdateFieldTooltip(fieldElement, valueInfo, m_CurrentElement);
         }
 
         public void SendNotifyAttributesChanged() => NotifyAttributesChanged();

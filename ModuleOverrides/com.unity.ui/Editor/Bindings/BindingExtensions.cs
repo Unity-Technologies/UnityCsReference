@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -2051,34 +2052,60 @@ namespace UnityEditor.UIElements.Bindings
             else
                 enumIndexToDisplayIndex.Clear();
 
-            Type enumType;
-            ScriptAttributeUtility.GetFieldInfoFromProperty(property, out enumType);
+            ScriptAttributeUtility.GetFieldInfoFromProperty(property, out var enumType);
             if (enumType != null)
             {
-                var enumData = EnumDataUtility.GetCachedEnumData(enumType, true);
+                var enumData = EnumDataUtility.GetCachedEnumData(enumType, UnityEngine.EnumDataUtility.CachedType.ExcludeObsolete);
+                var enumDataOld = EnumDataUtility.GetCachedEnumData(enumType, UnityEngine.EnumDataUtility.CachedType.IncludeAllObsolete);
                 c.choices = new List<string>(enumData.displayNames);
 
-                // The call to EditorGUI.EnumNamesCache.GetEnumNames returns an ordered version of the enum. We use the
-                // actual enum values, not the display names, in order to make sure we can compare them to the values in
-                // enumData.names, because the display names may actually be different (if the enum has the InspectorName
-                // attribute, for example).
                 var sortedEnumNames = EditorGUI.EnumNamesCache.GetEnumNames(property);
 
-                // Remove values from the list that don't have a valid display index
-                // Fixes: UUM-31056
-                List<string> filteredSortedEnumNames = new List<string>();
-                foreach (var sortedEnumName in sortedEnumNames)
+                // Build a name to value lookup. We need this to check for duplicate values.
+                var nameValueDict = UnityEngine.Pool.DictionaryPool<string, int>.Get();
+                for (int i = 0; i < enumDataOld.names.Length; ++i)
                 {
-                    if (Array.IndexOf(enumData.names, sortedEnumName) != -1)
+                    nameValueDict[enumDataOld.names[i]] = enumDataOld.flagValues[i];
+                }
+
+                displayIndexToEnumIndex.Fill(kDefaultValueIndex, enumData.names.Length);
+                enumIndexToDisplayIndex.Fill(kDefaultValueIndex, sortedEnumNames.Length);
+
+                // We need to map the display index to the first occurrence of the value in the serialized property enum names.
+                // The serialized property lacks information about obsolete enum values, so it always maps to the first occurrence of the value,
+                // regardless of its obsolescence and visibility.
+                // Additionally, we must handle obsolete values that are not displayed, as the enumValueIndex encompasses all values,
+                // including those marked as obsolete but not visible. (UUM-36836, UUM-31162)
+                var firstOccurrenceIndexToValueDict = UnityEngine.Pool.DictionaryPool<int, int>.Get();
+                for (int i = 0; i < sortedEnumNames.Length; ++i)
+                {
+                    var value = nameValueDict[sortedEnumNames[i]];
+
+                    var displayIndex = Array.IndexOf(enumData.names, sortedEnumNames[i]);
+                    if (displayIndex != -1)
                     {
-                        filteredSortedEnumNames.Add(sortedEnumName);
+                        // If we have already encountered this value then we need to use the first index as the serialized property will always map to this one.
+                        if (firstOccurrenceIndexToValueDict.TryGetValue(value, out var firstEnumIndex))
+                        {
+                            displayIndexToEnumIndex[displayIndex] = firstEnumIndex;
+                            enumIndexToDisplayIndex[firstEnumIndex] = displayIndex;
+                        }
+                        else
+                        {
+                            firstOccurrenceIndexToValueDict[value] = i;
+                            displayIndexToEnumIndex[displayIndex] = i;
+                        }
+
+                        enumIndexToDisplayIndex[i] = displayIndex;
+                    }
+                    else
+                    {
+                        firstOccurrenceIndexToValueDict[value] = i;
                     }
                 }
 
-                foreach (var enumName in enumData.names)
-                    displayIndexToEnumIndex.Add(filteredSortedEnumNames.FindIndex(name => name == enumName));
-                foreach (var sortedEnumName in filteredSortedEnumNames)
-                    enumIndexToDisplayIndex.Add(Array.IndexOf(enumData.names, sortedEnumName));
+                UnityEngine.Pool.DictionaryPool<string, int>.Release(nameValueDict);
+                UnityEngine.Pool.DictionaryPool<int, int>.Release(firstOccurrenceIndexToValueDict);
             }
             else
             {

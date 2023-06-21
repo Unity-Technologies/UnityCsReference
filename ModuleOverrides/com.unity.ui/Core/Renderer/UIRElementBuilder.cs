@@ -230,11 +230,19 @@ namespace UnityEngine.UIElements.UIR
                 }
                 else if (background.vectorImage != null)
                 {
+                    ScaleMode scaleMode = BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(style.backgroundPositionX,
+                        style.backgroundPositionY,
+                        style.backgroundRepeat,
+                        style.backgroundSize,
+                        out bool validScaleMode);
+
+                    bool useRepeat = !validScaleMode || (scaleMode == ScaleMode.ScaleAndCrop);
+
                     rectParams = MeshGenerator.RectangleParams.MakeVectorTextured(
                         ve.rect,
                         new Rect(0, 0, 1, 1),
                         background.vectorImage,
-                        ScaleMode.ScaleToFit,
+                        useRepeat ? ScaleMode.StretchToFill : scaleMode,
                         ve.panel.contextType);
 
                     rectParams.rect = new Rect(0, 0, rectParams.vectorImage.size.x, rectParams.vectorImage.size.y);

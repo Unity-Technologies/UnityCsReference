@@ -7,6 +7,7 @@ using System.IO;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -562,7 +563,7 @@ namespace Unity.UI.Builder
 
             field.SetProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName, valueInfo);
             UpdateFieldStatusIconAndStyling(currentVisualElement, field, valueInfo);
-            UpdateFieldTooltip(field, valueInfo);
+            UpdateFieldTooltip(field, valueInfo, currentVisualElement);
             UpdateBoundFieldsState(field, valueInfo);
 
             var isAttribute = field.HasLinkedAttributeDescription();
@@ -761,25 +762,17 @@ namespace Unity.UI.Builder
             }
         }
 
-        internal static void UpdateFieldTooltip(VisualElement field, FieldValueInfo valueInfo)
+        internal static void UpdateFieldTooltip(VisualElement field, FieldValueInfo valueInfo, VisualElement currentElement = null)
         {
-            // TODO: FIX labelElement not existing sometimes OR MOVE to BuilderInspectorStyleFields.BindStyleField . Maybe move this code to the class?
-
             var draggerLabel = GetDraggerLabel(field);
             var tooltipValue = GetFieldTooltip(field, valueInfo);
-            // var fieldLabel = field.Q<PropertyField>() ?? field.Q<BindableElement>()?.GetValueByReflection("labelElement") as VisualElement;
 
             if (draggerLabel != null)
             {
                 draggerLabel.tooltip = tooltipValue;
             }
 
-            // if (fieldLabel != null)
-            // {
-            //     fieldLabel.tooltip = tooltipValue;
-            // }
-
-            field.GetFieldStatusIndicator().tooltip = GetFieldStatusIndicatorTooltip(valueInfo, field);
+            field.GetFieldStatusIndicator().tooltip = GetFieldStatusIndicatorTooltip(valueInfo, field, currentElement);
         }
 
         internal static Label GetDraggerLabel(VisualElement field)
@@ -788,77 +781,63 @@ namespace Unity.UI.Builder
             return labelDraggers.Count != 1 ? null : labelDraggers.First();
         }
 
-        static string GetFieldStatusIndicatorTooltip(FieldValueInfo info, VisualElement field, string description = null)
+        static string GetFieldStatusIndicatorTooltip(FieldValueInfo info, VisualElement field, VisualElement currentElement, string description = null)
         {
             if (info.valueSource.type == FieldValueSourceInfoType.Default)
                 return BuilderConstants.FieldStatusIndicatorDefaultTooltip;
             if (info.valueBinding.type == FieldValueBindingInfoType.USSVariable)
-                return info.valueBinding.variable.sheet != null ? BuilderConstants.FieldStatusIndicatorVariableTooltip : BuilderConstants.FieldStatusIndicatorUnresolvedVariableTooltip;
+                return info.valueBinding.variable.sheet != null ? GetVariableTooltip(info.valueBinding.variable) : BuilderConstants.FieldStatusIndicatorUnresolvedVariableTooltip;
 
-            var valueDefinitionDataText = "";
-            var valueDataText = "";
-            var tooltipFormat = BuilderConstants.FieldTooltipWithoutValueFormatString;
-
-            // generic binding
-            if (info.valueSource.type != FieldValueSourceInfoType.Default
-                && info.valueSource.type != FieldValueSourceInfoType.Inherited)
+            // data binding
+            if (info.valueBinding.type == FieldValueBindingInfoType.Binding)
             {
-                // if the value is bound to variable then display the variable info
-                if (info.valueBinding.type == FieldValueBindingInfoType.USSVariable)
+                // detailed binding information
+                var inspector = Builder.ActiveWindow.inspector;
+                var currentVisualElement = inspector.currentVisualElement;
+                var property = BuilderInspectorUtilities.GetBindingProperty(inspector, field);
+
+                if (!BuilderBindingUtility.TryGetBinding(property, out var binding, out var bindingUxml) ||
+                    binding is not DataBinding dataBinding)
+                    return BuilderConstants.FieldStatusIndicatorUnresolvedBindingTooltip;
+
+                var notDefinedString = L10n.Tr(BuilderConstants.BindingNotDefinedAttributeString);
+                var currentElementDataSource =
+                    BuilderBindingUtility.GetBindingDataSourceOrRelativeHierarchicalDataSource(currentVisualElement,
+                        property);
+                var dataSourceString = currentElementDataSource ?? notDefinedString;
+                var bindingMode = dataBinding.bindingMode;
+                var dataSourcePathStr = dataBinding.dataSourcePath.IsEmpty
+                    ? notDefinedString
+                    : dataBinding.dataSourcePath.ToString();
+                var convertersToSource =
+                    bindingUxml.GetAttributeValue(BuilderBindingUxmlAttributesView
+                        .k_BindingAttr_ConvertersToSource);
+                var convertersToUI =
+                    bindingUxml.GetAttributeValue(BuilderBindingUxmlAttributesView.k_BindingAttr_ConvertersToUi);
+                var converters = GetFormattedConvertersString(convertersToSource, convertersToUI);
+
+                return info.valueSource.type switch
                 {
-                    valueDataText = $"\n{GetVariableTooltip(info.valueBinding.variable)}";
-                }
-
-                // data binding
-                if (info.valueBinding.type == FieldValueBindingInfoType.Binding)
-                {
-                    // detailed binding information
-                            var inspector = Builder.ActiveWindow.inspector;
-                            var currentVisualElement = inspector.currentVisualElement;
-                            var property = BuilderInspectorUtilities.GetBindingProperty(inspector, field);
-
-                            if (!BuilderBindingUtility.TryGetBinding(property, out var binding, out var bindingUxml) ||
-                                binding is not DataBinding dataBinding)
-                                return BuilderConstants.FieldStatusIndicatorUnresolvedBindingTooltip;
-
-                            var notDefinedString = L10n.Tr(BuilderConstants.BindingNotDefinedAttributeString);
-                            var currentElementDataSource =
-                                BuilderBindingUtility.GetBindingDataSourceOrRelativeHierarchicalDataSource(currentVisualElement,
-                                    property);
-                            var dataSourceString = currentElementDataSource ?? notDefinedString;
-                            var bindingMode = dataBinding.bindingMode;
-                            var dataSourcePathStr = dataBinding.dataSourcePath.IsEmpty
-                                ? notDefinedString
-                                : dataBinding.dataSourcePath.ToString();
-                            var convertersToSource =
-                                bindingUxml.GetAttributeValue(BuilderBindingUxmlAttributesView
-                                    .k_BindingAttr_ConvertersToSource);
-                            var convertersToUI =
-                                bindingUxml.GetAttributeValue(BuilderBindingUxmlAttributesView.k_BindingAttr_ConvertersToUi);
-                            var converters = GetFormattedConvertersString(convertersToSource, convertersToUI);
-
-                            return info.valueSource.type switch
-                            {
-                                FieldValueSourceInfoType.ResolvedBinding => string.Format(BuilderConstants.FieldTooltipDataDefinitionBindingFormatString,
-                                    BuilderConstants.FieldStatusIndicatorResolvedBindingTooltip,
-                                    dataSourceString, dataSourcePathStr, bindingMode, converters),
-                                FieldValueSourceInfoType.UnhandledBinding => string.Format(BuilderConstants.FieldTooltipDataDefinitionBindingFormatString,
-                                    BuilderConstants.FieldStatusIndicatorUnhandledBindingTooltip,
-                                    dataSourceString, dataSourcePathStr, bindingMode, converters),
-                                _ => string.Format(BuilderConstants.FieldTooltipDataDefinitionBindingFormatString,
-                                    BuilderConstants.FieldStatusIndicatorUnresolvedBindingTooltip,
-                                    dataSourceString, dataSourcePathStr, bindingMode, converters),
-                            };
-                }
+                    FieldValueSourceInfoType.ResolvedBinding => string.Format(BuilderConstants.FieldTooltipDataDefinitionBindingFormatString,
+                        BuilderConstants.FieldStatusIndicatorResolvedBindingTooltip,
+                        dataSourceString, dataSourcePathStr, bindingMode, converters),
+                    FieldValueSourceInfoType.UnhandledBinding => string.Format(BuilderConstants.FieldTooltipDataDefinitionBindingFormatString,
+                        BuilderConstants.FieldStatusIndicatorUnhandledBindingTooltip,
+                        dataSourceString, dataSourcePathStr, bindingMode, converters),
+                    _ => string.Format(BuilderConstants.FieldTooltipDataDefinitionBindingFormatString,
+                        BuilderConstants.FieldStatusIndicatorUnresolvedBindingTooltip,
+                        dataSourceString, dataSourcePathStr, bindingMode, converters),
+                };
             }
 
-            // source
-            if (info.valueSource.type.IsFromUSSSelector())
-                valueDefinitionDataText = $"\n{GetMatchingStyleSheetRuleSourceTooltip(info.valueSource.matchedRule)}";
-
-            tooltipFormat = BuilderConstants.FieldTooltipValueOnlyFormatString;
-            var value = string.Format(tooltipFormat, info.valueBinding.type.ToDisplayString(), valueDataText, info.valueSource.type.ToDisplayString(), valueDefinitionDataText);
-            return value;
+            return info.valueSource.type switch
+            {
+                FieldValueSourceInfoType.Inline => BuilderConstants.FieldStatusIndicatorInlineTooltip,
+                FieldValueSourceInfoType.Inherited => GetInheritedValueTooltip(currentElement),
+                FieldValueSourceInfoType.MatchingUSSSelector => GetMatchingStyleSheetRuleSourceTooltip(info.valueSource.matchedRule),
+                FieldValueSourceInfoType.LocalUSSSelector => BuilderConstants.FieldStatusIndicatorLocalTooltip,
+                _ => null
+            };
         }
 
         internal static string GetFieldTooltip(VisualElement field, FieldValueInfo info, string description = null, bool allowValueDescription = true)
@@ -932,7 +911,7 @@ namespace Unity.UI.Builder
                 displayPath = displayPath.Substring(0, index);
             }
 
-            return string.Format(BuilderConstants.MatchingStyleSheetRuleSourceTooltipFormatString, StyleSheetToUss.ToUssSelector(matchedRule.matchRecord.complexSelector), displayPath);
+            return string.Format(BuilderConstants.FieldStatusIndicatorFromSelectorTooltip, StyleSheetToUss.ToUssSelector(matchedRule.matchRecord.complexSelector), displayPath);
         }
 
         static string GetVariableTooltip(VariableInfo info)
@@ -961,7 +940,15 @@ namespace Unity.UI.Builder
 
             variableName = info.name;
 
-            return string.Format(BuilderConstants.VariableBindingTooltipFormatString, variableName, sourceStyleSheet);
+            return string.Format(BuilderConstants.FieldStatusIndicatorVariableTooltip, variableName, sourceStyleSheet);
+        }
+
+        static string GetInheritedValueTooltip(VisualElement child)
+        {
+            var parent = child.parent;
+            return string.Format(BuilderConstants.FieldStatusIndicatorInheritedTooltip,
+                parent != null ? parent.typeName : "",
+                parent != null ? parent.name : "");
         }
 
         internal override void OnViewDataReady()

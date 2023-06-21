@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
         public new abstract class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private string label;
+            [SerializeField, MultilineTextField] private string label;
             [SerializeField] private TValueType value;
             #pragma warning restore 649
 
