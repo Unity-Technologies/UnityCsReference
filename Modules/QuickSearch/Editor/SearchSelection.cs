@@ -13,6 +13,7 @@ namespace UnityEditor.Search
     /// </summary>
     public class SearchSelection : IReadOnlyCollection<SearchItem>
     {
+        int m_ListInitialCount;
         private ISearchList m_List;
         private IList<int> m_Selection;
         private List<SearchItem> m_Items;
@@ -26,6 +27,7 @@ namespace UnityEditor.Search
         {
             m_Selection = selection;
             m_List = filteredItems;
+            m_ListInitialCount = m_List.Count;
         }
 
         public SearchSelection(IEnumerable<SearchItem> items)
@@ -35,6 +37,22 @@ namespace UnityEditor.Search
             for (int i = 0; i < m_Items.Count; ++i)
                 m_Selection.Add(i);
             m_List = null;
+        }
+
+        internal bool SyncSelectionIfInvalid()
+        {
+            if (m_Items == null)
+                // Will be sync next time it is accessed
+                return false;
+            if (m_List == null)
+                return false;
+
+            if (m_Selection.Count != m_Items.Count || m_List.Count != m_ListInitialCount)
+            {
+                BuildSelection();
+                return true;
+            }
+            return false;
         }
 
         internal IList<int> indexes => m_Selection;
@@ -112,8 +130,17 @@ namespace UnityEditor.Search
             m_Items = new List<SearchItem>(m_Selection.Count);
             if (m_List == null)
                 return;
+
+            if (m_List.Count != m_ListInitialCount)
+            {
+                m_Selection = new List<int>(m_Selection.Where(index => index >= 0 && index < m_List.Count));
+                m_ListInitialCount = m_List.Count;
+            }
+
             foreach (var s in m_Selection)
+            {
                 m_Items.Add(m_List.ElementAt(s));
+            }
         }
 
         public bool Contains(SearchItem item)

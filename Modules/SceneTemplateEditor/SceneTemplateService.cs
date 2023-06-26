@@ -33,6 +33,7 @@ namespace UnityEditor.SceneTemplate
         public string path;
         public string rootFolder;
         public bool hasCloneableDependencies;
+        public bool hasSubScene;
         public string dependencyFolderName;
 
         public static InMemorySceneState None = new InMemorySceneState();
@@ -186,6 +187,7 @@ namespace UnityEditor.SceneTemplate
                 s_CurrentInMemorySceneState.rootFolder = rootFolder;
                 s_CurrentInMemorySceneState.hasCloneableDependencies = hasAnyCloneableDependencies;
                 s_CurrentInMemorySceneState.dependencyFolderName = Path.GetFileNameWithoutExtension(newSceneOutputPath);
+                s_CurrentInMemorySceneState.hasSubScene = sceneTemplate.dependencies.Any(dep => dep.dependency is SceneAsset);
             }
 
             SceneTemplateAnalytics.SendSceneInstantiationEvent(instantiateEvent);
@@ -406,14 +408,27 @@ namespace UnityEditor.SceneTemplate
                 }
 
                 SceneTemplateUtils.DeleteAsset(s_CurrentInMemorySceneState.rootFolder);
-
-                var success = EditorSceneManager.ReloadScene(scene);
-                if (!success)
+                if (s_CurrentInMemorySceneState.hasSubScene)
                 {
-                    Debug.LogError($"Failed to reload scene {scene.path}");
+                    EditorApplication.delayCall += () =>
+                    {
+                        var success = EditorSceneManager.ReloadScene(scene);
+                        if (!success)
+                        {
+                            Debug.LogError($"Failed to reload scene {scene.path}");
+                        }
+                        ClearInMemorySceneState();
+                    };
                 }
-
-                ClearInMemorySceneState();
+                else
+                {
+                    var success = EditorSceneManager.ReloadScene(scene);
+                    if (!success)
+                    {
+                        Debug.LogError($"Failed to reload scene {scene.path}");
+                    }
+                    ClearInMemorySceneState();
+                }            
             }
         }
 

@@ -41,7 +41,9 @@ namespace UnityEditor
         public static extern bool IsPickingEnabledOnAllChildren([NotNull] GameObject gameObject);
 
         public static extern bool AreAllChildrenHidden([NotNull] GameObject gameObject);
+        public static extern bool AreAllRootObjectsHiddenHierarchy(Scene scene);
         public static extern bool IsPickingDisabledOnAllChildren([NotNull] GameObject gameObject);
+        public static extern bool IsPickingDisabledOnAllDescendants(Scene scene);
 
         public static extern void ShowScene(Scene scene);
 

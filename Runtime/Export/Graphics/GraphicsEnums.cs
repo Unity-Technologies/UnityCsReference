@@ -281,7 +281,7 @@ namespace UnityEngine
         HDR10 = 4,
         DolbyHDR = 5
     }
-    
+
     [UsedByNativeCode]
     [NativeHeader("Runtime/Graphics/ColorGamut.h")]
     public enum ColorPrimaries
@@ -299,7 +299,7 @@ namespace UnityEngine
         Unknown = -1,
         D65 = 0
     }
-    
+
     [UsedByNativeCode]
     [NativeHeader("Runtime/Graphics/ColorGamut.h")]
     public enum TransferFunction
@@ -585,7 +585,7 @@ namespace UnityEngine
         AutomaticTonemapping = 1 << 2
     }
 
-    public enum HDRDisplayBitDepth 
+    public enum HDRDisplayBitDepth
     {
         BitDepth10 = 0,
         BitDepth16 = 1
@@ -1919,7 +1919,12 @@ namespace UnityEngine.Rendering
         UNITY_PRETRANSFORM_TO_DISPLAY_ORIENTATION,
         UNITY_ASTC_NORMALMAP_ENCODING,
         SHADER_API_GLES30,
-        UNITY_UNIFIED_SHADER_PRECISION_MODEL
+        UNITY_UNIFIED_SHADER_PRECISION_MODEL,
+
+        // NOTE: on trunk we've added UNITY_PLATFORM_SUPPORTS_WAVE_32 and UNITY_PLATFORM_SUPPORTS_WAVE_64
+        // NOTE: that go after UNITY_UNIFIED_SHADER_PRECISION_MODEL.
+        // NOTE: we leave a hole here on purpose so that enum values agree
+        UNITY_NEEDS_RENDERPASS_FBFETCH_FALLBACK = 35,
     }
 
     // Match VideoShadersMode on C++ side

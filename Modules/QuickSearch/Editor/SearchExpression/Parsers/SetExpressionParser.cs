@@ -17,7 +17,7 @@ namespace UnityEditor.Search
             var text = ParserUtils.SimplifyExpression(outerText);
             if (text.length < 2 || text[0] != '[' || text[text.length - 1] != ']')
                 return null;
-            var expressions = ParserUtils.GetExpressionsStartAndLength(text, out _);
+            var expressions = ParserUtils.GetExpressionsStartAndLength(text, out _, out _);
             if (expressions.Length != 1 || expressions[0].startIndex != text.startIndex || expressions[0].length != text.length)
                 return null;
 
@@ -42,7 +42,7 @@ namespace UnityEditor.Search
             if (text[0] != '{' || text[text.length - 1] != '}')
                 return null;
 
-            var expressions = ParserUtils.GetExpressionsStartAndLength(innerText, out var rootHasParameters);
+            var expressions = ParserUtils.GetExpressionsStartAndLength(innerText, out var rootHasParameters, out _);
             if (!rootHasParameters)
                 return null;
 

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Unity.Profiling;
 using UnityEditor.SceneManagement;
 using UnityEditor.Utils;
 using UnityEngine;
@@ -16,6 +17,9 @@ namespace UnityEditor.Search
 {
     class AssetIndexer : ObjectIndexer
     {
+        static readonly ProfilerMarker k_IndexGameObjectMarker = new($"{nameof(AssetIndexer)}.{nameof(IndexGameObject)}");
+        static readonly ProfilerMarker k_IndexCustomGameObjectPropertiesMarker = new($"{nameof(AssetIndexer)}.{nameof(IndexCustomGameObjectProperties)}");
+
         static string[] s_AssetDabaseRoots;
         static AssetIndexer()
         {
@@ -141,7 +145,7 @@ namespace UnityEditor.Search
                 var dirPath = Paths.ConvertSeparatorsToUnity(Path.GetDirectoryName(path));
                 foreach (var dir in dirPath.Split('/').Skip(1).Reverse().Take(3))
                     IndexProperty(documentIndex, "dir", dir, saveKeyword: false, exact: true);
-                
+
                 IndexProperty(documentIndex, "dir", dirPath, saveKeyword: false, exact: true);
                 IndexProperty(documentIndex, "t", "file", saveKeyword: true, exact: true);
             }
@@ -466,6 +470,7 @@ namespace UnityEditor.Search
 
         private void IndexGameObject(in int documentIndex, in GameObject go, in SearchDatabase.Options options)
         {
+            using var _ = k_IndexGameObjectMarker.Auto();
             if (options.types)
             {
                 if (go.transform.root != go.transform)
@@ -519,6 +524,7 @@ namespace UnityEditor.Search
 
         private void IndexCustomGameObjectProperties(string id, int documentIndex, GameObject go)
         {
+            using var _ = k_IndexCustomGameObjectPropertiesMarker.Auto();
             if (HasCustomIndexers(go.GetType()))
                 IndexCustomProperties(id, documentIndex, go);
 

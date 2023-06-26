@@ -89,24 +89,37 @@ namespace UnityEditor.Search
         }
     }
 
+    [InitializeOnLoad]
     static class CustomIndexers
     {
         private static readonly Dictionary<Type, List<CustomIndexerHandler>> s_CustomObjectIndexers = new Dictionary<Type, List<CustomIndexerHandler>>();
 
-        public static IEnumerable<Type> types => s_CustomObjectIndexers.Keys;
+        public static IEnumerable<Type> types
+        {
+            get
+            {
+                LoadCustomObjectIndexers();
+                return s_CustomObjectIndexers.Keys;
+            }
+        }
+
+        static bool s_Initialized;
 
         static CustomIndexers()
         {
-            LoadCustomObjectIndexers();
+            // Wait next update to make sure all CustomObjectIndexerAttribute are loaded.
+            EditorApplication.delayCall += LoadCustomObjectIndexers;
         }
 
         public static IList<CustomIndexerHandler> GetHandlers(Type type)
         {
+            LoadCustomObjectIndexers();
             return s_CustomObjectIndexers[type];
         }
 
         public static bool HasCustomIndexers(Type type, bool multiLevel = true)
         {
+            LoadCustomObjectIndexers();
             if (!multiLevel)
                 return s_CustomObjectIndexers.ContainsKey(type);
 
@@ -121,10 +134,11 @@ namespace UnityEditor.Search
 
         public static bool TryGetValue(Type objectType, out List<CustomIndexerHandler> customIndexers)
         {
+            LoadCustomObjectIndexers();
             return s_CustomObjectIndexers.TryGetValue(objectType, out customIndexers);
         }
 
-        public static Hash128 RefreshCustomIndexers()
+        static Hash128 RefreshCustomIndexers()
         {
             Hash128 globalIndexersHash = default;
             foreach (var customIndexerMethodInfo in TypeCache.GetMethodsWithAttribute<CustomObjectIndexerAttribute>())
@@ -166,9 +180,13 @@ namespace UnityEditor.Search
 
         static void LoadCustomObjectIndexers()
         {
+            if (s_Initialized)
+                return;
+
             var globalIndexersHash = RefreshCustomIndexers();
             if (!AssetDatabaseAPI.IsAssetImportWorkerProcess())
                 EditorApplication.delayCall += () => AssetDatabaseAPI.RegisterCustomDependency(nameof(CustomObjectIndexerAttribute), globalIndexersHash);
+            s_Initialized = true;
         }
 
         static bool ValidateCustomIndexerMethodSignature(MethodInfo methodInfo)

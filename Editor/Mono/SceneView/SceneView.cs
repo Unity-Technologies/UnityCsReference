@@ -2370,6 +2370,7 @@ namespace UnityEditor
 
             EditorGUIUtility.labelWidth = 100;
 
+            var prevCamera = Camera.current;
             SetupCamera();
             RenderingPath oldRenderingPath = m_Camera.renderingPath;
 
@@ -2533,6 +2534,8 @@ namespace UnityEditor
             onGUIEnded?.Invoke(this);
             if (m_StageHandling != null)
                 m_StageHandling.EndOnGUI();
+
+            Camera.SetupCurrent(prevCamera);
         }
 
         [Shortcut("Scene View/Render Mode/Shaded", typeof(SceneView))]

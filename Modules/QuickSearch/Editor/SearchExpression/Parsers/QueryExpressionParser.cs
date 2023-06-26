@@ -15,7 +15,7 @@ namespace UnityEditor.Search
         {
             var text = ParserUtils.SimplifyExpression(args.text);
             var nestedExpressions = new List<SearchExpression>();
-            var expressionsStartAndLength = ParserUtils.GetExpressionsStartAndLength(text, out _);
+            var expressionsStartAndLength = ParserUtils.GetExpressionsStartAndLength(text, out _, out var rootHasEscapedOpenersAndClosers);
             var lastExpressionEndIndex = 0;
             foreach (var expression in expressionsStartAndLength)
             {
@@ -34,7 +34,7 @@ namespace UnityEditor.Search
                 lastExpressionEndIndex = expression.startIndex + expression.length - text.startIndex;
             }
 
-            return new SearchExpression(SearchExpressionType.QueryString, args.text, text, QueryEvaluator, nestedExpressions.ToArray());
+            return new SearchExpression(SearchExpressionType.QueryString, args.text, text, QueryEvaluator, nestedExpressions.ToArray(), rootHasEscapedOpenersAndClosers);
         }
     }
 }

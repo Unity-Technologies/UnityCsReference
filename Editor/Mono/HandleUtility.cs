@@ -32,7 +32,8 @@ namespace UnityEditor
             // The constrained direction is facing towards the camera, THATS BAD when the handle is close to the camera
             // The srcPosition  goes through to the other side of the camera
             float invert = 1.0F;
-            Vector3 cameraForward = Camera.current == null ? Vector3.forward : Camera.current.transform.forward;
+            Camera cam = GetCurrentCamera();
+            Vector3 cameraForward = cam == null ? Vector3.forward : cam.transform.forward;
             if (Vector3.Dot(constraintDir, cameraForward) < 0.0F)
                 invert = -1.0F;
 
@@ -41,7 +42,7 @@ namespace UnityEditor
             // we then parametrise the perpendicular position of dest into the line (p1-p2)
             Vector3 cd = constraintDir;
             cd.y = -cd.y;
-            Camera cam = Camera.current;
+
             // if camera is null, then we are drawing in OnGUI, where y-coordinate goes top-to-bottom
             Vector2 p1 = cam == null
                 ? Vector2.Scale(srcPosition, new Vector2(1f, -1f))
@@ -62,6 +63,16 @@ namespace UnityEditor
 
             float output = (t1 - t0) * invert;
             return output;
+        }
+
+        internal static Camera GetCurrentCamera()
+        {
+            var camera = Camera.current;
+
+            if (!camera && SceneView.lastActiveSceneView != null)
+                camera = SceneView.lastActiveSceneView.camera;
+
+            return camera;
         }
 
         internal static float GetParametrization(Vector2 x0, Vector2 x1, Vector2 x2)
@@ -190,7 +201,7 @@ namespace UnityEditor
         public static float DistanceToCircle(Vector3 position, float radius)
         {
             Vector2 screenCenter = WorldToGUIPoint(position);
-            Camera cam = Camera.current;
+            Camera cam = GetCurrentCamera();
             if (cam)
             {
                 var screenEdge = WorldToGUIPoint(position + cam.transform.right * radius);
@@ -206,7 +217,7 @@ namespace UnityEditor
         public static float DistanceToCircle(CameraProjectionCache projection, Vector3 position, float radius)
         {
             Vector2 screenCenter = projection.WorldToGUIPoint(position);
-            Camera cam = Camera.current;
+            Camera cam = GetCurrentCamera();
             if (cam)
             {
                 var screenEdge = projection.WorldToGUIPoint(position + cam.transform.right * radius);
@@ -457,7 +468,7 @@ namespace UnityEditor
         public static float DistanceToPolyLine(params Vector3[] points)
         {
             Matrix4x4 handleMatrix = Handles.matrix;
-            CameraProjectionCache cam = new CameraProjectionCache(Camera.current);
+            CameraProjectionCache cam = new CameraProjectionCache(GetCurrentCamera());
             Vector2 mouse = Event.current.mousePosition;
 
             Vector2 p1 = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[0]));
@@ -480,7 +491,7 @@ namespace UnityEditor
         internal static float DistanceToPolyLine(Vector3[] points, bool loop, out int index)
         {
             Matrix4x4 handleMatrix = Handles.matrix;
-            CameraProjectionCache cam = new CameraProjectionCache(Camera.current);
+            CameraProjectionCache cam = new CameraProjectionCache(GetCurrentCamera());
             Vector2 mouse = Event.current.mousePosition;
 
             Vector2 p1 = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[0]));
@@ -628,7 +639,7 @@ namespace UnityEditor
 
             // project point cloud into 2D GUI space
             var handleMatrix = Handles.matrix;
-            var cam = new CameraProjectionCache(Camera.current);
+            var cam = new CameraProjectionCache(GetCurrentCamera());
             for (var i = 0; i < points.Length; ++i)
                 points[i] = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[i]));
 
@@ -640,7 +651,7 @@ namespace UnityEditor
         static readonly List<Vector2> s_PointCloudConvexHull = new List<Vector2>();
         static float DistanceToPointCloudConvexHull(params Vector3[] points)
         {
-            if (points == null || points.Length == 0 || Camera.current == null)
+            if (points == null || points.Length == 0 || GetCurrentCamera() == null)
                 return float.PositiveInfinity;
 
             var mousePos = Event.current.mousePosition;
@@ -692,9 +703,10 @@ namespace UnityEditor
             Handles.zTest = CompareFunction.Always;
             s_CustomPickDistance = kPickDistance;
 
-            if (null != Camera.current)
+            Camera cam = GetCurrentCamera();
+            if (null != cam)
             {
-                s_PreviousCamera = Camera.current;
+                s_PreviousCamera = cam;
             }
 
             Handles.Internal_SetCurrentCamera(null);
@@ -727,7 +739,7 @@ namespace UnityEditor
         // Get world space size of a manipulator handle at given position.
         public static float GetHandleSize(Vector3 position)
         {
-            Camera cam = Camera.current;
+            Camera cam = GetCurrentCamera();
             position = Handles.matrix.MultiplyPoint(position);
             if (cam)
             {
@@ -744,7 +756,11 @@ namespace UnityEditor
 
         static float renderingViewHeight
         {
-            get { return Camera.current == null ? Screen.height : Camera.current.pixelHeight; }
+            get
+            {
+                Camera cam = GetCurrentCamera();
+                return cam == null ? Screen.height : cam.pixelHeight;
+            }
         }
 
         // Convert world space point to a 2D GUI position.
@@ -756,7 +772,7 @@ namespace UnityEditor
         // Convert world space point to a 2D GUI position.
         public static Vector3 WorldToGUIPointWithDepth(Vector3 world)
         {
-            return WorldToGUIPointWithDepth(Camera.current, world);
+            return WorldToGUIPointWithDepth(GetCurrentCamera(), world);
         }
 
         // Convert world space point to a 2D GUI position.
@@ -792,7 +808,7 @@ namespace UnityEditor
 
         private static Ray GUIPointToWorldRayPrecise(Vector2 position, float startZ = float.NegativeInfinity)
         {
-            Camera camera = Camera.current;
+            Camera camera = GetCurrentCamera();
 
             if (!camera && SceneView.lastActiveSceneView != null)
                 camera = SceneView.lastActiveSceneView.camera;
@@ -916,7 +932,7 @@ namespace UnityEditor
         // *undocumented*
         public static GameObject[] PickRectObjects(Rect rect, bool selectPrefabRootsOnly)
         {
-            Camera cam = Camera.current;
+            Camera cam = GetCurrentCamera();
             rect = EditorGUIUtility.PointsToPixels(rect);
             rect.x /= cam.pixelWidth;
             rect.width /= cam.pixelWidth;
@@ -938,7 +954,7 @@ namespace UnityEditor
 
         public static bool FindNearestVertex(Vector2 guiPoint, Transform[] objectsToSearch, Transform[] objectsToIgnore, out Vector3 vertex, out GameObject gameObject)
         {
-            Camera cam = Camera.current;
+            Camera cam = GetCurrentCamera();
             var screenPoint = EditorGUIUtility.PointsToPixels(guiPoint);
             screenPoint.y = cam.pixelRect.yMax - screenPoint.y;
             gameObject = Internal_FindNearestVertex(cam, screenPoint, objectsToSearch, objectsToIgnore, out vertex, out bool found);
@@ -957,7 +973,7 @@ namespace UnityEditor
 
         public static bool FindNearestVertex(Vector2 guiPoint, Transform[] objectsToSearch, Transform[] objectsToIgnore, out Vector3 vertex)
         {
-            Camera cam = Camera.current;
+            Camera cam = GetCurrentCamera();
             var screenPoint = EditorGUIUtility.PointsToPixels(guiPoint);
             screenPoint.y = cam.pixelRect.yMax - screenPoint.y;
             Internal_FindNearestVertex(cam, screenPoint, objectsToSearch, objectsToIgnore, out vertex, out bool found);
@@ -1079,7 +1095,7 @@ namespace UnityEditor
             List<PickingObject> ignore = null,
             List<PickingObject> filter = null)
         {
-            Camera cam = Camera.current;
+            Camera cam = GetCurrentCamera();
             int layers = cam.cullingMask;
             var screenPosition = GUIPointToScreenPixelCoordinate(guiPosition);
             var sceneView = SceneView.lastActiveSceneView;
@@ -1442,7 +1458,7 @@ namespace UnityEditor
             get
             {
                 InitHandleMaterials();
-                return Camera.current ? s_HandleWireMaterial : s_HandleWireMaterial2D;
+                return GetCurrentCamera() ? s_HandleWireMaterial : s_HandleWireMaterial2D;
             }
         }
 
@@ -1452,7 +1468,7 @@ namespace UnityEditor
             get
             {
                 InitHandleMaterials();
-                return Camera.current ? s_HandleDottedWireMaterial : s_HandleDottedWireMaterial2D;
+                return GetCurrentCamera() ? s_HandleDottedWireMaterial : s_HandleDottedWireMaterial2D;
             }
         }
 
@@ -1489,8 +1505,9 @@ namespace UnityEditor
             // for any later GL.Begin calls.
             mat.SetFloat("_HandleZTest", (float)zTest);
             mat.SetPass(0);
-            int textureIndex = Camera.current ? s_HandleWireTextureIndex : s_HandleWireTextureIndex2D;
-            int samplerIndex = Camera.current ? s_HandleWireTextureSamplerIndex : s_HandleWireTextureSamplerIndex2D;
+            Camera cam = GetCurrentCamera();
+            int textureIndex = cam ? s_HandleWireTextureIndex : s_HandleWireTextureIndex2D;
+            int samplerIndex = cam ? s_HandleWireTextureSamplerIndex : s_HandleWireTextureSamplerIndex2D;
             Internal_SetHandleWireTextureIndex(textureIndex, samplerIndex);
         }
 
@@ -1508,8 +1525,9 @@ namespace UnityEditor
             // for any later GL.Begin calls.
             mat.SetFloat("_HandleZTest", (float)zTest);
             mat.SetPass(0);
-            int textureIndex = Camera.current ? s_HandleDottedWireTextureIndex : s_HandleDottedWireTextureIndex2D;
-            int samplerIndex = Camera.current ? s_HandleDottedWireTextureSamplerIndex : s_HandleDottedWireTextureSamplerIndex2D;
+            Camera cam = GetCurrentCamera();
+            int textureIndex = cam ? s_HandleDottedWireTextureIndex : s_HandleDottedWireTextureIndex2D;
+            int samplerIndex = cam ? s_HandleDottedWireTextureSamplerIndex : s_HandleDottedWireTextureSamplerIndex2D;
             Internal_SetHandleWireTextureIndex(textureIndex, samplerIndex);
         }
 
@@ -1597,7 +1615,7 @@ namespace UnityEditor
         // Casts /ray/ against the scene.
         public static object RaySnap(Ray ray)
         {
-            Camera cam = Camera.current;
+            Camera cam = GetCurrentCamera();
 
             if (cam == null)
                 return null;

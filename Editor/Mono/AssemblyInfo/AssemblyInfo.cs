@@ -138,6 +138,8 @@ using UnityEngine;
 
 [assembly: InternalsVisibleTo("UnityEditor.Android.Extensions")]
 
+[assembly: InternalsVisibleTo("Unity.Entities.Build")]
+
 [assembly: InternalsVisibleTo("Unity.Scenes")]
 
 [assembly: AssemblyIsEditorAssembly]

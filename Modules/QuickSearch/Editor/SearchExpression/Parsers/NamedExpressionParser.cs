@@ -19,7 +19,7 @@ namespace UnityEditor.Search
             if (!match.Success || match.Index != 0 || match.Groups["name"].Length == 0)
                 return null;
 
-            var expressionsStartAndLength = ParserUtils.GetExpressionsStartAndLength(text, out _);
+            var expressionsStartAndLength = ParserUtils.GetExpressionsStartAndLength(text, out _, out _);
             if (expressionsStartAndLength.Length != 1)
                 return null;
 

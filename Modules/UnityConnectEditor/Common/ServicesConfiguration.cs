@@ -19,7 +19,7 @@ namespace UnityEditor.Connect
         const string k_CloudHubServiceUrl = "https://public-cdn.cloud.unity3d.com/editor/production/cloud/hub";
         const string k_CloudUsageDashboardUrl = "/usage";
         const string k_CloudBuildAddTargetUrl = "/setup/platform";
-        const string k_CloudBuildTutorialUrl = "https://unity3d.com/learn/tutorials/topics/cloud-build-0";
+        const string k_CloudBuildTutorialUrl = "https://docs.unity.com/devops/en/manual/unity-build-automation";
         const string k_CloudDiagnosticsUrl = "https://unitytech.github.io/clouddiagnostics/";
         const string k_CloudDiagUserReportingSdkUrl = "https://userreporting.cloud.unity3d.com/api/userreporting/sdk";
         const int k_NoProgressId = -1;
@@ -36,6 +36,7 @@ namespace UnityEditor.Connect
         string m_ProjectServiceFlagsApiUrl;
         string m_CloudDiagCrashesDashboardUrl;
         string m_UnityTeamUrl;
+        string m_LearnMoreCloudBuildUrl;
 
         string m_CloudBuildProjectUrl;
         string m_CloudBuildUploadUrl;
@@ -105,6 +106,7 @@ namespace UnityEditor.Connect
         ServicesConfiguration()
         {
             m_UnityTeamUrl = L10n.Tr("https://unity3d.com/teams"); // Should be https://unity3d.com/fr/teams in French !
+            m_LearnMoreCloudBuildUrl = L10n.Tr("https://unity.com/solutions/ci-cd"); // Should be https://unity3d.com/fr/teams in French !
             PrepareAdsEnvironment(ConvertStringToServerEnvironment(UnityConnect.instance.GetEnvironment()));
             if (!string.IsNullOrEmpty(SessionState.GetString(k_ConfigJsonSessionStateKey, null)))
             {
@@ -147,7 +149,7 @@ namespace UnityEditor.Connect
 
             m_CloudBuildProjectUrl = m_ServicesUrlsConfig["build"] + "/build/orgs/{0}/projects/{1}";
 
-            m_CloudBuildUploadUrl = m_CloudBuildProjectUrl + "/upload/?page=1";
+            m_CloudBuildUploadUrl = m_CloudBuildProjectUrl + "?upload=true";
             m_CloudBuildTargetUrl = m_CloudBuildProjectUrl + "/buildtargets";
             m_CloudBuildApiUrl = m_ServicesUrlsConfig["build-api"];
             m_CloudBuildApiProjectUrl = m_CloudBuildApiUrl + "/api/v1/orgs/{0}/projects/{1}";
@@ -581,6 +583,12 @@ namespace UnityEditor.Connect
             return m_UnityTeamUrl;
         }
 
+        // Return the specific Unity Teams information URL for the Collab service
+        public string GetLearnMoreCloudBuildUrl()
+        {
+            return m_LearnMoreCloudBuildUrl;
+        }
+
         // Return the specific cloud build tutorial URL for the cloud build service
         public string GetCloudBuildTutorialUrl()
         {
@@ -597,7 +605,7 @@ namespace UnityEditor.Connect
 
         public void RequestCloudBuildCurrentProjectUrl(Action<string> callback)
         {
-            RequestCloudBuildProjectsUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId, callback);
+            RequestCloudBuildProjectsUrl(UnityConnect.instance.projectInfo.organizationForeignKey, UnityConnect.instance.projectInfo.projectGUID, callback);
         }
 
         public void RequestCloudBuildProjectsUrl(string organizationId, string projectId, Action<string> callback)

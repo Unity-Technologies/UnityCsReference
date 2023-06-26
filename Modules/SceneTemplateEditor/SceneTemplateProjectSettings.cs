@@ -76,9 +76,9 @@ namespace UnityEditor.SceneTemplate
 
         public bool userAdded;
         public string type;
-        public bool ignore;
+        [NonSerialized] public bool ignore;
         public TemplateInstantiationMode defaultInstantiationMode;
-        public bool supportsModification;
+        [NonSerialized] public bool supportsModification;
 
         GUIContent m_Content;
         public GUIContent content
@@ -354,14 +354,26 @@ namespace UnityEditor.SceneTemplate
                 };
                 needSaving = true;
             }
-
-            foreach (var dependencyTypeInfo in defaultDependencyTypeInfos)
+            else
             {
-                if (dependencyTypeInfos.Find(dti => dti.type == dependencyTypeInfo.type) == null)
+                defaultDependencyTypeInfo.ignore = false;
+                defaultDependencyTypeInfo.supportsModification = true;
+            }            
+
+            foreach (var defaultDti in defaultDependencyTypeInfos)
+            {
+                var dti = dependencyTypeInfos.Find(dti => dti.type == defaultDti.type);
+                if (dti == null)
                 {
-                    var dti = new DependencyTypeInfo(dependencyTypeInfo);
+                    dti = new DependencyTypeInfo(defaultDti);
                     dependencyTypeInfos.Add(dti);
                     needSaving = true;
+                }
+                else
+                {
+                    // These parameters are not considered to be user definable so always override it from default.
+                    dti.ignore = defaultDti.ignore;
+                    dti.supportsModification = defaultDti.supportsModification;
                 }
             }
 
