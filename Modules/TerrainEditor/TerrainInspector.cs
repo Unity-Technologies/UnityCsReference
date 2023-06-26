@@ -199,6 +199,7 @@ namespace UnityEditor
             public readonly GUIContent preserveTreePrototypeLayers = EditorGUIUtility.TextContent("Preserve Tree Prototype Layers|Enable this option if you want your tree instances to take on the layer values of their prototype prefabs, rather than the terrain GameObject's layer.");
             public readonly GUIContent treeAndDetails = EditorGUIUtility.TrTextContent("Tree & Detail Objects");
             public readonly GUIContent drawTrees = EditorGUIUtility.TrTextContent("Draw", "Should trees, grass and details be drawn?");
+            public readonly GUIContent treeMotionVectorOverrideMode = EditorGUIUtility.TrTextContent("Tree Motion Vectors", "Select the motion vector mode to be used for all of the trees painted on the terrain. 'Inherit From Prototype' will use the value from the tree prototype's mesh renderer.");
             public readonly GUIContent detailObjectDistance = EditorGUIUtility.TrTextContent("Detail Distance", "The distance (from camera) beyond which details will be culled.");
             public readonly GUIContent detailObjectDensity = EditorGUIUtility.TrTextContent("Detail Density Scale", "Scaling factor applied to the density of all details. Only affects details with the \"Affected by Density Scale\" option enabled.");
             public readonly GUIContent detailScatterMode = EditorGUIUtility.TrTextContent("Detail Scatter Mode", "The scatter mode type to be used while painting details. Coverage paints areas detail should be populated in based on their density setting, Instance Count paints the amount per sample.");
@@ -1513,6 +1514,10 @@ namespace UnityEditor
                     deringLightProbesForTrees = EditorGUILayout.Toggle(styles.deringLightProbesForTrees, deringLightProbesForTrees);
                 var preserveTreePrototypeLayers = EditorGUILayout.Toggle(styles.preserveTreePrototypeLayers, m_Terrain.preserveTreePrototypeLayers);
 
+                TreeMotionVectorModeOverride treeMotionVectorOverrideMode = m_Terrain.treeMotionVectorModeOverride;
+                using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
+                    treeMotionVectorOverrideMode = (TreeMotionVectorModeOverride)EditorGUILayout.EnumPopup(styles.treeMotionVectorOverrideMode, m_Terrain.treeMotionVectorModeOverride);
+
                 float detailObjectDistance = m_Terrain.detailObjectDistance;
                 bool overrideDetailDistance = overrideFlags.HasFlag(TerrainQualityOverrides.DetailDistance) && !m_Terrain.ignoreQualitySettings;
                 using (new EditorGUI.DisabledScope(overrideDetailDistance))
@@ -1600,6 +1605,7 @@ namespace UnityEditor
                     m_Terrain.treeBillboardDistance = treeBillboardDistance;
                     m_Terrain.treeCrossFadeLength = treeCrossFadeLength;
                     m_Terrain.treeMaximumFullLODCount = treeMaximumFullLODCount;
+                    m_Terrain.treeMotionVectorModeOverride = treeMotionVectorOverrideMode;
 
                     if (m_Terrain.terrainData.detailScatterMode != detailScatterMode)
                     {

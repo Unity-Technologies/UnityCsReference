@@ -542,7 +542,50 @@ namespace UnityEditor.Search
             {
                 if (string.Equals(s, "none", StringComparison.Ordinal) && string.Equals(v.text, string.Empty, StringComparison.Ordinal))
                     return comparer(s, "none");
-                return !string.IsNullOrEmpty(v.text) && comparer(v.text, s);
+                if (string.IsNullOrEmpty(v.text))
+                    return false;
+
+                // Test with the value as is.
+                if (comparer(v.text, s))
+                    return true;
+
+                // Could be an asset path, try to resolve it.
+                if (!v.text.StartsWith("/") && AssetDatabase.AssetPathExists(v.text))
+                {
+                    var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(v.text);
+
+                    // Compare with the name of the asset.
+                    return obj != null && comparer(obj.name, s);
+                }
+
+                // Might be a global object id, try to resolve it.
+                // Note: do this last, as it is slow.
+                if (v.text.StartsWith("GlobalObjectId", StringComparison.Ordinal) && GlobalObjectId.TryParse(v.text, out var goid))
+                {
+                    var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(goid);
+                    if (obj == null)
+                        return false;
+
+                    // Compare name of the object.
+                    if (comparer(obj.name, s))
+                        return true;
+
+                    if (obj is Component c)
+                    {
+                        var tp = SearchUtils.GetTransformPath(c.gameObject.transform);
+                        return comparer(tp, s);
+                    }
+
+                    var assetPath = AssetDatabase.GetAssetPath(obj);
+                    if (!string.IsNullOrEmpty(assetPath) && Utils.IsBuiltInResource(assetPath))
+                        return comparer(assetPath, s);
+
+                    if (obj is GameObject go)
+                    {
+                        var tp = SearchUtils.GetTransformPath(go.transform);
+                        return comparer(tp, s);
+                    }
+                }
             }
             if (v.type == ValueType.Bool)
             {
@@ -566,6 +609,7 @@ namespace UnityEditor.Search
         [PropertyDatabaseSerializer(typeof(SearchValue))]
         internal static PropertyDatabaseRecordValue SearchValueSerializer(PropertyDatabaseSerializationArgs args)
         {
+            // TODO: Figure out why vectors use strings instead of saving the data directly in the record value
             int stringSymbol;
             var gop = (SearchValue)args.value;
             switch (gop.type)
@@ -643,7 +687,7 @@ namespace UnityEditor.Search
 
     class SearchItemQueryEngine : QueryEngine<SearchItem>
     {
-        static Regex PropertyFilterRx = new Regex(@"[\@\$]([#\w\d\.]+)");
+        static Regex PropertyFilterRx = new Regex(@"[\@\$]([#\w\d\.\[\]]+)");
 
         SearchExpressionContext m_Context;
 

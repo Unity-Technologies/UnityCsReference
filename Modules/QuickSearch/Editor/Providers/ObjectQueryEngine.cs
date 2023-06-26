@@ -34,6 +34,7 @@ namespace UnityEditor.Search.Providers
         [ThreadStatic] List<int> m_FuzzyMatches = new List<int>();
 
         public QueryEngine<T> engine => m_QueryEngine;
+        public bool reportError;
 
         private static readonly char[] s_EntrySeparators = { '/', ' ', '_', '-', '.' };
         private static readonly SearchProposition[] s_FixedPropositions = new SearchProposition[]
@@ -149,6 +150,7 @@ namespace UnityEditor.Search.Providers
 
             m_QueryEngine.SetSearchWordMatcher(OnSearchData);
             m_QueryEngine.SetSearchDataCallback(OnSearchData, s => s.ToLowerInvariant(), StringComparison.Ordinal);
+            reportError = true;
         }
 
         public virtual void SetupQueryEnginePropositions()
@@ -203,7 +205,8 @@ namespace UnityEditor.Search.Providers
             var query = m_QueryEngine.ParseQuery(context.searchQuery, true);
             if (!query.valid)
             {
-                context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
+                if (reportError)
+                    context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
                 return Enumerable.Empty<T>();
             }
 

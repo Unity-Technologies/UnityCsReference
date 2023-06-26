@@ -397,16 +397,20 @@ namespace UnityEditor.Search
             if (tableConfig == null)
                 return;
 
+            var uniqueColumns = newColumns.Where(newColumn => tableConfig.columns.All(c => c.selector != newColumn.selector)).ToList();
+            if (uniqueColumns.Count == 0)
+                return;
+
             var searchColumns = new List<SearchColumn>(tableConfig.columns);
             if (insertColumnAt == -1)
                 insertColumnAt = searchColumns.Count;
             var columnCountBefore = searchColumns.Count;
-            searchColumns.InsertRange(insertColumnAt, newColumns);
+            searchColumns.InsertRange(insertColumnAt, uniqueColumns);
 
             var columnAdded = searchColumns.Count - columnCountBefore;
             if (columnAdded > 0)
             {
-                var firstColumn = newColumns.First();
+                var firstColumn = uniqueColumns.First();
                 var e = SearchAnalytics.GenericEvent.Create(null, SearchAnalytics.GenericEventType.QuickSearchTableAddColumn, firstColumn.name);
                 e.intPayload1 = columnAdded;
                 e.message = firstColumn.provider;

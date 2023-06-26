@@ -24,6 +24,7 @@ using System.Linq;
 using System.Reflection;
 using Unity.Profiling;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -2950,7 +2951,7 @@ namespace UnityEditor
             return f < 0.0f ? -result : result;
         }
 
-        internal static GenericMenu FillPropertyContextMenu(SerializedProperty property, SerializedProperty linkedProperty = null, GenericMenu menu = null)
+        internal static GenericMenu FillPropertyContextMenu(SerializedProperty property, SerializedProperty linkedProperty = null, GenericMenu menu = null, VisualElement element = null)
         {
             if (property == null)
                 return null;
@@ -3125,6 +3126,7 @@ namespace UnityEditor
                         pm.AddItem(EditorGUIUtility.TrTextContent("Duplicate Array Element"), false, (a) =>
                         {
                             var list = ReorderableList.GetReorderableListFromSerializedProperty(parentArrayProperty);
+                            var listView = element?.GetFirstAncestorOfType<ListView>();
 
                             // If we have a ReorderableList associated with this property lets use list selection array
                             // and apply this action to all selected elements thus having better integration with
@@ -3152,6 +3154,10 @@ namespace UnityEditor
 
                                 ReorderableList.InvalidateExistingListCaches();
                             }
+                            else if (listView != null && listView.selectedIndices.Any())
+                            {
+                                DuplicateListViewItems(listView, parentArrayProperty);
+                            }
                             else // Non reorderable
                             {
                                 if (parentArrayIndex >= 0 && parentArrayIndex < parentArrayProperty.arraySize)
@@ -3178,6 +3184,7 @@ namespace UnityEditor
                         pm.AddItem(EditorGUIUtility.TrTextContent("Delete Array Element"), false, (a) =>
                         {
                             var list = ReorderableList.GetReorderableListFromSerializedProperty(parentArrayProperty);
+                            var listView = element?.GetFirstAncestorOfType<ListView>();
 
                             // If we have a ReorderableList associated with this property lets use list selection array
                             // and apply this action to all selected elements thus having better integration with
@@ -3200,6 +3207,10 @@ namespace UnityEditor
                                 if (list.onChangedCallback != null)
                                     list.onChangedCallback(list);
                                 ReorderableList.InvalidateExistingListCaches();
+                            }
+                            else if (listView != null && listView.selectedIndices.Any())
+                            {
+                                DeleteListViewItems(listView, parentArrayProperty);
                             }
                             else // Non reorderable
                             {
@@ -3272,6 +3283,60 @@ namespace UnityEditor
             EditorGUIUtility.ContextualPropertyMenuCallback(pm, property);
 
             return pm;
+        }
+
+        internal static void DeleteListViewItems(ListView listView, SerializedProperty parentArrayProperty)
+        {
+            var previousSelectedIndices = new List<int>(listView.selectedIndices);
+            previousSelectedIndices.Sort();
+            listView.ClearSelection();
+
+            for (int i = previousSelectedIndices.Count - 1; i >= 0; i--)
+            {
+                var index = previousSelectedIndices.ElementAt(i);
+                if (index >= listView.itemsSource.Count) continue;
+
+                SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(index);
+                if (resolvedProperty != null)
+                {
+                    if (!TargetChoiceHandler.DeleteArrayElement(resolvedProperty)) continue;
+                }
+            }
+        }
+
+        internal static void DuplicateListViewItems(ListView listView, SerializedProperty parentArrayProperty)
+        {
+            var previousSelectedIndices = new List<int>(listView.selectedIndices);
+            previousSelectedIndices.Sort();
+            var newSelectedIndices = new List<int>();
+            listView.ClearSelection();
+
+            for (int i = previousSelectedIndices.Count - 1; i >= 0; i--)
+            {
+                var index = previousSelectedIndices.ElementAt(i);
+                if (index >= listView.itemsSource.Count) continue;
+
+                SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(index);
+                if (resolvedProperty != null)
+                {
+                    if (!TargetChoiceHandler.DuplicateArrayElement(resolvedProperty)) continue;
+                }
+
+                // need to update the rest of the selected indices as an element was added
+                for (int j = i + 1; j < previousSelectedIndices.Count; j++)
+                {
+                    previousSelectedIndices[j]++;
+                }
+
+                for (int j = 0; j < newSelectedIndices.Count; j++)
+                {
+                    newSelectedIndices[j]++;
+                }
+
+                newSelectedIndices.Add(previousSelectedIndices[i] + 1);
+            }
+
+            listView.SetSelection(newSelectedIndices);
         }
 
         internal static void GoToPrefab(string assetPath, GameObject openedFromInstance)
@@ -6325,7 +6390,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        content.tooltip = string.Format("Open Reference for {0}.", helpTopic);
+                        content.tooltip = string.Format("Open Reference for {0}.", ObjectNames.NicifyVariableName(helpTopic));
                     }
                 }
 

@@ -45,7 +45,6 @@ namespace UnityEditor.Connect
         const string k_HistoryButtonName = "HistoryButton";
         const string k_UploadButtonName = "UploadButton";
         const string k_ManageTargetButton = "ManageTargetButton";
-        const string k_AddTargetButton = "AddTargetButton";
         const string k_NoTargetContainer = "NoTargetContainer";
         const string k_PollFooterSectionName = "PollFooterSection";
         const string k_PollFooterName = "PollFooter";
@@ -90,13 +89,13 @@ namespace UnityEditor.Connect
 
         const string k_LaunchBuildPayload = "{\"clean\":false}";
 
-        const string k_MessageErrorForProjectData = "An unexpected error occurred while querying Cloud Build for current project data. See the console for more information.";
-        const string k_MessageErrorForProjectTeamData = "An unexpected error occurred while querying Cloud Build for current project team data. See the console for more information.";
-        const string k_MessageErrorForProjectBuildTargetsData = "An unexpected error occurred while querying Cloud Build for current project configured build targets. See the console for more information.";
-        const string k_MessageProjectStateMismatch = "There is a mismatch between local and web configuration for Cloud Build. Please open the Cloud Build web dashboard and enable the current project.";
-        const string k_MessageErrorForApiStatusData = "An unexpected error occurred while querying Cloud Build for api status. See the console for more information.";
+        const string k_MessageErrorForProjectData = "An unexpected error occurred while querying Unity Build Automation for current project data. See the console for more information.";
+        const string k_MessageErrorForProjectTeamData = "An unexpected error occurred while querying Unity Build Automation for current project team data. See the console for more information.";
+        const string k_MessageErrorForProjectBuildTargetsData = "An unexpected error occurred while querying Unity Build Automation for current project configured build targets. See the console for more information.";
+        const string k_MessageProjectStateMismatch = "There is a mismatch between local and web configuration for Unity Build Automation. Please open the Unity Build Automation web dashboard and enable the current project.";
+        const string k_MessageErrorForApiStatusData = "An unexpected error occurred while querying Unity Build Automation for api status. See the console for more information.";
         const string k_MessageErrorForBuildLaunch = "An unexpected error occurred while launching a build. See the console for more information.";
-        const string k_CloudBuildPermissionMessage = "You do not have sufficient permissions to enable / disable Cloud Build service.";
+        const string k_CloudBuildPermissionMessage = "You do not have sufficient permissions to enable / disable Unity Build Automation service.";
 
         const string k_MessageLaunchingBuild = "Starting build {0}.";
         const string k_MessageLaunchedBuildSuccess = "Build #{0} {1} added to queue";
@@ -267,7 +266,7 @@ namespace UnityEditor.Connect
             {
                 var clickable = new Clickable(() =>
                 {
-                    Application.OpenURL(ServicesConfiguration.instance.GetUnityTeamInfoUrl());
+                    Application.OpenURL(ServicesConfiguration.instance.GetLearnMoreCloudBuildUrl());
                 });
                 learnMore.AddManipulator(clickable);
             }
@@ -466,17 +465,6 @@ namespace UnityEditor.Connect
                     };
                     manageTargetButton.style.display = DisplayStyle.None;
                 }
-                var addTargetButton = m_Provider.rootVisualElement.Q<Button>(k_AddTargetButton);
-                if (addTargetButton != null)
-                {
-                    addTargetButton.clicked += () =>
-                    {
-                        ServicesConfiguration.instance.RequestCloudBuildAddTargetUrl(cloudBuildAddTargetUrl =>
-                        {
-                            Application.OpenURL(cloudBuildAddTargetUrl);
-                        });
-                    };
-                }
                 m_Provider.UpdateServiceToggleAndDashboardLink(m_Provider.serviceInstance.IsServiceEnabled());
 
                 ResetData();
@@ -656,6 +644,9 @@ namespace UnityEditor.Connect
                             var jsonParser = new JSONParser(m_Provider.m_GetProjectBuildTargetsRequest.downloadHandler.text);
                             var json = jsonParser.Parse();
                             var buildEntryList = json.AsList();
+
+                            m_Provider.rootVisualElement.Q(k_ManageTargetButton).style.display = DisplayStyle.Flex;
+
                             if (buildEntryList.Count <= 0)
                             {
                                 CloudBuildPoller.instance.Disable();
@@ -663,8 +654,6 @@ namespace UnityEditor.Connect
                             else
                             {
                                 m_Provider.rootVisualElement.Q(k_NoTargetContainer).style.display = DisplayStyle.None;
-                                m_Provider.rootVisualElement.Q(k_AddTargetButton).style.display = DisplayStyle.None;
-                                m_Provider.rootVisualElement.Q(k_ManageTargetButton).style.display = DisplayStyle.Flex;
                                 m_Provider.rootVisualElement.Q(k_PollFooterName).style.display = DisplayStyle.Flex;
                                 m_Provider.rootVisualElement.Q(k_PollFooterSectionName).style.display = DisplayStyle.Flex;
 

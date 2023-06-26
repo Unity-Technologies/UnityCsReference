@@ -35,7 +35,7 @@ namespace UnityEditor
             public static GUIContent UseReflectionProbes = EditorGUIUtility.TrTextContent("Reflection Probes", "The tree uses reflection probe for rendering"); // TODO: update help text
 
             public static GUIContent AdditionalSettingsHeader = EditorGUIUtility.TrTextContent("Additional Settings");
-            // TODO: motion vector settings?
+            public static GUIContent MotionVectorMode = EditorGUIUtility.TrTextContent("Motion Vectors", "Motion vector mode to set for the mesh renderer of each LOD object");
 
             public static GUIContent WindHeader = EditorGUIUtility.TrTextContent("Wind");
             public static GUIContent WindQuality = EditorGUIUtility.TrTextContent("Wind Quality", "Controls the wind effect's quality.");
@@ -63,6 +63,12 @@ namespace UnityEditor
                 , new GUIContent("inch to m")
                 , new GUIContent("Custom")
             };
+            public static GUIContent[] MotionVectorModeNames =  // Match SharedRendererDataTypes.h / enum MotionVectorGenerationMode
+            {
+                  new GUIContent("Camera Motion Only")  // kMotionVectorCamera = 0,    // Use camera motion for motion vectors
+                , new GUIContent("Per Object Motion")   // kMotionVectorObject,        // Use a per object motion vector pass for this object
+                , new GUIContent("Force No Motion")     // kMotionVectorForceNoMotion, // Force no motion for this object (0 into motion buffer)
+            };
         }
 
         //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -72,6 +78,7 @@ namespace UnityEditor
         // mesh 
         private SerializedProperty m_ScaleFactor;
         private SerializedProperty m_UnitConversionEnumValue;
+        private SerializedProperty m_MotionVectorModeEnumValue;
 
         // material
         private SerializedProperty m_MainColor;
@@ -123,6 +130,7 @@ namespace UnityEditor
         {
             m_ScaleFactor = serializedObject.FindProperty("m_ScaleFactor");
             m_UnitConversionEnumValue = serializedObject.FindProperty("m_UnitConversionEnumValue");
+            m_MotionVectorModeEnumValue = serializedObject.FindProperty("m_MotionVectorModeEnumValue");
 
             m_MainColor = serializedObject.FindProperty("m_MainColor");
             m_EnableHueVariation = serializedObject.FindProperty("m_EnableHueVariation");
@@ -274,6 +282,14 @@ namespace UnityEditor
             return false;
         }
 
+        private void ShowAdditionalSettingsGUI()
+        {
+            // motion vectors
+            GUILayout.Label(Styles.AdditionalSettingsHeader, EditorStyles.boldLabel);
+            EditorGUILayout.Popup(m_MotionVectorModeEnumValue, Styles.MotionVectorModeNames, Styles.MotionVectorMode);
+
+            EditorGUILayout.Space();
+        }
 
         public override void OnInspectorGUI()
         {
@@ -281,6 +297,7 @@ namespace UnityEditor
             ShowMeshGUI();
             ShowMaterialGUI();
             ShowLightingGUI();
+            ShowAdditionalSettingsGUI();
             ShowWindGUI();
             ShowLODGUI();
 
