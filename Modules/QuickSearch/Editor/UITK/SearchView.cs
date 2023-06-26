@@ -396,7 +396,13 @@ namespace UnityEditor.Search
         }
 
         private void UpdateSelectionFromIds()
-        {
+        {            
+            if (selection.SyncSelectionIfInvalid())
+            {
+                SetSelection(trackSelection: false, selection.indexes.ToArray());
+                return;
+            }
+
             if (viewState.selectedIds.Length == 0 || selection.Count != 0)
                 return;
 

@@ -11,7 +11,7 @@ namespace UnityEditor.Connect
         public override string title { get; }
         public override string description { get; }
         public override string pathTowardIcon { get; }
-        public override string projectSettingsPath { get; } = "Project/Services/Cloud Build";
+        public override string projectSettingsPath { get; } = "Project/Services/Build Automation";
         public override string settingsProviderClassName => nameof(CloudBuildProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.BuildService;
@@ -39,7 +39,7 @@ namespace UnityEditor.Connect
         BuildService()
         {
             name = "Build";
-            title = L10n.Tr("Cloud Build");
+            title = L10n.Tr("Build Automation");
             description = L10n.Tr("Build games faster");
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Build.png";
             displayToggle = true;

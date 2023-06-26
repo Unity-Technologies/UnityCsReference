@@ -2,17 +2,42 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using UnityEditor;
+using Unity.Profiling;
 using UnityEditor.Search.Providers;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace UnityEditor.Search
 {
+    readonly struct PrefabPropertyIndexKey
+    {
+        public readonly int documentIndex;
+        public readonly int instanceId;
+
+        public PrefabPropertyIndexKey(int documentIndex, int instanceId)
+        {
+            this.documentIndex = documentIndex;
+            this.instanceId = instanceId;
+        }
+    }
+
+    struct PrefabPropertyIndexData
+    {
+        public bool isModified;
+        public bool isAltered;
+    }
+
     static class IndexerExtensions
     {
+        static readonly ProfilerMarker k_IndexPrefabPropertiesMarker = new($"{nameof(IndexerExtensions)}.{nameof(IndexPrefabProperties)}");
+
+        static ConcurrentDictionary<ObjectIndexer, HashSet<PrefabPropertyIndexKey>> s_PrefabIndexCaches = new();
+        static ConcurrentDictionary<ObjectIndexer, Dictionary<int, PrefabPropertyIndexData>> s_PrefabInstanceRootCaches = new();
+
         [CustomObjectIndexer(typeof(GameObject), version = 2)]
         internal static void IndexPrefabTypes(CustomObjectIndexerTarget context, ObjectIndexer indexer)
         {
@@ -23,6 +48,13 @@ namespace UnityEditor.Search
 
         internal static void IndexPrefabProperties(int documentIndex, GameObject prefab, ObjectIndexer indexer)
         {
+            using var _ = k_IndexPrefabPropertiesMarker.Auto();
+
+            var prefabIndexCache = s_PrefabIndexCaches.GetOrAdd(indexer, _ => new HashSet<PrefabPropertyIndexKey>());
+            var key = new PrefabPropertyIndexKey(documentIndex, prefab.GetInstanceID());
+            if (prefabIndexCache.Contains(key))
+                return; // Already indexed
+
             var prefabType = PrefabUtility.GetPrefabAssetType(prefab);
             indexer.IndexProperty(documentIndex, "prefab", prefabType.ToString(), saveKeyword: true, exact: true);
 
@@ -42,11 +74,40 @@ namespace UnityEditor.Search
                 indexer.IndexProperty(documentIndex, "prefab", "base", saveKeyword: true, exact: true);
             }
 
-            if (PrefabUtility.HasPrefabInstanceAnyOverrides(prefab, false))
-                indexer.IndexProperty(documentIndex, "prefab", "modified", saveKeyword: true, exact: true);
+            var instanceRoot = PrefabUtility.GetPrefabInstanceHandle(prefab);
+            var instanceRootId = instanceRoot != null ? instanceRoot.GetInstanceID() : 0;
+            var indexerDictionary = s_PrefabInstanceRootCaches.GetOrAdd(indexer, _ => new Dictionary<int, PrefabPropertyIndexData>());
 
-            if (PrefabUtility.HasPrefabInstanceAnyOverrides(prefab, true))
-                indexer.IndexProperty(documentIndex, "prefab", "altered", saveKeyword: true, exact: true);
+            if (instanceRoot != null && indexerDictionary.TryGetValue(instanceRootId, out var data))
+            {
+                if (data.isModified)
+                    indexer.IndexProperty(documentIndex, "prefab", "modified", saveKeyword: true, exact: true);
+                if (data.isAltered)
+                    indexer.IndexProperty(documentIndex, "prefab", "altered", saveKeyword: true, exact: true);
+            }
+            else
+            {
+                var newData = new PrefabPropertyIndexData
+                {
+                    isModified = PrefabUtility.HasPrefabInstanceAnyOverrides(prefab, false),
+                    isAltered = PrefabUtility.HasPrefabInstanceAnyOverrides(prefab, true)
+                };
+                if (newData.isModified)
+                    indexer.IndexProperty(documentIndex, "prefab", "modified", saveKeyword: true, exact: true);
+                if (newData.isAltered)
+                    indexer.IndexProperty(documentIndex, "prefab", "altered", saveKeyword: true, exact: true);
+
+                if (instanceRoot != null)
+                    indexerDictionary.TryAdd(instanceRootId, newData);
+            }
+
+            prefabIndexCache.Add(key);
+        }
+
+        internal static void ClearIndexerCaches(ObjectIndexer indexer)
+        {
+            s_PrefabIndexCaches.TryRemove(indexer, out _);
+            s_PrefabInstanceRootCaches.TryRemove(indexer, out _);
         }
 
         [SearchSelector("prefabtype", provider: "scene")]
@@ -327,7 +388,7 @@ namespace UnityEditor.Search
                 indexer.MapProperty(propertyName, label ?? propertyName, null, "Vector4", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
         }
 
-        [SceneQueryEngineFilter("material", supportedOperators = new[] { ":" })]
+        [SceneQueryEngineFilter("material", new[] { ":" }, "material:<$object:none,Material$>")]
         [System.ComponentModel.Description("Check if a MeshRenderer uses a specific material")]
         internal static bool FilterMeshRendererMaterials(GameObject go, string op, string value)
         {
@@ -340,6 +401,19 @@ namespace UnityEditor.Search
                 var mname = m.name.Replace(" (Instance)", "");
                 if (mname.IndexOf(value, System.StringComparison.OrdinalIgnoreCase) != -1)
                     return true;
+
+                // Try with the asset path of the material.
+                var path = AssetDatabase.GetAssetPath(m);
+                if (!string.IsNullOrEmpty(path) && path.IndexOf(value, StringComparison.OrdinalIgnoreCase) != -1)
+                    return true;
+
+                // Try with the GlobalObjectId of the material.
+                if (value.StartsWith("GlobalObjectId", StringComparison.Ordinal))
+                {
+                    var goid = GlobalObjectId.GetGlobalObjectIdSlow(m);
+                    if (goid.ToString().Equals(value, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
             }
 
             return false;

@@ -85,7 +85,12 @@ namespace UnityEditor.Search.Providers
                 yield break;
 
             if (m_ResourcesQueryEngine == null)
-                m_ResourcesQueryEngine = new ObjectQueryEngine();
+            {
+                m_ResourcesQueryEngine = new ObjectQueryEngine()
+                {
+                    reportError = false
+                };
+            }
 
             // Search asset database
             foreach (var id in EnumerateInstanceIDs(context))

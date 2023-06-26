@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
@@ -14,6 +13,8 @@ namespace UnityEditor.Search
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "search-renamable-label";
+
+        public static readonly string labelClassName = ussClassName.WithUssElement("label");
 
         Label m_Label;
         TextField m_TextField;
@@ -34,6 +35,7 @@ namespace UnityEditor.Search
             AddToClassList(ussClassName);
 
             m_Label = new Label(text);
+            m_Label.AddToClassList(labelClassName);
             Add(m_Label);
         }
 

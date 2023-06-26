@@ -430,7 +430,7 @@ namespace UnityEditor.Search
                 this.value = Utils.ToString(v4);
                 this.formatValue = v4;
             }
-            else if (!string.IsNullOrEmpty(value) && TryParseObjectValue(value, out var objValue))
+            else if (Utils.TryParseObjectValue(value, out var objValue))
             {
                 format = QueryBlockFormat.Object;
                 formatValue = objValue;
@@ -445,40 +445,7 @@ namespace UnityEditor.Search
 
             return true;
         }
-
-        private static bool TryParseObjectValue(in string value, out UnityEngine.Object objValue)
-        {
-            objValue = null;
-            if (string.Equals("none", value, StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            if (value.StartsWith("GlobalObjectId", StringComparison.Ordinal) && GlobalObjectId.TryParse(value, out var gid))
-            {
-                objValue = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(gid);
-                return objValue != null;
-            }
-
-            // ADB prints a warning if the path starts with /
-            if (!value.StartsWith("/") && AssetDatabase.AssetPathExists(value))
-            {
-                var guid = AssetDatabase.AssetPathToGUID(value);
-                if (!string.IsNullOrEmpty(guid))
-                {
-                    objValue = AssetDatabase.LoadMainAssetAtPath(value);
-                    return true;
-                }
-            }
-
-            // Try to get the corresponding gameObject from the scene.
-            var go = GameObject.Find(value);
-            if (go)
-            {
-                objValue = go;
-                return true;
-            }
-            return false;
-        }
-
+        
         private void ParseMarker(in QueryMarker marker)
         {
             this.marker = marker;

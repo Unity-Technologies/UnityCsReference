@@ -450,7 +450,7 @@ namespace UnityEditor.UIElements.Bindings
             if (!element.enabledInHierarchy)
                 GUI.enabled = false;
 
-            var menu = EditorGUI.FillPropertyContextMenu(property);
+            var menu = EditorGUI.FillPropertyContextMenu(property, null, null, element);
             GUI.enabled = wasEnabled;
 
             if (menu == null)

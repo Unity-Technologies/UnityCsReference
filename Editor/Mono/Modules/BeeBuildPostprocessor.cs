@@ -207,7 +207,7 @@ namespace UnityEditor.Modules
                 LinkXmlFiles = AssemblyStripper.GetLinkXmlFiles(args, linkerInputDirectory),
                 EditorToLinkerData = AssemblyStripper.WriteEditorData(args, linkerInputDirectory),
                 AssembliesToProcess = assembliesToProcess.ToArray(),
-                Runtime = GetScriptingBackend(args).ToString().ToLower(),
+                Runtime = GetScriptingBackend(args).ToString().ToLowerInvariant(),
                 Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(
                     PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target),
                 Ruleset = strippingLevel switch

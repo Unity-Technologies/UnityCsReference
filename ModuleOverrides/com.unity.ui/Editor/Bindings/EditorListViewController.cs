@@ -77,6 +77,7 @@ namespace UnityEditor.UIElements.Bindings
 
             RaiseItemsRemoved(indices);
 
+            var listCount = serializedObjectList.Count;
             for (var i = indices.Count - 1; i >= 0; i--)
             {
                 var index = indices[i];
@@ -87,7 +88,8 @@ namespace UnityEditor.UIElements.Bindings
                     index--;
                 }
 
-                serializedObjectList.RemoveAt(index);
+                serializedObjectList.RemoveAt(index, listCount);
+                listCount--;
             }
 
             serializedObjectList.ApplyChanges();

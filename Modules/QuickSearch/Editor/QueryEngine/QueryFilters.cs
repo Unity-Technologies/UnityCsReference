@@ -259,9 +259,9 @@ namespace UnityEditor.Search
 
         void ValidateRegexToken()
         {
-            // Group 0 is the match, group 1 if the first group
-            if (regexToken.GetGroupNumbers().Length != 2)
-                Debug.LogWarning($"Filter regex \"{regexToken}\" must have exactly one capturing group.");
+            // Group 0 is the match, group 1 is the first group
+            if (regexToken.GetGroupNumbers().Length > 2)
+                Debug.LogWarning($"Filter regex \"{regexToken}\" cannot have more than one capturing group.");
         }
 
         public override int GetHashCode()

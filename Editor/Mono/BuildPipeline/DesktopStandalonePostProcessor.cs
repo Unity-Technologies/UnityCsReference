@@ -23,7 +23,7 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
             GetPlatformString(args),
             GetServer(args) ? "server" : "player",
             GetDevelopment(args) ? "development" : "nondevelopment",
-            GetScriptingBackend(args).ToString().ToLower());
+            GetScriptingBackend(args).ToString().ToLowerInvariant());
     }
 
     protected bool GetServer(BuildPostProcessArgs args) =>

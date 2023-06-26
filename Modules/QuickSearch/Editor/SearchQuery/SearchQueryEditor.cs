@@ -61,13 +61,26 @@ namespace UnityEditor.Search
             m_HeaderElement.Add(new UIElements.PropertyField(m_IsSearchTemplateProperty));
             m_HeaderElement.Add(new UIElements.PropertyField(m_IconProperty));
 
+            var searchTextElement = new VisualElement();
+            searchTextElement.style.flexDirection = FlexDirection.Row;
             var searchQueryTextEditor = new UIElements.PropertyField(m_TextProperty);
+            searchQueryTextEditor.style.flexGrow = 1;
             searchQueryTextEditor.RegisterValueChangeCallback(evt => {
-                m_ResultView.context.searchText = evt.changedProperty.stringValue;
+                if (evt.changedProperty.stringValue != m_ResultView.context.searchText)
+                {
+                    m_ResultView.context.searchText = evt.changedProperty.stringValue;
+                    m_ResultView.Refresh();
+                }
+            });
+            searchTextElement.Add(searchQueryTextEditor);
+            var refreshButton = new Button(() =>
+            {
                 m_ResultView.Refresh();
             });
+            refreshButton.text = L10n.Tr("Refresh");
+            searchTextElement.Add(refreshButton);
 
-            m_HeaderElement.Add(searchQueryTextEditor);
+            m_HeaderElement.Add(searchTextElement);
             m_HeaderElement.Add(new UIElements.PropertyField(m_DescriptionProperty));
 
             if (Unsupported.IsSourceBuild())

@@ -1257,6 +1257,44 @@ namespace UnityEditor.Search
             return attrs[0] as T;
         }
 
+        internal static bool TryParseObjectValue(in string value, out UnityEngine.Object objValue)
+        {            
+            objValue = null;
+            if (string.IsNullOrEmpty(value))
+            {
+                return false;
+            }
+
+            if (string.Equals("none", value, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (value.StartsWith("GlobalObjectId", StringComparison.Ordinal) && GlobalObjectId.TryParse(value, out var gid))
+            {
+                objValue = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(gid);
+                return objValue != null;
+            }
+
+            // ADB prints a warning if the path starts with /
+            if (!value.StartsWith("/") && AssetDatabase.AssetPathExists(value))
+            {
+                var guid = AssetDatabase.AssetPathToGUID(value);
+                if (!string.IsNullOrEmpty(guid))
+                {
+                    objValue = AssetDatabase.LoadMainAssetAtPath(value);
+                    return true;
+                }
+            }
+
+            // Try to get the corresponding gameObject from the scene.
+            var go = GameObject.Find(value);
+            if (go)
+            {
+                objValue = go;
+                return true;
+            }
+            return false;
+        }
+
         internal static bool IsBuiltInResource(UnityEngine.Object obj)
         {
             var resPath = AssetDatabase.GetAssetPath(obj);

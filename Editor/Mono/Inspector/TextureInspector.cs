@@ -237,7 +237,10 @@ namespace UnityEditor
         {
             RestoreLastTextureMipLevels();
 
+            m_TextureMipLevels.Clear();
+
             m_CubemapPreview.OnDisable();
+            m_Texture3DPreview.OnDisable();
             DestroyImmediate(m_Texture3DPreview);
         }
 

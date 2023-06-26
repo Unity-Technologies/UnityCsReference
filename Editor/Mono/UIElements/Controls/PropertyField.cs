@@ -672,6 +672,7 @@ namespace UnityEditor.UIElements
             {
                 listView = factory();
                 listView.showBorder = true;
+                listView.selectionType = SelectionType.Multiple;
                 listView.showAddRemoveFooter = true;
                 listView.showBoundCollectionSize = true;
                 listView.showFoldoutHeader = true;
