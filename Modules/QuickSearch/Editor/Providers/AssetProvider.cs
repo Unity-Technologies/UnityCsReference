@@ -378,7 +378,7 @@ namespace UnityEditor.Search.Providers
                 .Select(kw => new SearchProposition(category: null, label: kw));
         }
 
-        static string[] s_DefaultFilters = new[] { "t", "a", "l", "prefab", "b", "is", "tag", "dir", "size", "ext", "age", "name", "ref" };
+        static string[] s_DefaultFilters = new[] { "t", "a", "l", "prefab", "b", "is", "tag", "dir", "size", "ext", "age", "name", "ref", "tagstring" };
         private static IEnumerable<string> PopulateDefaultFilters()
         {
             return s_DefaultFilters;

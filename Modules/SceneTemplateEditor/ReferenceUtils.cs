@@ -58,6 +58,9 @@ namespace UnityEditor.SceneTemplate
             var objects = new List<Object>();
             foreach (var dstPath in pathMap.Values)
             {
+                // In case of subscene, we cannot call LoadAllAssetsAtPath on it. It creates loading error.
+                if (dstPath.EndsWith(".unity"))
+                    continue;
                 var assetsInDstPath = AssetDatabase.LoadAllAssetsAtPath(dstPath);
                 foreach (var o in assetsInDstPath)
                 {

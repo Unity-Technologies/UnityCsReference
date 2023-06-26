@@ -312,7 +312,7 @@ namespace UnityEditor.Search
                 if (mi.ReturnType == typeof(Vector4))
                     value = "(,,,)";
 
-                var replacement = $"{attr.token}{op}{value}";
+                var replacement = attr.propositionReplacement ?? $"{attr.token}{op}{value}";
 
                 var descriptionAttr = mi.GetAttribute<System.ComponentModel.DescriptionAttribute>();
                 if (descriptionAttr != null)

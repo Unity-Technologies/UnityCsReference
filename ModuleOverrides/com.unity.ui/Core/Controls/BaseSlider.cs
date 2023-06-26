@@ -308,6 +308,7 @@ namespace UnityEngine.UIElements
 
             dragContainer = new VisualElement() { name = "unity-drag-container" };
             dragContainer.AddToClassList(dragContainerUssClassName);
+            dragContainer.RegisterCallback<GeometryChangedEvent>(UpdateDragElementPosition);
             visualInput.Add(dragContainer);
 
             trackElement = new VisualElement() { name = "unity-tracker", usageHints = UsageHints.DynamicColor };

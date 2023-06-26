@@ -8,7 +8,6 @@ namespace UnityEditor.Connect
     {
         public const int ExploreServicesTopMenuPriority = int.MinValue;
         public const int GeneralSettingsServicesTopMenuPriority = int.MinValue + 1;
-
         public const string ExploreServicesPackageManagerFilter = "UnityRegistry/services";
     }
 }
