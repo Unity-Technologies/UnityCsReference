@@ -2954,11 +2954,15 @@ namespace UnityEditor
             m_Camera.useOcclusionCulling = m_CameraSettings.occlusionCulling;
             m_Camera.transform.position = m_Position.value + m_Camera.transform.rotation * new Vector3(0, 0, -cameraDistance);
 
-            // In 2D mode, camera position z should not go to positive value.
+            // In 2D mode, camera position z should not go to positive value
             if (m_2DMode && m_Camera.transform.position.z >= 0)
             {
                 var p = m_Camera.transform.position;
-                p.z = -(m_Camera.nearClipPlane + 0.01f);
+                // when clamping the camera distance, choose a point far from origin to avoid obscuring objects with the
+                // near clip plane. see https://fogbugz.unity3d.com/f/cases/1353387/
+                var z = -(100f + m_Camera.nearClipPlane + 0.01f);
+                m_Camera.farClipPlane += p.z - z;
+                p.z = z;
                 m_Camera.transform.position = p;
             }
 

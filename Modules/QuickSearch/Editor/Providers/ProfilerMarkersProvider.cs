@@ -62,16 +62,17 @@ namespace UnityEditor.Search.Providers
         List<ProfilerRecorderInfo> m_Recorders = new();
         bool m_Enabled;
 
-        int m_SecondUnitTypeHandle;
-        int m_ByteUnitTypeHandle;
-        int m_PercentUnitTypeHandle;
-        int m_HertzUnitTypeHandle;
+        static readonly UnitTypeHandle k_SecondUnitTypeHandle = UnitType.GetHandle("s");
+        static readonly UnitTypeHandle k_ByteUnitTypeHandle = UnitType.GetHandle("b");
+        static readonly UnitTypeHandle k_PercentUnitTypeHandle = UnitType.GetHandle("%");
+        static readonly UnitTypeHandle k_HertzUnitTypeHandle = UnitType.GetHandle("hz");
 
         [SearchItemProvider]
         public static SearchProvider CreateProvider()
         {
             var p = new ProfilerMarkersProvider(providerId, "Profiler Markers");
             p.Initialize();
+            p.filterId = "profile:";
             return p;
         }
 
@@ -86,10 +87,10 @@ namespace UnityEditor.Search.Providers
             AddPerformanceLimit(samplePeakSelector, ProfilerMarkerDataUnit.Bytes, 100 * k_KiloByte, k_MegaByte);
             AddPerformanceLimit(sampleAvgSelector, ProfilerMarkerDataUnit.Bytes, 100 * k_KiloByte, k_MegaByte);
 
-            m_SecondUnitTypeHandle = AddUnitType("s", UnitPowerType.One, UnitPowerType.Milli, UnitPowerType.Micro, UnitPowerType.Nano);
-            m_ByteUnitTypeHandle = AddUnitType("b", UnitPowerType.One, UnitPowerType.Kilo, UnitPowerType.Mega, UnitPowerType.Giga, UnitPowerType.Tera, UnitPowerType.Peta);
-            m_PercentUnitTypeHandle = AddUnitType("%", UnitPowerType.One);
-            m_HertzUnitTypeHandle = AddUnitType("hz", UnitPowerType.One, UnitPowerType.Kilo, UnitPowerType.Mega, UnitPowerType.Giga, UnitPowerType.Tera, UnitPowerType.Peta);
+            AddUnitType("s", k_SecondUnitTypeHandle, UnitPowerType.One, UnitPowerType.Milli, UnitPowerType.Micro, UnitPowerType.Nano);
+            AddUnitType("b", k_ByteUnitTypeHandle, UnitPowerType.One, UnitPowerType.Kilo, UnitPowerType.Mega, UnitPowerType.Giga, UnitPowerType.Tera, UnitPowerType.Peta);
+            AddUnitType("%", k_PercentUnitTypeHandle, UnitPowerType.One);
+            AddUnitType("hz", k_HertzUnitTypeHandle, UnitPowerType.One, UnitPowerType.Kilo, UnitPowerType.Mega, UnitPowerType.Giga, UnitPowerType.Tera, UnitPowerType.Peta);
         }
 
         public override void Initialize()
@@ -210,26 +211,22 @@ namespace UnityEditor.Search.Providers
             if (args.value == null)
                 return string.Empty;
 
+            var valueWithUnit = (ValueWithUnit)args.value;
             if (args.column.selector == sampleCountSelector)
-                return args.value.ToString();
-
-            double value;
-
-            if (args.value is long l)
-            {
-                if (l == long.MaxValue)
-                    value = double.PositiveInfinity;
-                else
-                    value = l;
-            }
-            else if (!Utils.TryGetNumber(args.value, out value))
-                return string.Empty;
+                return valueWithUnit.value.ToString("F0");
 
             var pri = GetRecorderInfo(args.item);
             if (!pri.recorder.Valid)
                 return string.Empty;
 
-            return FormatUnit(value, args.column.selector, pri.recorder.UnitType);
+            return FormatUnit(valueWithUnit.value, args.column.selector, pri.recorder.UnitType);
+        }
+
+        static double ConvertLongWithMaxValue(long value)
+        {
+            if (value == long.MaxValue)
+                return double.PositiveInfinity;
+            return value;
         }
 
         protected override void ResetItems(SearchItem[] items)
@@ -238,24 +235,28 @@ namespace UnityEditor.Search.Providers
                 GetRecorderInfo(item).ResetData();
         }
 
-        static long GetSampleCount(SearchItem item)
+        static ValueWithUnit GetSampleCount(SearchItem item)
         {
-            return GetRecorderInfo(item).GetSampleCount();
+            var pri = GetRecorderInfo(item);
+            return ProfilerRecorderInfoToUnitWithValue(pri, pri.GetSampleCount());
         }
 
-        static long GetMaxValue(SearchItem item)
+        static ValueWithUnit GetMaxValue(SearchItem item)
         {
-            return GetRecorderInfo(item).GetMaxValue();
+            var pri = GetRecorderInfo(item);
+            return ProfilerRecorderInfoToUnitWithValue(pri, pri.GetMaxValue());
         }
 
-        static long GetTotalValue(SearchItem item)
+        static ValueWithUnit GetTotalValue(SearchItem item)
         {
-            return GetRecorderInfo(item).GetTotalValue();
+            var pri = GetRecorderInfo(item);
+            return ProfilerRecorderInfoToUnitWithValue(pri, ConvertLongWithMaxValue(pri.GetTotalValue()));
         }
 
-        static double GetAverageValue(SearchItem item)
+        static ValueWithUnit GetAverageValue(SearchItem item)
         {
-            return GetRecorderInfo(item).GetAverageValue();
+            var pri = GetRecorderInfo(item);
+            return ProfilerRecorderInfoToUnitWithValue(pri, pri.GetAverageValue());
         }
 
         [SearchSelector(sampleCountSelector, provider: providerId)] static object SelectCount(SearchSelectorArgs args) => GetSampleCount(args.current);
@@ -362,22 +363,22 @@ namespace UnityEditor.Search.Providers
         protected override ValueWithUnit GetPerformancePeakValue(ProfilerRecorderInfo pri) => ProfilerRecorderInfoToUnitWithValue(pri, pri.GetMaxValue());
         protected override ValueWithUnit GetPerformanceSampleCountValue(ProfilerRecorderInfo pri) => ProfilerRecorderInfoToUnitWithValue(pri, pri.GetSampleCount());
 
-        ValueWithUnit ProfilerRecorderInfoToUnitWithValue(ProfilerRecorderInfo pri, double value)
+        static ValueWithUnit ProfilerRecorderInfoToUnitWithValue(ProfilerRecorderInfo pri, double value)
         {
             switch (pri.description.UnitType)
             {
                 case ProfilerMarkerDataUnit.Undefined:
-                    return new ValueWithUnit(value, m_UnitlessTypeHandle, UnitPowerType.One);
+                    return new ValueWithUnit(value, k_UnitlessTypeHandle, UnitPowerType.One);
                 case ProfilerMarkerDataUnit.TimeNanoseconds:
-                    return new ValueWithUnit(value, m_SecondUnitTypeHandle, UnitPowerType.Nano);
+                    return new ValueWithUnit(value, k_SecondUnitTypeHandle, UnitPowerType.Nano);
                 case ProfilerMarkerDataUnit.Bytes:
-                    return new ValueWithUnit(value, m_ByteUnitTypeHandle, UnitPowerType.One);
+                    return new ValueWithUnit(value, k_ByteUnitTypeHandle, UnitPowerType.One);
                 case ProfilerMarkerDataUnit.Count:
-                    return new ValueWithUnit(value, m_UnitlessTypeHandle, UnitPowerType.One);
+                    return new ValueWithUnit(value, k_UnitlessTypeHandle, UnitPowerType.One);
                 case ProfilerMarkerDataUnit.Percent:
-                    return new ValueWithUnit(value, m_PercentUnitTypeHandle, UnitPowerType.One);
+                    return new ValueWithUnit(value, k_PercentUnitTypeHandle, UnitPowerType.One);
                 case ProfilerMarkerDataUnit.FrequencyHz:
-                    return new ValueWithUnit(value, m_HertzUnitTypeHandle, UnitPowerType.One);
+                    return new ValueWithUnit(value, k_HertzUnitTypeHandle, UnitPowerType.One);
                 default:
                     throw new ArgumentOutOfRangeException();
             }

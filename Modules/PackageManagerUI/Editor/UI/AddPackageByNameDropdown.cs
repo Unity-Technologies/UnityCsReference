@@ -103,25 +103,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             submitButton.clickable.clicked -= SubmitClicked;
         }
 
-        private void SetError(string errorMessage, bool isNameError = false, bool isVersionError = false)
+        private void SetError(bool isNameError = false, bool isVersionError = false)
         {
             packageVersionField.RemoveFromClassList("error");
             packageNameField.RemoveFromClassList("error");
 
-            if (string.IsNullOrEmpty(errorMessage))
+            AddToClassList("inputError");
+            if (isNameError)
             {
-                RemoveFromClassList("inputError");
-                errorInfoBox.text = string.Empty;
+                errorInfoBox.text = L10n.Tr("Unable to find the package with the specified name.\nPlease check the name and try again.");
+                packageNameField.AddToClassList("error");
             }
-            else
+            if (isVersionError)
             {
-                AddToClassList("inputError");
-                errorInfoBox.text = errorMessage;
-                if (isNameError)
-                    packageNameField.AddToClassList("error");
-                if (isVersionError)
-                    packageVersionField.AddToClassList("error");
+                errorInfoBox.text = L10n.Tr("Unable to find the package with the specified version.\nPlease check the version and try again.");
+                packageVersionField.AddToClassList("error");
             }
+            ShowWithNewWindowSize();
         }
 
         private void ShowWithNewWindowSize()
@@ -193,18 +191,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnExtraFetchResult(SearchRequest request)
         {
             var packageInfo = request.Result.FirstOrDefault();
-            if (packageInfo.name == packageNameField.value)
+
+            if (packageInfo == null)
+                SetError(isNameError: true);
+            else if (packageInfo.name == packageNameField.value)
             {
                 var version = packageVersionField.value;
-                if (string.IsNullOrEmpty(version))
-                    InstallByNameAndVersion(packageInfo.name);
-                else if (packageInfo.versions.all.Contains(version))
+                if (string.IsNullOrEmpty(version) || packageInfo.versions.all.Contains(version))
                     InstallByNameAndVersion(packageInfo.name, version);
                 else
-                {
-                    SetError(L10n.Tr("Unable to find the package with the specified version.\nPlease check the version and try again."), false, true);
-                    ShowWithNewWindowSize();
-                }
+                    SetError(isVersionError: true);
             }
         }
 
@@ -212,10 +208,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var searchOperation = operation as UpmSearchOperation;
             if (searchOperation.packageName == packageNameField.value)
-            {
-                SetError(L10n.Tr("Unable to find the package with the specified name.\nPlease check the name and try again."), true, false);
-                ShowWithNewWindowSize();
-            }
+                SetError(isNameError: true);
         }
 
         private void OnTextFieldChange(ChangeEvent<string> evt)

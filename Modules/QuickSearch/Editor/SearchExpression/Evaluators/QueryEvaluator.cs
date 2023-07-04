@@ -23,10 +23,10 @@ namespace UnityEditor.Search
             }
 
             // Resolve variables
-            var queryText = c.expression.innerText.ToString();
+            var queryText = UnEscapeExpressions(c.expression);
             if (c.items.Count > 0 && (queryText.Contains('$') || queryText.Contains('@')))
             {
-                foreach (Match m in QueryVariableRx.Matches(queryText.ToString()))
+                foreach (Match m in QueryVariableRx.Matches(queryText))
                 {
                     for (int i = 2; i < m.Groups.Count; i++)
                         queryText = ResolveVariable(queryText, m.Groups[1].Value, m.Groups[i].Value, c);
@@ -37,7 +37,7 @@ namespace UnityEditor.Search
             if (c.args?.Length > 0)
                 return SpreadExpression(queryText, c);
 
-            return RunQuery(c, queryText.ToString());
+            return RunQuery(c, queryText);
         }
 
         public static IEnumerable<SearchItem> RunQuery(SearchExpressionContext c, string queryText)
@@ -110,6 +110,14 @@ namespace UnityEditor.Search
                 c.ThrowError($"Cannot resolve variable {token}{varName}");
 
             return query.Replace(token + varName, v.ToString());
+        }
+
+        static string UnEscapeExpressions(SearchExpression expression)
+        {
+            if (!expression.hasEscapedNestedExpressions)
+                return expression.innerText.ToString();
+
+            return ParserUtils.UnEscapeExpressions(expression.innerText);
         }
     }
 }

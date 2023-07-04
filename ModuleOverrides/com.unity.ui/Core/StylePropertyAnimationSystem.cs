@@ -302,6 +302,11 @@ namespace UnityEngine.UIElements
 
             public abstract Func<T, T, bool> SameFunc { get; }
 
+            protected virtual bool ConvertUnits(VisualElement owner, StylePropertyId prop, ref T a, ref T b)
+            {
+                return true;
+            }
+
             protected Values()
             {
                 running = AnimationDataSet<TimingData, StyleData>.Create();
@@ -594,6 +599,9 @@ namespace UnityEngine.UIElements
 
                 int combinedDuration = Mathf.Max(0, durationMs) + delayMs;
 
+                if (!ConvertUnits(owner, prop, ref style.startValue, ref style.endValue))
+                    return false;
+
                 // There was a prior completed animation
                 if (completed.IndexOf(owner, prop, out var completedIndex))
                 {
@@ -652,13 +660,20 @@ namespace UnityEngine.UIElements
                     }
 
                     style.startValue = running.style[index].currentValue;
+                    if (!ConvertUnits(owner, prop, ref style.startValue, ref style.endValue))
+                    {
+                        SendTransitionCancelEvent(owner, index, currentTimeMs);
+                        running.Remove(index);
+                        owner.styleAnimation.runningAnimationCount--;
+                        return false;
+                    }
                     style.currentValue = style.startValue;
 
                     // 4.3 Otherwise, if the reversing-adjusted start value of the running transition is the same as
                     // the value of the property in the after-change style, implementations must cancel the running
                     // transition and start a new transition whose reversing-adjusted start value is the end value
                     // of the running transition, [...]
-                    if (SameFunc(endValue, running.style[index].startValue))
+                    if (SameFunc(endValue, running.style[index].reversingAdjustedStartValue))
                     {
                         float rsf = timing.reversingShorteningFactor = ComputeReversingShorteningFactor(index);
                         timing.startTimeMs = currentTimeMs + ComputeReversingDelay(delayMs, rsf);
@@ -860,6 +875,11 @@ namespace UnityEngine.UIElements
             public override Func<Length, Length, bool> SameFunc { get; } = IsSame;
 
             private static bool IsSame(Length a, Length b) => a.unit == b.unit && Mathf.Approximately(a.value, b.value);
+
+            protected sealed override bool ConvertUnits(VisualElement owner, StylePropertyId prop, ref Length a, ref Length b)
+            {
+                return owner.TryConvertLengthUnits(prop, ref a, ref b);
+            }
 
             internal static Length Lerp(Length a, Length b, float t) =>
                 new Length(Mathf.LerpUnclamped(a.value, b.value, t), b.unit);
@@ -1133,6 +1153,11 @@ namespace UnityEngine.UIElements
             public override Func<Translate, Translate, bool> SameFunc { get; } = IsSame;
             private static bool IsSame(Translate a, Translate b) => a == b;
 
+            protected sealed override bool ConvertUnits(VisualElement owner, StylePropertyId prop, ref Translate a, ref Translate b)
+            {
+                return owner.TryConvertTranslateUnits(ref a, ref b);
+            }
+
             protected sealed override void UpdateComputedStyle()
             {
                 int n = running.count;
@@ -1167,6 +1192,12 @@ namespace UnityEngine.UIElements
         {
             public override Func<TransformOrigin, TransformOrigin, bool> SameFunc { get; } = IsSame;
             private static bool IsSame(TransformOrigin a, TransformOrigin b) => a == b;
+
+            protected sealed override bool ConvertUnits(VisualElement owner, StylePropertyId prop, ref TransformOrigin a, ref TransformOrigin b)
+            {
+                return owner.TryConvertTransformOriginUnits(ref a, ref b);
+            }
+
             protected sealed override void UpdateComputedStyle()
             {
                 int n = running.count;

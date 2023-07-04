@@ -18,13 +18,16 @@ namespace UnityEditor.Search
 {
     readonly struct AssetIndexChangeSet
     {
+        static readonly string[] s_EmptyStrings = new string[0];
+        internal static readonly AssetIndexChangeSet s_Empty = new AssetIndexChangeSet(null, null);
+        
         public readonly string[] updated;
         public readonly string[] removed;
 
         public AssetIndexChangeSet(string[] updated, string[] removed)
         {
-            this.removed = removed;
-            this.updated = updated;
+            this.removed = removed ?? s_EmptyStrings;
+            this.updated = updated ?? s_EmptyStrings;
         }
 
         public AssetIndexChangeSet(IEnumerable<string> updated, IEnumerable<string> removed, IEnumerable<string> moved, Func<string, bool> predicate)
@@ -38,7 +41,7 @@ namespace UnityEditor.Search
             this.removed = removed.Distinct().Where(predicate).ToArray();
         }
 
-        public bool empty => updated?.Length == 0 && removed?.Length == 0;
+        public bool empty => updated == null || removed == null || (updated.Length == 0 && removed.Length == 0);
         public IEnumerable<string> all => updated?.Concat(removed ?? new string[0]).Distinct() ?? Enumerable.Empty<string>();
     }
 
@@ -272,7 +275,7 @@ namespace UnityEditor.Search
         public static AssetIndexChangeSet GetDiff(long timestamp, IEnumerable<string> deletedAssets, Func<string, bool> predicate)
         {
             if (s_TransactionManager == null)
-                return default;
+                return AssetIndexChangeSet.s_Empty;
 
             var updated = new HashSet<string>();
             var moved = new HashSet<string>();

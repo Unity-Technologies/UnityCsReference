@@ -3202,6 +3202,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PrecompiledAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\PrecompiledAssembly.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\RoslynAnalyzers.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\RoslynAnalyzers.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\SafeMode.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\SafeMode.cs</Link>
     </Compile>

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace UnityEditor.Search
@@ -218,13 +219,13 @@ namespace UnityEditor.Search
                 if (currentStringTokenIndex != -1) // is in string
                     continue;
 
-                if (k_Openers.Any(c => c == paramsBlock[i]))
+                if (k_Openers.Any(c => c == paramsBlock[i]) && !IsEscaped(paramsBlock, i))
                 {
                     openersStack.Push(paramsBlock[i]);
                     continue;
                 }
 
-                if (k_Closers.Any(c => c == paramsBlock[i]))
+                if (k_Closers.Any(c => c == paramsBlock[i]) && !IsEscaped(paramsBlock, i))
                 {
                     if (CharMatchOpener(openersStack.Peek(), paramsBlock[i]))
                     {
@@ -310,9 +311,10 @@ namespace UnityEditor.Search
             return c == sv.Last();
         }
 
-        public static StringView[] GetExpressionsStartAndLength(StringView text, out bool rootHasParameters)
+        public static StringView[] GetExpressionsStartAndLength(StringView text, out bool rootHasParameters, out bool rootHasEscapedOpenersAndClosers)
         {
             rootHasParameters = false;
+            rootHasEscapedOpenersAndClosers = false;
             var openersStack = new Stack<char>();
             var expressions = new List<StringView>();
             int firstOpenerIndex = -1;
@@ -336,6 +338,12 @@ namespace UnityEditor.Search
 
                 if (k_Openers.Any(c => c == text[i]))
                 {
+                    if (IsEscaped(text, i))
+                    {
+                        rootHasEscapedOpenersAndClosers = true;
+                        continue;
+                    }
+
                     if (openersStack.Count == 0)
                         firstOpenerIndex = i;
                     openersStack.Push(text[i]);
@@ -344,6 +352,12 @@ namespace UnityEditor.Search
 
                 if (k_Closers.Any(c => c == text[i]))
                 {
+                    if (IsEscaped(text, i))
+                    {
+                        rootHasEscapedOpenersAndClosers = true;
+                        continue;
+                    }
+
                     if (openersStack.Count == 0)
                         throw new SearchExpressionParseException($"Extra \"{text[i]}\" found", text.startIndex + i, 1);
                     if (CharMatchOpener(openersStack.Peek(), text[i]))
@@ -379,7 +393,7 @@ namespace UnityEditor.Search
             {
                 if (char.IsWhiteSpace(outerText[i]))
                     continue;
-                if (outerText[i] == '}')
+                if (outerText[i] == '}' && !IsEscaped(outerText, i))
                 {
                     nestedLevelsEnd.Push(i);
                     continue;
@@ -403,7 +417,7 @@ namespace UnityEditor.Search
                     }
                     if (isInString)
                         continue;
-                    if (outerText[i] == '{')
+                    if (outerText[i] == '{' && !IsEscaped(outerText, i))
                     {
                         nestedLevelsStart.Push(i);
                         // if part can't be trimmed we must not keep the { so we keep track of how many
@@ -413,7 +427,7 @@ namespace UnityEditor.Search
                     }
                     if (!nestedLevelsStart.Any() || !nestedLevelsEnd.Any())
                         break;
-                    if (outerText[i] == '}')
+                    if (outerText[i] == '}' && !IsEscaped(outerText, i))
                     {
                         if (nonTrimmableOpeners == 0 && i == nestedLevelsEnd.Peek() && nestedLevelsStart.Count == nestedLevelsEnd.Count)
                         {
@@ -459,6 +473,48 @@ namespace UnityEditor.Search
                 return originalExpr;
             });
             return re.Replace(originalExpr, evaluator);
+        }
+
+        public static bool IsEscaped(StringView sv, int index)
+        {
+            if (index <= 0 || index >= sv.length)
+                return false;
+            return IsEscapeChar(sv[index - 1]);
+        }
+
+        public static bool IsEscaped(string s, int index)
+        {
+            return IsEscaped(new StringView(s), index);
+        }
+
+        public static bool IsEscapeChar(char c)
+        {
+            return c == '\\';
+        }
+
+        public static string UnEscapeExpressions(StringView sv)
+        {
+            var sb = new StringBuilder();
+            var length = sv.length;
+            var usableLength = length - 1;
+            for (var i = 0; i < sv.length; ++i)
+            {
+                var c = sv[i];
+                if (i < usableLength && IsEscapeChar(c))
+                {
+                    var nextC = sv[i + 1];
+                    if (IsOpener(nextC) || IsCloser(nextC))
+                        continue;
+                }
+                sb.Append(c);
+            }
+
+            return sb.ToString();
+        }
+
+        public static string UnEscapeExpressions(string expression)
+        {
+            return UnEscapeExpressions(new StringView(expression));
         }
     }
 }

@@ -13,10 +13,46 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    internal struct AnimationWindowEventMethod
+    /// <summary>
+    /// Holds the context for AnimationEvent editing.
+    /// </summary>
+    class AnimationEventEditorState
     {
-        public string name;
-        public Type parameterType;
+        static bool s_ShowOverloadedFunctionsDetails = true;
+        static bool s_ShowDuplicatedFunctionsDetails = true;
+
+        bool m_ShowOverloadedFunctionsDetails = s_ShowOverloadedFunctionsDetails;
+        bool m_ShowDuplicatedFunctionsDetails = s_ShowDuplicatedFunctionsDetails;
+
+        /// <summary>
+        /// Used to track whether or not to show extra details about duplicated function names found in among the potential supported functions
+        /// </summary>
+        public bool ShowOverloadedFunctionsDetails
+        {
+            get => m_ShowOverloadedFunctionsDetails;
+            set
+            {
+                m_ShowOverloadedFunctionsDetails = s_ShowOverloadedFunctionsDetails = value;
+            }
+        }
+
+        /// <summary>
+        /// Used to track whether or not to show extra details about overloaded function names found in among the potential supported functions
+        /// </summary>
+        public bool ShowDuplicatedFunctionsDetails
+        {
+            get => m_ShowDuplicatedFunctionsDetails;
+            set
+            {
+                m_ShowDuplicatedFunctionsDetails = s_ShowDuplicatedFunctionsDetails = value;
+            }
+        }
+
+        public AnimationEventEditorState()
+        {
+            m_ShowOverloadedFunctionsDetails = s_ShowOverloadedFunctionsDetails;
+            m_ShowDuplicatedFunctionsDetails = s_ShowDuplicatedFunctionsDetails;
+        }
     }
 
     internal class AnimationWindowEvent : ScriptableObject

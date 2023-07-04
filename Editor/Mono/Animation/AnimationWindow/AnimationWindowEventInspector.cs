@@ -5,7 +5,6 @@
 using System.Linq;
 using UnityEngine;
 using UnityEditor;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System;
@@ -17,15 +16,18 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class AnimationWindowEventInspector : Editor
     {
+        public static GUIContent s_OverloadWarning = EditorGUIUtility.TrTextContent("Some functions were overloaded in MonoBehaviour components and may not work as intended if used with Animation Events!");
+        public static GUIContent s_DuplicatesWarning = EditorGUIUtility.TrTextContent("Some functions have the same name across several Monobehaviour components and may not work as intended if used with Animation Events!");
+
         const string kNotSupportedPostFix = " (Function Not Supported)";
         const string kNoneSelected = "(No Function Selected)";
 
-        public static GUIContent s_OverloadWarning = EditorGUIUtility.TrTextContent("Some functions were overloaded in MonoBehaviour components and may not work as intended if used with Animation Events!");
+        AnimationEventEditorState m_State = new();
 
         public override void OnInspectorGUI()
         {
             var awes = targets.Select(o => o as AnimationWindowEvent).ToArray();
-            OnEditAnimationEvents(awes);
+            OnEditAnimationEvents(awes, m_State);
         }
 
         protected override void OnHeaderGUI()
@@ -34,12 +36,17 @@ namespace UnityEditor
             DrawHeaderGUI(this, targetTitle);
         }
 
-        public static void OnEditAnimationEvent(AnimationWindowEvent awe)
+        public static void OnEditAnimationEvent(AnimationWindowEvent awe, AnimationEventEditorState state)
         {
-            OnEditAnimationEvents(new AnimationWindowEvent[] {awe});
+            OnEditAnimationEvents(new AnimationWindowEvent[] {awe}, state);
         }
 
-        public static void OnEditAnimationEvents(AnimationWindowEvent[] awEvents)
+        // These are used so we don't alloc new lists on every call
+        static List<AnimationMethodMap> supportedMethods;
+        static List<AnimationMethodMap> overloads;
+        static List<AnimationMethodMap> duplicates;
+
+        public static void OnEditAnimationEvents(AnimationWindowEvent[] awEvents, AnimationEventEditorState state)
         {
             AnimationWindowEventData data = GetData(awEvents);
             if (data.events == null || data.selectedEvents == null || data.selectedEvents.Length == 0)
@@ -53,64 +60,60 @@ namespace UnityEditor
 
             if (data.root != null)
             {
-                List<AnimationWindowEventMethod> methods = new List<AnimationWindowEventMethod>();
-                HashSet<string> overloads = new HashSet<string>();
-                CollectSupportedMethods(data.root, methods, overloads);
+                supportedMethods ??= new List<AnimationMethodMap>();
+                overloads ??= new List<AnimationMethodMap>();
+                duplicates ??= new List<AnimationMethodMap>();
 
-                var methodsFormatted = new List<string>(methods.Count);
+                supportedMethods.Clear();
+                overloads.Clear();
+                duplicates.Clear();
+                CollectSupportedMethods(data.root, supportedMethods, overloads, duplicates);
 
-                for (int i = 0; i < methods.Count; ++i)
+                int selected = supportedMethods.FindIndex(method => method.Name == firstEvent.functionName);
+
+                // A non-empty array used for rendering the contents of the popup
+                // It is of size 1 greater than the list of supported methods to account for the "None" option
+                string[] methodsFormatted = new string[supportedMethods.Count + 1];
+
+                for (int i = 0; i < supportedMethods.Count; ++i)
                 {
-                    AnimationWindowEventMethod method = methods[i];
-
-                    string postFix = " ( )";
-                    if (method.parameterType != null)
-                    {
-                        if (method.parameterType == typeof(float))
-                            postFix = " ( float )";
-                        else if (method.parameterType == typeof(int))
-                            postFix = " ( int )";
-                        else
-                            postFix = string.Format(" ( {0} )", method.parameterType.Name);
-                    }
-
-                    methodsFormatted.Add(method.name + postFix);
+                    AnimationMethodMap methodMap = supportedMethods[i];
+                    string menuPath = methodMap.methodMenuPath;
+                    methodsFormatted[i] = menuPath;
                 }
 
-                int notSupportedIndex = methods.Count;
-                int selected = methods.FindIndex(method => method.name == firstEvent.functionName);
+                // Add a final option to set the function to no selected function
+                int notSupportedIndex = supportedMethods.Count;
                 if (selected == -1)
                 {
-                    selected = methods.Count;
+                    selected = notSupportedIndex;
 
-                    AnimationWindowEventMethod newMethod = new AnimationWindowEventMethod();
-                    newMethod.name = firstEvent.functionName;
-                    newMethod.parameterType = null;
-
-                    methods.Add(newMethod);
-
+                    // Display that the current function is not supported if applicable
                     if (string.IsNullOrEmpty(firstEvent.functionName))
-                        methodsFormatted.Add(kNoneSelected);
+                        methodsFormatted[notSupportedIndex] = kNoneSelected;
                     else
-                        methodsFormatted.Add(firstEvent.functionName + kNotSupportedPostFix);
+                        methodsFormatted[notSupportedIndex] = firstEvent.functionName + kNotSupportedPostFix;
+
+                    var emptyMethodMap = new AnimationMethodMap();
+                    supportedMethods.Add(emptyMethodMap);
                 }
 
                 EditorGUIUtility.labelWidth = 130;
 
                 EditorGUI.showMixedValue = !singleFunctionName;
                 int wasSelected = singleFunctionName ? selected : -1;
-                selected = EditorGUILayout.Popup("Function: ", selected, methodsFormatted.ToArray());
+                selected = EditorGUILayout.Popup("Function: ", selected, methodsFormatted);
                 if (wasSelected != selected && selected != -1 && selected != notSupportedIndex)
                 {
                     foreach (var evt in data.selectedEvents)
                     {
-                        evt.functionName = methods[selected].name;
+                        evt.functionName = supportedMethods[selected].Name;
                         evt.stringParameter = string.Empty;
                     }
                 }
                 EditorGUI.showMixedValue = false;
 
-                var selectedParameter = methods[selected].parameterType;
+                var selectedParameter = supportedMethods[selected].parameterType;
 
                 if (singleFunctionName && selectedParameter != null)
                 {
@@ -127,6 +130,24 @@ namespace UnityEditor
                 {
                     EditorGUILayout.Space();
                     EditorGUILayout.HelpBox(s_OverloadWarning.text, MessageType.Warning, true);
+                    state.ShowOverloadedFunctionsDetails = EditorGUILayout.Foldout(state.ShowOverloadedFunctionsDetails, "Show Details");
+                    if (state.ShowOverloadedFunctionsDetails)
+                    {
+                        string overloadedFunctionDetails = "Overloaded Functions: \n" + GetFormattedMethodsText(overloads);
+                        GUILayout.Label(overloadedFunctionDetails, EditorStyles.helpBox);
+                    }
+                }
+
+                if (duplicates.Count > 0)
+                {
+                    EditorGUILayout.Space();
+                    EditorGUILayout.HelpBox(s_DuplicatesWarning.text, MessageType.Warning, true);
+                    state.ShowDuplicatedFunctionsDetails = EditorGUILayout.Foldout(state.ShowDuplicatedFunctionsDetails, "Show Details");
+                    if (state.ShowDuplicatedFunctionsDetails)
+                    {
+                        string duplicatedFunctionDetails = "Duplicated Functions: \n" + GetFormattedMethodsText(duplicates);
+                        GUILayout.Label(duplicatedFunctionDetails, EditorStyles.helpBox);
+                    }
                 }
             }
             else
@@ -153,13 +174,51 @@ namespace UnityEditor
                     using (new EditorGUI.DisabledScope(true))
                     {
                         AnimationEvent dummyEvent = new AnimationEvent();
-                        DoEditRegularParameters(new AnimationEvent[] {dummyEvent}, typeof(AnimationEvent));
+                        DoEditRegularParameters(new AnimationEvent[] { dummyEvent }, typeof(AnimationEvent));
                     }
                 }
             }
 
             if (EditorGUI.EndChangeCheck())
                 SetData(awEvents, data);
+        }
+
+        static string GetFormattedMethodsText(List<AnimationMethodMap> methods)
+        {
+            string text = "";
+            foreach (AnimationMethodMap methodMap in methods)
+            {
+                text += string.Format("{0}.{1} ( {2} )\n", methodMap.sourceBehaviour.GetType().Name, methodMap.Name, GetTypeName(methodMap.parameterType));
+            }
+            text = text.Trim();
+            return text;
+        }
+
+        static string GetTypeName(Type t)
+        {
+            if (t == null)
+                return "";
+            if (t == typeof(int))
+                return "int";
+            if (t == typeof(float))
+                return "float";
+            if (t == typeof(string))
+                return "string";
+            if (t == typeof(bool))
+                return "bool";
+            return t.Name;
+        }
+
+        static string GetFormattedMethodName(AnimationMethodMap methodMap)
+        {
+            string targetName = methodMap.sourceBehaviour.GetType().Name;
+            string methodName = methodMap.Name;
+            string args = GetTypeName(methodMap.parameterType);
+
+            if (methodName.StartsWith("set_") || methodName.StartsWith("get_"))
+                return string.Format("{0}/Properties/{1} ( {2} )", targetName, methodName, args);
+            else
+                return string.Format("{0}/Methods/{1} ( {2} )", targetName, methodName, args);
         }
 
         public static void OnDisabledAnimationEvent()
@@ -169,11 +228,13 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(true))
             {
                 dummyEvent.functionName = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent("Function"), dummyEvent.functionName);
-                DoEditRegularParameters(new AnimationEvent[] {dummyEvent}, typeof(AnimationEvent));
+                DoEditRegularParameters(new AnimationEvent[] { dummyEvent }, typeof(AnimationEvent));
             }
         }
 
-        public static void CollectSupportedMethods(GameObject gameObject, List<AnimationWindowEventMethod> supportedMethods, HashSet<string> overloadedMethods)
+        static Dictionary<Type, IReadOnlyList<AnimationMethodMap>> s_TypeAnimationMethodMapCache = new Dictionary<Type, IReadOnlyList<AnimationMethodMap>>();
+
+        static void CollectSupportedMethods(GameObject gameObject, List<AnimationMethodMap> supportedMethods, List<AnimationMethodMap> overloadedMethods, List<AnimationMethodMap> duplicatedMethods)
         {
             if (gameObject == null)
                 return;
@@ -188,57 +249,97 @@ namespace UnityEditor
                 Type type = behaviour.GetType();
                 while (type != typeof(MonoBehaviour) && type != null)
                 {
-                    MethodInfo[] methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-                    for (int i = 0; i < methods.Length; i++)
+                    if (!s_TypeAnimationMethodMapCache.TryGetValue(type, out IReadOnlyList<AnimationMethodMap> validMethods))
                     {
-                        MethodInfo method = methods[i];
-                        string name = method.Name;
-
-                        if (!IsSupportedMethodName(name))
-                            continue;
-
-                        ParameterInfo[] parameters = method.GetParameters();
-                        if (parameters.Length > 1)
-                            continue;
-
-                        Type parameterType = null;
-
-                        if (parameters.Length == 1)
+                        var pendingValidMethods = new List<AnimationMethodMap>();
+                        MethodInfo[] methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly );
+                        for (int i = 0; i < methods.Length; i++)
                         {
-                            parameterType = parameters[0].ParameterType;
-                            if (!(parameterType == typeof(string) ||
-                                  parameterType == typeof(float) ||
-                                  parameterType == typeof(int) ||
-                                  parameterType == typeof(AnimationEvent) ||
-                                  parameterType == typeof(UnityEngine.Object) ||
-                                  parameterType.IsSubclassOf(typeof(UnityEngine.Object)) ||
-                                  parameterType.IsEnum))
+                            MethodInfo method = methods[i];
+                            string name = method.Name;
+
+                            if (!IsSupportedMethodName(name))
                                 continue;
+
+                            ParameterInfo[] parameters = method.GetParameters();
+                            if (parameters.Length > 1)
+                                continue;
+
+                            Type parameterType = null;
+
+                            if (parameters.Length == 1)
+                            {
+                                parameterType = parameters[0].ParameterType;
+                                if (!(parameterType == typeof(string) ||
+                                      parameterType == typeof(float) ||
+                                      parameterType == typeof(int) ||
+                                      parameterType == typeof(AnimationEvent) ||
+                                      parameterType == typeof(UnityEngine.Object) ||
+                                      parameterType.IsSubclassOf(typeof(UnityEngine.Object)) ||
+                                      parameterType.IsEnum))
+                                    continue;
+                            }
+
+                            AnimationMethodMap newMethodMap = new AnimationMethodMap
+                            {
+                                sourceBehaviour = behaviour,
+                                methodInfo = method,
+                                parameterType = parameterType
+                            };
+
+                            newMethodMap.methodMenuPath = GetFormattedMethodName(newMethodMap);
+
+                            pendingValidMethods.Add(newMethodMap);
                         }
 
-                        AnimationWindowEventMethod newMethod = new AnimationWindowEventMethod();
-                        newMethod.name = method.Name;
-                        newMethod.parameterType = parameterType;
+                        validMethods = pendingValidMethods.AsReadOnly();
+                        s_TypeAnimationMethodMapCache.Add(type, validMethods);
+                    }
 
+                    foreach (var method in validMethods)
+                    {
                         // Since AnimationEvents only stores method name, it can't handle functions with multiple overloads.
-                        // Only retrieve first found function, but discard overloads.
-                        int existingMethodIndex = supportedMethods.FindIndex(m => m.name == name);
+                        // or functions with the same name across multiple monobehaviours
+                        // Only retrieve first found method, and discard overloads and duplicate names.
+                        int existingMethodIndex = supportedMethods.FindIndex(m => m.Name == method.Name);
                         if (existingMethodIndex != -1)
                         {
                             // The method is only ambiguous if it has a different signature to the one we saw before
-                            if (supportedMethods[existingMethodIndex].parameterType != parameterType)
+                            if (supportedMethods[existingMethodIndex].parameterType != method.parameterType)
                             {
-                                overloadedMethods.Add(name);
+                                overloadedMethods.Add(method);
+                            }
+                            // Otherwise, there is another monobehaviour with the same method name.
+                            else
+                            {
+                                duplicatedMethods.Add(method);
                             }
                         }
                         else
                         {
-                            supportedMethods.Add(newMethod);
+                            supportedMethods.Add(method);
                         }
                     }
+
                     type = type.BaseType;
                 }
             }
+        }
+
+        /// <summary>
+        /// Maps the methodInfo and paramter type of a considered animation method to a source monobeheaviour.
+        /// Mimics the structure of <see cref="UnityEditorInternal.UnityEventDrawer.ValidMethodMap"/>
+        /// </summary>
+        struct AnimationMethodMap
+        {
+            public Object sourceBehaviour;
+            public MethodInfo methodInfo;
+            public Type parameterType;
+
+            // Used for caching
+            public string methodMenuPath;
+
+            public string Name => methodInfo?.Name ?? "";
         }
 
         public static string FormatEvent(GameObject root, AnimationEvent evt)
@@ -273,7 +374,7 @@ namespace UnityEditor
                 if (method == null)
                     continue;
 
-                var parameterTypes = method.GetParameters().Select(p => p.ParameterType);
+                var parameterTypes = method.GetParameters();
                 return evt.functionName + FormatEventArguments(parameterTypes, evt);
             }
 
@@ -382,15 +483,15 @@ namespace UnityEditor
             return name != "Main" && name != "Start" && name != "Awake" && name != "Update";
         }
 
-        private static string FormatEventArguments(IEnumerable<Type> paramTypes, AnimationEvent evt)
+        private static string FormatEventArguments(ParameterInfo[] paramTypes, AnimationEvent evt)
         {
-            if (!paramTypes.Any())
+            if (paramTypes.Length == 0)
                 return " ( )";
 
-            if (paramTypes.Count() > 1)
+            if (paramTypes.Length > 1)
                 return kNotSupportedPostFix;
 
-            var paramType = paramTypes.First();
+            var paramType = paramTypes[0].ParameterType;
 
             if (paramType == typeof(string))
                 return " ( \"" + evt.stringParameter + "\" )";
@@ -427,6 +528,9 @@ namespace UnityEditor
             public AnimationEvent[] selectedEvents;
         }
 
+
+        // this are used so we don't alloc new lists on every call
+        static List<AnimationEvent> getDataSelectedEvents;
         private static AnimationWindowEventData GetData(AnimationWindowEvent[] awEvents)
         {
             var data = new AnimationWindowEventData();
@@ -445,14 +549,15 @@ namespace UnityEditor
 
             if (data.events != null)
             {
-                List<AnimationEvent> selectedEvents = new List<AnimationEvent>();
+                getDataSelectedEvents ??= new List<AnimationEvent>();
+                getDataSelectedEvents.Clear();
                 foreach (var awEvent in awEvents)
                 {
                     if (awEvent.eventIndex >= 0 && awEvent.eventIndex < data.events.Length)
-                        selectedEvents.Add(data.events[awEvent.eventIndex]);
+                        getDataSelectedEvents.Add(data.events[awEvent.eventIndex]);
                 }
 
-                data.selectedEvents = selectedEvents.ToArray();
+                data.selectedEvents = getDataSelectedEvents.ToArray();
             }
 
             return data;
@@ -482,7 +587,7 @@ namespace UnityEditor
         static void ResetValues(MenuCommand command)
         {
             AnimationWindowEvent awEvent = command.context as AnimationWindowEvent;
-            AnimationWindowEvent[] awEvents = new AnimationWindowEvent[] {awEvent};
+            AnimationWindowEvent[] awEvents = new AnimationWindowEvent[] { awEvent };
 
             AnimationWindowEventData data = GetData(awEvents);
             if (data.events == null || data.selectedEvents == null || data.selectedEvents.Length == 0)

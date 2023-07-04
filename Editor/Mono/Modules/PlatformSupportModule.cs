@@ -8,6 +8,7 @@ using UnityEditor.DeploymentTargets;
 using UnityEngine;
 using Mono.Cecil;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEditor;
 
 namespace UnityEditor.Modules
 {
@@ -147,7 +148,8 @@ namespace UnityEditor.Modules
         // This is the place to make sure platform has everything it needs for the build.
         // Use EditorUtility.Display(Cancelable)ProgressBar when running long tasks (e.g. downloading SDK from internet).
         // Return non-empty string indicating error message to stop the build.
-        string PrepareForBuild(BuildOptions options, BuildTarget target);
+        /// <param name="buildOptions">Build details. Useful to get the location of the player to build, for instance.</param>
+        string PrepareForBuild(BuildPlayerOptions buildOptions);
 
         void PostProcessCompletedBuild(BuildPostProcessArgs args);
 

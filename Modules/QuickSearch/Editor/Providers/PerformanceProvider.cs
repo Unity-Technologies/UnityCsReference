@@ -14,20 +14,21 @@ namespace UnityEditor.Search.Providers
     {
         internal const string providerId = "performance";
 
-        int m_SecondUnitTypeHandle;
+        static readonly UnitTypeHandle k_SecondUnitTypeHandle = UnitType.GetHandle("s");
 
         [SearchItemProvider]
         public static SearchProvider CreateProvider()
         {
             var p = new PerformanceProvider(providerId, "Performance Trackers");
             p.Initialize();
+            p.filterId = "perf:";
             return p;
         }
 
         protected PerformanceProvider(string id, string displayName)
             : base(id, displayName)
         {
-            m_SecondUnitTypeHandle = AddUnitType("s", UnitPowerType.One, UnitPowerType.Milli, UnitPowerType.Micro, UnitPowerType.Nano);
+            AddUnitType("s", k_SecondUnitTypeHandle, UnitPowerType.One, UnitPowerType.Milli, UnitPowerType.Micro, UnitPowerType.Nano);
         }
 
         protected override IEnumerable<SearchAction> GetActions()
@@ -41,10 +42,10 @@ namespace UnityEditor.Search.Providers
                 EditorPerformanceTracker.Reset(item.id);
         }
 
-        [SearchSelector(sampleCountSelector, provider: providerId)] static object SelectCount(SearchSelectorArgs args) => EditorPerformanceTracker.GetSampleCount(args.current.id);
-        [SearchSelector(samplePeakSelector, provider: providerId)] static object SelectPeak(SearchSelectorArgs args) => EditorPerformanceTracker.GetPeakTime(args.current.id);
-        [SearchSelector(sampleAvgSelector, provider: providerId)] static object SelectAvg(SearchSelectorArgs args) => EditorPerformanceTracker.GetAverageTime(args.current.id);
-        [SearchSelector(sampleTotalSelector, provider: providerId)] static object SelectTotal(SearchSelectorArgs args) => EditorPerformanceTracker.GetTotalTime(args.current.id);
+        [SearchSelector(sampleCountSelector, provider: providerId)] static object SelectCount(SearchSelectorArgs args) => TrackerToValueWithUnit(EditorPerformanceTracker.GetSampleCount(args.current.id));
+        [SearchSelector(samplePeakSelector, provider: providerId)] static object SelectPeak(SearchSelectorArgs args) => TrackerToValueWithUnit(EditorPerformanceTracker.GetPeakTime(args.current.id));
+        [SearchSelector(sampleAvgSelector, provider: providerId)] static object SelectAvg(SearchSelectorArgs args) => TrackerToValueWithUnit(EditorPerformanceTracker.GetAverageTime(args.current.id));
+        [SearchSelector(sampleTotalSelector, provider: providerId)] static object SelectTotal(SearchSelectorArgs args) => TrackerToValueWithUnit(EditorPerformanceTracker.GetTotalTime(args.current.id));
 
         static void CaptureCallstack(in SearchItem item, string callstack)
         {
@@ -67,13 +68,14 @@ namespace UnityEditor.Search.Providers
         {
             if (args.value == null)
                 return string.Empty;
+            if (args.value is string valueStr)
+                return valueStr;
 
+            var valueWithUnit = (ValueWithUnit)args.value;
             if (args.column.selector == sampleCountSelector)
-                return args.value.ToString();
+                return valueWithUnit.value.ToString("F0");
 
-            if (Utils.TryGetNumber(args.value, out var d))
-                return GetTimeLabel(d, GetDefaultPerformanceLimit(args.column.selector));
-            return string.Empty;
+            return GetTimeLabel(valueWithUnit.value, GetDefaultPerformanceLimit(args.column.selector));
         }
 
         static string FormatCallstackForConsole(string callstack)
@@ -103,14 +105,14 @@ namespace UnityEditor.Search.Providers
         protected override ValueWithUnit GetPerformancePeakValue(string trackerName) => TrackerToValueWithUnit(EditorPerformanceTracker.GetPeakTime(trackerName));
         protected override ValueWithUnit GetPerformanceSampleCountValue(string trackerName) => TrackerToValueWithUnit(EditorPerformanceTracker.GetSampleCount(trackerName));
 
-        ValueWithUnit TrackerToValueWithUnit(double value)
+        static ValueWithUnit TrackerToValueWithUnit(double value)
         {
-            return new ValueWithUnit(value, m_SecondUnitTypeHandle, UnitPowerType.One);
+            return new ValueWithUnit(value, k_SecondUnitTypeHandle, UnitPowerType.One);
         }
 
-        ValueWithUnit TrackerToValueWithUnit(int value)
+        static ValueWithUnit TrackerToValueWithUnit(int value)
         {
-            return new ValueWithUnit(value, m_UnitlessTypeHandle, UnitPowerType.One);
+            return new ValueWithUnit(value, k_UnitlessTypeHandle, UnitPowerType.One);
         }
 
         protected override IEnumerable<SearchItem> FetchItem(SearchContext context, SearchProvider provider)

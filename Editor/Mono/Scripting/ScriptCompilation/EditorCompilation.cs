@@ -1533,6 +1533,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 options |= EditorScriptCompilationOptions.BuildingForEditor;
             }
 
+            options |= EditorScriptCompilationOptions.BuildingWithRoslynAnalysis;
+
             return options;
         }
 
@@ -1572,7 +1574,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Files = scriptFiles,
                 Filename = AssetPath.GetFileName(assemblyPath),
                 OutputDirectory = AssetPath.GetDirectoryName(assemblyPath),
-                CompilerOptions = assemblyBuilder.compilerOptions,
+                CompilerOptions = new ScriptCompilerOptions(assemblyBuilder.compilerOptions),
                 ScriptAssemblyReferences = new ScriptAssembly[0],
                 RootNamespace = string.Empty
             };
@@ -1609,6 +1611,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             scriptAssembly.References = references.ToArray();
             scriptAssembly.Defines = defines.ToArray();
+
+            if (options.HasFlag(EditorScriptCompilationOptions.BuildingWithRoslynAnalysis))
+            {
+                RoslynAnalyzers.SetAnalyzers(
+                    new[] { scriptAssembly },
+                    customTargetAssemblies.Values.ToArray(),
+                    PrecompiledAssemblyProvider.GetRoslynAnalyzerPaths(),
+                    true);
+
+                // AssemblyBuilder can explicitly set analyzers and rule set
+                if (assemblyBuilder.compilerOptions.RoslynAnalyzerDllPaths != null)
+                    scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = assemblyBuilder.compilerOptions.RoslynAnalyzerDllPaths
+                        .Concat(scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths)
+                        .ToArray();
+
+                if (!string.IsNullOrEmpty(assemblyBuilder.compilerOptions.RoslynAnalyzerRulesetPath))
+                    scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = assemblyBuilder.compilerOptions.RoslynAnalyzerRulesetPath;
+            }
 
             return scriptAssembly;
         }

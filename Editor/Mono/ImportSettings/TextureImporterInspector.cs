@@ -857,36 +857,33 @@ namespace UnityEditor
             {
                 if ((TextureImporterShape)m_TextureShape.intValue == TextureImporterShape.TextureCube)
                 {
-                    using (new EditorGUI.DisabledScope(!m_IsPOT && m_NPOTScale.intValue == (int)TextureImporterNPOTScale.None))
+                    Rect controlRect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
+                    GUIContent label = EditorGUI.BeginProperty(controlRect, s_Styles.cubemap, m_GenerateCubemap);
+
+                    EditorGUI.showMixedValue = m_GenerateCubemap.hasMultipleDifferentValues || m_SeamlessCubemap.hasMultipleDifferentValues;
+
+                    EditorGUI.BeginChangeCheck();
+
+                    int value = EditorGUI.IntPopup(controlRect, label, m_GenerateCubemap.intValue, s_Styles.cubemapOptions, s_Styles.cubemapValues2);
+                    if (EditorGUI.EndChangeCheck())
+                        m_GenerateCubemap.intValue = value;
+
+                    EditorGUI.EndProperty();
+                    EditorGUI.indentLevel++;
+
+                    // Convolution
+                    if (ShouldDisplayGUIElement(guiElements, TextureInspectorGUIElement.CubeMapConvolution))
                     {
-                        Rect controlRect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
-                        GUIContent label = EditorGUI.BeginProperty(controlRect, s_Styles.cubemap, m_GenerateCubemap);
-
-                        EditorGUI.showMixedValue = m_GenerateCubemap.hasMultipleDifferentValues || m_SeamlessCubemap.hasMultipleDifferentValues;
-
-                        EditorGUI.BeginChangeCheck();
-
-                        int value = EditorGUI.IntPopup(controlRect, label, m_GenerateCubemap.intValue, s_Styles.cubemapOptions, s_Styles.cubemapValues2);
-                        if (EditorGUI.EndChangeCheck())
-                            m_GenerateCubemap.intValue = value;
-
-                        EditorGUI.EndProperty();
-                        EditorGUI.indentLevel++;
-
-                        // Convolution
-                        if (ShouldDisplayGUIElement(guiElements, TextureInspectorGUIElement.CubeMapConvolution))
-                        {
-                            EditorGUILayout.IntPopup(m_CubemapConvolution,
-                                s_Styles.cubemapConvolutionOptions,
-                                s_Styles.cubemapConvolutionValues,
-                                s_Styles.cubemapConvolution);
-                        }
-
-                        ToggleFromInt(m_SeamlessCubemap, s_Styles.seamlessCubemap);
-
-                        EditorGUI.indentLevel--;
-                        EditorGUILayout.Space();
+                        EditorGUILayout.IntPopup(m_CubemapConvolution,
+                            s_Styles.cubemapConvolutionOptions,
+                            s_Styles.cubemapConvolutionValues,
+                            s_Styles.cubemapConvolution);
                     }
+
+                    ToggleFromInt(m_SeamlessCubemap, s_Styles.seamlessCubemap);
+
+                    EditorGUI.indentLevel--;
+                    EditorGUILayout.Space();
                 }
             }
             EditorGUILayout.EndFadeGroup();
@@ -936,6 +933,13 @@ namespace UnityEditor
 
         void POTScaleGUI(TextureInspectorGUIElement guiElements)
         {
+            // Cubemap face sizes are calculated using the original file's width/height + the cubemap generation mode.
+            // Currently, the calculation always outputs POT face sizes: displaying this control is thus unnecessary.
+            if ((TextureImporterShape)m_TextureShape.intValue == TextureImporterShape.TextureCube)
+            {
+                return;
+            }
+
             using (new EditorGUI.DisabledScope(m_IsPOT))
             {
                 EnumPopup(m_NPOTScale, typeof(TextureImporterNPOTScale), s_Styles.npot);

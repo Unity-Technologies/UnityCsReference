@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Unity.Profiling;
 using UnityEditor;
 using UnityEditor.Search.Providers;
 using UnityEngine;
@@ -28,6 +29,18 @@ namespace UnityEditor.Search
     /// </summary>
     public abstract class ObjectIndexer : SearchIndexer
     {
+        static readonly ProfilerMarker k_IndexWordMarker = new($"{nameof(ObjectIndexer)}.{nameof(IndexWord)}");
+        static readonly ProfilerMarker k_IndexObjectMarker = new($"{nameof(ObjectIndexer)}.{nameof(IndexObject)}");
+        static readonly ProfilerMarker k_IndexPropertiesMarker = new($"{nameof(ObjectIndexer)}.{nameof(IndexProperties)}");
+        static readonly ProfilerMarker k_IndexPropertyMarker = new($"{nameof(ObjectIndexer)}.{nameof(IndexProperty)}");
+        static readonly ProfilerMarker k_IndexSerializedPropertyMarker = new($"{nameof(ObjectIndexer)}.IndexSerializedProperty");
+        static readonly ProfilerMarker k_IndexPropertyComponentsMarker = new($"{nameof(ObjectIndexer)}.IndexPropertyComponents");
+        static readonly ProfilerMarker k_IndexPropertyStringComponentsMarker = new($"{nameof(ObjectIndexer)}.{nameof(IndexPropertyStringComponents)}");
+        static readonly ProfilerMarker k_LogPropertyMarker = new($"{nameof(ObjectIndexer)}.{nameof(LogProperty)}");
+        static readonly ProfilerMarker k_IndexCustomPropertiesMarker = new($"{nameof(ObjectIndexer)}.{nameof(IndexCustomProperties)}");
+        static readonly ProfilerMarker k_AddReferenceMarker = new($"{nameof(ObjectIndexer)}.{nameof(AddReference)}");
+        static readonly ProfilerMarker k_AddObjectReferenceMarker = new($"{nameof(ObjectIndexer)}.AddObjectReference");
+
         // Define a list of patterns that will automatically skip path entries if they start with it.
         readonly static string[] BuiltInTransientFilePatterns = new[]
         {
@@ -190,6 +203,7 @@ namespace UnityEditor.Search
         /// <param name="value">Value to add to the index.</param>
         public void IndexPropertyComponents(int documentIndex, string name, string value)
         {
+            using var _ = k_IndexPropertyComponentsMarker.Auto();
             int scoreModifier = 0;
             double number = 0;
             foreach (var c in GetEntryComponents(value, documentIndex))
@@ -234,6 +248,7 @@ namespace UnityEditor.Search
 
         internal void IndexWord(int documentIndex, in string word, int minVariations, int maxVariations, bool exact, int scoreModifier = 0)
         {
+            using var _ = k_IndexWordMarker.Auto();
             var lword = word.ToLowerInvariant();
             var modifiedScore = settings.baseScore + scoreModifier;
             AddWord(lword, minVariations, maxVariations, modifiedScore, documentIndex);
@@ -263,6 +278,7 @@ namespace UnityEditor.Search
         /// <param name="exact">If exact is true, only the exact match of the value will be stored in the index (not the variations).</param>
         public void IndexProperty(int documentIndex, string name, string value, bool saveKeyword, bool exact = false)
         {
+            using var _ = k_IndexPropertyMarker.Auto();
             if (string.IsNullOrEmpty(value))
                 return;
             var valueLower = value.ToLowerInvariant();
@@ -334,6 +350,7 @@ namespace UnityEditor.Search
 
         internal void IndexObject(int documentIndex, Object obj, bool dependencies, bool recursive)
         {
+            using var _ = k_IndexObjectMarker.Auto();
             using (var so = new SerializedObject(obj))
             {
                 var p = so.GetIterator();
@@ -384,6 +401,7 @@ namespace UnityEditor.Search
 
         internal void IndexProperties(int documentIndex, in SerializedProperty p, bool recursive, int maxDepth, Func<SerializedProperty, bool> shouldContinueIterating)
         {
+            using var _ = k_IndexPropertiesMarker.Auto();
             var next = p.NextVisible(true);
             while (next)
             {
@@ -400,6 +418,7 @@ namespace UnityEditor.Search
 
         internal void IndexProperty(in int documentIndex, in string fieldName, in SerializedProperty p, int maxDepth)
         {
+            using var _ = k_IndexSerializedPropertyMarker.Auto();
             if (ignoredProperties.Contains(fieldName))
                 return;
 
@@ -499,6 +518,7 @@ namespace UnityEditor.Search
 
         bool IndexPropertyStringComponents(in int documentIndex, in string fieldName, in string sv)
         {
+            using var _ = k_IndexPropertyStringComponentsMarker.Auto();
             if (string.IsNullOrEmpty(sv) || sv.Length > 64)
                 return false;
             if (sv.Length > 4 && sv.Length < 32 && char.IsLetter(sv[0]) && sv.IndexOf(' ') == -1)
@@ -510,6 +530,7 @@ namespace UnityEditor.Search
 
         void LogProperty(in string fieldName, in SerializedProperty p, object value = null)
         {
+            using var _ = k_LogPropertyMarker.Auto();
             var propertyType = SearchUtils.GetPropertyManagedTypeString(p);
             if (propertyType != null)
                 MapProperty(fieldName, p.displayName, p.tooltip, propertyType, p.serializedObject?.targetObject?.GetType().AssemblyQualifiedName, removeNestedKeys: true);
@@ -517,6 +538,7 @@ namespace UnityEditor.Search
 
         internal void AddReference(int documentIndex, string assetPath, bool saveKeyword = false)
         {
+            using var _ = k_AddReferenceMarker.Auto();
             if (string.IsNullOrEmpty(assetPath))
                 return;
 
@@ -531,6 +553,7 @@ namespace UnityEditor.Search
 
         internal void AddReference(int documentIndex, string propertyName, Object objRef, in string label = null, in Type ownerPropertyType = null)
         {
+            using var _ = k_AddObjectReferenceMarker.Auto();
             if (!objRef)
                 return;
 
@@ -563,6 +586,7 @@ namespace UnityEditor.Search
         /// <param name="obj">Object to index.</param>
         internal void IndexCustomProperties(string documentId, int documentIndex, Object obj)
         {
+            using var _ = k_IndexCustomPropertiesMarker.Auto();
             using (var so = new SerializedObject(obj))
             {
                 CallCustomIndexers(documentId, documentIndex, obj, so);
@@ -627,6 +651,11 @@ namespace UnityEditor.Search
         internal bool HasCustomIndexers(Type type, bool multiLevel = true)
         {
             return CustomIndexers.HasCustomIndexers(type, multiLevel);
+        }
+
+        private protected override void OnFinish()
+        {
+            IndexerExtensions.ClearIndexerCaches(this);
         }
     }
 }
