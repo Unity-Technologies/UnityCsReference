@@ -1867,13 +1867,21 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
-            if (lastEnumValue != boundProperty.intValue)
+            if (lastEnumValue == boundProperty.intValue)
+                return false;
+
+            // When the value is a negative we need to convert it or it will be clamped.
+            var underlyingType = managedType.GetEnumUnderlyingType();
+            if (lastEnumValue < 0 && (underlyingType == typeof(uint) || underlyingType == typeof(ushort) || underlyingType == typeof(byte)))
+            {
+                boundProperty.longValue = (uint)lastEnumValue;
+            }
+            else
             {
                 boundProperty.intValue = lastEnumValue;
-                boundProperty.m_SerializedObject.ApplyModifiedProperties();
-                return true;
             }
-            return false;
+            boundProperty.m_SerializedObject.ApplyModifiedProperties();
+            return true;
         }
 
         public override void Release()

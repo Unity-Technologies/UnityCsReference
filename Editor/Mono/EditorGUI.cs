@@ -6141,7 +6141,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        content.tooltip = string.Format("Open Reference for {0}.", helpTopic);
+                        content.tooltip = string.Format("Open Reference for {0}.", ObjectNames.NicifyVariableName(helpTopic));
                     }
                 }
 

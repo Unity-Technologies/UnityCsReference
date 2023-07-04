@@ -4,6 +4,7 @@
 
 using UnityEditor;
 using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
@@ -64,9 +65,9 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
         m_HasServerIl2CppPlayers = hasServerIl2CppPlayers;
     }
 
-    public override string PrepareForBuild(BuildOptions options, BuildTarget target)
+    public override string PrepareForBuild(BuildPlayerOptions buildOptions)
     {
-        var namedBuildTarget = NamedBuildTarget.FromActiveSettings(target);
+        var namedBuildTarget = NamedBuildTarget.FromActiveSettings(buildOptions.target);
         var isServer = namedBuildTarget == NamedBuildTarget.Server;
 
         if (!isServer && !m_HasMonoPlayers)
@@ -91,7 +92,7 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
                 return $"Dedicated Server support for {GetPlatformNameForBuildProgram(default)} is not installed.";
         }
 
-        return base.PrepareForBuild(options, target);
+        return base.PrepareForBuild(buildOptions);
     }
 
     internal class ScriptingImplementations : DefaultScriptingImplementations

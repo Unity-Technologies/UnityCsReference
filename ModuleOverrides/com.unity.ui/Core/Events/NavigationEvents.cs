@@ -122,6 +122,15 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        // For unit tests. Move vector remains unassigned because it's not needed internally.
+        internal static NavigationMoveEvent GetPooled(Direction direction)
+        {
+            NavigationMoveEvent e = GetPooled();
+            e.direction = direction;
+            e.move = Vector2.zero;
+            return e;
+        }
+
         /// <summary>
         /// Initialize the event members.
         /// </summary>

@@ -36,6 +36,7 @@ namespace UnityEditor.SceneTemplate
         private static readonly string k_SnapshotTargetPopupName = "snapshot";
         private static readonly string k_CreatePipelineTooltip = L10n.Tr("Create a new Scene Template Pipeline.");
         private static readonly string k_CreatePipelineButtonLabel = L10n.Tr("Create New Scene Template Pipeline");
+        private static readonly string k_SceneTemplatePipelineHelpButtonTooltip = L10n.Tr("Open Reference for Scene Template Pipeline.");
         private List<SerializedProperty> m_DependenciesProperty = new List<SerializedProperty>();
 
         private Texture2D m_HelpIcon;
@@ -177,18 +178,22 @@ namespace UnityEditor.SceneTemplate
                 }
             });
             sceneTemplatePipeline.Add(pipelineField);
-            var buttonRow = CreateEmptyLabelRow(L10n.Tr("Scene Template Pipeline"), Styles.classUnityPropertyFieldLabel); // Use a hidden label instead of an empty element for proper alignment
+            var buttonRow = CreateEmptyLabelRow(); // Use a hidden label instead of an empty element for proper alignment
             var createPipelineButton = new Button(OnCreateSceneTemplatePipeline) { text = k_CreatePipelineButtonLabel, tooltip = k_CreatePipelineTooltip };
             createPipelineButton.AddToClassList(Styles.classUnityBaseFieldInput);
             buttonRow.Add(createPipelineButton);
             sceneTemplatePipeline.Add(buttonRow);
             var version = UnityEditorInternal.InternalEditorUtility.GetUnityVersion();
-            var url = $"https://docs.unity3d.com/{version.Major}.{version.Minor}/Documentation/Manual/scene-templates-customizing-scene-instantiation.html";
-            root.Add(CreateFoldoutInspectorWithHelp(sceneTemplatePipeline, L10n.Tr("Scene Template Pipeline"), "SceneTemplatePipelineFoldout", url));
+            root.Add(CreateFoldoutInspectorWithHelp(sceneTemplatePipeline, L10n.Tr("Scene Template Pipeline"), "SceneTemplatePipelineFoldout", GetSceneTemplatePipelineHelp(), k_SceneTemplatePipelineHelpButtonTooltip));
 
             // Dependencies
             root.Add(CreateFoldoutInspector(BuildDependencyRows(), L10n.Tr("Dependencies"), "SceneTemplateDependenciesFoldout"));
             return root;
+        }
+
+        internal static string GetSceneTemplatePipelineHelp()
+        {
+            return Help.FindHelpNamed("scene-templates-customizing-scene-instantiation");
         }
 
         protected override bool ShouldHideOpenButton()
@@ -235,7 +240,7 @@ namespace UnityEditor.SceneTemplate
             return foldout;
         }
 
-        private Foldout CreateFoldoutInspectorWithHelp(VisualElement element, string title, string foldoutEditorPref, string helpUrl)
+        private Foldout CreateFoldoutInspectorWithHelp(VisualElement element, string title, string foldoutEditorPref, string helpUrl, string helpTooltip)
         {
             var foldout = CreateFoldoutInspector(element, title, foldoutEditorPref);
 
@@ -250,6 +255,7 @@ namespace UnityEditor.SceneTemplate
             });
             helpButton.style.backgroundImage = new StyleBackground(m_HelpIcon);
             helpButton.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+            helpButton.tooltip = helpTooltip;
             helpButton.AddToClassList(Styles.classFoldoutHelpButton);
             toggleInput.Add(helpButton);
 

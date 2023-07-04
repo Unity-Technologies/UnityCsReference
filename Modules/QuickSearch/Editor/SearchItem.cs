@@ -124,7 +124,6 @@ namespace UnityEditor.Search
         public static readonly SearchItem none = new SearchItem(Guid.NewGuid().ToString())
         {
             label = "None",
-            description = "Clear the current value",
             score = int.MinValue,
             provider = defaultProvider
         };

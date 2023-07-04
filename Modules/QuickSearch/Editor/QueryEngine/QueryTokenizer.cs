@@ -21,7 +21,7 @@ namespace UnityEditor.Search
     {
         // To match a regex at a specific index, use \\G and Match(input, startIndex)
 
-        public const string k_BaseWordPattern = "[\\w.]+";
+        public const string k_BaseWordPattern = "[\\w.\\[\\]]+";
         public const string k_FilterOperatorsInnerPattern = "[^\\w\\s-{}()\"\\[\\].,/|\\`]+";
         // This is a balanced group for {} with an optional aggregator name
         public const string k_NestedFilterPattern = "(?<agg>[a-zA-Z0-9]*?)(?<nested>\\{(?>(?<c>\\{)|[^{}]+|(?<-c>\\}))*(?(c)(?!))\\})";

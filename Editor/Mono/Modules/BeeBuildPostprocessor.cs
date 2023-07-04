@@ -479,13 +479,13 @@ namespace UnityEditor.Modules
                 args.report.RecordFileAdded(outputfile.ToString(), outputfile.Extension);
         }
 
-        public override string PrepareForBuild(BuildOptions options, BuildTarget target)
+        public override string PrepareForBuild(BuildPlayerOptions buildOptions)
         {
             // Clean the Bee folder in PrepareForBuild, so that it is also clean for script compilation.
-            if ((options & BuildOptions.CleanBuildCache) == BuildOptions.CleanBuildCache)
+            if ((buildOptions.options & BuildOptions.CleanBuildCache) == BuildOptions.CleanBuildCache)
                 EditorCompilation.CleanCache();
 
-            return base.PrepareForBuild(options, target);
+            return base.PrepareForBuild(buildOptions);
         }
 
         protected virtual void CleanBuildOutput(BuildPostProcessArgs args)

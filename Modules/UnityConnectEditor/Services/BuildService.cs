@@ -40,10 +40,10 @@ namespace UnityEditor.Connect
         BuildService()
         {
             name = "Build";
-            title = L10n.Tr("Cloud Build");
+            title = L10n.Tr("Build Automation");
             description = L10n.Tr("Build games faster");
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Build.png";
-            projectSettingsPath = "Project/Services/Cloud Build";
+            projectSettingsPath = "Project/Services/Build Automation";
             displayToggle = true;
             packageName = null;
             serviceFlagName = "build";

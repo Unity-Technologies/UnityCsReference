@@ -97,6 +97,7 @@ namespace UnityEditor
             public int nextIndex;
         }
 
+        internal const string k_ModePathsCache = "mode-paths-cache";
         internal const string k_DefaultModeId = "default";
         internal const string k_ModeCurrentIdKeyName = "mode-current-id";
         internal const string k_MenuKeyChecked = "checked";
@@ -137,6 +138,7 @@ namespace UnityEditor
 
             modeChanged += OnModeChangeMenus;
             modeChanged += OnModeChangeLayouts;
+            UnityEditor.PackageManager.Events.registeredPackages += OnRegisteredPackages;
 
             ModeDescriptorImporter.allowExplicitModeRefresh = true;
         }
@@ -349,6 +351,12 @@ namespace UnityEditor
             return Application.HasARGV("editor-mode");
         }
 
+        private static void OnRegisteredPackages(PackageManager.PackageRegistrationEventArgs evt)
+        {
+            SessionState.EraseString(k_ModePathsCache);
+            LoadModes();
+        }
+
         private static void LoadModes(bool checkStartupMode = false)
         {
             Log("LoadModes");
@@ -418,21 +426,38 @@ namespace UnityEditor
             var builtinModeFile = Path.Combine(EditorApplication.applicationContentsPath, "Resources/default.mode");
             FillModeData(builtinModeFile, modesData);
 
-            var modeDescriptors = AssetDatabase.EnumerateAllAssets(new SearchFilter
+            var modeFilePathCache = SessionState.GetString(k_ModePathsCache, "");
+            
+            if (modeFilePathCache == "")
             {
-                searchArea = SearchFilter.SearchArea.InPackagesOnly,
-                classNames = new[] { nameof(ModeDescriptor) },
-                showAllHits = true
-            });
+                var modeDescriptors = AssetDatabase.EnumerateAllAssets(new SearchFilter
+                {
+                    searchArea = SearchFilter.SearchArea.InPackagesOnly,
+                    classNames = new[] { nameof(ModeDescriptor) },
+                    showAllHits = true
+                });
 
-            while (modeDescriptors.MoveNext())
-            {
-                var md = modeDescriptors.Current.pptrValue as ModeDescriptor;
-                if (md == null)
-                    continue;
-                FillModeData(md.path, modesData);
+                while (modeDescriptors.MoveNext())
+                {
+                    var md = modeDescriptors.Current.pptrValue as ModeDescriptor;
+                    if (md == null)
+                        continue;
+                    FillModeData(md.path, modesData);
+                    modeFilePathCache += md.path + ";";
+                }
+                SessionState.SetString(k_ModePathsCache, modeFilePathCache);
             }
-
+            else
+            {
+                var paths = modeFilePathCache.Split(';');
+                foreach(var path in paths)
+                {
+                    if (!File.Exists(path))
+                        continue;
+                    FillModeData(path, modesData);
+                }
+            }
+            
             modes = new ModeEntry[modesData.Keys.Count];
             modes[0] = CreateEntry(k_DefaultModeId, (JSONObject)modesData[k_DefaultModeId]);
             var modeIndex = 1;

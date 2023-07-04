@@ -746,10 +746,10 @@ namespace UnityEngine.TextCore.Text
                 if (m_TextElementType == TextElementType.Sprite)
                 {
                     // If a sprite is used as a fallback then get a reference to it and set the color to white.
-                    m_CurrentSpriteAsset = textInfo.textElementInfo[m_CharacterCount].spriteAsset;
-                    m_SpriteIndex = textInfo.textElementInfo[m_CharacterCount].spriteIndex;
+                    SpriteCharacter sprite = (SpriteCharacter)textInfo.textElementInfo[m_CharacterCount].textElement;
+                    m_CurrentSpriteAsset = sprite.textAsset as SpriteAsset;
+                    m_SpriteIndex = (int)sprite.glyphIndex;
 
-                    SpriteCharacter sprite = m_CurrentSpriteAsset.spriteCharacterTable[m_SpriteIndex];
                     if (sprite == null)
                         continue;
 
@@ -5376,12 +5376,11 @@ namespace UnityEngine.TextCore.Text
                 if (m_TextElementType == TextElementType.Sprite)
                 {
                     // If a sprite is used as a fallback then get a reference to it and set the color to white.
-                    m_CurrentSpriteAsset = textInfo.textElementInfo[m_CharacterCount].spriteAsset;
-                    m_SpriteIndex = textInfo.textElementInfo[m_CharacterCount].spriteIndex;
+                    SpriteCharacter sprite = (SpriteCharacter)textInfo.textElementInfo[m_CharacterCount].textElement;
+                    m_CurrentSpriteAsset = sprite.textAsset as SpriteAsset;
+                    m_SpriteIndex = (int)sprite.glyphIndex;
 
-                    SpriteCharacter sprite = m_CurrentSpriteAsset.spriteCharacterTable[m_SpriteIndex];
-                    if (sprite == null)
-                        continue;
+                    if (sprite == null) continue;
 
                     // Sprites are assigned in the E000 Private Area + sprite Index
                     if (charCode == k_LesserThan)

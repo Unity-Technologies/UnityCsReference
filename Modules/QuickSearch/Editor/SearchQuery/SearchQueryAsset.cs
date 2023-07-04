@@ -16,6 +16,7 @@ namespace UnityEditor.Search
     /// Asset storing a query that will be executable by a SearchEngine.
     /// </summary>
     [Serializable, ExcludeFromPreset]
+    [HelpURL("search-usage")]
     class SearchQueryAsset : ScriptableObject, ISearchQuery
     {
         static List<SearchQueryAsset> s_SavedQueries;

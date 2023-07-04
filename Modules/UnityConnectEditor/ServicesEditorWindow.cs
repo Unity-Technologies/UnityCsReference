@@ -136,7 +136,7 @@ namespace UnityEditor.Connect
             rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesWindowCommon);
             rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesWindowDark : ServicesUtils.StylesheetPath.servicesWindowLight);
 
-            mainTemplate.CloneTree(rootVisualElement, new Dictionary<string, VisualElement>(), null);
+            mainTemplate.CloneTree(rootVisualElement);
             notificationSubscriber = new UIElementsNotificationSubscriber(rootVisualElement);
             notificationSubscriber.Subscribe(
                 Notification.Topic.AdsService,

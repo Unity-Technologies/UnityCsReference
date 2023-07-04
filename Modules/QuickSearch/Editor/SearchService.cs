@@ -803,7 +803,7 @@ namespace UnityEditor.Search
 
             var rootExpression = ParseExpression(context);
             if (rootExpression == null || (rootExpression.types.HasAny(SearchExpressionType.QueryString) &&
-                                           rootExpression.parameters.Length == 0 && rootExpression.innerText == rootExpression.outerText) ||
+                    rootExpression.parameters.Length == 0 && rootExpression.innerText == rootExpression.outerText && !rootExpression.hasEscapedNestedExpressions) ||
                 !rootExpression.types.HasAny(SearchExpressionType.Iterable))
                 return false;
 

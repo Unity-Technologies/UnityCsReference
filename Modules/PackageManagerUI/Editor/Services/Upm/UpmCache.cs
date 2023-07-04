@@ -151,6 +151,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void AddExtraPackageInfo(PackageInfo packageInfo)
         {
+            if (packageInfo == null)
+                return;
+
             if (!m_ExtraPackageInfo.TryGetValue(packageInfo.name, out var dict))
             {
                 dict = new Dictionary<string, PackageInfo>();
