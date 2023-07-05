@@ -51,13 +51,13 @@ namespace UnityEditor
         [NativeProperty("FontNameFromTTFData", false, TargetType.Function)] public extern string fontTTFName { get; }
         [NativeProperty("ForceTextureCase", false, TargetType.Function)] public extern FontTextureCase fontTextureCase { get; set; }
 
-        [NativeProperty("MarshalledFontReferences", false, TargetType.Function)] public extern Font[] fontReferences { get; set; }
-        [NativeProperty("MarshalledFontNames", false, TargetType.Function)] public extern string[] fontNames { get; set; }
+        [NativeProperty("MarshalledFontReferences", false, TargetType.Function)] public extern Font[] fontReferences { get; [param:Unmarshalled] set; }
+        [NativeProperty("MarshalledFontNames", false, TargetType.Function)] public extern string[] fontNames { get; [param:Unmarshalled] set; }
 
         internal extern bool IsFormatSupported();
         public extern Font GenerateEditableFont(string path);
 
-        internal extern Font[] MarshalledLookupFallbackFontReferences(string[] names);
+        internal extern Font[] MarshalledLookupFallbackFontReferences([Unmarshalled] string[] names);
         internal Font[] LookupFallbackFontReferences(string[] names)
         {
             return MarshalledLookupFallbackFontReferences(names);

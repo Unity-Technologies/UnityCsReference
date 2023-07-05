@@ -282,7 +282,7 @@ namespace UnityEngine
         public delegate void FontTextureRebuildCallback();
 
         public extern Material material { get; set; }
-        public extern string[] fontNames { get; set; }
+        public extern string[] fontNames { get; [param: Unmarshalled] set; }
         public extern bool dynamic { get; }
         public extern int ascent { get; }
         public extern int fontSize { get; }
@@ -359,7 +359,7 @@ namespace UnityEngine
 
         private static extern void Internal_CreateFont([Writable] Font self, string name);
         private static extern void Internal_CreateFontFromPath([Writable] Font self, string fontPath);
-        private static extern void Internal_CreateDynamicFont([Writable] Font self, string[] _names, int size);
+        private static extern void Internal_CreateDynamicFont([Writable] Font self, [Unmarshalled]string[] _names, int size);
 
         [FreeFunction("TextRenderingPrivate::GetCharacterInfo", HasExplicitThis = true)]
         public extern bool GetCharacterInfo(char ch, out CharacterInfo info, [DefaultValue("0")] int size, [DefaultValue("FontStyle.Normal")] FontStyle style);

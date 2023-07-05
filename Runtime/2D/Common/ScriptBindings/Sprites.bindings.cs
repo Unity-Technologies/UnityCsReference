@@ -82,7 +82,7 @@ namespace UnityEngine
         internal extern static Sprite CreateSpriteWithoutTextureScripting(Rect rect, Vector2 pivot, float pixelsToUnits, Texture2D texture);
 
         [FreeFunction("SpritesBindings::CreateSprite", ThrowsException = true)]
-        internal extern static Sprite CreateSprite(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape, SecondarySpriteTexture[] secondaryTexture);
+        internal extern static Sprite CreateSprite(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape, [Unmarshalled] SecondarySpriteTexture[] secondaryTexture);
 
         public extern Bounds bounds
         {
@@ -109,7 +109,7 @@ namespace UnityEngine
         // Get Secondary Texture count
         public extern int GetSecondaryTextureCount();
         [FreeFunction("SpritesBindings::GetSecondaryTextures", ThrowsException = true, HasExplicitThis = true)]
-        public extern int GetSecondaryTextures([NotNull] SecondarySpriteTexture[] secondaryTexture);
+        public extern int GetSecondaryTextures([NotNull][Unmarshalled] SecondarySpriteTexture[] secondaryTexture);
 
         // The number of pixels in one unit. Note: The C++ side still uses the name pixelsToUnits which is misleading,
         // but has not been changed yet to minimize merge conflicts.
@@ -199,7 +199,7 @@ namespace UnityEngine
 
         public extern uint GetScriptableObjectsCount();
         [FreeFunction("SpritesBindings::GetScriptableObjects", ThrowsException = true, HasExplicitThis = true)]
-        public extern uint GetScriptableObjects([NotNull] ScriptableObject[] scriptableObjects);
+        public extern uint GetScriptableObjects([NotNull][Unmarshalled] ScriptableObject[] scriptableObjects);
         public extern bool AddScriptableObject([NotNull("NullExceptionObject")]ScriptableObject obj);
         public extern bool RemoveScriptableObjectAt(uint i);
         public extern bool SetScriptableObjectAt([NotNull("NullExceptionObject")]ScriptableObject obj, uint i);
