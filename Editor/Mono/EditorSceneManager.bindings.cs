@@ -241,7 +241,7 @@ namespace UnityEditor.SceneManagement
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("RestoreSceneManagerSetup")]
-        public extern static void RestoreSceneManagerSetup(SceneSetup[] value);
+        public extern static void RestoreSceneManagerSetup([Unmarshalled] SceneSetup[] value);
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("LoadSceneManagerSetup")]

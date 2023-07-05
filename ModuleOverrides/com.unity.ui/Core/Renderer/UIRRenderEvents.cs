@@ -542,10 +542,10 @@ namespace UnityEngine.UIElements.UIR
             // UUM-21405: Fully-transparent backgrounds don't generate any geometry. So, we need to
             // force a dirty-repaint if we were transparent before, otherwise we may be trying to
             // change the color of a mesh that doesn't exists.
-            if (ve.renderChainData.backgroundColor.a == 0.0f && newColor.a > 0.0f)
+            if (ve.renderChainData.backgroundAlpha == 0.0f && newColor.a > 0.0f)
                 renderChain.UIEOnVisualsChanged(ve, false);
 
-            ve.renderChainData.backgroundColor = newColor;
+            ve.renderChainData.backgroundAlpha = newColor.a;
 
             bool shouldUpdateVisuals = false;
             if ((ve.renderHints & RenderHints.DynamicColor) == RenderHints.DynamicColor && !ve.renderChainData.isIgnoringDynamicColorHint)

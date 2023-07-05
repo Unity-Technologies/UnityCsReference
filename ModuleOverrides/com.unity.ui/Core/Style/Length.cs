@@ -17,10 +17,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         Pixel,
         /// <summary>
-        /// Interprets length as a percentage.
+        /// Interprets length as a percentage, with 100 representing 100%.
+        /// The value is not constrained and can range from negative numbers to values greater than 100.
         /// </summary>
         Percent,
-        // Em
     }
 
     /// <summary>

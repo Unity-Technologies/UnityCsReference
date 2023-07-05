@@ -33,6 +33,11 @@ namespace UnityEditor
             propertyMode = BaseExposedPropertyDrawer.GetExposedPropertyMode(exposedPropertyNameString);
             exposedPropertyTable = GetExposedPropertyTable(property);
             currentOverrideState = BaseExposedPropertyDrawer.OverrideState.DefaultValue;
+            UpdateValue();
+        }
+
+        public void UpdateValue()
+        {
             currentReferenceValue = Resolve(out m_CurrentOverrideState);
         }
 

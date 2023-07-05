@@ -132,13 +132,19 @@ namespace UnityEngine.UIElements.UIR
                 return;
 
             var style = ve.computedStyle;
-            if (style.backgroundColor.a > UIRUtility.k_Epsilon)
+
+            // UUM-40007 Store the cached background color. This will prevent the DynamicColor from forcing a
+            // full repaint if the color didn't actually change.
+            var backgroundColor = style.backgroundColor;
+            ve.renderChainData.backgroundAlpha = backgroundColor.a;
+
+            if (backgroundColor.a > UIRUtility.k_Epsilon)
             {
                 // Draw solid color background
                 var rectParams = new MeshGenerator.RectangleParams
                 {
                     rect = ve.rect,
-                    color = style.backgroundColor,
+                    color = backgroundColor,
                     colorPage = ColorPage.Init(m_RenderChain, ve.renderChainData.backgroundColorID),
                     playmodeTintColor = ve.panel.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
                 };
@@ -225,11 +231,19 @@ namespace UnityEngine.UIElements.UIR
                 }
                 else if (background.vectorImage != null)
                 {
+                    ScaleMode scaleMode = BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(style.backgroundPositionX,
+                        style.backgroundPositionY,
+                        style.backgroundRepeat,
+                        style.backgroundSize,
+                        out bool validScaleMode);
+
+                    bool useRepeat = !validScaleMode || (scaleMode == ScaleMode.ScaleAndCrop);
+
                     rectParams = MeshGenerator.RectangleParams.MakeVectorTextured(
                         ve.rect,
                         new Rect(0, 0, 1, 1),
                         background.vectorImage,
-                        ScaleMode.ScaleToFit,
+                        useRepeat ? ScaleMode.StretchToFill : scaleMode,
                         ve.panel.contextType);
 
                     rectParams.rect = new Rect(0, 0, rectParams.vectorImage.size.x, rectParams.vectorImage.size.y);

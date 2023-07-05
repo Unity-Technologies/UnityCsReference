@@ -238,6 +238,7 @@ namespace UnityEditor.Overlays
             return null;
         }
 
+        bool m_MouseInCurrentCanvas = false;
         OverlayMenu m_Menu;
         internal string lastAppliedPresetName => m_LastAppliedPresetName;
         List<Overlay> m_Overlays = new List<Overlay>();
@@ -392,17 +393,31 @@ namespace UnityEditor.Overlays
         {
             //this is used to clamp overlays to floating container bounds.
             floatingContainer.RegisterCallback<GeometryChangedEvent>(GeometryChanged);
+            rootVisualElement.RegisterCallback<MouseEnterEvent>(OnMouseEnter);
+            rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
         }
 
         void OnDetachedFromPanel(DetachFromPanelEvent evt)
         {
             floatingContainer.UnregisterCallback<GeometryChangedEvent>(GeometryChanged);
+            rootVisualElement.UnregisterCallback<MouseEnterEvent>(OnMouseEnter);
+            rootVisualElement.UnregisterCallback<MouseLeaveEvent>(OnMouseLeave);
         }
 
         internal void OnContainerWindowDisabled()
         {
             foreach (var overlay in m_Overlays)
                 overlay.OnWillBeDestroyed();
+        }
+
+        void OnMouseEnter(MouseEnterEvent evt)
+        {
+            m_MouseInCurrentCanvas = true;
+        }
+
+        void OnMouseLeave(MouseLeaveEvent evt)
+        {
+            m_MouseInCurrentCanvas = false;
         }
 
         internal Rect ClampToOverlayWindow(Rect rect)
@@ -473,7 +488,7 @@ namespace UnityEditor.Overlays
         internal void ShowMenu(bool show, bool atMousePosition = true)
         {
             if (show && !menuVisible)
-                menu.Show(atMousePosition);
+                menu.Show(atMousePosition && m_MouseInCurrentCanvas);
             else if (!show)
                 menu.Hide();
         }

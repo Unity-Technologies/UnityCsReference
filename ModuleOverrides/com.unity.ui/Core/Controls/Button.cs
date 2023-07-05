@@ -120,6 +120,10 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This is a shortcut for modifying <seealso cref="Clickable.clicked"/>. It is provided as a convenience. When you add or remove actions from clicked, it adds or removes them from <c>Clickable.clicked</c> automatically.
         /// </remarks>
+        /// <example>
+        /// The following example shows how to use the clicked event to print a message to the console when the button is clicked.
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/Button_clicked.cs"/>
+        /// </example>
         public event Action clicked
         {
             add

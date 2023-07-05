@@ -1014,7 +1014,7 @@ namespace UnityEngine.UIElements.UIR
         internal BMPAlloc transformID, clipRectID, opacityID, textCoreSettingsID;
         internal BMPAlloc colorID, backgroundColorID, borderLeftColorID, borderTopColorID, borderRightColorID, borderBottomColorID, tintColorID;
         internal float compositeOpacity;
-        internal Color backgroundColor;
+        internal float backgroundAlpha;
 
         internal BasicNode<TextureEntry> textures;
 
