@@ -11,7 +11,6 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Provides strongly typed access to unmanaged property data.
     /// </summary>
-    /// <typeparam name="T">The strongly typed value.</typeparam>
     public readonly struct HierarchyPropertyUnmanaged<T> :
         IEquatable<HierarchyPropertyUnmanaged<T>>,
         IHierarchyProperty<T> where T : unmanaged

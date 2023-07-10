@@ -780,7 +780,7 @@ namespace UnityEditor
 
         public void LoadTools()
         {
-            if ((m_ToolNameToType != null && m_TypeToToolName != null && m_ToolsMap != null) || IsTerrainPartOfPrefabOrAsset(target as Terrain)) return;
+            if ((m_ToolNameToType != null && m_TypeToToolName != null && m_ToolsMap != null)) return;
 
             m_ToolsMap = new Dictionary<string, ITerrainPaintTool>();
             m_ToolNameToType = new Dictionary<string, Type>();
@@ -1083,6 +1083,7 @@ namespace UnityEditor
             m_Lighting.showLightingSettings = new SavedBool($"{target.GetType()}.ShowLightingSettings", true);
             m_Lighting.showLightmapSettings = new SavedBool($"{target.GetType()}.ShowLightmapSettings", true);
             m_Lighting.showBakedLightmap = new SavedBool($"{target.GetType()}.ShowBakedLightmapSettings", false);
+            m_Lighting.showPreviewLightmap = new SavedBool($"{target.GetType()}.ShowPreviewLightmapSettings", false);
             m_Lighting.showRealtimeLightmap = new SavedBool($"{target.GetType()}.ShowRealtimeLightmapSettings", false);
 
             m_TerrainToolContext = new TerrainToolShortcutContext(this);

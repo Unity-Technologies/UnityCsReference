@@ -13,7 +13,7 @@ using UnityEngineInternal;
 
 namespace UnityEditor
 {
-    [EditorWindowTitle(title = "Preview", icon = "Lighting")]
+    [EditorWindowTitle(title = "Viewer", icon = "Lighting")]
     internal class LightmapPreviewWindow : EditorWindow
     {
         // UI selections etc
@@ -53,13 +53,24 @@ namespace UnityEditor
             GITextureType.Charting
         };
 
-        GITextureType[] kBakedPreviewTextureTypes =
+        GITextureType[] kInstanceBasedBakedPreviewTextureTypes =
         {
             GITextureType.Baked,
             GITextureType.BakedDirectional,
             GITextureType.BakedShadowMask,
             GITextureType.BakedAlbedo,
             GITextureType.BakedEmissive,
+            GITextureType.BakedCharting,
+            GITextureType.BakedTexelValidity,
+            GITextureType.BakedUVOverlap,
+            GITextureType.BakedLightmapCulling
+        };
+
+        GITextureType[] kIndexBasedBakedPreviewTextureTypes =
+        {
+            GITextureType.Baked,
+            GITextureType.BakedDirectional,
+            GITextureType.BakedShadowMask,
             GITextureType.BakedCharting,
             GITextureType.BakedTexelValidity,
             GITextureType.BakedUVOverlap,
@@ -77,7 +88,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("UV Charts")
             };
 
-            public static readonly GUIContent[] BakedPreviewTextureOptions =
+            public static readonly GUIContent[] InstanceBasedBakedPreviewTextureOptions =
             {
                 EditorGUIUtility.TrTextContent("Baked Lightmap"),
                 EditorGUIUtility.TrTextContent("Baked Directionality"),
@@ -89,12 +100,21 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Baked UV Overlap"),
             };
 
+            public static readonly GUIContent[] IndexBasedBakedPreviewTextureOptions =
+            {
+                EditorGUIUtility.TrTextContent("Baked Lightmap"),
+                EditorGUIUtility.TrTextContent("Baked Directionality"),
+                EditorGUIUtility.TrTextContent("Baked Shadowmask"),
+                EditorGUIUtility.TrTextContent("Baked UV Charts"),
+                EditorGUIUtility.TrTextContent("Baked Texel Validity"),
+                EditorGUIUtility.TrTextContent("Baked UV Overlap"),
+            };
+
             public static readonly GUIStyle PreviewLabel = new GUIStyle(EditorStyles.whiteLabel);
 
             public static readonly GUIContent TextureNotAvailableRealtime = EditorGUIUtility.TrTextContent("The texture is not available at the moment.");
-            public static readonly GUIContent TextureNotAvailableBaked = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease try to rebake the current scene or turn on Auto, and make sure that this object is set to 'Contribute Global Illumination' if it's meant to be baked.");
+            public static readonly GUIContent TextureNotAvailableBaked = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease try to rebake the current scene, and make sure that this object is set to 'Contribute Global Illumination' if it's meant to be baked.");
             public static readonly GUIContent TextureNotAvailableBakedShadowmask = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease make sure that Mixed Lights affect this GameObject and that it is set to 'Contribute Global Illumination'.");
-            public static readonly GUIContent TextureNotAvailableBakedAlbedoEmissive = EditorGUIUtility.TrTextContent("The texture is not an index-based texture and is not available when using Progressive.\nPlease go to the instance you wish to debug, and select the lightmap on the Mesh Renderer.");
             public static readonly GUIContent TextureLoading = EditorGUIUtility.TrTextContent("Loading...");
             public static readonly GUIContent UVOverlayIcon = EditorGUIUtility.TrIconContent("ToggleUVOverlay", "Toggles the UV Overlay for all the objects in the lightmap. The currently selected object will be highlighted. ");
         }
@@ -121,18 +141,52 @@ namespace UnityEditor
             get { return m_InstanceID == -1; }
         }
 
+        private GITextureType[] currentPreviewTextureTypes
+        {
+            get
+            {
+                if (isRealtimeLightmap)
+                    return kRealtimePreviewTextureTypes;
+                else if (isIndexBased)
+                    return kIndexBasedBakedPreviewTextureTypes;
+                else
+                    return kInstanceBasedBakedPreviewTextureTypes;
+            }
+        }
+
+        private GUIContent[] currentPreviewTextureOptions
+        {
+            get
+            {
+                if (isRealtimeLightmap)
+                    return Styles.RealtimePreviewTextureOptions;
+                else if (isIndexBased)
+                    return Styles.IndexBasedBakedPreviewTextureOptions;
+                else
+                    return Styles.InstanceBasedBakedPreviewTextureOptions;
+            }
+        }
+
+        public bool useInteractiveLightBakingData { get; set; }
+
         private string lightmapTitle
         {
             get
             {
-                if (isIndexBased) return ((isRealtimeLightmap ? "Realtime Lightmap Index " : "Lightmap Index ") + m_LightmapIndex);
+                string prefix = "";
+                if (isRealtimeLightmap)
+                    prefix = "Realtime ";
+                else if (useInteractiveLightBakingData)
+                    prefix = "Preview ";
+
+                if (isIndexBased) return $"{prefix}Lightmap Index {m_LightmapIndex}";
 
                 var obj = EditorUtility.InstanceIDToObject(m_InstanceID);
 
                 if (obj)
-                    return (isRealtimeLightmap ? "Realtime" : "") + " Lightmap for '" + obj.name + "'";
+                    return $"{prefix}Lightmap for '{obj.name}'";
 
-                return (isRealtimeLightmap ? "Realtime" : "") + " Lightmap";
+                return $"{prefix}Lightmap";
             }
         }
 
@@ -141,7 +195,7 @@ namespace UnityEditor
             get { return SelectedTextureTypeNeedsExposureControl() ? m_ExposureSliderValue : 0.0f; }
         }
 
-        public static void CreateLightmapPreviewWindow(int lightmapId, bool realtimeLightmap, bool indexBased)
+        public static void CreateLightmapPreviewWindow(int lightmapId, bool realtimeLightmap, bool indexBased, bool useInteractiveLightBakingData)
         {
             LightmapPreviewWindow window = EditorWindow.CreateInstance<LightmapPreviewWindow>();
             window.minSize = new Vector2(360, 390);
@@ -151,6 +205,8 @@ namespace UnityEditor
                 window.lightmapIndex = lightmapId;
             else
                 window.instanceID = lightmapId;
+
+            window.useInteractiveLightBakingData = useInteractiveLightBakingData;
 
             window.Show();
         }
@@ -211,8 +267,8 @@ namespace UnityEditor
             m_ShowUVOverlay = GUILayout.Toggle(m_ShowUVOverlay, Styles.UVOverlayIcon, EditorStyles.toolbarButton);
 
             Rect dropRect = GUILayoutUtility.GetRect(14, 160, EditorGUI.kWindowToolbarHeight, EditorGUI.kWindowToolbarHeight);
-            GUIContent[] options = isRealtimeLightmap ? Styles.RealtimePreviewTextureOptions : Styles.BakedPreviewTextureOptions;
-            GITextureType[] types = isRealtimeLightmap ? kRealtimePreviewTextureTypes : kBakedPreviewTextureTypes;
+            GUIContent[] options = currentPreviewTextureOptions;
+            GITextureType[] types = currentPreviewTextureTypes;
 
             if ((m_SelectedPreviewTextureOptionIndex < 0 || m_SelectedPreviewTextureOptionIndex >= options.Length) || !LightmapVisualizationUtility.IsTextureTypeEnabled(types[m_SelectedPreviewTextureOptionIndex]))
             {
@@ -272,9 +328,7 @@ namespace UnityEditor
             {
                 if (!isRealtimeLightmap)
                 {
-                    if (!LightmapVisualizationUtility.IsAtlasTextureType(textureType) && isIndexBased)
-                        GUI.Label(drawableArea, Styles.TextureNotAvailableBakedAlbedoEmissive, Styles.PreviewLabel);
-                    else if (textureType == GITextureType.BakedShadowMask)
+                    if (textureType == GITextureType.BakedShadowMask)
                         GUI.Label(drawableArea, Styles.TextureNotAvailableBakedShadowmask, Styles.PreviewLabel);
                     else
                         GUI.Label(drawableArea, Styles.TextureNotAvailableBaked, Styles.PreviewLabel);
@@ -357,7 +411,7 @@ namespace UnityEditor
 
                         LightmapVisualizationUtility.DrawTextureWithUVOverlay(texture,
                             (m_ShowUVOverlay && IsActiveGameObjectInLightmap(textureType)) ? Selection.activeGameObject : null,
-                            m_ShowUVOverlay ? m_CachedTextureObjects : new GameObject[] {}, drawableArea, textureRect, textureType, exposure);
+                            m_ShowUVOverlay ? m_CachedTextureObjects : new GameObject[] {}, drawableArea, textureRect, textureType, exposure, useInteractiveLightBakingData);
                         texture.filterMode = prevMode;
                     }
                 }
@@ -369,15 +423,15 @@ namespace UnityEditor
 
         private void SelectPreviewTextureIndex(object textureOption)
         {
-            GUIContent[] options = isRealtimeLightmap ? Styles.RealtimePreviewTextureOptions : Styles.BakedPreviewTextureOptions;
+            GUIContent[] options = currentPreviewTextureOptions;
 
             m_SelectedPreviewTextureOptionIndex = Array.IndexOf(options, textureOption);
         }
 
         private GITextureType GetSelectedTextureType()
         {
-            GUIContent[] options = isRealtimeLightmap ? Styles.RealtimePreviewTextureOptions : Styles.BakedPreviewTextureOptions;
-            GITextureType[] types = isRealtimeLightmap ? kRealtimePreviewTextureTypes : kBakedPreviewTextureTypes;
+            GUIContent[] options = currentPreviewTextureOptions;
+            GITextureType[] types = currentPreviewTextureTypes;
 
             if ((m_SelectedPreviewTextureOptionIndex < 0 || m_SelectedPreviewTextureOptionIndex >= options.Length) || !LightmapVisualizationUtility.IsTextureTypeEnabled(types[m_SelectedPreviewTextureOptionIndex]))
             {
@@ -437,8 +491,12 @@ namespace UnityEditor
             }
             else
             {
-                m_ActiveGameObjectLightmapIndex = renderer != null ? renderer.lightmapIndex : terrain.lightmapIndex;
                 m_ActiveGameObjectInstanceId = renderer != null ? renderer.GetInstanceID() : terrain.GetInstanceID();
+
+                if (useInteractiveLightBakingData)
+                    m_ActiveGameObjectLightmapIndex = InteractiveLightBaking.GetLightmapIndexFromRenderer(m_ActiveGameObjectInstanceId);
+                else
+                    m_ActiveGameObjectLightmapIndex = renderer != null ? renderer.lightmapIndex : terrain.lightmapIndex;
             }
         }
 
@@ -469,10 +527,20 @@ namespace UnityEditor
                     }
                     m_RealtimeTextureHash = systemHash;
                 }
+                else if (useInteractiveLightBakingData)
+                {
+                    ushort lightmapIndex = InteractiveLightBaking.GetLightmapIndexFromRenderer(m_InstanceID);
+                    if (lightmapIndex >= 0xFFFF)
+                    {
+                        m_CachedTexture.textureAvailability = GITextureAvailability.GITextureNotAvailable;
+                        return;
+                    }
+
+                    m_LightmapIndex = lightmapIndex;
+                }
                 else
                 {
                     int lightmapIndex;
-
                     if (!Lightmapping.GetLightmapIndex(m_InstanceID, out lightmapIndex))
                     {
                         m_CachedTexture.textureAvailability = GITextureAvailability.GITextureNotAvailable;
@@ -483,7 +551,6 @@ namespace UnityEditor
                 }
             }
 
-            const bool useInteractiveLightBakingData = false;
             Hash128 contentHash = isRealtimeLightmap ? LightmapVisualizationUtility.GetRealtimeGITextureHash(m_RealtimeTextureHash, textureType) :
                 LightmapVisualizationUtility.GetBakedGITextureHash(m_LightmapIndex, m_InstanceID, textureType, useInteractiveLightBakingData);
 
@@ -506,7 +573,7 @@ namespace UnityEditor
             if (isRealtimeLightmap)
                 m_CachedTextureObjects = LightmapVisualizationUtility.GetRealtimeGITextureRenderers(m_RealtimeTextureHash);
             else if (LightmapVisualizationUtility.IsAtlasTextureType(textureType))
-                m_CachedTextureObjects = LightmapVisualizationUtility.GetBakedGITextureRenderers(m_LightmapIndex);
+                m_CachedTextureObjects = LightmapVisualizationUtility.GetBakedGITextureRenderers(m_LightmapIndex, useInteractiveLightBakingData);
             else // if it's an instance based baked lightmap, we only have 1 object in it
                 m_CachedTextureObjects = new GameObject[] {};
         }

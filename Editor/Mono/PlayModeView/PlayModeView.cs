@@ -10,6 +10,7 @@ using Unity.Collections;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Scripting;
 
@@ -47,6 +48,8 @@ namespace UnityEditor
         [SerializeField] bool m_RenderIMGUI;
         [SerializeField] EnterPlayModeBehavior m_EnterPlayModeBehavior;
         [SerializeField] bool m_UseMipMap;
+
+        protected bool m_SwitchingPlayModeViewType = false;
 
         private const int k_MaxSupportedDisplays = 8;
 
@@ -167,6 +170,14 @@ namespace UnityEditor
 
         RenderTexture m_TargetTexture;
         ColorSpace m_CurrentColorSpace = ColorSpace.Uninitialized;
+
+        [FreeFunction]
+        extern protected static bool NeedToPerformRendering();
+
+        protected static bool renderViewCallNeededInOnGUI =>
+            !EditorApplication.isPlaying ||
+            (EditorApplication.isPlaying && NeedToPerformRendering() && !Unsupported.IsEditorPlayerLoopWaiting());
+
 
         class RenderingView : IDisposable
         {
@@ -315,6 +326,11 @@ namespace UnityEditor
 
                 if (m_Parent is DockArea dockAreaParent)
                 {
+                    // Mark that this view is the one switching out so when we do the tab management we don't have
+                    //   the old tab rewrite the desired size when GameView.OnBackgroundResized() is called during
+                    //   SplitView.Reflow().
+                    m_SwitchingPlayModeViewType = true;
+
                     dockAreaParent.AddTab(window);
                     dockAreaParent.RemoveTab(this);
                     DestroyImmediate(this, true);

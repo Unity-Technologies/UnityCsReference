@@ -71,6 +71,13 @@ namespace UnityEditor.PackageManager
             return new AddScopedRegistryRequest(operationId, status);
         }
 
+        public static ClearCacheRequest ClearCache()
+        {
+            long operationId;
+            var status = ClearCache(out operationId);
+            return new ClearCacheRequest(operationId, status);
+        }
+
         internal static ClearCacheRootRequest ClearCacheRoot()
         {
             long operationId;

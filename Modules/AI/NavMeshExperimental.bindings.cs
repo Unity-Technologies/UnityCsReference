@@ -13,6 +13,7 @@ using UnityEngine.AI;
 
 namespace UnityEngine.Experimental.AI
 {
+    [Obsolete("The experimental PolygonId struct has been deprecated without replacement.")]
     public struct PolygonId : IEquatable<PolygonId>
     {
         internal ulong polyRef;
@@ -33,6 +34,7 @@ namespace UnityEngine.Experimental.AI
         }
     }
 
+    [Obsolete("The experimental NavMeshLocation struct has been deprecated without replacement.")]
     public struct NavMeshLocation
     {
         public PolygonId polygon { get; }
@@ -71,6 +73,7 @@ namespace UnityEngine.Experimental.AI
     //}
 
     // Keep in sync with the values in NavMeshTypes.h
+    [Obsolete("The experimental PathQueryStatus struct has been deprecated without replacement.")]
     [Flags]
     public enum PathQueryStatus
     {
@@ -91,12 +94,14 @@ namespace UnityEngine.Experimental.AI
     }
 
     // Flags describing polygon properties. Keep in sync with the enum declared in NavMesh.h
+    [Obsolete("The experimental NavMeshPolyTypes enum has been deprecated without replacement.")]
     public enum NavMeshPolyTypes
     {
         Ground = 0,                    // Regular ground polygons.
         OffMeshConnection = 1          // Off-mesh connections.
     }
 
+    [Obsolete("The experimental NavMeshWorld struct has been deprecated without replacement.")]
     [StaticAccessor("NavMeshWorldBindings", StaticAccessorType.DoubleColon)]
     public struct NavMeshWorld
     {
@@ -119,6 +124,7 @@ namespace UnityEngine.Experimental.AI
         }
     }
 
+    [Obsolete("The experimental NavMeshQuery struct has been deprecated without replacement.")]
     [NativeContainer]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/AI/NavMeshExperimental.bindings.h")]

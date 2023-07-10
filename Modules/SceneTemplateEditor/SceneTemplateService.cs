@@ -231,7 +231,8 @@ namespace UnityEditor.SceneTemplate
             AssetDatabase.SaveAssets();
             AssetDatabase.ImportAsset(sceneTemplatePath);
 
-            var sceneCreationEvent = new SceneTemplateAnalytics.SceneTemplateCreationEvent(sceneTemplate, creationType);
+            var sceneCreationEvent = new SceneTemplateAnalytics.SceneTemplateCreationEvent();
+            sceneCreationEvent.SetData(sceneTemplate, creationType);
             SceneTemplateAnalytics.SendSceneTemplateCreationEvent(sceneCreationEvent);
 
             SceneTemplateUtils.SetLastFolder(sceneTemplatePath);

@@ -5,17 +5,22 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using UnityEditor.Connect;
 using UnityEditor.Profiling;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Analytics;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
+using static UnityEditor.PlayModeAnalytics;
+using static UnityEditor.Profiling.Analytics.ProfilerWindowAnalytics;
 
 namespace UnityEditor.Profiling.Analytics
 {
     [RequiredByNativeCode(GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct ProfilerAnalyticsSaveLoadData
+    internal struct ProfilerAnalyticsSaveLoadData : IAnalytic.IData
     {
         public string extension;
         public long duration;
@@ -30,7 +35,7 @@ namespace UnityEditor.Profiling.Analytics
 
     [RequiredByNativeCode(GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct ProfilerAnalyticsConnectionData
+    internal struct ProfilerAnalyticsConnectionData : IAnalytic.IData
     {
         public bool success;
         public string connectionDetail;
@@ -38,7 +43,7 @@ namespace UnityEditor.Profiling.Analytics
     }
 
     [Serializable]
-    internal struct ProfilerAnalyticsViewUsability
+    internal struct ProfilerAnalyticsViewUsability : IAnalytic.IData
     {
         public string element;
         public uint mouseEvents;
@@ -47,7 +52,7 @@ namespace UnityEditor.Profiling.Analytics
     }
 
     [Serializable]
-    internal struct ProfilerAnalyticsViewUsabilitySession
+    internal struct ProfilerAnalyticsViewUsabilitySession : IAnalytic.IData
     {
         public ProfilerAnalyticsViewUsability[] session;
         public uint mouseEvents;
@@ -56,13 +61,20 @@ namespace UnityEditor.Profiling.Analytics
     }
 
     [Serializable]
-    internal struct ProfilerAnalyticsCapture
+    internal struct ProfilerAnalyticsCapture : IAnalytic.IData
     {
         public bool deepProfileEnabled;
         public bool callStacksEnabled;
         public string platformName; // Editor is platform
         public string connectionName;
     }
+
+    [Serializable]
+    internal struct BottleneckLink : IAnalytic.IData
+    {
+        public string linkDescription;
+    }
+
 
     internal static class ProfilerWindowAnalytics
     {
@@ -75,18 +87,11 @@ namespace UnityEditor.Profiling.Analytics
         const string k_ProfilerCapture = "profilerCapture";
         const string k_BottlenecksModuleLinkSelected = "bottlenecksModuleLinkSelected";
 
-        static IAnalyticsService s_AnalyticsService;
-
-        // events registered
-        static bool s_ProfilerElementUsabilityRegistered;
-        static bool s_ProfilerCaptureRegistered;
-        static bool s_ProfilerSaveLoadRegistered;
-        static bool s_ProfilerConnectionRegistered;
-        static bool s_BottlenecksModuleLinkSelectedRegistered;
-
         static ProfilerAnalyticsViewUsabilitySession s_ProfilerSession;
         static List<ProfilerAnalyticsViewUsability> s_Views;
         static int s_CurrentViewIndex;
+
+        static IAnalyticsService s_AnalyticsService;
 
         static ProfilerWindowAnalytics()
         {
@@ -95,31 +100,78 @@ namespace UnityEditor.Profiling.Analytics
                 SetAnalyticsService(new EditorAnalyticsService());
         }
 
-        static bool RegisterEvent(ref bool eventRegisteredFlag, string eventName)
-        {
-            if (s_AnalyticsService == null)
-                return false;
-
-            if (!eventRegisteredFlag)
-                eventRegisteredFlag = s_AnalyticsService.RegisterEventWithLimit(eventName, k_MaxEventsPerHour, k_MaxNumberOfElements, k_VendorKey);
-
-            return eventRegisteredFlag;
-        }
-
         public static IAnalyticsService SetAnalyticsService(IAnalyticsService service)
         {
             var oldService = s_AnalyticsService;
             s_AnalyticsService = service;
 
-            // Reset events registration
-            s_ProfilerElementUsabilityRegistered = false;
-            s_ProfilerCaptureRegistered = false;
-            s_ProfilerSaveLoadRegistered = false;
-            s_ProfilerConnectionRegistered = false;
-            s_BottlenecksModuleLinkSelectedRegistered = false;
-
             return oldService;
         }
+
+        [AnalyticInfo(eventName: k_ProfilerElementUsability, vendorKey: k_VendorKey)]
+        internal class ProfilerWindowDestroy : IAnalytic
+        {
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                error = null;
+                data = s_ProfilerSession;
+                return data != null;
+            }
+        }
+
+        [AnalyticInfo(eventName: k_ProfilerSaveLoad, vendorKey: k_VendorKey)]
+        internal class SaveLoadEvent : IAnalytic
+        {
+            public SaveLoadEvent(ProfilerAnalyticsSaveLoadData data) { m_data = data; }
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                error = null;
+                data = m_data;
+                return data != null;
+            }
+            private ProfilerAnalyticsSaveLoadData m_data;
+        }
+
+        [AnalyticInfo(eventName: k_ProfilerConnection, vendorKey: k_VendorKey)]
+        internal class ConnectionEvent : IAnalytic
+        {
+            public ConnectionEvent(ProfilerAnalyticsConnectionData data) { m_data = data; }
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                error = null;
+                data = m_data;
+                return data != null;
+            }
+            private ProfilerAnalyticsConnectionData m_data;
+        }
+
+        [AnalyticInfo(eventName: k_ProfilerCapture, vendorKey: k_VendorKey)]
+        internal class CaptureEvent : IAnalytic
+        {
+            public CaptureEvent(ProfilerAnalyticsCapture data) { m_data = data; }
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                error = null;
+                data = m_data;
+                return data != null;
+            }
+            private ProfilerAnalyticsCapture m_data;
+        }
+
+        [AnalyticInfo(eventName: k_BottlenecksModuleLinkSelected, vendorKey: k_VendorKey)]
+        internal class BottleneckLinkEvent : IAnalytic
+        {
+            public BottleneckLinkEvent(BottleneckLink data) { m_data = data; }
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                error = null;
+                data = m_data;
+                return data != null;
+            }
+            private BottleneckLink m_data;
+        }
+
+        
 
         /// <summary>
         /// Reset analytics tracking on profiler window open and record the session start time.
@@ -183,8 +235,6 @@ namespace UnityEditor.Profiling.Analytics
             if (s_Views != null && s_CurrentViewIndex >= 0 && s_CurrentViewIndex < s_Views.Count && s_Views[s_CurrentViewIndex].element == element)
                 return;
 
-            if (!RegisterEvent(ref s_ProfilerElementUsabilityRegistered, k_ProfilerElementUsability))
-                return;
 
             // Check if we start a new sequence or continuing the old one
             s_Views ??= new List<ProfilerAnalyticsViewUsability>();
@@ -222,7 +272,7 @@ namespace UnityEditor.Profiling.Analytics
             if (s_Views == null || s_Views.Count == 0)
                 return;
 
-            if (!RegisterEvent(ref s_ProfilerElementUsabilityRegistered, k_ProfilerElementUsability))
+            if (s_AnalyticsService == null)
                 return;
 
             // Update duration for the current view and send all accumulated events.
@@ -233,7 +283,10 @@ namespace UnityEditor.Profiling.Analytics
             var currentTime = EditorApplication.timeSinceStartup;
             s_ProfilerSession.session = s_Views.ToArray();
             s_ProfilerSession.time = currentTime - s_ProfilerSession.time;
-            s_AnalyticsService.SendEventWithLimit(k_ProfilerElementUsability, s_ProfilerSession);
+
+            ProfilerWindowDestroy analytic = new ProfilerWindowDestroy();
+            s_AnalyticsService.SendAnalytic(analytic);
+
 
             ClearElementUsabilityQueue(currentTime);
         }
@@ -256,7 +309,7 @@ namespace UnityEditor.Profiling.Analytics
         /// </summary>
         public static void StartCapture()
         {
-            if (!RegisterEvent(ref s_ProfilerCaptureRegistered, k_ProfilerCapture))
+            if (s_AnalyticsService == null)
                 return;
 
             var captureEvt = new ProfilerAnalyticsCapture
@@ -268,31 +321,41 @@ namespace UnityEditor.Profiling.Analytics
                 // Editor platform name
                 platformName = Application.platform.ToString()
             };
-            s_AnalyticsService.SendEventWithLimit(k_ProfilerCapture, captureEvt);
+
+            CaptureEvent analytic = new CaptureEvent(captureEvt);
+            s_AnalyticsService.SendAnalytic(analytic);
         }
 
         public static void SendSaveLoadEvent(ProfilerAnalyticsSaveLoadData data)
         {
-            if (!RegisterEvent(ref s_ProfilerSaveLoadRegistered, k_ProfilerSaveLoad))
+          if (s_AnalyticsService == null)
                 return;
 
-            s_AnalyticsService.SendEventWithLimit(k_ProfilerSaveLoad, data);
+            SaveLoadEvent analytic = new SaveLoadEvent(data);
+            s_AnalyticsService.SendAnalytic(analytic);
         }
 
         public static void SendConnectionEvent(ProfilerAnalyticsConnectionData data)
         {
-            if (!RegisterEvent(ref s_ProfilerConnectionRegistered, k_ProfilerConnection))
+            if (s_AnalyticsService == null)
                 return;
-
-            s_AnalyticsService.SendEventWithLimit(k_ProfilerConnection, data);
+            ConnectionEvent analytic = new ConnectionEvent(data);
+            s_AnalyticsService.SendAnalytic(analytic);
         }
 
         public static void SendBottleneckLinkSelectedEvent(string linkDescription)
         {
-            if (!RegisterEvent(ref s_BottlenecksModuleLinkSelectedRegistered, k_BottlenecksModuleLinkSelected))
+            if (s_AnalyticsService == null)
                 return;
 
-            s_AnalyticsService.SendEventWithLimit(k_BottlenecksModuleLinkSelected, linkDescription);
+            var data = new BottleneckLink
+            {
+                linkDescription = linkDescription
+            };
+
+            BottleneckLinkEvent analytic = new BottleneckLinkEvent(data);
+            s_AnalyticsService.SendAnalytic(analytic);
+
         }
     }
 }

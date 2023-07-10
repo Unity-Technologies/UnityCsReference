@@ -269,8 +269,7 @@ namespace UnityEngine
                         UnsafeUtility.GetReasonForArrayNonBlittable(data)));
             }
 
-            var elemSize = UnsafeUtility.SizeOf(data.GetType().GetElementType());
-            InternalSetData(UnsafeUtility.GetByteSpanFromArray(data, elemSize), 0, 0, data.Length, elemSize);
+            InternalSetData(data, 0, 0, data.Length, UnsafeUtility.SizeOf(data.GetType().GetElementType()));
         }
 
         // Set buffer data.
@@ -287,7 +286,7 @@ namespace UnityEngine
                         typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
             }
 
-            InternalSetData(UnsafeUtility.GetByteSpanFromList(data), 0, 0, NoAllocHelpers.SafeLength(data), Marshal.SizeOf(typeof(T)));
+            InternalSetData(NoAllocHelpers.ExtractArrayFromList(data), 0, 0, NoAllocHelpers.SafeLength(data), Marshal.SizeOf(typeof(T)));
         }
 
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
@@ -314,8 +313,7 @@ namespace UnityEngine
             if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
                 throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
 
-            var elemSize = Marshal.SizeOf(data.GetType().GetElementType());
-            InternalSetData(UnsafeUtility.GetByteSpanFromArray(data, elemSize), managedBufferStartIndex, graphicsBufferStartIndex, count, elemSize);
+            InternalSetData(data, managedBufferStartIndex, graphicsBufferStartIndex, count, Marshal.SizeOf(data.GetType().GetElementType()));
         }
 
         // Set partial buffer data
@@ -335,7 +333,7 @@ namespace UnityEngine
             if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Count)
                 throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
 
-            InternalSetData(UnsafeUtility.GetByteSpanFromList(data), managedBufferStartIndex, graphicsBufferStartIndex, count, Marshal.SizeOf(typeof(T)));
+            InternalSetData(NoAllocHelpers.ExtractArrayFromList(data), managedBufferStartIndex, graphicsBufferStartIndex, count, Marshal.SizeOf(typeof(T)));
         }
 
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
@@ -354,7 +352,7 @@ namespace UnityEngine
 
         [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
         [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalSetData", HasExplicitThis = true, ThrowsException = true)]
-        extern private void InternalSetData(ReadOnlySpan<byte> data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
+        extern private void InternalSetData(System.Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
 
         [System.Security.SecurityCritical] // due to Marshal.SizeOf
         public void GetData(System.Array data)
@@ -369,8 +367,7 @@ namespace UnityEngine
                         UnsafeUtility.GetReasonForArrayNonBlittable(data)));
             }
 
-            var elemType = Marshal.SizeOf(data.GetType().GetElementType());
-            InternalGetData(UnsafeUtility.GetByteSpanFromArray(data, elemType), 0, 0, data.Length, elemType);
+            InternalGetData(data, 0, 0, data.Length, Marshal.SizeOf(data.GetType().GetElementType()));
         }
 
         // Read partial buffer data.
@@ -390,13 +387,12 @@ namespace UnityEngine
             if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
                 throw new ArgumentOutOfRangeException(String.Format("Bad indices/count argument (managedBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", managedBufferStartIndex, computeBufferStartIndex, count));
 
-            var elemSize = Marshal.SizeOf(data.GetType().GetElementType());
-            InternalGetData(UnsafeUtility.GetByteSpanFromArray(data, elemSize), managedBufferStartIndex, computeBufferStartIndex, count, elemSize);
+            InternalGetData(data, managedBufferStartIndex, computeBufferStartIndex, count, Marshal.SizeOf(data.GetType().GetElementType()));
         }
 
         [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
         [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalGetData", HasExplicitThis = true, ThrowsException = true)]
-        extern private void InternalGetData(Span<byte> data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
+        extern private void InternalGetData(System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
 
         [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalGetNativeBufferPtr", HasExplicitThis = true)]
         extern public IntPtr GetNativeBufferPtr();

@@ -287,12 +287,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_HasErrorWithEntitlementMessage = info.errors.Any(error
                 => error.errorCode == ErrorCode.Forbidden
-                || error.message.IndexOf(EntitlementsErrorAndDeprecationChecker.k_NoSubscriptionUpmErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0);
+                && error.message.IndexOf(EntitlementsErrorAndDeprecationChecker.k_NoSubscriptionUpmErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0);
 
             m_Errors.Clear();
 
             if (hasEntitlementsError)
-                m_Errors.Add(UIError.k_EntitlementError);
+                m_Errors.Add(isInstalled ? UIError.k_EntitlementError : UIError.k_EntitlementWarning);
 
             foreach (var error in info.errors)
             {

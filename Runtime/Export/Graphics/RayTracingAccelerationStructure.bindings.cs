@@ -518,10 +518,10 @@ namespace UnityEngine.Rendering
                 throw new ArgumentException("config.vertexBuffer must not be null.");
 
             if (config.vertexCount == -1 && config.vertexStart >= config.vertexBuffer.count)
-                throw new ArgumentOutOfRangeException("config.vertexStart", "config.vertexStart is out of range. Not enough vertices in the vertex buffer.");
+                throw new ArgumentOutOfRangeException("config.vertexStart", $"config.vertexStart ({config.vertexStart}) is out of range. Not enough vertices in the vertex buffer ({config.vertexBuffer.count}).");
 
             if (config.vertexCount != -1 && config.vertexStart + config.vertexCount > config.vertexBuffer.count)
-                throw new ArgumentOutOfRangeException("config.vertexStart", "config.vertexStart + config.vertexCount is out of range. Not enough vertices in the vertex buffer.");
+                throw new ArgumentOutOfRangeException("config.vertexStart", $"config.vertexStart ({config.vertexStart}) + config.vertexCount ({config.vertexCount}) is out of range. Not enough vertices in the vertex buffer ({config.vertexBuffer.count}).");
 
             int vertexCount = (config.vertexCount < 0) ? config.vertexBuffer.count : config.vertexCount;
 
@@ -534,10 +534,10 @@ namespace UnityEngine.Rendering
                     throw new ArgumentOutOfRangeException("config.indexBuffer", "config.indexBuffer must contain at least 3 indices.");
 
                 if (config.indexCount == -1 && config.indexStart >= config.indexBuffer.count)
-                    throw new ArgumentOutOfRangeException("config.indexStart", "config.indexStart is out of range. Not enough indices in the index buffer.");
+                    throw new ArgumentOutOfRangeException("config.indexStart", $"config.indexStart ({config.indexStart}) is out of range. Not enough indices in the index buffer ({config.indexBuffer.count}).");
 
                 if (config.indexCount != -1 && config.indexStart + config.indexCount > config.indexBuffer.count)
-                    throw new ArgumentOutOfRangeException("config.indexStart", "config.indexStart + config.indexCount is out of range. Not enough indices in the index buffer.");
+                    throw new ArgumentOutOfRangeException("config.indexStart", $"config.indexStart ({config.indexStart}) + config.indexCount ({config.indexCount}) is out of range. Not enough indices in the index buffer ({config.indexBuffer.count}).");
 
                 int indexCount = (config.indexCount < 0) ? config.indexBuffer.count : config.indexCount;
 
@@ -755,10 +755,7 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("RayTracingAccelerationStructure_Bindings::Destroy")]
         extern private static void Destroy(RayTracingAccelerationStructure accelStruct);
-
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddAABBsInstance", HasExplicitThis = true)]
-        extern private int AddInstance_Procedural([NotNull] GraphicsBuffer aabbBuffer, uint aabbCount, bool dynamicData, Matrix4x4 matrix, [NotNull] Material material, bool opaqueMaterial, MaterialPropertyBlock properties, uint mask = 0xFF, uint id = 0xFFFFFFFF);
-
+       
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::RemoveInstance", HasExplicitThis = true)]
         extern private void RemoveInstance_Renderer([NotNull] Renderer targetRenderer);
 
@@ -803,27 +800,27 @@ namespace UnityEngine.Rendering
 
 
         // Obsolete methods bellow. To be removed in the future.
-        const string obsoleteBuildMsg1 = "Method Update is deprecated. Use Build instead (UnityUpgradable) -> Build()";
+        const string obsoleteBuildMsg1 = "Method Update is deprecated and it will be removed in Unity 2024.1. Use Build instead (UnityUpgradable) -> Build()";
         [Obsolete(obsoleteBuildMsg1, true)]
         public void Update() => new NotSupportedException(obsoleteBuildMsg1);
 
-        const string obsoleteBuildMsg2 = "Method Update is deprecated. Use Build instead (UnityUpgradable) -> Build(*)";
+        const string obsoleteBuildMsg2 = "Method Update is deprecated and it will be removed in Unity 2024.1. Use Build instead (UnityUpgradable) -> Build(*)";
         [Obsolete(obsoleteBuildMsg2, true)]
         public void Update(Vector3 relativeOrigin) => new NotSupportedException(obsoleteBuildMsg2);
 
-        const string obsoleteRendererMsg = "This AddInstance method is deprecated and will be removed in a future version. Please use the alternate AddInstance method for adding Renderers to the acceleration structure.";
+        const string obsoleteRendererMsg = "This AddInstance method is deprecated and will be removed and it will be removed in Unity 2024.1. Please use the alternative AddInstance method for adding Renderers to the acceleration structure.";
         [Obsolete(obsoleteRendererMsg, true)]
         public void AddInstance(Renderer targetRenderer, bool[] subMeshMask = null, bool[] subMeshTransparencyFlags = null, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteRendererMsg);
 
-        const string obsoleteAABBMsg1 = "This AddInstance method is deprecated and will be removed in a future version. Please use the alternate AddInstance method for adding procedural geometry (AABBs) to the acceleration structure.";
+        const string obsoleteAABBMsg1 = "This AddInstance method is deprecated and it will be removed in Unity 2024.1. Please use the alternative AddInstance method for adding procedural geometry (AABBs) to the acceleration structure.";
         [Obsolete(obsoleteAABBMsg1, true)]
         public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteAABBMsg1);
 
-        const string obsoleteAABBMsg2 = "This AddInstance method is deprecated and will be removed in a future version. Please use the alternate AddInstance method for adding procedural geometry (AABBs) to the acceleration structure.";
-        [Obsolete(obsoleteAABBMsg2, false)]
+        const string obsoleteAABBMsg2 = "This AddInstance method is deprecated and it will be removed in Unity 2024.1. Please use the alternative AddInstance method for adding procedural geometry (AABBs) to the acceleration structure.";
+        [Obsolete(obsoleteAABBMsg2, true)]
         public int AddInstance(GraphicsBuffer aabbBuffer, uint aabbCount, bool dynamicData, Matrix4x4 matrix, Material material, bool opaqueMaterial, MaterialPropertyBlock properties, uint mask = 0xFF, uint id = 0xFFFFFFFF)
         {
-            return AddInstance_Procedural(aabbBuffer, aabbCount, dynamicData, matrix, material, opaqueMaterial, properties, mask, id);
+            throw new NotSupportedException(obsoleteAABBMsg2);
         }
 
         internal static class BindingsMarshaller

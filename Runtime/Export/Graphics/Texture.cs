@@ -1001,8 +1001,7 @@ namespace UnityEngine
 
             if (!isReadable) throw CreateNonReadableException(this);
             if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
-            var elemSize = System.Runtime.InteropServices.Marshal.SizeOf(data[0]);
-            SetPixelDataImplArray(UnsafeUtility.GetByteSpanFromArray(data, elemSize), mipLevel, elemSize, data.Length, sourceDataStartIndex);
+            SetPixelDataImplArray(data, mipLevel, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
         }
 
         unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct
@@ -1285,8 +1284,7 @@ namespace UnityEngine
 
             if (!isReadable) throw CreateNonReadableException(this);
             if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
-            var elemSize = System.Runtime.InteropServices.Marshal.SizeOf(data[0]);
-            SetPixelDataImplArray(UnsafeUtility.GetByteSpanFromArray(data, elemSize), mipLevel, (int)face, elemSize, data.Length, sourceDataStartIndex);
+            SetPixelDataImplArray(data, mipLevel, (int)face, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
         }
 
         unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, CubemapFace face, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct
@@ -1496,8 +1494,7 @@ namespace UnityEngine
 
             if (!isReadable) throw CreateNonReadableException(this);
             if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
-            var elemSize = System.Runtime.InteropServices.Marshal.SizeOf(data[0]);
-            SetPixelDataImplArray(UnsafeUtility.GetByteSpanFromArray(data, elemSize), mipLevel, elemSize, data.Length, sourceDataStartIndex);
+            SetPixelDataImplArray(data, mipLevel, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
         }
 
         unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct
@@ -1659,8 +1656,7 @@ namespace UnityEngine
 
             if (!isReadable) throw CreateNonReadableException(this);
             if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
-            var elemSize = System.Runtime.InteropServices.Marshal.SizeOf(data[0]);
-            SetPixelDataImplArray(UnsafeUtility.GetByteSpanFromArray(data, elemSize), mipLevel, element, elemSize, data.Length, sourceDataStartIndex);
+            SetPixelDataImplArray(data, mipLevel, element, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
         }
 
         unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, int element, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct
@@ -1792,8 +1788,7 @@ namespace UnityEngine
             if (!isReadable) throw CreateNonReadableException(this);
             if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
 
-            var elemSize = System.Runtime.InteropServices.Marshal.SizeOf(data[0]);
-            SetPixelDataImplArray(UnsafeUtility.GetByteSpanFromArray(data, elemSize), mipLevel, (int)face, element, elemSize, data.Length, sourceDataStartIndex);
+            SetPixelDataImplArray(data, mipLevel, (int)face, element, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
         }
 
         unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, CubemapFace face, int element, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct

@@ -22,17 +22,17 @@ namespace Unity.Hierarchy
         readonly int m_Id;
 
         /// <summary>
-        /// Represents an hierarchy node type that is null/invalid.
+        /// Represents a hierarchy node type that is null or invalid.
         /// </summary>
         public static ref readonly HierarchyNodeType Null => ref s_Null;
 
         /// <summary>
-        /// Unique identification number of the hierarchy node type.
+        /// The unique identification number of the hierarchy node type.
         /// </summary>
         public int Id => m_Id;
 
         /// <summary>
-        /// Create a null node type.
+        /// Creates a null node type.
         /// </summary>
         public HierarchyNodeType()
         {

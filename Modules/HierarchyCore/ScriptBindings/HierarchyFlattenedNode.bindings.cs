@@ -10,7 +10,7 @@ using UnityEngine.Internal;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Represents an hierarchy flattened node.
+    /// Represents a flattened hierarchy node.
     /// </summary>
     [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyFlattenedNode.h")]
     [StructLayout(LayoutKind.Sequential)]
@@ -24,7 +24,7 @@ namespace Unity.Hierarchy
         readonly int m_Depth;
 
         /// <summary>
-        /// Represents an hierarchy flattened node that is null/invalid.
+        /// Represents a flattened hierarchy node that is null or invalid.
         /// </summary>
         public static ref readonly HierarchyFlattenedNode Null => ref s_Null;
 
@@ -34,27 +34,27 @@ namespace Unity.Hierarchy
         public HierarchyNode Node => m_Node;
 
         /// <summary>
-        /// The offset of the node's parent.
+        /// The offset of the parent of the node.
         /// </summary>
         public int ParentOffset => m_ParentOffset;
 
         /// <summary>
-        /// The offset of the node's next sibling.
+        /// The offset of the next sibling of the node.
         /// </summary>
         public int NextSiblingOffset => m_NextSiblingOffset;
 
         /// <summary>
-        /// The node's number of children.
+        /// The number of children nodes that the node has.
         /// </summary>
         public int ChildCount => m_ChildCount;
 
         /// <summary>
-        /// The node's depth.
+        /// The depth of the node.
         /// </summary>
         public int Depth => m_Depth;
 
         /// <summary>
-        /// Create a Flattened Node.
+        /// Creates a flattened node.
         /// </summary>
         public HierarchyFlattenedNode()
         {

@@ -4,17 +4,19 @@
 
 using Unity.Collections;
 using Unity.Jobs;
-using UnityEngine.LightTransport;
+using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
-namespace UnityEngine.LightBaking
+namespace UnityEngine.LightTransport
 {
     namespace PostProcessing
     {
         internal interface IProbePostProcessor
         {
-            void ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount);
+            bool Initialize(IDeviceContext context);
+
+            bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount);
 
             // Unity expects the following of the irradiance SH coefficients:
             // 1) For L0 and L1, they must have the SH standard normalization terms folded into them (to avoid doing this multiplication in shader).
@@ -24,9 +26,9 @@ namespace UnityEngine.LightBaking
             // 4) For L2 we cannot (always) use 1) due to how these basis functions have more than one term.
             //    In the below we just copy Unity's existing logic which is coupled to GetShaderConstantsFromNormalizedSH.
             //    Because we use fC2, fC3 and fC4 directly, the division by π is not needed.
-            void ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount);
+            bool ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount);
 
-            void AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice A, BufferSlice B, BufferSlice sum, int probeCount);
+            bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice A, BufferSlice B, BufferSlice sum, int probeCount);
         }
 
         struct SH
@@ -139,9 +141,17 @@ namespace UnityEngine.LightBaking
         }
         internal class ReferenceProbePostProcessor : IProbePostProcessor
         {
-            public void ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount)
+            public bool Initialize(IDeviceContext context)
+            {
+                return true;
+            }
+
+            public bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount)
             {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
+                if (context is not ReferenceContext)
+                    return false;
+
                 var refContext = context as ReferenceContext;
                 var radianceNativeArray = refContext.GetNativeArray(radianceIn.Id);
                 var irradianceNativeArray = refContext.GetNativeArray(irradianceOut.Id);
@@ -165,11 +175,16 @@ namespace UnityEngine.LightBaking
                     };
                     Irradiances[probeIdx] = irradiance;
                 }
+                return true;
             }
-            public void ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount)
+
+            public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount)
             {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
                 var refContext = context as ReferenceContext;
+                if (context is not ReferenceContext)
+                    return false;
+
                 var irradianceInNativeArray = refContext.GetNativeArray(irradianceIn.Id);
                 var irradianceOutNativeArray = refContext.GetNativeArray(irradianceOut.Id);
                 var IrradianceIn = irradianceInNativeArray.Reinterpret<SphericalHarmonicsL2>(1);
@@ -214,10 +229,15 @@ namespace UnityEngine.LightBaking
                     }
                     IrradianceOut[probeIdx] = output;
                 }
+                return true;
             }
-            public void AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice a, BufferSlice b, BufferSlice sum, int probeCount)
+
+            public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice a, BufferSlice b, BufferSlice sum, int probeCount)
             {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
+                if (context is not ReferenceContext)
+                    return false;
+
                 var refContext = context as ReferenceContext;
                 var A = refContext.GetNativeArray(a.Id);
                 var B = refContext.GetNativeArray(b.Id);
@@ -229,14 +249,23 @@ namespace UnityEngine.LightBaking
                 {
                     shSum[probeIdx] = shA[probeIdx] + shB[probeIdx];
                 }
+                return true;
             }
         }
         internal class WintermuteProbePostProcessor : IProbePostProcessor
         {
-            public void ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount)
+            public bool Initialize(IDeviceContext context)
+            {
+                return true;
+            }
+
+            public bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount)
             {
                 Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
                 var wmContext = context as WintermuteContext;
+                if (context is not WintermuteContext)
+                    return false;
+
                 var radianceInNativeArray = wmContext.GetNativeArray(radianceIn.Id);
                 var irradianceOutNativeArray = wmContext.GetNativeArray(irradianceOut.Id);
                 var job = new ConvolveJob
@@ -246,10 +275,15 @@ namespace UnityEngine.LightBaking
                 };
                 JobHandle jobHandle = job.Schedule(probeCount, 64);
                 jobHandle.Complete();
+                return true;
             }
-            public void ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount)
+
+            public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount)
             {
                 Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
+                if (context is not WintermuteContext)
+                    return false;
+
                 var wmContext = context as WintermuteContext;
                 var irradianceInNativeArray = wmContext.GetNativeArray(irradianceIn.Id);
                 var irradianceOutNativeArray = wmContext.GetNativeArray(irradianceOut.Id);
@@ -260,10 +294,15 @@ namespace UnityEngine.LightBaking
                 };
                 JobHandle jobHandle = job.Schedule(probeCount, 64);
                 jobHandle.Complete();
+                return true;
             }
-            public void AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice a, BufferSlice b, BufferSlice sum, int probeCount)
+
+            public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice a, BufferSlice b, BufferSlice sum, int probeCount)
             {
                 Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
+                if (context is not WintermuteContext)
+                    return false;
+
                 var wmContext = context as WintermuteContext;
                 var A = wmContext.GetNativeArray(a.Id);
                 var B = wmContext.GetNativeArray(b.Id);
@@ -276,61 +315,48 @@ namespace UnityEngine.LightBaking
                 };
                 JobHandle jobHandle = job.Schedule(probeCount, 64);
                 jobHandle.Complete();
+                return true;
             }
         }
         internal class RadeonRaysProbePostProcessor : IProbePostProcessor
         {
-            const int sizeofSphericalHarmonicsL2 = 27 * sizeof(float);
-            public void ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount)
+            private const int sizeofSphericalHarmonicsL2 = 27 * sizeof(float);
+
+            public bool Initialize(IDeviceContext context)
             {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
                 var rrContext = context as RadeonRaysContext;
-                using var radianceInNativeArray = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.TempJob);
-                using var irradianceOutNativeArray = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.TempJob);
-                rrContext.ReadBuffer(radianceIn.Id, radianceInNativeArray.Reinterpret<byte>(sizeofSphericalHarmonicsL2));
-                var job = new ConvolveJob
-                {
-                    Radiances = radianceInNativeArray,
-                    Irradiances = irradianceOutNativeArray
-                };
-                JobHandle jobHandle = job.Schedule(probeCount, 64);
-                jobHandle.Complete();
-                rrContext.WriteBuffer(irradianceOut.Id, irradianceOutNativeArray.Reinterpret<byte>(sizeofSphericalHarmonicsL2));
+                return RadeonRaysContext.InitializePostProcessingInternal(rrContext);
             }
-            public void ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount)
+
+            public bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount)
             {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
+                if (context is not RadeonRaysContext)
+                    return false;
+
                 var rrContext = context as RadeonRaysContext;
-                using var irradianceInNativeArray = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.TempJob);
-                using var irradianceOutNativeArray = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.TempJob);
-                rrContext.ReadBuffer(irradianceIn.Id, irradianceInNativeArray.Reinterpret<byte>(sizeofSphericalHarmonicsL2));
-                var job = new UnityfyJob
-                {
-                    IrradianceIn = irradianceInNativeArray,
-                    IrradianceOut = irradianceOutNativeArray
-                };
-                JobHandle jobHandle = job.Schedule(probeCount, 64);
-                jobHandle.Complete();
-                rrContext.WriteBuffer(irradianceOut.Id, irradianceOutNativeArray.Reinterpret<byte>(sizeofSphericalHarmonicsL2));
+                return RadeonRaysContext.ConvolveRadianceToIrradianceInternal(rrContext, radianceIn.Id, irradianceOut.Id, probeCount);
             }
-            public void AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice a, BufferSlice b, BufferSlice sum, int probeCount)
+
+            public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount)
             {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
+                if (context is not RadeonRaysContext)
+                    return false;
+
                 var rrContext = context as RadeonRaysContext;
-                using var A = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.TempJob);
-                using var B = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.TempJob);
-                using var Sum = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.TempJob);
-                rrContext.ReadBuffer(a.Id, A.Reinterpret<byte>(sizeofSphericalHarmonicsL2));
-                rrContext.ReadBuffer(b.Id, B.Reinterpret<byte>(sizeofSphericalHarmonicsL2));
-                var job = new AddSHJob
-                {
-                    A = A,
-                    B = B,
-                    Sum = Sum
-                };
-                JobHandle jobHandle = job.Schedule(probeCount, 64);
-                jobHandle.Complete();
-                rrContext.WriteBuffer(sum.Id, Sum.Reinterpret<byte>(sizeofSphericalHarmonicsL2));
+                return RadeonRaysContext.ConvertToUnityFormatInternal(rrContext, irradianceIn.Id, irradianceOut.Id, probeCount);
+            }
+
+            public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice a, BufferSlice b, BufferSlice sum, int probeCount)
+            {
+                Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
+                if (context is not RadeonRaysContext)
+                    return false;
+
+                var rrContext = context as RadeonRaysContext;
+                return RadeonRaysContext.AddSphericalHarmonicsL2Internal(rrContext, a.Id, b.Id, sum.Id, probeCount);
             }
         }
     }

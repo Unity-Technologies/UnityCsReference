@@ -14,7 +14,7 @@ using UnityEngine.Scripting;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// A read-only array of <see cref="HierarchyNode"/>, from a filtered view over an <see cref="HierarchyFlattened"/>.
+    /// A hierarchy view model is a read-only filtering view of a <see cref="HierarchyFlattened"/>. 
     /// </summary>
     [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyViewModel.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyViewModelBindings.h")]
@@ -42,7 +42,7 @@ namespace Unity.Hierarchy
         static extern void Internal_Destroy(IntPtr ptr);
 
         /// <summary>
-        /// Whether or not this object is still valid and uses memory.
+        /// Whether this object is valid and uses memory.
         /// </summary>
         public bool IsCreated => m_Ptr != IntPtr.Zero;
 
@@ -50,7 +50,7 @@ namespace Unity.Hierarchy
         /// The total number of nodes.
         /// </summary>
         /// <remarks>
-        /// Does not include the <see cref="Hierarchy.Root"/> node.
+        /// The total does not include the <see cref="Hierarchy.Root"/> node.
         /// </remarks>
         public extern int Count { [NativeMethod("Count")] get; }
 
@@ -58,7 +58,7 @@ namespace Unity.Hierarchy
         /// Whether the hierarchy view model is currently updating.
         /// </summary>
         /// <remarks>
-        /// Happens during use of <see cref="UpdateIncremental"/> or <see cref="UpdateIncrementalTimed"/>.
+        /// This happens when <see cref="UpdateIncremental"/> or <see cref="UpdateIncrementalTimed"/> is used.
         /// </remarks>
         public extern bool Updating { [NativeMethod("Updating")] get; }
 
@@ -66,17 +66,17 @@ namespace Unity.Hierarchy
         /// Whether the hierarchy view model requires an update.
         /// </summary>
         /// <remarks>
-        /// Happens when the underlying hierarchy changes topology.
+        /// This happens when the underlying hierarchy changes topology.
         /// </remarks>
         public extern bool UpdateNeeded { [NativeMethod("UpdateNeeded")] get; }
 
         /// <summary>
-        /// Access the HierarchyFlattened
+        /// Accesses the <see cref="HierarchyFlattened"/>.
         /// </summary>
         public HierarchyFlattened HierarchyFlattened => m_HierarchyFlattened;
 
         /// <summary>
-        /// Access the Hierarchy
+        /// Accesses the <see cref="Hierarchy"/>.
         /// </summary>
         public Hierarchy Hierarchy => m_Hierarchy;
 
@@ -104,9 +104,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Create a new HierarchyViewModel from a HierarchyFlattened.
+        /// Creates a new HierarchyViewModel from a <see cref="HierarchyFlattened"/>.
         /// </summary>
-        /// <param name="hierarchyFlattened">Flattened hierarchy that serve as the hierarchy model.</param>
+        /// <param name="hierarchyFlattened">The flattened hierarchy that serves as the hierarchy model.</param>
         public HierarchyViewModel(HierarchyFlattened hierarchyFlattened)
         {
             m_Ptr = Internal_Create(hierarchyFlattened);
@@ -121,7 +121,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Dispose this object, releasing its memory.
+        /// Disposes this object and releases its memory.
         /// </summary>
         public void Dispose()
         {
@@ -140,14 +140,14 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Retrieve the <see cref="HierarchyNode"/> at the specified index.
+        /// Gets the <see cref="HierarchyNode"/> at a specified index.
         /// </summary>
         /// <param name="index">The node index.</param>
-        /// <returns>An hierarchy node.</returns>
+        /// <returns>A hierarchy node.</returns>
         public HierarchyNode this[int index] => ElementAt(index);
 
         /// <summary>
-        /// Returns the zero-based index of the specified node.
+        /// Gets the zero-based index of a specified node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>A zero-based index of the node if found, -1 otherwise.</returns>
@@ -155,7 +155,7 @@ namespace Unity.Hierarchy
         public extern int IndexOf(in HierarchyNode node);
 
         /// <summary>
-        /// Determine if the specified node is found in the hierarchy view model.
+        /// Determines if a specified node is in the hierarchy view model.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns><see langword="true"/> if the node is found, <see langword="false"/> otherwise.</returns>
@@ -163,23 +163,23 @@ namespace Unity.Hierarchy
         public extern bool Contains(in HierarchyNode node);
 
         /// <summary>
-        /// Retrieve the parent of an hierarchy node.
+        /// Gets the parent of a hierarchy node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
-        /// <returns>An hierarchy node.</returns>
+        /// <returns>A hierarchy node.</returns>
         [NativeThrows]
         public extern HierarchyNode GetParent(in HierarchyNode node);
 
         /// <summary>
-        /// Retrieve the next sibling of a node.
+        /// Gets the next sibling of a node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
-        /// <returns>An hierarchy node.</returns>
+        /// <returns>A hierarchy node.</returns>
         [NativeThrows]
         public extern HierarchyNode GetNextSibling(in HierarchyNode node);
 
         /// <summary>
-        /// Retrieve the number of children of an hierarchy node.
+        /// Gets the number of child nodes that a hierarchy node has.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The number of children.</returns>
@@ -187,7 +187,7 @@ namespace Unity.Hierarchy
         public extern int GetChildrenCount(in HierarchyNode node);
 
         /// <summary>
-        /// Determine the depth of a node.
+        /// Determines the depth of a node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The depth of the hierarchy node.</returns>
@@ -195,7 +195,7 @@ namespace Unity.Hierarchy
         public extern int GetDepth(in HierarchyNode node);
 
         /// <summary>
-        /// Set the expanded state of a node.
+        /// Sets the expanded state of a node.
         /// </summary>
         /// <remarks>
         /// Nodes are expanded by default.
@@ -206,7 +206,7 @@ namespace Unity.Hierarchy
         public extern void SetExpanded(in HierarchyNode node, bool expanded);
 
         /// <summary>
-        /// Get the expanded state of a node.
+        /// Gets the expanded state of a node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns><see langword="true"/> if the node is expanded, <see langword="false"/> otherwise.</returns>
@@ -214,7 +214,7 @@ namespace Unity.Hierarchy
         public extern bool GetExpanded(in HierarchyNode node);
 
         /// <summary>
-        /// Set the selected state of a node.
+        /// Sets the selected state of a node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="selected">The selected state.</param>
@@ -222,7 +222,7 @@ namespace Unity.Hierarchy
         public extern void SetSelected(in HierarchyNode node, bool selected);
 
         /// <summary>
-        /// Get the selected state of a node.
+        /// Gets the selected state of a node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns><see langword="true"/> if the node is selected, <see langword="false"/> otherwise.</returns>
@@ -230,7 +230,7 @@ namespace Unity.Hierarchy
         public extern bool GetSelected(in HierarchyNode node);
 
         /// <summary>
-        /// Set the search query.
+        /// Sets the search query.
         /// </summary>
         /// <param name="query">The search query.</param>
         public void SetQuery(string query)
@@ -242,31 +242,31 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Update the hierarchy view model, requesting to rebuild the list of <see cref="HierarchyNode"/> filtering the <see cref="HierarchyFlattened"/>.
+        /// Updates the hierarchy view model and requests a rebuild of the list of <see cref="HierarchyNode"/> that filters the <see cref="HierarchyFlattened"/>.
         /// </summary>
         public extern void Update();
 
         /// <summary>
-        /// Incrementally update the hierarchy view model.
+        /// Updates the hierarchy view model incrementally. 
         /// </summary>
         /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
         public extern bool UpdateIncremental();
 
         /// <summary>
-        /// Incrementally update the hierarchy view model until the time limit is reached.
+        /// Updates the hierarchy view model incrementally until a time limit is reached.
         /// </summary>
-        /// <param name="milliseconds">Time limit in milliseconds.</param>
+        /// <param name="milliseconds">The time period in milliseconds.</param>
         /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
         public extern bool UpdateIncrementalTimed(double milliseconds);
 
         /// <summary>
-        /// Get the <see cref="HierarchyNode"/> enumerator.
+        /// Gets the <see cref="HierarchyNode"/> enumerator.
         /// </summary>
         /// <returns>An enumerator.</returns>
         public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <summary>
-        /// And enumerator of <see cref="HierarchyNode"/>. This enumerate and filter items at the same time.
+        /// An enumerator of <see cref="HierarchyNode"/>. Enumerates and filters items at the same time.
         /// </summary>
         public struct Enumerator : IEnumerator<HierarchyNode>
         {
@@ -274,11 +274,11 @@ namespace Unity.Hierarchy
             int m_Index;
 
             /// <summary>
-            /// Get progress of iteration as a percentage.
+            /// Gets the progress of an iteration as a percentage.
             /// </summary>
             public float Progress => m_HierarchyViewModel.Count == 0 ? 0 : (float)m_Index / m_HierarchyViewModel.Count;
             /// <summary>
-            /// Get the current item being enumerated.
+            /// Gets the current item being enumerated.
             /// </summary>
             public HierarchyNode Current => m_HierarchyViewModel[m_Index];
 
@@ -293,17 +293,17 @@ namespace Unity.Hierarchy
             [ExcludeFromDocs]
             public void Dispose() { }
             /// <summary>
-            /// Move to next iterable value.
+            /// Moves to the next iterable value.
             /// </summary>
             /// <returns>Returns true if Current item is valid</returns>
             public bool MoveNext() => ++m_Index < m_HierarchyViewModel.Count;
             /// <summary>
-            /// Check if iteration is done.
+            /// Checks if the iteration is done.
             /// </summary>
-            /// <returns>Returns true if iteration is done.</returns>
+            /// <returns>Returns true if the iteration is done.</returns>
             public bool Done() => m_Index >= m_HierarchyViewModel.Count;
             /// <summary>
-            /// Reset iteration at the beginning.
+            /// Resets iteration to the beginning.
             /// </summary>
             public void Reset() => m_Index = -1;
         }

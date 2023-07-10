@@ -286,7 +286,7 @@ namespace UnityEngine
         DolbyHDR = 5,
         P3D65G22 = 6
     }
-    
+
     [UsedByNativeCode]
     [NativeHeader("Runtime/Graphics/ColorGamut.h")]
     public enum ColorPrimaries
@@ -304,7 +304,7 @@ namespace UnityEngine
         Unknown = -1,
         D65 = 0
     }
-    
+
     [UsedByNativeCode]
     [NativeHeader("Runtime/Graphics/ColorGamut.h")]
     public enum TransferFunction
@@ -577,7 +577,7 @@ namespace UnityEngine
         AutomaticTonemapping = 1 << 2
     }
 
-    public enum HDRDisplayBitDepth 
+    public enum HDRDisplayBitDepth
     {
         BitDepth10 = 0,
         BitDepth16 = 1
@@ -628,7 +628,7 @@ namespace UnityEngine
                 [Obsolete("IgnoreMipmapLimit flag is no longer used since this is now the default behavior for all Texture shapes. Please provide mipmap limit information using a MipmapLimitDescriptor argument.", false)]
                 IgnoreMipmapLimit = 1 << 11,
             }
-            
+
             [Obsolete("Use GraphicsFormatUsage instead", false)]
             public enum FormatUsage
             {
@@ -1956,8 +1956,11 @@ namespace UnityEngine.Rendering
         UNITY_ASTC_NORMALMAP_ENCODING,
         SHADER_API_GLES30,
         UNITY_UNIFIED_SHADER_PRECISION_MODEL,
+
         UNITY_PLATFORM_SUPPORTS_WAVE_32,
         UNITY_PLATFORM_SUPPORTS_WAVE_64,
+
+        UNITY_NEEDS_RENDERPASS_FBFETCH_FALLBACK,
     }
 
     // Match VideoShadersMode on C++ side
@@ -2038,6 +2041,7 @@ namespace UnityEngine.Rendering
         None = 0,
         FoveationImage = 1 << 0,
         NonUniformRaster = 1 << 1,
+        ModeChangeOnlyBeforeRenderTargetSet = 1 << 2,
     }
 
     // Must match c++ FoveatedRenderingMode from GfxDeviceTypes.h

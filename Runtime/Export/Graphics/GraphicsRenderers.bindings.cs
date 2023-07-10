@@ -54,7 +54,9 @@ namespace UnityEngine
         [FreeFunction(Name = "RendererScripting::GetMaterialArray", HasExplicitThis = true)] extern private Material[] GetMaterialArray();
         [FreeFunction(Name = "RendererScripting::GetMaterialArray", HasExplicitThis = true)] extern private void CopyMaterialArray([Out] Material[] m);
         [FreeFunction(Name = "RendererScripting::GetSharedMaterialArray", HasExplicitThis = true)] extern private void CopySharedMaterialArray([Out] Material[] m);
-        [FreeFunction(Name = "RendererScripting::SetMaterialArray", HasExplicitThis = true)] extern private void SetMaterialArray([NotNull] Material[] m);
+        [FreeFunction(Name = "RendererScripting::SetMaterialArray", HasExplicitThis = true)] extern private void SetMaterialArray([NotNull] Material[] m, int length);
+
+        private void SetMaterialArray(Material[] m) { SetMaterialArray(m, m != null ? m.Length : 0); }
 
         [FreeFunction(Name = "RendererScripting::SetPropertyBlock", HasExplicitThis = true)] extern internal void Internal_SetPropertyBlock(MaterialPropertyBlock properties);
         [FreeFunction(Name = "RendererScripting::GetPropertyBlock", HasExplicitThis = true)] extern internal void Internal_GetPropertyBlock([NotNull] MaterialPropertyBlock dest);
@@ -184,7 +186,7 @@ namespace UnityEngine
             if (materials == null)
                 throw new ArgumentNullException("The material list to set cannot be null.", "materials");
 
-            SetMaterialArray(NoAllocHelpers.ExtractArrayFromList(materials));
+            SetMaterialArray(NoAllocHelpers.ExtractArrayFromList(materials), materials.Count);
         }
 
         public void SetMaterials(List<Material> materials)
@@ -192,7 +194,7 @@ namespace UnityEngine
             if (materials == null)
                 throw new ArgumentNullException("The material list to set cannot be null.", "materials");
 
-            SetMaterialArray(NoAllocHelpers.ExtractArrayFromList(materials));
+            SetMaterialArray(NoAllocHelpers.ExtractArrayFromList(materials), materials.Count);
         }
 
         public void GetSharedMaterials(List<Material> m)

@@ -207,7 +207,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static CompilerMessage[] ParseCompilerOutput(NodeFinishedMessage nodeResult)
         {
             // TODO: future improvement opportunity: write a single parser that can parse warning, errors files from all tools that we use.
-            if (nodeResult.Node.Annotation.StartsWith("CopyFiles"))
+            if (nodeResult.Node.Annotation.StartsWith("CopyFiles", StringComparison.Ordinal))
             {
                 if (nodeResult.ExitCode == 0)
                 {
@@ -223,7 +223,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
                 };
             }
-            var parser = nodeResult.Node.Annotation.StartsWith("ILPostProcess")
+            var parser = nodeResult.Node.Annotation.StartsWith("ILPostProcess", StringComparison.Ordinal)
                 ? (CompilerOutputParserBase) new PostProcessorOutputParser()
                 : (CompilerOutputParserBase) new MicrosoftCSharpCompilerOutputParser();
 

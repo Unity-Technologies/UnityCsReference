@@ -134,6 +134,7 @@ namespace UnityEngine
 
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/UnityAnalytics/RemoteSettings/RemoteSettings.h")]
+    [NativeHeader("Modules/UnityAnalyticsCommon/Public/UnityAnalyticsCommon.h")]
     [NativeHeader("UnityAnalyticsScriptingClasses.h")]
     [uei.ExcludeFromDocs]
     public class RemoteConfigSettings : IDisposable
@@ -183,7 +184,7 @@ namespace UnityEngine
                 handler(wasLastUpdatedFromServer);
         }
 
-        public extern static bool QueueConfig(string name, object param, int ver = 1, string prefix = "");
+        public extern static Analytics.AnalyticsResult QueueConfig(string name, object param, int ver = 1, string prefix = "");
 
         public extern static bool SendDeviceInfoInConfigRequest();
 

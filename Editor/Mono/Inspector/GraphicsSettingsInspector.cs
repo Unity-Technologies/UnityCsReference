@@ -9,6 +9,7 @@ using UnityEditor.Inspector.GraphicsSettingsInspectors;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.ProjectSettings;
 using UnityEditorInternal;
+using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
@@ -23,8 +24,13 @@ namespace UnityEditor
             internal const string graphicsSettings = "StyleSheets/ProjectSettings/GraphicsSettings.uss";
             internal const string bodyTemplateBuiltInOnly = "UXML/ProjectSettings/GraphicsSettingsEditor-Builtin.uxml";
             internal const string bodyTemplateSRP = "UXML/ProjectSettings/GraphicsSettingsEditor-SRP.uxml";
-            internal const string warningTemplateForSRP = "UXML/ProjectSettings/GraphicsSettingsEditor-Warning.uxml";
+            internal const string helpBoxesTemplateForSRP = "UXML/ProjectSettings/GraphicsSettingsEditor-HelpBoxes.uxml";
             internal const string builtInTabContent = "UXML/ProjectSettings/GraphicsSettingsEditor-BuiltInTab.uxml";
+        }
+
+        internal class LocalizedTexts
+        {
+            internal static GUIContent builtInWarningText = EditorGUIUtility.TrTextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.");
         }
 
         readonly VisibilityControllerBasedOnRenderPipeline m_VisibilityController = new();
@@ -133,21 +139,23 @@ namespace UnityEditor
             });
 
             var builtInSettingsContainer = builtInTemplate.MandatoryQ<VisualElement>("Built-InSettingsContainer");
-            var builtInWarning = builtInSettingsContainer.Q<HelpBox>("Built-InWarning");
-            m_VisibilityController.RegisterVisualElement(builtInWarning, typeof(RenderPipelineAsset));
-            GraphicsSettingsUtils.CreateNewTab(m_TabbedView, "Built-In", builtInSettingsContainer, GraphicsSettings.currentRenderPipeline == null);
+            var builtInHelpBoxes = GraphicsSettingsUtils.CreateRPHelpBox(m_VisibilityController, null);
+            builtInSettingsContainer.Insert(0, builtInHelpBoxes);
+            builtInHelpBoxes.MandatoryQ<HelpBox>("CurrentPipelineWarningHelpBox").text = LocalizedTexts.builtInWarningText.text;
+            GraphicsSettingsUtils.CreateNewTab(m_TabbedView, "Built-In", builtInSettingsContainer, true);
 
             //Add SRP tabs
             for (var i = 0; i < m_GlobalSettings.Count; i++)
             {
                 var globalSettingsContainer = m_GlobalSettings[i];
                 var globalSettingsElement = new VisualElement();
-                var srpWarning = GraphicsSettingsUtils.CreateSRPWarning(ResourcesPaths.warningTemplateForSRP, m_GlobalSettings, globalSettingsContainer.renderPipelineAssetType);
-                m_VisibilityController.RegisterVisualElement(srpWarning.warning, srpWarning.activePipelines);
-                globalSettingsElement.Add(srpWarning.warning);
+                var rpHelpBoxes = GraphicsSettingsUtils.CreateRPHelpBox(m_VisibilityController,globalSettingsContainer.renderPipelineAssetType);
+                globalSettingsElement.Add(rpHelpBoxes);
 
                 globalSettingsElement.Bind(globalSettingsContainer.serializedObject);
-                globalSettingsElement.Add(new PropertyField(globalSettingsContainer.property));
+                var propertyEditor = new PropertyField(globalSettingsContainer.property);
+                propertyEditor.AddToClassList(InspectorElement.uIEInspectorVariantUssClassName);
+                globalSettingsElement.Add(propertyEditor);
 
                 GraphicsSettingsUtils.CreateNewTab(m_TabbedView, globalSettingsContainer.name, globalSettingsElement,
                     GraphicsSettings.currentRenderPipelineAssetType == globalSettingsContainer.renderPipelineAssetType);

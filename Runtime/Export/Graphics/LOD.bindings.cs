@@ -78,7 +78,7 @@ namespace UnityEngine
 
         // Set the LODs for the LOD group. This will remove any existing LODs configured on the LODGroup
         [FreeFunction("SetLODs_Binding", HasExplicitThis = true)]
-        extern public void SetLODs(LOD[] lods);
+        extern public void SetLODs([Unmarshalled] LOD[] lods);
 
         // Force a LOD level on this LOD group
         //

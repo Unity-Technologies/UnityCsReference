@@ -39,6 +39,10 @@ namespace UnityEditor
         [FreeFunction]
         public static extern InteractiveLightmapData GetLightmapData();
         [FreeFunction]
+        public static extern Vector4 GetLightmapSTFromRenderer(int instanceID);
+        [FreeFunction]
+        public static extern ushort GetLightmapIndexFromRenderer(int instanceID);
+        [FreeFunction]
         public static extern bool IsBakingDone();
         [FreeFunction]
         [NativeName("GetInteractiveLightingSettings")]

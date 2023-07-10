@@ -4,29 +4,40 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Analytics;
 
 namespace UnityEditor.Audio.Analytics;
 
 [InitializeOnLoad]
 class AudioRandomContainerQuitAnalyticsEvent
 {
-    const string k_EventName = "audioRandomContainerQuit";
-    const int k_MaxEventsPerHour = 60;
-    const int k_MaxNumberOfElements = 1;
-
-    static bool s_Initialized;
-
-    static bool Initialized
+    [AnalyticInfo(eventName: "audioRandomContainerQuit", vendorKey: "unity.audio", maxEventsPerHour: 60, maxNumberOfElements: 1)]
+    internal class AudioRandomAnalytic : IAnalytic
     {
-        get
+        public AudioRandomAnalytic(int count)
         {
-            if (!s_Initialized)
-            {
-                s_Initialized = AudioAnalytics.RegisterEvent(k_EventName, k_MaxEventsPerHour, k_MaxNumberOfElements);
-            }
-
-            return s_Initialized;
+            this.count = count;
         }
+
+        [Serializable]
+        struct Payload : IAnalytic.IData
+        {
+            public int count;
+        }
+
+
+        public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+        {
+            error = null;
+            data = new Payload
+            {
+                count = count
+            };
+
+            return data != null;
+        }
+
+        private int count;
     }
 
     static AudioRandomContainerQuitAnalyticsEvent()
@@ -42,18 +53,12 @@ class AudioRandomContainerQuitAnalyticsEvent
 
     static void SendEvent()
     {
-        if (!EditorAnalytics.enabled || AudioSettings.unityAudioDisabled || !Initialized)
+        if (!EditorAnalytics.enabled || AudioSettings.unityAudioDisabled)
         {
             return;
         }
 
         var assetPaths = AssetDatabase.FindAssets("t:AudioRandomContainer");
-        var payload = new Payload { count = assetPaths.Length };
-        EditorAnalytics.SendEventWithLimit(k_EventName, payload);
-    }
-
-    struct Payload
-    {
-        public int count;
+        EditorAnalytics.SendAnalytic(new AudioRandomAnalytic(assetPaths.Length));
     }
 }

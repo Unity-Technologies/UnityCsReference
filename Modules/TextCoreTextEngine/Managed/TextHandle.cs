@@ -246,6 +246,7 @@ namespace UnityEngine.TextCore.Text
 
         public Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
         {
+            AddTextInfoToCache();
             var result = screenRect.position;
             if (textInfo.characterCount == 0)
                 return inverseYAxis ? new Vector2(0, lineHeightDefault) : result;
@@ -264,6 +265,7 @@ namespace UnityEngine.TextCore.Text
 
         public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, bool useXAdvance = false, bool inverseYAxis = true)
         {
+            AddTextInfoToCache();
             var result = screenRect.position;
             if (textInfo.characterCount == 0 || index < 0)
                 return inverseYAxis ? new Vector2(0, lineHeightDefault) : result;
@@ -845,8 +847,6 @@ namespace UnityEngine.TextCore.Text
                 return true;
 
             bool success = generator.PrepareFontAsset(settings);
-            if (success)
-                TextGenerator.AddGradientScalesToList(generator.m_MaterialReferences);
             return success;
         }
 

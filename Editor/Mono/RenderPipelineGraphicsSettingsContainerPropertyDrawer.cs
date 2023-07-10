@@ -51,14 +51,14 @@ namespace UnityEditor.Rendering
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            VisualElement root = new VisualElement();
-            SerializedProperty graphicsSettings = property.FindPropertyRelative("m_SettingsList");
+            var root = new VisualElement { name = "GlobalSettingsList" };
+            var graphicsSettings = property.FindPropertyRelative("m_SettingsList");
             UnityEngine.Debug.Assert(graphicsSettings != null);
 
-            foreach (var cathegory in Categorize(graphicsSettings))
+            foreach (var category in Categorize(graphicsSettings))
             {
-                var foldout = new Foldout() { text = cathegory.Key };
-                foreach(var element in cathegory.Value)
+                var foldout = new Foldout() { text = category.Key };
+                foreach(var element in category.Value)
                     foldout.Add(element.Value);
                 root.Add(foldout);
             }

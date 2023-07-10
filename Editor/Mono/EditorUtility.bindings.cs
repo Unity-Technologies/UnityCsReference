@@ -136,8 +136,9 @@ namespace UnityEditor
         private static extern void InternalCopySerializedIfDifferent([NotNull] Object source, [NotNull] Object dest);
 
         [NativeThrows]
-        public static extern Object[] CollectDependencies(Object[] roots);
-        public static extern Object[] CollectDeepHierarchy(Object[] roots);
+        [return: Unmarshalled]
+        public static extern Object[] CollectDependencies([Unmarshalled] Object[] roots);
+        public static extern Object[] CollectDeepHierarchy([Unmarshalled] Object[] roots);
 
         [FreeFunction("InstantiateObjectRemoveAllNonAnimationComponents")]
         private static extern Object Internal_InstantiateRemoveAllNonAnimationComponentsSingle([NotNull] Object data, Vector3 pos, Quaternion rot);

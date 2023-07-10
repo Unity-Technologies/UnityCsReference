@@ -10,7 +10,7 @@ using UnityEngine.Internal;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Hierarchy Property Id.
+    /// Represents a hierarchy property ID.
     /// </summary>
     [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyPropertyId.h")]
     [StructLayout(LayoutKind.Sequential)]
@@ -22,17 +22,17 @@ namespace Unity.Hierarchy
         readonly int m_Id;
 
         /// <summary>
-        /// Represents an hierarchy property that is null/invalid.
+        /// Represents a hierarchy property that is null or invalid.
         /// </summary>
         public static ref readonly HierarchyPropertyId Null => ref s_Null;
 
         /// <summary>
-        /// Unique identification number of the hierarchy property.
+        /// The unique identification number of the hierarchy property.
         /// </summary>
         public int Id => m_Id;
 
         /// <summary>
-        /// Create null property Id.
+        /// Creates a null property ID.
         /// </summary>
         public HierarchyPropertyId()
         {

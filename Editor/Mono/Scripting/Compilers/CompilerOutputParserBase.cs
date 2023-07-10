@@ -76,6 +76,8 @@ namespace UnityEditor.Scripting.Compilers
 
             foreach (var line in errorOutput)
             {
+                if (!ShouldParseLine(line))
+                    continue;
                 //Jamplus can fail with enormous lines in the stdout, parsing of which can take 30! seconds.
                 var line2 = line.Length > 1000 ? line.Substring(0, 100) : line;
 
@@ -99,6 +101,11 @@ namespace UnityEditor.Scripting.Compilers
                 msgs.Add(CreateInternalCompilerErrorMessage(errorOutput));
             }
             return msgs;
+        }
+
+        protected virtual bool ShouldParseLine(string line)
+        {
+            return true;
         }
 
         protected abstract string GetErrorIdentifier();

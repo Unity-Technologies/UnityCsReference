@@ -26,6 +26,7 @@ namespace UnityEditor
     class CameraSelectionPopup : OverlayPopupWindow
     {
         const string k_USSPath = "StyleSheets/SceneView/CamerasOverlay/CamerasOverlaySelector.uss";
+        const string k_ViewpointSearchFieldUSSClass = "unity-viewpoint-collection-search-field";
         static StyleSheet s_StyleSheet;
 
         CameraList m_ListPopup;
@@ -105,6 +106,8 @@ namespace UnityEditor
             s_FilteredNames.Clear();
             m_ListPopup = new CameraList();
             m_SearchField = new ToolbarSearchField();
+
+            m_SearchField.AddToClassList(k_ViewpointSearchFieldUSSClass);
 
             if (s_StyleSheet == null)
                 s_StyleSheet = EditorGUIUtility.Load(k_USSPath) as StyleSheet;

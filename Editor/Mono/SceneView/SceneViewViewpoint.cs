@@ -153,14 +153,12 @@ namespace UnityEditor
                     || sceneViewTransformIsAnimating)
             {
                 // Camera is moving in the Scene View. Align SceneView's Camera to Viewpoint.
-                activeViewpoint.Rotation = m_SceneView.GetTransformRotation();
-                activeViewpoint.Position = m_SceneView.GetTransformPosition();
+                TryMoveViewpoint();
             }
             else
             {
                 // Align the Viewpoint's transform to the SceneView's Camera when no system is driving the Scene View.
-                m_SceneView.rotation = activeViewpoint.Rotation;
-                m_SceneView.pivot = activeViewpoint.Position + activeViewpoint.Rotation * new Vector3(0, 0, m_SceneView.cameraDistance);
+                AlignSceneViewToViewpoint();
             }
         }
 
@@ -358,6 +356,25 @@ namespace UnityEditor
         bool ViewpointIsSelected()
         {
             return Selection.Contains(activeViewpoint.TargetObject);
+        }
+
+        void TryMoveViewpoint()
+        {
+            activeViewpoint.Rotation = m_SceneView.GetTransformRotation();
+            activeViewpoint.Position = m_SceneView.GetTransformPosition();
+
+            if (activeViewpoint.Rotation != m_SceneView.GetTransformRotation()
+                    || activeViewpoint.Position != m_SceneView.GetTransformPosition())
+            {
+                // Viewpoint is under some constraint. Apply back to SceneView so it gives the appropriate feedback to the user.
+                AlignSceneViewToViewpoint();
+            }
+        }
+
+        void AlignSceneViewToViewpoint()
+        {
+            m_SceneView.rotation = activeViewpoint.Rotation;
+            m_SceneView.pivot = activeViewpoint.Position + activeViewpoint.Rotation * new Vector3(0, 0, m_SceneView.cameraDistance);
         }
     }
 }

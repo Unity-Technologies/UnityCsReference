@@ -10,7 +10,7 @@ using UnityEngine.Scripting;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Represent a list of commands used to modify an hierarchy when executed.
+    /// Represents a list of commands that modify a hierarchy.
     /// </summary>
     [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyCommandList.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyCommandListBindings.h")]
@@ -35,7 +35,7 @@ namespace Unity.Hierarchy
         static extern void Internal_Destroy(IntPtr ptr);
 
         /// <summary>
-        /// Whether or not this object is still valid and uses memory.
+        /// Determines if this object is valid and uses memory.
         /// </summary>
         public bool IsCreated => m_Ptr != IntPtr.Zero;
 
@@ -50,17 +50,17 @@ namespace Unity.Hierarchy
         public extern int Capacity { [NativeMethod("Capacity")] get; }
 
         /// <summary>
-        /// Determine if the command list is empty.
+        /// Determines if the command list is empty.
         /// </summary>
         public extern bool IsEmpty { [NativeMethod("IsEmpty")] get; }
 
         /// <summary>
-        /// Determine if the command list is currently executing.
+        /// Determines if the command list is currently executing.
         /// </summary>
         public extern bool IsExecuting { [NativeMethod("IsExecuting")] get; }
 
         /// <summary>
-        /// Construct a new command list.
+        /// Creates a new command list.
         /// </summary>
         /// <param name="hierarchy">The hierarchy.</param>
         /// <param name="initialCapacity">The initial capacity in bytes.</param>
@@ -77,7 +77,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Dispose the command list, releasing its memory.
+        /// Disposes the command list and releases its memory.
         /// </summary>
         public void Dispose()
         {
@@ -96,39 +96,40 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Clear all the commands from the command list.
+        /// Clears all commands from the command list.
         /// </summary>
         public extern void Clear();
 
         /// <summary>
-        /// Pre-allocate memory if necessary, in anticipation of adding nodes.
+        /// Reserves memory for nodes to use. Use this to avoid memory allocation hits when you add batches of nodes.
         /// </summary>
-        /// <param name="count">The number of nodes that are going to be added.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <param name="count">The number of nodes to reserve memory for.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         [NativeThrows]
         public extern bool Reserve(int count);
 
         /// <summary>
-        /// Add a new node to the hierarchy, with <see cref="Hierarchy.Root"/> as the parent.
+        /// Adds a new node that has <see cref="Hierarchy.Root"/> as its parent node to the hierarchy.
         /// </summary>
-        /// <param name="node">The new node if command is successful.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <param name="node">The new node if the command succeeds.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
+
         public bool Add(out HierarchyNode node) => AddNode(out node);
 
         /// <summary>
-        /// Add a new node to the hierarchy, with the specified parent node.
+        /// Adds a new node that has a specified parent node to the hierarchy.
         /// </summary>
-        /// <param name="parent">The hierarchy node parent.</param>
-        /// <param name="node">The new node if command is successful.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <param name="parent">The parent of the new node.</param>
+        /// <param name="node">The new node if the command succeeds.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool Add(in HierarchyNode parent, out HierarchyNode node) => AddNodeWithParent(in parent, out node);
 
         /// <summary>
-        /// Add multiple new nodes to the hierarchy, with <see cref="Hierarchy.Root"/> as parent.
+        /// Adds multiple new nodes that have <see cref="Hierarchy.Root"/> as their parent to the hierarchy.
         /// </summary>
-        /// <param name="count">The number of node to create.</param>
-        /// <param name="nodes">The new nodes if command is successful.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <param name="count">The number of nodes to create.</param>
+        /// <param name="nodes">The new nodes if the command succeeds.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool Add(int count, out HierarchyNode[] nodes)
         {
             nodes = new HierarchyNode[count];
@@ -136,12 +137,12 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Add multiple new nodes to the hierarchy, with the specified parent node.
+        /// Adds multiple new nodes that have a specified parent node to the hierarchy.
         /// </summary>
-        /// <param name="count">The number of node to create.</param>
-        /// <param name="parent">The hierarchy nodes parent.</param>
-        /// <param name="nodes">The new nodes if command is successful.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <param name="count">The number of nodes to create.</param>
+        /// <param name="parent">The parent of the new nodes.</param>
+        /// <param name="nodes">The new nodes if the command succeeds.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool Add(int count, in HierarchyNode parent, out HierarchyNode[] nodes)
         {
             nodes = new HierarchyNode[count];
@@ -149,75 +150,75 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Add multiple new nodes to the hierarchy, with <see cref="Hierarchy.Root"/> as parent.
+        /// Add multiple new nodes that have <see cref="Hierarchy.Root"/> as their parent to the hierarchy.
         /// </summary>
-        /// <param name="outNodes">Span of nodes filled with new nodes if command is successful.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <param name="outNodes">The span of nodes filled with new nodes if the command succeeds.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool Add(Span<HierarchyNode> outNodes) => AddNodeSpan(outNodes);
 
         /// <summary>
-        /// Add multiple new nodes to the hierarchy, with the specified parent node.
+        /// Adds multiple new nodes that have a specified parent node to the hierarchy.
         /// </summary>
-        /// <param name="parent">The hierarchy nodes parent.</param>
-        /// <param name="outNodes">Span of nodes filled with new nodes if command is successful.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <param name="parent">The parent of the new nodes.</param>
+        /// <param name="outNodes">The span of nodes filled with new nodes if the command succeeds.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool Add(in HierarchyNode parent, Span<HierarchyNode> outNodes) => AddNodeSpanWithParent(in parent, outNodes);
 
         /// <summary>
-        /// Remove a node from the hierarchy.
+        /// Removes a node from the hierarchy.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <param name="node">The hierarchy node to remove.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool Remove(in HierarchyNode node) => RemoveNode(in node);
 
         /// <summary>
-        /// Remove multiple nodes from the hierarchy.
+        /// Removes multiple nodes from the hierarchy.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <param name="nodes">The hierarchy nodes to remove.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool Remove(Span<HierarchyNode> nodes) => RemoveNodeSpan(nodes);
 
         /// <summary>
-        /// Set the parent of an hierarchy node.
+        /// Sets the parent node of a hierarchy node.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
-        /// <param name="parent">The hierarchy node parent.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <param name="node">The hierarchy node to set a parent for.</param>
+        /// <param name="parent">The hierarchy node to set as the parent node.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool SetParent(in HierarchyNode node, in HierarchyNode parent) => SetNodeParent(in node, in parent);
 
         /// <summary>
-        /// Set the parent of multiple hierarchy nodes.
+        /// Sets the parent nodes for multiple hierarchy nodes.
         /// </summary>
         /// <param name="nodes">The hierarchy nodes.</param>
         /// <param name="parent">The hierarchy nodes parent.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool SetParent(Span<HierarchyNode> nodes, in HierarchyNode parent) => SetNodeParentSpan(nodes, in parent);
 
         /// <summary>
-        /// Set the sorting index of an hierarchy node.
+        /// Sets the sorting index for a hierarchy node.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The hierarchy node to set a sorting index for.</param>
         /// <param name="sortIndex">The sorting index.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         [NativeThrows]
         public extern bool SetSortIndex(in HierarchyNode node, int sortIndex);
 
         /// <summary>
-        /// Sort the children of a hierarchy node by their sort index.
+        /// Sorts the child nodes of a hierarchy node by their sort index.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <param name="node">The hierarchy node with child nodes to sort by their index.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         [NativeThrows]
         public extern bool SortChildren(in HierarchyNode node);
 
         /// <summary>
-        /// Set the value of an hierarchy node's property.
+        /// Sets a value for a property of a hierarchy node.
         /// </summary>
         /// <typeparam name="T">The property type.</typeparam>
         /// <param name="name">The property name.</param>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="value">The property value.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool SetProperty<T>(in HierarchyPropertyUnmanaged<T> property, in HierarchyNode node, T value) where T : unmanaged
         {
             unsafe
@@ -227,57 +228,57 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Set the value of an hierarchy node's property.
+        /// Sets a value for a property of a hierarchy node
         /// </summary>
         /// <param name="name">The property name.</param>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="value">The property value.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool SetProperty(in HierarchyPropertyString property, in HierarchyNode node, string value) => SetNodePropertyString(in property.m_Property, in node, value);
 
         /// <summary>
-        /// Clear the property value for the specified hierarchy node.
+        /// Clears a property value for the specified hierarchy node.
         /// </summary>
         /// <typeparam name="T">The property type.</typeparam>
         /// <param name="property">The hierarchy property.</param>
         /// <param name="node">The hierarchy node.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool ClearProperty<T>(in HierarchyPropertyUnmanaged<T> property, in HierarchyNode node) where T : unmanaged => ClearNodeProperty(in property.m_Property, in node);
 
         /// <summary>
-        /// Clear the property value for the specified hierarchy node.
+        /// Clears a property value for the specified hierarchy node.
         /// </summary>
         /// <param name="property">The hierarchy property.</param>
         /// <param name="node">The hierarchy node.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool ClearProperty(in HierarchyPropertyString property, in HierarchyNode node) => ClearNodeProperty(in property.m_Property, in node);
 
         /// <summary>
-        /// Set the name of an hierarchy node.
+        /// Sets a name for a hierarchy node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
-        /// <param name="name">The node's name.</param>
-        /// <returns><see langword="true"/> if the command was successfully appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <param name="name">The name of the node.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         [NativeThrows]
         public extern bool SetName(in HierarchyNode node, string name);
 
         /// <summary>
-        /// Execute all the commands of the hierarchy command list.
+        /// Executes all the commands in the hierarchy command list.
         /// </summary>
         [NativeThrows]
         public extern void Execute();
 
         /// <summary>
-        /// Execute one command of the hierarchy command list.
+        /// Executes one command from the hierarchy command list.
         /// </summary>
-        /// <returns><see langword="true"/> if additional invocations are needed to complete the execution, <see langword="false"/> otherwise.</returns>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         [NativeThrows]
         public extern bool ExecuteIncremental();
 
         /// <summary>
-        /// Execute commands of the hierarchy command list until the time limit is reached.
+        /// Executes commands from the hierarchy command list until a time limit is reached.
         /// </summary>
-        /// <param name="milliseconds">Time limit in milliseconds.</param>
+        /// <param name="milliseconds">The time limit in milliseconds.</param>
         /// <returns><see langword="true"/> if additional invocations are needed to complete the execution, <see langword="false"/> otherwise.</returns>
         [NativeThrows]
         public extern bool ExecuteIncrementalTimed(double milliseconds);

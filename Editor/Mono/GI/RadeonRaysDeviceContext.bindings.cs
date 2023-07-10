@@ -102,5 +102,17 @@ namespace UnityEngine.LightTransport
 
         [NativeMethod(IsThreadSafe = true)]
         public extern bool IsAsyncOperationComplete(EventID id);
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern bool InitializePostProcessingInternal(RadeonRaysContext context);
+        
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern bool ConvolveRadianceToIrradianceInternal(RadeonRaysContext context, BufferID radianceIn, BufferID irradianceOut, int probeCount);
+        
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern bool ConvertToUnityFormatInternal(RadeonRaysContext context, BufferID irradianceIn, BufferID irradianceOut, int probeCount);
+        
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern bool AddSphericalHarmonicsL2Internal(RadeonRaysContext context, BufferID a, BufferID b, BufferID sum, int probeCount);
     }
 }

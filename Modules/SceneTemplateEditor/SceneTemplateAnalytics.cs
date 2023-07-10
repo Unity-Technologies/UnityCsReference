@@ -12,6 +12,8 @@ namespace UnityEditor.SceneTemplate
 {
     internal static class SceneTemplateAnalytics
     {
+        const string vendorKey = "unity.scene-template";
+
         [Serializable]
         internal class AnalyticDepInfo
         {
@@ -89,7 +91,7 @@ namespace UnityEditor.SceneTemplate
         }
 
         [Serializable]
-        internal class SceneInstantiationEvent
+        internal class SceneInstantiationEvent : IAnalytic.IData
         {
             private DateTime m_StartTime;
 
@@ -122,6 +124,24 @@ namespace UnityEditor.SceneTemplate
             }
         }
 
+        [AnalyticInfo(eventName: "SceneInstantiationEvent", vendorKey: vendorKey)]
+        internal class SceneInstantiationEventAnalytic : IAnalytic
+        {
+            public SceneInstantiationEventAnalytic(SceneInstantiationEvent data)
+            {
+                m_data = data;
+            }
+
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                error = null;
+                data = m_data;
+                return data != null;
+            }
+
+            private SceneInstantiationEvent m_data = null;
+        }
+
         internal enum TemplateCreationType
         {
             CreateFromTargetSceneMenu,
@@ -130,7 +150,7 @@ namespace UnityEditor.SceneTemplate
         }
 
         [Serializable]
-        internal class SceneTemplateCreationEvent
+        internal class SceneTemplateCreationEvent : IAnalytic.IData
         {
             public string sceneName;
             public List<AnalyticDepInfo> dependencyInfos = new List<AnalyticDepInfo>();
@@ -138,7 +158,7 @@ namespace UnityEditor.SceneTemplate
             public int numberOfTemplatesInProject;
             public bool hasCloneableDependencies;
 
-            public SceneTemplateCreationEvent(SceneTemplateAsset template, TemplateCreationType templateCreationType)
+            public void SetData(SceneTemplateAsset template, TemplateCreationType templateCreationType)
             {
                 this.templateCreationType = Enum.GetName(typeof(TemplateCreationType), templateCreationType);
                 sceneName = AssetDatabase.GetAssetPath(template.templateScene);
@@ -147,15 +167,26 @@ namespace UnityEditor.SceneTemplate
             }
         }
 
-        enum EventName
+        [AnalyticInfo(eventName: "SceneTemplateCreationEvent", vendorKey: vendorKey)]
+        internal class SceneTemplateCreationEventAnalytic : IAnalytic
         {
-            SceneInstantiationEvent,
-            SceneTemplateCreationEvent
+            public SceneTemplateCreationEventAnalytic(SceneTemplateCreationEvent data)
+            {
+                m_data = data;
+            }
+
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                error = null;
+                data = m_data;
+                return data != null;
+            }
+
+            private SceneTemplateCreationEvent m_data = null;
         }
 
         internal static string Version;
-        private static bool s_Registered;
-
+  
         static SceneTemplateAnalytics()
         {
         }
@@ -163,85 +194,17 @@ namespace UnityEditor.SceneTemplate
         internal static void SendSceneInstantiationEvent(SceneInstantiationEvent evt)
         {
             evt.Done();
-            Send(EventName.SceneInstantiationEvent, evt);
+            SceneInstantiationEventAnalytic analytic = new SceneInstantiationEventAnalytic(evt);
+            EditorAnalytics.SendAnalytic(analytic);
+            
         }
 
         internal static void SendSceneTemplateCreationEvent(SceneTemplateCreationEvent evt)
         {
-            Send(EventName.SceneTemplateCreationEvent, evt);
+            SceneTemplateCreationEventAnalytic analytic = new SceneTemplateCreationEventAnalytic(evt);
+            EditorAnalytics.SendAnalytic(analytic);
         }
 
-        private static bool RegisterEvents()
-        {
-            if (UnityEditorInternal.InternalEditorUtility.inBatchMode)
-            {
-                return false;
-            }
-
-            if (!EditorAnalytics.enabled)
-            {
-                Console.WriteLine("[ST] Editor analytics are disabled");
-                return false;
-            }
-
-            if (s_Registered)
-            {
-                return true;
-            }
-
-            var allNames = Enum.GetNames(typeof(EventName));
-            if (allNames.Any(eventName => !RegisterEvent(eventName)))
-            {
-                return false;
-            }
-
-            s_Registered = true;
-            return true;
-        }
-
-        private static bool RegisterEvent(string eventName)
-        {
-            const string vendorKey = "unity.scene-template";
-            var result = EditorAnalytics.RegisterEventWithLimit(eventName, 100, 1000, vendorKey);
-            switch (result)
-            {
-                case AnalyticsResult.Ok:
-                {
-                    return true;
-                }
-                case AnalyticsResult.TooManyRequests:
-                    // this is fine - event registration survives domain reload (native)
-                    return true;
-                default:
-                {
-                    Console.WriteLine($"[ST] Failed to register analytics event '{eventName}'. Result: '{result}'");
-                    return false;
-                }
-            }
-        }
-
-        private static void Send(EventName eventName, object eventData)
-        {
-            if (!RegisterEvents())
-            {
-                return;
-            }
-            try
-            {
-                var result = EditorAnalytics.SendEventWithLimit(eventName.ToString(), eventData);
-                if (result == AnalyticsResult.Ok)
-                {
-                }
-                else
-                {
-                    Console.WriteLine($"[ST] Failed to send event {eventName}. Result: {result}");
-                }
-            }
-            catch (Exception)
-            {
-                // ignored
-            }
-        }
 
     }
 }

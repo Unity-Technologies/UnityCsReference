@@ -16,7 +16,7 @@ namespace UnityEngine.InputForUI
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static class EventProvider
     {
-        private static IEventProviderImpl s_impl;
+        private static IEventProviderImpl s_impl = new InputManagerProvider();
         private static EventSanitizer s_sanitizer;
 
         private static IEventProviderImpl s_implMockBackup = null; // storing original impl when using mock
@@ -33,8 +33,7 @@ namespace UnityEngine.InputForUI
         /// <param name="type">Filters by type, if none provided sends all events</param>
         public static void Subscribe(EventConsumer handler, int priority = 0, int? playerId = null, params Event.Type[] type)
         {
-            if (s_impl == null)
-                Bootstrap();
+            Bootstrap();
 
             _registrations.Add(new Registration
             {
@@ -50,6 +49,24 @@ namespace UnityEngine.InputForUI
         {
             _registrations.RemoveAll(x => x.handler == handler);
         }
+
+        /// <summary>
+        /// Enable or disables the Provider.
+        /// This is useful if InputForUI gets disabled then we can also turn off the provider here
+        /// and cleanup any resources it was using.
+        /// </summary>
+        /// <param name="enable">Specifies whether to enable or disable the provider.</param>
+        public static void SetEnabled(bool enable)
+        {
+            m_IsEnabled = enable;
+
+            if (enable)
+                Initialize();
+            else
+                Shutdown();
+        }
+        static bool m_IsEnabled = true;
+        static bool m_IsInitialized = false;
 
         internal static void Dispatch(in Event ev)
         {
@@ -97,27 +114,42 @@ namespace UnityEngine.InputForUI
         // TODO should this be an event? Maybe create different events for user joined / user left?
         public static uint playerCount => s_impl?.playerCount ?? 0;
 
-        private static void Bootstrap()
+        static void Bootstrap()
         {
-            // The logic for deciding which provider is used is mostly inside InputSystem Package.
-            // InputSystem will call SetInputSystemProvider() if it wishes to enable itself.
-            // If not, then we ALWAYS fallback to using InputManager here, to ensure we always have a provider.
-            //
-            // InputSystem will NOT enable itself if PlayerSettings explicitly enables InputManager ONLY.
-            // InputSystem will be used (and therefore InputManager will NOT be) if PlayerSettings enables InputSystem
-            // (either just InputSystem by itself or enabling Both input backends).
-            // InputSystem Package cannot enable itself if it is not installed; therefore in this case InputManager
-            // will ALWAYS be used regardless of the PlayerSettings.
-            s_impl ??= new InputManagerProvider();
+            if (m_IsEnabled)
+                Initialize();
+        }
+
+        static void Initialize()
+        {
+            if (m_IsInitialized)
+                return;
 
             s_sanitizer.Reset();
-            s_impl.Initialize();
+            s_impl?.Initialize();
 
             if (!s_focusChangedRegistered)
             {
                 Application.focusChanged += OnFocusChanged;
                 s_focusChangedRegistered = true;
             }
+            m_IsInitialized = true;
+        }
+
+        static void Shutdown()
+        {
+            if (!m_IsInitialized)
+                return;
+
+            m_IsInitialized = false;
+
+            if (s_focusChangedRegistered)
+            {
+                s_focusChangedRegistered = false;
+                Application.focusChanged -= OnFocusChanged;
+            }
+
+            s_impl?.Shutdown();
         }
 
         private static void OnFocusChanged(bool focus)
@@ -129,7 +161,7 @@ namespace UnityEngine.InputForUI
         internal static void NotifyUpdate()
         {
             // Don't Update if there are no registered users. Avoid unexpected InputForUI errors in the console.
-            if (!Application.isPlaying || _registrations.Count == 0)
+            if (!Application.isPlaying || _registrations.Count == 0 || !m_IsInitialized)
                 return;
 
             s_sanitizer.BeforeProviderUpdate();
@@ -142,9 +174,26 @@ namespace UnityEngine.InputForUI
         /// </summary>
         internal static void SetInputSystemProvider(IEventProviderImpl impl)
         {
-            s_impl?.Shutdown();
+            // The logic for deciding which provider is used is mostly inside InputSystem Package.
+            // InputSystem will call SetInputSystemProvider() if it wishes to enable itself.
+            // If not, then we ALWAYS fallback to using InputManager here, to ensure we always have a provider.
+            //
+            // InputSystem will NOT enable itself if PlayerSettings explicitly enables InputManager ONLY.
+            // InputSystem will be used (and therefore InputManager will NOT be) if PlayerSettings enables InputSystem
+            // (either just InputSystem by itself or enabling Both input backends).
+            // InputSystem Package cannot enable itself if it is not installed; therefore in this case InputManager
+            // will ALWAYS be used regardless of the PlayerSettings.
+
+            bool wasInitialized = m_IsInitialized;
+            Shutdown();
+
+            // Typically we just lazily set the provider here, to be initialized later during Bootstrap().
             s_impl = impl;
-            Bootstrap();
+
+            // However if we are changing the provider after the bootstrapping phase occurred
+            // then we should ensure the new provider is initialized here.
+            if (wasInitialized)
+                Initialize();
         }
 
         /// <summary>
@@ -157,9 +206,9 @@ namespace UnityEngine.InputForUI
                 s_implMockBackup = s_impl;
             s_focusStateBeforeMock = Application.isFocused;
 
+            Shutdown();
             s_impl = impl;
-
-            Bootstrap();
+            Initialize();
         }
 
         /// <summary>
@@ -167,12 +216,10 @@ namespace UnityEngine.InputForUI
         /// </summary>
         internal static void ClearMockProvider()
         {
-            s_impl?.Shutdown();
-
+            Shutdown();
             s_impl = s_implMockBackup;
             s_implMockBackup = null;
-
-            s_sanitizer.Reset();
+            Initialize();
 
             if (s_focusStateBeforeMock != Application.isFocused)
                 s_impl?.OnFocusChanged(Application.isFocused);

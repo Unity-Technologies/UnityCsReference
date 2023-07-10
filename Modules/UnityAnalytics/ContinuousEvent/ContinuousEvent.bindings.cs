@@ -11,6 +11,7 @@ namespace UnityEngine.Analytics
 {
     [RequiredByNativeCode]
     [NativeHeader("Modules/UnityAnalytics/Public/UnityAnalytics.h")]
+    [NativeHeader("Modules/UnityAnalyticsCommon/Public/UnityAnalyticsCommon.h")]
     [NativeHeader("Modules/UnityAnalytics/ContinuousEvent/Manager.h")]
     [uei.ExcludeFromDocs]
     public class ContinuousEvent

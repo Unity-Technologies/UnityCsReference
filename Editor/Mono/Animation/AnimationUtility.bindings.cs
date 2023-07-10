@@ -134,7 +134,7 @@ namespace UnityEditor
         extern internal static AnimationClip[] GetAnimationClipsInAnimationPlayer([NotNull] GameObject gameObject);
 
         // Sets the array of AnimationClips to be referenced in the Animation component
-        extern public static void SetAnimationClips([NotNull] Animation animation, AnimationClip[] clips);
+        extern public static void SetAnimationClips([NotNull] Animation animation, [Unmarshalled] AnimationClip[] clips);
 
         public static EditorCurveBinding[] GetAnimatableBindings(GameObject targetObject, GameObject root)
         {
@@ -201,7 +201,7 @@ namespace UnityEditor
 
         extern public static ObjectReferenceKeyframe[] GetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
 
-        public static void SetObjectReferenceCurve(AnimationClip clip, EditorCurveBinding binding, ObjectReferenceKeyframe[] keyframes)
+        public static void SetObjectReferenceCurve(AnimationClip clip, EditorCurveBinding binding, [Unmarshalled]ObjectReferenceKeyframe[] keyframes)
         {
             Internal_SetObjectReferenceCurve(clip, binding, keyframes, true);
             Internal_InvokeOnCurveWasModified(clip, binding, keyframes != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
@@ -232,7 +232,7 @@ namespace UnityEditor
         }
 
         [NativeThrows]
-        extern private static void Internal_SetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, ObjectReferenceKeyframe[] keyframes, bool updateMuscleClip);
+        extern private static void Internal_SetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, [Unmarshalled] ObjectReferenceKeyframe[] keyframes, bool updateMuscleClip);
 
         extern public static AnimationCurve GetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
 

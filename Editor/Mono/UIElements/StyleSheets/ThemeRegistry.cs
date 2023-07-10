@@ -47,6 +47,5 @@ namespace UnityEditor.UIElements.StyleSheets
         {
             themes.Remove(themeName);
         }
-
     }
 }

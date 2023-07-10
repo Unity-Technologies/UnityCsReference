@@ -83,6 +83,7 @@ namespace UnityEngine
             OpenImage = 2,
 
             // The AMD Radeon Pro Image Processing denoiser is applied.
+            [Obsolete("DenoiserType.RadeonPro is obsolete, use DenoiserType.OpenImage instead.", true)]
             RadeonPro = 3
         }
 

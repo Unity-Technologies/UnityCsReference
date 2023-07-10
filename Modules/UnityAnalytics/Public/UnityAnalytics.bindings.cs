@@ -10,6 +10,7 @@ namespace UnityEngine.Analytics
 
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/UnityAnalytics/Public/UnityAnalytics.h")]
+    [NativeHeader("Modules/UnityAnalyticsCommon/Public/UnityAnalyticsCommon.h")]
     [NativeHeader("Modules/UnityConnect/UnityConnectSettings.h")]
     [NativeHeader("Modules/UnityAnalytics/Public/Events/UserCustomEvent.h")]
     public static partial class Analytics
@@ -152,6 +153,6 @@ namespace UnityEngine.Analytics
 
         [ThreadSafe]
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
-        internal static extern bool QueueEvent(string eventName, object parameters, int ver, string prefix);
+        internal static extern AnalyticsResult QueueEvent(string eventName, object parameters, int ver, string prefix);
     }
 }

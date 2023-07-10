@@ -281,6 +281,9 @@ namespace UnityEngine.TextCore.Text
 
         protected void InitializeFontReferenceLookup()
         {
+            if (m_FontReferences == null)
+                m_FontReferences = new List<FontReferenceMap>();
+
             for (int i = 0; i < m_FontReferences.Count; i++)
             {
                 FontReferenceMap fontRef = m_FontReferences[i];

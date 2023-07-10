@@ -7,7 +7,6 @@ namespace Unity.Hierarchy
     /// <summary>
     /// An interface that is used to access strongly typed node data.
     /// </summary>
-    /// <typeparam name="T">The property value type.</typeparam>
     public interface IHierarchyProperty<T>
     {
         /// <summary>

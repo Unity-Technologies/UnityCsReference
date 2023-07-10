@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Analytics;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -10,30 +11,49 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal struct PackageManagerFiltersAnalytics
     {
         private const string k_EventName = "packageManagerWindowFilters";
+        private const string k_VendorKey = "unity.package-manager-ui";
 
-        public string filter_tab;
-        public string order_by;
-        public string status;
-        public string[] categories;
-        public string[] labels;
+        [AnalyticInfo(eventName: k_EventName, vendorKey: k_VendorKey)]
+        internal class PackageManagerFiltersAnalytic : IAnalytic
+        {
+            [Serializable]
+            internal class PackageManagerFiltersAnalyticsData : IAnalytic.IData
+            {
+                public string filter_tab;
+                public string order_by;
+                public string status;
+                public string[] categories;
+                public string[] labels;
+            }
+            public PackageManagerFiltersAnalytic(PageFilters filters)
+            {
+                this.m_Filters = filters;
+            }
+
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                error = null;
+                var servicesContainer = ServicesContainer.instance;
+                var filterTab = servicesContainer.Resolve<PageManager>().activePage.id;
+                var parameters = new PackageManagerFiltersAnalyticsData
+                {
+                    filter_tab = filterTab,
+                    order_by = m_Filters.sortOption.ToString(),
+                    status = m_Filters.status.ToString(),
+                    categories = m_Filters.categories.ToArray(),
+                    labels = m_Filters.labels.ToArray()
+                };
+                data = parameters;
+                return data != null;
+            }
+
+            private PageFilters m_Filters;
+        }
 
         public static void SendEvent(PageFilters filters)
         {
-            var servicesContainer = ServicesContainer.instance;
-            var editorAnalyticsProxy = servicesContainer.Resolve<EditorAnalyticsProxy>();
-            if (!editorAnalyticsProxy.RegisterEvent(k_EventName))
-                return;
-
-            var pageId = servicesContainer.Resolve<PageManager>().activePage.id;
-            var parameters = new PackageManagerFiltersAnalytics
-            {
-                filter_tab = pageId,
-                order_by = filters.sortOption.ToString(),
-                status = filters.status.ToString(),
-                categories = filters.categories.ToArray(),
-                labels = filters.labels.ToArray()
-            };
-            editorAnalyticsProxy.SendEventWithLimit(k_EventName, parameters);
+            var editorAnalyticsProxy = ServicesContainer.instance.Resolve<EditorAnalyticsProxy>();
+            editorAnalyticsProxy.SendAnalytic(new PackageManagerFiltersAnalytic(filters));
         }
     }
 }

@@ -403,6 +403,7 @@ namespace UnityEditor
             m_Lighting.showLightingSettings = new SavedBool($"{target.GetType()}.ShowLightingSettings", true);
             m_Lighting.showLightmapSettings = new SavedBool($"{target.GetType()}.ShowLightmapSettings", true);
             m_Lighting.showBakedLightmap = new SavedBool($"{target.GetType()}.ShowBakedLightmapSettings", false);
+            m_Lighting.showPreviewLightmap = new SavedBool($"{target.GetType()}.ShowPreviewLightmapSettings", false);
             m_Lighting.showRealtimeLightmap = new SavedBool($"{target.GetType()}.ShowRealtimeLightmapSettings", false);
 
             m_Probes = new Probes();

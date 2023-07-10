@@ -366,7 +366,7 @@ namespace UnityEngine
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapPointArray_Binding")]
-        extern private static int OverlapPointArray_Internal(PhysicsScene2D physicsScene, Vector2 point, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
+        extern private static int OverlapPointArray_Internal(PhysicsScene2D physicsScene, Vector2 point, ContactFilter2D contactFilter, [NotNull][Unmarshalled] Collider2D[] results);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapPointList_Binding")]
@@ -409,7 +409,7 @@ namespace UnityEngine
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapCircleArray_Binding")]
-        extern private static int OverlapCircleArray_Internal(PhysicsScene2D physicsScene, Vector2 point, float radius, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
+        extern private static int OverlapCircleArray_Internal(PhysicsScene2D physicsScene, Vector2 point, float radius, ContactFilter2D contactFilter, [NotNull][Unmarshalled] Collider2D[] results);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapCircleList_Binding")]
@@ -452,7 +452,7 @@ namespace UnityEngine
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapBoxArray_Binding")]
-        extern private static int OverlapBoxArray_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, float angle, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
+        extern private static int OverlapBoxArray_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, float angle, ContactFilter2D contactFilter, [NotNull][Unmarshalled] Collider2D[] results);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapBoxList_Binding")]
@@ -547,7 +547,7 @@ namespace UnityEngine
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapCapsuleArray_Binding")]
-        extern private static int OverlapCapsuleArray_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
+        extern private static int OverlapCapsuleArray_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, ContactFilter2D contactFilter, [NotNull] [Unmarshalled] Collider2D[] results);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapCapsuleList_Binding")]
@@ -595,7 +595,7 @@ namespace UnityEngine
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapColliderFilteredArray_Binding")]
-        extern private static int OverlapColliderFilteredArray_Internal([NotNull] Collider2D collider, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
+        extern private static int OverlapColliderFilteredArray_Internal([NotNull] Collider2D collider, ContactFilter2D contactFilter, [NotNull] [Unmarshalled] Collider2D[] results);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapColliderList_Binding")]
@@ -1484,7 +1484,7 @@ namespace UnityEngine
         }
 
         // Returns all colliders overlapping the point (limited by the size of the array) but filters using ContactFilter2D.  This does not produce any garbage.
-        public static int OverlapPoint(Vector2 point, ContactFilter2D contactFilter, Collider2D[] results)
+        public static int OverlapPoint(Vector2 point, ContactFilter2D contactFilter, [Unmarshalled] Collider2D[] results)
         {
             return defaultPhysicsScene.OverlapPoint(point, contactFilter, results);
         }
@@ -1916,12 +1916,12 @@ namespace UnityEngine
         // Gets contacting colliders for the specified collider (non-allocating) - Colliders Only.
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("GetColliderContactsCollidersOnlyArray_Binding")]
-        extern private static int GetColliderContactsCollidersOnlyArray([NotNull] Collider2D collider, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
+        extern private static int GetColliderContactsCollidersOnlyArray([NotNull] Collider2D collider, ContactFilter2D contactFilter, [NotNull] [Unmarshalled] Collider2D[] results);
 
         // Gets contacting colliders for the specified rigidbody (non-allocating) - Colliders Only.
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("GetRigidbodyContactsCollidersOnlyArray_Binding")]
-        extern private static int GetRigidbodyContactsCollidersOnlyArray([NotNull] Rigidbody2D rigidbody, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
+        extern private static int GetRigidbodyContactsCollidersOnlyArray([NotNull] Rigidbody2D rigidbody, ContactFilter2D contactFilter, [NotNull] [Unmarshalled] Collider2D[] results);
 
         #endregion
 
@@ -3787,7 +3787,7 @@ namespace UnityEngine
         }
 
         [NativeMethod("GetAttachedCollidersArray_Binding")]
-        extern private int GetAttachedCollidersArray_Internal([NotNull] Collider2D[] results, bool findTriggers);
+        extern private int GetAttachedCollidersArray_Internal([NotNull] [Unmarshalled] Collider2D[] results, bool findTriggers);
 
         [NativeMethod("GetAttachedCollidersList_Binding")]
         extern private int GetAttachedCollidersList_Internal([NotNull] List<Collider2D> results, bool findTriggers);
@@ -3814,7 +3814,7 @@ namespace UnityEngine
         extern private int CastFromFiltered_Internal(Vector2 position, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
 
         [NativeMethod("OverlapArray_Binding")]
-        extern private int OverlapArray_Internal(ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
+        extern private int OverlapArray_Internal(ContactFilter2D contactFilter, [NotNull][Unmarshalled] Collider2D[] results);
 
         [NativeMethod("OverlapList_Binding")]
         extern private int OverlapList_Internal([NotNull] List<Collider2D> results);

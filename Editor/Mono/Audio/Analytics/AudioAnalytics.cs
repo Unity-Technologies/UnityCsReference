@@ -10,18 +10,4 @@ namespace UnityEditor.Audio.Analytics;
 
 static class AudioAnalytics
 {
-    const string k_VendorKey = "unity.audio";
-
-    internal static bool RegisterEvent(string eventName, int maxEventsPerHour, int maxNumberOfElements)
-    {
-        var result = EditorAnalytics.RegisterEventWithLimit(eventName, maxEventsPerHour, maxNumberOfElements, k_VendorKey);
-
-        if (result == AnalyticsResult.Ok)
-        {
-            return true;
-        }
-
-        Console.WriteLine($"Event '{eventName}' could not be registered.");
-        return false;
-    }
 }

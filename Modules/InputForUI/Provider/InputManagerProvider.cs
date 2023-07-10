@@ -470,7 +470,7 @@ namespace UnityEngine.InputForUI
 
             if (navigateNext != 0)
             {
-                // same as https://github.cds.internal.unity3d.com/unity/unity/blob/trunk/ModuleOverrides/com.unity.ui/Core/DefaultEventSystem.cs#L596
+                // same as https://github.cds.internal.unity3d.com/unity/unity/blob/trunk/Modules/UIElements/Core/DefaultEventSystem.cs#L596
                 if (_eventModifiers.isShiftPressed)
                     navigateNext = -navigateNext;
 

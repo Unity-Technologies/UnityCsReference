@@ -52,6 +52,7 @@ namespace UnityEditor
             public static readonly GUIContent unsupportedTopology = EditorGUIUtility.TrTextContent("Mesh with point, strip or line topology is not supported by lightmapping.");
             public static readonly GUIContent uvOverlap = EditorGUIUtility.TrTextContent("This GameObject has overlapping UVs. Please adjust Mesh Importer settings or increase chart padding in your modeling package.");
             public static readonly GUIContent atlas = EditorGUIUtility.TrTextContent("Baked Lightmap");
+            public static readonly GUIContent interactiveAtlas = EditorGUIUtility.TrTextContent("Preview Lightmap");
             public static readonly GUIContent realtimeLM = EditorGUIUtility.TrTextContent("Realtime Lightmap");
             public static readonly GUIContent scaleInLightmap = EditorGUIUtility.TrTextContent("Scale In Lightmap", "Specifies the relative size of object's UVs within a lightmap. A value of 0 will result in the object not being lightmapped, but still contribute lighting to other objects in the Scene.");
             public static readonly GUIContent albedoScale = EditorGUIUtility.TrTextContent("Albedo Scale", "Specifies the relative size of object's UVs within its albedo texture that is used when calculating the influence on surrounding objects.");
@@ -84,7 +85,7 @@ namespace UnityEditor
             public static readonly GUIContent giMeshNotValid = EditorGUIUtility.TrTextContent("It is not possible to generate lighting for this Mesh because it is missing the required attribute(s). Ensure that this Mesh has normals, vertices, and texture coordinates.");
             public static readonly GUIContent giMeshNotValidMultiple = EditorGUIUtility.TrTextContent("It is not possible to generate lighting for these Meshes because one or more of them are missing the required attribute(s). Ensure that all the Meshes you've selected have normals, vertices, and texture coordinates.");
 
-            public static readonly GUIContent openPreview = EditorGUIUtility.TrTextContent("Open Preview");
+            public static readonly GUIContent openPreview = EditorGUIUtility.TrTextContent("View");
             public static readonly GUIStyle openPreviewStyle = EditorStyles.objectFieldThumb.name + "LightmapPreviewOverlay";
             public static readonly int previewPadding = 30;
             public static readonly int previewWidth = 104;
@@ -118,6 +119,7 @@ namespace UnityEditor
 
         internal SavedBool showLightingSettings { get; set; }
         internal SavedBool showLightmapSettings { get; set; }
+        internal SavedBool showPreviewLightmap { get; set; }
         internal SavedBool showBakedLightmap { get; set; }
         internal SavedBool showRealtimeLightmap { get; set; }
 
@@ -316,7 +318,8 @@ namespace UnityEditor
 
                     if ((m_Renderers != null) && (m_Renderers.Length > 0))
                     {
-                        ShowAtlasGUI(m_Renderers[0].GetInstanceID(), true);
+                        ShowAtlasGUI(m_Renderers[0].GetInstanceID(), true, true);
+                        ShowAtlasGUI(m_Renderers[0].GetInstanceID(), true, false);
                         ShowRealtimeLMGUI(m_Renderers[0]);
 
                         DisplayMeshWarning();
@@ -413,7 +416,8 @@ namespace UnityEditor
                         if (GUI.enabled && m_Terrains.Length == 1 && m_Terrains[0].terrainData != null)
                             ShowBakePerformanceWarning(m_Terrains[0]);
 
-                        ShowAtlasGUI(m_Terrains[0].GetInstanceID(), false);
+                        ShowAtlasGUI(m_Terrains[0].GetInstanceID(), false, true);
+                        ShowAtlasGUI(m_Terrains[0].GetInstanceID(), false, false);
                         ShowRealtimeLMGUI(m_Terrains[0]);
                     }
 
@@ -542,40 +546,56 @@ namespace UnityEditor
             ShowClampedSizeInLightmapGUI(lightmapScale, cachedSurfaceArea, isSSD);
         }
 
-        void ShowAtlasGUI(int instanceID, bool isMeshRenderer)
+        void ShowAtlasGUI(int instanceID, bool isMeshRenderer, bool useInteractiveLightBakingData)
         {
+            const int InfluenceOnlyIndex = 0xFFFE; // kLightmapIndexInfluenceOnly
+            const int NotLightmappedIndex = 0xFFFF; // kLightmapIndexNotLightmapped
+
+            int lightmapIndex = useInteractiveLightBakingData ?
+                InteractiveLightBaking.GetLightmapIndexFromRenderer(instanceID) :
+                (m_LightmapIndex?.intValue ?? NotLightmappedIndex);
+
+            Vector4 lightmapST = useInteractiveLightBakingData ?
+                InteractiveLightBaking.GetLightmapSTFromRenderer(instanceID) :
+                new Vector4(m_LightmapTilingOffsetX.floatValue, m_LightmapTilingOffsetY.floatValue, m_LightmapTilingOffsetZ.floatValue, m_LightmapTilingOffsetW.floatValue);
+
             // If lightmap index is missing, or renderer is not lightmapped, hide this gui
-            if (m_LightmapIndex == null || m_LightmapIndex.intValue >= 0xFFFE)
+            if (lightmapIndex >= InfluenceOnlyIndex)
                 return;
 
-            const bool useInteractiveLightBakingData = false;
-            Hash128 contentHash = LightmapVisualizationUtility.GetBakedGITextureHash(m_LightmapIndex.intValue, 0, GITextureType.Baked, useInteractiveLightBakingData);
+            // Hide preview lightmaps if we aren't in preview mode
+            if (useInteractiveLightBakingData && !Lightmapping.isInteractive)
+                return;
+
+            Hash128 contentHash = LightmapVisualizationUtility.GetBakedGITextureHash(lightmapIndex, 0, GITextureType.Baked, useInteractiveLightBakingData);
 
             // if we need to fetch a new texture
             if (m_CachedBakedTexture.texture == null || m_CachedBakedTexture.contentHash != contentHash)
-                m_CachedBakedTexture = LightmapVisualizationUtility.GetBakedGITexture(m_LightmapIndex.intValue, 0, GITextureType.Baked, useInteractiveLightBakingData);
+                m_CachedBakedTexture = LightmapVisualizationUtility.GetBakedGITexture(lightmapIndex, 0, GITextureType.Baked, useInteractiveLightBakingData);
 
             if (m_CachedBakedTexture.texture == null)
                 return;
 
-            showBakedLightmap.value = EditorGUILayout.Foldout(showBakedLightmap.value, Styles.atlas, true);
+            SavedBool showLightmap = useInteractiveLightBakingData ? showPreviewLightmap : showBakedLightmap;
+            GUIContent foldoutContent = useInteractiveLightBakingData ? Styles.interactiveAtlas : Styles.atlas;
+            showLightmap.value = EditorGUILayout.Foldout(showLightmap.value, foldoutContent, true);
 
-            if (!showBakedLightmap.value)
+            if (!showLightmap.value)
                 return;
 
             EditorGUI.indentLevel += 1;
 
             GUILayout.BeginHorizontal();
 
-            DrawLightmapPreview(m_CachedBakedTexture.texture, false, instanceID);
+            DrawLightmapPreview(m_CachedBakedTexture.texture, false, instanceID, useInteractiveLightBakingData);
 
             GUILayout.BeginVertical();
 
-            GUILayout.Label(Styles.atlasIndex.text + ": " + m_LightmapIndex.intValue);
-            GUILayout.Label(Styles.atlasTilingX.text + ": " + m_LightmapTilingOffsetX.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
-            GUILayout.Label(Styles.atlasTilingY.text + ": " + m_LightmapTilingOffsetY.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
-            GUILayout.Label(Styles.atlasOffsetX.text + ": " + m_LightmapTilingOffsetZ.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
-            GUILayout.Label(Styles.atlasOffsetY.text + ": " + m_LightmapTilingOffsetW.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            GUILayout.Label(Styles.atlasIndex.text + ": " + lightmapIndex);
+            GUILayout.Label(Styles.atlasTilingX.text + ": " + lightmapST.x.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            GUILayout.Label(Styles.atlasTilingY.text + ": " + lightmapST.y.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            GUILayout.Label(Styles.atlasOffsetX.text + ": " + lightmapST.z.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            GUILayout.Label(Styles.atlasOffsetY.text + ": " + lightmapST.w.ToString(CultureInfo.InvariantCulture.NumberFormat));
 
             var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
 
@@ -614,7 +634,7 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
 
-            DrawLightmapPreview(m_CachedRealtimeTexture.texture, true, terrain.GetInstanceID());
+            DrawLightmapPreview(m_CachedRealtimeTexture.texture, true, terrain.GetInstanceID(), false);
 
             GUILayout.BeginVertical();
 
@@ -656,7 +676,7 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
 
-            DrawLightmapPreview(m_CachedRealtimeTexture.texture, true, renderer.GetInstanceID());
+            DrawLightmapPreview(m_CachedRealtimeTexture.texture, true, renderer.GetInstanceID(), false);
 
             GUILayout.BeginVertical();
 
@@ -715,21 +735,21 @@ namespace UnityEditor
             return true;
         }
 
-        private void DrawLightmapPreview(Texture2D texture, bool realtimeLightmap, int instanceId)
+        private void DrawLightmapPreview(Texture2D texture, bool realtimeLightmap, int instanceId, bool useInteractiveLightBakingData)
         {
             GUILayout.Space(Styles.previewPadding);
 
             int previewWidth = Styles.previewWidth - 4; // padding
 
             Rect rect = GUILayoutUtility.GetRect(previewWidth, previewWidth, EditorStyles.objectField);
-            Rect buttonRect = new Rect(rect.xMax - 70, rect.yMax - 14, 70, 14);
+            Rect buttonRect = new Rect(rect.xMax - 35, rect.yMax - 14, 35, 14);
 
             if (Event.current.type == EventType.MouseDown)
             {
                 if ((buttonRect.Contains(Event.current.mousePosition) && Event.current.clickCount == 1) ||
                     (rect.Contains(Event.current.mousePosition) && Event.current.clickCount == 2))
                 {
-                    LightmapPreviewWindow.CreateLightmapPreviewWindow(instanceId, realtimeLightmap, false);
+                    LightmapPreviewWindow.CreateLightmapPreviewWindow(instanceId, realtimeLightmap, false, useInteractiveLightBakingData);
                 }
                 else if (rect.Contains(Event.current.mousePosition) && Event.current.clickCount == 1)
                 {

@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.Build;
+using UnityEditor.Rendering.Settings;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
@@ -59,7 +60,10 @@ namespace UnityEditor.Rendering
             CheckRenderPipelineType(renderPipelineType);
 
             if (newSettings != null)
+            {
+                RenderPipelineGraphicsSettingsManager.PopulateRenderPipelineGraphicsSettings(newSettings);
                 Internal_RegisterRenderPipeline(renderPipelineType.FullName, newSettings);
+            }
             else
                 Internal_UnregisterRenderPipeline(renderPipelineType.FullName);
         }

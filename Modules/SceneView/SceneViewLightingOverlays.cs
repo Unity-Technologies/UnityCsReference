@@ -133,17 +133,23 @@ namespace UnityEditor
 
         void OnUseInteractiveLightBakingDataChanged(bool useInteractiveLightBakingDataChanged)
         {
-            m_InteractiveBakingContent?.Q<Toggle>()?.SetValueWithoutNotify(useInteractiveLightBakingDataChanged);
+            m_InteractiveBakingContent?.Q<EnumField>()?.SetValueWithoutNotify(useInteractiveLightBakingDataChanged ? LightingDataSource.Preview : LightingDataSource.Baked);
         }
 
         void OnBakeStarted()
         {
-            m_InteractiveBakingContent?.Q<Toggle>()?.SetEnabled(false);
+            m_InteractiveBakingContent?.Q<EnumField>()?.SetEnabled(false);
         }
 
         void OnBakeCompleted()
         {
-            m_InteractiveBakingContent?.Q<Toggle>()?.SetEnabled(true);
+            m_InteractiveBakingContent?.Q<EnumField>()?.SetEnabled(true);
+        }
+
+        enum LightingDataSource
+        {
+            Baked,
+            Preview
         }
 
         VisualElement CreateInteractiveBakingContent()
@@ -151,16 +157,23 @@ namespace UnityEditor
             var useInteractiveLightBakingDataChanged = SceneView.lastActiveSceneView?.debugDrawModesUseInteractiveLightBakingData ?? false;
 
             var root = new VisualElement();
-            root.tooltip = "Interactively bake data for this Scene View Mode instead of showing existing baked data.";
 
-            var toggle = new Toggle { label = "Interactive Preview" };
-            toggle.labelElement.AddToClassList(Styles.k_ToggleLabelClass);
-            toggle.visualInput.AddToClassList(Styles.k_ToggleClass);
-            toggle.RegisterValueChangedCallback((ChangeEvent<bool> evt) => SceneView.lastActiveSceneView.debugDrawModesUseInteractiveLightBakingData = evt.newValue);
-            toggle.SetValueWithoutNotify(useInteractiveLightBakingDataChanged);
-            toggle.SetEnabled(!Lightmapping.isRunning);
+            var dropdown = new EnumField("Lighting Data", LightingDataSource.Baked);
+            dropdown.tooltip = "Select which lighting data is shown in Debug Draw Modes.\n\nBaked displays the most recent lighting data generated from the Lighting Window.\n\nPreview displays an interactive preview which updates in relation to Scene changes.";
+            dropdown.RegisterValueChangedCallback((evt) =>
+            {
+                bool isInteractive = (LightingDataSource)evt.newValue == LightingDataSource.Preview;
+                SceneView.lastActiveSceneView.debugDrawModesUseInteractiveLightBakingData = isInteractive;
+            });
 
-            root.Add(toggle);
+            dropdown.labelElement.AddToClassList(Styles.k_ToggleLabelClass);
+            dropdown.visualInput.AddToClassList(Styles.k_SliderFloatFieldClass);
+
+            dropdown.SetEnabled(!Lightmapping.isRunning);
+
+            dropdown.SetValueWithoutNotify(useInteractiveLightBakingDataChanged ? LightingDataSource.Preview : LightingDataSource.Baked);
+
+            root.Add(dropdown);
             return root;
         }
 

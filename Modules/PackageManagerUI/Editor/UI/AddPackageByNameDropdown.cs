@@ -91,25 +91,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             submitButton.clickable.clicked -= SubmitClicked;
         }
 
-        private void SetError(string errorMessage, bool isNameError = false, bool isVersionError = false)
+        private void SetError(bool isNameError = false, bool isVersionError = false)
         {
             packageVersionField.RemoveFromClassList("error");
             packageNameField.RemoveFromClassList("error");
 
-            if (string.IsNullOrEmpty(errorMessage))
+            AddToClassList("inputError");
+            if (isNameError)
             {
-                RemoveFromClassList("inputError");
-                errorInfoBox.text = string.Empty;
+                errorInfoBox.text = L10n.Tr("Unable to find the package with the specified name.\nPlease check the name and try again.");
+                packageNameField.AddToClassList("error");
             }
-            else
+            if (isVersionError)
             {
-                AddToClassList("inputError");
-                errorInfoBox.text = errorMessage;
-                if (isNameError)
-                    packageNameField.AddToClassList("error");
-                if (isVersionError)
-                    packageVersionField.AddToClassList("error");
+                errorInfoBox.text = L10n.Tr("Unable to find the package with the specified version.\nPlease check the version and try again.");
+                packageVersionField.AddToClassList("error");
             }
+            ShowWithNewWindowSize();
         }
 
         internal void SubmitClicked()
@@ -138,21 +136,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 successCallback: packageInfo =>
                 {
                     var packageVersion = packageVersionField.value;
-                    if (string.IsNullOrEmpty(packageVersion))
-                        InstallByNameAndVersion(packageInfo.name);
-                    else if (packageInfo.versions.all.Contains(packageVersion))
-                        InstallByNameAndVersion(packageInfo.name, packageVersion);
+                    if (packageInfo == null)
+                        SetError(isNameError: true);
+                    else if (string.IsNullOrEmpty(packageVersion) || packageInfo.versions.all.Contains(packageVersion) == true)
+                        InstallByNameAndVersion(packageName, packageVersion);
                     else
-                    {
-                        SetError(L10n.Tr("Unable to find the package with the specified version.\nPlease check the version and try again."), false, true);
-                        ShowWithNewWindowSize();
-                    }
+                        SetError(isVersionError: true);
                 },
-                errorCallback: error =>
-                {
-                    SetError(L10n.Tr("Unable to find the package with the specified name.\nPlease check the name and try again."), true);
-                    ShowWithNewWindowSize();
-                });
+                errorCallback: error => SetError(isNameError: true));
 
             inputForm.SetEnabled(false);
         }

@@ -17,1464 +17,6 @@
     <Compile Include="..\..\External\unitytls\builds\CSharp\UnityTLSNativeLibrary.cs">
       <Link>External\unitytls\builds\CSharp\UnityTLSNativeLibrary.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\AlignmentUtils.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\AlignmentUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Atlas.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Atlas.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundPosition.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\BackgroundPosition.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundPosition.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\BackgroundPosition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundPropertyHelper.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\BackgroundPropertyHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundRepeat.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\BackgroundRepeat.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundRepeat.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\BackgroundRepeat.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundSize.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\BackgroundSize.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundSize.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\BackgroundSize.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BindableElement.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\BindableElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\Binding.Factory.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\Binding.Factory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\Binding.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\Binding.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\BindingActivationContext.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\BindingActivationContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\BindingContext.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\BindingContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\BindingResult.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\BindingResult.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\BindingTarget.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\BindingTarget.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\BindingUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\BindingUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\ConverterGroup.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\ConverterGroup.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\ConverterGroups.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\ConverterGroups.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\CustomBinding.Factory.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\CustomBinding.Factory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\CustomBinding.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\CustomBinding.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\DataBinding.Factory.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\DataBinding.Factory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\DataBinding.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\DataBinding.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\DataBindingManager.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\DataBindingManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\DataBindingUtility.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\DataBindingUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\DataSourceContext.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\DataSourceContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\IDataSourceProvider.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\IDataSourceProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\IDataSourceViewHashProvider.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\IDataSourceViewHashProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\INotifyBindablePropertyChanged.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\INotifyBindablePropertyChanged.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\Utils\AutoCompletePathVisitor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\Utils\AutoCompletePathVisitor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\Utils\TypePathVisitor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\Utils\TypePathVisitor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\VisualTreeBindingsUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\VisualTreeBindingsUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Bindings\VisualTreeDataBindingUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Bindings\VisualTreeDataBindingUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ClampedDragger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\ClampedDragger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ClickDetector.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\ClickDetector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Clickable.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Clickable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\BaseListViewController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\BaseListViewController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\BaseTreeViewController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\BaseTreeViewController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\CollectionViewController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\CollectionViewController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\DefaultMultiColumnTreeViewController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\DefaultMultiColumnTreeViewController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\DefaultTreeViewController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\DefaultTreeViewController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\IDefaultTreeViewController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\IDefaultTreeViewController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\ListViewController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\ListViewController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\MultiColumnListViewController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\MultiColumnListViewController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\MultiColumnTreeViewController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\MultiColumnTreeViewController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\TreeDataController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\TreeDataController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\TreeViewController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\TreeViewController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\DictionaryExtensions.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\DictionaryExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\CollectionVirtualizationController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\CollectionVirtualizationController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\DynamicHeightVirtualizationController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\DynamicHeightVirtualizationController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\FixedHeightVirtualizationController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\FixedHeightVirtualizationController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableCollectionItem.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableCollectionItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableListViewItem.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableListViewItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableMultiColumnListViewItem.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableMultiColumnListViewItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableMultiColumnTreeViewItem.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableMultiColumnTreeViewItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableTreeViewItem.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableTreeViewItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\VerticalVirtualizationController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\VerticalVirtualizationController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ContextualMenuManager.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\ContextualMenuManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ContextualMenuManipulator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\ContextualMenuManipulator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseBoolField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseBoolField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseCompositeField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseCompositeField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseListView.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseListView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BasePopupField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BasePopupField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseSlider.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseSlider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseTreeView.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseTreeView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseVerticalCollectionView.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseVerticalCollectionView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Binding.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Binding.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BoundsField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BoundsField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BoundsIntField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BoundsIntField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Box.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Box.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Button.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Button.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\ButtonStripField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\ButtonStripField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\CompoundFields.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\CompoundFields.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\DoubleField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\DoubleField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\DropdownField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\DropdownField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\EnumField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\EnumField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\FloatField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\FloatField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Foldout.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Foldout.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\GenericDropdownMenu.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\GenericDropdownMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\GroupBox.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\GroupBox.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Hash128Field.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Hash128Field.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\HelpBox.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\HelpBox.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\IMixedValueSupport.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\IMixedValueSupport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\INotifyValueChanged.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\INotifyValueChanged.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Image.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Image.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\InputField\BaseField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\InputField\BaseField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\InputField\KeyboardTextEditor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\InputField\KeyboardTextEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\InputField\TextEditor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\InputField\TextEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\InputField\TextField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\InputField\TextField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\InputField\TextInputFieldBase.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\InputField\TextInputFieldBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\InputField\TouchScreenTextEditor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\InputField\TouchScreenTextEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\IntegerField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\IntegerField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Label.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Label.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\ListView.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\ListView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\LongField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\LongField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MinMaxSlider.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MinMaxSlider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\Column.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\Column.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\ColumnLayout.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\ColumnLayout.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\ColumnMover.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\ColumnMover.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\ColumnResizer.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\ColumnResizer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\Columns.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\Columns.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnCollectionHeader.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnCollectionHeader.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnHeaderColumn.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnHeaderColumn.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnHeaderColumnResizeHandle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnHeaderColumnResizeHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnListView.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnListView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnTreeView.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnTreeView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\SortColumnDescription.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\SortColumnDescription.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\SortColumnDescriptions.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\SortColumnDescriptions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\PopupField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\PopupField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\PopupWindow.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\PopupWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\ProgressBar.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\ProgressBar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\RadioButton.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\RadioButton.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\RadioButtonGroup.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\RadioButtonGroup.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\RepeatButton.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\RepeatButton.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\ScrollView.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\ScrollView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Scroller.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Scroller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Slider.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Slider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\SliderInt.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\SliderInt.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Tab.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Tab.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TabDragger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TabDragger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TabView.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TabView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TextValueField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TextValueField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Toggle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Toggle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\ToggleButtonGroup\ToggleButtonGroup.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\ToggleButtonGroup\ToggleButtonGroup.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\ToggleButtonGroup\ToggleButtonGroupState.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\ToggleButtonGroup\ToggleButtonGroupState.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TreeView.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TreeView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TreeViewHelpers.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TreeViewHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TreeViewItem.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TreeViewItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TreeViewItemData.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TreeViewItemData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TwoPaneSplitView.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TwoPaneSplitView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\UnsignedIntegerField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\UnsignedIntegerField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\UnsignedLongField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\UnsignedLongField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Conversions\SetValueVisitor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Conversions\SetValueVisitor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\CountingBloomFilter.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\CountingBloomFilter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Cursor.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Cursor.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Cursor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Cursor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DefaultEventSystem.InputForUIProcessor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DefaultEventSystem.InputForUIProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DefaultEventSystem.LegacyInputProcessor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DefaultEventSystem.LegacyInputProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DefaultEventSystem.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DefaultEventSystem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DisposeHelper.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DisposeHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\BaseReorderableDragAndDropController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\BaseReorderableDragAndDropController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\DragAndDropUtility.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\DragAndDropUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\DragEventsProcessor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\DragEventsProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\ICollectionDragAndDropController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\ICollectionDragAndDropController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDrop.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDrop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDropArgs.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDropArgs.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDropController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDropController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IReorderable.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IReorderable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\ListViewDragger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\ListViewDragger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\ListViewDraggerAnimated.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\ListViewDraggerAnimated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\ListViewReorderableDragAndDropController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\ListViewReorderableDragAndDropController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\TreeViewReorderableDragAndDropController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\TreeViewReorderableDragAndDropController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DropdownMenu.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DropdownMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DropdownUtility.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DropdownUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\EasingCurves.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\EasingCurves.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\EventDispatcher.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\EventDispatcher.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\CaptureEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\CaptureEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\ChangeEvent.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\ChangeEvent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\CommandEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\CommandEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\DebuggerEventDispatchUtilities.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\DebuggerEventDispatchUtilities.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\DragAndDropEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\DragAndDropEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\ElementUnderPointer.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\ElementUnderPointer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\EventBase.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\EventBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\EventCallback.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\EventCallback.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\EventCallbackRegistry.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\EventCallbackRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\EventDebugger\EventDebugger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\EventDebugger\EventDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\EventDebugger\EventDebuggerEventRecord.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\EventDebugger\EventDebuggerEventRecord.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\EventDebugger\EventDebuggerTrace.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\EventDebugger\EventDebuggerTrace.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\EventDebugger\GlobalCallbackRegistry.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\EventDebugger\GlobalCallbackRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\EventDispatchUtilities.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\EventDispatchUtilities.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\EventHandler.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\EventHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\FocusEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\FocusEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\InputEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\InputEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\KeyboardEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\KeyboardEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\LayoutEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\LayoutEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\LinkTagEvent.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\LinkTagEvent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\MouseEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\MouseEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\MouseEventsHelper.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\MouseEventsHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\NavigationEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\NavigationEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\PanelEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\PanelEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\PointerDeviceState.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\PointerDeviceState.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\PointerEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\PointerEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\PropagationPaths.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\PropagationPaths.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\StyleEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\StyleEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\TooltipEvent.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\TooltipEvent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\TransitionEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\TransitionEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\UIEvent.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Events\UIEvent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\FieldMouseDragger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\FieldMouseDragger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\FocusController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\FocusController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\GameObjects\DynamicAtlasSettings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\GameObjects\DynamicAtlasSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\GameObjects\NavigateFocusRing.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\GameObjects\NavigateFocusRing.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\GameObjects\PanelSettings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\GameObjects\PanelSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\GameObjects\RuntimeEventDispatcher.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\GameObjects\RuntimeEventDispatcher.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\GameObjects\RuntimePanel.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\GameObjects\RuntimePanel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\GameObjects\RuntimePanelUtils.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\GameObjects\RuntimePanelUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\GameObjects\UIDocument.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\GameObjects\UIDocument.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\GameObjects\UIDocumentHierarchyUtil.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\GameObjects\UIDocumentHierarchyUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\GroupBoxUtility.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\GroupBoxUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\HierarchyTraversal.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\HierarchyTraversal.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\IDataWatchService.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\IDataWatchService.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\IGroupBox.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\IGroupBox.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\IGroupManager.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\IGroupManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ILiveReloadAssetTracker.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\ILiveReloadAssetTracker.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ILiveReloadSystem.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\ILiveReloadSystem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\IMGUIContainer.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\IMGUIContainer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ISerializableJsonDictionary.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\ISerializableJsonDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ITransform.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\ITransform.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ImmediateModeElement.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\ImmediateModeElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\InteractionEnums.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\InteractionEnums.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\KeyboardNavigationManipulator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\KeyboardNavigationManipulator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\LayoutConfig.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\LayoutConfig.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\LayoutHandle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\LayoutHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\LayoutManager.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\LayoutManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\LayoutNode+Computed.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\LayoutNode+Computed.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\LayoutNode+Hierarchy.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\LayoutNode+Hierarchy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\LayoutNode+Style.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\LayoutNode+Style.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\LayoutNode.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\LayoutNode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\LayoutProcessor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\LayoutProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutCacheData.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutCacheData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutComputedData.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutComputedData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutConfigData.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutConfigData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutDataAccess.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutDataAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutDataStore.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutDataStore.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutNodeData.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutNodeData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutStyleData.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\Components\LayoutStyleData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\FixedBuffer.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\FixedBuffer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutAlign.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutAlign.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutDefaults.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutDefaults.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutDimension.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutDimension.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutDirection.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutDirection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutDisplay.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutDisplay.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutEdge.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutEdge.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutFlexDirection.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutFlexDirection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutJustify.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutJustify.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutList.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutList.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutLogLevel.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutLogLevel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutMeasureMode.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutMeasureMode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutNodeType.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutNodeType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutOverflow.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutOverflow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutPositionType.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutPositionType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutPrintOptions.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutPrintOptions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutSize.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutSize.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutUnit.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutUnit.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutValue.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutValue.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutWrap.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Model\LayoutWrap.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Native\LayoutNative.bindings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Native\LayoutNative.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Layout\Native\LayoutProcessorNative.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Layout\Native\LayoutProcessorNative.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ManipulatorActivationFilter.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\ManipulatorActivationFilter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Manipulators.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Manipulators.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\MouseButton.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\MouseButton.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\MouseCaptureController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\MouseCaptureController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\MouseManipulator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\MouseManipulator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\ImmediateStylePainter.bindings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Native\ImmediateStylePainter.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\MeshWriteDataInterface.bindings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\MeshWriteDataInterface.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIPainter2D.bindings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIPainter2D.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRMeshBuilder.bindings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRMeshBuilder.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRenderer.bindings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRenderer.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRendererJobProcessor.bindings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRendererJobProcessor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\TextNative.bindings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Native\TextNative.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\UIElementsUtility.bindings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Native\UIElementsUtility.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ObjectPool.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\ObjectPool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Panel.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Panel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\PenButton.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\PenButton.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\PointerCaptureController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\PointerCaptureController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\PointerManipulator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\PointerManipulator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ProjectionUtils.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\ProjectionUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\GCHandlePool.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\GCHandlePool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\LayoutDebuggerVisualElement.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\LayoutDebuggerVisualElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\SafeHandleAccess.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\SafeHandleAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRAllocator2D.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRAllocator2D.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRAtlasAllocator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRAtlasAllocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRAtlasManager.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRAtlasManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRCommandList.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRCommandList.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRCommandManipulator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRCommandManipulator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRDetachedAllocator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRDetachedAllocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRDynamicAtlasPage.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRDynamicAtlasPage.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRElementBuilder.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRElementBuilder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryPool.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryPool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryPreProcessor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryPreProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryProcessor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryRecorder.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryRecorder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRGradientSettingsAtlas.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRGradientSettingsAtlas.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRImplicitPool.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRImplicitPool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRJobManager.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRJobManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRJobMerger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRJobMerger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRLayoutUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRLayoutUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRLinkedPool.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRLinkedPool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationDeferrer.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationDeferrer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationNode.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationNode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRNativeList.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRNativeList.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRNativePagedList.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRNativePagedList.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIROpacityIdAccelerator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIROpacityIdAccelerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRPainter2D.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRPainter2D.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRRenderChain.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRRenderChain.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRRenderEvents.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRRenderEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRRepaintUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRRepaintUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRShaderInfoStorage.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRShaderInfoStorage.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRShaders.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRShaders.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempAllocator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempAllocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempMeshAllocator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempMeshAllocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextCoreSettings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextCoreSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextureBlitter.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextureBlitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextureRegistry.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextureRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextureSlotManager.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextureSlotManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRUtility.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRVEShaderInfoAllocator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRVEShaderInfoAllocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRVectorImageManager.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRVectorImageManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRVisualChangesProcessor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRVisualChangesProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRenderer\UIRenderDevice.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRenderer\UIRenderDevice.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRenderer\UIRenderDeviceAllocator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRenderer\UIRenderDeviceAllocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRenderer\UIRenderers.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRenderer\UIRenderers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Scheduler.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Scheduler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Spacing.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Spacing.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StringUtils.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StringUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleEnums.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleEnums.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StylePropertyAnimation.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StylePropertyAnimation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StylePropertyAnimationSystem.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StylePropertyAnimationSystem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StylePropertyName.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StylePropertyName.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StylePropertyName.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StylePropertyName.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\CSSSpec.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\CSSSpec.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\Dimension.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\Dimension.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\ScalableImage.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\ScalableImage.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleComplexSelector.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleComplexSelector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleProperty.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleProperty.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StylePropertyReader.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StylePropertyReader.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StylePropertyReaderHelper.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StylePropertyReaderHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleRule.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleRule.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSelector.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSelector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSelectorHelper.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSelectorHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSelectorPart.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSelectorPart.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSelectorRelationship.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSelectorRelationship.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSelectorType.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSelectorType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSheet.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSheet.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSheetApplicator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSheetApplicator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSheetBuilder.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSheetBuilder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSheetCache.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSheetCache.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSheetColor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSheetColor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSheetExtensions.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleSheetExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleValue.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleValue.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleValueFunction.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleValueFunction.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleValueHandle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleValueHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleValueKeyword.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleValueKeyword.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleValueType.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleValueType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleVariable.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleVariable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\Syntax\StyleSyntaxExpression.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\Syntax\StyleSyntaxExpression.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\Syntax\StyleSyntaxParser.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\Syntax\StyleSyntaxParser.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\Syntax\StyleSyntaxToken.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\Syntax\StyleSyntaxToken.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\ThemeStyleSheet.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\ThemeStyleSheet.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\Validation\StyleMatcher.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\Validation\StyleMatcher.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\Validation\StylePropertyCache.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\Validation\StylePropertyCache.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\Validation\StylePropertyValueParser.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\Validation\StylePropertyValueParser.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\Validation\StyleValidator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\Validation\StyleValidator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Angle.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Angle.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Angle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Angle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Background.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Background.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Background.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Background.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\ComputedStyle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\ComputedStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\ComputedTransitions.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\ComputedTransitions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\CustomStyle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\CustomStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\EasingFunction.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\EasingFunction.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\EasingFunction.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\EasingFunction.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\FontDefinition.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\FontDefinition.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\FontDefinition.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\FontDefinition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\ComputedStyle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\ComputedStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\IResolvedStyle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\IResolvedStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\IStyle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\IStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\InitialStyle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\InitialStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\InlineStyleAccess.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\InlineStyleAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\InlineStyleAccessPropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\InlineStyleAccessPropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleAccess.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleAccessPropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleAccessPropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleProperties.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleProperties.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\ShorthandApplicator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\ShorthandApplicator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\StyleDataStructs.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\StyleDataStructs.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\StyleDebug.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\StyleDebug.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\StyleProperties.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\StyleProperties.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\StylePropertyCache.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\StylePropertyCache.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\StylePropertyEnums.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\StylePropertyEnums.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\StylePropertyUtil.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\StylePropertyUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\IResolvedStyle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\IResolvedStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\IStyle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\IStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\InlineStyleAccess.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\InlineStyleAccess.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\InlineStyleAccess.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\InlineStyleAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Length.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Length.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Length.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Length.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\ResolvedStyleAccess.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\ResolvedStyleAccess.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\ResolvedStyleAccess.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\ResolvedStyleAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Rotate.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Rotate.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Rotate.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Rotate.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Scale.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Scale.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Scale.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Scale.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleBackground.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleBackground.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleBackgroundPosition.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleBackgroundPosition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleBackgroundRepeat.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleBackgroundRepeat.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleBackgroundSize.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleBackgroundSize.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleColor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleColor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleCursor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleCursor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleDataRef.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleDataRef.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleDebug.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleDebug.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleEnum.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleEnum.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleFloat.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleFloat.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleFont.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleFont.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleFontDefinition.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleFontDefinition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleInt.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleInt.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleLength.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleLength.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleList.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleList.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StylePropertyUtil.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StylePropertyUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleRotate.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleRotate.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleScale.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleScale.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleTanslate.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleTanslate.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleTextShadow.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleTextShadow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleTransformOrigin.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleTransformOrigin.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleTypes.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleTypes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleValue.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleValue.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\TimeValue.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\TimeValue.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\TimeValue.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\TimeValue.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\TransformOrigin.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\TransformOrigin.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\TransformOrigin.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\TransformOrigin.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Translate.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Translate.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Translate.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Style\Translate.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TemplateContainer.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\TemplateContainer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextElement.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\TextElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextElementEdition.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\TextElementEdition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextElementExperimental.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\TextElementExperimental.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextElementSelection.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\TextElementSelection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextShadow.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\TextShadow.PropertyBag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextShadow.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\TextShadow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Text\PanelTextSettings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Text\PanelTextSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Text\TextEditingManipulator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Text\TextEditingManipulator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Text\TextSelectingManipulator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Text\TextSelectingManipulator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Text\UITKTextHandle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Text\UITKTextHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Text\UITKTextJobSystem.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Text\UITKTextJobSystem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Transitions.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Transitions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UIElementsBridge.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UIElementsBridge.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UIElementsInitialization.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UIElementsInitialization.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UIElementsPackageUtility.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UIElementsPackageUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UIElementsRuntimeUtility.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UIElementsRuntimeUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UIElementsUtility.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UIElementsUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UIToolkitInputConfiguration.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UIToolkitInputConfiguration.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UQuery.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UQuery.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\FieldRenderingAttributes.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\FieldRenderingAttributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\IUxmlAttributes.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\IUxmlAttributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\OrphanFactories.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\OrphanFactories.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\TemplateAsset.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\TemplateAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlAssetAttributeDescription.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlAssetAttributeDescription.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlAttributeDescription.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlAttributeDescription.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlAttributes.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlAttributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlChildElementDescription.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlChildElementDescription.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlFactory.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlImageAttributeDescription.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlImageAttributeDescription.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlObjectAsset.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlObjectAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlObjectFactoryRegistry.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlObjectFactoryRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlSerializedData.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlSerializedData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlTypeRestriction.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlTypeRestriction.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlUtility.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\VisualElementAsset.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\VisualElementAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\VisualElementFactoryRegistry.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\VisualElementFactoryRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\VisualTreeAsset.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UXML\VisualTreeAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UpgradeConstants.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\UpgradeConstants.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ValueAnimation.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\ValueAnimation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VectorImage.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VectorImage.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElement.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementAnimation.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementAnimation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementBindableProperties.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementBindableProperties.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementDataBinding.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementDataBinding.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementEventInterests.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementEventInterests.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementExperimentalFeatures.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementExperimentalFeatures.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementFocusRing.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementFocusRing.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementHierarchy.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementHierarchy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementMathUtils.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementMathUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementScheduler.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementScheduler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementStyleAccess.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementStyleAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementStyleSheetSet.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementStyleSheetSet.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementTooltip.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementTooltip.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementTypeData.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementTypeData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementUtils.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeAnimationUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeAnimationUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeHierarchyFlagsUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeHierarchyFlagsUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeHierarchyTracker.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeHierarchyTracker.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeStyleUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeStyleUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeViewDataUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeViewDataUpdater.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\AI\AssemblyInfo.cs">
       <Link>Modules\AI\AssemblyInfo.cs</Link>
     </Compile>
@@ -1513,6 +55,45 @@
     </Compile>
     <Compile Include="..\..\Modules\AR\ARCore\ScriptBindings\ARCore.bindings.cs">
       <Link>Modules\AR\ARCore\ScriptBindings\ARCore.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\AssemblyInfo.cs">
+      <Link>Modules\Accessibility\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Bindings\AccessibilityAction.bindings.cs">
+      <Link>Modules\Accessibility\Bindings\AccessibilityAction.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Bindings\AccessibilityManager.bindings.cs">
+      <Link>Modules\Accessibility\Bindings\AccessibilityManager.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Bindings\AccessibilityNodeData.bindings.cs">
+      <Link>Modules\Accessibility\Bindings\AccessibilityNodeData.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Bindings\AccessibilityNodeManager.bindings.cs">
+      <Link>Modules\Accessibility\Bindings\AccessibilityNodeManager.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Bindings\AccessibilityNotificationContext.bindings.cs">
+      <Link>Modules\Accessibility\Bindings\AccessibilityNotificationContext.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Managed\AssistiveSupport.cs">
+      <Link>Modules\Accessibility\Managed\AssistiveSupport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Managed\Hierarchy\AccessibilityHierarchy.cs">
+      <Link>Modules\Accessibility\Managed\Hierarchy\AccessibilityHierarchy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Managed\Hierarchy\AccessibilityNode.cs">
+      <Link>Modules\Accessibility\Managed\Hierarchy\AccessibilityNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Managed\IAccessibilityNotificationDispatcher.cs">
+      <Link>Modules\Accessibility\Managed\IAccessibilityNotificationDispatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Managed\Services\AccessibilityHierarchyService.cs">
+      <Link>Modules\Accessibility\Managed\Services\AccessibilityHierarchyService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Managed\Services\IService.cs">
+      <Link>Modules\Accessibility\Managed\Services\IService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Managed\Services\ServiceManager.cs">
+      <Link>Modules\Accessibility\Managed\Services\ServiceManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Accessibility\VisionUtility.cs">
       <Link>Modules\Accessibility\VisionUtility.cs</Link>
@@ -2846,6 +1427,1524 @@
     <Compile Include="..\..\Modules\UIElements\AssemblyInfo.cs">
       <Link>Modules\UIElements\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\AlignmentUtils.cs">
+      <Link>Modules\UIElements\Core\AlignmentUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Atlas.cs">
+      <Link>Modules\UIElements\Core\Atlas.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\BackgroundPosition.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\BackgroundPosition.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\BackgroundPosition.cs">
+      <Link>Modules\UIElements\Core\BackgroundPosition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\BackgroundPropertyHelper.cs">
+      <Link>Modules\UIElements\Core\BackgroundPropertyHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\BackgroundRepeat.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\BackgroundRepeat.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\BackgroundRepeat.cs">
+      <Link>Modules\UIElements\Core\BackgroundRepeat.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\BackgroundSize.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\BackgroundSize.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\BackgroundSize.cs">
+      <Link>Modules\UIElements\Core\BackgroundSize.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\BindableElement.cs">
+      <Link>Modules\UIElements\Core\BindableElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\Binding.Factory.cs">
+      <Link>Modules\UIElements\Core\Bindings\Binding.Factory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\Binding.cs">
+      <Link>Modules\UIElements\Core\Bindings\Binding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\BindingActivationContext.cs">
+      <Link>Modules\UIElements\Core\Bindings\BindingActivationContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\BindingContext.cs">
+      <Link>Modules\UIElements\Core\Bindings\BindingContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\BindingResult.cs">
+      <Link>Modules\UIElements\Core\Bindings\BindingResult.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\BindingTarget.cs">
+      <Link>Modules\UIElements\Core\Bindings\BindingTarget.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\BindingUpdater.cs">
+      <Link>Modules\UIElements\Core\Bindings\BindingUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\ConverterGroup.cs">
+      <Link>Modules\UIElements\Core\Bindings\ConverterGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\ConverterGroups.cs">
+      <Link>Modules\UIElements\Core\Bindings\ConverterGroups.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\CustomBinding.Factory.cs">
+      <Link>Modules\UIElements\Core\Bindings\CustomBinding.Factory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\CustomBinding.cs">
+      <Link>Modules\UIElements\Core\Bindings\CustomBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\DataBinding.Factory.cs">
+      <Link>Modules\UIElements\Core\Bindings\DataBinding.Factory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\DataBinding.cs">
+      <Link>Modules\UIElements\Core\Bindings\DataBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\DataBindingManager.cs">
+      <Link>Modules\UIElements\Core\Bindings\DataBindingManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\DataBindingUtility.cs">
+      <Link>Modules\UIElements\Core\Bindings\DataBindingUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\DataSourceContext.cs">
+      <Link>Modules\UIElements\Core\Bindings\DataSourceContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\IDataSourceProvider.cs">
+      <Link>Modules\UIElements\Core\Bindings\IDataSourceProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\IDataSourceViewHashProvider.cs">
+      <Link>Modules\UIElements\Core\Bindings\IDataSourceViewHashProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\INotifyBindablePropertyChanged.cs">
+      <Link>Modules\UIElements\Core\Bindings\INotifyBindablePropertyChanged.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\Utils\AutoCompletePathVisitor.cs">
+      <Link>Modules\UIElements\Core\Bindings\Utils\AutoCompletePathVisitor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\Utils\TypePathVisitor.cs">
+      <Link>Modules\UIElements\Core\Bindings\Utils\TypePathVisitor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\VisualTreeBindingsUpdater.cs">
+      <Link>Modules\UIElements\Core\Bindings\VisualTreeBindingsUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\VisualTreeDataBindingUpdater.cs">
+      <Link>Modules\UIElements\Core\Bindings\VisualTreeDataBindingUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ClampedDragger.cs">
+      <Link>Modules\UIElements\Core\ClampedDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ClickDetector.cs">
+      <Link>Modules\UIElements\Core\ClickDetector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Clickable.cs">
+      <Link>Modules\UIElements\Core\Clickable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\BaseListViewController.cs">
+      <Link>Modules\UIElements\Core\Collections\Controllers\BaseListViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\BaseTreeViewController.cs">
+      <Link>Modules\UIElements\Core\Collections\Controllers\BaseTreeViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\CollectionViewController.cs">
+      <Link>Modules\UIElements\Core\Collections\Controllers\CollectionViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\DefaultMultiColumnTreeViewController.cs">
+      <Link>Modules\UIElements\Core\Collections\Controllers\DefaultMultiColumnTreeViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\DefaultTreeViewController.cs">
+      <Link>Modules\UIElements\Core\Collections\Controllers\DefaultTreeViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\IDefaultTreeViewController.cs">
+      <Link>Modules\UIElements\Core\Collections\Controllers\IDefaultTreeViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\ListViewController.cs">
+      <Link>Modules\UIElements\Core\Collections\Controllers\ListViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\MultiColumnListViewController.cs">
+      <Link>Modules\UIElements\Core\Collections\Controllers\MultiColumnListViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\MultiColumnTreeViewController.cs">
+      <Link>Modules\UIElements\Core\Collections\Controllers\MultiColumnTreeViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\TreeDataController.cs">
+      <Link>Modules\UIElements\Core\Collections\Controllers\TreeDataController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\TreeViewController.cs">
+      <Link>Modules\UIElements\Core\Collections\Controllers\TreeViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\DictionaryExtensions.cs">
+      <Link>Modules\UIElements\Core\Collections\DictionaryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Virtualization\CollectionVirtualizationController.cs">
+      <Link>Modules\UIElements\Core\Collections\Virtualization\CollectionVirtualizationController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Virtualization\DynamicHeightVirtualizationController.cs">
+      <Link>Modules\UIElements\Core\Collections\Virtualization\DynamicHeightVirtualizationController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Virtualization\FixedHeightVirtualizationController.cs">
+      <Link>Modules\UIElements\Core\Collections\Virtualization\FixedHeightVirtualizationController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Virtualization\ReusableCollectionItem.cs">
+      <Link>Modules\UIElements\Core\Collections\Virtualization\ReusableCollectionItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Virtualization\ReusableListViewItem.cs">
+      <Link>Modules\UIElements\Core\Collections\Virtualization\ReusableListViewItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Virtualization\ReusableMultiColumnListViewItem.cs">
+      <Link>Modules\UIElements\Core\Collections\Virtualization\ReusableMultiColumnListViewItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Virtualization\ReusableMultiColumnTreeViewItem.cs">
+      <Link>Modules\UIElements\Core\Collections\Virtualization\ReusableMultiColumnTreeViewItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Virtualization\ReusableTreeViewItem.cs">
+      <Link>Modules\UIElements\Core\Collections\Virtualization\ReusableTreeViewItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Virtualization\VerticalVirtualizationController.cs">
+      <Link>Modules\UIElements\Core\Collections\Virtualization\VerticalVirtualizationController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ContextualMenuManager.cs">
+      <Link>Modules\UIElements\Core\ContextualMenuManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ContextualMenuManipulator.cs">
+      <Link>Modules\UIElements\Core\ContextualMenuManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\BaseBoolField.cs">
+      <Link>Modules\UIElements\Core\Controls\BaseBoolField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\BaseCompositeField.cs">
+      <Link>Modules\UIElements\Core\Controls\BaseCompositeField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\BaseListView.cs">
+      <Link>Modules\UIElements\Core\Controls\BaseListView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\BasePopupField.cs">
+      <Link>Modules\UIElements\Core\Controls\BasePopupField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\BaseSlider.cs">
+      <Link>Modules\UIElements\Core\Controls\BaseSlider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\BaseTreeView.cs">
+      <Link>Modules\UIElements\Core\Controls\BaseTreeView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\BaseVerticalCollectionView.cs">
+      <Link>Modules\UIElements\Core\Controls\BaseVerticalCollectionView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\Binding.cs">
+      <Link>Modules\UIElements\Core\Controls\Binding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\BoundsField.cs">
+      <Link>Modules\UIElements\Core\Controls\BoundsField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\BoundsIntField.cs">
+      <Link>Modules\UIElements\Core\Controls\BoundsIntField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\Box.cs">
+      <Link>Modules\UIElements\Core\Controls\Box.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\Button.cs">
+      <Link>Modules\UIElements\Core\Controls\Button.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\ButtonStripField.cs">
+      <Link>Modules\UIElements\Core\Controls\ButtonStripField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\CompoundFields.cs">
+      <Link>Modules\UIElements\Core\Controls\CompoundFields.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\DoubleField.cs">
+      <Link>Modules\UIElements\Core\Controls\DoubleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\DropdownField.cs">
+      <Link>Modules\UIElements\Core\Controls\DropdownField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\EnumField.cs">
+      <Link>Modules\UIElements\Core\Controls\EnumField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\FloatField.cs">
+      <Link>Modules\UIElements\Core\Controls\FloatField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\Foldout.cs">
+      <Link>Modules\UIElements\Core\Controls\Foldout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\GenericDropdownMenu.cs">
+      <Link>Modules\UIElements\Core\Controls\GenericDropdownMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\GroupBox.cs">
+      <Link>Modules\UIElements\Core\Controls\GroupBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\Hash128Field.cs">
+      <Link>Modules\UIElements\Core\Controls\Hash128Field.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\HelpBox.cs">
+      <Link>Modules\UIElements\Core\Controls\HelpBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\IMixedValueSupport.cs">
+      <Link>Modules\UIElements\Core\Controls\IMixedValueSupport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\INotifyValueChanged.cs">
+      <Link>Modules\UIElements\Core\Controls\INotifyValueChanged.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\Image.cs">
+      <Link>Modules\UIElements\Core\Controls\Image.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\InputField\BaseField.cs">
+      <Link>Modules\UIElements\Core\Controls\InputField\BaseField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\InputField\KeyboardTextEditor.cs">
+      <Link>Modules\UIElements\Core\Controls\InputField\KeyboardTextEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\InputField\TextEditor.cs">
+      <Link>Modules\UIElements\Core\Controls\InputField\TextEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\InputField\TextField.cs">
+      <Link>Modules\UIElements\Core\Controls\InputField\TextField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\InputField\TextInputFieldBase.cs">
+      <Link>Modules\UIElements\Core\Controls\InputField\TextInputFieldBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\InputField\TouchScreenTextEditor.cs">
+      <Link>Modules\UIElements\Core\Controls\InputField\TouchScreenTextEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\IntegerField.cs">
+      <Link>Modules\UIElements\Core\Controls\IntegerField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\Label.cs">
+      <Link>Modules\UIElements\Core\Controls\Label.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\ListView.cs">
+      <Link>Modules\UIElements\Core\Controls\ListView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\LongField.cs">
+      <Link>Modules\UIElements\Core\Controls\LongField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MinMaxSlider.cs">
+      <Link>Modules\UIElements\Core\Controls\MinMaxSlider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MultiColumn\Column.cs">
+      <Link>Modules\UIElements\Core\Controls\MultiColumn\Column.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MultiColumn\ColumnLayout.cs">
+      <Link>Modules\UIElements\Core\Controls\MultiColumn\ColumnLayout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MultiColumn\ColumnMover.cs">
+      <Link>Modules\UIElements\Core\Controls\MultiColumn\ColumnMover.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MultiColumn\ColumnResizer.cs">
+      <Link>Modules\UIElements\Core\Controls\MultiColumn\ColumnResizer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MultiColumn\Columns.cs">
+      <Link>Modules\UIElements\Core\Controls\MultiColumn\Columns.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MultiColumn\MultiColumnCollectionHeader.cs">
+      <Link>Modules\UIElements\Core\Controls\MultiColumn\MultiColumnCollectionHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MultiColumn\MultiColumnController.cs">
+      <Link>Modules\UIElements\Core\Controls\MultiColumn\MultiColumnController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MultiColumn\MultiColumnHeaderColumn.cs">
+      <Link>Modules\UIElements\Core\Controls\MultiColumn\MultiColumnHeaderColumn.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MultiColumn\MultiColumnHeaderColumnResizeHandle.cs">
+      <Link>Modules\UIElements\Core\Controls\MultiColumn\MultiColumnHeaderColumnResizeHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MultiColumn\MultiColumnListView.cs">
+      <Link>Modules\UIElements\Core\Controls\MultiColumn\MultiColumnListView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MultiColumn\MultiColumnTreeView.cs">
+      <Link>Modules\UIElements\Core\Controls\MultiColumn\MultiColumnTreeView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MultiColumn\SortColumnDescription.cs">
+      <Link>Modules\UIElements\Core\Controls\MultiColumn\SortColumnDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MultiColumn\SortColumnDescriptions.cs">
+      <Link>Modules\UIElements\Core\Controls\MultiColumn\SortColumnDescriptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\PopupField.cs">
+      <Link>Modules\UIElements\Core\Controls\PopupField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\PopupWindow.cs">
+      <Link>Modules\UIElements\Core\Controls\PopupWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\ProgressBar.cs">
+      <Link>Modules\UIElements\Core\Controls\ProgressBar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\RadioButton.cs">
+      <Link>Modules\UIElements\Core\Controls\RadioButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\RadioButtonGroup.cs">
+      <Link>Modules\UIElements\Core\Controls\RadioButtonGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\RepeatButton.cs">
+      <Link>Modules\UIElements\Core\Controls\RepeatButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\ScrollView.cs">
+      <Link>Modules\UIElements\Core\Controls\ScrollView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\Scroller.cs">
+      <Link>Modules\UIElements\Core\Controls\Scroller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\Slider.cs">
+      <Link>Modules\UIElements\Core\Controls\Slider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\SliderInt.cs">
+      <Link>Modules\UIElements\Core\Controls\SliderInt.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\Tab.cs">
+      <Link>Modules\UIElements\Core\Controls\Tab.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\TabDragger.cs">
+      <Link>Modules\UIElements\Core\Controls\TabDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\TabView.cs">
+      <Link>Modules\UIElements\Core\Controls\TabView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\TextValueField.cs">
+      <Link>Modules\UIElements\Core\Controls\TextValueField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\Toggle.cs">
+      <Link>Modules\UIElements\Core\Controls\Toggle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\ToggleButtonGroup\ToggleButtonGroup.cs">
+      <Link>Modules\UIElements\Core\Controls\ToggleButtonGroup\ToggleButtonGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\ToggleButtonGroup\ToggleButtonGroupState.cs">
+      <Link>Modules\UIElements\Core\Controls\ToggleButtonGroup\ToggleButtonGroupState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\TreeView.cs">
+      <Link>Modules\UIElements\Core\Controls\TreeView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\TreeViewHelpers.cs">
+      <Link>Modules\UIElements\Core\Controls\TreeViewHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\TreeViewItem.cs">
+      <Link>Modules\UIElements\Core\Controls\TreeViewItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\TreeViewItemData.cs">
+      <Link>Modules\UIElements\Core\Controls\TreeViewItemData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\TwoPaneSplitView.cs">
+      <Link>Modules\UIElements\Core\Controls\TwoPaneSplitView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\TwoPaneSplitViewResizer.cs">
+      <Link>Modules\UIElements\Core\Controls\TwoPaneSplitViewResizer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\UnsignedIntegerField.cs">
+      <Link>Modules\UIElements\Core\Controls\UnsignedIntegerField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\UnsignedLongField.cs">
+      <Link>Modules\UIElements\Core\Controls\UnsignedLongField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Conversions\SetValueVisitor.cs">
+      <Link>Modules\UIElements\Core\Conversions\SetValueVisitor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\CountingBloomFilter.cs">
+      <Link>Modules\UIElements\Core\CountingBloomFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Cursor.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Cursor.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Cursor.cs">
+      <Link>Modules\UIElements\Core\Cursor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DefaultEventSystem.InputForUIProcessor.cs">
+      <Link>Modules\UIElements\Core\DefaultEventSystem.InputForUIProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DefaultEventSystem.LegacyInputProcessor.cs">
+      <Link>Modules\UIElements\Core\DefaultEventSystem.LegacyInputProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DefaultEventSystem.cs">
+      <Link>Modules\UIElements\Core\DefaultEventSystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DisposeHelper.cs">
+      <Link>Modules\UIElements\Core\DisposeHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DragAndDrop\BaseReorderableDragAndDropController.cs">
+      <Link>Modules\UIElements\Core\DragAndDrop\BaseReorderableDragAndDropController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DragAndDrop\DragAndDropUtility.cs">
+      <Link>Modules\UIElements\Core\DragAndDrop\DragAndDropUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DragAndDrop\DragEventsProcessor.cs">
+      <Link>Modules\UIElements\Core\DragAndDrop\DragEventsProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DragAndDrop\ICollectionDragAndDropController.cs">
+      <Link>Modules\UIElements\Core\DragAndDrop\ICollectionDragAndDropController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DragAndDrop\IDragAndDrop.cs">
+      <Link>Modules\UIElements\Core\DragAndDrop\IDragAndDrop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DragAndDrop\IDragAndDropArgs.cs">
+      <Link>Modules\UIElements\Core\DragAndDrop\IDragAndDropArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DragAndDrop\IDragAndDropController.cs">
+      <Link>Modules\UIElements\Core\DragAndDrop\IDragAndDropController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DragAndDrop\IReorderable.cs">
+      <Link>Modules\UIElements\Core\DragAndDrop\IReorderable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DragAndDrop\ListViewDragger.cs">
+      <Link>Modules\UIElements\Core\DragAndDrop\ListViewDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DragAndDrop\ListViewDraggerAnimated.cs">
+      <Link>Modules\UIElements\Core\DragAndDrop\ListViewDraggerAnimated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DragAndDrop\ListViewReorderableDragAndDropController.cs">
+      <Link>Modules\UIElements\Core\DragAndDrop\ListViewReorderableDragAndDropController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DragAndDrop\TreeViewReorderableDragAndDropController.cs">
+      <Link>Modules\UIElements\Core\DragAndDrop\TreeViewReorderableDragAndDropController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DropdownMenu.cs">
+      <Link>Modules\UIElements\Core\DropdownMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\DropdownUtility.cs">
+      <Link>Modules\UIElements\Core\DropdownUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\EasingCurves.cs">
+      <Link>Modules\UIElements\Core\EasingCurves.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\EventDispatcher.cs">
+      <Link>Modules\UIElements\Core\EventDispatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\CaptureEvents.cs">
+      <Link>Modules\UIElements\Core\Events\CaptureEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\ChangeEvent.cs">
+      <Link>Modules\UIElements\Core\Events\ChangeEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\CommandEvents.cs">
+      <Link>Modules\UIElements\Core\Events\CommandEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\DebuggerEventDispatchUtilities.cs">
+      <Link>Modules\UIElements\Core\Events\DebuggerEventDispatchUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\DragAndDropEvents.cs">
+      <Link>Modules\UIElements\Core\Events\DragAndDropEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\ElementUnderPointer.cs">
+      <Link>Modules\UIElements\Core\Events\ElementUnderPointer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\EventBase.cs">
+      <Link>Modules\UIElements\Core\Events\EventBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\EventCallback.cs">
+      <Link>Modules\UIElements\Core\Events\EventCallback.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\EventCallbackRegistry.cs">
+      <Link>Modules\UIElements\Core\Events\EventCallbackRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\EventDebugger\EventDebugger.cs">
+      <Link>Modules\UIElements\Core\Events\EventDebugger\EventDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\EventDebugger\EventDebuggerEventRecord.cs">
+      <Link>Modules\UIElements\Core\Events\EventDebugger\EventDebuggerEventRecord.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\EventDebugger\EventDebuggerTrace.cs">
+      <Link>Modules\UIElements\Core\Events\EventDebugger\EventDebuggerTrace.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\EventDebugger\GlobalCallbackRegistry.cs">
+      <Link>Modules\UIElements\Core\Events\EventDebugger\GlobalCallbackRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\EventDispatchUtilities.cs">
+      <Link>Modules\UIElements\Core\Events\EventDispatchUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\EventHandler.cs">
+      <Link>Modules\UIElements\Core\Events\EventHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\FocusEvents.cs">
+      <Link>Modules\UIElements\Core\Events\FocusEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\InputEvents.cs">
+      <Link>Modules\UIElements\Core\Events\InputEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\KeyboardEvents.cs">
+      <Link>Modules\UIElements\Core\Events\KeyboardEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\LayoutEvents.cs">
+      <Link>Modules\UIElements\Core\Events\LayoutEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\LinkTagEvent.cs">
+      <Link>Modules\UIElements\Core\Events\LinkTagEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\MouseEvents.cs">
+      <Link>Modules\UIElements\Core\Events\MouseEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\MouseEventsHelper.cs">
+      <Link>Modules\UIElements\Core\Events\MouseEventsHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\NavigationEvents.cs">
+      <Link>Modules\UIElements\Core\Events\NavigationEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\PanelEvents.cs">
+      <Link>Modules\UIElements\Core\Events\PanelEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\PointerDeviceState.cs">
+      <Link>Modules\UIElements\Core\Events\PointerDeviceState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\PointerEvents.cs">
+      <Link>Modules\UIElements\Core\Events\PointerEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\PropagationPaths.cs">
+      <Link>Modules\UIElements\Core\Events\PropagationPaths.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\StyleEvents.cs">
+      <Link>Modules\UIElements\Core\Events\StyleEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\TooltipEvent.cs">
+      <Link>Modules\UIElements\Core\Events\TooltipEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\TransitionEvents.cs">
+      <Link>Modules\UIElements\Core\Events\TransitionEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\UIEvent.cs">
+      <Link>Modules\UIElements\Core\Events\UIEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\FieldMouseDragger.cs">
+      <Link>Modules\UIElements\Core\FieldMouseDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\FocusController.cs">
+      <Link>Modules\UIElements\Core\FocusController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\DynamicAtlasSettings.cs">
+      <Link>Modules\UIElements\Core\GameObjects\DynamicAtlasSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\NavigateFocusRing.cs">
+      <Link>Modules\UIElements\Core\GameObjects\NavigateFocusRing.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\PanelSettings.cs">
+      <Link>Modules\UIElements\Core\GameObjects\PanelSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\RuntimeEventDispatcher.cs">
+      <Link>Modules\UIElements\Core\GameObjects\RuntimeEventDispatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\RuntimePanel.cs">
+      <Link>Modules\UIElements\Core\GameObjects\RuntimePanel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\RuntimePanelUtils.cs">
+      <Link>Modules\UIElements\Core\GameObjects\RuntimePanelUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\UIDocument.cs">
+      <Link>Modules\UIElements\Core\GameObjects\UIDocument.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\UIDocumentHierarchyUtil.cs">
+      <Link>Modules\UIElements\Core\GameObjects\UIDocumentHierarchyUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GroupBoxUtility.cs">
+      <Link>Modules\UIElements\Core\GroupBoxUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\HierarchyTraversal.cs">
+      <Link>Modules\UIElements\Core\HierarchyTraversal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\IDataWatchService.cs">
+      <Link>Modules\UIElements\Core\IDataWatchService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\IGroupBox.cs">
+      <Link>Modules\UIElements\Core\IGroupBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\IGroupManager.cs">
+      <Link>Modules\UIElements\Core\IGroupManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ILiveReloadAssetTracker.cs">
+      <Link>Modules\UIElements\Core\ILiveReloadAssetTracker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ILiveReloadSystem.cs">
+      <Link>Modules\UIElements\Core\ILiveReloadSystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\IMGUIContainer.cs">
+      <Link>Modules\UIElements\Core\IMGUIContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ISerializableJsonDictionary.cs">
+      <Link>Modules\UIElements\Core\ISerializableJsonDictionary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ITransform.cs">
+      <Link>Modules\UIElements\Core\ITransform.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ImmediateModeElement.cs">
+      <Link>Modules\UIElements\Core\ImmediateModeElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\InteractionEnums.cs">
+      <Link>Modules\UIElements\Core\InteractionEnums.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\KeyboardNavigationManipulator.cs">
+      <Link>Modules\UIElements\Core\KeyboardNavigationManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\LayoutConfig.cs">
+      <Link>Modules\UIElements\Core\Layout\LayoutConfig.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\LayoutHandle.cs">
+      <Link>Modules\UIElements\Core\Layout\LayoutHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\LayoutManager.cs">
+      <Link>Modules\UIElements\Core\Layout\LayoutManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\LayoutNode+Computed.cs">
+      <Link>Modules\UIElements\Core\Layout\LayoutNode+Computed.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\LayoutNode+Hierarchy.cs">
+      <Link>Modules\UIElements\Core\Layout\LayoutNode+Hierarchy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\LayoutNode+Style.cs">
+      <Link>Modules\UIElements\Core\Layout\LayoutNode+Style.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\LayoutNode.cs">
+      <Link>Modules\UIElements\Core\Layout\LayoutNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\LayoutProcessor.cs">
+      <Link>Modules\UIElements\Core\Layout\LayoutProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\Components\LayoutCacheData.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\Components\LayoutCacheData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\Components\LayoutComputedData.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\Components\LayoutComputedData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\Components\LayoutConfigData.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\Components\LayoutConfigData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\Components\LayoutDataAccess.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\Components\LayoutDataAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\Components\LayoutDataStore.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\Components\LayoutDataStore.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\Components\LayoutNodeData.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\Components\LayoutNodeData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\Components\LayoutStyleData.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\Components\LayoutStyleData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\FixedBuffer.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\FixedBuffer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutAlign.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutAlign.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutDefaults.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutDefaults.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutDimension.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutDimension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutDirection.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutDirection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutDisplay.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutDisplay.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutEdge.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutEdge.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutFlexDirection.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutFlexDirection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutJustify.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutJustify.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutList.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutLogLevel.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutLogLevel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutMeasureMode.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutMeasureMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutNodeType.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutNodeType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutOverflow.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutOverflow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutPositionType.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutPositionType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutPrintOptions.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutPrintOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutSize.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutSize.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutUnit.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutUnit.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutValue.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutWrap.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutWrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Native\LayoutNative.bindings.cs">
+      <Link>Modules\UIElements\Core\Layout\Native\LayoutNative.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Native\LayoutProcessorNative.cs">
+      <Link>Modules\UIElements\Core\Layout\Native\LayoutProcessorNative.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ManipulatorActivationFilter.cs">
+      <Link>Modules\UIElements\Core\ManipulatorActivationFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Manipulators.cs">
+      <Link>Modules\UIElements\Core\Manipulators.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\MouseButton.cs">
+      <Link>Modules\UIElements\Core\MouseButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\MouseCaptureController.cs">
+      <Link>Modules\UIElements\Core\MouseCaptureController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\MouseManipulator.cs">
+      <Link>Modules\UIElements\Core\MouseManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\ImmediateStylePainter.bindings.cs">
+      <Link>Modules\UIElements\Core\Native\ImmediateStylePainter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\Renderer\MeshWriteDataInterface.bindings.cs">
+      <Link>Modules\UIElements\Core\Native\Renderer\MeshWriteDataInterface.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\Renderer\UIPainter2D.bindings.cs">
+      <Link>Modules\UIElements\Core\Native\Renderer\UIPainter2D.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\Renderer\UIRMeshBuilder.bindings.cs">
+      <Link>Modules\UIElements\Core\Native\Renderer\UIRMeshBuilder.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\Renderer\UIRenderer.bindings.cs">
+      <Link>Modules\UIElements\Core\Native\Renderer\UIRenderer.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\Renderer\UIRendererJobProcessor.bindings.cs">
+      <Link>Modules\UIElements\Core\Native\Renderer\UIRendererJobProcessor.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\TextNative.bindings.cs">
+      <Link>Modules\UIElements\Core\Native\TextNative.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\UIElementsUtility.bindings.cs">
+      <Link>Modules\UIElements\Core\Native\UIElementsUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ObjectPool.cs">
+      <Link>Modules\UIElements\Core\ObjectPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Panel.cs">
+      <Link>Modules\UIElements\Core\Panel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\PenButton.cs">
+      <Link>Modules\UIElements\Core\PenButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\PointerCaptureController.cs">
+      <Link>Modules\UIElements\Core\PointerCaptureController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\PointerManipulator.cs">
+      <Link>Modules\UIElements\Core\PointerManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ProjectionUtils.cs">
+      <Link>Modules\UIElements\Core\ProjectionUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\GCHandlePool.cs">
+      <Link>Modules\UIElements\Core\Renderer\GCHandlePool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\LayoutDebuggerVisualElement.cs">
+      <Link>Modules\UIElements\Core\Renderer\LayoutDebuggerVisualElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\SafeHandleAccess.cs">
+      <Link>Modules\UIElements\Core\Renderer\SafeHandleAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRAllocator2D.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRAllocator2D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRAtlasAllocator.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRAtlasAllocator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRAtlasManager.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRAtlasManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRCommandList.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRCommandList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRCommandManipulator.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRCommandManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRDetachedAllocator.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRDetachedAllocator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRDynamicAtlasPage.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRDynamicAtlasPage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRElementBuilder.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRElementBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIREntryPool.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIREntryPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIREntryPreProcessor.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIREntryPreProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIREntryProcessor.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIREntryProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIREntryRecorder.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIREntryRecorder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRGradientSettingsAtlas.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRGradientSettingsAtlas.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRImplicitPool.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRImplicitPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRJobManager.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRJobManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRJobMerger.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRJobMerger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRLayoutUpdater.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRLayoutUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRLinkedPool.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRLinkedPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshGenerationContext.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRMeshGenerationContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshGenerationDeferrer.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRMeshGenerationDeferrer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshGenerationNode.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRMeshGenerationNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshGenerator.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRMeshGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRNativeList.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRNativeList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRNativePagedList.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRNativePagedList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIROpacityIdAccelerator.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIROpacityIdAccelerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRPainter2D.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRPainter2D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderChain.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderChain.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderEvents.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRepaintUpdater.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRepaintUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRShaderInfoStorage.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRShaderInfoStorage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRShaders.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRShaders.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRTempAllocator.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRTempAllocator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRTempMeshAllocator.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRTempMeshAllocator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRTextCoreSettings.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRTextCoreSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRTextureBlitter.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRTextureBlitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRTextureRegistry.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRTextureRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRTextureSlotManager.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRTextureSlotManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRUtility.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRVEShaderInfoAllocator.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRVEShaderInfoAllocator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRVectorImageManager.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRVectorImageManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRVisualChangesProcessor.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRVisualChangesProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRenderDevice.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRenderDevice.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRenderDeviceAllocator.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRenderDeviceAllocator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRenderers.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRenderers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Scheduler.cs">
+      <Link>Modules\UIElements\Core\Scheduler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Spacing.cs">
+      <Link>Modules\UIElements\Core\Spacing.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StringUtils.cs">
+      <Link>Modules\UIElements\Core\StringUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleEnums.cs">
+      <Link>Modules\UIElements\Core\StyleEnums.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StylePropertyAnimation.cs">
+      <Link>Modules\UIElements\Core\StylePropertyAnimation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StylePropertyAnimationSystem.cs">
+      <Link>Modules\UIElements\Core\StylePropertyAnimationSystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StylePropertyName.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\StylePropertyName.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StylePropertyName.cs">
+      <Link>Modules\UIElements\Core\StylePropertyName.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\CSSSpec.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\CSSSpec.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\Dimension.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\Dimension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\ScalableImage.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\ScalableImage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleComplexSelector.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleComplexSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleProperty.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleProperty.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StylePropertyReader.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StylePropertyReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StylePropertyReaderHelper.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StylePropertyReaderHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleRule.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleRule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSelector.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSelectorHelper.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSelectorHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSelectorPart.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSelectorPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSelectorRelationship.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSelectorRelationship.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSelectorType.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSelectorType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSheet.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSheet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSheetApplicator.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSheetApplicator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSheetBuilder.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSheetBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSheetCache.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSheetCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSheetColor.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSheetColor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSheetExtensions.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSheetExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleValue.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleValueFunction.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleValueFunction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleValueHandle.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleValueHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleValueKeyword.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleValueKeyword.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleValueType.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleValueType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleVariable.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleVariable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\Syntax\StyleSyntaxExpression.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\Syntax\StyleSyntaxExpression.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\Syntax\StyleSyntaxParser.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\Syntax\StyleSyntaxParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\Syntax\StyleSyntaxToken.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\Syntax\StyleSyntaxToken.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\ThemeStyleSheet.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\ThemeStyleSheet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\Validation\StyleMatcher.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\Validation\StyleMatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\Validation\StylePropertyCache.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\Validation\StylePropertyCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\Validation\StylePropertyValueParser.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\Validation\StylePropertyValueParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\Validation\StyleValidator.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\Validation\StyleValidator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Angle.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\Angle.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Angle.cs">
+      <Link>Modules\UIElements\Core\Style\Angle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Background.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\Background.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Background.cs">
+      <Link>Modules\UIElements\Core\Style\Background.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\ComputedStyle.cs">
+      <Link>Modules\UIElements\Core\Style\ComputedStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\ComputedTransitions.cs">
+      <Link>Modules\UIElements\Core\Style\ComputedTransitions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\CustomStyle.cs">
+      <Link>Modules\UIElements\Core\Style\CustomStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\EasingFunction.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\EasingFunction.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\EasingFunction.cs">
+      <Link>Modules\UIElements\Core\Style\EasingFunction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\FontDefinition.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\FontDefinition.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\FontDefinition.cs">
+      <Link>Modules\UIElements\Core\Style\FontDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ComputedStyle.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\ComputedStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\IResolvedStyle.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\IResolvedStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\IStyle.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\IStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\InitialStyle.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\InitialStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\InlineStyleAccess.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\InlineStyleAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\InlineStyleAccessPropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\InlineStyleAccessPropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ResolvedStyleAccess.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\ResolvedStyleAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ResolvedStyleAccessPropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\ResolvedStyleAccessPropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ResolvedStyleProperties.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\ResolvedStyleProperties.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ShorthandApplicator.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\ShorthandApplicator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleDataStructs.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StyleDataStructs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleDebug.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StyleDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleProperties.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StyleProperties.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StylePropertyCache.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StylePropertyCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StylePropertyEnums.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StylePropertyEnums.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StylePropertyUtil.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StylePropertyUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\IResolvedStyle.cs">
+      <Link>Modules\UIElements\Core\Style\IResolvedStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\IStyle.cs">
+      <Link>Modules\UIElements\Core\Style\IStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\InlineStyleAccess.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\InlineStyleAccess.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\InlineStyleAccess.cs">
+      <Link>Modules\UIElements\Core\Style\InlineStyleAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Length.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\Length.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Length.cs">
+      <Link>Modules\UIElements\Core\Style\Length.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\ResolvedStyleAccess.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\ResolvedStyleAccess.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\ResolvedStyleAccess.cs">
+      <Link>Modules\UIElements\Core\Style\ResolvedStyleAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Rotate.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\Rotate.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Rotate.cs">
+      <Link>Modules\UIElements\Core\Style\Rotate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Scale.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\Scale.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Scale.cs">
+      <Link>Modules\UIElements\Core\Style\Scale.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleBackground.cs">
+      <Link>Modules\UIElements\Core\Style\StyleBackground.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleBackgroundPosition.cs">
+      <Link>Modules\UIElements\Core\Style\StyleBackgroundPosition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleBackgroundRepeat.cs">
+      <Link>Modules\UIElements\Core\Style\StyleBackgroundRepeat.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleBackgroundSize.cs">
+      <Link>Modules\UIElements\Core\Style\StyleBackgroundSize.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleColor.cs">
+      <Link>Modules\UIElements\Core\Style\StyleColor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleCursor.cs">
+      <Link>Modules\UIElements\Core\Style\StyleCursor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleDataRef.cs">
+      <Link>Modules\UIElements\Core\Style\StyleDataRef.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleDebug.cs">
+      <Link>Modules\UIElements\Core\Style\StyleDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleEnum.cs">
+      <Link>Modules\UIElements\Core\Style\StyleEnum.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleFloat.cs">
+      <Link>Modules\UIElements\Core\Style\StyleFloat.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleFont.cs">
+      <Link>Modules\UIElements\Core\Style\StyleFont.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleFontDefinition.cs">
+      <Link>Modules\UIElements\Core\Style\StyleFontDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleInt.cs">
+      <Link>Modules\UIElements\Core\Style\StyleInt.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleLength.cs">
+      <Link>Modules\UIElements\Core\Style\StyleLength.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleList.cs">
+      <Link>Modules\UIElements\Core\Style\StyleList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StylePropertyUtil.cs">
+      <Link>Modules\UIElements\Core\Style\StylePropertyUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleRotate.cs">
+      <Link>Modules\UIElements\Core\Style\StyleRotate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleScale.cs">
+      <Link>Modules\UIElements\Core\Style\StyleScale.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleTanslate.cs">
+      <Link>Modules\UIElements\Core\Style\StyleTanslate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleTextShadow.cs">
+      <Link>Modules\UIElements\Core\Style\StyleTextShadow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleTransformOrigin.cs">
+      <Link>Modules\UIElements\Core\Style\StyleTransformOrigin.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleTypes.cs">
+      <Link>Modules\UIElements\Core\Style\StyleTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleValue.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\StyleValue.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\TimeValue.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\TimeValue.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\TimeValue.cs">
+      <Link>Modules\UIElements\Core\Style\TimeValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\TransformOrigin.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\TransformOrigin.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\TransformOrigin.cs">
+      <Link>Modules\UIElements\Core\Style\TransformOrigin.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Translate.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\Translate.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Translate.cs">
+      <Link>Modules\UIElements\Core\Style\Translate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\TemplateContainer.cs">
+      <Link>Modules\UIElements\Core\TemplateContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\TextElement.cs">
+      <Link>Modules\UIElements\Core\TextElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\TextElementEdition.cs">
+      <Link>Modules\UIElements\Core\TextElementEdition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\TextElementExperimental.cs">
+      <Link>Modules\UIElements\Core\TextElementExperimental.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\TextElementSelection.cs">
+      <Link>Modules\UIElements\Core\TextElementSelection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\TextShadow.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\TextShadow.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\TextShadow.cs">
+      <Link>Modules\UIElements\Core\TextShadow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\PanelTextSettings.cs">
+      <Link>Modules\UIElements\Core\Text\PanelTextSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\TextEditingManipulator.cs">
+      <Link>Modules\UIElements\Core\Text\TextEditingManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\TextSelectingManipulator.cs">
+      <Link>Modules\UIElements\Core\Text\TextSelectingManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\UITKTextHandle.cs">
+      <Link>Modules\UIElements\Core\Text\UITKTextHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\UITKTextJobSystem.cs">
+      <Link>Modules\UIElements\Core\Text\UITKTextJobSystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Transitions.cs">
+      <Link>Modules\UIElements\Core\Transitions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UIElementsBridge.cs">
+      <Link>Modules\UIElements\Core\UIElementsBridge.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UIElementsInitialization.cs">
+      <Link>Modules\UIElements\Core\UIElementsInitialization.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UIElementsRuntimeUtility.cs">
+      <Link>Modules\UIElements\Core\UIElementsRuntimeUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UIElementsUtility.cs">
+      <Link>Modules\UIElements\Core\UIElementsUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UIToolkitInputConfiguration.cs">
+      <Link>Modules\UIElements\Core\UIToolkitInputConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UQuery.cs">
+      <Link>Modules\UIElements\Core\UQuery.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\FieldRenderingAttributes.cs">
+      <Link>Modules\UIElements\Core\UXML\FieldRenderingAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\IUxmlAttributes.cs">
+      <Link>Modules\UIElements\Core\UXML\IUxmlAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\OrphanFactories.cs">
+      <Link>Modules\UIElements\Core\UXML\OrphanFactories.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\TemplateAsset.cs">
+      <Link>Modules\UIElements\Core\UXML\TemplateAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlAssetAttributeDescription.cs">
+      <Link>Modules\UIElements\Core\UXML\UxmlAssetAttributeDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlAttributeDescription.cs">
+      <Link>Modules\UIElements\Core\UXML\UxmlAttributeDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlAttributes.cs">
+      <Link>Modules\UIElements\Core\UXML\UxmlAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlChildElementDescription.cs">
+      <Link>Modules\UIElements\Core\UXML\UxmlChildElementDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlFactory.cs">
+      <Link>Modules\UIElements\Core\UXML\UxmlFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlImageAttributeDescription.cs">
+      <Link>Modules\UIElements\Core\UXML\UxmlImageAttributeDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlObjectAsset.cs">
+      <Link>Modules\UIElements\Core\UXML\UxmlObjectAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlObjectFactoryRegistry.cs">
+      <Link>Modules\UIElements\Core\UXML\UxmlObjectFactoryRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlSerializedData.cs">
+      <Link>Modules\UIElements\Core\UXML\UxmlSerializedData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlTypeRestriction.cs">
+      <Link>Modules\UIElements\Core\UXML\UxmlTypeRestriction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlUtility.cs">
+      <Link>Modules\UIElements\Core\UXML\UxmlUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\VisualElementAsset.cs">
+      <Link>Modules\UIElements\Core\UXML\VisualElementAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\VisualElementFactoryRegistry.cs">
+      <Link>Modules\UIElements\Core\UXML\VisualElementFactoryRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\VisualTreeAsset.cs">
+      <Link>Modules\UIElements\Core\UXML\VisualTreeAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UpgradeConstants.cs">
+      <Link>Modules\UIElements\Core\UpgradeConstants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ValueAnimation.cs">
+      <Link>Modules\UIElements\Core\ValueAnimation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VectorImage.cs">
+      <Link>Modules\UIElements\Core\VectorImage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElement.cs">
+      <Link>Modules\UIElements\Core\VisualElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementAnimation.cs">
+      <Link>Modules\UIElements\Core\VisualElementAnimation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementBindableProperties.cs">
+      <Link>Modules\UIElements\Core\VisualElementBindableProperties.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementDataBinding.cs">
+      <Link>Modules\UIElements\Core\VisualElementDataBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementEventInterests.cs">
+      <Link>Modules\UIElements\Core\VisualElementEventInterests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementExperimentalFeatures.cs">
+      <Link>Modules\UIElements\Core\VisualElementExperimentalFeatures.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementFocusRing.cs">
+      <Link>Modules\UIElements\Core\VisualElementFocusRing.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementHierarchy.cs">
+      <Link>Modules\UIElements\Core\VisualElementHierarchy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementMathUtils.cs">
+      <Link>Modules\UIElements\Core\VisualElementMathUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementScheduler.cs">
+      <Link>Modules\UIElements\Core\VisualElementScheduler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementStyleAccess.cs">
+      <Link>Modules\UIElements\Core\VisualElementStyleAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementStyleSheetSet.cs">
+      <Link>Modules\UIElements\Core\VisualElementStyleSheetSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementTooltip.cs">
+      <Link>Modules\UIElements\Core\VisualElementTooltip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementTypeData.cs">
+      <Link>Modules\UIElements\Core\VisualElementTypeData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementUtils.cs">
+      <Link>Modules\UIElements\Core\VisualElementUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualTreeAnimationUpdater.cs">
+      <Link>Modules\UIElements\Core\VisualTreeAnimationUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualTreeHierarchyFlagsUpdater.cs">
+      <Link>Modules\UIElements\Core\VisualTreeHierarchyFlagsUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualTreeHierarchyTracker.cs">
+      <Link>Modules\UIElements\Core\VisualTreeHierarchyTracker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualTreeStyleUpdater.cs">
+      <Link>Modules\UIElements\Core\VisualTreeStyleUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualTreeUpdater.cs">
+      <Link>Modules\UIElements\Core\VisualTreeUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualTreeViewDataUpdater.cs">
+      <Link>Modules\UIElements\Core\VisualTreeViewDataUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\InputSystem\InputSystemEventSystem.cs">
+      <Link>Modules\UIElements\InputSystem\InputSystemEventSystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\InputSystem\InputWrapper.cs">
+      <Link>Modules\UIElements\InputSystem\InputWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Managed\Utility\ChunkAllocatingArray.cs">
+      <Link>Modules\UIElements\Managed\Utility\ChunkAllocatingArray.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Managed\VisualNode.cs">
+      <Link>Modules\UIElements\Managed\VisualNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Managed\VisualNodeChildren.cs">
+      <Link>Modules\UIElements\Managed\VisualNodeChildren.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Managed\VisualNodeClassList.cs">
+      <Link>Modules\UIElements\Managed\VisualNodeClassList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Managed\VisualPanel.cs">
+      <Link>Modules\UIElements\Managed\VisualPanel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualManager.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualManager.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualNodeChildrenData.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualNodeChildrenData.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualNodeClassData.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualNodeClassData.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualNodeClassNameStore.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualNodeClassNameStore.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualNodeData.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualNodeData.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualNodeHandle.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualNodeHandle.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualNodeImguiData.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualNodeImguiData.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualNodeProperty.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualNodeProperty.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualNodePropertyStore.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualNodePropertyStore.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualNodePseudoStateData.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualNodePseudoStateData.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualNodeRenderData.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualNodeRenderData.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualNodeTextData.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualNodeTextData.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualPanelData.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualPanelData.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ScriptBindings\VisualPanelHandle.bindings.cs">
+      <Link>Modules\UIElements\ScriptBindings\VisualPanelHandle.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UI\ScriptBindings\CanvasGroup.bindings.cs">
       <Link>Modules\UI\ScriptBindings\CanvasGroup.bindings.cs</Link>
     </Compile>
@@ -2860,6 +2959,42 @@
     </Compile>
     <Compile Include="..\..\Modules\UI\ScriptBindings\UICanvas.bindings.cs">
       <Link>Modules\UI\ScriptBindings\UICanvas.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\AssetDatabaseAnalytics.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\Events\AssetDatabaseAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\BuildAssetBundleAnalytics.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\Events\BuildAssetBundleAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\CollabOperationAnalytics.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\Events\CollabOperationAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\LicensingAnalytics.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\Events\LicensingAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\MetalUtilAnalytics.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\Events\MetalUtilAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\NavigationAnalytics.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\Events\NavigationAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\PackageManagerAnalytics.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\Events\PackageManagerAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\PackageUtilityAnalytics.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\Events\PackageUtilityAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\StallAnalytics.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\Events\StallAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\SubsystemsAnalytics.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\Events\SubsystemsAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\TestAnalytics.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\Events\TestAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\VRDeviceAnalytics.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\Events\VRDeviceAnalytics.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\UnityAnalyticsCommon.bindings.cs">
       <Link>Modules\UnityAnalyticsCommon\Public\UnityAnalyticsCommon.bindings.cs</Link>
@@ -3080,6 +3215,9 @@
     <Compile Include="..\..\Runtime\Export\2D\SortingLayer.bindings.cs">
       <Link>Runtime\Export\2D\SortingLayer.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Analytics\AnalyticsCommon.cs">
+      <Link>Runtime\Export\Analytics\AnalyticsCommon.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Animation\AnimationCurve.bindings.cs">
       <Link>Runtime\Export\Animation\AnimationCurve.bindings.cs</Link>
     </Compile>
@@ -3169,6 +3307,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Caching\Caching.deprecated.cs">
       <Link>Runtime\Export\Caching\Caching.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Camera\BatchRenderGroupAnalytics.cs">
+      <Link>Runtime\Export\Camera\BatchRenderGroupAnalytics.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Camera\BuiltinRuntimeReflectionSystem.bindings.cs">
       <Link>Runtime\Export\Camera\BuiltinRuntimeReflectionSystem.bindings.cs</Link>

@@ -238,7 +238,7 @@ namespace Unity.UI.Builder
                             CallDeserializeOnElement();
                         }
 
-                        m_UxmlDocument.hideFlags = HideFlags.DontUnloadUnusedAsset;
+                        m_UxmlDocument.hideFlags = HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
 
                         var isTemplateInstance = false;
                         int index = -1;

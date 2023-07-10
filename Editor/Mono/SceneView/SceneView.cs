@@ -632,6 +632,9 @@ namespace UnityEditor
                     return;
                 m_DebugDrawModesUseInteractiveLightBakingData = value;
                 debugDrawModesUseInteractiveLightBakingDataChanged?.Invoke(m_DebugDrawModesUseInteractiveLightBakingData);
+
+                // Force repaint to update lightmap previews immediately
+                Lightmapping.Internal_CallLightingDataUpdatedFunctions();
             }
         }
 
@@ -2492,6 +2495,7 @@ namespace UnityEditor
 
             EditorGUIUtility.labelWidth = 100;
 
+            var prevCamera = Camera.current;
             SetupCamera();
             RenderingPath oldRenderingPath = m_Camera.renderingPath;
 
@@ -2663,6 +2667,8 @@ namespace UnityEditor
             onGUIEnded?.Invoke(this);
             if (m_StageHandling != null)
                 m_StageHandling.EndOnGUI();
+
+            Camera.SetupCurrent(prevCamera);
         }
 
         // This will eventually be modified to use the mouse right-click.

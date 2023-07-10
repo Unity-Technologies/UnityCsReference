@@ -145,12 +145,11 @@ namespace UnityEditor
             };
 
             // must match PVRDenoiserType
-            public static readonly int[] denoiserTypeValues = { (int)LightingSettings.DenoiserType.Optix, (int)LightingSettings.DenoiserType.OpenImage, (int)LightingSettings.DenoiserType.RadeonPro, (int)LightingSettings.DenoiserType.None };
+            public static readonly int[] denoiserTypeValues = { (int)LightingSettings.DenoiserType.Optix, (int)LightingSettings.DenoiserType.OpenImage, (int)LightingSettings.DenoiserType.None };
             public static readonly GUIContent[] denoiserTypeStrings =
             {
                 EditorGUIUtility.TrTextContent("Optix"),
                 EditorGUIUtility.TrTextContent("OpenImageDenoise"),
-                EditorGUIUtility.TrTextContent("Radeon Pro"),
                 EditorGUIUtility.TrTextContent("None")
             };
 
@@ -178,7 +177,7 @@ namespace UnityEditor
             };
 
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
-            public static readonly GUIContent appleSiliconLightmapperWarning = EditorGUIUtility.TrTextContent("Progressive CPU Lightmapper is not avaliable on Apple silicon. Use Progressive GPU Lightmapper instead.");
+            public static readonly GUIContent appleSiliconLightmapperWarning = EditorGUIUtility.TrTextContent("Progressive CPU Lightmapper is not available on Apple silicon. Use Progressive GPU Lightmapper instead.");
             public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current Render Pipeline. Fallback mode is ");
             public static readonly GUIContent directionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
             public static readonly GUIContent denoiserNotSupportedWarning = EditorGUIUtility.TrTextContent("The current hardware or system configuration does not support the selected denoiser. Select a different denoiser.");
@@ -521,7 +520,7 @@ namespace UnityEditor
                                 if (m_PVRFilteringMode.intValue == (int)LightingSettings.FilterMode.Advanced && !m_PVRFilteringMode.hasMultipleDifferentValues)
                                 {
                                     // Check if the platform doesn't support denoising.
-                                    bool anyDenoisingSupported = (Lightmapping.IsOptixDenoiserSupported() || Lightmapping.IsOpenImageDenoiserSupported() || Lightmapping.IsRadeonDenoiserSupported());
+                                    bool anyDenoisingSupported = (Lightmapping.IsOptixDenoiserSupported() || Lightmapping.IsOpenImageDenoiserSupported());
 
                                     EditorGUI.indentLevel++;
                                     using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
@@ -873,9 +872,7 @@ namespace UnityEditor
                 return false;
             if (denoiserType == LightingSettings.DenoiserType.OpenImage && !Lightmapping.IsOpenImageDenoiserSupported())
                 return false;
-            if (denoiserType == LightingSettings.DenoiserType.RadeonPro && !Lightmapping.IsRadeonDenoiserSupported())
-                return false;
-
+            
             return true;
         }
 

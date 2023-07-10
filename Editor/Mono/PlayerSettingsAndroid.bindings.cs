@@ -50,26 +50,27 @@ namespace UnityEditor
         AndroidApiLevelAuto = 0,
 
         // Android 4.1, "Jelly Bean", API level 16
-        [Obsolete("Minimum supported Android API level is 22 (Android 5.1 Lollipop). Please use AndroidApiLevel22 or higher", true)]
+        [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel16 = 16,
 
         // Android 4.2, "Jelly Bean", API level 17
-        [Obsolete("Minimum supported Android API level is 22 (Android 5.1 Lollipop). Please use AndroidApiLevel22 or higher", true)]
+        [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel17 = 17,
 
         // Android 4.3, "Jelly Bean", API level 18
-        [Obsolete("Minimum supported Android API level is 22 (Android 5.1 Lollipop). Please use AndroidApiLevel22 or higher", true)]
+        [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel18 = 18,
 
         // Android 4.4, "KitKat", API level 19
-        [Obsolete("Minimum supported Android API level is 22 (Android 5.1 Lollipop). Please use AndroidApiLevel22 or higher", true)]
+        [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel19 = 19,
 
         // Android 5.0, "Lollipop", API level 21
-        [Obsolete("Minimum supported Android API level is 22 (Android 5.1 Lollipop). Please use AndroidApiLevel22 or higher", true)]
+        [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel21 = 21,
 
         // Android 5.1, "Lollipop", API level 22
+        [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel22 = 22,
 
         // Android 6.0, "Marshmallow", API level 23
@@ -206,6 +207,8 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
         public partial class Android
         {
+            internal const string MinSupportedAPILevelWarning = "Minimum supported Android API level is 23 (Android 6.0 Marshmallow). Please use AndroidApiLevel23 or higher";
+
             // Disable Depth and Stencil Buffers
             public static extern bool disableDepthAndStencilBuffers { get; set; }
 

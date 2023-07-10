@@ -637,6 +637,9 @@ namespace Unity.UI.Builder
             if (!m_Active)
                 return;
 
+            if (s_CurrentlyActiveBuilderDragger == this)
+                s_CurrentlyActiveBuilderDragger = null;
+
             m_Active = false;
 
             if (!target.HasMouseCapture())

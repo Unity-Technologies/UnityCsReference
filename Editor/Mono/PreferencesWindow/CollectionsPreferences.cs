@@ -9,6 +9,8 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine;
+using UnityEngine.Analytics;
+
 
 class JobsMenu
 {
@@ -57,7 +59,12 @@ class JobsMenu
                 }
 
                 if (madeChange)
-                    Telemetry.LogMenuPreferences(new Telemetry.MenuPreferencesEvent { useJobsThreads = newUseJobsDebugger, enableJobsDebugger = newUseJobsDebugger, nativeLeakDetectionMode = newLeakDetectionMode });
+                    Telemetry.LogMenuPreferences(new Telemetry(new Telemetry.MenuPreferencesEvent
+                    {
+                        useJobsThreads = newUseJobsDebugger,
+                        enableJobsDebugger = newUseJobsDebugger,
+                        nativeLeakDetectionMode = newLeakDetectionMode
+                      }));
 
                 GUILayout.EndVertical();
                 EditorGUILayout.EndVertical();
@@ -103,12 +110,12 @@ class JobsMenu
                 }
             case NativeLeakDetectionMode.Enabled:
                 {
-                    Debug.Log("Leak detection has been enabled. Leak warnings will be generated upon exiting play mode.");
+                    Debug.Log("Leak detection has been enabled. Leak warnings will be generated upon domain reload.");
                     break;
                 }
             case NativeLeakDetectionMode.EnabledWithStackTrace:
                 {
-                    Debug.Log("Leak detection with stack traces has been enabled. Leak warnings will be generated upon exiting play mode.");
+                    Debug.Log("Leak detection with stack traces has been enabled. Leak warnings will be generated upon domain reload.");
                     break;
                 }
             default:
@@ -120,41 +127,34 @@ class JobsMenu
         NativeLeakDetection.Mode = value;
     }
 
-    internal struct Telemetry
+    [AnalyticInfo(eventName: "collectionsMenuPreferences", vendorKey: "unity.collections")]
+    internal struct Telemetry : IAnalytic
     {
-        const string k_VendorKey = "unity.collections";
-        const int k_MaxEventsPerHour = 1000;
-        const int k_MaxNumberOfElements = 1000;
-        const int k_Version = 1;
-        static bool s_EventsRegistered = false;
+        public Telemetry(MenuPreferencesEvent data) { m_data = data; }
 
-        static void RegisterTelemetryEvents()
-        {
-            EditorAnalytics.RegisterEventWithLimit(k_Event_MenuPreferences, k_MaxEventsPerHour, k_MaxNumberOfElements, k_VendorKey, k_Version);
-
-            s_EventsRegistered = true;
-        }
-
-        internal struct MenuPreferencesEvent
+        [Serializable]
+        internal struct MenuPreferencesEvent : IAnalytic.IData
         {
             public bool enableJobsDebugger;
             public bool useJobsThreads;
             public NativeLeakDetectionMode nativeLeakDetectionMode;
         }
 
-        const string k_Event_MenuPreferences = "collectionsMenuPreferences";
-
-        internal static void LogMenuPreferences(MenuPreferencesEvent value)
+        public bool TryGatherData(out IAnalytic.IData data, out Exception error)
         {
-            SendEditorEvent(k_Event_MenuPreferences, value);
+            error = null;
+            data = m_data;
+            return data != null;
         }
 
-        private static void SendEditorEvent<T>(string eventName, T eventData) where T : unmanaged
+        public static void LogMenuPreferences(Telemetry analytics)
         {
-            if (!s_EventsRegistered)
-                RegisterTelemetryEvents();
-
-            EditorAnalytics.SendEventWithLimit(eventName, eventData, k_Version);
+        EditorAnalytics.SendAnalytic(analytics);
         }
+      
+        MenuPreferencesEvent m_data;
     }
+
+    
+
 }

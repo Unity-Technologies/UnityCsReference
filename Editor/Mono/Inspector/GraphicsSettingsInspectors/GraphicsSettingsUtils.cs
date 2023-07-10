@@ -48,6 +48,7 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             root.Query<VisualElement>().ForEach(LocalizeTooltip);
             root.Query<Label>().ForEach(label =>
             {
+                //Ignore text inside ObjectField because it's an asset name
                 if (label.ClassListContains("unity-object-field-display__label"))
                     return;
                 LocalizeText(label);
@@ -90,6 +91,9 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         internal static bool TryCreateNewGlobalSettingsContainer(RenderPipelineGlobalSettings globalSettings, out GlobalSettingsContainer globalSettingsContainer)
         {
             globalSettingsContainer = null;
+            if (globalSettings == null)
+                return false;
+
             var settingsListInContainer = GetSettingsListFromRenderPipelineGlobalSettings(globalSettings, out var globalSettingsSO, out var settingsContainer);
             if (settingsListInContainer.arraySize == 0)
                 return false;
@@ -193,24 +197,30 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             tabView.AddTab(tab, active);
         }
 
-        internal static (VisualElement warning, Type[] activePipelines) CreateSRPWarning(string warningTemplatePath, List<GlobalSettingsContainer> allAssetTypes, Type currentAssetType)
+        internal static VisualElement CreateRPHelpBox(VisibilityControllerBasedOnRenderPipeline visibilityController, Type currentAssetType)
         {
-            var warningAsset = EditorGUIUtility.Load(warningTemplatePath) as VisualTreeAsset;
-            var warning = warningAsset.Instantiate();
-            LocalizeVisualTree(warning);
-            var allAssetsExceptCurrent = new Type[allAssetTypes.Count];
-            for (int j = 0, index = 0; j < allAssetTypes.Count; j++, index++)
+            var helpBoxTemplate = EditorGUIUtility.Load(GraphicsSettingsInspector.ResourcesPaths.helpBoxesTemplateForSRP) as VisualTreeAsset;
+            var helpBoxContainer = helpBoxTemplate.Instantiate();
+            LocalizeVisualTree(helpBoxContainer);
+
+            var allRenderPipelineAssetTypes = TypeCache.GetTypesDerivedFrom<RenderPipelineAsset>();
+            var allAssetsExceptCurrent = new Type[allRenderPipelineAssetTypes.Count];
+            for (int j = 0, index = 0; j < allRenderPipelineAssetTypes.Count; j++, index++)
             {
-                if (allAssetTypes[j].renderPipelineAssetType == currentAssetType)
+                if (currentAssetType != null && allRenderPipelineAssetTypes[j] == currentAssetType)
                 {
                     index--;
                     continue;
                 }
 
-                allAssetsExceptCurrent[index] = allAssetTypes[j].renderPipelineAssetType == null ? null : allAssetTypes[j].renderPipelineAssetType;
+                allAssetsExceptCurrent[index] = allRenderPipelineAssetTypes[j] == null ? null : allRenderPipelineAssetTypes[j];
             }
 
-            return (warning, allAssetsExceptCurrent);
+            var infoHelpBox = helpBoxContainer.MandatoryQ<HelpBox>("CurrentPipelineInfoHelpBox");
+            var warningHelpBox = helpBoxContainer.MandatoryQ<HelpBox>("CurrentPipelineWarningHelpBox");
+            visibilityController.RegisterVisualElement(infoHelpBox, currentAssetType);
+            visibilityController.RegisterVisualElement(warningHelpBox, allAssetsExceptCurrent);
+            return helpBoxContainer;
         }
 
         internal static IEnumerable<string> GetSearchKeywordsFromUXMLInEditorResources(string path)

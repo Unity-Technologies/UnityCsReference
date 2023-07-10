@@ -11,47 +11,47 @@ using UnityEngine.Scripting;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Filter operator. Colon (:) is considered to be "contains" operator. "-" is considered to be "not" operator.
+    /// Represents options for search filter operators. A colon (:) is the "contains" operator. A "-" is a "not" operator.
     /// </summary>
     [NativeType("Modules/HierarchyCore/Public/HierarchySearch.h")]
     public enum HierarchySearchFilterOperator
     {
         /// <summary>
-        /// Check if a filter value is equal from right hand operand.
+        /// Checks if a filter value is equal to the right-hand operand.
         /// </summary>
         Equal,
         /// <summary>
-        /// Compare filter value with contains. (ex: with a string value this means string.Contains()
+        /// Checks if a filter value occurs within the right-hand operand. For instance, with a string value `Contains` uses `string.Contains`. 
         /// </summary>
         Contains,
         /// <summary>
-        /// Check if a numerical filter value is greater than right hand operand.
+        /// Checks if a numerical filter value is greater than the right-hand operand.
         /// </summary>
         Greater,
         /// <summary>
-        /// Check if a numerical filter value is greater or equal than right hand operand.
+        /// Checks if a numerical filter value is greater than or equal to the right-hand operand.
         /// </summary>
         GreaterOrEqual,
         /// <summary>
-        /// Check if a numerical filter value is lesser than right hand operand.
+        /// Checks if a numerical filter value is less than the right-hand operand.
         /// </summary>
         Lesser,
         /// <summary>
-        /// Check if a numerical filter value is lesser or equal than right hand operand.
+        /// Checks if a numerical filter value is less than or equal to the right-hand operand.
         /// </summary>
         LesserOrEqual,
         /// <summary>
-        /// Check if a filter value is different from right hand operand.
+        /// Checks if a filter value is different than the right-hand operand.
         /// </summary>
         NotEqual,
         /// <summary>
-        /// Does a not operation on a filter value: this means all items NOT matching the filter.
+        /// Checks for items that do not match the filter value. 
         /// </summary>
         Not
     }
 
     /// <summary>
-    /// Encapsulate all data needed to filter a hierarchy.
+    /// Encapsulates all data needed to filter a hierarchy.
     /// </summary>
     [NativeType("Modules/HierarchyCore/Public/HierarchySearch.h")]
     [RequiredByNativeCode, StructLayout(LayoutKind.Sequential), Serializable]
@@ -61,22 +61,22 @@ namespace Unity.Hierarchy
         static readonly HierarchySearchFilter s_Invalid;
 
         /// <summary>
-        /// Default invalid HierarchySearchFilter. This assume the Hierarchy has a query, but is invalid, so no nodes would be shown.
+        /// The default invalid HierarchySearchFilter. This assumes the Hierarchy has a query, but is invalid, so no nodes are shown.
         /// </summary>
         public static ref readonly HierarchySearchFilter Invalid => ref s_Invalid;
 
         /// <summary>
-        /// Is the filter valid: does it have a name.
+        /// Whether the filter is valid and has a name.
         /// </summary>
         public bool IsValid => !string.IsNullOrEmpty(Name);
 
         /// <summary>
-        /// Filter name.
+        /// The name of the filter.
         /// </summary>
         public string Name { get; set; }
 
         /// <summary>
-        /// Filter textual value.
+        /// The textual value of the filter.
         /// </summary>
         public string Value { get; set; }
 
@@ -86,15 +86,15 @@ namespace Unity.Hierarchy
         public float NumValue { get; set; }
 
         /// <summary>
-        /// Filter operator.
+        /// The filter search operator.
         /// </summary>
         public HierarchySearchFilterOperator Op { get; set; }
 
         /// <summary>
-        /// Convert an operator to its textual value.
+        /// Converts an operator to its textual value.
         /// </summary>
-        /// <param name="op">Filter operator</param>
-        /// <returns>Operator textual value.</returns>
+        /// <param name="op">The filter operator</param>
+        /// <returns>The operator textual value.</returns>
         public static string ToString(HierarchySearchFilterOperator op)
         {
             switch (op)
@@ -121,10 +121,10 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Convert a textual value to its operator value if possible. 
+        /// Converts a textual value to its operator value if possible. 
         /// </summary>
-        /// <param name="op">Textual operator. Ex: =, <=, : ... </param>
-        /// <returns></returns>
+        /// <param name="op">The textual operator. For example: =, <=, :, and .... </param>
+        /// <returns>The `HierarchySearchFilterOperator` that matches the parsed string. For example, this function parses the string "=" and converts it to `HierarchySearchFilterOperator.Equal`. </returns>
         public static HierarchySearchFilterOperator ToOp(string op)
         {
             switch (op)
@@ -151,7 +151,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Convert a Filter to its full textual value: <FilerName><Filter operator><FilterValue>. The textual value will be escaped with doublequotes if needed.
+        /// Converts a filter to its full textual value: <FilerName><Filter operator><FilterValue>. The textual value is escaped with double quotation marks if it is necessary.
         /// </summary>
         /// <returns></returns>
         public override string ToString()
@@ -198,7 +198,7 @@ namespace Unity.Hierarchy
     }
 
     /// <summary>
-    /// Encapsulate all the query filters and text values that are used to filter a Hierarchy.
+    /// Encapsulates all the query filters and text values that are used to filter a hierarchy.
     /// </summary>
     [NativeType("Modules/HierarchyCore/Public/HierarchySearch.h"), NativeAsStruct]
     [RequiredByNativeCode, StructLayout(LayoutKind.Sequential), Serializable]
@@ -209,57 +209,57 @@ namespace Unity.Hierarchy
         static readonly HierarchySearchQueryDescriptor s_InvalidQuery = new HierarchySearchQueryDescriptor() { Invalid = true };
 
         /// <summary>
-        /// Default Empty query;
+        /// The default empty query.
         /// </summary>
         public static HierarchySearchQueryDescriptor Empty => s_Empty;
 
         /// <summary>
-        /// Default Invalid query.
+        /// The default invalid query.
         /// </summary>
         public static HierarchySearchQueryDescriptor InvalidQuery => s_InvalidQuery;
 
         /// <summary>
-        /// Filters used by the Hierarchy. Filters are of the form [filterName][operator][filterValue]. Ex: nodetype:gameobject. These filters are global to all NodeHandlers.
+        /// The filters used by the hierarchy. Filters are in this form: `[filterName][operator][filterValue]`. For example: `nodetype:gameobject`. These filters are global to all NodeHandlers.
         /// </summary>
         public HierarchySearchFilter[] SystemFilters { get; set; }
 
         /// <summary>
-        /// User define filters. Filters are of the form [filterName][operator][filterValue]. Ex: t:Light. Each of these filters can be used by a NodeHandler to filter according to domain specific characteristics.
+        /// User-defined filters. Filters are in this form `[filterName][operator][filterValue]`. For example: `t:Light`. Each of these filters can be used by a NodeHandler to filter according to domain-specific characteristics.
         /// </summary>
         public HierarchySearchFilter[] Filters { get; set; }
 
         /// <summary>
-        /// All textual values. ex: "cube"
+        /// All textual values. For example: "cube"
         /// </summary>
         public string[] TextValues { get; set; }
 
         /// <summary>
-        /// Is the query evaluated strictly. This means if any filters is considered to be invalid the whole query is invalid.
+        /// Whether the query is evaluated strictly. This means that if any filters are invalid, then the whole query is invalid.
         /// </summary>
         public bool Strict { get; set; }
 
         /// <summary>
-        /// Is the query invalid. An invalid query will yield no node.
+        /// Whether the query invalid. An invalid query yields no node.
         /// </summary>
         public bool Invalid { get; set; }
 
         /// <summary>
-        /// Is the query value.
+        /// Whether the query is valid.
         /// </summary>
         public bool IsValid => !Invalid && !IsEmpty;
 
         /// <summary>
-        /// Is the query empty
+        /// Whether the query is empty. 
         /// </summary>
         public bool IsEmpty => Filters.Length == 0 && TextValues.Length == 0 && SystemFilters.Length == 0;
 
         /// <summary>
-        /// Is the query only using System filters. This means NodeHandlers won't be called for filtering.
+        /// Whether the query uses system filters. This means NodeHandlers won't be called for filtering.
         /// </summary>
         public bool IsSystemOnlyQuery => SystemFilters.Length > 0 && Filters.Length == 0 && TextValues.Length == 0;
 
         /// <summary>
-        /// Constructor for a Query.
+        /// The constructor for a query.
         /// </summary>
         /// <param name="filters">List of user filters</param>
         /// <param name="textValues">List of textual values.</param>
@@ -300,7 +300,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Convert the query to textual form. A textual query is of the form <All system Filters>  <All user filters> <All textual values.>
+        /// Converts the query to textual form. A textual query is of the form: <All system Filters> <All user filters> <All textual values>.
         /// </summary>
         /// <returns>return a text query.</returns>
         public override string ToString()

@@ -1007,7 +1007,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var isCompiling = false;
 
-            var removeAssemblyBuilders = new List<AssemblyBuilder>();
+            var removeAssemblyBuilders = new HashSet<AssemblyBuilder>();
 
             // Check status of compile tasks
             foreach (var assemblyBuilder in assemblyBuilders)
@@ -1212,18 +1212,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         void InvokeAssemblyCompilationFinished(ScriptAssembly[] assemblies, BeeDriverResult beeDriverResult, bool buildingForEditor, CompilerMessage[][] compilerMessagesForNodeResults)
         {
-            bool Belongs(ScriptAssembly scriptAssembly, NodeFinishedMessage nodeFinishedMessage) => new NPath(nodeFinishedMessage.Node.OutputFile).FileName == scriptAssembly.Filename;
-
-            // We want to send callbacks for assemblies that were copied, for assemblies that failed to compile, but not for assemblies that were compiled but not copied (because they ended up identical).
-            bool RequiresCallbackInvocation(ScriptAssembly scriptAssembly)
+            var relatedMessages = new Dictionary<string, List<int>>();
+            var requiresCallbackInvocation = new HashSet<string>();
+            for (int i = 0; i < beeDriverResult.NodeFinishedMessages.Length; i++)
             {
-                var relatedNodes = beeDriverResult.NodeFinishedMessages.Where(nodeFinishedMessage => Belongs(scriptAssembly, nodeFinishedMessage));
-                return relatedNodes.Any(n => n.ExitCode != 0 || n.Node.Annotation.StartsWith("CopyFiles"));
+                var msg = beeDriverResult.NodeFinishedMessages[i];
+                string filePath = new NPath(msg.Node.OutputFile).FileName;
+
+                if (!relatedMessages.TryGetValue(filePath, out var list))
+                    relatedMessages[filePath] = list = new List<int>();
+                list.Add(i);
+                if (msg.ExitCode != 0 || msg.Node.Annotation.StartsWith("CopyFiles", StringComparison.Ordinal))
+                    requiresCallbackInvocation.Add(filePath);
             }
 
             foreach (var scriptAssembly in assemblies)
             {
-                if (!RequiresCallbackInvocation(scriptAssembly))
+                var fileName = scriptAssembly.Filename;
+                if (!requiresCallbackInvocation.Contains(fileName))
                 {
                     // Report that an assembly was unchanged as a result of compilation.
                     assemblyCompilationNotRequired?.Invoke(scriptAssembly);
@@ -1234,10 +1240,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (buildingForEditor)
                     m_ScriptsForEditorHaveBeenCompiledSinceLastDomainReload = true;
 
-                var nodeResultIndicesRelatedToAssembly = beeDriverResult.NodeFinishedMessages
-                    .Select((result, index) => (result, index))
-                    .Where(c => Belongs(scriptAssembly, c.result))
-                    .Select(c => c.index);
+                IEnumerable<int> nodeResultIndicesRelatedToAssembly;
+                if (relatedMessages.TryGetValue(fileName, out var nodeResultIndices))
+                    nodeResultIndicesRelatedToAssembly = nodeResultIndices;
+                else
+                    nodeResultIndicesRelatedToAssembly = Enumerable.Empty<int>();
 
                 var messagesForAssembly = nodeResultIndicesRelatedToAssembly.SelectMany(index => compilerMessagesForNodeResults[index]).ToArray();
                 scriptAssembly.HasCompileErrors = !beeDriverResult.Success;

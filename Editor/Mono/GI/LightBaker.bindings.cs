@@ -623,10 +623,10 @@ namespace UnityEditor.LightBaking
         public static Result PopulateWorld(BakeInput bakeInput, BakeProgressState progress,
             UnityEngine.LightTransport.IDeviceContext context, UnityEngine.LightTransport.IWorld world)
         {
-            IntegrationContext integrationContext = new IntegrationContext();
             Result result = new Result();
             if (context is RadeonRaysContext)
             {
+                IntegrationContext integrationContext = new IntegrationContext();
                 result = PopulateWorldRadeonRays(bakeInput, progress, context as RadeonRaysContext, integrationContext);
                 Debug.Assert(world is RadeonRaysWorld);
                 var rrWorld = world as RadeonRaysWorld;
@@ -634,6 +634,7 @@ namespace UnityEditor.LightBaking
             }
             else if (context is WintermuteContext)
             {
+                IntegrationContext integrationContext = new IntegrationContext();
                 result = PopulateWorldWintermute(bakeInput, progress, context as WintermuteContext, integrationContext);
                 Debug.Assert(world is WintermuteWorld);
                 var wmWorld = world as WintermuteWorld;

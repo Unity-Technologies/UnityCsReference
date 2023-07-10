@@ -245,6 +245,12 @@ namespace UnityEngine.Rendering
             var isSupported = (bool*)isSupportedPtr;
             *isSupported = active.defaultReflectionProbeBaking;
         }
+        [RequiredByNativeCode]
+        internal static unsafe void OverridesLightProbeSystem(IntPtr overridesPtr)
+        {
+            var overrides = (bool*)overridesPtr;
+            *overrides = active.overridesLightProbeSystem;
+        }
 
         internal static unsafe int FallbackLightmapper()
         {

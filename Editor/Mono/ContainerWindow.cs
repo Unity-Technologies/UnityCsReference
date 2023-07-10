@@ -492,7 +492,7 @@ namespace UnityEditor
         internal void SaveGeometry()
         {
             string ID = windowID;
-            if (string.IsNullOrEmpty(ID))
+            if (string.IsNullOrEmpty(ID) || IsValidContextMenu())
                 return;
 
             // save position/size
@@ -511,7 +511,7 @@ namespace UnityEditor
 
         bool IsValidContextMenu()
         {
-            return string.Equals(s_ContextMenuID, windowID) && m_PixelRect.x == 0 && m_PixelRect.y == 0;
+            return string.Equals(s_ContextMenuID, windowID);
         }
 
         internal void LoadGeometry(bool loadPosition)

@@ -15,8 +15,10 @@ namespace UnityEditor.Search
 {
     internal static class SearchAnalytics
     {
+        const string vendorKey = "unity.quicksearch";
+
         [Serializable]
-        internal class ProviderData
+        internal class ProviderData : IAnalytic.IData
         {
             // Was the provider enabled for the search
             public bool isEnabled;
@@ -29,7 +31,7 @@ namespace UnityEditor.Search
         }
 
         [Serializable]
-        internal class PreferenceData
+        internal class PreferenceData : IAnalytic.IData
         {
             // BEGIN- Not used anymore
             public bool useDockableWindow;
@@ -40,7 +42,7 @@ namespace UnityEditor.Search
         }
 
         [Serializable]
-        internal class SearchEvent
+        internal class SearchEvent : IAnalytic.IData
         {
             public SearchEvent()
             {
@@ -63,6 +65,7 @@ namespace UnityEditor.Search
                 if (duration == 0)
                     duration = elapsedTimeMs;
             }
+            
 
             public long elapsedTimeMs => (long)(DateTime.Now - startTime).TotalMilliseconds;
 
@@ -111,8 +114,26 @@ namespace UnityEditor.Search
             // useRightClickContextAction
         }
 
+        [AnalyticInfo(eventName: "quickSearch", vendorKey: vendorKey)]
+        internal class SearchEventAnalytic : IAnalytic
+        {
+            public SearchEventAnalytic(SearchEvent data)
+            {
+                m_data = data;
+            }
+
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                error = null;
+                data = m_data;
+                return data != null;
+            }
+
+            private SearchEvent m_data = null;
+        }
+
         [Serializable]
-        internal struct GenericEvent
+        internal struct GenericEvent : IAnalytic.IData
         {
             public static GenericEvent Create(string windowId, GenericEventType type, string name = null)
             {
@@ -152,8 +173,26 @@ namespace UnityEditor.Search
             public int intPayload2;
         }
 
+        [AnalyticInfo(eventName: "quickSearchGeneric", vendorKey: vendorKey)]
+        internal class GenericEventAnalytic : IAnalytic
+        {
+            public GenericEventAnalytic(GenericEvent data)
+            {
+                m_data = data;
+            }
+
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                error = null;
+                data = m_data;
+                return data != null;
+            }
+
+            private GenericEvent m_data;
+        }
+
         [Serializable]
-        internal class SearchUsageReport
+        internal class SearchUsageReport : IAnalytic.IData
         {
             public int indexCount;
             public float maxIndexSize;
@@ -175,11 +214,22 @@ namespace UnityEditor.Search
             public bool useQueryBuilder;
         }
 
-        enum EventName
+        [AnalyticInfo(eventName: "quickSearchUsageReport", vendorKey: vendorKey)]
+        internal class SearchUsageReportAnalytic : IAnalytic
         {
-            quickSearchGeneric,
-            quickSearch,
-            quickSearchUsageReport
+            public SearchUsageReportAnalytic(SearchUsageReport data)
+            {
+                m_data = data;
+            }
+
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                error = null;
+                data = m_data;
+                return data != null;
+            }
+
+            private SearchUsageReport m_data;
         }
 
         public enum GenericEventType
@@ -268,7 +318,6 @@ namespace UnityEditor.Search
 
         public static readonly string Package = "com.unity.quicksearch";
         public static string PackageVersion;
-        private static bool s_Registered;
         private static readonly HashSet<int> s_OnceHashCodes = new HashSet<int>();
         private static Delayer m_Debouncer;
 
@@ -368,13 +417,15 @@ namespace UnityEditor.Search
                     break;
             }
 
-            Send(EventName.quickSearchGeneric, evt);
+            GenericEventAnalytic analytic = new GenericEventAnalytic(evt);
+            EditorAnalytics.SendAnalytic(analytic);
         }
 
         public static void SendReportUsage()
         {
             var report = CreateSearchUsageReport();
-            Send(EventName.quickSearchUsageReport, report);
+            SearchUsageReportAnalytic analytic = new SearchUsageReportAnalytic(report);
+            EditorAnalytics.SendAnalytic(analytic);
         }
 
         public static void DebounceSendEvent(Func<GenericEvent> evtCreator)
@@ -406,7 +457,8 @@ namespace UnityEditor.Search
             if (evt.success)
                 sessionQueryCount++;
 
-            Send(EventName.quickSearch, evt);
+            SearchEventAnalytic analytic = new SearchEventAnalytic(evt);
+            EditorAnalytics.SendAnalytic(analytic);
         }
 
         private static bool UnityQuit()
@@ -453,85 +505,6 @@ namespace UnityEditor.Search
             if (eventCreator is Func<GenericEvent> functor)
             {
                 SendEvent(functor());
-            }
-        }
-
-        private static bool RegisterEvents()
-        {
-            if (UnityEditorInternal.InternalEditorUtility.inBatchMode)
-            {
-                return false;
-            }
-
-            if (!EditorAnalytics.enabled)
-            {
-                Console.WriteLine("[QS] Editor analytics are disabled");
-                return false;
-            }
-
-            if (s_Registered)
-            {
-                return true;
-            }
-
-            var allNames = Enum.GetNames(typeof(EventName));
-            if (allNames.Any(eventName => !RegisterEvent(eventName)))
-            {
-                return false;
-            }
-
-            s_Registered = true;
-            return true;
-        }
-
-        private static bool RegisterEvent(string eventName)
-        {
-            const string vendorKey = "unity.quicksearch";
-            var result = EditorAnalytics.RegisterEventWithLimit(eventName, 100, 1000, vendorKey);
-            switch (result)
-            {
-                case AnalyticsResult.Ok:
-                {
-                    return true;
-                }
-                case AnalyticsResult.TooManyRequests:
-
-                    // this is fine - event registration survives domain reload (native)
-                    return true;
-                default:
-                {
-                    Console.WriteLine($"[QS] Failed to register analytics event '{eventName}'. Result: '{result}'");
-                    return false;
-                }
-            }
-        }
-
-        private static void Send(EventName eventName, object eventData)
-        {
-            if (Utils.IsRunningTests())
-                return;
-
-            if (Utils.isDeveloperBuild)
-                return;
-
-            if (!RegisterEvents())
-            {
-                return;
-            }
-            try
-            {
-                var result = EditorAnalytics.SendEventWithLimit(eventName.ToString(), eventData);
-                if (result == AnalyticsResult.Ok)
-                {
-                }
-                else
-                {
-                    Console.WriteLine($"[QS] Failed to send event {eventName}. Result: {result}");
-                }
-            }
-            catch (Exception)
-            {
-                // ignored
             }
         }
     }

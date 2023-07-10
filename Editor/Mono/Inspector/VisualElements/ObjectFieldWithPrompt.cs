@@ -127,6 +127,8 @@ namespace UnityEditor.UIElements
             {
                 if (EditorUtility.DisplayDialog(title, message, "Confirm", "Cancel"))
                     value = evt.newValue;
+                else
+                    m_ObjectField.SetValueWithoutNotify(value);
             });
             Add(m_ObjectField);
         }

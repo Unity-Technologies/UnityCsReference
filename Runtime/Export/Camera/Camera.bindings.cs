@@ -456,7 +456,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("CameraScripting::SubmitRenderRequests", HasExplicitThis = true)]  extern private void SubmitRenderRequestsInternal(object requests);
-        [FreeFunction("CameraScripting::SubmitBuiltInObjectIDRenderRequest", HasExplicitThis = true)] [NativeConditional("UNITY_EDITOR")]
+        [FreeFunction("CameraScripting::SubmitBuiltInObjectIDRenderRequest", HasExplicitThis = true)] [NativeConditional("UNITY_EDITOR")] [return: Unmarshalled]
         extern private UnityEngine.Object[] SubmitBuiltInObjectIDRenderRequest(
             RenderTexture target,
             int mipLevel,

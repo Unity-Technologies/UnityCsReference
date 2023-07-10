@@ -207,7 +207,7 @@ namespace UnityEngine
         extern public static void SetConnectivityDirty();
 
         [NativeProperty("ActiveTerrainsScriptingArray")]
-        extern public static Terrain[] activeTerrains { get; }
+        extern public static Terrain[] activeTerrains { [return:Unmarshalled] get; }
 
         public static void GetActiveTerrains(List<Terrain> terrainList)
         {

@@ -6,11 +6,10 @@ using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.LightBaking;
-using UnityEngine.LightTransport;
-using static UnityEngine.LightBaking.IProbeIntegrator;
+using UnityEngine.LightBaking;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
-namespace UnityEngine.LightBaking
+namespace UnityEngine.LightTransport
 {
     internal interface IProbeIntegrator
     {
@@ -72,7 +71,7 @@ namespace UnityEngine.LightBaking
         {
             _progress = progress;
         }
-        public unsafe Result IntegrateDirectRadiance(IDeviceContext context,
+        public unsafe IProbeIntegrator.Result IntegrateDirectRadiance(IDeviceContext context,
             int positionOffset, int positionCount, int sampleCount, BufferSlice radianceEstimateOut)
         {
             Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
@@ -91,9 +90,9 @@ namespace UnityEngine.LightBaking
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
             context.WriteBuffer(radianceEstimateOut.Id, radianceBuffer.Reinterpret<byte>(sizeOfSHL2));
 
-            return new Result(result);
+            return new IProbeIntegrator.Result(result);
         }
-        public unsafe Result IntegrateIndirectRadiance(IDeviceContext context,
+        public unsafe IProbeIntegrator.Result IntegrateIndirectRadiance(IDeviceContext context,
             int positionOffset, int positionCount, int sampleCount, BufferSlice radianceEstimateOut)
         {
             Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
@@ -112,9 +111,9 @@ namespace UnityEngine.LightBaking
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
             context.WriteBuffer(radianceEstimateOut.Id, radianceBuffer.Reinterpret<byte>(sizeOfSHL2));
 
-            return new Result(result);
+            return new IProbeIntegrator.Result(result);
         }
-        public unsafe Result IntegrateValidity(IDeviceContext context,
+        public unsafe IProbeIntegrator.Result IntegrateValidity(IDeviceContext context,
             int positionOffset, int positionCount, int sampleCount, BufferSlice validityEstimateOut)
         {
             Debug.Assert(context is WintermuteContext, "Expected RadeonRaysContext but got something else.");
@@ -133,7 +132,7 @@ namespace UnityEngine.LightBaking
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
             context.WriteBuffer(validityEstimateOut.Id, validityBuffer.Reinterpret<byte>(sizeOfFloat));
 
-            return new Result(result);
+            return new IProbeIntegrator.Result(result);
         }
     }
     internal class RadeonRaysProbeIntegrator : IProbeIntegrator
@@ -160,7 +159,7 @@ namespace UnityEngine.LightBaking
         {
             _progress = progress;
         }
-        public unsafe Result IntegrateDirectRadiance(IDeviceContext context,
+        public unsafe IProbeIntegrator.Result IntegrateDirectRadiance(IDeviceContext context,
             int positionOffset, int positionCount, int sampleCount, BufferSlice radianceEstimateOut)
         {
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
@@ -179,9 +178,9 @@ namespace UnityEngine.LightBaking
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
             context.WriteBuffer(radianceEstimateOut.Id, radianceBuffer.Reinterpret<byte>(sizeOfSHL2));
 
-            return new Result(result);
+            return new IProbeIntegrator.Result(result);
         }
-        public unsafe Result IntegrateIndirectRadiance(IDeviceContext context,
+        public unsafe IProbeIntegrator.Result IntegrateIndirectRadiance(IDeviceContext context,
             int positionOffset, int positionCount, int sampleCount, BufferSlice radianceEstimateOut)
         {
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
@@ -200,9 +199,9 @@ namespace UnityEngine.LightBaking
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
             context.WriteBuffer(radianceEstimateOut.Id, radianceBuffer.Reinterpret<byte>(sizeOfSHL2));
 
-            return new Result(result);
+            return new IProbeIntegrator.Result(result);
         }
-        public unsafe Result IntegrateValidity(IDeviceContext context,
+        public unsafe IProbeIntegrator.Result IntegrateValidity(IDeviceContext context,
             int positionOffset, int positionCount, int sampleCount, BufferSlice validityEstimateOut)
         {
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
@@ -221,7 +220,7 @@ namespace UnityEngine.LightBaking
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
             context.WriteBuffer(validityEstimateOut.Id, validityBuffer.Reinterpret<byte>(sizeOfFloat));
 
-            return new Result(result);
+            return new IProbeIntegrator.Result(result);
         }
     }
 }

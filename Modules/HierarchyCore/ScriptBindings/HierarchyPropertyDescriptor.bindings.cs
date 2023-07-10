@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Describe the type and size of a Hierarchy Property.
+    /// Describes the type and size of a Hierarchy Property.
     /// </summary>
     [NativeType("Modules/HierarchyCore/Public/HierarchyPropertyDescriptor.h")]
     [StructLayout(LayoutKind.Sequential)]
@@ -18,7 +18,7 @@ namespace Unity.Hierarchy
         HierarchyPropertyStorageType m_Type;
 
         /// <summary>
-        /// Size of the property in bytes.
+        /// The size of the property in bytes.
         /// </summary>
         public int Size
         {
@@ -27,7 +27,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Storage type of the property.
+        /// The storage type of the property.
         /// </summary>
         public HierarchyPropertyStorageType Type
         {

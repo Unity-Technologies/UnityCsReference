@@ -285,50 +285,6 @@ namespace UnityEngine.TextCore.Text
 
         TextElementInfo[] m_InternalTextElementInfo;
 
-        internal static Dictionary<int, Material> gradientScalesToAdd = new Dictionary<int, Material>();
-        internal static Dictionary<int, float> gradientScales = new Dictionary<int, float>();
-
-        static object gradientLock = new object();
-
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static void UpdateGradientScales()
-        {
-            foreach (var grad in gradientScalesToAdd)
-            {
-                if (grad.Value == null)
-                    continue;
-                var gradientScale = grad.Value.HasProperty(TextShaderUtilities.ID_GradientScale) ? grad.Value.GetFloat(TextShaderUtilities.ID_GradientScale) : 0;
-                gradientScales[grad.Key] = gradientScale;
-            }
-
-            gradientScalesToAdd.Clear();
-        }
-
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static void AddGradientScalesToList(MaterialReference[] refs)
-        {
-            if (refs == null)
-                return;
-
-            lock (gradientLock)
-            {
-                for (int i = 0; i < refs.Length; i++)
-                {
-                    if (((System.Object)refs[i].material) == null)
-                        break;
-
-                    var hash = refs[i].material.GetHashCode();
-                    gradientScalesToAdd[hash] = refs[i].material;
-
-                    if (((System.Object)refs[i].fallbackMaterial) != null)
-                    {
-                        hash = refs[i].fallbackMaterial.GetHashCode();
-                        gradientScalesToAdd[hash] = refs[i].fallbackMaterial;
-                    }
-                }
-            }
-        }
-
         /// <summary>
         /// This is the main function that is responsible for creating / displaying the text.
         /// </summary>

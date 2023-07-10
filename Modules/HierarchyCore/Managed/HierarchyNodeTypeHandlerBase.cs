@@ -52,7 +52,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Disposes this hierarchy node type handler to free up resources in the derived class.
         /// </summary>
-        /// <param name="disposing"><see langword="true"/> if called from Dispose, <see langword="false"/> otherwise.</param>
+        /// <param name="disposing">Returns true if called from Dispose, false otherwise.</param>
         protected virtual void Dispose(bool disposing) { }
 
         /// <summary>
@@ -71,16 +71,16 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Callback to determine if changes are pending to be applied to the hierarchy.
+        /// Callback that determines if pending changes from a registered node type handler need to be applied to the hierarchy. When the hierarchy is updated, `ChangesPending` is called on all registered node ype handlers. If they return true, then `IntegrateChanges` is called on them. If they return false, then `IntegrateChanges` is not called on them.
         /// </summary>
         /// <returns><see langword="true"/> if changes are pending, <see langword="false"/> otherwise.</returns>
         protected abstract bool ChangesPending();
 
         /// <summary>
-        /// Callback when an hierarchy needs to integrate changes during an update.
+        /// Callback that determines if changes from an update need to be integrated into the hierarchy. `IntegrateChanges` is called after <see cref="ChangesPending"/> returns <see langword="true"/>. When the hierarchy is updated, `ChangesPending` is called on all registered node ype handlers. If they return true, then `IntegrateChanges` is called on them. If they return false, then `IntegrateChanges` is not called on them.
         /// </summary>
         /// <param name="cmdList">A hierarchy command list that can modify the hierarchy.</param>
-        /// <returns><see langword="true"/> if more invocations are needed to complete integrating changes, <see langword="false"/> otherwise.</returns>
+        /// <returns><see langword="true"/> if more invocations are needed to complete integrating changes, and <see langword="false"/> if the handler is done integrating changes.</returns>
         protected abstract bool IntegrateChanges(HierarchyCommandList cmdList);
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Determines if a node type handler can accept a specified node as a child.
         /// </summary>
-        /// <param name="node">The hierarchy parent node.</param>
+        /// <param name="node">The hierarchy child node.</param>
         /// <returns><see langword="true"/> if the node can be set as a child, <see langword="false"/> otherwise.</returns>
         public virtual bool AcceptChild(in HierarchyNode node)
         {

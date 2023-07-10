@@ -32,7 +32,6 @@ namespace UnityEditor.UIElements
     public static class EditorMenuExtensions
     {
         const float k_MaxMenuWidth = 512.0f;
-        const float k_MinMenuHeight = 100.0f;
         internal const string k_AutoExpandDelayKeyName = "ContextMenuAutoExpandDelay";
         internal const float k_SubmenuExpandDelay = 0.4f;
         internal const string k_SearchShortcutId = "Main Menu/Edit/Find";
@@ -57,32 +56,32 @@ namespace UnityEditor.UIElements
         internal class ContextMenu : EditorWindow
         {
             const float k_OffsetAllowance = 2;
-            static readonly Vector2 k_SizeOverallocation = new Vector2(2, 1);
 
             const float k_WindowOffset = 9;
 
             EditorWindow m_ParentWindow;
             Rect m_ParentRect = k_InvalidRect;
-            Vector2 m_MaxSize;
-            float m_ScrollBarAdjust;
-            bool m_Initialized;
 
-            Rect GetAdjustedPosition() => GetAdjustedPosition(m_ParentRect, minSize, m_ScrollBarAdjust);
+            Rect GetAdjustedPosition() => GetAdjustedPosition(m_ParentRect, minSize);
 
             // This is static so it can be used in test code conveniently
-            internal static Rect GetAdjustedPosition(Rect parentRect, Vector2 size, float scrollBarAdjust = 0)
+            internal static Rect GetAdjustedPosition(Rect parentRect, Vector2 size, ScrollView scrollView = null)
             {
                 var origin = new Vector2(parentRect.xMax, parentRect.y);
                 var rect = new Rect(origin, size);
                 var windowPos = ContainerWindow.FitRectToScreen(rect, true, true);
 
+                // No height means rect is a point and there is no point for further adjustment
                 if (parentRect.height < 1)
                     return windowPos;
 
-                rect.x += k_WindowOffset + scrollBarAdjust;
+                var scrollViewWidth = scrollView?.verticalScroller.computedStyle.display == DisplayStyle.Flex ?
+                    scrollView?.verticalScroller.computedStyle.width.value ?? 0 : 0;
+
+                rect.x += k_WindowOffset + scrollViewWidth;
                 windowPos = ContainerWindow.FitRectToScreen(rect, true, true);
 
-                if (windowPos.x < parentRect.xMax + scrollBarAdjust + k_WindowOffset - k_OffsetAllowance)
+                if (windowPos.x < parentRect.xMax + k_WindowOffset + scrollViewWidth - k_OffsetAllowance)
                     rect.x = parentRect.x - windowPos.width - k_WindowOffset;
 
                 if (windowPos.y < parentRect.y)
@@ -100,80 +99,33 @@ namespace UnityEditor.UIElements
                 m_Parent.window.m_DontSaveToLayout = true;
                 menu.customFocusHandling = true;
 
-                var content = menu.menuContainer;
-                var rootContainer = new VisualElement();
+                menu.innerContainer.style.maxWidth = k_MaxMenuWidth;
+                menu.outerContainer.style.maxHeight = maxMenuHeight;
+                menu.outerContainer.RegisterCallback<GeometryChangedEvent>(e =>
+                {
+                    minSize = maxSize = menu.outerContainer.worldBound.size;
+                    position = GetAdjustedPosition(m_ParentRect, minSize, menu.m_Parent?.scrollView);
+                });
 
-                // Alter menu containers to expand to fill the whole EditorWindow
-                rootContainer.style.flexDirection = FlexDirection.Row;
-                rootContainer.style.flexGrow = 1;
-                content.style.flexGrow = 1;
-                menu.outerContainer.style.flexGrow = 1;
-
-                rootContainer.Add(content);
-                rootContainer.RegisterCallback<DetachFromPanelEvent>(e =>
+                menu.menuContainer.RegisterCallback<DetachFromPanelEvent>(e =>
                 {
                     s_ActiveMenus.Remove(menu);
 
                     if (s_ActiveMenus.Count == 0)
                         s_CachedRect = k_InvalidRect;
                 });
-                rootVisualElement.Add(rootContainer);
-
-                m_MaxSize = new Vector2(k_MaxMenuWidth, maxMenuHeight);
-                menu.onDesiredSizeChange += size =>
-                {
-                    // UITK layouting and Unity Editor windowing seems to differ in their interpretation of size vectors.
-                    // We attempt to adjust it a bit so we don't get cut menu items or scroll bars in menus they
-                    // shouldn't be in.
-                    size += Vector2.one * k_SizeOverallocation;
-
-                    minSize = maxSize = Vector2.Min(size, m_MaxSize);
-
-                    // EditorWindow.position will not retain x and y so we store full window rect in adjustedPosition variable
-                    var adjustedPosition = GetAdjustedPosition();
-                    position = adjustedPosition;
-
-                    var panel = menu.menuContainer.panel as Panel;
-                    panel?.ValidateLayout();
-
-                    var showScrollbar = size.y > m_MaxSize.y + k_SizeOverallocation.y + 1;
-
-                    // Vertical scrollbar will shrink scroll viewport, we need to adjust for it if possible
-                    if (showScrollbar)
-                    {
-                        size.x += Mathf.Ceil(menu.innerContainer.verticalScroller.computedStyle.width.value);
-                        minSize = maxSize = Vector2.Min(size, m_MaxSize);
-                        position = adjustedPosition = GetAdjustedPosition();
-                    }
-
-                    if (showScrollbar && menu.innerContainer.verticalScrollerVisibility != ScrollerVisibility.AlwaysVisible)
-                        menu.innerContainer.verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible;
-                    else if (!showScrollbar && menu.innerContainer.verticalScrollerVisibility != ScrollerVisibility.Hidden)
-                        menu.innerContainer.verticalScrollerVisibility = ScrollerVisibility.Hidden;
-
-                    if (m_Initialized)
-                        return;
-
-                    // Anchor context menu to its original position and don't allow it to expand past the initial size
-                    m_ParentRect.x = adjustedPosition.x;
-                    m_ParentRect.y = adjustedPosition.y;
-                    m_MaxSize = new Vector2(k_MaxMenuWidth, Mathf.Clamp(adjustedPosition.height, k_MinMenuHeight, maxMenuHeight));
-                    m_Initialized = true;
-                };
-                menu.ResizeMenu();
+                rootVisualElement.Add(menu.menuContainer);
             }
 
             public static ContextMenu Show(Rect parent, GenericDropdownMenu menu)
             {
-                GenericDropdownMenu lastMenu = null;
-                if (s_ActiveMenus.Count > 0)
-                    lastMenu = s_ActiveMenus[^1];
-
                 // Registering active menu early so RecycledTextEditor doesn't end text editing state for input fields while entering context menus
                 s_ActiveMenus.Add(menu);
 
                 var menuWindow = CreateInstance<ContextMenu>();
-
+              
+                menuWindow.wantsLessLayoutEvents = true;
+              
                 var parentMenu = EditorWindow.focusedWindow as ContextMenu;
                 var parentIsMenu = parentMenu != null;
                 menuWindow.m_ParentWindow = parentIsMenu ? parentMenu.m_ParentWindow : EditorWindow.focusedWindow;
@@ -183,27 +135,31 @@ namespace UnityEditor.UIElements
                 menuWindow.position = new Rect(parent.position, Vector2.one * 50);
                 menuWindow.ShowPopup();
 
+                menuWindow.m_Parent.window.m_DontSaveToLayout = true;
+
                 var menuPanel = menuWindow.rootVisualElement.panel;
                 var imguiContainer = menuPanel.visualTree.Q<IMGUIContainer>();
                 imguiContainer?.parent?.Remove(imguiContainer);
-
-                var scrollBarWidth = 0f;
-
-                if (lastMenu != null)
-                {
-                    scrollBarWidth = lastMenu.scrollView.verticalScroller.resolvedStyle.width;
-
-                    if (!float.IsNormal(scrollBarWidth))
-                        scrollBarWidth = 0f;
-                }
-
+                
                 menuWindow.m_ParentRect = parent;
-                menuWindow.m_ScrollBarAdjust = scrollBarWidth;
                 menuWindow.Host(menu);
                 menuWindow.Focus();
                 menuWindow.Repaint();
 
-                menu.menuContainer.RegisterCallback<DetachFromPanelEvent>(e => menu.m_Parent?.contentContainer.Focus());
+                menu.menuContainer.RegisterCallback<DetachFromPanelEvent>(e =>
+                {
+                    menu.m_Parent?.innerContainer.Focus();
+
+                    if (s_Shortcuts.ContainsKey(menu))
+                        foreach (var shortcut in s_Shortcuts[menu])
+                        {
+                            shortcut.style.minWidth = StyleKeyword.Null;
+                            s_ShortcutPool.Release(shortcut);
+                        }
+
+                    s_Shortcuts.Remove(menu);
+                    s_MaxShortcutLength.Remove(menu);
+                });
                 menu.onHide += menuWindow.Close;
                 menu.m_OnBeforePerformAction = (submenu, autoClose) =>
                 {
@@ -351,117 +307,117 @@ namespace UnityEditor.UIElements
         }
 
         // GenericDropdownMenu
-        internal static void AddSearchField(this GenericDropdownMenu menu)
+        static readonly ObjectPool<ToolbarSearchField> s_SearchPool = new(() =>
         {
-            string ClearHighlighting(string text)
-            {
-                return Regex.Replace(text, "<.*?>", string.Empty);
-            }
-
-            string HighlightText(string text, string query)
-            {
-                // Keep in sync with FuzzySearch.cs RichTextFormatter
-                return Regex.Replace(text, query, $"{(EditorGUIUtility.isProSkin ? "<color=#FF6100>" : "<color=#EE4400>")}$&</color>",
-                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-            }
-
-            List<GenericDropdownMenu.MenuItem> GetSearchResults(string query, GenericDropdownMenu.MenuItem root)
-            {
-                string GetPath(GenericDropdownMenu.MenuItem item)
-                {
-                    var path = item.name;
-
-                    while (!string.IsNullOrEmpty(item.parent?.name))
-                    {
-                        path = item.parent.name + " / " + path;
-                        item = item.parent;
-                    }
-
-                    return path;
-                }
-
-                var results = new List<GenericDropdownMenu.MenuItem>();
-                var itemCount = 0;
-
-                foreach (var item in root.children)
-                {
-                    if (item.isSubmenu || !item.name.ToLowerInvariant().Contains(query))
-                        continue;
-
-                    // Add category title
-                    if (itemCount == 0 && !string.IsNullOrEmpty(root.name))
-                    {
-                        var path = GetPath(root);
-                        var categoryLabel = new Label(path);
-                        categoryLabel.pickingMode = PickingMode.Ignore;
-                        categoryLabel.AddToClassList(searchCategoryUssClassName);
-                        var categoryItem = new GenericDropdownMenu.MenuItem()
-                        {
-                            name = path,
-                            element = categoryLabel
-                        };
-                        results.Add(categoryItem);
-                    }
-
-                    results.Add(item);
-                    itemCount++;
-                }
-
-                // Add separator at the end
-                if (itemCount > 0)
-                    results.Add(new GenericDropdownMenu.MenuItem() { name = "", element = GenericDropdownMenu.CreateSeparator() });
-
-                foreach (var item in root.children)
-                {
-                    if (!item.isSubmenu)
-                        continue;
-
-                    foreach (var subItem in GetSearchResults(query, item))
-                        results.Add(subItem);
-                }
-
-                return results;
-            }
-
-            GenericDropdownMenu.MenuItem BuildSearchMenu(string query, GenericDropdownMenu.MenuItem root)
-            {
-                var searchQuery = query.ToLowerInvariant();
-                var results = GetSearchResults(searchQuery, root);
-
-                if (results.Count == 0)
-                {
-                    var noResultLabel = new Label(string.Format(L10n.Tr("No search results for '{0}'"), query));
-                    noResultLabel.pickingMode = PickingMode.Ignore;
-                    noResultLabel.AddToClassList(GenericDropdownMenu.labelUssClassName);
-                    var noResultItem = new GenericDropdownMenu.MenuItem()
-                    {
-                        name = "No Results",
-                        element = noResultLabel
-                    };
-                    results.Add(noResultItem);
-                }
-
-                var searchMenu = new GenericDropdownMenu.MenuItem()
-                {
-                    parent = root,
-                    children = results,
-                };
-
-                foreach (var result in searchMenu.children)
-                {
-                    var label = result.element.Q<Label>(className: GenericDropdownMenu.labelUssClassName);
-
-                    if (label != null)
-                        label.text = HighlightText(label.text, searchQuery);
-                }
-
-                return searchMenu;
-            }
-
             var search = new ToolbarSearchField();
             search.AddToClassList(searchUssClassName);
             search.RegisterValueChangedCallback(e =>
             {
+                string ClearHighlighting(string text)
+                {
+                    return Regex.Replace(text, "<.*?>", string.Empty);
+                }
+
+                string HighlightText(string text, string query)
+                {
+                    // Keep in sync with FuzzySearch.cs RichTextFormatter
+                    return Regex.Replace(text, query, $"{(EditorGUIUtility.isProSkin ? "<color=#FF6100>" : "<color=#EE4400>")}$&</color>",
+                        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                }
+
+                List<GenericDropdownMenu.MenuItem> GetSearchResults(string query, GenericDropdownMenu.MenuItem root)
+                {
+                    string GetPath(GenericDropdownMenu.MenuItem item)
+                    {
+                        var path = item.name;
+
+                        while (!string.IsNullOrEmpty(item.parent?.name))
+                        {
+                            path = item.parent.name + " / " + path;
+                            item = item.parent;
+                        }
+
+                        return path;
+                    }
+
+                    var results = new List<GenericDropdownMenu.MenuItem>();
+                    var itemCount = 0;
+
+                    foreach (var item in root.children)
+                    {
+                        if (item.isSubmenu || !item.name.ToLowerInvariant().Contains(query))
+                            continue;
+
+                        // Add category title
+                        if (itemCount == 0 && !string.IsNullOrEmpty(root.name))
+                        {
+                            var path = GetPath(root);
+                            var categoryLabel = new Label(path);
+                            categoryLabel.pickingMode = PickingMode.Ignore;
+                            categoryLabel.AddToClassList(searchCategoryUssClassName);
+                            var categoryItem = new GenericDropdownMenu.MenuItem()
+                            {
+                                name = path,
+                                element = categoryLabel
+                            };
+                            results.Add(categoryItem);
+                        }
+
+                        results.Add(item);
+                        itemCount++;
+                    }
+
+                    // Add separator at the end
+                    if (itemCount > 0)
+                        results.Add(new GenericDropdownMenu.MenuItem() { name = "", element = GenericDropdownMenu.CreateSeparator() });
+
+                    foreach (var item in root.children)
+                    {
+                        if (!item.isSubmenu)
+                            continue;
+
+                        foreach (var subItem in GetSearchResults(query, item))
+                            results.Add(subItem);
+                    }
+
+                    return results;
+                }
+
+                GenericDropdownMenu.MenuItem BuildSearchMenu(string query, GenericDropdownMenu.MenuItem root)
+                {
+                    var searchQuery = query.ToLowerInvariant();
+                    var results = GetSearchResults(searchQuery, root);
+
+                    if (results.Count == 0)
+                    {
+                        var noResultLabel = new Label(string.Format(L10n.Tr("No search results for '{0}'"), query));
+                        noResultLabel.pickingMode = PickingMode.Ignore;
+                        noResultLabel.AddToClassList(GenericDropdownMenu.labelUssClassName);
+                        var noResultItem = new GenericDropdownMenu.MenuItem()
+                        {
+                            name = "No Results",
+                            element = noResultLabel
+                        };
+                        results.Add(noResultItem);
+                    }
+
+                    var searchMenu = new GenericDropdownMenu.MenuItem()
+                    {
+                        parent = root,
+                        children = results,
+                    };
+
+                    foreach (var result in searchMenu.children)
+                    {
+                        var label = result.element.Q<Label>(className: GenericDropdownMenu.labelUssClassName);
+
+                        if (label != null)
+                            label.text = HighlightText(label.text, searchQuery);
+                    }
+
+                    return searchMenu;
+                }
+
                 void ResetHighlighting(GenericDropdownMenu.MenuItem root)
                 {
                     foreach (var child in root.children)
@@ -476,6 +432,7 @@ namespace UnityEditor.UIElements
                         label.text = ClearHighlighting(label.text);
                 }
 
+                var menu = search.userData as GenericDropdownMenu;
                 ResetHighlighting(menu.root);
 
                 if (string.IsNullOrWhiteSpace(menu.current.name))
@@ -491,18 +448,58 @@ namespace UnityEditor.UIElements
             });
             search.AddManipulator(new KeyboardNavigationManipulator((op, e) =>
             {
+                var menu = search.userData as GenericDropdownMenu;
+
                 switch (op)
                 {
                     case KeyboardNavigationOperation.Next:
                     case KeyboardNavigationOperation.PageDown:
                     case KeyboardNavigationOperation.Begin:
                     case KeyboardNavigationOperation.Cancel:
-                        menu.contentContainer.Focus();
+                        menu.innerContainer.Focus();
                         menu.Apply(op, e);
                         break;
                 }
             }));
 
+            var input = search.Q("unity-text-input");
+            input.style.flexGrow = 0;
+
+            return search;
+        }, GenericDropdownMenu.k_OptimizedMenus);
+        static readonly ObjectPool<Label> s_ShortcutPool = new(() =>
+            {
+                var shortcut = new Label();
+                shortcut.AddToClassList(shortcutUssClassName);
+                shortcut.pickingMode = PickingMode.Ignore;
+                shortcut.RegisterCallback<GeometryChangedEvent>(e =>
+                {
+                    if (e.elementTarget.userData is not GenericDropdownMenu menu)
+                        return;
+
+                    s_MaxShortcutLength.TryAdd(menu, 0f);
+                    s_MaxShortcutLength[menu] = Mathf.Max(s_MaxShortcutLength[menu], e.elementTarget.resolvedStyle.width);
+                    e.elementTarget.style.minWidth = s_MaxShortcutLength[menu];
+                });
+
+                return shortcut;
+            }, GenericDropdownMenu.k_OptimizedElements);
+
+        static readonly Dictionary<GenericDropdownMenu, List<Label>> s_Shortcuts = new();
+        static readonly Dictionary<GenericDropdownMenu, float> s_MaxShortcutLength = new();
+
+        internal static void AddSearchField(this GenericDropdownMenu menu)
+        {
+            var search = s_SearchPool.Get();
+            search.userData = menu;
+
+            menu.outerContainer.Insert(1, search);
+            menu.outerContainer.RegisterCallback<DetachFromPanelEvent>(e =>
+            {
+                search.value = string.Empty;
+                search.userData = null;
+                s_SearchPool.Release(search);
+            });
             menu.outerContainer.RegisterCallback<KeyDownEvent>(e =>
             {
                 var searchKeyCombination = FirstOrDefault(ShortcutManager.instance.GetShortcutBinding(k_SearchShortcutId).keyCombinationSequence);
@@ -514,7 +511,6 @@ namespace UnityEditor.UIElements
                 search.Focus();
                 e.StopPropagation();
             });
-            menu.outerContainer.Insert(1, search);
 
             menu.onKey += (c, code, mod) =>
             {
@@ -528,74 +524,61 @@ namespace UnityEditor.UIElements
 
         internal static void ProcessShortcuts(this GenericDropdownMenu menu, bool parseShortcuts)
         {
-            int ParseItem(string item, out string name, out string shortcut)
+            void ParseItem(string item, out string name, out string shortcut)
             {
+                name = item;
+                shortcut = string.Empty;
+
                 var lastSpace = item.TrimEnd().LastIndexOf(' ');
 
-                if (lastSpace == -1 || !KeyCombination.TryParseMenuItemBindingString(item.Substring(lastSpace + 1), out var combination))
-                {
-                    name = item;
-                    shortcut = string.Empty;
-                    return item.Length;
-                }
+                if (lastSpace == -1 || !KeyCombination.TryParseMenuItemBindingString(item[(lastSpace + 1)..], out var combination))
+                    return;
 
                 name = item[..lastSpace];
                 shortcut = combination.ToString();
-                return lastSpace;
             }
 
             void AddShortcutsRecursive(GenericDropdownMenu.MenuItem root)
             {
-                var shortcuts = new List<Label>();
-
-                Label itemShortcut = null;
                 foreach (var child in root.children)
                 {
                     if (child.isSubmenu)
                         AddShortcutsRecursive(child);
 
-                    if (child.isSubmenu || child.isSeparator)
+                    if (child.isSubmenu || child.isSeparator || child.isCustomContent)
                         continue;
 
-                    var trimLength = ParseItem(child.name, out var name, out var shortcut);
+                    ParseItem(child.name, out var name, out var shortcut);
 
-                    // We don't want menu items be searchable by menu shortcut strings
-                    child.name = child.name[..trimLength];
+                    using var elements = child.element.Children().GetEnumerator();
+                    elements.MoveNext();
+                    elements.MoveNext();
 
-                    var itemName = child.element.Q<Label>(className: GenericDropdownMenu.labelUssClassName);
+                    if (elements.Current is not Label itemName)
+                        continue;
 
-                    if (itemName != null)
-                        itemName.text = name;
+                    child.name = itemName.text = name;
 
                     if (!parseShortcuts)
                         continue;
 
-                    var appendix = child.element.Query<VisualElement>(className: GenericDropdownMenu.appendixUssClassName).Build().Last();
+                    elements.MoveNext();
+                    var appendix = elements.Current;
 
                     if (appendix == null)
                         continue;
 
-                    itemShortcut = new Label(shortcut);
-                    itemShortcut.AddToClassList(shortcutUssClassName);
-                    itemShortcut.pickingMode = PickingMode.Ignore;
+                    var shortcutLabel = s_ShortcutPool.Get();
+                    shortcutLabel.text = shortcut;
+                    shortcutLabel.userData = menu;
 
-                    shortcuts.Add(itemShortcut);
-                    appendix.Add(itemShortcut);
+                    if (!s_Shortcuts.ContainsKey(menu) || s_Shortcuts[menu] == null)
+                        s_Shortcuts[menu] = new List<Label> { shortcutLabel };
+                    else
+                        s_Shortcuts[menu].Add(shortcutLabel);
+
+                    appendix.Add(shortcutLabel);
                 }
-
-                if (!parseShortcuts)
-                    return;
-
-                itemShortcut?.RegisterCallback<AttachToPanelEvent>(e =>
-                {
-                    var panel = itemShortcut.panel as Panel;
-                    panel?.ValidateLayout();
-
-                    var maxWidth = shortcuts.Max(s => s.resolvedStyle.width);
-
-                    foreach (var shortcut in shortcuts)
-                        shortcut.style.width = maxWidth;
-                });
             }
 
             AddShortcutsRecursive(menu.root);
@@ -653,7 +636,7 @@ namespace UnityEditor.UIElements
 
                                 // Focus will have cleared all opened child submenus
                                 menu.m_Child = null;
-                                item.element.parent.EnableInClassList(GenericDropdownMenu.latentUssClassName, false);
+                                item.element?.parent?.EnableInClassList(GenericDropdownMenu.latentUssClassName, false);
                             }
 
                             if (item.isSubmenu)
@@ -819,7 +802,7 @@ namespace UnityEditor.UIElements
         }
 
         // Avoid Linq
-        static bool Any<T>(this IEnumerable<T> source, Func<T, bool> predicate)
+        static bool Any<T>(this List<T> source, Func<T, bool> predicate)
         {
             foreach (var item in source)
             {
@@ -836,25 +819,6 @@ namespace UnityEditor.UIElements
                 return item;
 
             return default;
-        }
-
-        static T2 Max<T1, T2>(this IEnumerable<T1> source, Func<T1, T2> selector) where T2 : IComparable<T2>
-        {
-            var result = default(T2);
-            var first = true;
-
-            foreach (var item in source)
-            {
-                var value = selector(item);
-                var comparison = value.CompareTo(result);
-
-                if (first || comparison > 0)
-                    result = value;
-
-                first = false;
-            }
-
-            return result;
         }
     }
 

@@ -173,7 +173,7 @@ namespace UnityEditor
 
         public void RunServerWithRetries(int retries)
         {
-            for (int i=0; i<=retries; ++i)
+            for (int i=0; i<=retries && !m_cts.IsCancellationRequested; ++i)
             {
                 try{
                     RunServer();
@@ -181,10 +181,12 @@ namespace UnityEditor
                 }
                 catch(SocketException)
                 {
+
                     // We had an instances where on our infrastructure domain reload happened
                     // and socket is still not free. In such a case we are retrying this multiple
                     // times before giving up on starting server.
-                    Thread.Sleep(250);
+                    for (int j=0; j<5 && !m_cts.IsCancellationRequested; ++j)
+                        Thread.Sleep(50);
                 }
                 catch(Exception e)
                 {
@@ -197,6 +199,9 @@ namespace UnityEditor
 
         public void OnEnable()
         {
+            if (AssetDatabase.IsAssetImportWorkerProcess())
+                return;
+
             m_mainThreadScheduler = TaskScheduler.FromCurrentSynchronizationContext();
 
             m_cts = new CancellationTokenSource();
@@ -206,6 +211,9 @@ namespace UnityEditor
 
         public void OnDisable()
         {
+            if (AssetDatabase.IsAssetImportWorkerProcess())
+                return;
+
             m_cts.Cancel();
             m_listener.Abort();
             m_listenerThread.Join();

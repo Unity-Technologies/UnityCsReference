@@ -3473,6 +3473,9 @@
     <Compile Include="..\..\Editor\Mono\Settings\Providers\AssetSettingsProvider.cs">
       <Link>Editor\Mono\Settings\Providers\AssetSettingsProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Settings\RenderPipelines\RenderPipelineGraphicsSettingsManager.cs">
+      <Link>Editor\Mono\Settings\RenderPipelines\RenderPipelineGraphicsSettingsManager.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Settings\SettingsProvider.cs">
       <Link>Editor\Mono\Settings\SettingsProvider.cs</Link>
     </Compile>
@@ -3988,258 +3991,6 @@
     </Compile>
     <Compile Include="..\..\External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs">
       <Link>External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\BindingExtensions.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\BindingExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\EditorListViewController.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\EditorListViewController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\ListViewBindings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\ListViewBindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedPropertyHelper.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedPropertyHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\BoxModelView.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\BoxModelView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerSearchBar.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerSearchBar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerTreeView.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerTreeView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\EditorWindowExtension.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\EditorWindowExtension.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\CodeLine.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\CodeLine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\EventLog.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\EventLog.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\EventLogLine.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\EventLogLine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\EventTypeSearchField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\EventTypeSearchField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\IRegisteredCallbackLine.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\IRegisteredCallbackLine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CallbackInfo.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CallbackInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CodeLineInfo.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CodeLineInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\TitleInfo.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\TitleInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\LayoutPanelDebuggerImpl.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\LayoutPanelDebuggerImpl.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebugger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebuggerHistogram.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebuggerHistogram.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebuggerWindow.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebuggerWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\OtherDebbugerField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\OtherDebbugerField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\OverlayPainter.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\OverlayPainter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\PanelDebugger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\PanelDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\StyleLengthField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\StyleLengthField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\StylePropertyDebugger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\StylePropertyDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\StylesDebugger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\StylesDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\UIElementsDebugger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\UIElementsDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\UIR\Debugger\AllocatorDebugger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\UIR\Debugger\AllocatorDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\UIR\Debugger\UIRDebugger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\UIR\Debugger\UIRDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\UIR\UIRDebugUtility.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\UIR\UIRDebugUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\UxmlExporter.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\UxmlExporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Delegates\EditorDelegateRegistration.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Delegates\EditorDelegateRegistration.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Delegates\SerializedPropertyDelegates.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Delegates\SerializedPropertyDelegates.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorContextualMenuManager.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\EditorContextualMenuManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorCursor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\EditorCursor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorDragAndDrop.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\EditorDragAndDrop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorMonitor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\EditorMonitor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorPanel.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\EditorPanel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorUIElementsBridge.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\EditorUIElementsBridge.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\GUIDConversionTask.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\GUIDConversionTask.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\GUIDConverter.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\GUIDConverter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\PackageManagerHookGUIDConverter.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\PackageManagerHookGUIDConverter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\UI\GUIDConverterListDialog.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\UI\GUIDConverterListDialog.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\UI\GUIDConverterMainDialog.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\UI\GUIDConverterMainDialog.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\PanelSettingsInspector.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\PanelSettingsInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\UIDocumentInspector.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\UIDocumentInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\UIRendererEditor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\UIRendererEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\LiveReloadTrackerCreator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\LiveReloadTrackerCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\PanelSettingsCreator\PanelSettingsCreator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\PanelSettingsCreator\PanelSettingsCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\PlayModeMenuItems.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\PlayModeMenuItems.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\UIDocumentHierarchyWatcher.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\UIDocumentHierarchyWatcher.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Legacy\ProgressBar.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Legacy\ProgressBar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\PanelDebug.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\PanelDebug.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\RetainedMode.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\RetainedMode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Text\PanelTextSettingsCreationMenu.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Text\PanelTextSettingsCreationMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Text\PanelTextSettingsEditor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Text\PanelTextSettingsEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Text\PanelTextSettingsImporter.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Text\PanelTextSettingsImporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Text\TextInfoOverlay.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Text\TextInfoOverlay.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Tooltip.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Tooltip.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsEditorInitialization.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsEditorInitialization.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsEditorRuntimeUtility.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsEditorRuntimeUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\CSharpTemplateCreator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\CSharpTemplateCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\UIElementsEditorWindowCreator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\UIElementsEditorWindowCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\UssTemplateCreator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\UssTemplateCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\UxmlTemplateCreator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\UxmlTemplateCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsViewImporter.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsViewImporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIToolkitProjectSettings.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UIToolkitProjectSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIToolkitSettingsProvider.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UIToolkitSettingsProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLAssetAttributeCache.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UXMLAssetAttributeCache.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLEditorFactories.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UXMLEditorFactories.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLFactoryPreserver.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UXMLFactoryPreserver.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLSchemaGenerator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UXMLSchemaGenerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXML\UxmlAttributeComparison.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UXML\UxmlAttributeComparison.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXML\UxmlAttributeConverter.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UXML\UxmlAttributeConverter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXML\UxmlSerializedDataDescription.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UXML\UxmlSerializedDataDescription.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXML\UxmlSerializedDataRegistry.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UXML\UxmlSerializedDataRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXML\UxmlSerializer.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UXML\UxmlSerializer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UxmlCodeDependencies.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\UxmlCodeDependencies.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\VisualTreeAssetChangeTrackerUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\VisualTreeAssetChangeTrackerUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\VisualTreeAssetEditor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\VisualTreeAssetEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\VisualTreeEditorUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\VisualTreeEditorUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\WindowBackends\DefaultEditorWindowBackend.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\WindowBackends\DefaultEditorWindowBackend.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\WindowBackends\DefaultWindowBackend.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\WindowBackends\DefaultWindowBackend.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AIEditor\Builder\NavMeshBuilderEditor.bindings.cs">
       <Link>Modules\AIEditor\Builder\NavMeshBuilderEditor.bindings.cs</Link>
@@ -7517,6 +7268,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\AddScopedRegistryRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\AddScopedRegistryRequest.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\ClearCacheRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\ClearCacheRequest.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\ClearCacheRootRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\ClearCacheRootRequest.cs</Link>
     </Compile>
@@ -10238,6 +9992,243 @@
     <Compile Include="..\..\Modules\UIElementsEditor\AssemblyInfo.cs">
       <Link>Modules\UIElementsEditor\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\BindingExtensions.cs">
+      <Link>Modules\UIElementsEditor\Bindings\BindingExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\EditorListViewController.cs">
+      <Link>Modules\UIElementsEditor\Bindings\EditorListViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\ListViewBindings.cs">
+      <Link>Modules\UIElementsEditor\Bindings\ListViewBindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedPropertyHelper.cs">
+      <Link>Modules\UIElementsEditor\Bindings\SerializedPropertyHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\BoxModelView.cs">
+      <Link>Modules\UIElementsEditor\Debugger\BoxModelView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\DebuggerSearchBar.cs">
+      <Link>Modules\UIElementsEditor\Debugger\DebuggerSearchBar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\DebuggerTreeView.cs">
+      <Link>Modules\UIElementsEditor\Debugger\DebuggerTreeView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\EditorWindowExtension.cs">
+      <Link>Modules\UIElementsEditor\Debugger\EditorWindowExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\Events\CodeLine.cs">
+      <Link>Modules\UIElementsEditor\Debugger\Events\CodeLine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\Events\EventLog.cs">
+      <Link>Modules\UIElementsEditor\Debugger\Events\EventLog.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\Events\EventLogLine.cs">
+      <Link>Modules\UIElementsEditor\Debugger\Events\EventLogLine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\Events\EventTypeSearchField.cs">
+      <Link>Modules\UIElementsEditor\Debugger\Events\EventTypeSearchField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\Events\IRegisteredCallbackLine.cs">
+      <Link>Modules\UIElementsEditor\Debugger\Events\IRegisteredCallbackLine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\Events\RegisterCallbackLines\CallbackInfo.cs">
+      <Link>Modules\UIElementsEditor\Debugger\Events\RegisterCallbackLines\CallbackInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\Events\RegisterCallbackLines\CodeLineInfo.cs">
+      <Link>Modules\UIElementsEditor\Debugger\Events\RegisterCallbackLines\CodeLineInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\Events\RegisterCallbackLines\TitleInfo.cs">
+      <Link>Modules\UIElementsEditor\Debugger\Events\RegisterCallbackLines\TitleInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\Events\UIElementsEventDebugger.cs">
+      <Link>Modules\UIElementsEditor\Debugger\Events\UIElementsEventDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\LayoutDebugger\LayoutPanelDebuggerImpl.cs">
+      <Link>Modules\UIElementsEditor\Debugger\LayoutDebugger\LayoutPanelDebuggerImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\LayoutDebugger\UILayoutDebugger.cs">
+      <Link>Modules\UIElementsEditor\Debugger\LayoutDebugger\UILayoutDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\LayoutDebugger\UILayoutDebuggerHistogram.cs">
+      <Link>Modules\UIElementsEditor\Debugger\LayoutDebugger\UILayoutDebuggerHistogram.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\LayoutDebugger\UILayoutDebuggerWindow.cs">
+      <Link>Modules\UIElementsEditor\Debugger\LayoutDebugger\UILayoutDebuggerWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\OtherDebbugerField.cs">
+      <Link>Modules\UIElementsEditor\Debugger\OtherDebbugerField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\OverlayPainter.cs">
+      <Link>Modules\UIElementsEditor\Debugger\OverlayPainter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\PanelDebugger.cs">
+      <Link>Modules\UIElementsEditor\Debugger\PanelDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\StyleLengthField.cs">
+      <Link>Modules\UIElementsEditor\Debugger\StyleLengthField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\StylePropertyDebugger.cs">
+      <Link>Modules\UIElementsEditor\Debugger\StylePropertyDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\StylesDebugger.cs">
+      <Link>Modules\UIElementsEditor\Debugger\StylesDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\UIElementsDebugger.cs">
+      <Link>Modules\UIElementsEditor\Debugger\UIElementsDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\UIR\Debugger\AllocatorDebugger.cs">
+      <Link>Modules\UIElementsEditor\Debugger\UIR\Debugger\AllocatorDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\UIR\Debugger\UIRDebugger.cs">
+      <Link>Modules\UIElementsEditor\Debugger\UIR\Debugger\UIRDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\UIR\UIRDebugUtility.cs">
+      <Link>Modules\UIElementsEditor\Debugger\UIR\UIRDebugUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\UxmlExporter.cs">
+      <Link>Modules\UIElementsEditor\Debugger\UxmlExporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Delegates\EditorDelegateRegistration.cs">
+      <Link>Modules\UIElementsEditor\Delegates\EditorDelegateRegistration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Delegates\SerializedPropertyDelegates.cs">
+      <Link>Modules\UIElementsEditor\Delegates\SerializedPropertyDelegates.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\EditorContextualMenuManager.cs">
+      <Link>Modules\UIElementsEditor\EditorContextualMenuManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\EditorCursor.cs">
+      <Link>Modules\UIElementsEditor\EditorCursor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\EditorDragAndDrop.cs">
+      <Link>Modules\UIElementsEditor\EditorDragAndDrop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\EditorMonitor.cs">
+      <Link>Modules\UIElementsEditor\EditorMonitor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\EditorPanel.cs">
+      <Link>Modules\UIElementsEditor\EditorPanel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\EditorUIElementsBridge.cs">
+      <Link>Modules\UIElementsEditor\EditorUIElementsBridge.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\GameObjects\Inspector\PanelSettingsInspector.cs">
+      <Link>Modules\UIElementsEditor\GameObjects\Inspector\PanelSettingsInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\GameObjects\Inspector\UIDocumentInspector.cs">
+      <Link>Modules\UIElementsEditor\GameObjects\Inspector\UIDocumentInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\GameObjects\Inspector\UIRendererEditor.cs">
+      <Link>Modules\UIElementsEditor\GameObjects\Inspector\UIRendererEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\GameObjects\LiveReloadTrackerCreator.cs">
+      <Link>Modules\UIElementsEditor\GameObjects\LiveReloadTrackerCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\GameObjects\PanelSettingsCreator\PanelSettingsCreator.cs">
+      <Link>Modules\UIElementsEditor\GameObjects\PanelSettingsCreator\PanelSettingsCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\GameObjects\PlayModeMenuItems.cs">
+      <Link>Modules\UIElementsEditor\GameObjects\PlayModeMenuItems.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\GameObjects\UIDocumentHierarchyWatcher.cs">
+      <Link>Modules\UIElementsEditor\GameObjects\UIDocumentHierarchyWatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Legacy\ProgressBar.cs">
+      <Link>Modules\UIElementsEditor\Legacy\ProgressBar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\PanelDebug.cs">
+      <Link>Modules\UIElementsEditor\PanelDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\RetainedMode.cs">
+      <Link>Modules\UIElementsEditor\RetainedMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Text\PanelTextSettingsCreationMenu.cs">
+      <Link>Modules\UIElementsEditor\Text\PanelTextSettingsCreationMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Text\PanelTextSettingsEditor.cs">
+      <Link>Modules\UIElementsEditor\Text\PanelTextSettingsEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Text\PanelTextSettingsImporter.cs">
+      <Link>Modules\UIElementsEditor\Text\PanelTextSettingsImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Text\TextInfoOverlay.cs">
+      <Link>Modules\UIElementsEditor\Text\TextInfoOverlay.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Tooltip.cs">
+      <Link>Modules\UIElementsEditor\Tooltip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UIElementsEditorInitialization.cs">
+      <Link>Modules\UIElementsEditor\UIElementsEditorInitialization.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UIElementsEditorRuntimeUtility.cs">
+      <Link>Modules\UIElementsEditor\UIElementsEditorRuntimeUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UIElementsEditorWindowCreator\CSharpTemplateCreator.cs">
+      <Link>Modules\UIElementsEditor\UIElementsEditorWindowCreator\CSharpTemplateCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UIElementsEditorWindowCreator\UIElementsEditorWindowCreator.cs">
+      <Link>Modules\UIElementsEditor\UIElementsEditorWindowCreator\UIElementsEditorWindowCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UIElementsEditorWindowCreator\UssTemplateCreator.cs">
+      <Link>Modules\UIElementsEditor\UIElementsEditorWindowCreator\UssTemplateCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UIElementsEditorWindowCreator\UxmlTemplateCreator.cs">
+      <Link>Modules\UIElementsEditor\UIElementsEditorWindowCreator\UxmlTemplateCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UIElementsViewImporter.cs">
+      <Link>Modules\UIElementsEditor\UIElementsViewImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UIToolkitProjectSettings.cs">
+      <Link>Modules\UIElementsEditor\UIToolkitProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UIToolkitSettingsProvider.cs">
+      <Link>Modules\UIElementsEditor\UIToolkitSettingsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXMLAssetAttributeCache.cs">
+      <Link>Modules\UIElementsEditor\UXMLAssetAttributeCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXMLEditorFactories.cs">
+      <Link>Modules\UIElementsEditor\UXMLEditorFactories.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXMLFactoryPreserver.cs">
+      <Link>Modules\UIElementsEditor\UXMLFactoryPreserver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXMLSchemaGenerator.cs">
+      <Link>Modules\UIElementsEditor\UXMLSchemaGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlAttributeComparison.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlAttributeComparison.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlAttributeConverter.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlAttributeConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlSerializedDataDescription.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlSerializedDataDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlSerializedDataRegistry.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlSerializedDataRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlSerializer.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlSerializer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UxmlCodeDependencies.cs">
+      <Link>Modules\UIElementsEditor\UxmlCodeDependencies.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\VisualTreeAssetChangeTrackerUpdater.cs">
+      <Link>Modules\UIElementsEditor\VisualTreeAssetChangeTrackerUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\VisualTreeAssetEditor.cs">
+      <Link>Modules\UIElementsEditor\VisualTreeAssetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\VisualTreeEditorUpdater.cs">
+      <Link>Modules\UIElementsEditor\VisualTreeEditorUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\WindowBackends\DefaultEditorWindowBackend.cs">
+      <Link>Modules\UIElementsEditor\WindowBackends\DefaultEditorWindowBackend.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\WindowBackends\DefaultWindowBackend.cs">
+      <Link>Modules\UIElementsEditor\WindowBackends\DefaultWindowBackend.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\ElementSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\ElementSnippet.cs</Link>
     </Compile>
@@ -10586,7 +10577,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_c6ae/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_2230/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

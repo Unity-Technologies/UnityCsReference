@@ -121,7 +121,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Refresh();
         }
 
-        internal void OnSelectionChanged(PageSelectionChangeArgs args)
+        public void OnSelectionChanged(PageSelectionChangeArgs args)
         {
             if (!args.page.isActivePage)
                 return;
@@ -130,9 +130,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             Refresh(args.selection);
         }
 
-        internal void Refresh(PageSelection selections = null)
+        public void Refresh(PageSelection selections = null)
         {
-            selections = selections ?? m_PageManager.activePage.GetSelection();
+            selections ??= m_PageManager.activePage.GetSelection();
             scrollView.scrollOffset = new Vector2(0, m_PackageManagerPrefs.packageDetailVerticalScrollOffset);
 
             if (selections.Count == 1)
@@ -152,7 +152,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void Refresh(IPackage package, IPackageVersion version)
         {
-            version = version ?? package?.versions.primary;
+            version ??= package?.versions.primary;
             var shouldDisplayProgress = inProgressView.ShouldDisplayProgress(package);
             inProgressView.Refresh(shouldDisplayProgress ? package : null);
 
@@ -215,7 +215,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             detailError.RefreshError(error, version);
         }
 
-        private VisualElementCache cache { get; set; }
+        private VisualElementCache cache { get; }
 
         private MultiSelectDetails multiSelectDetails => cache.Get<MultiSelectDetails>("multiSelectDetails");
         private InProgressView inProgressView => cache.Get<InProgressView>("inProgressView");
@@ -223,14 +223,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageDetailsBody body => cache.Get<PackageDetailsBody>("detailsBody");
         public PackageToolbar toolbar => cache.Get<PackageToolbar>("packageToolbar");
 
-        internal Alert detailError => cache.Get<Alert>("detailError");
+        private Alert detailError => cache.Get<Alert>("detailError");
         private ScrollView scrollView => cache.Get<ScrollView>("detailScrollView");
         private VisualElement detail => cache.Get<VisualElement>("detail");
 
         // customContainer is kept for Package Manager UI extension API v1 &
         // extensionContainer is for extension API v2
         private VisualElement customContainer => cache.Get<VisualElement>("detailCustomContainer");
-        internal VisualElement extensionContainer => cache.Get<VisualElement>("detailExtensionContainer");
+        public VisualElement extensionContainer => cache.Get<VisualElement>("detailExtensionContainer");
 
         private PackageDetailsTabView tabView => cache.Get<PackageDetailsTabView>("packageDetailsTabView");
         private VisualElement tabViewHeaderContainer => cache.Get<VisualElement>("packageDetailsTabViewHeaderContainer");

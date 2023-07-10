@@ -78,7 +78,7 @@ namespace Unity.Hierarchy
         /// Whether the hierarchy requires an update.
         /// </summary>
         /// <remarks>
-        /// Happens when changes in registered hierarchy node handlers are pending or flattened hierarchy needs updating.
+        /// An update is required when changes in registered hierarchy node handlers are pending.
         /// </remarks>
         public extern bool UpdateNeeded { [NativeMethod("UpdateNeeded")] get; }
 
@@ -129,21 +129,18 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Register an hierarchy node type handler for this hierarchy.
+        /// Registers a hierarchy node type handler for this hierarchy.
         /// </summary>
-        /// <typeparam name="T">The hierarchy node type handler type.</typeparam>
         public void RegisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => RegisterNodeTypeHandler(typeof(T));
 
         /// <summary>
         /// Removes a hierarchy node type handler from this hierarchy.
         /// </summary>
-        /// <typeparam name="T">The type of the hierarchy node type handler.</typeparam>
         public void UnregisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => UnregisterNodeTypeHandler(typeof(T));
 
         /// <summary>
         /// Gets a hierarchy node type handler instance from this hierarchy.
         /// </summary>
-        /// <typeparam name="T">The type of the hierarchy node type handler.</typeparam>
         /// <returns>The hierarchy node type handler.</returns>
         public T GetNodeTypeHandlerBase<T>() where T : HierarchyNodeTypeHandlerBase => (T)GetNodeTypeHandlerFromType(typeof(T));
 
@@ -168,9 +165,8 @@ namespace Unity.Hierarchy
         public extern void GetAllNodeTypeHandlersBase(List<HierarchyNodeTypeHandlerBase> handlers);
 
         /// <summary>
-        /// Retrieve the hierarchy node type for the specified hierarchy node type handler type.
+        /// Gets the type of the specified hierarchy node.  
         /// </summary>
-        /// <typeparam name="T">The type of the hierarchy node type handler.</typeparam>
         /// <returns>The hierarchy node type.</returns>
         public HierarchyNodeType GetNodeType<T>() where T : HierarchyNodeTypeHandlerBase => GetNodeTypeFromType(typeof(T));
 
@@ -182,9 +178,9 @@ namespace Unity.Hierarchy
         public extern HierarchyNodeType GetNodeType(in HierarchyNode node);
 
         /// <summary>
-        /// Pre-allocate memory if necessary, in anticipation of adding nodes.
+        /// Reserves memory for nodes to use. Use this to avoid memory allocation hits when you add batches of nodes.    
         /// </summary>
-        /// <param name="count">The number of nodes that are going to be added.</param>
+        /// <param name="count">The number of nodes to reserve memory for.</param>
         [NativeThrows]
         public extern void Reserve(int count);
 
@@ -208,7 +204,7 @@ namespace Unity.Hierarchy
         /// Determines the depth of a node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
-        /// <returns>The depth of the hierarchy node.</returns>
+        /// <returns>The depth of the hierarchy node. A value of -1 indicates the root node. A value of 0 indicates direct child nodes of the root node. A value of 1 indicates child nodes of the root node's direct children, and then their children have a value of 2 and so on. </returns>
         [NativeThrows]
         public extern int GetDepth(in HierarchyNode node);
 
@@ -350,7 +346,6 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="name">The property name.</param>
         /// <param name="type">The storage type for the property.</param>
-        /// <typeparam name="T">The property type.</typeparam>
         /// <returns>The property accessor.</returns>
         public HierarchyPropertyUnmanaged<T> GetOrCreatePropertyUnmanaged<T>(string name, HierarchyPropertyStorageType type = HierarchyPropertyStorageType.Default) where T : unmanaged
         {
@@ -405,9 +400,9 @@ namespace Unity.Hierarchy
         public extern bool UpdateIncremental();
 
         /// <summary>
-        /// Incrementally update the hierarchy until the time limit is reached.
+        /// Incrementally updates the hierarchy until a time limit is reached.
         /// </summary>
-        /// <param name="milliseconds">A time period in milliseconds.</param>
+        /// <param name="milliseconds">The time period in milliseconds.</param>
         /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
         public extern bool UpdateIncrementalTimed(double milliseconds);
 

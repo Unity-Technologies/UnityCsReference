@@ -149,6 +149,6 @@ namespace UnityEditor
         [ThreadSafe]
         public extern static unsafe void AddMessagesImpl(void* messagesBuffer, int messagesBufferLength);
 
-        internal static extern int GetEntryRowIndex(int globalIndex);
+        internal static extern int GetEntryRowIndex(int globalIndex, int indexHint = -1);
     }
 }

@@ -11,6 +11,6 @@ namespace UnityEditor.Connect
         public const int ExploreServicesTopMenuPriority = int.MinValue;
         public const int GeneralSettingsServicesTopMenuPriority = int.MinValue + 1;
 
-        public static readonly string ExploreServicesPackageManagerPageId = ExtensionPage.GetIdFromName(EditorGameServiceExtension.k_ServicesExtensionPageName);
+            public static readonly string ExploreServicesPackageManagerPageId = ExtensionPage.GetIdFromName(EditorGameServiceExtension.k_ServicesExtensionPageName);
     }
 }

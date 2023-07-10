@@ -69,10 +69,17 @@ namespace UnityEditor.Actions
             if (!string.IsNullOrEmpty(submenu) && submenu[^1] != '/')
                 submenu += '/';
 
+            int lastItemPriority = -1;
             foreach (var menuItem in items)
             {
                 var menuPath = menuItem.path;
                 var newPath = $"{submenu}{menuPath.Substring(context.Length)}";
+
+                // Add separator between items with priority differing by over 10 points
+                if (lastItemPriority != -1 && menuItem.priority > lastItemPriority + 10)
+                    menu.AppendSeparator(newPath.Substring(0, newPath.LastIndexOf('/') + 1));
+                lastItemPriority = menuItem.priority;
+
                 if (!menuItem.isSeparator)
                     AddMenuItemWithContext(menu, targets, menuPath, newPath);
             }

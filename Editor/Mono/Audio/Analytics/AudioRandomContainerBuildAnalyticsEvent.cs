@@ -7,29 +7,45 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.Analytics;
 
 namespace UnityEditor.Audio.Analytics;
 
 class AudioRandomContainerBuildAnalyticsEvent : IPostprocessBuildWithReport
 {
-    const string k_EventName = "audioRandomContainerBuild";
-    const int k_MaxEventsPerHour = 60;
-    const int k_MaxNumberOfElements = 2;
-
-    static bool s_Initialized;
-
-    static bool Initialized
+    [AnalyticInfo(eventName: "audioRandomContainerBuild", vendorKey: "unity.audio", maxEventsPerHour: 60, maxNumberOfElements: 2)]
+    internal class AudioRandomAnalytic : IAnalytic
     {
-        get
+        public AudioRandomAnalytic(string build_guid, int count)
         {
-            if (!s_Initialized)
-            {
-                s_Initialized = AudioAnalytics.RegisterEvent(k_EventName, k_MaxEventsPerHour, k_MaxNumberOfElements);
-            }
-
-            return s_Initialized;
+            this.build_guid = build_guid;
+            this.count = count;
         }
+
+        [Serializable]
+        struct Payload : IAnalytic.IData
+        {
+            public string build_guid;
+            public int count;
+        }
+
+
+        public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+        {
+            error = null;
+            data = new Payload
+            {
+                build_guid = build_guid,
+                count = count
+            };
+
+            return data != null;
+        }
+
+        private string build_guid;
+        private int count;
     }
+
 
     public int callbackOrder { get; }
 
@@ -42,7 +58,6 @@ class AudioRandomContainerBuildAnalyticsEvent : IPostprocessBuildWithReport
     {
         if (!EditorAnalytics.enabled
             || AudioSettings.unityAudioDisabled
-            || !Initialized
             || report == null
             || report.packedAssets.Length == 0)
         {
@@ -64,18 +79,7 @@ class AudioRandomContainerBuildAnalyticsEvent : IPostprocessBuildWithReport
             }
         }
 
-        var payload = new Payload
-        {
-            build_guid = report.summary.guid.ToString(),
-            count = count
-        };
-
-        EditorAnalytics.SendEventWithLimit(k_EventName, payload);
+        EditorAnalytics.SendAnalytic(new AudioRandomAnalytic(report.summary.guid.ToString(), count));
     }
-
-    struct Payload
-    {
-        public string build_guid;
-        public int count;
-    }
-}
+    
+   }

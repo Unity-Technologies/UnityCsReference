@@ -57,7 +57,7 @@ namespace UnityEditor
             Optix = 1,
             OpenImage = 2,
 
-            // The AMD Radeon Pro Image Processing denoiser is applied.
+            // The AMD Radeon Image Filter denoiser is not supported in 2023.2 and later.
             RadeonPro = 3
         }
 
@@ -287,9 +287,6 @@ namespace UnityEditor
                 case LightingSettings.DenoiserType.OpenImage:
                     return DenoiserType.OpenImage;
 
-                case LightingSettings.DenoiserType.RadeonPro:
-                    return DenoiserType.RadeonPro;
-
                 default:
                 {
                     Debug.LogError("Unsupported DenoiserType type was added and not handled correctly. ");
@@ -310,9 +307,6 @@ namespace UnityEditor
 
                 case DenoiserType.OpenImage:
                     return LightingSettings.DenoiserType.OpenImage;
-
-                case DenoiserType.RadeonPro:
-                    return LightingSettings.DenoiserType.RadeonPro;
 
                 default:
                 {

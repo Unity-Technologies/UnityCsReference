@@ -26,7 +26,12 @@ namespace UnityEditor
         internal class DesktopSingleCPUProperty : Property
         {
             public DesktopSingleCPUProperty(BuildTarget buildTarget, DesktopPluginCPUArchitecture architecture)
-                : base(EditorGUIUtility.TrTextContent(GetArchitectureNameInGUI(buildTarget, architecture)), "CPU", architecture, BuildPipeline.GetBuildTargetName(buildTarget))
+                : base(EditorGUIUtility.TrTextContent(GetArchitectureNameInGUI(buildTarget, architecture)), cpuKey, architecture, BuildPipeline.GetBuildTargetName(buildTarget))
+            {
+            }
+
+            public DesktopSingleCPUProperty(GUIContent name, BuildTarget buildTarget)
+                : base(name, cpuKey, DesktopPluginCPUArchitecture.AnyCPU, BuildPipeline.GetBuildTargetName(buildTarget))
             {
             }
 
@@ -67,7 +72,7 @@ namespace UnityEditor
             private readonly GUIContent[] m_SupportedArchitectureNames;
 
             public DesktopMultiCPUProperty(BuildTarget buildTarget, params DesktopPluginCPUArchitecture[] supportedArchitectures) :
-                base("CPU", "CPU", DesktopPluginCPUArchitecture.None, BuildPipeline.GetBuildTargetName(buildTarget))
+                base(cpuKey, cpuKey, DesktopPluginCPUArchitecture.None, BuildPipeline.GetBuildTargetName(buildTarget))
             {
                 // Add "None" and "AnyCPU" architectures to the supported architecture list
                 m_SupportedArchitectures = new DesktopPluginCPUArchitecture[supportedArchitectures.Length + 2];
@@ -142,6 +147,11 @@ namespace UnityEditor
         // macOS has multiple architectures, but one target.
         private readonly DesktopMultiCPUProperty m_MacOS;
 
+        // For Managed plugins the only options for CPU architecture should be "None" or "AnyCPU", so it can be DesktopSingleCPUProperty
+        private readonly DesktopSingleCPUProperty m_Windows32Managed;
+        private readonly DesktopSingleCPUProperty m_Windows64Managed;
+        private readonly DesktopSingleCPUProperty m_LinuxManaged;
+        private readonly DesktopSingleCPUProperty m_MacOSManaged;
 
         public DesktopPluginImporterExtension()
             : base(null)
@@ -152,12 +162,23 @@ namespace UnityEditor
             m_Linux = new DesktopSingleCPUProperty(BuildTarget.StandaloneLinux64, DesktopPluginCPUArchitecture.x86_64);
             m_MacOS = new DesktopMultiCPUProperty(BuildTarget.StandaloneOSX, DesktopPluginCPUArchitecture.x86_64, DesktopPluginCPUArchitecture.ARM64);
 
+            // Windows 32-bit (x86) and Windows 64-bit (ARM64/x86_64) are separate targets, so they have separate checkboxes
+            // Linux only has x64 architecture and Mac has a single target for both 64-bit architectures (ARM64/Intel-64bit)
+            m_Windows32Managed = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("Windows x86"), BuildTarget.StandaloneWindows);
+            m_Windows64Managed = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("Windows 64-bit"), BuildTarget.StandaloneWindows64);
+            m_LinuxManaged = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("Linux x64"),BuildTarget.StandaloneLinux64);
+            m_MacOSManaged = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("macOS 64-bit"),BuildTarget.StandaloneOSX);
+
             properties = new Property[]
             {
                 m_Windows32,
                 m_Windows64,
                 m_Linux,
-                m_MacOS
+                m_MacOS,
+                m_Windows32Managed,
+                m_Windows64Managed,
+                m_LinuxManaged,
+                m_MacOSManaged
             };
         }
 
@@ -191,25 +212,42 @@ namespace UnityEditor
         {
             PluginImporter imp = inspector.importer;
             EditorGUI.BeginChangeCheck();
-            if (IsUsableOnWindows(imp))
+            // skip CPU property for things that aren't native libs
+            if (imp.isNativePlugin)
             {
-                EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Windows"), EditorStyles.boldLabel);
-                m_Windows32.OnGUI(inspector);
-                m_Windows64.OnGUI(inspector);
-                EditorGUILayout.Space();
-            }
+                if (IsUsableOnWindows(imp))
+                {
+                    EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Windows"), EditorStyles.boldLabel);
+                    m_Windows32.OnGUI(inspector);
+                    m_Windows64.OnGUI(inspector);
+                    EditorGUILayout.Space();
+                }
 
-            if (IsUsableOnLinux(imp))
-            {
-                EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Linux"), EditorStyles.boldLabel);
-                m_Linux.OnGUI(inspector);
-                EditorGUILayout.Space();
-            }
+                if (IsUsableOnLinux(imp))
+                {
+                    EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Linux"), EditorStyles.boldLabel);
+                    m_Linux.OnGUI(inspector);
+                    EditorGUILayout.Space();
+                }
 
-            if (IsUsableOnOSX(imp))
+                if (IsUsableOnOSX(imp))
+                {
+                    EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("macOS"), EditorStyles.boldLabel);
+                    m_MacOS.OnGUI(inspector);
+                    EditorGUILayout.Space();
+                }
+            }
+            else
             {
-                EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("macOS"), EditorStyles.boldLabel);
-                m_MacOS.OnGUI(inspector);
+                // Managed plugins are usable on all platforms
+                m_Windows32Managed.OnGUI(inspector);
+                m_Windows64Managed.OnGUI(inspector);
+                EditorGUILayout.Space();
+
+                m_LinuxManaged.OnGUI(inspector);
+                EditorGUILayout.Space();
+
+                m_MacOSManaged.OnGUI(inspector);
                 EditorGUILayout.Space();
             }
 
@@ -227,7 +265,7 @@ namespace UnityEditor
 
                 foreach (var importer in inspector.importers)
                 {
-                    importer.SetPlatformData(target.platformName, "CPU", target.value.ToString());
+                    importer.SetPlatformData(target.platformName, cpuKey, target.value.ToString());
                 }
             }
         }
@@ -252,13 +290,18 @@ namespace UnityEditor
             if (pluginForLinux && !IsUsableOnLinux(imp))
                 return string.Empty;
 
-            string cpu = imp.GetPlatformData(platformName, "CPU");
+            string cpu = imp.GetPlatformData(platformName, cpuKey);
 
             if (string.Compare(cpu, "None", true) == 0)
                 return string.Empty;
 
             if (pluginForWindows)
             {
+                if (string.Compare(cpu, nameof(DesktopPluginCPUArchitecture.ARM64), true) == 0)
+                {
+                    return Path.Combine(cpu, Path.GetFileName(imp.assetPath));
+                }
+
                 // Fix case 1185926: plugins for x86_64 are supposed to be copied to Plugins/x86_64
                 // Plugins for x86 are supposed to be copied to Plugins/x86
                 var cpuName = target == BuildTarget.StandaloneWindows ? nameof(DesktopPluginCPUArchitecture.x86) : nameof(DesktopPluginCPUArchitecture.x86_64);

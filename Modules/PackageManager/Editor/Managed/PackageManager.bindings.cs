@@ -26,6 +26,9 @@ namespace UnityEditor.PackageManager
         [FreeFunction("PackageManager::AddScopedRegistry::StartOperation")]
         private static extern NativeStatusCode AddScopedRegistry([Out] out long operationId, string name, string url, string[] scopes);
 
+        [FreeFunction("PackageManager::ClearCache::StartOperation")]
+        private static extern NativeStatusCode ClearCache([Out] out long operationId);
+
         [FreeFunction("PackageManager::ClearCacheRoot::StartOperation")]
         private static extern NativeStatusCode ClearCacheRoot([Out] out long operationId);
 

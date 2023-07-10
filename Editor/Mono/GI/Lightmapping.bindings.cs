@@ -578,10 +578,6 @@ namespace UnityEditor
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool IsRadeonDenoiserSupported();
-
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
         extern static internal bool IsOpenImageDenoiserSupported();
 
         // Packing for realtime GI may fail of the mesh has zero UV or surface area. This is the outcome for the given renderer.

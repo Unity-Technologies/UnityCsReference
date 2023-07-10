@@ -27,7 +27,6 @@ namespace UnityEditor
         }
 
         SavedBool m_ShowLightingSettings;
-        SavedBool m_ShowWorkflowSettings;
         Vector2 m_ScrollPosition = Vector2.zero;
         LightingWindowBakeSettings m_BakeSettings;
 
@@ -55,7 +54,6 @@ namespace UnityEditor
             m_BakeSettings.OnEnable();
 
             m_ShowLightingSettings = new SavedBool("LightingWindow.ShowLightingSettings", true);
-            m_ShowWorkflowSettings = new SavedBool("LightingWindow.ShowWorkflowSettings", true);
         }
 
         public void OnDisable()

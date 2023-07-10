@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 
-
 namespace UnityEngine.TextCore.Text
 {
     [Serializable][ExcludeFromPresetAttribute][ExcludeFromObjectFactory]
@@ -28,6 +27,7 @@ namespace UnityEngine.TextCore.Text
             LoadStyleDictionaryInternal();
         }
 
+        object styleLookupLock = new object();
         /// <summary>
         /// Get the Style for the given hash code value.
         /// </summary>
@@ -36,7 +36,13 @@ namespace UnityEngine.TextCore.Text
         public TextStyle GetStyle(int hashCode)
         {
             if (m_StyleLookupDictionary == null)
-                LoadStyleDictionaryInternal();
+            {
+                lock (styleLookupLock)
+                {
+                    if (m_StyleLookupDictionary == null)
+                        LoadStyleDictionaryInternal();
+                }
+            }
 
             TextStyle style;
 
@@ -78,29 +84,30 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         private void LoadStyleDictionaryInternal()
         {
-            if (m_StyleLookupDictionary == null)
-                m_StyleLookupDictionary = new Dictionary<int, TextStyle>();
+            Dictionary<int, TextStyle> styleLookup = m_StyleLookupDictionary;
+            if (styleLookup == null)
+                styleLookup = new Dictionary<int, TextStyle>();
             else
-                m_StyleLookupDictionary.Clear();
+                styleLookup.Clear();
 
             // Read Styles from style list and store them into dictionary for faster access.
             for (int i = 0; i < m_StyleList.Count; i++)
             {
                 m_StyleList[i].RefreshStyle();
 
-                if (!m_StyleLookupDictionary.ContainsKey(m_StyleList[i].hashCode))
-                    m_StyleLookupDictionary.Add(m_StyleList[i].hashCode, m_StyleList[i]);
+                if (!styleLookup.ContainsKey(m_StyleList[i].hashCode))
+                    styleLookup.Add(m_StyleList[i].hashCode, m_StyleList[i]);
             }
 
             // Add Normal Style if it does not already exists
             int normalStyleHashCode = TextUtilities.GetHashCodeCaseInSensitive("Normal");
-            if (!m_StyleLookupDictionary.ContainsKey(normalStyleHashCode))
+            if (!styleLookup.ContainsKey(normalStyleHashCode))
             {
                 TextStyle style = new TextStyle("Normal", string.Empty, string.Empty);
                 m_StyleList.Add(style);
-                m_StyleLookupDictionary.Add(normalStyleHashCode, style);
+                styleLookup.Add(normalStyleHashCode, style);
             }
-
+            m_StyleLookupDictionary = styleLookup;
             //// Event to update objects when styles are changed in the editor.
             TextEventManager.ON_TEXT_STYLE_PROPERTY_CHANGED(true);
         }

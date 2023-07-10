@@ -53,7 +53,7 @@ namespace UnityEditor
             // Required for MonoBehaviour derived types like UIBehaviour that
             // were previous in a precompiled UnityEngine.UI.dll, but are now
             // compiled in a package.
-            searchPaths.Add("Library/ScriptAssemblies");
+            searchPaths.Add(InternalEditorUtility.GetEditorScriptAssembliesPath());
 
             return searchPaths.ToArray();
         }

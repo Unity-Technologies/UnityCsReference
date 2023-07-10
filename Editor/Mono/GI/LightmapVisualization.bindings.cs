@@ -87,15 +87,15 @@ namespace UnityEditor
         public   extern static GameObject[] GetRealtimeGITextureRenderers(Hash128 inputSystemHash);
 
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
-        public   extern static GameObject[] GetBakedGITextureRenderers(int lightmapIndex);
+        public   extern static GameObject[] GetBakedGITextureRenderers(int lightmapIndex, bool useInteractiveLightBakingData);
 
         [NativeHeader("Runtime/GI/RenderOverlay.h")]
         [FreeFunction("DrawTextureWithUVOverlay")]
-        public extern static void DrawTextureWithUVOverlay(Texture2D texture, GameObject selectedGameObject, GameObject[] gameObjects, Rect drawableArea, Rect position, GITextureType textureType, Color uvColor, Color selectedUVColor, float exposure = 0.0f);
+        public extern static void DrawTextureWithUVOverlay(Texture2D texture, GameObject selectedGameObject, GameObject[] gameObjects, Rect drawableArea, Rect position, GITextureType textureType, Color uvColor, Color selectedUVColor, float exposure, bool useInteractiveLightBakingData);
 
-        public static void DrawTextureWithUVOverlay(Texture2D texture, GameObject selectedGameObject, GameObject[] gameObjects, Rect drawableArea, Rect position, GITextureType textureType, float exposure = 0.0f)
+        public static void DrawTextureWithUVOverlay(Texture2D texture, GameObject selectedGameObject, GameObject[] gameObjects, Rect drawableArea, Rect position, GITextureType textureType, float exposure, bool useInteractiveLightBakingData)
         {
-            DrawTextureWithUVOverlay(texture, selectedGameObject, gameObjects, drawableArea, position, textureType, kUVColor, kSelectedUVColor, exposure);
+            DrawTextureWithUVOverlay(texture, selectedGameObject, gameObjects, drawableArea, position, textureType, kUVColor, kSelectedUVColor, exposure, useInteractiveLightBakingData);
         }
 
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]

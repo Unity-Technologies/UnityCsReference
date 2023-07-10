@@ -116,7 +116,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool hasEntitlements => versions.Any(v => v.HasTag(PackageTag.Unity) && v.hasEntitlements);
 
-        public bool hasEntitlementsError => m_Errors.Any(e => e.errorCode == UIErrorCode.UpmError_Forbidden) || versions.Any(v => v.hasEntitlementsError);
+        public bool hasEntitlementsError => versions.Any(v => v.hasEntitlementsError);
 
         [SerializeReference]
         private IVersionList m_VersionList;
@@ -169,11 +169,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             public void AddError(Package package, UIError error)
             {
-                if (error.errorCode == UIErrorCode.UpmError_Forbidden && package.versions?.primary.hasEntitlementsError == true)
-                {
-                    package.m_Errors.Add(package.versions?.primary.isInstalled == true ? UIError.k_EntitlementError : UIError.k_EntitlementWarning);
-                    return;
-                }
                 package.m_Errors.Add(error);
             }
 

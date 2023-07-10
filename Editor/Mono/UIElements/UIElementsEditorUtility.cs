@@ -13,10 +13,8 @@ namespace UnityEditor.UIElements
 {
     internal static class UIElementsEditorUtility
     {
-        internal static readonly string s_DefaultCommonDarkStyleSheetPath =
-            Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, "StyleSheets/Generated/DefaultCommonDark.uss.asset");
-        internal static readonly string s_DefaultCommonLightStyleSheetPath =
-            Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, "StyleSheets/Generated/DefaultCommonLight.uss.asset");
+        internal static readonly string s_DefaultCommonDarkStyleSheetPath = "StyleSheets/Generated/DefaultCommonDark.uss.asset";
+        internal static readonly string s_DefaultCommonLightStyleSheetPath = "StyleSheets/Generated/DefaultCommonLight.uss.asset";
 
         static StyleSheet s_DefaultCommonDarkStyleSheet;
         static StyleSheet s_DefaultCommonLightStyleSheet;

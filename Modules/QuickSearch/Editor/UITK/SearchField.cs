@@ -162,7 +162,7 @@ namespace UnityEditor.Search
             {
                 var queryBuilderView = new SearchQueryBuilderView("SearchQueryBuilder", m_ViewModel, searchField);
                 searchField.Insert(1, queryBuilderView);
-                textField.RegisterCallback<ChangeEvent<string>>(OnQueryChanged);
+                queryBuilderView.RegisterCallback<ChangeEvent<string>>(OnQueryChanged);
                 m_SearchTextInput = queryBuilderView;
             }
             else

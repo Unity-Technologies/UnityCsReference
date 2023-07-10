@@ -10,7 +10,7 @@ using UnityEngine.Internal;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Represents an hierarchy node.
+    /// Represents a hierarchy node.
     /// </summary>
     [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyNode.h")]
     [StructLayout(LayoutKind.Sequential)]
@@ -24,22 +24,22 @@ namespace Unity.Hierarchy
         readonly int m_Version;
 
         /// <summary>
-        /// Represents an hierarchy node that is null/invalid.
+        /// Represents a hierarchy node that is null or invalid.
         /// </summary>
         public static ref readonly HierarchyNode Null => ref s_Null;
 
         /// <summary>
-        /// Unique identification number of the hierarchy node.
+        /// The unique identification number of the hierarchy node.
         /// </summary>
         public int Id => m_Id;
 
         /// <summary>
-        /// Version number of the hierarchy node.
+        /// The version number of the hierarchy node.
         /// </summary>
         public int Version => m_Version;
 
         /// <summary>
-        /// Create a HierarchyNode.
+        /// Creates a hierarchy node.
         /// </summary>
         public HierarchyNode()
         {

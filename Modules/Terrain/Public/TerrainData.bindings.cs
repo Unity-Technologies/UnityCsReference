@@ -1067,7 +1067,7 @@ namespace UnityEngine
             get;
 
             [FreeFunction(k_ScriptingInterfacePrefix + "SetTerrainLayers", HasExplicitThis = true)]
-            set;
+            [param: Unmarshalled] set;
         }
 
         public void SetTerrainLayersRegisterUndo(TerrainLayer[] terrainLayers, string undoName)
@@ -1082,7 +1082,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "SetTerrainLayersRegisterUndo", HasExplicitThis = true)]
-        extern private void Internal_SetTerrainLayersRegisterUndo(TerrainLayer[] terrainLayers, string undoName);
+        extern private void Internal_SetTerrainLayersRegisterUndo([Unmarshalled] TerrainLayer[] terrainLayers, string undoName);
 
         [NativeName(k_TreeDatabasePrefix + "AddTree")]
         extern internal void AddTree(ref TreeInstance tree);

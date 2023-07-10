@@ -205,6 +205,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct DirectorDeferredEvaluate {}
         [RequiredByNativeCode]
+        public struct AccessibilityUpdate {}
+        [RequiredByNativeCode]
         public struct UIElementsUpdatePanels {}
         [RequiredByNativeCode]
         public struct UpdateNetworkManager {}

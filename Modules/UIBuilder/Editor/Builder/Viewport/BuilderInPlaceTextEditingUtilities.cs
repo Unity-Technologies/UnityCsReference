@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -233,33 +234,45 @@ namespace Unity.UI.Builder
 
             if (newValue != oldValue)
             {
-                // Set value in asset.
-                vea.SetAttribute(s_EditedTextAttribute.name, newValue);
-
-                var fullTypeName = type.ToString();
-
-                if (VisualElementFactoryRegistry.TryGetValue(fullTypeName, out var factoryList))
+                // UxmlSerializedData
+                if (!BuilderUxmlAttributesView.alwaysUseUxmlTraits && vea.serializedData != null && UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName) is {} description)
                 {
-                    var traits = factoryList[0].GetTraits() as UxmlTraits;
-
-                    if (traits == null)
+                    var attributeDescription = description.FindAttributeWithUxmlName(s_EditedTextAttribute.name);
+                    if (attributeDescription != null)
                     {
-                        CloseEditor();
-                        return;
+                        attributeDescription.SetSerializedValue(vea.serializedData, newValue);
+                        vea.SetAttribute(s_EditedTextAttribute.name, newValue);
                     }
+                }
+                else // Fallback to factory
+                {
+                    vea.SetAttribute(s_EditedTextAttribute.name, newValue);
 
-                    var context = new CreationContext();
+                    var fullTypeName = type.ToString();
 
-                    try
+                    if (VisualElementFactoryRegistry.TryGetValue(fullTypeName, out var factoryList))
                     {
-                        // We need to clear bindings before calling Init to avoid corrupting the data source.
-                        BuilderBindingUtility.ClearUxmlBindings(s_EditedElement);
+                        var traits = factoryList[0].GetTraits() as UxmlTraits;
 
-                        traits.Init(s_EditedElement, vea, context);
-                    }
-                    catch
-                    {
-                        // HACK: This throws in 2019.3.0a4 because usageHints property throws when set after the element has already been added to the panel.
+                        if (traits == null)
+                        {
+                            CloseEditor();
+                            return;
+                        }
+
+                        var context = new CreationContext();
+
+                        try
+                        {
+                            // We need to clear bindings before calling Init to avoid corrupting the data source.
+                            BuilderBindingUtility.ClearUxmlBindings(s_EditedElement);
+
+                            traits.Init(s_EditedElement, vea, context);
+                        }
+                        catch
+                        {
+                            // HACK: This throws in 2019.3.0a4 because usageHints property throws when set after the element has already been added to the panel.
+                        }
                     }
                 }
 
