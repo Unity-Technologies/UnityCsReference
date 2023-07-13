@@ -855,10 +855,13 @@ namespace UnityEditor
             else if (o != null)
                 DrawObjectIcon(previewRect, m_ListArea.m_SelectedObjectIcon);
 
+            var prevClipping = Styles.smallStatus.clipping;
+            Styles.smallStatus.clipping = TextClipping.Overflow;
             if (EditorGUIUtility.isProSkin)
                 EditorGUI.DropShadowLabel(labelRect, s, Styles.smallStatus);
             else
                 GUI.Label(labelRect, s, Styles.smallStatus);
+            Styles.smallStatus.clipping = prevClipping;
         }
 
         void OverlapPreview(float actualSize, string s, UnityObject o, EditorWrapper p)

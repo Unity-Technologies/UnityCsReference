@@ -20,6 +20,12 @@ namespace UnityEditor
     [NativeHeader("Editor/Mono/Prefabs/PrefabUtility.bindings.h")]
     public sealed partial class PrefabUtility
     {
+        [StaticAccessor("PrefabInstance", StaticAccessorType.DoubleColon)]
+        extern internal static int defaultOverridesCount { get; }
+
+        [StaticAccessor("PrefabInstance", StaticAccessorType.DoubleColon)]
+        extern internal static int defaultOverridesCountUsingRectTransform { get; }
+
         // Returns the corresponding GameObject/Component from /source/, or null if it can't be found.
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static Object GetCorrespondingObjectFromSource_internal([NotNull] Object obj);
