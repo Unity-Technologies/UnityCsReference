@@ -125,6 +125,9 @@ namespace UnityEditor
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         public static extern void MoveGameObjectToScene([NotNull] GameObject go, Scene scene, string name);
 
+        [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
+        public static extern void SetSiblingIndex([NotNull] Transform transform, int siblingIndex, string name);
+
         // Register the state of a Unity Object so the user can later undo back to that state.
         public static void RegisterCreatedObjectUndo(Object objectToUndo, string name)
         {

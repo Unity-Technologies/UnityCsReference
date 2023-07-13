@@ -957,12 +957,21 @@ namespace UnityEditor
             set;
         }
 
-        // Enable linkage of the Heap inspector tool for Nintendo Switch.
-        public static extern bool switchEnableHeapInspector
+        // Enable linkage of the Memory Tracker tool for Nintendo Switch.
+        public static extern bool switchEnableMemoryTracker
         {
-            [NativeMethod("GetEnableHeapInspectorForSwitch")]
+            [NativeMethod("GetEnableMemoryTrackerForSwitch")]
             get;
-            [NativeMethod("SetEnableHeapInspectorForSwitch")]
+            [NativeMethod("SetEnableMemoryTrackerForSwitch")]
+            set;
+        }
+
+        // On startup the application waits for Memory Tracker to connect.
+        public static extern bool switchWaitForMemoryTrackerOnStartup
+        {
+            [NativeMethod("GetWaitForSwitchMemoryTrackerOnStartup")]
+            get;
+            [NativeMethod("SetWaitForSwitchMemoryTrackerOnStartup")]
             set;
         }
 

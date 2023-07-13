@@ -185,14 +185,18 @@ namespace UnityEditor
             if (!isPolygon)
             {
                 // Try to have a minimum of 64 pixels for width and height, unless requested width and height is smaller
-                var minWidth = Mathf.Min(64, width);
-                var minHeight = Mathf.Min(64, height);
+                var minWidth = Mathf.Min(64f, width);
+                var minHeight = Mathf.Min(64f, height);
 
                 PreviewHelpers.AdjustWidthAndHeightForStaticPreview((int) spriteWidth, (int) spriteHeight, ref width, ref height);
 
-                // Set minimum size for width and height to prevent small previews for small sprites
-                width = Mathf.Max(minWidth, width);
-                height = Mathf.Max(minHeight, height);
+                // Set minimum size for width/height to prevent small previews for small sprites
+                if (width < minWidth && height < minHeight)
+                {
+                    var ratio = Mathf.Min( minWidth / width, minHeight / height);
+                    width = Mathf.FloorToInt(width * ratio);
+                    height = Mathf.FloorToInt(height * ratio);
+                }
             }
 
             SavedRenderTargetState savedRTState = new SavedRenderTargetState();

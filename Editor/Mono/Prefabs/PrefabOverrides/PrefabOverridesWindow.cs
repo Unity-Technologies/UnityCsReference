@@ -20,6 +20,7 @@ namespace UnityEditor
         RectOffset k_TreeViewPadding = new RectOffset(0, 0, 4, 4);
         const float k_HeaderHeight = 60f;
         const float k_ButtonWidth = 120;
+        const float k_ButtonWidthVariant = 201;
         const float k_ButtonWidthPadding = 10; //Padding in case the text is long to give the window a bit of margins around the buttons
         const float k_HeaderLeftMargin = 6;
         const float k_NoOverridesLabelHeight = 26f;
@@ -629,7 +630,7 @@ namespace UnityEditor
             if (stage is PrefabStage && PrefabUtility.IsPartOfVariantPrefab(AssetDatabase.LoadAssetAtPath<Object>(stage.assetPath)))
             {
                 applyAllContent = Styles.applyAllToBaseContent;
-                m_ApplyButtonWidth = GUI.skin.button.CalcSize(applyAllContent).x;
+                m_ApplyButtonWidth = k_ButtonWidthVariant;
                 applySelectedContent = Styles.applySelectedToBaseContent;
 
             }
