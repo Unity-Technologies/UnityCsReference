@@ -163,7 +163,11 @@ namespace UnityEditor
                 BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms();
                 string title = string.Format(Styles.overrideFor.text, validPlatforms[selected].title.text);
                 Rect controlRect = EditorGUILayout.GetControlRect(true);
-                GUIContent label = EditorGUI.BeginProperty(controlRect, GUIContent.Temp(title), realPS.model.overriddenProperty);
+                GUIContent label = GUIContent.Temp(title);
+                if (realPS.model.overriddenProperty != null)
+                {
+                    label = EditorGUI.BeginProperty(controlRect, label, realPS.model.overriddenProperty);
+                }
 
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = realPS.model.overriddenIsDifferent;
@@ -173,7 +177,10 @@ namespace UnityEditor
                     realPS.model.SetOverriddenForAll(newOverride);
                     SyncPlatformSettings(platformSettings);
                 }
-                EditorGUI.EndProperty();
+                if (realPS.model.overriddenProperty != null)
+                {
+                    EditorGUI.EndProperty();
+                }
             }
 
             // Disable size and format GUI if not overwritten for all objects
@@ -544,8 +551,32 @@ namespace UnityEditor
             Init();
         }
 
+        public void ResetSerializedProperties()
+        {
+            model.platformTextureSettingsProp = null;
+            model.alphaSplitProperty = null;
+            model.androidETC2FallbackOverrideProperty = null;
+            model.compressionQualityProperty = null;
+            model.crunchedCompressionProperty = null;
+            model.maxTextureSizeProperty = null;
+            model.overriddenProperty = null;
+            model.resizeAlgorithmProperty = null;
+            model.textureCompressionProperty = null;
+            model.textureFormatProperty = null;
+        }
+
         public void CacheSerializedProperties(SerializedProperty platformSettingsArray)
         {
+            // When multi-selecting texture importers, depending on the number of stored platform settings + their order,
+            // we may end up in a situation where it is impossible to find the correct platform settings property.
+            // This is because the SerializedProperty system can only get elements that are found in all selected objects.
+            // Until a better solution comes around, keep this locked off.
+            if (platformSettingsArray.hasMultipleDifferentValues)
+            {
+                ResetSerializedProperties();
+                return;
+            }
+
             if (model.platformTextureSettingsProp != null && model.platformTextureSettingsProp.isValid &&
                 model.platformTextureSettingsProp.FindPropertyRelative("m_BuildTarget").stringValue == model.platformTextureSettings.name)
             {
@@ -557,7 +588,7 @@ namespace UnityEditor
             {
                 // This should not happen, all known valid platforms should have
                 // been created in advance, including the Default Platform.
-                model.platformTextureSettingsProp = null;
+                ResetSerializedProperties();
                 throw new UnityException("Cannot find any Platform Settings, including the Default Platform. This is incorrect, did initialization fail?");
             }
             else
@@ -578,6 +609,7 @@ namespace UnityEditor
                 // we should be able to find the currently selected platform. If not, fail.
                 if (model.platformTextureSettingsProp is null)
                 {
+                    ResetSerializedProperties();
                     throw new UnityException("Could not find the requested Platform Texture Settings. This is incorrect, did initialization fail?");
                 }
             }

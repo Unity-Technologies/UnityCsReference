@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 
 
 namespace UnityEngine
@@ -185,7 +186,7 @@ namespace UnityEngine
 
         // Capacity must be extended beforehand!
         extern internal int ExtractContacts(List<ContactPoint> managedContainer, bool flipped);
-        extern internal int ExtractContactsArray(ContactPoint[] managedContainer, bool flipped);
+        extern internal int ExtractContactsArray([Unmarshalled] ContactPoint[] managedContainer, bool flipped);
 
         public void CopyToNativeArray(NativeArray<ContactPairPoint> buffer)
         {

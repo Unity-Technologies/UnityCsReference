@@ -214,10 +214,10 @@ namespace UnityEngine
         extern public void Compress(bool highQuality);
 
         [FreeFunction("Texture2DScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex, string mipmapLimitGroupName);
-        private static void Internal_Create([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex, string mipmapLimitGroupName)
+        extern private static bool Internal_CreateImpl([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureColorSpace colorSpace, TextureCreationFlags flags, IntPtr nativeTex, string mipmapLimitGroupName);
+        private static void Internal_Create([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureColorSpace colorSpace, TextureCreationFlags flags, IntPtr nativeTex, string mipmapLimitGroupName)
         {
-            if (!Internal_CreateImpl(mono, w, h, mipCount, format, flags, nativeTex, mipmapLimitGroupName))
+            if (!Internal_CreateImpl(mono, w, h, mipCount, format, colorSpace, flags, nativeTex, mipmapLimitGroupName))
                 throw new UnityException("Failed to create texture because of invalid parameters.");
         }
 
@@ -331,10 +331,10 @@ namespace UnityEngine
         extern public void UpdateExternalTexture(IntPtr nativeTex);
 
         [FreeFunction("Texture2DScripting::SetAllPixels32", HasExplicitThis = true, ThrowsException = true)]
-        extern private void SetAllPixels32(Color32[] colors, int miplevel);
+        extern private void SetAllPixels32([Unmarshalled] Color32[] colors, int miplevel);
 
         [FreeFunction("Texture2DScripting::SetBlockOfPixels32", HasExplicitThis = true, ThrowsException = true)]
-        extern private void SetBlockOfPixels32(int x, int y, int blockWidth, int blockHeight, Color32[] colors, int miplevel);
+        extern private void SetBlockOfPixels32(int x, int y, int blockWidth, int blockHeight, [Unmarshalled] Color32[] colors, int miplevel);
 
         [FreeFunction("Texture2DScripting::GetRawTextureData", HasExplicitThis = true, ThrowsException = true)]
         extern public byte[] GetRawTextureData();
@@ -383,10 +383,10 @@ namespace UnityEngine
         extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
 
         [FreeFunction("CubemapScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Cubemap mono, int ext, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex);
-        private static void Internal_Create([Writable] Cubemap mono, int ext, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex)
+        extern private static bool Internal_CreateImpl([Writable] Cubemap mono, int ext, int mipCount, GraphicsFormat format, TextureColorSpace colorSpace, TextureCreationFlags flags, IntPtr nativeTex);
+        private static void Internal_Create([Writable] Cubemap mono, int ext, int mipCount, GraphicsFormat format, TextureColorSpace colorSpace, TextureCreationFlags flags, IntPtr nativeTex)
         {
-            if (!Internal_CreateImpl(mono, ext, mipCount, format, flags, nativeTex))
+            if (!Internal_CreateImpl(mono, ext, mipCount, format, colorSpace, flags, nativeTex))
                 throw new UnityException("Failed to create texture because of invalid parameters.");
         }
 
@@ -412,7 +412,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "CubemapScripting::SetPixels", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetPixels(Color[] colors, CubemapFace face, int miplevel);
+        extern public void SetPixels([Unmarshalled] Color[] colors, CubemapFace face, int miplevel);
 
         [FreeFunction(Name = "CubemapScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int face, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
@@ -488,10 +488,10 @@ namespace UnityEngine
         [NativeName("GetPixelBilinear")] extern private Color GetPixelBilinearImpl(int mip, float u, float v, float w);
 
         [FreeFunction("Texture3DScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Texture3D mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex);
-        private static void Internal_Create([Writable] Texture3D mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex)
+        extern private static bool Internal_CreateImpl([Writable] Texture3D mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureColorSpace colorSpace, TextureCreationFlags flags, IntPtr nativeTex);
+        private static void Internal_Create([Writable] Texture3D mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureColorSpace colorSpace, TextureCreationFlags flags, IntPtr nativeTex)
         {
-            if (!Internal_CreateImpl(mono, w, h, d, mipCount, format, flags, nativeTex))
+            if (!Internal_CreateImpl(mono, w, h, d, mipCount, format, colorSpace, flags, nativeTex))
                 throw new UnityException("Failed to create texture because of invalid parameters.");
         }
 
@@ -517,7 +517,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "Texture3DScripting::SetPixels", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetPixels(Color[] colors, int miplevel);
+        extern public void SetPixels([Unmarshalled] Color[] colors, int miplevel);
 
         public void SetPixels(Color[] colors)
         {
@@ -525,7 +525,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "Texture3DScripting::SetPixels32", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetPixels32(Color32[] colors, int miplevel);
+        extern public void SetPixels32([Unmarshalled] Color32[] colors, int miplevel);
 
         public void SetPixels32(Color32[] colors)
         {
@@ -553,10 +553,10 @@ namespace UnityEngine
         extern override public bool isReadable { get; }
 
         [FreeFunction("Texture2DArrayScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Texture2DArray mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureCreationFlags flags);
-        private static void Internal_Create([Writable] Texture2DArray mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureCreationFlags flags)
+        extern private static bool Internal_CreateImpl([Writable] Texture2DArray mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureColorSpace colorSpace, TextureCreationFlags flags);
+        private static void Internal_Create([Writable] Texture2DArray mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureColorSpace colorSpace, TextureCreationFlags flags)
         {
-            if (!Internal_CreateImpl(mono, w, h, d, mipCount, format, flags))
+            if (!Internal_CreateImpl(mono, w, h, d, mipCount, format, colorSpace, flags))
                 throw new UnityException("Failed to create 2D array texture because of invalid parameters.");
         }
 
@@ -586,7 +586,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "Texture2DArrayScripting::SetPixels", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetPixels(Color[] colors, int arrayElement, int miplevel);
+        extern public void SetPixels([Unmarshalled]Color[] colors, int arrayElement, int miplevel);
 
         public void SetPixels(Color[] colors, int arrayElement)
         {
@@ -594,7 +594,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "Texture2DArrayScripting::SetPixels32", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetPixels32(Color32[] colors, int arrayElement, int miplevel);
+        extern public void SetPixels32([Unmarshalled] Color32[] colors, int arrayElement, int miplevel);
 
         public void SetPixels32(Color32[] colors, int arrayElement)
         {
@@ -615,10 +615,10 @@ namespace UnityEngine
         extern override public bool isReadable { get; }
 
         [FreeFunction("CubemapArrayScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] CubemapArray mono, int ext, int count, int mipCount, GraphicsFormat format, TextureCreationFlags flags);
-        private static void Internal_Create([Writable] CubemapArray mono, int ext, int count, int mipCount, GraphicsFormat format, TextureCreationFlags flags)
+        extern private static bool Internal_CreateImpl([Writable] CubemapArray mono, int ext, int count, int mipCount, GraphicsFormat format, TextureColorSpace colorSpace, TextureCreationFlags flags);
+        private static void Internal_Create([Writable] CubemapArray mono, int ext, int count, int mipCount, GraphicsFormat format, TextureColorSpace colorSpace, TextureCreationFlags flags)
         {
-            if (!Internal_CreateImpl(mono, ext, count, mipCount, format, flags))
+            if (!Internal_CreateImpl(mono, ext, count, mipCount, format, colorSpace, flags))
                 throw new UnityException("Failed to create cubemap array texture because of invalid parameters.");
         }
 
@@ -642,7 +642,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "CubemapArrayScripting::SetPixels", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetPixels(Color[] colors, CubemapFace face, int arrayElement, int miplevel);
+        extern public void SetPixels([Unmarshalled] Color[] colors, CubemapFace face, int arrayElement, int miplevel);
 
         public void SetPixels(Color[] colors, CubemapFace face, int arrayElement)
         {
@@ -650,7 +650,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "CubemapArrayScripting::SetPixels32", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetPixels32(Color32[] colors, CubemapFace face, int arrayElement, int miplevel);
+        extern public void SetPixels32([Unmarshalled] Color32[] colors, CubemapFace face, int arrayElement, int miplevel);
 
         public void SetPixels32(Color32[] colors, CubemapFace face, int arrayElement)
         {
@@ -675,13 +675,13 @@ namespace UnityEngine
         extern public bool isCreated { [NativeName("IsInitialized")] get; }
 
         [FreeFunction(Name = "SparseTextureScripting::Create", ThrowsException = true)]
-        extern private static void Internal_Create([Writable] SparseTexture mono, int width, int height, GraphicsFormat format, int mipCount);
+        extern private static void Internal_Create([Writable] SparseTexture mono, int width, int height, GraphicsFormat format, TextureColorSpace colorSpace, int mipCount);
 
         [FreeFunction(Name = "SparseTextureScripting::UpdateTile", HasExplicitThis = true)]
-        extern public void UpdateTile(int tileX, int tileY, int miplevel, Color32[] data);
+        extern public void UpdateTile(int tileX, int tileY, int miplevel, [Unmarshalled] Color32[] data);
 
         [FreeFunction(Name = "SparseTextureScripting::UpdateTileRaw", HasExplicitThis = true)]
-        extern public void UpdateTileRaw(int tileX, int tileY, int miplevel, byte[] data);
+        extern public void UpdateTileRaw(int tileX, int tileY, int miplevel, [Unmarshalled] byte[] data);
 
         public void UnloadTile(int tileX, int tileY, int miplevel)
         {
@@ -884,7 +884,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "CustomRenderTextureScripting::SetUpdateZonesInternal", HasExplicitThis = true)]
-        extern private void SetUpdateZonesInternal(CustomRenderTextureUpdateZone[] updateZones);
+        extern private void SetUpdateZonesInternal([Unmarshalled] CustomRenderTextureUpdateZone[] updateZones);
 
         [FreeFunction(Name = "CustomRenderTextureScripting::GetDoubleBufferRenderTexture", HasExplicitThis = true)]
         extern public RenderTexture GetDoubleBufferRenderTexture();

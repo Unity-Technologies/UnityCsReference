@@ -299,7 +299,7 @@ namespace UnityEditor.Search
 
         const int k_SearchFieldFontSize = 15;
 
-        public static readonly GUIStyle searchField = new GUIStyle("ToolbarSeachTextFieldPopup")
+        public static readonly GUIStyle searchField = new GUIStyle("ToolbarSearchTextFieldPopup")
         {
             name = "quick-search-search-field",
             wordWrap = true,

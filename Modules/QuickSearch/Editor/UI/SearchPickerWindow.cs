@@ -106,6 +106,8 @@ namespace UnityEditor.Search
 
         protected override void UpdateFocusState(TextEditor te)
         {
+            if (te.scrollOffset.x > 0)
+                te.scrollOffset.x = 0;
             te.MoveTextEnd();
         }
 

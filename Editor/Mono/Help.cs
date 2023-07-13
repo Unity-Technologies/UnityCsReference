@@ -349,6 +349,11 @@ namespace UnityEditor
                 return "CreatingScenes";
             }
 
+            if (obj is PrefabImporter)
+            {
+                return "-Prefab Asset";
+            }
+
             if (obj is DefaultAsset)
                 return "";
 

@@ -262,13 +262,21 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// This event is called for every item added to the itemsSource. Includes the item index.
+        /// This event is called for every item added to the ::ref::itemsSource. Includes the item index.
         /// </summary>
+        /// <remarks>
+        /// Note: This event is only called when items are added through the ::ref::viewController, such as when calling ::ref::AddItems.
+        /// Adding items directly to the ::ref::itemsSource will not trigger this event.
+        /// </remarks>
         public event Action<IEnumerable<int>> itemsAdded;
 
         /// <summary>
-        /// This event is called for every item added to the itemsSource. Includes the item index.
+        /// This event is called for every item removed from the ::ref::itemsSource. Includes the item index.
         /// </summary>
+        /// <remarks>
+        /// Note: This event is only called when items are removed through the ::ref::viewController, such as when
+        /// calling ::ref::RemoveItems or <see cref="BaseListViewController.ClearItems"/>.
+        /// </remarks>
         public event Action<IEnumerable<int>> itemsRemoved;
 
         private void AddItems(int itemCount)

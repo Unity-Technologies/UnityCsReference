@@ -97,16 +97,16 @@ namespace UnityEditor
         static extern void Internal_SetupCamera([NotNull("NullExceptionObject")] Camera cam);
 
         [FreeFunction]
-        static extern void Internal_DrawAAPolyLine(Color[] colors, Vector3[] points, Color defaultColor, int actualNumberOfPoints, Texture2D texture, float width, Matrix4x4 toWorld);
+        static extern void Internal_DrawAAPolyLine([Unmarshalled] Color[] colors, [Unmarshalled] Vector3[] points, Color defaultColor, int actualNumberOfPoints, Texture2D texture, float width, Matrix4x4 toWorld);
 
         [FreeFunction]
-        static extern void Internal_DrawAAConvexPolygon(Vector3[] points, Color defaultColor, int actualNumberOfPoints, Matrix4x4 toWorld);
+        static extern void Internal_DrawAAConvexPolygon([Unmarshalled] Vector3[] points, Color defaultColor, int actualNumberOfPoints, Matrix4x4 toWorld);
 
         [FreeFunction]
         static extern void Internal_DrawBezier(Vector3 startPosition, Vector3 endPosition, Vector3 startTangent, Vector3 endTangent, Color color, Texture2D texture, float width, Matrix4x4 toWorld);
 
         [FreeFunction("Internal_SetDiscSectionPoints")]
-        internal static extern void SetDiscSectionPoints(Vector3[] dest, Vector3 center, Vector3 normal, Vector3 from, float angle, float radius);
+        internal static extern void SetDiscSectionPoints([Unmarshalled] Vector3[] dest, Vector3 center, Vector3 normal, Vector3 from, float angle, float radius);
 
         [FreeFunction("Internal_EmitGUIGeometryForCamera")]
         internal static extern void EmitGUIGeometryForCamera([NotNull("NullExceptionObject")] Camera source, Camera dest);

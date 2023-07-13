@@ -18,8 +18,10 @@ namespace UnityEditor.PlatformSupport
 
         public readonly static string kDefaultiOSProvisioningProfileUUID    = "DefaultiOSProvisioningProfileUUID";
         public readonly static string kDefaulttvOSProvisioningProfileUUID   = "DefaulttvOSProvisioningProfileUUID";
+        public readonly static string kDefaultVisionOSProvisioningProfileUUID   = "DefaultVisionOSProvisioningProfileUUID";
         public readonly static string kDefaultiOSProvisioningProfileType    = "kDefaultiOSProvisioningProfileType";
         public readonly static string kDefaulttvOSProvisioningProfileType   = "kDefaulttvOSProvisioningProfileType";
+        public readonly static string kDefaultVisionOSProvisioningProfileType   = "kDefaultVisionOSProvisioningProfileType";
     }
 
     internal class ProvisioningProfile

@@ -153,7 +153,7 @@ namespace UnityEditor
         public extern int colorCode { get; }
 
         [FreeFunction("HierarchyPropertyBindings::IsExpanded", HasExplicitThis = true)]
-        public extern bool IsExpanded(int[] expanded);
+        public extern bool IsExpanded([Unmarshalled] int[] expanded);
 
         public extern string guid { [FreeFunction("HierarchyPropertyBindings::GetGuid", HasExplicitThis = true)] get; }
         public extern bool alphaSorted { [NativeName("IsAlphaSorted")] get; set; }
@@ -167,18 +167,18 @@ namespace UnityEditor
         public extern GUID[] dynamicDependencies { get; }
 
         [FreeFunction("HierarchyPropertyBindings::Next", HasExplicitThis = true)]
-        public extern bool Next(int[] expanded);
+        public extern bool Next([Unmarshalled] int[] expanded);
         [FreeFunction("HierarchyPropertyBindings::NextWithDepthCheck", HasExplicitThis = true)]
-        public extern bool NextWithDepthCheck(int[] expanded, int minDepth);
+        public extern bool NextWithDepthCheck([Unmarshalled] int[] expanded, int minDepth);
         [FreeFunction("HierarchyPropertyBindings::Previous", HasExplicitThis = true)]
-        public extern bool Previous(int[] expanded);
+        public extern bool Previous([Unmarshalled] int[] expanded);
         public extern bool Parent();
         [FreeFunction("HierarchyPropertyBindings::Find", HasExplicitThis = true)]
-        public extern bool Find(int instanceID, int[] expanded);
+        public extern bool Find(int instanceID, [Unmarshalled] int[] expanded);
         [FreeFunction("HierarchyPropertyBindings::Skip", HasExplicitThis = true)]
-        public extern bool Skip(int count, int[] expanded);
+        public extern bool Skip(int count, [Unmarshalled] int[] expanded);
         [FreeFunction("HierarchyPropertyBindings::CountRemaining", HasExplicitThis = true)]
-        public extern int CountRemaining(int[] expanded);
+        public extern int CountRemaining([Unmarshalled] int[] expanded);
 
         public extern int GetInstanceIDIfImported();
 

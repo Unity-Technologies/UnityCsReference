@@ -532,6 +532,29 @@ namespace UnityEngine
     {
         public static readonly int GenerateAllMips = -1;
 
+        // In TextureFormat constructors, we eventually need to convert the TextureFormat to a GraphicsFormat
+        // in order to call Internal_Create.
+        // When a GraphicsFormat is obtained (with GetGraphicsFormat), Unity is allowed to choose one that
+        // doesn't necessarily reflect what the user asked (sRGB / Linear) -- this is by design, TextureFormat
+        // should be easy to use, so the GraphicsFormat may indeed be UNorm instead of SRGB in gamma projects.
+        // However, if the Internal_Create only receives colorspace information through the GraphicsFormat,
+        // then the texture does not know what the (CPU) data colorspace really should have been.
+        // The texture then re-uses the GraphicsFormat information, which can cause issues if the user then
+        // converts the texture to an asset.
+        // That is why we separately pass the result of "GetTextureColorSpace" here to Internal_Create,
+        // so that we can have a proper distinction between CPU data colorspace & GPU colorspace.
+        internal TextureColorSpace GetTextureColorSpace(bool linear)
+        {
+            return linear ? TextureColorSpace.Linear : TextureColorSpace.sRGB;
+        }
+
+        // Do not use this in TextureFormat constructors, you would otherwise obtain a TextureColorSpace that
+        // may not reflect what the user asked. Always use the above in TextureFormat constructors instead.
+        internal TextureColorSpace GetTextureColorSpace(GraphicsFormat format)
+        {
+            return GetTextureColorSpace(!GraphicsFormatUtility.IsSRGBFormat(format));
+        }
+
         internal bool ValidateFormat(RenderTextureFormat format)
         {
             if (SystemInfo.SupportsRenderTextureFormat(format))
@@ -633,7 +656,7 @@ namespace UnityEngine
         internal Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags, int mipCount, IntPtr nativeTex, string mipmapLimitGroupName)
         {
             if (ValidateFormat(format, width, height))
-                Internal_Create(this, width, height, mipCount, format, flags, nativeTex, mipmapLimitGroupName);
+                Internal_Create(this, width, height, mipCount, format, GetTextureColorSpace(format), flags, nativeTex, mipmapLimitGroupName);
         }
 
         [uei.ExcludeFromDocs]
@@ -685,7 +708,7 @@ namespace UnityEngine
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             if (ignoreMipmapLimit)
                 flags |= TextureCreationFlags.IgnoreMipmapLimit;
-            Internal_Create(this, width, height, mipCount, format, flags, nativeTex, mipmapLimitGroupName);
+            Internal_Create(this, width, height, mipCount, format, GetTextureColorSpace(linear), flags, nativeTex, mipmapLimitGroupName);
         }
 
         public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("-1")] int mipCount, [uei.DefaultValue("false")] bool linear)
@@ -1047,7 +1070,7 @@ namespace UnityEngine
 
             ValidateIsNotCrunched(flags); // Script created Crunched Cubemaps not supported
 
-            Internal_Create(this, width, mipCount, format, flags, IntPtr.Zero);
+            Internal_Create(this, width, mipCount, format, GetTextureColorSpace(format), flags, IntPtr.Zero);
         }
 
         internal Cubemap(int width, TextureFormat textureFormat, int mipCount, IntPtr nativeTex, bool createUninitialized)
@@ -1055,14 +1078,15 @@ namespace UnityEngine
             if (!ValidateFormat(textureFormat, width))
                 return;
 
-            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
+            const bool linear = true;
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
             TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             ValidateIsNotCrunched(flags); // Script created Crunched Cubemaps not supported
-            Internal_Create(this, width, mipCount, format, flags, nativeTex);
+            Internal_Create(this, width, mipCount, format, GetTextureColorSpace(linear), flags, nativeTex);
         }
 
         public Cubemap(int width, TextureFormat textureFormat, bool mipChain)
@@ -1200,7 +1224,7 @@ namespace UnityEngine
                 return;
 
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags, IntPtr.Zero);
+            Internal_Create(this, width, height, depth, mipCount, format, GetTextureColorSpace(format), flags, IntPtr.Zero);
         }
 
         [uei.ExcludeFromDocs]
@@ -1219,14 +1243,15 @@ namespace UnityEngine
             if (!ValidateFormat(textureFormat))
                 return;
 
-            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
+            const bool linear = true;
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
             TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags, nativeTex);
+            Internal_Create(this, width, height, depth, mipCount, format, GetTextureColorSpace(linear), flags, nativeTex);
         }
 
         [uei.ExcludeFromDocs]
@@ -1388,7 +1413,7 @@ namespace UnityEngine
                 return;
 
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, gfxFormat, flags);
+            Internal_Create(this, width, height, depth, mipCount, gfxFormat, GetTextureColorSpace(gfxFormat), flags);
         }
 
 
@@ -1405,7 +1430,7 @@ namespace UnityEngine
                 return;
 
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags);
+            Internal_Create(this, width, height, depth, mipCount, format, GetTextureColorSpace(format), flags);
         }
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, bool linear, bool createUninitialized)
@@ -1420,7 +1445,7 @@ namespace UnityEngine
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags);
+            Internal_Create(this, width, height, depth, mipCount, format, GetTextureColorSpace(linear), flags);
         }
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, bool linear)
@@ -1527,7 +1552,7 @@ namespace UnityEngine
                 return;
 
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, cubemapCount, mipCount, format, flags);
+            Internal_Create(this, width, cubemapCount, mipCount, format, GetTextureColorSpace(format), flags);
         }
 
         public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, int mipCount, bool linear, [uei.DefaultValue("false")] bool createUninitialized)
@@ -1542,7 +1567,7 @@ namespace UnityEngine
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, cubemapCount, mipCount, format, flags);
+            Internal_Create(this, width, cubemapCount, mipCount, format, GetTextureColorSpace(linear), flags);
         }
 
         public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, int mipCount, bool linear)
@@ -1681,7 +1706,7 @@ namespace UnityEngine
             if (!ValidateSize(width, height, format))
                 return;
 
-            Internal_Create(this, width, height, format, mipCount);
+            Internal_Create(this, width, height, format, GetTextureColorSpace(format), mipCount);
         }
 
         [uei.ExcludeFromDocs]
@@ -1718,7 +1743,7 @@ namespace UnityEngine
             if (!ValidateSize(width, height, format))
                 return;
 
-            Internal_Create(this, width, height, format, mipCount);
+            Internal_Create(this, width, height, format, GetTextureColorSpace(linear), mipCount);
         }
     }
 }
