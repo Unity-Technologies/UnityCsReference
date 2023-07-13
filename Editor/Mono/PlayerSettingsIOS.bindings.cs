@@ -159,7 +159,7 @@ namespace UnityEditor
         private string m_VariantName;
 
         [FreeFunction("PlayerSettingsIOSBindings::SetOrAddDeviceRequirementForVariantNameImpl")]
-        extern private static void SetOrAddDeviceRequirementForVariantNameImpl(string name, int index, string[] keys, string[] values);
+        extern private static void SetOrAddDeviceRequirementForVariantNameImpl(string name, int index, [Unmarshalled] string[] keys, [Unmarshalled] string[] values);
 
         [NativeMethod(Name = "GetIOSDeviceRequirementCountForVariantName")]
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
@@ -472,6 +472,28 @@ namespace UnityEditor
             }
 
 
+            [NativeProperty("VisionOSManualProvisioningProfileID")]
+            private extern static string VisionOSManualProvisioningProfileIDInternal
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
+
+            public static string VisionOSManualProvisioningProfileID
+            {
+                get
+                {
+                    return String.IsNullOrEmpty(VisionOSManualProvisioningProfileIDInternal) ?
+                        EditorPrefs.GetString("DefaultVisionOSProvisioningProfileUUID") : VisionOSManualProvisioningProfileIDInternal;
+                }
+                set
+                {
+                    VisionOSManualProvisioningProfileIDInternal = value;
+                }
+            }
+
             [NativeProperty("tvOSManualProvisioningProfileType")]
             public static extern ProvisioningProfileType tvOSManualProvisioningProfileType
             {
@@ -483,6 +505,15 @@ namespace UnityEditor
 
             [NativeProperty("iOSManualProvisioningProfileType")]
             public static extern ProvisioningProfileType iOSManualProvisioningProfileType
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
+
+            [NativeProperty("VisionOSManualProvisioningProfileType")]
+            public static extern ProvisioningProfileType VisionOSManualProvisioningProfileType
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
                 get;

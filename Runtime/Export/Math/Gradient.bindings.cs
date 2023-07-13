@@ -88,13 +88,13 @@ namespace UnityEngine
         extern public GradientColorKey[] colorKeys
         {
             [FreeFunction("Gradient_Bindings::GetColorKeys", IsThreadSafe = true, HasExplicitThis = true)] get;
-            [FreeFunction("Gradient_Bindings::SetColorKeys", IsThreadSafe = true, HasExplicitThis = true)] set;
+            [FreeFunction("Gradient_Bindings::SetColorKeys", IsThreadSafe = true, HasExplicitThis = true)] [param: Unmarshalled] set;
         }
 
         extern public GradientAlphaKey[] alphaKeys
         {
             [FreeFunction("Gradient_Bindings::GetAlphaKeys", IsThreadSafe = true, HasExplicitThis = true)] get;
-            [FreeFunction("Gradient_Bindings::SetAlphaKeys", IsThreadSafe = true, HasExplicitThis = true)] set;
+            [FreeFunction("Gradient_Bindings::SetAlphaKeys", IsThreadSafe = true, HasExplicitThis = true)] [param: Unmarshalled] set;
         }
 
 
@@ -105,7 +105,7 @@ namespace UnityEngine
 
         // Setup Gradient with an array of color keys and alpha keys
         [FreeFunction(Name = "Gradient_Bindings::SetKeys", IsThreadSafe = true, HasExplicitThis = true)]
-        extern public void SetKeys(GradientColorKey[] colorKeys, GradientAlphaKey[] alphaKeys);
+        extern public void SetKeys([Unmarshalled] GradientColorKey[] colorKeys, [Unmarshalled] GradientAlphaKey[] alphaKeys);
 
         public override bool Equals(object o)
         {

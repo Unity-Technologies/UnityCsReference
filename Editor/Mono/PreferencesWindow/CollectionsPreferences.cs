@@ -103,12 +103,12 @@ class JobsMenu
                 }
             case NativeLeakDetectionMode.Enabled:
                 {
-                    Debug.Log("Leak detection has been enabled. Leak warnings will be generated upon exiting play mode.");
+                    Debug.Log("Leak detection has been enabled. Leak warnings will be generated upon domain reload.");
                     break;
                 }
             case NativeLeakDetectionMode.EnabledWithStackTrace:
                 {
-                    Debug.Log("Leak detection with stack traces has been enabled. Leak warnings will be generated upon exiting play mode.");
+                    Debug.Log("Leak detection with stack traces has been enabled. Leak warnings will be generated upon domain reload.");
                     break;
                 }
             default:

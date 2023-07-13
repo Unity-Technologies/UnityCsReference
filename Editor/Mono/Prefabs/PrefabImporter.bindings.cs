@@ -11,6 +11,7 @@ namespace UnityEditor
 {
     [NativeHeader("Editor/Src/AssetPipeline/PrefabImporter.h")]
     [ExcludeFromPreset]
+    [HelpURL("https://docs.unity3d.com/2022.3/Documentation/Manual/Prefabs.html")]
     internal class PrefabImporter : AssetImporter
     {
     }

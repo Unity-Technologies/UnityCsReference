@@ -307,6 +307,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This property controls the speed of the horizontal scrolling when using a keyboard or the on-screen scrollbar buttons (arrows and handle), based on the size of the page.
         /// </summary>
+        /// <remarks>
+        /// When scrolling the page size will be applied to the offset for each scroll step, so the final offset will be the page size multiplied by the number of steps.
+        /// SA: BaseSlider_1::ref::pageSize.
+        /// </remarks>
         public float horizontalPageSize
         {
             get { return m_HorizontalPageSize; }
@@ -322,6 +326,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This property controls the speed of the vertical scrolling when using a keyboard or the on-screen scrollbar buttons (arrows and handle), based on the size of the page.
         /// </summary>
+        /// <remarks>
+        /// When scrolling the page size will be applied to the offset for each scroll step, so the final offset will be the page size multiplied by the number of steps.
+        /// SA: BaseSlider_1::ref::pageSize.
+        /// </remarks>
         public float verticalPageSize
         {
             get { return m_VerticalPageSize; }
@@ -547,6 +555,10 @@ namespace UnityEngine.UIElements
         /// Scroll to a specific child element.
         /// </summary>
         /// <param name="child">The child to scroll to.</param>
+        /// <example>
+        /// This example creates a ScrollView that contains multiple labels. A Button is added that can be used to scroll to a selected label.
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ScrollView_ScrollTo.cs"/>
+        /// </example>
         public void ScrollTo(VisualElement child)
         {
             if (child == null)

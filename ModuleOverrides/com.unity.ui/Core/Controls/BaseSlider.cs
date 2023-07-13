@@ -99,7 +99,7 @@ namespace UnityEngine.UIElements
         private float m_PageSize;
 
         /// <summary>
-        /// This is a generic page size used to change the value when clicking in the slider.
+        /// Represents the value that should be applied to the calculated scroll offset while scrolling the slider, such as when clicking within the track or clicking the slider arrows.
         /// </summary>
         public virtual float pageSize
         {

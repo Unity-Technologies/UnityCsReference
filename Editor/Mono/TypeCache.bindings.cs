@@ -115,7 +115,7 @@ namespace UnityEditor
             static extern Type GetValue(IntPtr key, int index);
 
             [ThreadSafe]
-            extern void Internal_CopyTo(Type[] array, int arrayIndex);
+            extern void Internal_CopyTo([Unmarshalled] Type[] array, int arrayIndex);
 
             IEnumerator<Type> IEnumerable<Type>.GetEnumerator() => GetEnumerator();
 
@@ -338,7 +338,7 @@ namespace UnityEditor
             static extern MethodInfo GetValue(IntPtr key, int index);
 
             [ThreadSafe]
-            extern void Internal_CopyTo(MethodInfo[] array, int arrayIndex);
+            extern void Internal_CopyTo([Unmarshalled] MethodInfo[] array, int arrayIndex);
 
             IEnumerator<MethodInfo> IEnumerable<MethodInfo>.GetEnumerator() => GetEnumerator();
 
@@ -562,7 +562,7 @@ namespace UnityEditor
             static extern FieldInfo GetValue(IntPtr key, int index);
 
             [ThreadSafe]
-            extern void Internal_CopyTo(FieldInfo[] array, int arrayIndex);
+            extern void Internal_CopyTo([Unmarshalled] FieldInfo[] array, int arrayIndex);
 
             IEnumerator<FieldInfo> IEnumerable<FieldInfo>.GetEnumerator() => GetEnumerator();
 
