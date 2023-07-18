@@ -24,6 +24,12 @@ namespace Unity.UI.Builder
             TreeView
         }
 
+        public enum DefaultVisualElementType
+        {
+            Styled = 0,
+            NoStyles = 1
+        }
+
         const string k_UssClassName = "unity-builder-library";
         const string k_ContentContainerName = "content";
 
@@ -45,6 +51,8 @@ namespace Unity.UI.Builder
         [SerializeField] bool m_ShowPackageTemplates;
         [SerializeField] LibraryViewMode m_ViewMode = LibraryViewMode.IconTile;
         [SerializeField] BuilderLibraryTab m_ActiveTab = BuilderLibraryTab.Standard;
+
+        int defaultVisualElementType => EditorPrefs.GetInt(BuilderConstants.LibraryDefaultVisualElementType, (int)DefaultVisualElementType.Styled);
 
         public BuilderLibrary(
             BuilderPaneWindow paneWindow, BuilderViewport viewport,
@@ -128,6 +136,18 @@ namespace Unity.UI.Builder
                 a => m_PaneWindow.document.fileSettings.editorExtensionMode
                     ? DropdownMenuAction.Status.Checked
                     : DropdownMenuAction.Status.Normal);
+
+            pane.AppendActionToEllipsisMenu(BuilderConstants.LibraryDefaultVisualElementType + "/" + BuilderConstants.LibraryDefaultVisualElementStyledName,
+                a => SwitchDefaultVisualElementType(),
+                a => defaultVisualElementType == (int)DefaultVisualElementType.Styled
+                    ? DropdownMenuAction.Status.Checked
+                    : DropdownMenuAction.Status.Normal);
+
+            pane.AppendActionToEllipsisMenu(BuilderConstants.LibraryDefaultVisualElementType + "/" + BuilderConstants.LibraryDefaultVisualElementNoStylesName,
+                a => SwitchDefaultVisualElementType(),
+                a => defaultVisualElementType == (int)DefaultVisualElementType.NoStyles
+                    ? DropdownMenuAction.Status.Checked
+                    : DropdownMenuAction.Status.Normal);
         }
 
         void ToggleEditorExtensionsAuthoring()
@@ -175,6 +195,21 @@ namespace Unity.UI.Builder
             SetViewMode(m_ViewMode == LibraryViewMode.IconTile
                 ? LibraryViewMode.TreeView
                 : LibraryViewMode.IconTile);
+        }
+
+        internal void SetDefaultVisualElementType(DefaultVisualElementType visualElementType)
+        {
+            if (defaultVisualElementType == (int)visualElementType)
+                return;
+
+            EditorPrefs.SetInt(BuilderConstants.LibraryDefaultVisualElementType, (int)visualElementType);
+        }
+
+        void SwitchDefaultVisualElementType()
+        {
+            SetDefaultVisualElementType(defaultVisualElementType == (int)DefaultVisualElementType.NoStyles
+                ? DefaultVisualElementType.Styled
+                : DefaultVisualElementType.NoStyles);
         }
 
         BuilderLibraryTreeView controlsTreeView

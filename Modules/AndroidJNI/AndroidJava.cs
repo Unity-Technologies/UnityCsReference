@@ -103,15 +103,80 @@ namespace UnityEngine
         {
             Exception error = null;
             BindingFlags binderFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-
+            int NullArgs = 0;
             Type[] argTypes = new Type[args.Length];
+
             for (int i = 0; i < args.Length; ++i)
-                argTypes[i] = args[i] == null ? typeof(AndroidJavaObject) : args[i].GetType();
+            {
+                if (args[i] == null)
+                {
+                    argTypes[i] = null;
+                    NullArgs++;
+                }
+                else
+                {
+                    argTypes[i] = args[i].GetType();
+                }
+            }
+
             try
             {
-                MethodInfo method = GetType().GetMethod(methodName, binderFlags, null, argTypes, null);
-                if (method != null)
-                    return _AndroidJNIHelper.Box(method.Invoke(this, args));
+                MethodInfo methodResult = null;
+                if (NullArgs > 0)
+                {
+                    MethodInfo[] methods = this.GetType().GetMethods();
+
+                    var matches = 0;
+
+                    foreach (var method in methods)
+                    {
+                        //exit loop if dont have same name
+                        if (methodName != method.Name)
+                            continue;
+
+                        ParameterInfo[] methodParameters = method.GetParameters();
+
+                        //exit loop of dont have same number of paramters
+                        if (methodParameters.Length != args.Length)
+                            continue;
+
+                        var isOk = true;
+
+                        for (int j = 0; j < methodParameters.Length; j++)
+                        {
+                            if (argTypes[j] == null)
+                            {
+                                if (methodParameters[j].ParameterType.IsValueType)
+                                {
+                                    isOk = false;
+                                    break;
+                                }
+                            }
+                            else if (!methodParameters[j].ParameterType.IsAssignableFrom(argTypes[j]))
+                            {
+                                isOk = false;
+                                break;
+                            }
+                        }
+
+                        if (!isOk)
+                            continue;
+                        else
+                            matches++;
+
+                        methodResult = method;
+                    }
+
+                    if (matches > 1)
+                        throw new Exception($"Ambiguous overloads found for {methodName} with given parameters");
+
+                }
+                else
+                    methodResult = GetType().GetMethod(methodName, binderFlags, null, argTypes, null);
+
+                if (methodResult != null)
+                    return _AndroidJNIHelper.Box(methodResult.Invoke(this, args));
+
             }
             catch (TargetInvocationException invocationError)
             {
@@ -122,16 +187,24 @@ namespace UnityEngine
                 error = invocationError;
             }
 
-            // Log error
+            //Log Error
             string[] argTypeNames = new string[args.Length];
-            for (int i = 0; i < argTypes.Length; ++i)
-                argTypeNames[i] = argTypes[i].ToString();
+            for (int i = 0; i < argTypeNames.Length; ++i)
+            {
+                if (argTypes[i] == null)
+                    argTypeNames[i] = "null";
+                else
+                    argTypeNames[i] = argTypes[i].ToString();
+            }
 
             if (error != null)
                 throw new TargetInvocationException(GetType() + "." + methodName + "(" + string.Join(",", argTypeNames) + ")", error);
 
             AndroidReflection.SetNativeExceptionOnProxy(GetRawProxy(),
                 new Exception("No such proxy method: " + GetType() + "." + methodName + "(" + string.Join(",", argTypeNames) + ")"), true);
+
+
+
             return null;
         }
 

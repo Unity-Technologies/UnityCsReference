@@ -9,6 +9,8 @@ using Unity.Profiling;
 using UnityEngine.Serialization;
 using UnityEngine.TextCore.LowLevel;
 
+using UnityEditor;
+
 namespace UnityEngine.TextCore.Text
 {
     /// <summary>
@@ -130,6 +132,18 @@ namespace UnityEngine.TextCore.Text
             }
         }
         internal Font m_SourceFontFile_EditorRef;
+
+        
+        /// <summary>
+        /// The settings used in the Font Asset Creator when this font asset was created or edited.
+        /// </summary>
+        public FontAssetCreationEditorSettings fontAssetCreationEditorSettings
+        {
+            get { return m_fontAssetCreationEditorSettings; }
+            set { m_fontAssetCreationEditorSettings = value; }
+        }
+        [SerializeField]
+        internal FontAssetCreationEditorSettings m_fontAssetCreationEditorSettings;
 
         /// <summary>
         /// Source font file when atlas population mode is set to dynamic. Null when the atlas population mode is set to static.
@@ -440,17 +454,6 @@ namespace UnityEngine.TextCore.Text
         internal List<FontAsset> m_FallbackFontAssetTable;
 
         /// <summary>
-        /// The settings used in the Font Asset Creator when this font asset was created or edited.
-        /// </summary>
-        public FontAssetCreationEditorSettings fontAssetCreationEditorSettings
-        {
-            get { return m_fontAssetCreationEditorSettings; }
-            set { m_fontAssetCreationEditorSettings = value; }
-        }
-        [SerializeField]
-        internal FontAssetCreationEditorSettings m_fontAssetCreationEditorSettings;
-
-        /// <summary>
         /// Array containing font assets to be used as alternative typefaces for the various potential font weights of this font asset.
         /// </summary>
         public FontWeightPair[] fontWeightTable
@@ -711,6 +714,7 @@ namespace UnityEngine.TextCore.Text
         internal static Action<Texture2D, bool> SetAtlasTextureIsReadable;
         internal static Func<string, Font> GetSourceFontRef;
         internal static Func<Font, string> SetSourceFontGUID;
+        internal static Func<bool> EditorApplicationIsUpdating;
 
         // Profiler Marker declarations
         private static ProfilerMarker k_ReadFontAssetDefinitionMarker = new ProfilerMarker("FontAsset.ReadFontAssetDefinition");
@@ -740,6 +744,10 @@ namespace UnityEngine.TextCore.Text
         {
             // Skip validation until the Editor has been fully loaded.
             if (Time.frameCount == 0)
+                return;
+
+            // See TMPB-187
+            if (EditorApplicationIsUpdating?.Invoke() ?? true)
                 return;
 
             // Make sure our lookup dictionary have been initialized.

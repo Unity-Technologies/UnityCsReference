@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using uei = UnityEngine.Internal;
+using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using Unity.Collections.LowLevel.Unsafe;
 
@@ -721,25 +722,14 @@ namespace UnityEngine
         {
             get
             {
-                RenderTextureFormat format;
-
-                if(graphicsFormat != GraphicsFormat.None)
+                if (graphicsFormat != GraphicsFormat.None)
                 {
-                    format = GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat);
+                    return GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat);
                 }
-                else //if graphicsFormat is None then it is a depth only RT
+                else // If graphicsFormat is None, then the RT is a depth-only RT.
                 {
-                    if(GetDescriptor().shadowSamplingMode != Rendering.ShadowSamplingMode.None)
-                    {
-                        format = RenderTextureFormat.Shadowmap;
-                    }
-                    else
-                    {
-                        format = RenderTextureFormat.Depth;
-                    }
+                    return (GetDescriptor().shadowSamplingMode != ShadowSamplingMode.None) ? RenderTextureFormat.Shadowmap : RenderTextureFormat.Depth;
                 }
-
-                return format;
             }
             set { graphicsFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB); }
         }

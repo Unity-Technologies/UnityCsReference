@@ -172,11 +172,14 @@ namespace UnityEngine.UIElements
         }
 
         //Called when a visual element is removed from a panel to clear all reference to the visual element
-        internal void Cleanup(VisualElement ve)
+        internal void Cleanup(List<VisualElement> elements)
         {
             foreach (var status in m_ClickStatus)
             {
-                if (status.m_Target == ve)
+                if( status.m_Target == null)
+                    continue;
+
+                if(elements.Contains(status.m_Target))
                     status.Reset();
             }
         }
