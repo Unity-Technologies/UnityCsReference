@@ -263,7 +263,7 @@ namespace UnityEditor.UIElements
                             // Find the actual index of the selected choice...
                             foreach (int itemMask in m_UserChoicesMasks)
                             {
-                                if ((itemMask & itemIndex) == itemIndex)
+                                if (itemMask != ~0 && ((itemMask & itemIndex) == itemIndex))
                                 {
                                     indexOfValue = m_UserChoicesMasks.IndexOf(itemMask);
                                     break;

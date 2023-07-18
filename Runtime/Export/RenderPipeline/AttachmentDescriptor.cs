@@ -48,7 +48,18 @@ namespace UnityEngine.Rendering
         // The format of this attachment, legacy.
         public RenderTextureFormat format
         {
-            get { return GraphicsFormatUtility.GetRenderTextureFormat(m_Format); }
+            get
+            {
+#pragma warning disable 618 // Disable deprecation warnings on the ShadowAuto format
+                if (GraphicsFormatUtility.IsDepthStencilFormat(m_Format) && m_Format != GraphicsFormat.ShadowAuto)
+#pragma warning restore 618
+                {
+                    return RenderTextureFormat.Depth;
+                    // Note that there is no way for us to identify the descriptor as "RenderTextureFormat.ShadowMap" when m_Format != ShadowAuto.
+                    // This is because the ShadowSamplingMode is not relevant to AttachmentDescriptors. (attachments aren't sampled)
+                }
+                return GraphicsFormatUtility.GetRenderTextureFormat(m_Format);
+            }
             set { m_Format = GraphicsFormatUtility.GetGraphicsFormat(value, RenderTextureReadWrite.Default); }
         }
 

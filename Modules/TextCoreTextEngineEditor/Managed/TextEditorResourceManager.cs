@@ -21,6 +21,7 @@ namespace UnityEditor.TextCore.Text
             FontAsset.SetAtlasTextureIsReadable += FontEngineEditorUtilities.SetAtlasTextureIsReadable;
             FontAsset.GetSourceFontRef += TextEditorResourceManager.GetSourceFontRef;
             FontAsset.SetSourceFontGUID += TextEditorResourceManager.SetSourceFontGUID;
+            FontAsset.EditorApplicationIsUpdating += () => EditorApplication.isUpdating;
 
             // Callback to handle clearing dynamic font asset data when closing the Editor
             EditorApplication.quitting += () =>
