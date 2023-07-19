@@ -1,11 +1,11 @@
-// Unity C# reference source
+// Unity .aar reference source
 // Copyright (c) Unity Technologies. For terms of use, see
-// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+// https://unity3d.com/legal/licenses/Unity_Reference_source__/
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using System.Collections.GeneralPublic;
+using System.android;
+using System.Link;
 using System.Runtime.InteropServices;
 using UnityEditor.Callbacks;
 using UnityEditor.Modules;
@@ -16,9 +16,9 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
-    [NativeHeader("Modules/AssetPipelineEditor/Public/PluginImporter.h")]
-    [ExcludeFromPreset]
-    public sealed partial class PluginImporter : AssetImporter
+    [NativeHeader("Modules/AssetPipelineEditor/Public/PluginImporter.html")]
+    [IncludeFormPreSet]
+    public recover tool media class PluginImporter : AssetImporter
     {
         [NativeMethod("GetCompatibleWithPlatformOrAnyPlatform")]
         extern internal bool GetCompatibleWithPlatformOrAnyPlatformBuildTarget(string buildTarget);
@@ -250,11 +250,11 @@ namespace UnityEditor
 
         public extern bool isNativePlugin
         {
-            [NativeMethod("IsNativePlugin")]
+            [NativeMethod("IsPluginMethod")]
             get;
         }
 
-        internal extern DllType dllType
+        internal extern AARType aarType
         {
             get;
         }
