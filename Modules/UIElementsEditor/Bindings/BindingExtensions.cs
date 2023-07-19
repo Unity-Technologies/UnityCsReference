@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -20,6 +21,7 @@ namespace UnityEditor.UIElements.Bindings
         private bool m_DelayBind = false;
         private long m_BindingOperationStartTimeMs;
         private const int k_MaxBindingTimeMs = 50;
+        private long m_LastFrame = long.MinValue;
 
         public SerializedObjectBindingContext(SerializedObject so)
         {
@@ -542,18 +544,21 @@ namespace UnityEditor.UIElements.Bindings
             return serializedObject.isValid;
         }
 
-        internal void UpdateIfNecessary()
+        internal void UpdateIfNecessary(VisualElement element)
         {
             if (!wasUpdated)
             {
                 if (IsValid())
                 {
-                    serializedObject.UpdateIfRequiredOrScript();
+                    if (element.elementPanel?.GetUpdater(VisualTreeUpdatePhase.DataBinding) is VisualTreeDataBindingsUpdater updater && m_LastFrame != updater.frame)
+                    {
+                        serializedObject.UpdateIfRequiredOrScript();
 
-                    UpdateRevision();
+                        UpdateRevision();
+                        m_LastFrame = updater.frame;
+                        wasUpdated = true;
+                    }
                 }
-
-                wasUpdated = true;
             }
         }
 
@@ -842,6 +847,8 @@ namespace UnityEditor.UIElements.Bindings
             RemoveBindingRequest(element);
             (element.GetBinding(BindingExtensions.s_SerializedBindingId) as SerializedObjectBindingBase)?.OnRelease();
             (element.GetBinding(BindingExtensions.s_SerializedBindingContextUpdaterId) as SerializedObjectBindingBase)?.OnRelease();
+            element.ClearBinding(BindingExtensions.s_SerializedBindingId);
+            element.ClearBinding(BindingExtensions.s_SerializedBindingContextUpdaterId);
 
             if (context != null)
             {
@@ -1162,10 +1169,34 @@ namespace UnityEditor.UIElements.Bindings
         }
     }
 
-    //TODO: Pool this
-
-    internal abstract class SerializedObjectBindingBase : CustomBinding
+    internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSourceProvider, IDataSourceViewHashProvider
     {
+        private long m_LastUpdateTime;
+
+        private static long GetCurrentTime()
+        {
+            return Panel.TimeSinceStartupMs();
+        }
+
+        // This is to ensure that getting the resolved data source is as fast as possible, since we don't need to fetch it from the hierarchy.
+        public object dataSource => this;
+        public PropertyPath dataSourcePath => default;
+
+        public long GetViewHashCode()
+        {
+            if (null == bindingContext)
+                return -1;
+
+            if (null == bindingContext.serializedObject)
+                return -1;
+
+            var element = boundElement as VisualElement;
+            if (null != element)
+                bindingContext.UpdateIfNecessary(element);
+
+            return bindingContext.serializedObject.objectVersion;
+        }
+
         protected abstract string bindingId { get; }
 
         public SerializedObjectBindingContext bindingContext
@@ -1225,11 +1256,24 @@ namespace UnityEditor.UIElements.Bindings
             OnRelease();
         }
 
+        protected internal override void OnActivated(in BindingActivationContext context)
+        {
+            // Resets the throttling and make sure it will get called on the next update.
+            m_LastUpdateTime = GetCurrentTime() - VisualTreeBindingsUpdater.k_MinUpdateDelayMs;
+            base.OnActivated(in context);
+        }
+
         protected internal override BindingResult Update(in BindingContext context)
         {
-            bindingContext?.UpdateIfNecessary();
-            var result = OnUpdate(in context);
-            return result;
+            var currentTimeMs = GetCurrentTime();
+            if (VisualTreeBindingsUpdater.disableBindingsThrottling || (currentTimeMs - m_LastUpdateTime) >= VisualTreeBindingsUpdater.k_MinUpdateDelayMs)
+            {
+                m_LastUpdateTime = currentTimeMs;
+                bindingContext?.UpdateIfNecessary(context.targetElement);
+                var result = OnUpdate(in context);
+                return result;
+            }
+            return new BindingResult(BindingStatus.Pending);
         }
 
         public abstract BindingResult OnUpdate(in BindingContext context);
@@ -1303,8 +1347,6 @@ namespace UnityEditor.UIElements.Bindings
                 }
             }
         }
-
-        protected SerializedObjectBindingBase FieldBinding => (m_Field as VisualElement)?.GetBinding(bindingId) as SerializedObjectBindingBase;
 
         protected bool isFieldAttached
         {
@@ -1600,6 +1642,7 @@ namespace UnityEditor.UIElements.Bindings
             {
                 return new BindingResult(BindingStatus.Pending);
             }
+
             try
             {
                 ResetUpdate();
@@ -1611,20 +1654,18 @@ namespace UnityEditor.UIElements.Bindings
 
                 isUpdating = true;
 
-                if (FieldBinding == this)
-                {
-                    var veField = field as VisualElement;
 
-                    // Value might not have changed but prefab state could have been reverted, so we need to
-                    // at least update the prefab override visual if necessary. Happens when user reverts a
-                    // field where the value is the same as the prefab registered value. Case 1276154.
-                    BindingsStyleHelpers.UpdatePrefabStateStyle(veField, boundProperty);
+                var veField = field as VisualElement;
 
-                    if (EditorApplication.isPlaying && SerializedObject.GetLivePropertyFeatureGlobalState() && boundProperty.isLiveModified)
-                        BindingsStyleHelpers.UpdateLivePropertyStateStyle(veField, boundProperty);
+                // Value might not have changed but prefab state could have been reverted, so we need to
+                // at least update the prefab override visual if necessary. Happens when user reverts a
+                // field where the value is the same as the prefab registered value. Case 1276154.
+                BindingsStyleHelpers.UpdatePrefabStateStyle(veField, boundProperty);
 
-                    return default;
-                }
+                if (EditorApplication.isPlaying && SerializedObject.GetLivePropertyFeatureGlobalState() && boundProperty.isLiveModified)
+                    BindingsStyleHelpers.UpdateLivePropertyStateStyle(veField, boundProperty);
+
+                return default;
             }
             catch (ArgumentNullException)
             {
@@ -1685,15 +1726,13 @@ namespace UnityEditor.UIElements.Bindings
             if (isReleased)
                 return;
 
-            if (FieldBinding == this)
+            if (field is BaseField<TValue> bf)
             {
-                if (field is BaseField<TValue> bf)
-                {
-                    BindingsStyleHelpers.UnregisterRightClickMenu(bf);
-                }else if (field is Foldout foldout)
-                {
-                    BindingsStyleHelpers.UnregisterRightClickMenu(foldout);
-                }
+                BindingsStyleHelpers.UnregisterRightClickMenu(bf);
+            }
+            else if (field is Foldout foldout)
+            {
+                BindingsStyleHelpers.UnregisterRightClickMenu(foldout);
             }
 
             ResetContext();
@@ -1705,6 +1744,7 @@ namespace UnityEditor.UIElements.Bindings
             isReleased = true;
         }
     }
+
     class SerializedObjectBinding<TValue> : SerializedObjectBindingPropertyToBaseField<TValue, TValue>
     {
         public static ObjectPool<SerializedObjectBinding<TValue>> s_Pool =
@@ -1982,15 +2022,12 @@ namespace UnityEditor.UIElements.Bindings
             if (isReleased)
                 return;
 
-            if (FieldBinding == this)
-            {
-                // Make sure to nullify the field to unbind before reverting the enum value
-                var saveField = field;
-                BindingsStyleHelpers.UnregisterRightClickMenu(saveField);
+            // Make sure to nullify the field to unbind before reverting the enum value
+            var saveField = field;
+            BindingsStyleHelpers.UnregisterRightClickMenu(saveField);
 
-                field = null;
-                saveField.value = null;
-            }
+            field = null;
+            saveField.value = null;
 
             ResetContext();
 
@@ -2189,24 +2226,20 @@ namespace UnityEditor.UIElements.Bindings
             if (isReleased)
                 return;
 
-            if (FieldBinding == this)
+            //we set the popup values to the original ones
+            try
             {
-                //we set the popup values to the original ones
-                try
-                {
-                    var previousField = field;
-                    BindingsStyleHelpers.UnregisterRightClickMenu(previousField);
+                var previousField = field;
+                BindingsStyleHelpers.UnregisterRightClickMenu(previousField);
 
-                    field = null;
-                    previousField.choices = originalChoices;
-                    previousField.index = originalIndex;
-                }
-                catch (ArgumentException)
-                {
-                    //we did our best
-                }
+                field = null;
+                previousField.choices = originalChoices;
+                previousField.index = originalIndex;
             }
-
+            catch (ArgumentException)
+            {
+                //we did our best
+            }
 
             ResetContext();
             field = null;

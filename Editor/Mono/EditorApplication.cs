@@ -42,7 +42,7 @@ namespace UnityEditor
         Unpaused,
     }
 
-    internal class ApplicationTitleDescriptor
+    public class ApplicationTitleDescriptor
     {
         public ApplicationTitleDescriptor(string projectName, string unityVersion, string activeSceneName, string targetName, bool codeCoverageEnabled)
         {
@@ -282,7 +282,7 @@ namespace UnityEditor
         // Global contextual menus for inspector values
         public static SerializedPropertyCallbackFunction contextualPropertyMenu;
 
-        internal static event Action<ApplicationTitleDescriptor> updateMainWindowTitle;
+        public static event Action<ApplicationTitleDescriptor> updateMainWindowTitle;
 
         internal static string GetDefaultMainWindowTitle(ApplicationTitleDescriptor desc)
         {

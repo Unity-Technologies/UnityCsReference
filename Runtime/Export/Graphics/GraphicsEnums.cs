@@ -550,6 +550,7 @@ namespace UnityEngine
         NoResolvedColorSurface = 1 << 8,
         DynamicallyScalable = 1 << 10,
         BindMS = 1 << 11,
+        DynamicallyScalableExplicit = 1 << 16,
     }
 
     public enum RenderTextureReadWrite

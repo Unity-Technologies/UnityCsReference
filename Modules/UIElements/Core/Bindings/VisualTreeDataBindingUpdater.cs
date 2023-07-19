@@ -18,6 +18,8 @@ namespace UnityEngine.UIElements
 
     class VisualTreeDataBindingsUpdater : BaseVisualTreeHierarchyTrackerUpdater
     {
+        public long frame { get; private set; }
+
         readonly struct VersionInfo
         {
             public readonly object source;
@@ -86,7 +88,7 @@ namespace UnityEngine.UIElements
                 m_DataSourceChangedRequests.Add(ve);
         }
 
-        void CacheAndLogBindingResult(bool appliedOnUiCache, DataBindingManager.BindingData bindingData, BindingResult result)
+        void CacheAndLogBindingResult(bool appliedOnUiCache, in DataBindingManager.BindingData bindingData, in BindingResult result)
         {
             var logLevel = bindingManager.logLevel;
 
@@ -118,7 +120,7 @@ namespace UnityEngine.UIElements
                 bindingManager.CacheSourceBindingResult(bindingData, result);
         }
 
-        void LogResult(BindingResult result)
+        void LogResult(in BindingResult result)
         {
             if (string.IsNullOrWhiteSpace(result.message))
                 return;
@@ -135,6 +137,7 @@ namespace UnityEngine.UIElements
 
         public override void Update()
         {
+            ++frame;
             base.Update();
 
             ProcessAllBindingRequests();
@@ -267,7 +270,7 @@ namespace UnityEngine.UIElements
             return (true, 0L);
         }
 
-        private bool IsPrefix(PropertyPath prefix, PropertyPath path)
+        private bool IsPrefix(in PropertyPath prefix, in PropertyPath path)
         {
             if (path.Length < prefix.Length)
                 return false;

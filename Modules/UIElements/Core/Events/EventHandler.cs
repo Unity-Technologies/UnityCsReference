@@ -330,7 +330,7 @@ namespace UnityEngine.UIElements
         /// Informs the data binding system that a property of a control has changed.
         /// </summary>
         /// <param name="property">The property that has changed.</param>
-        protected void NotifyPropertyChanged(BindingId property)
+        protected void NotifyPropertyChanged(in BindingId property)
         {
             var element = this as VisualElement;
             if (null == element?.elementPanel)

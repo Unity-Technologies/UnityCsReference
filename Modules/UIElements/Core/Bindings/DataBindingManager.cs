@@ -82,7 +82,7 @@ namespace UnityEngine.UIElements
             public readonly Binding binding;
             public readonly bool shouldProcess;
 
-            public BindingRequest(BindingId bindingId, Binding binding, bool shouldProcess = true)
+            public BindingRequest(in BindingId bindingId, Binding binding, bool shouldProcess = true)
             {
                 this.bindingId = bindingId;
                 this.binding = binding;
@@ -108,7 +108,7 @@ namespace UnityEngine.UIElements
                 return collection;
             }
 
-            public void AddBindingData(BindingData bindingData)
+            public void AddBindingData(in BindingData bindingData)
             {
                 if (m_BindingPerId.TryGetValue(bindingData.target.bindingId, out var toRemove))
                 {
@@ -119,12 +119,12 @@ namespace UnityEngine.UIElements
                 m_Bindings.Add(bindingData);
             }
 
-            public bool TryGetBindingData(BindingId bindingId, out BindingData data)
+            public bool TryGetBindingData(in BindingId bindingId, out BindingData data)
             {
                 return m_BindingPerId.TryGetValue(bindingId, out data);
             }
 
-            public bool RemoveBindingData(BindingData bindingData)
+            public bool RemoveBindingData(in BindingData bindingData)
             {
                 if (!m_BindingPerId.TryGetValue(bindingData.target.bindingId, out var toRemove))
                     return false;
@@ -243,7 +243,7 @@ namespace UnityEngine.UIElements
                 return m_BindingDataPerElement.TryGetValue(element, out collection);
             }
 
-            public void StartTrackingBinding(VisualElement element, BindingData binding)
+            public void StartTrackingBinding(VisualElement element, in BindingData binding)
             {
                 BindingDataCollection collection;
                 if (m_BoundElements.Add(element))
@@ -279,7 +279,7 @@ namespace UnityEngine.UIElements
                     m_Panel.dataBindingManager.m_DetectedChangesFromUI.Add(bindingData);
             }
 
-            public void StopTrackingBinding(VisualElement element, BindingData binding)
+            public void StopTrackingBinding(VisualElement element, in BindingData binding)
             {
                 if (m_BoundElements.Contains(element) && m_BindingDataPerElement.TryGetValue(element, out var collection))
                 {
@@ -594,7 +594,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            public DataSourceContext GetResolvedDataSourceContext(VisualElement element, BindingData bindingData)
+            public DataSourceContext GetResolvedDataSourceContext(VisualElement element, in BindingData bindingData)
             {
                 object localDataSource = null;
                 PropertyPath localDataSourcePath = default;
@@ -666,7 +666,7 @@ namespace UnityEngine.UIElements
             private void TrackPropertyChanges(object sender, BindablePropertyChangedEventArgs args)
                 => TrackPropertyChanges(sender, args.propertyName);
 
-            private void TrackPropertyChanges(object sender, PropertyPath propertyPath)
+            private void TrackPropertyChanges(object sender, in PropertyPath propertyPath)
             {
                 if (!m_DataSourceRefCount.ContainsKey(sender))
                     return;
@@ -776,7 +776,7 @@ namespace UnityEngine.UIElements
                 return path;
             }
 
-            void AddHierarchyDataSourcePathForElement(VisualElement element, PropertyPath dataSourcePath)
+            void AddHierarchyDataSourcePathForElement(VisualElement element, in PropertyPath dataSourcePath)
             {
                 m_ResolvedHierarchicalDataSourcePathPerElement[element] = dataSourcePath;
             }
@@ -888,27 +888,27 @@ namespace UnityEngine.UIElements
             m_DataSourceTracker.UpdateVersion(source, version);
         }
 
-        internal void CacheUIBindingResult(BindingData bindingData, BindingResult result)
+        internal void CacheUIBindingResult(in BindingData bindingData, in BindingResult result)
         {
             m_LastUIBindingResultsCache[bindingData] = result;
         }
 
-        internal bool TryGetLastUIBindingResult(BindingData bindingData, out BindingResult result)
+        internal bool TryGetLastUIBindingResult(in BindingData bindingData, out BindingResult result)
         {
             return m_LastUIBindingResultsCache.TryGetValue(bindingData, out result);
         }
 
-        internal void CacheSourceBindingResult(BindingData bindingData, BindingResult result)
+        internal void CacheSourceBindingResult(in BindingData bindingData, in BindingResult result)
         {
             m_LastSourceBindingResultsCache[bindingData] = result;
         }
 
-        internal bool TryGetLastSourceBindingResult(BindingData bindingData, out BindingResult result)
+        internal bool TryGetLastSourceBindingResult(in BindingData bindingData, out BindingResult result)
         {
             return m_LastSourceBindingResultsCache.TryGetValue(bindingData, out result);
         }
 
-        internal DataSourceContext GetResolvedDataSourceContext(VisualElement element, BindingData bindingData)
+        internal DataSourceContext GetResolvedDataSourceContext(VisualElement element, in BindingData bindingData)
         {
             return element.panel == m_Panel
                 ? m_DataSourceTracker.GetResolvedDataSourceContext(element, bindingData)
@@ -980,7 +980,7 @@ namespace UnityEngine.UIElements
                 : s_Empty;
         }
 
-        internal bool TryGetBindingData(VisualElement element, BindingId bindingId, out BindingData bindingData)
+        internal bool TryGetBindingData(VisualElement element, in BindingId bindingId, out BindingData bindingData)
         {
             bindingData = default;
             if (element.panel == m_Panel && m_BindingsTracker.TryGetBindingCollection(element, out var collection))
@@ -992,7 +992,7 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        internal void RegisterBinding(VisualElement element, BindingId bindingId, Binding binding)
+        internal void RegisterBinding(VisualElement element, in BindingId bindingId, Binding binding)
         {
             Assert.IsNotNull(binding);
             Assert.IsFalse(((PropertyPath)bindingId).IsEmpty, $"[UI Toolkit] Could not register binding on element of type '{element.GetType().Name}': target property path is empty.");
@@ -1016,7 +1016,7 @@ namespace UnityEngine.UIElements
             binding.OnActivated(new BindingActivationContext(element, bindingId));
         }
 
-        internal void UnregisterBinding(VisualElement element, BindingId bindingId)
+        internal void UnregisterBinding(VisualElement element, in BindingId bindingId)
         {
             if (!m_BindingsTracker.TryGetBindingCollection(element, out var collection))
                 return;
@@ -1068,7 +1068,7 @@ namespace UnityEngine.UIElements
             m_DetectedChangesFromUI.Clear();
         }
 
-        public static void CreateBindingRequest(VisualElement target, BindingId bindingId, Binding binding)
+        public static void CreateBindingRequest(VisualElement target, in BindingId bindingId, Binding binding)
         {
             var requests = (List<BindingRequest>) target.GetProperty(k_RequestBindingPropertyName);
             if (requests == null)
@@ -1180,7 +1180,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static bool TryGetBindingRequest(VisualElement element, BindingId bindingId, out Binding binding)
+        internal static bool TryGetBindingRequest(VisualElement element, in BindingId bindingId, out Binding binding)
         {
             var requests = (List<BindingRequest>) element.GetProperty(k_RequestBindingPropertyName);
             if (requests == null)

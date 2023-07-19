@@ -47,7 +47,7 @@ namespace UnityEditor
             public static readonly GUIContent cacheServerLearnMore = new GUIContent("Learn more...", "Go to cacheserver documentation.");
 
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
-            public static GUIContent textSerializeMappingsOnOneLine = EditorGUIUtility.TrTextContent("Force Serialize References On One Line", "Forces Unity to write references and other inline mappings on one line, to help reduce version control noise");
+            public static GUIContent textSerializeMappingsOnOneLine = EditorGUIUtility.TrTextContent("Reduce version control noise", "Forces Unity to write references and similar YAML structures on one line, which reduces version control noise.");
             public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
 
             public static GUIContent buildPipelineHeader = EditorGUIUtility.TrTextContent("Build Pipeline");
@@ -438,7 +438,7 @@ namespace UnityEditor
             if (m_SerializationMode.intValue != (int)SerializationMode.ForceBinary)
             {
                 EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_SerializeInlineMappingsOnOneLine);
+                EditorGUILayout.PropertyField(m_SerializeInlineMappingsOnOneLine, Content.textSerializeMappingsOnOneLine);
                 if (EditorGUI.EndChangeCheck() && m_IsGlobalSettings)
                 {
                     EditorSettings.serializeInlineMappingsOnOneLine = m_SerializeInlineMappingsOnOneLine.boolValue;

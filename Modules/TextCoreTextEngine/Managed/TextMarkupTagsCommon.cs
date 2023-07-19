@@ -216,5 +216,7 @@ namespace UnityEngine.TextCore.Text
         public const uint LOW_SURROGATE_START = 0xDC00;
         public const uint LOW_SURROGATE_END = 0xDFFF;
         public const uint UNICODE_PLANE01_START = 0x10000;
+        public const uint UNICODE_PLANE16_END = 0x10FFFF;
+        public const uint LOWEST_10BITS_MASK = 0x3FF;
     }
 }

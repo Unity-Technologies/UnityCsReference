@@ -34,9 +34,19 @@ namespace UnityEditor.Actions
         public static void AddMenuItemWithContext(DropdownMenu menu, IEnumerable<Object> context, string menuItemPath, string contextMenuPath = "")
         {
             var contextArray = ToArray(context);
-            bool enabled = Menu.GetEnabledWithContext(menuItemPath, contextArray);
+            var enabled = Menu.GetEnabledWithContext(menuItemPath, contextArray);
+            AddMenuItemWithContext(menu, context, enabled, menuItemPath, contextMenuPath);
+        }
+
+        internal static void AddMenuItemWithContext(DropdownMenu menu, IEnumerable<Object> context, bool enabled, string menuItemPath, string contextMenuPath = "")
+        {
+            var contextArray = ToArray(context);
             string iconResource = Menu.GetIconResource(menuItemPath);
-            AddAction(menu, string.IsNullOrEmpty(contextMenuPath) ? menuItemPath : contextMenuPath,
+            string shortcut = Menu.GetHotkey(menuItemPath);
+            string path = (string.IsNullOrEmpty(contextMenuPath) ? menuItemPath : contextMenuPath)
+                + (string.IsNullOrEmpty(shortcut) ? "" : " " + shortcut);
+
+            AddAction(menu, path,
                 () => { ExecuteMenuItem(contextArray, menuItemPath); }, enabled,
                 string.IsNullOrEmpty(iconResource) ? null : EditorGUIUtility.LoadIcon(iconResource),
                 enabled ? string.Empty : Menu.GetDisabledTooltip(menuItemPath));
@@ -87,11 +97,18 @@ namespace UnityEditor.Actions
 
         public static void AddClipboardEntriesTo(DropdownMenu menu)
         {
-            AddMenuItemWithContext(menu, null, "Edit/Cut", "Cut");
-            AddMenuItemWithContext(menu, null, "Edit/Copy", "Copy");
-            AddMenuItemWithContext(menu, null, "Edit/Paste", "Paste");
-            AddMenuItemWithContext(menu, null, "Edit/Duplicate", "Duplicate");
-            AddMenuItemWithContext(menu, null, "Edit/Delete", "Delete");
+            var isThereGameObjectInSelection = Selection.gameObjects.Length > 0;
+            var isPasteEnabled = GUIUtility.systemCopyBuffer.Length > 0;
+            AddClipboardEntriesTo(menu, isThereGameObjectInSelection, isThereGameObjectInSelection, isPasteEnabled, isThereGameObjectInSelection, isThereGameObjectInSelection);
+        }
+
+        public static void AddClipboardEntriesTo(DropdownMenu menu, bool cutEnabled, bool copyEnabled, bool pasteEnabled, bool duplicateEnabled, bool deleteEnabled)
+        {
+            AddMenuItemWithContext(menu, null, cutEnabled, "Edit/Cut", "Cut");
+            AddMenuItemWithContext(menu, null, copyEnabled, "Edit/Copy", "Copy");
+            AddMenuItemWithContext(menu, null, pasteEnabled, "Edit/Paste", "Paste");
+            AddMenuItemWithContext(menu, null, duplicateEnabled, "Edit/Duplicate", "Duplicate");
+            AddMenuItemWithContext(menu, null, deleteEnabled, "Edit/Delete", "Delete");
         }
 
         public static void AddComponentEntriesTo(DropdownMenu menu)
@@ -118,6 +135,7 @@ namespace UnityEditor.Actions
         public static void AddGameObjectEntriesTo(DropdownMenu menu)
         {
             bool hasSelectedGO = Selection.gameObjects.Length > 0;
+            bool hasSelectedExactlyOneGO = Selection.gameObjects.Length == 1;
             AddClipboardEntriesTo(menu);
 
             menu.AppendSeparator();
@@ -128,13 +146,31 @@ namespace UnityEditor.Actions
 
             menu.AppendSeparator();
 
-            AddAction(menu, "Isolate", SceneVisibilityManager.ToggleIsolateSelectionShortcut, hasSelectedGO);
+            AddAction(menu,
+                SceneVisibilityState.isolation ? "Exit Isolation" : "Isolate",
+                SceneVisibilityManager.ToggleIsolateSelectionShortcut,
+                SceneVisibilityState.isolation || hasSelectedGO);
 
             menu.AppendSeparator();
 
             AddMenuItemWithContext(menu, null, "Component/Add...", "Add Component...");
             AddMenuItemWithContext(menu, null, "Assets/Properties...", "Properties...");
 
+            // Prefab menu items that only make sense if a single object is selected.
+            var listOfSceneHierarchyWindows = SceneHierarchyWindow.GetAllSceneHierarchyWindows();
+            if (hasSelectedExactlyOneGO && listOfSceneHierarchyWindows.Count > 0)
+            {
+                var sceneHierarchy = listOfSceneHierarchyWindows[0].sceneHierarchy;
+                if (sceneHierarchy is not null)
+                {
+                    menu.AppendSeparator();
+                    var prefabIcon = PrefabUtility.GameObjectStyles.prefabIcon;
+                    AddAction(menu, "Prefab/", null, icon: prefabIcon);
+                    sceneHierarchy.PopulateDropdownMenuWithPrefabMenuItems(menu);
+                }
+            }
+
+            // Component entries
             if (hasSelectedGO)
             {
                 menu.AppendSeparator();

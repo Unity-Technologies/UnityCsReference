@@ -84,6 +84,15 @@ namespace UnityEngine
 
         private IntPtr m_Ptr = IntPtr.Zero;
 
+        // These are used to avoid dynamically created delegate objects (or GC.HeapAlloc for every dispatch call).
+        private Allocator m_DispatchAllocator;
+        private TypeDispatchData m_TypeDispatchData;
+        private TransformDispatchData m_TransformDispatchData;
+        private Component[] m_TransformedComponents;
+        private Action<TypeDispatchData> m_TypeDataCallback;
+        private Action<TransformDispatchData> m_TransformDataCallback;
+        private Action<Component[]> m_TransformComponentCallback;
+
         public bool valid { get { return m_Ptr != IntPtr.Zero; } }
 
         public int maxDispatchHistoryFramesCount
@@ -105,6 +114,10 @@ namespace UnityEngine
         public ObjectDispatcher()
         {
             m_Ptr = CreateDispatchSystemHandle();
+
+            m_TypeDataCallback = DispatchCallback;
+            m_TransformDataCallback = DispatchCallback;
+            m_TransformComponentCallback = DispatchCallback;
         }
 
         ~ObjectDispatcher()
@@ -214,6 +227,30 @@ namespace UnityEngine
             }
         };
 
+        private void DispatchCallback(TypeDispatchData data)
+        {
+            m_TypeDispatchData = new TypeDispatchData();
+            m_TypeDispatchData.changed = data.changed;
+            m_TypeDispatchData.changedID = new NativeArray<int>(data.changedID, m_DispatchAllocator);
+            m_TypeDispatchData.destroyedID = new NativeArray<int>(data.destroyedID, m_DispatchAllocator);
+        }
+
+        private void DispatchCallback(TransformDispatchData data)
+        {
+            m_TransformDispatchData = new TransformDispatchData();
+            m_TransformDispatchData.transformedID = new NativeArray<int>(data.transformedID, m_DispatchAllocator);
+            m_TransformDispatchData.parentID = new NativeArray<int>(data.parentID, m_DispatchAllocator);
+            m_TransformDispatchData.localToWorldMatrices = new NativeArray<Matrix4x4>(data.localToWorldMatrices, m_DispatchAllocator);
+            m_TransformDispatchData.positions = new NativeArray<Vector3>(data.positions, m_DispatchAllocator);
+            m_TransformDispatchData.rotations = new NativeArray<Quaternion>(data.rotations, m_DispatchAllocator);
+            m_TransformDispatchData.scales = new NativeArray<Vector3>(data.scales, m_DispatchAllocator);
+        }
+
+        private void DispatchCallback(Component[] components)
+        {
+            m_TransformedComponents = components;
+        }
+
         public void DispatchTypeChangesAndClear(Type type, Action<TypeDispatchData> callback, bool sortByInstanceID = false, bool noScriptingArray = false)
         {
             ValidateSystemHandleAndThrow();
@@ -244,60 +281,31 @@ namespace UnityEngine
 
         public TypeDispatchData GetTypeChangesAndClear(Type type, Allocator allocator, bool sortByInstanceID = false, bool noScriptingArray = false)
         {
-            var dispatchData = new TypeDispatchData();
-
-            DispatchTypeChangesAndClear(type, (TypeDispatchData data) =>
-            {
-                dispatchData.changed = data.changed;
-                dispatchData.changedID = new NativeArray<int>(data.changedID, allocator);
-                dispatchData.destroyedID = new NativeArray<int>(data.destroyedID, allocator);
-            }, sortByInstanceID, noScriptingArray);
-
-            return dispatchData;
+            m_DispatchAllocator = allocator;
+            DispatchTypeChangesAndClear(type, m_TypeDataCallback, sortByInstanceID, noScriptingArray);
+            return m_TypeDispatchData;
         }
 
         public void GetTypeChangesAndClear(Type type, List<Object> changed, out NativeArray<int> changedID, out NativeArray<int> destroyedID, Allocator allocator, bool sortByInstanceID = false)
         {
-            var dispatchData = new TypeDispatchData();
-
-            DispatchTypeChangesAndClear(type, (TypeDispatchData data) =>
-            {
-                dispatchData.changedID = new NativeArray<int>(data.changedID, allocator);
-                dispatchData.destroyedID = new NativeArray<int>(data.destroyedID, allocator);
-            }, sortByInstanceID, true);
-
-            changedID = dispatchData.changedID;
-            destroyedID = dispatchData.destroyedID;
-            Resources.InstanceIDToObjectList(dispatchData.changedID, changed);
+            m_DispatchAllocator = allocator;
+            DispatchTypeChangesAndClear(type, m_TypeDataCallback, sortByInstanceID, true);
+            changedID = m_TypeDispatchData.changedID;
+            destroyedID = m_TypeDispatchData.destroyedID;
+            Resources.InstanceIDToObjectList(m_TypeDispatchData.changedID, changed);
         }
 
         public Component[] GetTransformChangesAndClear(Type type, TransformTrackingType trackingType, bool sortByInstanceID = false)
         {
-            Component[] dispatchData = null;
-
-            DispatchTransformChangesAndClear(type, trackingType, (Component[] instances) =>
-            {
-                dispatchData = instances;
-            }, sortByInstanceID);
-
-            return dispatchData;
+            DispatchTransformChangesAndClear(type, trackingType, m_TransformComponentCallback, sortByInstanceID);
+            return m_TransformedComponents;
         }
 
         public TransformDispatchData GetTransformChangesAndClear(Type type, TransformTrackingType trackingType, Allocator allocator)
         {
-            var dispatchData = new TransformDispatchData();
-
-            DispatchTransformChangesAndClear(type, trackingType, (TransformDispatchData data) =>
-            {
-                dispatchData.transformedID = new NativeArray<int>(data.transformedID, allocator);
-                dispatchData.parentID = new NativeArray<int>(data.parentID, allocator);
-                dispatchData.localToWorldMatrices = new NativeArray<Matrix4x4>(data.localToWorldMatrices, allocator);
-                dispatchData.positions = new NativeArray<Vector3>(data.positions, allocator);
-                dispatchData.rotations = new NativeArray<Quaternion>(data.rotations, allocator);
-                dispatchData.scales = new NativeArray<Vector3>(data.scales, allocator);
-            });
-
-            return dispatchData;
+            m_DispatchAllocator = allocator;
+            DispatchTransformChangesAndClear(type, trackingType, m_TransformDataCallback);
+            return m_TransformDispatchData;
         }
 
         public void EnableTypeTracking(TypeTrackingFlags typeTrackingMask, params Type[] types)

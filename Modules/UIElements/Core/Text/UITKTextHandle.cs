@@ -29,7 +29,7 @@ namespace UnityEngine.UIElements
             return preferredSize;
         }
 
-        public virtual MeshInfo[] Update()
+        public MeshInfo[] Update()
         {
             ConvertUssToTextGenerationSettings();
 
@@ -318,7 +318,7 @@ namespace UnityEngine.UIElements
             return TextOverflowMode.Overflow;
         }
 
-        internal void ConvertUssToTextGenerationSettings()
+        internal virtual void ConvertUssToTextGenerationSettings()
         {
             var style = m_TextElement.computedStyle;
             var tgs = settings;

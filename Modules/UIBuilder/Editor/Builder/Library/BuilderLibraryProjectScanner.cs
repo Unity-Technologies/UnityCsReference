@@ -93,12 +93,12 @@ namespace Unity.UI.Builder
 
             var shownTypes = new HashSet<Type>();
             UxmlSerializedDataRegistry.Register();
-            foreach (var kvp in UxmlSerializedDataRegistry.SerializedDataTypes)
+
+            var sortedEntries = UxmlSerializedDataRegistry.SerializedDataTypes.Values.OrderBy(o => o.FullName);
+            foreach (var type in sortedEntries)
             {
                 try
                 {
-                    var fullname = kvp.Key;
-                    var type = kvp.Value;
                     var elementType = type.DeclaringType;
                     var hasNamespace = !string.IsNullOrEmpty(elementType.Namespace);
 
@@ -122,7 +122,7 @@ namespace Unity.UI.Builder
                     if (shownTypes.Contains(type))
                         continue;
 
-                    var description = UxmlSerializedDataRegistry.GetDescription(fullname);
+                    var description = UxmlSerializedDataRegistry.GetDescription(elementType.FullName);
                     Debug.AssertFormat(description != null, "Expected to find a description for {0}", elementType.FullName);
 
                     shownTypes.Add(type);
@@ -136,7 +136,7 @@ namespace Unity.UI.Builder
 
                     // Generate a unique id.
                     // We prepend the name as its possible the same Type may be displayed for both UxmlSerializedData and UxmlTraits so we need to ensure the ids do not conflict.
-                    var idCode = ("uxml-serialized-data" + kvp.Key + elementType.FullName).GetHashCode();
+                    var idCode = ("uxml-serialized-data" + elementType.FullName + elementType.FullName).GetHashCode();
 
                     var newItem = BuilderLibraryContent.CreateItem(name, "CustomCSharpElement", elementType, () =>
                     {

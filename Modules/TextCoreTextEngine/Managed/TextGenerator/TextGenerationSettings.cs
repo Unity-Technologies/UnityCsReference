@@ -78,8 +78,66 @@ namespace UnityEngine.TextCore.Text
         public float charWidthMaxAdj;
         internal TextInputSource inputSource = TextInputSource.TextString;
 
+        public TextGenerationSettings() { }
 
-	public bool Equals(TextGenerationSettings other)
+        // Used by automated tests
+        internal TextGenerationSettings(TextGenerationSettings tgs)
+        {
+            text = tgs.text;
+            screenRect = tgs.screenRect;
+            margins = tgs.margins;
+            scale = tgs.scale;
+            fontAsset = tgs.fontAsset;
+            material = tgs.material;
+            spriteAsset = tgs.spriteAsset;
+            styleSheet = tgs.styleSheet;
+            fontStyle = tgs.fontStyle;
+            textSettings = tgs.textSettings;
+            textAlignment = tgs.textAlignment;
+            overflowMode = tgs.overflowMode;
+            wordWrap = tgs.wordWrap;
+            wordWrappingRatio = tgs.wordWrappingRatio;
+            fontColorGradient = tgs.fontColorGradient;
+            fontColorGradientPreset = tgs.fontColorGradientPreset;
+            tintSprites = tgs.tintSprites;
+            overrideRichTextColors = tgs.overrideRichTextColors;
+            shouldConvertToLinearSpace = tgs.shouldConvertToLinearSpace;
+            fontSize = tgs.fontSize;
+            autoSize = tgs.autoSize;
+            fontSizeMin = tgs.fontSizeMin;
+            fontSizeMax = tgs.fontSizeMax;
+            emojiFallbackSupport = tgs.emojiFallbackSupport;
+            richText = tgs.richText;
+            isRightToLeft = tgs.isRightToLeft;
+            extraPadding = tgs.extraPadding;
+            parseControlCharacters = tgs.parseControlCharacters;
+            isOrthographic = tgs.isOrthographic;
+            isPlaceholder = tgs.isPlaceholder;
+            tagNoParsing = tgs.tagNoParsing;
+            characterSpacing = tgs.characterSpacing;
+            wordSpacing = tgs.wordSpacing;
+            lineSpacing = tgs.lineSpacing;
+            paragraphSpacing = tgs.paragraphSpacing;
+            lineSpacingMax = tgs.lineSpacingMax;
+            textWrappingMode = tgs.textWrappingMode;
+            maxVisibleCharacters = tgs.maxVisibleCharacters;
+            maxVisibleWords = tgs.maxVisibleWords;
+            maxVisibleLines = tgs.maxVisibleLines;
+            firstVisibleCharacter = tgs.firstVisibleCharacter;
+            useMaxVisibleDescender = tgs.useMaxVisibleDescender;
+            fontWeight = tgs.fontWeight;
+            pageToDisplay = tgs.pageToDisplay;
+            horizontalMapping = tgs.horizontalMapping;
+            verticalMapping = tgs.verticalMapping;
+            uvLineOffset = tgs.uvLineOffset;
+            geometrySortingOrder = tgs.geometrySortingOrder;
+            inverseYAxis = tgs.inverseYAxis;
+            isIMGUI = tgs.isIMGUI;
+            charWidthMaxAdj = tgs.charWidthMaxAdj;
+            inputSource = tgs.inputSource;
+        }
+
+        public bool Equals(TextGenerationSettings other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;

@@ -140,14 +140,14 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        internal static bool GetIsInteractive()
+        internal static bool ShouldBakeInteractively()
         {
-            return SceneView.IsInteractiveBakingEnabled();
+            return SceneView.NeedsInteractiveBaking();
         }
 
-        internal static bool isInteractive
+        internal static bool shouldBakeInteractively
         {
-            get { return GetIsInteractive(); }
+            get { return ShouldBakeInteractively(); }
         }
 
         [RequiredByNativeCode]

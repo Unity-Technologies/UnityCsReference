@@ -176,7 +176,6 @@ namespace UnityEngine.UIElements
             }
 
             base.SetViewController(controller);
-            RefreshItems();
 
             if (viewController != null)
             {

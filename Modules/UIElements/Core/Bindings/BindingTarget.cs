@@ -9,7 +9,7 @@ namespace UnityEngine.UIElements
         public readonly VisualElement element;
         public readonly BindingId bindingId;
 
-        public BindingTarget(VisualElement element, BindingId bindingId)
+        public BindingTarget(VisualElement element, in BindingId bindingId)
         {
             this.element = element;
             this.bindingId = bindingId;

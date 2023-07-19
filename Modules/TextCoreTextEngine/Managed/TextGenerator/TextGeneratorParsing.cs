@@ -403,7 +403,7 @@ namespace UnityEngine.TextCore.Text
                 #endregion
 
                 // Store some of the text object's information
-                textInfo.textElementInfo[m_CharacterCount].character = (char)charCode;
+                textInfo.textElementInfo[m_CharacterCount].character = charCode;
                 textInfo.textElementInfo[m_CharacterCount].pointSize = m_CurrentFontSize;
                 textInfo.textElementInfo[m_CharacterCount].color = m_HtmlColor;
                 textInfo.textElementInfo[m_CharacterCount].underlineColor = m_UnderlineColor;
@@ -753,8 +753,6 @@ namespace UnityEngine.TextCore.Text
                 // Set Characters to not visible by default.
                 textInfo.textElementInfo[m_CharacterCount].isVisible = false;
 
-                bool isJustifiedOrFlush = ((HorizontalAlignment)m_LineJustification & HorizontalAlignment.Flush) == HorizontalAlignment.Flush || ((HorizontalAlignment)m_LineJustification & HorizontalAlignment.Justified) == HorizontalAlignment.Justified;
-
                 // Setup Mesh for visible text elements. ie. not a SPACE / LINEFEED / CARRIAGE RETURN.
                 #region Handle Visible Characters
 
@@ -962,7 +960,7 @@ namespace UnityEngine.TextCore.Text
 
                     #region Current Line Horizontal Bounds Check
 
-                    if (isBaseGlyph && textWidth > widthOfTextArea * (isJustifiedOrFlush ? 1.05f : 1.0f))
+                    if (isBaseGlyph && textWidth > widthOfTextArea)
                     {
                         // Handle Line Breaking (if still possible)
                         if (wordWrap != TextWrappingMode.NoWrap && wordWrap != TextWrappingMode.PreserveWhitespaceNoWrap && m_CharacterCount != m_FirstCharacterOfLine)
@@ -1026,7 +1024,7 @@ namespace UnityEngine.TextCore.Text
                                     if (m_CharWidthAdjDelta > 0)
                                         adjustedTextWidth /= 1f - m_CharWidthAdjDelta;
 
-                                    float adjustmentDelta = textWidth - (widthOfTextArea - 0.0001f) * (isJustifiedOrFlush ? 1.05f : 1.0f);
+                                    float adjustmentDelta = textWidth - (widthOfTextArea - 0.0001f);
                                     m_CharWidthAdjDelta += adjustmentDelta / adjustedTextWidth;
                                     m_CharWidthAdjDelta = Mathf.Min(m_CharWidthAdjDelta, generationSettings.charWidthMaxAdj / 100);
 
@@ -1106,7 +1104,7 @@ namespace UnityEngine.TextCore.Text
                                         if (m_CharWidthAdjDelta > 0)
                                             adjustedTextWidth /= 1f - m_CharWidthAdjDelta;
 
-                                        float adjustmentDelta = textWidth - (widthOfTextArea - 0.0001f) * (isJustifiedOrFlush ? 1.05f : 1.0f);
+                                        float adjustmentDelta = textWidth - (widthOfTextArea - 0.0001f);
                                         m_CharWidthAdjDelta += adjustmentDelta / adjustedTextWidth;
                                         m_CharWidthAdjDelta = Mathf.Min(m_CharWidthAdjDelta, generationSettings.charWidthMaxAdj / 100);
 
@@ -1243,7 +1241,7 @@ namespace UnityEngine.TextCore.Text
                                     if (m_CharWidthAdjDelta > 0)
                                         adjustedTextWidth /= 1f - m_CharWidthAdjDelta;
 
-                                    float adjustmentDelta = textWidth - (widthOfTextArea - 0.0001f) * (isJustifiedOrFlush ? 1.05f : 1.0f);
+                                    float adjustmentDelta = textWidth - (widthOfTextArea - 0.0001f);
                                     m_CharWidthAdjDelta += adjustmentDelta / adjustedTextWidth;
                                     m_CharWidthAdjDelta = Mathf.Min(m_CharWidthAdjDelta, generationSettings.charWidthMaxAdj / 100);
 
@@ -1433,7 +1431,7 @@ namespace UnityEngine.TextCore.Text
                     float textWidth = Mathf.Abs(m_XAdvance) + (!generationSettings.isRightToLeft ? m_Ellipsis.character.m_Glyph.metrics.horizontalAdvance : 0) * (1 - m_CharWidthAdjDelta) * scale;
                     float widthOfTextAreaForEllipsis = m_Width != -1 ? Mathf.Min(marginWidth + 0.0001f - marginLeft - marginRight, m_Width) : marginWidth + 0.0001f - marginLeft - marginRight;
 
-                    if (textWidth < widthOfTextAreaForEllipsis * (isJustifiedOrFlush ? 1.05f : 1.0f))
+                    if (textWidth < widthOfTextAreaForEllipsis)
                     {
                         SaveWordWrappingState(ref m_SavedEllipsisState, i, m_CharacterCount, textInfo);
                         m_EllipsisInsertionCandidateStack.Push(m_SavedEllipsisState);
@@ -1678,7 +1676,7 @@ namespace UnityEngine.TextCore.Text
                     bool shouldSaveHardLineBreak = false;
                     bool shouldSaveSoftLineBreak = false;
 
-                    if ((isWhiteSpace || charCode == k_ZeroWidthSpace || (charCode == k_HyphenMinus && (m_CharacterCount <= 0 || char.IsWhiteSpace(textInfo.textElementInfo[m_CharacterCount - 1].character) == false)) || charCode == k_SoftHyphen) && (!m_IsNonBreakingSpace || ignoreNonBreakingSpace) && charCode != k_NoBreakSpace && charCode != k_FigureSpace && charCode != k_NonBreakingHyphen && charCode != k_NarrowNoBreakSpace && charCode != k_WordJoiner)
+                    if ((isWhiteSpace || charCode == k_ZeroWidthSpace || (charCode == k_HyphenMinus && (m_CharacterCount <= 0 || char.IsWhiteSpace((char)textInfo.textElementInfo[m_CharacterCount - 1].character) == false)) || charCode == k_SoftHyphen) && (!m_IsNonBreakingSpace || ignoreNonBreakingSpace) && charCode != k_NoBreakSpace && charCode != k_FigureSpace && charCode != k_NonBreakingHyphen && charCode != k_NarrowNoBreakSpace && charCode != k_WordJoiner)
                     {
                         isFirstWordOfLine = false;
                         shouldSaveHardLineBreak = true;

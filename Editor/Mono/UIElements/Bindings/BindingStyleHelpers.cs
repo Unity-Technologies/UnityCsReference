@@ -34,10 +34,10 @@ namespace UnityEditor.UIElements
         {
             VisualElement elementToUpdate = element;
 
-            if (element is Foldout)
+            if (element is Foldout foldout)
             {
                 // We only want to apply override styles onto the Foldout header, not the entire contents.
-                elementToUpdate = element.Q(className: Foldout.toggleUssClassName);
+                elementToUpdate = foldout.toggle;
             }
             else if (element.ClassListContains(BaseCompositeField<int, IntegerField, int>.ussClassName)
                      || element is BoundsField || element is BoundsIntField)
@@ -53,7 +53,10 @@ namespace UnityEditor.UIElements
                 var compositeField = element;
 
                 // The element we style in the main pass is going to be just the label.
-                elementToUpdate = element.Q(className: BaseField<int>.labelUssClassName);
+                if (element is IPrefixLabel prefixLabel)
+                    elementToUpdate = prefixLabel.labelElement;
+                else
+                    elementToUpdate = element.Q(className: BaseField<int>.labelUssClassName);
 
                 // Go through the inputs and find any that match the names of the child PropertyFields.
                 var propCopy = prop.Copy();

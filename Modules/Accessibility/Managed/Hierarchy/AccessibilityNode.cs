@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.Accessibility
 {
@@ -14,12 +15,19 @@ namespace UnityEngine.Accessibility
     /// </summary>
     public class AccessibilityNode
     {
-        private class ObservableList<T> : IList<T>, IReadOnlyList<T>
+        private class ObservableList<T> : IList<T>, IReadOnlyList<T>, IList
         {
             readonly List<T> m_Items;
 
             public int Count => m_Items.Count;
-            public bool IsReadOnly => false;
+            public bool IsSynchronized => (m_Items as IList)?.IsSynchronized ?? false;
+            public object SyncRoot => (m_Items as IList)?.SyncRoot ?? false;
+            public bool IsReadOnly => (m_Items as IList)?.IsReadOnly ?? false;
+            object IList.this[int index]
+            {
+                get => m_Items[index];
+                set => throw new NotImplementedException();
+            }
 
             public ObservableList()
             {
@@ -30,6 +38,8 @@ namespace UnityEngine.Accessibility
             {
                 m_Items = new List<T>(enumerable);
             }
+
+            public void CopyTo(Array array, int index) => (m_Items as IList)?.CopyTo(array, index);
 
             public void Add(T item)
             {
@@ -61,16 +71,43 @@ namespace UnityEngine.Accessibility
                 return removed;
             }
 
+            public void Remove(object value)
+            {
+                throw new NotImplementedException();
+            }
+
             public void RemoveAt(int index)
             {
                 m_Items.RemoveAt(index);
                 listChanged?.Invoke();
             }
 
+            public bool IsFixedSize { get; }
+
+            public int Add(object value)
+            {
+                throw new NotImplementedException();
+            }
+
             public void Clear()
             {
                 m_Items.Clear();
                 listChanged?.Invoke();
+            }
+
+            public bool Contains(object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public int IndexOf(object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Insert(int index, object value)
+            {
+                throw new NotImplementedException();
             }
 
             public T this[int index]
@@ -382,19 +419,21 @@ namespace UnityEngine.Accessibility
 
                 return m_Frame;
             }
-            set
+            set => SetFrame(value);
+        }
+
+        void SetFrame(Rect frame)
+        {
+            if (m_Frame == frame)
             {
-                if (m_Frame == value)
-                {
-                    return;
-                }
+                return;
+            }
 
-                m_Frame = value;
+            m_Frame = frame;
 
-                if (IsInActiveHierarchy())
-                {
-                    AccessibilityNodeManager.SetFrame(id, value);
-                }
+            if (IsInActiveHierarchy())
+            {
+                AccessibilityNodeManager.SetFrame(id, frame);
             }
         }
 
@@ -409,7 +448,7 @@ namespace UnityEngine.Accessibility
 
         internal void CalculateFrame()
         {
-            m_Frame = frameGetter?.Invoke() ?? Rect.zero;
+            SetFrame(frameGetter?.Invoke() ?? Rect.zero);
         }
 
         /// <summary>

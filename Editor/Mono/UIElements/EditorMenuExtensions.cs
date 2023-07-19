@@ -32,8 +32,7 @@ namespace UnityEditor.UIElements
     public static class EditorMenuExtensions
     {
         const float k_MaxMenuWidth = 512.0f;
-        internal const string k_AutoExpandDelayKeyName = "ContextMenuAutoExpandDelay";
-        internal const float k_SubmenuExpandDelay = 0.4f;
+        internal const float k_SubmenuExpandDelay = 0.35f;
         internal const string k_SearchShortcutId = "Main Menu/Edit/Find";
 
         internal static readonly Rect k_InvalidRect = new(0, 0, -1, -1);
@@ -433,14 +432,17 @@ namespace UnityEditor.UIElements
                 }
 
                 var menu = search.userData as GenericDropdownMenu;
+                var newValue = Regex.Replace(e.newValue, "[^\\w ]+", "");
+                search.SetValueWithoutNotify(newValue);
+                
                 ResetHighlighting(menu.root);
 
                 if (string.IsNullOrWhiteSpace(menu.current.name))
                     menu.NavigateBack(false);
 
                 // Allow whitespace so we can search for spaces too
-                if (!string.IsNullOrEmpty(e.newValue))
-                    menu.NavigateTo(BuildSearchMenu(e.newValue, menu.current));
+                if (!string.IsNullOrEmpty(newValue))
+                    menu.NavigateTo(BuildSearchMenu(newValue, menu.current));
 
                 // Workaround for getting window content stretching artifacts
                 // when resizing to fit search results on Mac.
@@ -644,8 +646,7 @@ namespace UnityEditor.UIElements
                                 menu.m_OnBeforePerformAction?.Invoke(item.isSubmenu, menu.autoClose);
                                 item.PerformAction();
                             }
-                        }, EditorPrefs.GetFloat(EditorMenuExtensions.k_AutoExpandDelayKeyName,
-                            EditorMenuExtensions.k_SubmenuExpandDelay));
+                        }, k_SubmenuExpandDelay);
 
                         if (!item.isCustomContent)
                             s_CachedRect = GUIUtility.GUIToScreenRect(item.element.worldBound);

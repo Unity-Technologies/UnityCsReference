@@ -96,8 +96,8 @@ namespace UnityEditor
             public static GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos");
             public static GUIContent zoomSliderContent = EditorGUIUtility.TrTextContent("Scale", "Size of the game view on the screen.");
             public static GUIContent vsyncContent = EditorGUIUtility.TrTextContent("VSync");
-            public static GUIContent muteOffContent = EditorGUIUtility.TrIconContent("SceneviewAudio On", "Mute Audio");
-            public static GUIContent muteOnContent = EditorGUIUtility.TrIconContent("SceneviewAudio", "Mute Audio");
+            public static GUIContent muteOffContent = EditorGUIUtility.TrIconContent("GameViewAudio On", "Mute Audio");
+            public static GUIContent muteOnContent = EditorGUIUtility.TrIconContent("GameViewAudio", "Mute Audio");
             public static GUIContent shortcutsOnContent = EditorGUIUtility.TrIconContent("Keyboard", "Unity Shortcuts");
             public static GUIContent shortcutsOffContent = EditorGUIUtility.TrIconContent("KeyboardShortcutsDisabled", "Unity Shortcuts");
             public static GUIContent statsContent = EditorGUIUtility.TrTextContent("Stats");
@@ -106,7 +106,7 @@ namespace UnityEditor
             public static GUIContent clearEveryFrameContextMenuContent = EditorGUIUtility.TrTextContent("Clear Every Frame in Edit Mode");
             public static GUIContent lowResAspectRatiosContextMenuContent = EditorGUIUtility.TrTextContent("Low Resolution Aspect Ratios");
             public static GUIContent metalFrameCaptureContent = EditorGUIUtility.TrIconContent("FrameCapture", "Capture the current view and open in Xcode frame debugger");
-            public static GUIContent frameDebuggerContent = EditorGUIUtility.TrIconContent("Debug_Frame_d", "Opens the Frame Debugger");
+            public static GUIContent frameDebuggerContent = EditorGUIUtility.TrIconContent("Debug", "Opens the Frame Debugger");
 
             public const string k_StatsShortcutID = "Game View/Toggle Stats";
             public const string k_StatsTooltip = "View general rendering information";

@@ -705,6 +705,7 @@ namespace UnityEditor
             root.Add(m_UserData);
 
             root.name = "Cameras Preview Overlay";
+            root.AddToClassList(k_CamerasOverlayUSSClass);
             return root;
         }
 

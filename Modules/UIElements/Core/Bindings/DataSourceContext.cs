@@ -63,7 +63,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public DataSourceContext newContext => m_NewContext;
 
-        internal DataSourceContextChanged(VisualElement element, BindingId bindingId, DataSourceContext previousContext, DataSourceContext newContext)
+        internal DataSourceContextChanged(VisualElement element, in BindingId bindingId, in DataSourceContext previousContext, in DataSourceContext newContext)
         {
             m_TargetElement = element;
             m_BindingId = bindingId;

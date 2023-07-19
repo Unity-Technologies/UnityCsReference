@@ -17,13 +17,15 @@ namespace UnityEditor.UIElements
 {
     internal class UxmlSerializedDataDescription
     {
-        private List<UxmlSerializedAttributeDescription> m_SerializedAttributes = new();
+        private readonly List<UxmlSerializedAttributeDescription> m_SerializedAttributes = new();
 
-        private Dictionary<string, int> m_UxmlNameToIndex = new();
-        private Dictionary<string, int> m_PropertyNameToIndex = new();
-        private HashSet<string> m_UxmlObjectFields = new();
+        private readonly Dictionary<string, int> m_UxmlNameToIndex = new();
+        private readonly Dictionary<string, int> m_PropertyNameToIndex = new();
+        private readonly HashSet<string> m_UxmlObjectFields = new();
         private Type m_SerializedDataType;
         private UxmlObjectAttribute m_UxmlObjectAttribute;
+        private string m_UxmlName;
+        private string m_UxmlFullName;
 
         public Type serializedDataType => m_SerializedDataType;
         public bool isUxmlObject => m_UxmlObjectAttribute != null;
@@ -32,14 +34,22 @@ namespace UnityEditor.UIElements
         {
             get
             {
-                // TemplateContainer must use the class name
-                if (serializedDataType.DeclaringType == typeof(TemplateContainer))
-                    return nameof(TemplateContainer);
+                if (m_UxmlName == null)
+                {
+                    // TemplateContainer must use the class name
+                    if (serializedDataType.DeclaringType == typeof(TemplateContainer))
+                        m_UxmlName = nameof(TemplateContainer);
+                    else
+                    {
+                        var elementAttribute = serializedDataType.DeclaringType.GetCustomAttribute<UxmlElementAttribute>();
+                        if (elementAttribute != null && !string.IsNullOrEmpty(elementAttribute.name))
+                            m_UxmlName = elementAttribute.name;
+                        else
+                            m_UxmlName = serializedDataType.DeclaringType.Name;
+                    }
+                }
 
-                var elementAttribute = serializedDataType.DeclaringType.GetCustomAttribute<UxmlElementAttribute>();
-                if (elementAttribute != null && !string.IsNullOrEmpty(elementAttribute.name))
-                    return elementAttribute.name;
-                return serializedDataType.DeclaringType.Name;
+                return m_UxmlName;
             }
         }
 
@@ -47,9 +57,15 @@ namespace UnityEditor.UIElements
         {
             get
             {
-                if (string.IsNullOrEmpty(serializedDataType.DeclaringType.Namespace))
-                    return uxmlName;
-                return $"{serializedDataType.DeclaringType.Namespace}.{uxmlName}";
+                if (m_UxmlFullName == null)
+                {
+                    if (string.IsNullOrEmpty(serializedDataType.DeclaringType.Namespace))
+                        m_UxmlFullName = uxmlName;
+                    else
+                        m_UxmlFullName = $"{serializedDataType.DeclaringType.Namespace}.{uxmlName}";
+                }
+
+                return m_UxmlFullName;
             }
         }
 

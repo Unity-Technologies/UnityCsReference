@@ -373,7 +373,7 @@ namespace UnityEngine.UIElements
         }
 
         // Internal for tests
-        internal static string GetExtractValueErrorString(VisitReturnCode returnCode, object target, PropertyPath path)
+        internal static string GetExtractValueErrorString(VisitReturnCode returnCode, object target, in PropertyPath path)
         {
             var prefix = $"[UI Toolkit] Could not retrieve the value at path '<b>{path}</b>' for source of type '<b>{target?.GetType().Name}</b>':";
             switch (returnCode)
@@ -395,7 +395,7 @@ namespace UnityEngine.UIElements
         }
 
         // Internal for tests
-        internal static string GetSetValueErrorString(VisitReturnCode returnCode, object source, PropertyPath sourcePath, object target, PropertyPath targetPath, object extractedValueFromSource)
+        internal static string GetSetValueErrorString(VisitReturnCode returnCode, object source, in PropertyPath sourcePath, object target, in PropertyPath targetPath, object extractedValueFromSource)
         {
             var prefix = $"[UI Toolkit] Could not set value for target of type '<b>{target.GetType().Name}</b>' at path '<b>{targetPath}</b>':";
             switch (returnCode)

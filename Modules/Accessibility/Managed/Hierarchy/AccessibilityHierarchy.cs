@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.Accessibility
 {
@@ -42,6 +43,19 @@ namespace UnityEngine.Accessibility
         /// </summary>
         readonly IDictionary<int, AccessibilityNode> m_Nodes;
 
+        event Action<AccessibilityHierarchy> m_Changed;
+
+        /// <summary>
+        /// Event sent when the hierarchy changes.
+        /// </summary>
+        internal event Action<AccessibilityHierarchy> changed
+        {
+            [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
+            add => m_Changed += value;
+            [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
+            remove => m_Changed -= value;
+        }
+
         /// <summary>
         /// Initializes and returns an instance of an AccessibilityHierarchy.
         /// </summary>
@@ -52,6 +66,11 @@ namespace UnityEngine.Accessibility
             m_SecondLowestCommonAncestorChain = new Stack<AccessibilityNode>();
             m_Nodes = new Dictionary<int, AccessibilityNode>();
             m_RootNodes = new List<AccessibilityNode>();
+        }
+
+        internal void NotifyHierarchyChanged()
+        {
+            m_Changed?.Invoke(this);
         }
 
         /// <summary>
@@ -126,6 +145,7 @@ namespace UnityEngine.Accessibility
                 SetParent(node, parent, null, parent == null ? m_RootNodes : parent.childList, childIndex);
             }
 
+            NotifyHierarchyChanged();
             return node;
         }
 
@@ -184,6 +204,7 @@ namespace UnityEngine.Accessibility
             // Update node relationships (SetParent checks for loops)
             CheckForLoopsAndSetParent(node, newParent, newChildIndex);
 
+            NotifyHierarchyChanged();
             return true;
         }
 
@@ -228,6 +249,7 @@ namespace UnityEngine.Accessibility
             }
 
             node.Destroy(removeChildren);
+            NotifyHierarchyChanged();
         }
 
         /// <summary>

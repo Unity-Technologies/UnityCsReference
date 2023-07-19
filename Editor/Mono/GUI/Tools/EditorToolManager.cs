@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using UnityEditor.Actions;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityObject = UnityEngine.Object;
@@ -19,6 +20,8 @@ namespace UnityEditor.EditorTools
 
         [SerializeField]
         EditorTool m_ActiveTool;
+
+        EditorActionTool m_ActiveOverride;
 
         Tool m_PreviousTool = Tool.Move;
 
@@ -166,6 +169,8 @@ namespace UnityEditor.EditorTools
 
                 s_ChangingActiveTool = true;
 
+                activeOverride = null;
+
                 ToolManager.ActiveToolWillChange();
 
                 var previous = instance.m_ActiveTool;
@@ -203,6 +208,20 @@ namespace UnityEditor.EditorTools
                     instance.variantPrefs.SetPreferredVariant(meta.variantGroup, meta.editor);
 
                 s_ChangingActiveTool = false;
+            }
+        }
+
+        // this tool will transparently override the `OnToolGUI` method of the active tool.
+        // do not expose this as public API with also considering how to handle lifecycle and active tool interop.
+        // currently this is only used for EditorToolAction.
+        internal static EditorActionTool activeOverride
+        {
+            get => instance.m_ActiveOverride;
+
+            set
+            {
+                instance.m_ActiveOverride?.Dispose();
+                instance.m_ActiveOverride = value;
             }
         }
 
@@ -303,6 +322,7 @@ namespace UnityEditor.EditorTools
 
         void OnDisable()
         {
+            m_ActiveOverride = null;
             Undo.undoRedoEvent -= UndoRedoPerformed;
             ActiveEditorTracker.editorTrackerRebuilt -= TrackerRebuilt;
             Selection.selectedObjectWasDestroyed -= SelectedObjectWasDestroyed;
@@ -382,6 +402,8 @@ namespace UnityEditor.EditorTools
         // destroy invalid custom editor tools
         void ClearCustomEditorTools()
         {
+            m_ActiveOverride = null;
+
             foreach (var customEditorTool in m_ComponentTools)
             {
                 if (customEditorTool.editor == m_ActiveTool)
@@ -512,10 +534,17 @@ namespace UnityEditor.EditorTools
             if (!IsGizmoCulledBySceneCullingMasksOrFocusedScene(activeToolContext.target))
                 activeToolContext.OnToolGUI(window);
 
+            if (instance.m_ActiveOverride != null)
+            {
+                instance.m_ActiveOverride.OnGUI(window);
+                return;
+            }
+
             if (Tools.s_Hidden || instance.m_ActiveTool == null)
                 return;
 
             var current = instance.m_ActiveTool;
+
             if (IsGizmoCulledBySceneCullingMasksOrFocusedScene(current.target))
                 return;
 

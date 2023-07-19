@@ -81,6 +81,7 @@ namespace UnityEditor.UIElements.Bindings
 
             listView = lv;
             listView.SetProperty(BaseVerticalCollectionView.internalBindingKey, this);
+            var parentField = listView.GetProperty(PropertyField.listViewBoundFieldProperty);
 
             if (listView.makeItem == null)
             {
@@ -101,13 +102,21 @@ namespace UnityEditor.UIElements.Bindings
             listView.scrollView.contentContainer.RegisterCallback(m_SerializedObjectBindEventCallback);
             listView.scrollView.contentContainer.RegisterCallback(m_SerializedPropertyBindEventCallback);
 
-            var isReorderable = PropertyHandler.IsArrayReorderable(m_DataList.ArrayProperty);
+            // ListViews instantiated by users are driven by users. We only change the reordering options if the user
+            // has used a PropertyField to display the list. (Cases UUM-33402 and UUM-27687)
+            var isReorderable = listView.reorderable;
+            if (parentField != null)
+            {
+                isReorderable = PropertyHandler.IsArrayReorderable(m_DataList.ArrayProperty);
+                listView.reorderMode = isReorderable ? ListViewReorderMode.Animated : ListViewReorderMode.Simple;
+            }
+
             listView.SetViewController(new EditorListViewController());
             listView.SetDragAndDropController(new SerializedObjectListReorderableDragAndDropController(listView)
             {
                 enableReordering = isReorderable,
             });
-            listView.reorderMode = isReorderable ? ListViewReorderMode.Animated : ListViewReorderMode.Simple;
+
             listView.itemsSource = m_DataList;
 
             var foldoutInput = listView.headerFoldout?.toggle?.visualInput;
@@ -149,7 +158,6 @@ namespace UnityEditor.UIElements.Bindings
             listView.scrollView.contentContainer.UnregisterCallback(m_SerializedPropertyBindEventCallback);
 
             listView.SetViewController(null);
-            listView.SetDragAndDropController(null);
 
             var foldoutInput = listView.headerFoldout?.toggle?.visualInput;
             if (foldoutInput != null)

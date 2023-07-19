@@ -44,8 +44,8 @@ namespace UnityEngine.UIElements
 
         internal BindingContext(
             VisualElement targetElement,
-            BindingId bindingId,
-            PropertyPath resolvedDataSourcePath,
+            in BindingId bindingId,
+            in PropertyPath resolvedDataSourcePath,
             object resolvedDataSource)
         {
             m_TargetElement = targetElement;

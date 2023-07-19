@@ -30,18 +30,18 @@ namespace UnityEngine.UIElements
                 var e = (MultiColumnTreeView)obj;
                 e.sortingEnabled = sortingEnabled;
 
-                if (columns != null)
-                {
-                    var c = new Columns();
-                    columns.Deserialize(c);
-                    e.columns = c;
-                }
-
                 if (sortColumnDescriptions != null)
                 {
                     var c = new SortColumnDescriptions();
                     sortColumnDescriptions.Deserialize(c);
                     e.sortColumnDescriptions = c;
+                }
+
+                if (columns != null)
+                {
+                    var c = new Columns();
+                    columns.Deserialize(c);
+                    e.columns = c;
                 }
             }
         }
@@ -179,6 +179,14 @@ namespace UnityEngine.UIElements
         /// <param name="columns">Column definitions used to initialize the header.</param>
         public MultiColumnTreeView(Columns columns)
         {
+            // Setting the view data key on the ScrollView to get view data persistence on the header which
+            // is inside the contentViewport.
+            // Disabling view data persistence on the vertical and horizontal scrollers to make sure we keep
+            // the previous behavior on the scrollOffset.
+            scrollView.viewDataKey = "unity-multi-column-scroll-view";
+            scrollView.verticalScroller.viewDataKey = null;
+            scrollView.horizontalScroller.viewDataKey = null;
+
             this.columns = columns ?? new Columns();
         }
 

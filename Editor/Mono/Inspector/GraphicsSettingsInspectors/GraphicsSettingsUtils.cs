@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
@@ -81,9 +81,8 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             for (int i = 0; i < renderPipelineGlobalSettingsMap.arraySize; ++i)
             {
                 var globalSettings = GetRenderPipelineGlobalSettingsByIndex(renderPipelineGlobalSettingsMap, i);
-                if (!TryCreateNewGlobalSettingsContainer(globalSettings, out var globalSettingsContainer))
-                    continue;
-                existedGlobalSettings.Add(globalSettingsContainer);
+                if (TryCreateNewGlobalSettingsContainer(globalSettings, out var globalSettingsContainer))
+                    existedGlobalSettings.Add(globalSettingsContainer);
             }
             return existedGlobalSettings;
         }
@@ -91,28 +90,28 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         internal static bool TryCreateNewGlobalSettingsContainer(RenderPipelineGlobalSettings globalSettings, out GlobalSettingsContainer globalSettingsContainer)
         {
             globalSettingsContainer = null;
+
             if (globalSettings == null)
                 return false;
+                
+            var globalSettingsSerializedObject = new SerializedObject(globalSettings);
+            var settingsContainer = globalSettingsSerializedObject.FindProperty("m_Settings");
 
-            var settingsListInContainer = GetSettingsListFromRenderPipelineGlobalSettings(globalSettings, out var globalSettingsSO, out var settingsContainer);
-            if (settingsListInContainer.arraySize == 0)
-                return false;
+            var settingsListInContainer = settingsContainer != null
+                ? settingsContainer.FindPropertyRelative("m_SettingsList")
+                : null;
 
-            var globalSettingsType = globalSettings.GetType();
-            if (!ExtractSupportedOnRenderPipelineAttribute(globalSettingsType, out var supportedOnRenderPipelineAttribute))
-                return false;
+            if (settingsListInContainer != null && settingsListInContainer.arraySize != 0)
+            {
+                var globalSettingsType = globalSettings.GetType();
+                if (ExtractSupportedOnRenderPipelineAttribute(globalSettingsType, out var supportedOnRenderPipelineAttribute))
+                {
+                    var tabName = CreateNewTabName(globalSettingsType, supportedOnRenderPipelineAttribute);
+                    globalSettingsContainer = new GlobalSettingsContainer(tabName, supportedOnRenderPipelineAttribute.renderPipelineTypes[0], settingsContainer, globalSettingsSerializedObject);
+                }
+            }
 
-            var tabName = CreateNewTabName(globalSettingsType, supportedOnRenderPipelineAttribute);
-            globalSettingsContainer = new GlobalSettingsContainer(tabName, supportedOnRenderPipelineAttribute.renderPipelineTypes[0], settingsContainer, globalSettingsSO);
-            return true;
-        }
-
-        internal static SerializedProperty GetSettingsListFromRenderPipelineGlobalSettings(RenderPipelineGlobalSettings globalSettings, out SerializedObject globalSettingsSO, out SerializedProperty settingsContainer)
-        {
-            globalSettingsSO = new SerializedObject(globalSettings);
-            settingsContainer = globalSettingsSO.FindProperty("m_Settings");
-            var settingsListInContainer = settingsContainer.FindPropertyRelative("m_SettingsList");
-            return settingsListInContainer;
+            return globalSettingsContainer != null;
         }
 
         internal static RenderPipelineGlobalSettings GetRenderPipelineGlobalSettingsByIndex(SerializedProperty srpDefaultSettings, int i)

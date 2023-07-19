@@ -11,12 +11,17 @@ internal abstract class ImportActionBase : PackageAction
     protected readonly PackageOperationDispatcher m_OperationDispatcher;
     protected readonly AssetStoreDownloadManager m_AssetStoreDownloadManager;
     protected readonly ApplicationProxy m_Application;
+    protected readonly UnityConnectProxy m_UnityConnect;
 
-    protected ImportActionBase(PackageOperationDispatcher operationDispatcher, AssetStoreDownloadManager assetStoreDownloadManager, ApplicationProxy application)
+    protected ImportActionBase(PackageOperationDispatcher operationDispatcher,
+                               AssetStoreDownloadManager assetStoreDownloadManager,
+                               ApplicationProxy application,
+                               UnityConnectProxy unityConnect)
     {
         m_OperationDispatcher = operationDispatcher;
         m_AssetStoreDownloadManager = assetStoreDownloadManager;
         m_Application = application;
+        m_UnityConnect = unityConnect;
     }
 
     protected abstract string analyticEventName { get; }
@@ -30,10 +35,11 @@ internal abstract class ImportActionBase : PackageAction
 
     public override bool IsVisible(IPackageVersion version)
     {
-        return version?.HasTag(PackageTag.LegacyFormat) == true
-               && version.package.versions.importAvailable != null
-               && version.package.progress == PackageProgress.None
-               && m_AssetStoreDownloadManager.GetDownloadOperation(version.package.product?.id)?.isProgressVisible != true;
+        return m_UnityConnect.isUserLoggedIn
+            && version.HasTag(PackageTag.LegacyFormat)
+            && version.package.versions.importAvailable != null
+            && version.package.progress == PackageProgress.None
+            && m_AssetStoreDownloadManager.GetDownloadOperation(version.package.product?.id)?.isProgressVisible != true;
     }
 
     public override bool IsInProgress(IPackageVersion version) => false;

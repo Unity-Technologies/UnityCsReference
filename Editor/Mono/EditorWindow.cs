@@ -337,8 +337,7 @@ namespace UnityEditor
             if (warningSize.y > targetHeight)
                 warningSize.y = targetHeight;
 
-            Rect r = new Rect((position.width - warningSize.x) * .5f, 20 + (position.height - 20 - warningSize.y) * .7f, warningSize.x, warningSize.y);
-
+            Rect r = new Rect((position.width - warningSize.x - EditorStyles.notificationText.margin.horizontal) * .5f, 20 + (position.height - 20 - warningSize.y) * .7f, warningSize.x + EditorStyles.notificationText.margin.horizontal, warningSize.y);
             double time = EditorApplication.timeSinceStartup;
             if (time > m_FadeoutTime)
                 GUI.color = new Color(1, 1, 1, 1 - (float)((time - m_FadeoutTime) / kWarningFadeoutTime));

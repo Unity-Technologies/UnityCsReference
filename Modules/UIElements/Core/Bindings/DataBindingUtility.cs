@@ -33,7 +33,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public readonly PropertyPath resolvedPath;
 
-        internal BindingTypeResult(Type type, PropertyPath resolvedPath)
+        internal BindingTypeResult(Type type, in PropertyPath resolvedPath)
         {
             this.type = type;
             this.resolvedPath = resolvedPath;
@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
             errorIndex = -1;
         }
 
-        internal BindingTypeResult(VisitReturnCode returnCode, int errorIndex, PropertyPath resolvedPath)
+        internal BindingTypeResult(VisitReturnCode returnCode, int errorIndex, in PropertyPath resolvedPath)
         {
             type = null;
             this.resolvedPath = resolvedPath;
@@ -68,19 +68,19 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Binding binding { get; }
 
-        private BindingInfo(VisualElement targetElement, BindingId bindingId, Binding binding)
+        private BindingInfo(VisualElement targetElement, in BindingId bindingId, Binding binding)
         {
             this.targetElement = targetElement;
             this.bindingId = bindingId;
             this.binding = binding;
         }
 
-        internal static BindingInfo FromRequest(VisualElement target, PropertyPath targetPath, Binding binding)
+        internal static BindingInfo FromRequest(VisualElement target, in PropertyPath targetPath, Binding binding)
         {
             return new BindingInfo(target, targetPath, binding);
         }
 
-        internal static BindingInfo FromBindingData(DataBindingManager.BindingData bindingData)
+        internal static BindingInfo FromBindingData(in DataBindingManager.BindingData bindingData)
         {
             return new BindingInfo(bindingData.target.element, bindingData.target.bindingId, bindingData.binding);
         }
@@ -100,7 +100,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public readonly Type type;
 
-        internal PropertyPathInfo(PropertyPath propertyPath, Type type)
+        internal PropertyPathInfo(in PropertyPath propertyPath, Type type)
         {
             this.propertyPath = propertyPath;
             this.type = type;
@@ -164,7 +164,7 @@ namespace UnityEngine.UIElements
         /// <param name="bindingId">The id of the binding.</param>
         /// <param name="bindingInfo">The binding found on the element.</param>
         /// <returns>Whether a binding was found or not.</returns>
-        public static bool TryGetBinding(VisualElement element, BindingId bindingId, out BindingInfo bindingInfo)
+        public static bool TryGetBinding(VisualElement element, in BindingId bindingId, out BindingInfo bindingInfo)
         {
             if (DataBindingManager.TryGetBindingRequest(element, bindingId, out var binding))
             {
@@ -319,7 +319,7 @@ namespace UnityEngine.UIElements
         /// <param name="element">The element it is applied on.</param>
         /// <param name="result">The result of the last UI update for this binding, if found.</param>
         /// <returns>Whether a cached result was found or not.</returns>
-        public static bool TryGetLastUIBindingResult(BindingId bindingId, VisualElement element, out BindingResult result)
+        public static bool TryGetLastUIBindingResult(in BindingId bindingId, VisualElement element, out BindingResult result)
         {
             result = default;
             var bindingData = GetBindingData(bindingId, element);
@@ -338,7 +338,7 @@ namespace UnityEngine.UIElements
         /// <param name="element">The element it is applied on.</param>
         /// <param name="result">The result of the last source update for this binding, if found.</param>
         /// <returns>Whether a cached result was found or not.</returns>
-        public static bool TryGetLastSourceBindingResult(BindingId bindingId, VisualElement element, out BindingResult result)
+        public static bool TryGetLastSourceBindingResult(in BindingId bindingId, VisualElement element, out BindingResult result)
         {
             result = default;
 
@@ -563,7 +563,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        static DataBindingManager.BindingData GetBindingData(BindingId bindingId, VisualElement element)
+        static DataBindingManager.BindingData GetBindingData(in BindingId bindingId, VisualElement element)
         {
             if (element.elementPanel != null && element.elementPanel.dataBindingManager.TryGetBindingData(element, bindingId, out var activeBinding))
                 return activeBinding;

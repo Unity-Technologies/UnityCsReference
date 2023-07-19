@@ -297,7 +297,7 @@ namespace UnityEditor
         internal static extern void UpdateSceneIfNeeded();
 
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
-        internal static extern void UpdateMainWindowTitle();
+        public static extern void UpdateMainWindowTitle();
 
         // Plays system beep sound.
         [FreeFunction("UnityBeep")]

@@ -5,6 +5,7 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("UnityEngine.AccessibilityModule.EditModeTests")]
+[assembly: InternalsVisibleTo("UnityEditor.AccessibilityModule")]
 
 // TOLERATED: modules or core packages evolving in lockstep with this module
 // Reducing this list means to improve the API design of this module.

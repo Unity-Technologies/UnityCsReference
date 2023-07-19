@@ -14,6 +14,7 @@ using UnityEditor.ShortcutManagement;
 using UnityEditorInternal;
 using UnityEngine.Assertions;
 using System.Text;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -78,7 +79,7 @@ namespace UnityEditor
         const int kInvalidSceneHandle = 0;
         bool m_RectSelectInProgress;
 
-        TreeViewController m_TreeView;
+        IMGUI.Controls.TreeViewController m_TreeView;
         [SerializeField]
         TreeViewState m_TreeViewState;
 
@@ -219,7 +220,7 @@ namespace UnityEditor
             get { return m_TreeViewState; }
         }
 
-        internal TreeViewController treeView
+        internal IMGUI.Controls.TreeViewController treeView
         {
             get
             {
@@ -262,7 +263,7 @@ namespace UnityEditor
             if (m_SortingObjects == null)
                 SetUpSortMethodLists();
 
-            m_TreeView = new TreeViewController(m_EditorWindow, m_TreeViewState);
+            m_TreeView = new IMGUI.Controls.TreeViewController(m_EditorWindow, m_TreeViewState);
             m_TreeView.itemDoubleClickedCallback += TreeViewItemDoubleClicked;
             m_TreeView.selectionChangedCallback += TreeViewSelectionChanged;
             m_TreeView.onGUIRowCallback += OnRowGUICallback;
@@ -1159,89 +1160,8 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Delete GameObject"), false, DeleteGO);
         }
 
-        void CreateGameObjectContextClick(GenericMenu menu, int contextClickedItemID)
+        void PopulateGenericMenuWithPrefabMenuItems(GenericMenu menu, int contextClickedItemID)
         {
-            bool itemIsSelected = Selection.gameObjects.Length > 0;
-            // If the custom parent for new objects is set we don't allow cut, copy or duplicate any ancestors of this object
-            // as it might be context objects (as in Prefab Mode in Context).
-            bool allowCutCopyAndDuplicate = m_CustomParentForNewGameObjects == null
-                                            || !IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects.parent);
-
-            if (itemIsSelected && allowCutCopyAndDuplicate)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, ClipboardUtility.CutGO);
-            else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Cut"));
-            if (itemIsSelected && allowCutCopyAndDuplicate)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, ClipboardUtility.CopyGO);
-            else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Copy"));
-            if (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, PasteGO);
-            else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste"));
-            if (ClipboardUtility.CanPasteAsChild())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste As Child"), false, ClipboardUtility.PasteGOAsChild);
-            else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste As Child"));
-
-            menu.AddSeparator("");
-
-            if (itemIsSelected && !hasSearchFilter && m_TreeViewState.selectedIDs.Count == 1 && !GetIsNotEditable())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, RenameGO);
-            else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename"));
-
-            if (itemIsSelected && allowCutCopyAndDuplicate)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, DuplicateGO);
-            else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Duplicate"));
-
-            if (m_CustomParentForNewGameObjects != null && IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects) || !itemIsSelected)
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
-            else
-                menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, DeleteGO);
-
-
-            menu.AddSeparator("");
-
-            if (IsSelectChildrenAvailable())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Select Children"), false, SelectChildren);
-            else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Select Children"));
-
-            menu.AddSeparator("");
-            if (Selection.activeGameObject)
-            {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Find References in Scene"), false, FindReferenceInScene);
-            }
-            else
-            {
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Find References in Scene"));
-            }
-
-            menu.AddSeparator("");
-
-            GameObject selectedObject = null;
-            if (Selection.objects.Length > 0)
-                selectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
-
-            if (Selection.count == 0 && treeView.hoveredItem == null || selectedObject && (selectedObject.name == PrefabUtility.kDummyPrefabStageRootObjectName || PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(selectedObject)))
-            {
-                menu.AddDisabledItem(Styles.setOriginLabel);
-            }
-            else if (selectedObject && (selectedObject.GetInstanceID() != GetDefaultParentForSession(selectedObject.scene.guid) || EditorSceneManager.GetActiveScene().guid != selectedObject.scene.guid))
-            {
-                menu.AddItem(Styles.setOriginLabel, false, () =>
-                {
-                    SetDefaultParentObject(false);
-                });
-            }
-            else
-            {
-                menu.AddItem(Styles.clearOriginLabel, false, () => { ClearDefaultParentObject(); });
-            }
-
-            // Prefab menu items that only make sense if a single object is selected.
             GameObject go = null;
             string assetPath = null;
             GameObject prefabAsset = null;
@@ -1367,6 +1287,92 @@ namespace UnityEditor
                 menu.AddSeparator("Prefab/");
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Remove Unused Overrides..."), false, RemoveSelectedPrefabInstanceUnusedOverrides);
             }
+        }
+
+        void CreateGameObjectContextClick(GenericMenu menu, int contextClickedItemID)
+        {
+            bool itemIsSelected = Selection.gameObjects.Length > 0;
+            // If the custom parent for new objects is set we don't allow cut, copy or duplicate any ancestors of this object
+            // as it might be context objects (as in Prefab Mode in Context).
+            bool allowCutCopyAndDuplicate = m_CustomParentForNewGameObjects == null
+                                            || !IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects.parent);
+
+            if (itemIsSelected && allowCutCopyAndDuplicate)
+                menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, ClipboardUtility.CutGO);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Cut"));
+            if (itemIsSelected && allowCutCopyAndDuplicate)
+                menu.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, ClipboardUtility.CopyGO);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Copy"));
+            if (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, PasteGO);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste"));
+            if (ClipboardUtility.CanPasteAsChild())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste As Child"), false, ClipboardUtility.PasteGOAsChild);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste As Child"));
+
+            menu.AddSeparator("");
+
+            if (itemIsSelected && !hasSearchFilter && m_TreeViewState.selectedIDs.Count == 1 && !GetIsNotEditable())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, RenameGO);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename"));
+
+            if (itemIsSelected && allowCutCopyAndDuplicate)
+                menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, DuplicateGO);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Duplicate"));
+
+            if (m_CustomParentForNewGameObjects != null && IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects) || !itemIsSelected)
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
+            else
+                menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, DeleteGO);
+
+
+            menu.AddSeparator("");
+
+            if (IsSelectChildrenAvailable())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Select Children"), false, SelectChildren);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Select Children"));
+
+            menu.AddSeparator("");
+            if (Selection.activeGameObject)
+            {
+                menu.AddItem(EditorGUIUtility.TrTextContent("Find References in Scene"), false, FindReferenceInScene);
+            }
+            else
+            {
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Find References in Scene"));
+            }
+
+            menu.AddSeparator("");
+
+            GameObject selectedObject = null;
+            if (Selection.objects.Length > 0)
+                selectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
+
+            if (Selection.count == 0 && treeView.hoveredItem == null || selectedObject && (selectedObject.name == PrefabUtility.kDummyPrefabStageRootObjectName || PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(selectedObject)))
+            {
+                menu.AddDisabledItem(Styles.setOriginLabel);
+            }
+            else if (selectedObject && (selectedObject.GetInstanceID() != GetDefaultParentForSession(selectedObject.scene.guid) || EditorSceneManager.GetActiveScene().guid != selectedObject.scene.guid))
+            {
+                menu.AddItem(Styles.setOriginLabel, false, () =>
+                {
+                    SetDefaultParentObject(false);
+                });
+            }
+            else
+            {
+                menu.AddItem(Styles.clearOriginLabel, false, () => { ClearDefaultParentObject(); });
+            }
+
+            // Prefab menu items that only make sense if a single object is selected.
+            PopulateGenericMenuWithPrefabMenuItems(menu, contextClickedItemID);
 
             GameObject[] selectedGameObjects = Selection.transforms.Select(t => t.gameObject).ToArray();
 
@@ -1397,6 +1403,28 @@ namespace UnityEditor
             {
                 menu.AddSeparator("");
                 menu.AddItem(new GUIContent("Properties..."), false, () => PropertyEditor.OpenPropertyEditorOnSelection());
+            }
+        }
+
+        internal void PopulateDropdownMenuWithPrefabMenuItems(DropdownMenu menu)
+        {
+            if (m_TreeViewState.selectedIDs.Count != 1) return;
+
+            int selectedGameObjectInstanceID = m_TreeViewState.selectedIDs[0];
+            GenericMenu genericMenuForGettingPrefabItems = new GenericMenu();
+            PopulateGenericMenuWithPrefabMenuItems(genericMenuForGettingPrefabItems, selectedGameObjectInstanceID);
+
+            for (int i = 1, prefabMenuItemsCount = genericMenuForGettingPrefabItems.menuItems.Count; i < prefabMenuItemsCount; ++i)
+            {
+                GenericMenu.MenuItem menuItem = genericMenuForGettingPrefabItems.menuItems[i];
+                if (menuItem.separator)
+                    menu.AppendSeparator(menuItem.content.text);
+                else if (menuItem.func2 != null && menuItem.userData != null)
+                    menu.AppendAction(menuItem.content.text, action => { menuItem.func2(menuItem.userData); });
+                else if (menuItem.func != null)
+                    menu.AppendAction(menuItem.content.text, action => { menuItem.func(); });
+                else
+                    menu.AppendAction(menuItem.content.text, action => { }, DropdownMenuAction.Status.Disabled);
             }
         }
 
@@ -1754,7 +1782,7 @@ namespace UnityEditor
         {
             if (PrefabUtility.DoRemovePrefabInstanceUnusedOverridesDialog(instanceOverridesInfos))
             {
-                PrefabUtility.RemovePrefabInstanceUnusedOverrides(instanceOverridesInfos);
+                PrefabUtility.RemovePrefabInstanceUnusedOverrides(instanceOverridesInfos, InteractionMode.UserAction);
                 return true;
             }
 

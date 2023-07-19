@@ -645,10 +645,7 @@ namespace UnityEngine.UIElements
         /// <param name="target">A VisualElement that will act as the root of the cloned tree.</param>
         public void CloneTree(VisualElement target)
         {
-            int firstElementIndex;
-            int elementAddedCount;
-
-            CloneTree(target, out firstElementIndex, out elementAddedCount);
+            CloneTree(target, out _, out _);
         }
 
         public void CloneTree(VisualElement target, out int firstElementIndex, out int elementAddedCount)
@@ -687,7 +684,7 @@ namespace UnityEngine.UIElements
                 if (!idToChildren.TryGetValue(asset.parentId, out children))
                 {
                     children = new List<VisualElementAsset>();
-                    idToChildren.Add(asset.parentId, children);
+                    idToChildren[asset.parentId] = children;
                 }
 
                 children.Add(asset);
@@ -752,8 +749,8 @@ namespace UnityEngine.UIElements
             // context.target is the created templateContainer
             if (root.id == context.visualTreeAsset.contentContainerId)
             {
-                if (context.target is TemplateContainer)
-                    ((TemplateContainer)context.target).SetContentContainer(ve);
+                if (context.target is TemplateContainer tc)
+                    tc.SetContentContainer(ve);
                 else
                     Debug.LogError(
                         "Trying to clone a VisualTreeAsset with a custom content container into a element which is not a template container");

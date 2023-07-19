@@ -93,72 +93,55 @@ namespace UnityEditor
             Object firstDuplicatedObjectToFail = null;
             List<string> pastedObjects = new List<string>();
 
-            try
+            foreach (var item in assetClipboard)
             {
-                // StartAssetEditing begins a batch operation on the AssetDatabase
-                // such that we don't do any actual imports until
-                // AssetDatabase.StopAssetImporting is called.
-                // This means that while function calls are allowed to happen
-                // imports won't actually happen until AssetDatabase.StopAssetImporting
-                // is called below.
-                AssetDatabase.StartAssetEditing();
+                var asset = ObjectIdentifier.ToObject(item);
+                var assetPath = AssetDatabase.GetAssetPath(asset);
 
-                // We batch the copies here
-                foreach (var item in assetClipboard)
+                // if duplicating a sub-asset, then create a copy next to the main asset file
+                if (asset != null && !String.IsNullOrEmpty(assetPath) && AssetDatabase.IsSubAsset(asset))
                 {
-                    var asset = ObjectIdentifier.ToObject(item);
-                    var assetPath = AssetDatabase.GetAssetPath(asset);
-
-                    // if duplicating a sub-asset, then create a copy next to the main asset file
-                    if (asset != null && !String.IsNullOrEmpty(assetPath) && AssetDatabase.IsSubAsset(asset))
+                    if (asset is ISubAssetNotDuplicatable || asset is GameObject)
                     {
-                        if (asset is ISubAssetNotDuplicatable || asset is GameObject)
-                        {
-                            firstDuplicatedObjectToFail = firstDuplicatedObjectToFail ? firstDuplicatedObjectToFail : asset;
-                            continue;
-                        }
-
-                        var extension = NativeFormatImporterUtility.GetExtensionForAsset(asset);
-
-                        // We dot sanitize or block unclean the asset filename (asset.name)
-                        // since the assertdb will do it for us and has a whole tailored logic for that.
-
-                        // It feels wrong that the asset name (that can apparently contain any char)
-                        // is conflated with the orthogonal notion of filename. From the user's POV
-                        // it will force an asset dup but with mangled names if the original name contained
-                        // "invalid chars" for filenames.
-                        // Path.Combine is not used here to avoid blocking asset names that might
-                        // contain chars not allowed in filenames.
-                        if ((new HashSet<char>(Path.GetInvalidFileNameChars())).Intersect(asset.name).Count() != 0)
-                        {
-                            Debug.LogWarning(string.Format("Duplicated asset name '{0}' contains invalid characters. Those will be replaced in the duplicated asset name.", asset.name));
-                        }
-
-                        var newPath = AssetDatabase.GenerateUniqueAssetPath(
-                            string.Format("{0}{1}{2}.{3}",
-                                Path.GetDirectoryName(assetPath),
-                                Path.DirectorySeparatorChar,
-                                asset.name,
-                                extension)
-                        );
-
-                        assetPath = GetValidPath(newPath, destination);
-                        AssetDatabase.CreateAsset(Object.Instantiate(asset), assetPath);
-                        pastedObjects.Add(assetPath);
+                        firstDuplicatedObjectToFail = firstDuplicatedObjectToFail ? firstDuplicatedObjectToFail : asset;
+                        continue;
                     }
-                    // Otherwise duplicate the main asset file
-                    else if (EditorUtility.IsPersistent(asset))
+
+                    var extension = NativeFormatImporterUtility.GetExtensionForAsset(asset);
+
+                    // We dot sanitize or block unclean the asset filename (asset.name)
+                    // since the assertdb will do it for us and has a whole tailored logic for that.
+
+                    // It feels wrong that the asset name (that can apparently contain any char)
+                    // is conflated with the orthogonal notion of filename. From the user's POV
+                    // it will force an asset dup but with mangled names if the original name contained
+                    // "invalid chars" for filenames.
+                    // Path.Combine is not used here to avoid blocking asset names that might
+                    // contain chars not allowed in filenames.
+                    if ((new HashSet<char>(Path.GetInvalidFileNameChars())).Intersect(asset.name).Count() != 0)
                     {
-                        var newPath = AssetDatabase.GenerateUniqueAssetPath(GetValidPath(assetPath, destination));
-                        if (newPath.Length > 0 && AssetDatabase.CopyAsset(assetPath, newPath))
-                            pastedObjects.Add(newPath);
+                        Debug.LogWarning(string.Format("Duplicated asset name '{0}' contains invalid characters. Those will be replaced in the duplicated asset name.", asset.name));
                     }
+
+                    var newPath = AssetDatabase.GenerateUniqueAssetPath(
+                        string.Format("{0}{1}{2}.{3}",
+                            Path.GetDirectoryName(assetPath),
+                            Path.DirectorySeparatorChar,
+                            asset.name,
+                            extension)
+                    );
+
+                    assetPath = GetValidPath(newPath, destination);
+                    AssetDatabase.CreateAsset(Object.Instantiate(asset), assetPath);
+                    pastedObjects.Add(assetPath);
                 }
-            }
-            finally
-            {
-                // Batch import all assets that were created & copied in the try{} block above
-                AssetDatabase.StopAssetEditing();
+                // Otherwise duplicate the main asset file
+                else if (EditorUtility.IsPersistent(asset))
+                {
+                    var newPath = AssetDatabase.GenerateUniqueAssetPath(GetValidPath(assetPath, destination));
+                    if (newPath.Length > 0 && AssetDatabase.CopyAsset(assetPath, newPath))
+                        pastedObjects.Add(newPath);
+                }
             }
 
             if (firstDuplicatedObjectToFail != null)

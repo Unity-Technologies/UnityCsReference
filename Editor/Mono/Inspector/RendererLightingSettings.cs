@@ -564,7 +564,7 @@ namespace UnityEditor
                 return;
 
             // Hide preview lightmaps if we aren't in preview mode
-            if (useInteractiveLightBakingData && !Lightmapping.isInteractive)
+            if (useInteractiveLightBakingData && !Lightmapping.shouldBakeInteractively)
                 return;
 
             Hash128 contentHash = LightmapVisualizationUtility.GetBakedGITextureHash(lightmapIndex, 0, GITextureType.Baked, useInteractiveLightBakingData);

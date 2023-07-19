@@ -145,7 +145,7 @@ namespace UnityEngine.TextCore.Text
             {
                 FontAsset currentFontAsset = textElementInfos[i].fontAsset;
 
-                char unicode = textElementInfos[i].character;
+                char unicode = (char)textElementInfos[i].character;
                 bool isWhiteSpace = char.IsWhiteSpace(unicode);
 
                 int currentLine = textElementInfos[i].lineNumber;
@@ -216,7 +216,7 @@ namespace UnityEngine.TextCore.Text
                         // Skip Zero Width Characters and spaces outside of the margins.
                         if (i > lineInfo.lastVisibleCharacterIndex || unicode == 0x0A || unicode == k_SoftHyphen || unicode == k_ZeroWidthSpace || unicode == k_WordJoiner || unicode == k_EndOfText) break;
 
-                        char lastCharOfCurrentLine = textElementInfos[lineInfo.lastCharacterIndex].character;
+                        char lastCharOfCurrentLine = (char)textElementInfos[lineInfo.lastCharacterIndex].character;
 
                         bool isFlush = ((HorizontalAlignment)lineAlignment & HorizontalAlignment.Flush) == HorizontalAlignment.Flush;
 
@@ -239,7 +239,7 @@ namespace UnityEngine.TextCore.Text
                             }
                             else
                             {
-                                float gap = !generationSettings.isRightToLeft ? lineInfo.width - lineInfo.maxAdvance : lineInfo.width + lineInfo.maxAdvance;
+                                float gap = generationSettings.isRightToLeft ? lineInfo.width + lineInfo.maxAdvance : lineInfo.width - lineInfo.maxAdvance;
                                 int visibleCount = lineInfo.visibleCharacterCount - 1 + lineInfo.controlCharacterCount;
                                 int spaces = lineInfo.spaceCount - lineInfo.controlCharacterCount;
 
@@ -569,7 +569,7 @@ namespace UnityEngine.TextCore.Text
                 }
                 else if (isStartOfWord || i == 0 && (!char.IsPunctuation(unicode) || isWhiteSpace || unicode == k_ZeroWidthSpace || i == m_CharacterCount - 1))
                 {
-                    if (i > 0 && i < textElementInfos.Length - 1 && i < m_CharacterCount && (unicode == k_SingleQuote || unicode == k_RightSingleQuote) && char.IsLetterOrDigit(textElementInfos[i - 1].character) && char.IsLetterOrDigit(textElementInfos[i + 1].character)) { }
+                    if (i > 0 && i < textElementInfos.Length - 1 && i < m_CharacterCount && (unicode == k_SingleQuote || unicode == k_RightSingleQuote) && char.IsLetterOrDigit((char)textElementInfos[i - 1].character) && char.IsLetterOrDigit((char)textElementInfos[i + 1].character)) { }
                     else
                     {
                         wordLastChar = i == m_CharacterCount - 1 && char.IsLetterOrDigit(unicode) ? i : i - 1;

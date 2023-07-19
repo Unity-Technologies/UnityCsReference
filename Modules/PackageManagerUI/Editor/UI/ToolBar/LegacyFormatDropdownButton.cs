@@ -43,9 +43,9 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
         {
             new DownloadNewAction(operationDispatcher, assetStoreDownloadManager, unityConnect, application),
             new DownloadUpdateAction(operationDispatcher, assetStoreDownloadManager, unityConnect, application),
-            new ImportNewAction(operationDispatcher, assetStoreDownloadManager, application),
-            new ImportUpdateAction(operationDispatcher, assetStoreDownloadManager, application),
-            new ReImportAction(operationDispatcher, assetStoreDownloadManager, application),
+            new ImportNewAction(operationDispatcher, assetStoreDownloadManager, application, unityConnect),
+            new ImportUpdateAction(operationDispatcher, assetStoreDownloadManager, application, unityConnect),
+            new ReImportAction(operationDispatcher, assetStoreDownloadManager, application, unityConnect),
             new RemoveImportedAction(operationDispatcher, application),
             new ReDownloadAction(operationDispatcher, assetStoreDownloadManager, unityConnect, application),
         };

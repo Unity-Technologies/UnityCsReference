@@ -30,8 +30,8 @@ namespace UnityEditor
             {
                 // For textures larger than our wanted width and height we ensure to
                 // keep aspect ratio of the texture and fit it to best match our wanted width and height.
-                float relWidth = height / (float)textureWidth;
-                float relHeight = width / (float)textureHeight;
+                float relWidth = width / (float)textureWidth;
+                float relHeight = height / (float)textureHeight;
 
                 float scale = Mathf.Min(relHeight, relWidth);
 

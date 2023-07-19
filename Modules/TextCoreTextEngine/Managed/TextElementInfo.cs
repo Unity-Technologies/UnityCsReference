@@ -21,7 +21,7 @@ namespace UnityEngine.TextCore.Text
     [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
     internal struct TextElementInfo
     {
-        public char character; // Should be changed to an int to handle UTF 32
+        public uint character;
         public int index; // Index of the character in the input string.
         public TextElementType elementType;
         public int stringLength;

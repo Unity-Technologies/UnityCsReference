@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -18,7 +18,7 @@ namespace UnityEditor.UIElements
         private static bool s_Registered;
 
         // We use a sorted dictionary so that the UI Builder Library (ImportUxmlSerializedDataFromSource) can process the namespaces together.
-        public static SortedDictionary<string, Type> SerializedDataTypes { get; } = new SortedDictionary<string, Type>();
+        public static Dictionary<string, Type> SerializedDataTypes { get; } = new Dictionary<string, Type>();
         private static Dictionary<string, UxmlSerializedDataDescription> s_DescriptionsCache = new Dictionary<string, UxmlSerializedDataDescription>();
 
         [UsedImplicitly, InitializeOnLoadMethod]
@@ -36,6 +36,21 @@ namespace UnityEditor.UIElements
                 var keyName = GetDependencyKeyName(typeName);
                 AssetDatabase.RegisterCustomDependency(keyName, Hash128.Compute(typeName));
             }
+        }
+
+        // Used for testing
+        public static void ClearCache()
+        {
+            SerializedDataTypes.Clear();
+            s_Registered = false;
+
+            ClearDescriptionCache();
+        }
+
+        // Used for testing
+        public static void ClearDescriptionCache()
+        {
+            s_DescriptionsCache.Clear();
         }
 
         public static UxmlSerializedDataDescription GetDescription(string typeName)
@@ -93,7 +108,7 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            SerializedDataTypes.Add(typeName, type);
+            SerializedDataTypes[typeName] = type;
         }
     }
 }

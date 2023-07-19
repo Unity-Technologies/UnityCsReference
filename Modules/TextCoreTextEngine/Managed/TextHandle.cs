@@ -758,7 +758,21 @@ namespace UnityEngine.TextCore.Text
 
             var result = new StringBuilder(length);
             for (int i = startIndex; i < startIndex + length; ++i)
-                result.Append(textInfo.textElementInfo[i].character);
+            {
+                var codePoint = textInfo.textElementInfo[i].character;
+                if (codePoint >= CodePoint.UNICODE_PLANE01_START && codePoint <= CodePoint.UNICODE_PLANE16_END)
+                {
+                    uint highSurrogate = CodePoint.HIGH_SURROGATE_START + ((codePoint - CodePoint.UNICODE_PLANE01_START) >> 10);
+                    uint lowSurrogate = CodePoint.LOW_SURROGATE_START + ((codePoint - CodePoint.UNICODE_PLANE01_START) & CodePoint.LOWEST_10BITS_MASK);
+
+                    result.Append((char)highSurrogate);
+                    result.Append((char)lowSurrogate);
+                }
+                else
+                {
+                    result.Append((char)codePoint);
+                }
+            }
 
             return result.ToString();
         }

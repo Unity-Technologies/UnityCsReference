@@ -911,7 +911,7 @@ namespace UnityEngine
 
         CharacterType ClassifyChar(int index)
         {
-            char c = m_TextElementInfos[index].character;
+            char c = (char)m_TextElementInfos[index].character;
             if (c == kNewLineChar)
                 return CharacterType.NewLine;
             if (char.IsWhiteSpace(c))

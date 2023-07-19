@@ -1006,6 +1006,7 @@ namespace UnityEngine.UIElements
             {
                 if (recycledItem.index == index)
                 {
+                    viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                     viewController.InvokeBindItem(recycledItem, recycledItem.index);
                     break;
                 }

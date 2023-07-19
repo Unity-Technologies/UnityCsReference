@@ -243,6 +243,13 @@ namespace UnityEditor
     }
 
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    public enum WindowsBuildAndRunDeployTarget
+    {
+        LocalMachine = 0,
+        DevicePortal = 2
+    }
+
+    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum WSABuildType
     {
         Debug = 0,
@@ -334,7 +341,7 @@ namespace UnityEditor
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum QNXOsVersion
     {
-        [UnityEngine.InspectorName("Neutrino RTOS 7.0")]
+        [System.Obsolete("Neutrino RTOS 7.0 has been removed in 2023.2")]
         Neutrino70 = 0,
 
         [UnityEngine.InspectorName("Neutrino RTOS 7.1")]
@@ -347,13 +354,13 @@ namespace UnityEditor
         [UnityEngine.InspectorName("Arm64")]
         Arm64 = 0,
 
-        [UnityEngine.InspectorName("Arm32")]
+        [System.Obsolete("Arm32 has been removed in 2023.2")]
         Arm32 = 1,
 
         [UnityEngine.InspectorName("X64")]
         X64 = 2,
 
-        [UnityEngine.InspectorName("X86")]
+        [System.Obsolete("X86 has been removed in 2023.2")]
         X86 = 3,
     }
 
@@ -363,13 +370,13 @@ namespace UnityEditor
         [UnityEngine.InspectorName("Arm64")]
         Arm64 = EmbeddedArchitecture.Arm64,
 
-        [UnityEngine.InspectorName("Arm32")]
+        [System.Obsolete("Arm32 has been removed in 2023.2")]
         Arm32 = EmbeddedArchitecture.Arm32,
 
         [UnityEngine.InspectorName("X64")]
         X64 = EmbeddedArchitecture.X64,
 
-        [UnityEngine.InspectorName("X86")]
+        [System.Obsolete("X86 has been removed in 2023.2")]
         X86 = EmbeddedArchitecture.X86,
     }
 
@@ -379,13 +386,13 @@ namespace UnityEditor
         [UnityEngine.InspectorName("Arm64")]
         Arm64 = EmbeddedArchitecture.Arm64,
 
-        [UnityEngine.InspectorName("Arm32")]
+        [System.Obsolete("Arm32 has been removed in 2023.2")]
         Arm32 = EmbeddedArchitecture.Arm32,
 
         [UnityEngine.InspectorName("X64")]
         X64 = EmbeddedArchitecture.X64,
 
-        [UnityEngine.InspectorName("X86")]
+        [System.Obsolete("X86 has been removed in 2023.2")]
         X86 = EmbeddedArchitecture.X86,
     }
 
@@ -619,7 +626,7 @@ namespace UnityEditor
         }
 
         public static extern string webGLClientBrowserPath { get; set; }
-        
+
         public static extern WebGLClientBrowserType webGLClientBrowserType
         {
             [NativeMethod("GetWebGLClientBrowserType")]
@@ -764,6 +771,13 @@ namespace UnityEditor
             set;
         }
 
+        public static extern WindowsBuildAndRunDeployTarget windowsBuildAndRunDeployTarget
+        {
+            [NativeMethod("GetSelectedWindowsBuildAndRunDeployTarget")]
+            get;
+            [NativeMethod("SetSelectedWindowsBuildAndRunDeployTarget")]
+            set;
+        }
         public static extern int overrideMaxTextureSize { get; set; }
         public static extern Build.OverrideTextureCompression overrideTextureCompression { get; set; }
 

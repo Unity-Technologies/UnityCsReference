@@ -40,7 +40,7 @@ namespace UnityEngine.UIElements
         /// Instantiate a new binding property.
         /// </summary>
         /// <param name="path">The path of the property.</param>
-        public BindingId(PropertyPath path)
+        public BindingId(in PropertyPath path)
         {
             m_PropertyPath = path;
             m_Path = path.ToString();
@@ -81,7 +81,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="path">The path to the property.</param>
         /// <returns>The property.</returns>
-        public static implicit operator BindingId(PropertyPath path)
+        public static implicit operator BindingId(in PropertyPath path)
         {
             return new BindingId(path);
         }
@@ -164,7 +164,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="property">The property that has changed.</param>
         /// <returns>A <see cref="PropertyChangedEvent"/>.</returns>
-        public static PropertyChangedEvent GetPooled(BindingId property)
+        public static PropertyChangedEvent GetPooled(in BindingId property)
         {
             var e = GetPooled();
             e.property = property;

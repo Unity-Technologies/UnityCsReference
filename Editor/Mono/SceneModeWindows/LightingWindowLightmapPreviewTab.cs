@@ -136,7 +136,7 @@ namespace UnityEditor
             else
             {
                 var interactiveLightmaps = InteractiveLightBaking.GetLightmapData();
-                if (interactiveLightmaps.numLightmaps > 0 && Lightmapping.isInteractive) // Hide preview lightmaps when not in preview mode
+                if (interactiveLightmaps.numLightmaps > 0 && Lightmapping.shouldBakeInteractively) // Hide preview lightmaps when not in preview mode
                 {
                     m_ShowPreviewLightmaps.value = EditorGUILayout.Foldout(m_ShowPreviewLightmaps.value, Styles.PreviewLightmapsFoldoutTitle);
 

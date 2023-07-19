@@ -373,45 +373,6 @@ namespace UnityEditor
             return height;
         }
 
-        public bool CanCacheInspectorGUI(SerializedProperty property)
-        {
-            if (m_DecoratorDrawers != null &&
-                !isCurrentlyNested &&
-                m_DecoratorDrawers.Any(decorator => !decorator.CanCacheInspectorGUI()))
-                return false;
-
-            if (propertyDrawer != null)
-            {
-                // Retrieve drawer BEFORE increasing nesting.
-                PropertyDrawer drawer = propertyDrawer;
-                using (var nestingContext = IncrementNestingContext())
-                {
-                    return drawer.CanCacheInspectorGUISafe(property.Copy());
-                }
-            }
-
-            property = property.Copy();
-
-            bool childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
-
-            // Loop through all child properties
-            if (childrenAreExpanded)
-            {
-                PropertyHandler handler = null;
-                SerializedProperty endProperty = property.GetEndProperty();
-                while (property.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(property, endProperty))
-                {
-                    if (handler == null)
-                        handler = ScriptAttributeUtility.GetHandler(property);
-                    if (!handler.CanCacheInspectorGUI(property))
-                        return false;
-                    childrenAreExpanded = false;
-                }
-            }
-
-            return true;
-        }
-
         public void AddMenuItems(SerializedProperty property, GenericMenu menu)
         {
             if (contextMenuItems != null)

@@ -720,7 +720,8 @@ namespace UnityEditor.Overlays
                 menu.AppendSeparator();
                 var layouts = supportedLayouts;
 
-                if ((layouts & Layout.Panel) != 0)
+                // Panel layout is always supported by default, we only add this option in the menu if other options are available
+                if ((layouts & Layout.HorizontalToolbar) != 0 || (layouts & Layout.VerticalToolbar) != 0)
                     menu.AppendAction(L10n.Tr("Panel"), action => { layout = Layout.Panel; collapsed = false; }, GetMenuItemState(layout == Layout.Panel));
                 if ((layouts & Layout.HorizontalToolbar) != 0)
                     menu.AppendAction(L10n.Tr("Horizontal"), action => { layout = Layout.HorizontalToolbar; collapsed = false; }, GetMenuItemState(layout == Layout.HorizontalToolbar));

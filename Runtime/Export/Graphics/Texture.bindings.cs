@@ -792,7 +792,9 @@ namespace UnityEngine
         extern public bool bindTextureMS { get; set; }
         extern public bool enableRandomWrite { get; set; }
         extern public bool useDynamicScale { get; set; }
+        extern public bool useDynamicScaleExplicit { get; set; }
 
+        extern public void ApplyDynamicScale();
 
         // for some reason we are providing isPowerOfTwo setter which is empty (i dont know what the intent is/was)
         extern private bool GetIsPowerOfTwo();

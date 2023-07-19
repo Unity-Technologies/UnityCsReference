@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
-using UnityEngine.UIElements;
 
 namespace UnityEngine.UIElements
 {

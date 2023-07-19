@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     internal class VisualElementAsset : UxmlAsset, ISerializationCallbackReceiver
     {
         [SerializeField]
-        private string m_Name;
+        private string m_Name = string.Empty;
 
         [SerializeField]
         private int m_RuleIndex = -1;
@@ -23,10 +23,10 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
-        private string m_Text;
+        private string m_Text = string.Empty;
 
         [SerializeField]
-        private PickingMode m_PickingMode;
+        private PickingMode m_PickingMode = PickingMode.Position;
 
         [SerializeField]
         private string[] m_Classes;
@@ -53,8 +53,8 @@ namespace UnityEngine.UIElements
 
         public List<StyleSheet> stylesheets
         {
-            get { return m_Stylesheets ?? (m_Stylesheets = new List<StyleSheet>()); }
-            set { m_Stylesheets = value; }
+            get => m_Stylesheets ??= new List<StyleSheet>();
+            set => m_Stylesheets = value;
         }
 
         public bool hasStylesheets => m_Stylesheets != null;
@@ -71,9 +71,6 @@ namespace UnityEngine.UIElements
         public VisualElementAsset(string fullTypeName)
             : base(fullTypeName)
         {
-            m_Name = String.Empty;
-            m_Text = String.Empty;
-            m_PickingMode = PickingMode.Position;
         }
 
         public void OnBeforeSerialize() {}
@@ -102,10 +99,9 @@ namespace UnityEngine.UIElements
             if (!cc.TryGetSerializedDataOverride(id, out var data))
                 data = serializedData;
 
-            var instance = data.CreateInstance();
-            data.Deserialize(instance);
+            var ve = (VisualElement)data.CreateInstance();
+            data.Deserialize(ve);
 
-            var ve = (VisualElement)instance;
             if (hasStylesheetPaths)
             {
                 for (var i = 0; i < stylesheetPaths.Count; i++)

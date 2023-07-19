@@ -988,14 +988,23 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::ConfigureFoveatedRendering", HasExplicitThis = true)]
         extern public void ConfigureFoveatedRendering(IntPtr platformData);
 
+        static public bool ThrowOnSetRenderTarget = false;
+
+        static void CheckThrowOnSetRenderTarget()
+        {
+            if (ThrowOnSetRenderTarget) throw new Exception("Setrendertarget is not allowed in this context");
+        }
+
         public void SetRenderTarget(RenderTargetIdentifier rt)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             SetRenderTargetSingle_Internal(rt, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
         }
 
         public void SetRenderTarget(RenderTargetIdentifier rt, RenderBufferLoadAction loadAction, RenderBufferStoreAction storeAction)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             if (loadAction == RenderBufferLoadAction.Clear)
                 throw new ArgumentException("RenderBufferLoadAction.Clear is not supported");
@@ -1006,6 +1015,7 @@ namespace UnityEngine.Rendering
             RenderBufferLoadAction colorLoadAction, RenderBufferStoreAction colorStoreAction,
             RenderBufferLoadAction depthLoadAction, RenderBufferStoreAction depthStoreAction)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             if (colorLoadAction == RenderBufferLoadAction.Clear || depthLoadAction == RenderBufferLoadAction.Clear)
                 throw new ArgumentException("RenderBufferLoadAction.Clear is not supported");
@@ -1023,6 +1033,7 @@ namespace UnityEngine.Rendering
 
         public void SetRenderTarget(RenderTargetIdentifier rt, int mipLevel, CubemapFace cubemapFace)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             if (mipLevel < 0)
                 throw new ArgumentException(String.Format("Invalid value for mipLevel ({0})", mipLevel));
@@ -1032,6 +1043,7 @@ namespace UnityEngine.Rendering
 
         public void SetRenderTarget(RenderTargetIdentifier rt, int mipLevel, CubemapFace cubemapFace, int depthSlice)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             if (depthSlice < -1)
                 throw new ArgumentException(String.Format("Invalid value for depthSlice ({0})", depthSlice));
@@ -1043,12 +1055,14 @@ namespace UnityEngine.Rendering
 
         public void SetRenderTarget(RenderTargetIdentifier color, RenderTargetIdentifier depth)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             SetRenderTargetColorDepth_Internal(color, depth, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderTargetFlags.None);
         }
 
         public void SetRenderTarget(RenderTargetIdentifier color, RenderTargetIdentifier depth, int mipLevel)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             if (mipLevel < 0)
                 throw new ArgumentException(String.Format("Invalid value for mipLevel ({0})", mipLevel));
@@ -1059,6 +1073,7 @@ namespace UnityEngine.Rendering
 
         public void SetRenderTarget(RenderTargetIdentifier color, RenderTargetIdentifier depth, int mipLevel, CubemapFace cubemapFace)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             if (mipLevel < 0)
                 throw new ArgumentException(String.Format("Invalid value for mipLevel ({0})", mipLevel));
@@ -1068,6 +1083,7 @@ namespace UnityEngine.Rendering
 
         public void SetRenderTarget(RenderTargetIdentifier color, RenderTargetIdentifier depth, int mipLevel, CubemapFace cubemapFace, int depthSlice)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             if (depthSlice < -1)
                 throw new ArgumentException(String.Format("Invalid value for depthSlice ({0})", depthSlice));
@@ -1080,6 +1096,7 @@ namespace UnityEngine.Rendering
         public void SetRenderTarget(RenderTargetIdentifier color, RenderBufferLoadAction colorLoadAction, RenderBufferStoreAction colorStoreAction,
             RenderTargetIdentifier depth, RenderBufferLoadAction depthLoadAction, RenderBufferStoreAction depthStoreAction)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             if (colorLoadAction == RenderBufferLoadAction.Clear || depthLoadAction == RenderBufferLoadAction.Clear)
                 throw new ArgumentException("RenderBufferLoadAction.Clear is not supported");
@@ -1088,6 +1105,7 @@ namespace UnityEngine.Rendering
 
         public void SetRenderTarget(RenderTargetIdentifier[] colors, Rendering.RenderTargetIdentifier depth)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             if (colors.Length < 1)
                 throw new ArgumentException(string.Format("colors.Length must be at least 1, but was {0}", colors.Length));
@@ -1099,6 +1117,7 @@ namespace UnityEngine.Rendering
 
         public void SetRenderTarget(RenderTargetIdentifier[] colors, Rendering.RenderTargetIdentifier depth, int mipLevel, CubemapFace cubemapFace, int depthSlice)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             if (colors.Length < 1)
                 throw new ArgumentException(string.Format("colors.Length must be at least 1, but was {0}", colors.Length));
@@ -1109,6 +1128,7 @@ namespace UnityEngine.Rendering
 
         public void SetRenderTarget(RenderTargetBinding binding, int mipLevel, CubemapFace cubemapFace, int depthSlice)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             if (binding.colorRenderTargets.Length < 1)
                 throw new ArgumentException(string.Format("The number of color render targets must be at least 1, but was {0}", binding.colorRenderTargets.Length));
@@ -1128,6 +1148,7 @@ namespace UnityEngine.Rendering
 
         public void SetRenderTarget(RenderTargetBinding binding)
         {
+            CheckThrowOnSetRenderTarget();
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             if (binding.colorRenderTargets.Length < 1)
                 throw new ArgumentException(string.Format("The number of color render targets must be at least 1, but was {0}", binding.colorRenderTargets.Length));
@@ -1399,6 +1420,18 @@ namespace UnityEngine.Rendering
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             BeginRenderPass_Internal(width, height, volumeDepth, samples, attachments, depthAttachmentIndex, subPasses, new ReadOnlySpan<byte>());
+        }
+
+        public void BeginRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, NativeArray<SubPassDescriptor> subPasses, ReadOnlySpan<byte> debugNameUtf8)
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            BeginRenderPass_Internal(width, height, 1, samples, attachments, depthAttachmentIndex, subPasses, debugNameUtf8);
+        }
+
+        public void BeginRenderPass(int width, int height, int volumeDepth, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, NativeArray<SubPassDescriptor> subPasses, ReadOnlySpan<byte> debugNameUtf8)
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            BeginRenderPass_Internal(width, height, volumeDepth, samples, attachments, depthAttachmentIndex, subPasses, debugNameUtf8);
         }
 
         [FreeFunction("RenderingCommandBuffer_Bindings::NextSubPass", HasExplicitThis = true)]

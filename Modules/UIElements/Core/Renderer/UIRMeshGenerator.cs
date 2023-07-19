@@ -681,6 +681,9 @@ namespace UnityEngine.UIElements.UIR
 
         void DrawTextInfo(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes)
         {
+            if (vertices == null)
+                return;
+
             for (int i = 0, drawCount = vertices.Count; i < drawCount; i++)
             {
                 if (vertices[i].Length == 0)

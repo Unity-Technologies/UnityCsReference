@@ -6,8 +6,8 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class ReImportAction : ImportActionBase
 {
-    public ReImportAction(PackageOperationDispatcher operationDispatcher, AssetStoreDownloadManager assetStoreDownloadManager, ApplicationProxy application)
-        : base(operationDispatcher, assetStoreDownloadManager, application)
+    public ReImportAction(PackageOperationDispatcher operationDispatcher, AssetStoreDownloadManager assetStoreDownloadManager, ApplicationProxy application, UnityConnectProxy unityConnect)
+        : base(operationDispatcher, assetStoreDownloadManager, application, unityConnect)
     {
     }
 

@@ -18,7 +18,10 @@ namespace UnityEngine.Accessibility
 
             var isScreenReaderEnabled = AccessibilityManager.IsScreenReaderEnabled();
             screenReaderStatusChanged?.Invoke(isScreenReaderEnabled);
-            UpdateServices(isScreenReaderEnabled);
+            // In the Editor context, we always initialize services in order to allow users to build,
+            // activate and debug (using the Accessibility Hierarchy Viewer for instance) their Accessibility hierarchies in play mode
+            // even if Screen Reader is off and the Accessibility backend is not supported.
+            UpdateServices(true);
         }
 
         public T GetService<T>() where T : IService
