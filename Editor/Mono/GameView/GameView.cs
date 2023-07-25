@@ -126,9 +126,6 @@ namespace UnityEditor
 
         static double s_LastScrollTime;
 
-        [FreeFunction]
-        extern private static bool NeedToPerformRendering();
-
         public GameView()
         {
             autoRepaintOnSceneChange = true;
@@ -992,8 +989,7 @@ namespace UnityEditor
                 viewPadding = targetInParent.position;
                 viewMouseScale = gameMouseScale;
 
-                if (!EditorApplication.isPlaying ||
-                    (EditorApplication.isPlaying && NeedToPerformRendering() && !Unsupported.IsEditorPlayerLoopWaiting()))
+                if (renderViewCallNeededInOnGUI)
                     m_RenderTexture = RenderView(gameMousePosition, clearTexture);
 
                 if (m_TargetClamped)
