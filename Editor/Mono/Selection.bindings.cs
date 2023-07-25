@@ -95,11 +95,11 @@ namespace UnityEditor
 
         // The actual unfiltered selection from the Scene.
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern public static Object[] objects { get; set; }
+        extern public static Object[] objects { get; [param:Unmarshalled] set; }
 
         // The actual unfiltered selection from the Scene returned as instance ids instead of ::ref::objects.
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern public static int[] instanceIDs { get; [NativeThrows] set; }
+        extern public static int[] instanceIDs { get; [NativeThrows][param: Unmarshalled] set; }
 
         [StaticAccessor("GetSceneTracker()", StaticAccessorType.Dot)]
         [NativeMethod("IsSelected")]

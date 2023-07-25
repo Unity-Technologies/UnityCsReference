@@ -93,7 +93,7 @@ namespace UnityEditor
 
         [NativeThrows]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
-        private static extern void RegisterCompleteObjectUndoMultiple([NotNull] Object identifier, Object[] objectsToUndo, string name, int namePriority);
+        private static extern void RegisterCompleteObjectUndoMultiple([NotNull] Object identifier, [Unmarshalled] Object[] objectsToUndo, string name, int namePriority);
 
         public static void SetTransformParent(Transform transform, Transform newParent, string name)
         {
@@ -173,7 +173,7 @@ namespace UnityEditor
 
         [NativeThrows]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
-        private static extern void RecordObjectsInternal(Object[] objectToUndo, int size, string name);
+        private static extern void RecordObjectsInternal([Unmarshalled] Object[] objectToUndo, int size, string name);
 
         [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
         [NativeMethod("ClearUndoIdentifier")]

@@ -10,6 +10,14 @@ using UnityEngine;
 
 namespace UnityEditor.Search.Providers
 {
+    enum MissingReferenceFilter
+    {
+        Script,
+        Asset,
+        Prefab,
+        Any
+    }
+
     class ObjectQueryEngine : ObjectQueryEngine<UnityEngine.Object>
     {
     }
@@ -26,6 +34,7 @@ namespace UnityEditor.Search.Providers
         [ThreadStatic] List<int> m_FuzzyMatches = new List<int>();
 
         public QueryEngine<T> engine => m_QueryEngine;
+        public bool reportError;
 
         private static readonly char[] s_EntrySeparators = { '/', ' ', '_', '-', '.' };
         private static readonly SearchProposition[] s_FixedPropositions = new SearchProposition[]
@@ -73,10 +82,29 @@ namespace UnityEditor.Search.Providers
 
             public bool? isChild;
             public bool? isLeaf;
+            public bool missingScript;
+            public bool missingPrefab;
+            public bool missingAssetReference;
         }
 
         public bool InvalidateObject(int instanceId)
         {
+            return m_GODS.Remove(instanceId);
+        }
+
+        public bool InvalidateObjectAndRefs(int instanceId)
+        {
+            // Invalidate all refs because depending on the topology changed it becomes costly and
+            // difficult to compute what needs to be updated. Example of Topology changed:
+            // - Reparent NodeA: invalidate every node referencing nodeA
+            // - Reparent NodeA which is the parent of a whole hierarchy: invalidate every node referencing nodeA AND any of
+            //   the moved children since their TransformPath has changed as well
+
+            // TODO: Should we store scene dependency as GlobalObjectId in the query instead of path?
+            foreach (var god in m_GODS.Values)
+            {
+                god.refs = null;
+            }
             return m_GODS.Remove(instanceId);
         }
 
@@ -91,7 +119,7 @@ namespace UnityEditor.Search.Providers
             m_QueryEngine.AddFilter<int>("id", GetId);
             m_QueryEngine.AddFilter("path", GetPath);
             m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] {":"});
-
+            m_QueryEngine.AddFilter<MissingReferenceFilter>("missing", OnMissing, new[] { ":" });
             m_QueryEngine.AddFilter<string>("t", OnTypeFilter, new[] {"=", ":"});
             m_QueryEngine.SetFilter<string>("ref", GetReferences, new[] {"=", ":"}).AddTypeParser(s =>
             {
@@ -122,6 +150,7 @@ namespace UnityEditor.Search.Providers
 
             m_QueryEngine.SetSearchWordMatcher(OnSearchData);
             m_QueryEngine.SetSearchDataCallback(OnSearchData, s => s.ToLowerInvariant(), StringComparison.Ordinal);
+            reportError = true;
         }
 
         public virtual void SetupQueryEnginePropositions()
@@ -176,7 +205,8 @@ namespace UnityEditor.Search.Providers
             var query = m_QueryEngine.Parse(context.searchQuery, true);
             if (!query.valid)
             {
-                context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
+                if (reportError)
+                    context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
                 return Enumerable.Empty<T>();
             }
 
@@ -211,6 +241,30 @@ namespace UnityEditor.Search.Providers
                 m_GODS[instanceId] = god;
             }
             return god;
+        }
+
+        protected bool OnMissing(T obj, QueryFilterOperator op, MissingReferenceFilter value)
+        {
+            var god = GetGOD(obj);
+
+            if (god.refs == null)
+            {
+                BuildReferences(ref god, obj);
+            }
+
+            switch(value)
+            {
+                case MissingReferenceFilter.Any:
+                    return god.missingAssetReference || god.missingScript || god.missingPrefab;
+                case MissingReferenceFilter.Script:
+                    return god.missingScript;
+                case MissingReferenceFilter.Asset:
+                    return god.missingAssetReference;
+                case MissingReferenceFilter.Prefab:
+                    return god.missingPrefab;
+                default:
+                    return false;
+            }
         }
 
         protected virtual bool OnIsFilter(T obj, QueryFilterOperator op, string value)
@@ -292,7 +346,11 @@ namespace UnityEditor.Search.Providers
                         if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
                             continue;
 
-                        types.Add(c.GetType().Name.ToLowerInvariant());
+                        var componentType = c.GetType();
+                        var shortName = componentType.Name;
+                        types.Add(shortName.ToLowerInvariant());
+                        if (componentType.FullName != shortName)
+                            types.Add(componentType.FullName.ToLowerInvariant());
                     }
                 }
 
@@ -302,7 +360,43 @@ namespace UnityEditor.Search.Providers
             return CompareWords(op, value.ToLowerInvariant(), god.types);
         }
 
-        private void BuildReferences(UnityEngine.Object obj, ICollection<int> refs)
+        private void BuildReferences(ref GOD god, T obj)
+        {
+            var refs = new HashSet<int>();
+
+            BuildReferences(obj, ref god, refs);
+
+            if (obj is GameObject go)
+            {
+                // Index any prefab reference
+                AddReference(go, PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go), refs);
+
+                if (PrefabUtility.IsPrefabAssetMissing(go))
+                {
+                    god.missingPrefab = true;
+                }
+
+                var gocs = go.GetComponents<Component>();
+                for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
+                {
+                    var c = gocs[componentIndex];
+                    if (c == null || !c)
+                    {
+                        god.missingScript = true;
+                        continue;
+                    }
+
+                    if ((c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
+                        continue;
+                    BuildReferences(c, ref god, refs);
+                }
+            }
+
+            refs.Remove(obj.GetHashCode());
+            god.refs = refs;
+        }
+
+        private void BuildReferences(UnityEngine.Object obj, ref GOD god, ICollection<int> refs)
         {
             if (!obj)
                 return;
@@ -314,7 +408,7 @@ namespace UnityEditor.Search.Providers
                     var next = p.NextVisible(true);
                     while (next)
                     {
-                        AddPropertyReferences(obj, p, refs);
+                        AddPropertyReferences(obj, p, ref god, refs);
                         next = p.NextVisible(p.hasVisibleChildren);
                     }
                 }
@@ -325,10 +419,16 @@ namespace UnityEditor.Search.Providers
             }
         }
 
-        private void AddPropertyReferences(UnityEngine.Object obj, SerializedProperty p, ICollection<int> refs)
+        private void AddPropertyReferences(UnityEngine.Object obj, SerializedProperty p, ref GOD god, ICollection<int> refs)
         {
-            if (p.propertyType != SerializedPropertyType.ObjectReference || !p.objectReferenceValue)
+            if (p.propertyType != SerializedPropertyType.ObjectReference)
                 return;
+
+            if (p.objectReferenceValue == null)
+            {
+                god.missingAssetReference = god.missingAssetReference || p.objectReferenceInstanceIDValue != 0;
+                return;
+            }
 
             var refValue = AssetDatabase.GetAssetPath(p.objectReferenceValue);
             if (string.IsNullOrEmpty(refValue) && p.objectReferenceValue is GameObject go)
@@ -338,13 +438,16 @@ namespace UnityEditor.Search.Providers
                 AddReference(p.objectReferenceValue, refValue, refs);
             refs.Add(p.objectReferenceValue.GetInstanceID());
             if (p.objectReferenceValue is Component c)
+            {
                 refs.Add(c.gameObject.GetInstanceID());
+                var compRefValue = SearchUtils.GetTransformPath(c.gameObject.transform);
+                AddReference(c.gameObject, compRefValue, refs);
+            }
 
             // Add custom object cases
-            if (p.objectReferenceValue is Material material)
+            if (p.objectReferenceValue is Material material && material.shader)
             {
-                if (material.shader)
-                    AddReference(material.shader, material.shader.name, refs);
+                AddReference(material.shader, material.shader.name, refs);
             }
         }
 
@@ -353,9 +456,12 @@ namespace UnityEditor.Search.Providers
             if (string.IsNullOrEmpty(refValue))
                 return false;
 
+            refValue = refValue.ToLowerInvariant();
             if (refValue[0] == '/')
-                refValue = refValue.Substring(1);
-            refs.Add(refValue.ToLowerInvariant().GetHashCode());
+            {
+                refs.Add(refValue.Substring(1).GetHashCode());
+            }
+            refs.Add(refValue.GetHashCode());
 
             var refType = refObj?.GetType().Name;
             if (refType != null)
@@ -370,33 +476,19 @@ namespace UnityEditor.Search.Providers
 
             if (god.refs == null)
             {
-                var refs = new HashSet<int>();
-
-                BuildReferences(obj, refs);
-
-                if (obj is GameObject go)
-                {
-                    // Index any prefab reference
-                    AddReference(go, PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go), refs);
-
-                    var gocs = go.GetComponents<Component>();
-                    for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
-                    {
-                        var c = gocs[componentIndex];
-                        if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
-                            continue;
-                        BuildReferences(c, refs);
-                    }
-                }
-
-                refs.Remove(obj.GetHashCode());
-                god.refs = refs;
+                BuildReferences(ref god, obj);
             }
 
             if (god.refs.Count == 0)
                 return false;
 
-            if (Utils.TryParse(value, out int instanceId))
+            // Account for legacy ref:<InstanceID>: query that can be emitted by the various Find Reference in Scene menu items.
+            var potentialId = value;
+            if (value.EndsWith(":"))
+            {
+                potentialId = value.TrimEnd(':');
+            }
+            if (Utils.TryParse(potentialId, out int instanceId))
                 return god.refs.Contains(instanceId);
 
             return god.refs.Contains(value.ToLowerInvariant().GetHashCode());

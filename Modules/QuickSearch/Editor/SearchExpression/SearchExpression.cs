@@ -82,6 +82,7 @@ namespace UnityEditor.Search
         public readonly StringView outerText;
         public readonly StringView innerText;
         public readonly StringView alias;
+        internal bool hasEscapedNestedExpressions;
 
         // Evaluation fields
         internal readonly SearchExpressionEvaluator evaluator;
@@ -89,7 +90,7 @@ namespace UnityEditor.Search
 
         internal SearchExpression(SearchExpressionType types,
                                 StringView outerText, StringView innerText, StringView alias,
-                                SearchExpressionEvaluator evaluator, SearchExpression[] parameters)
+                                SearchExpressionEvaluator evaluator, SearchExpression[] parameters, bool hasEscapedNestedExpressions)
         {
             this.types = types;
             this.outerText = outerText;
@@ -97,50 +98,62 @@ namespace UnityEditor.Search
             this.alias = alias;
             this.parameters = parameters ?? new SearchExpression[0];
             this.evaluator = evaluator;
+            this.hasEscapedNestedExpressions = hasEscapedNestedExpressions;
         }
 
+        internal SearchExpression(SearchExpressionType types,
+            StringView outerText, StringView innerText, StringView alias,
+            SearchExpressionEvaluator evaluator, SearchExpression[] parameters)
+            : this(types, outerText, innerText, alias, evaluator, parameters, false)
+        {}
+
         internal SearchExpression(SearchExpressionType types, StringView text)
-            : this(types, text, StringView.nil, StringView.nil, default, null)
+            : this(types, text, StringView.nil, StringView.nil, default, null, false)
         {
         }
 
         internal SearchExpression(SearchExpressionType types, StringView outerText, StringView innerText)
-            : this(types, outerText, innerText, StringView.nil, default, null)
+            : this(types, outerText, innerText, StringView.nil, default, null, false)
         {
         }
 
         internal SearchExpression(SearchExpressionType types, StringView outerText, StringView innerText, SearchExpressionEvaluator evaluator)
-            : this(types, outerText, innerText, StringView.nil, evaluator, null)
+            : this(types, outerText, innerText, StringView.nil, evaluator, null, false)
         {
         }
 
         internal SearchExpression(SearchExpressionType types, StringView outerText, StringView innerText, SearchExpressionEvaluator evaluator, SearchExpression[] parameters)
-            : this(types, outerText, innerText, StringView.nil, evaluator, parameters)
+            : this(types, outerText, innerText, StringView.nil, evaluator, parameters, false)
+        {
+        }
+
+        internal SearchExpression(SearchExpressionType types, StringView outerText, StringView innerText, SearchExpressionEvaluator evaluator, SearchExpression[] parameters, bool hasEscapedNestedExpressions)
+            : this(types, outerText, innerText, StringView.nil, evaluator, parameters, hasEscapedNestedExpressions)
         {
         }
 
         internal SearchExpression(SearchExpressionType types, StringView outerText, StringView innerText, StringView alias, SearchExpressionEvaluator evaluator)
-            : this(types, outerText, innerText, alias, evaluator, null)
+            : this(types, outerText, innerText, alias, evaluator, null, false)
         {
         }
 
         internal SearchExpression(SearchExpressionType types, StringView text, SearchExpressionEvaluator evaluator)
-            : this(types, text, text, StringView.nil, evaluator, null)
+            : this(types, text, text, StringView.nil, evaluator, null, false)
         {
         }
 
         internal SearchExpression(SearchExpressionType types, StringView text, SearchExpressionEvaluator evaluator, SearchExpression[] parameters)
-            : this(types, text, text, StringView.nil, evaluator, parameters)
+            : this(types, text, text, StringView.nil, evaluator, parameters, false)
         {
         }
 
         internal SearchExpression(SearchExpression ex, SearchExpressionType types, StringView outerText, StringView innerText)
-            : this(types, outerText, innerText, ex.alias, ex.evaluator, ex.parameters)
+            : this(types, outerText, innerText, ex.alias, ex.evaluator, ex.parameters, false)
         {
         }
 
         internal SearchExpression(SearchExpression ex, StringView newAlias)
-            : this(ex.types, ex.outerText, ex.innerText, newAlias, ex.evaluator, ex.parameters)
+            : this(ex.types, ex.outerText, ex.innerText, newAlias, ex.evaluator, ex.parameters, false)
         {
         }
 
@@ -308,7 +321,7 @@ namespace UnityEditor.Search
             var see = EvaluatorManager.GetEvaluatorByNameDuringParsing(functionName, innerText);
             var seeArgs = new List<SearchExpression> { this };
             seeArgs.AddRange(args);
-            return new SearchExpression(SearchExpressionType.Function, StringView.nil, innerText, alias, see, seeArgs.ToArray());
+            return new SearchExpression(SearchExpressionType.Function, StringView.nil, innerText, alias, see, seeArgs.ToArray(), hasEscapedNestedExpressions);
         }
 
         public static bool TryConvertToDouble(SearchItem item, out double value, string selector = null)

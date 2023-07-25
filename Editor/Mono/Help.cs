@@ -334,6 +334,11 @@ namespace UnityEditor
                 return "class-EditorManager";
             }
 
+            if (obj is PrefabImporter)
+            {
+                return "-Prefab Asset";
+            }
+
             return $"class-{obj.GetType().Name}";
         }
 

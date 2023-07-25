@@ -26,9 +26,9 @@ namespace UnityEngine
         extern public int  variantCount { get; }
         extern public bool isWarmedUp   {[NativeName("IsWarmedUp")] get; }
 
-        extern private bool AddVariant(Shader shader, UnityEngine.Rendering.PassType passType, string[] keywords);
-        extern private bool RemoveVariant(Shader shader, UnityEngine.Rendering.PassType passType, string[] keywords);
-        extern private bool ContainsVariant(Shader shader, UnityEngine.Rendering.PassType passType, string[] keywords);
+        extern private bool AddVariant(Shader shader, UnityEngine.Rendering.PassType passType, [Unmarshalled] string[] keywords);
+        extern private bool RemoveVariant(Shader shader, UnityEngine.Rendering.PassType passType,[Unmarshalled] string[] keywords);
+        extern private bool ContainsVariant(Shader shader, UnityEngine.Rendering.PassType passType, [Unmarshalled] string[] keywords);
 
         [NativeName("ClearVariants")] extern public void Clear();
         [NativeName("WarmupShaders")] extern public void WarmUp();

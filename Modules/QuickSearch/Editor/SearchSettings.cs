@@ -154,7 +154,7 @@ namespace UnityEditor.Search
         internal static bool queryBuilder { get; set; }
         internal static string ignoredProperties { get; set; }
         internal static string helperWidgetCurrentArea { get; set; }
-
+        internal static int minIndexVariations { get; set; }
         internal static int[] expandedQueries { get; set; }
 
         // User editor pref
@@ -229,6 +229,7 @@ namespace UnityEditor.Search
             ignoredProperties = ReadSetting(settings, nameof(ignoredProperties), "id;name;classname;imagecontentshash");
             helperWidgetCurrentArea = ReadSetting(settings, nameof(helperWidgetCurrentArea), "all");
             s_DisabledIndexersString = ReadSetting(settings, nameof(disabledIndexers), "");
+            minIndexVariations = ReadSetting(settings, nameof(minIndexVariations), 2);
 
             itemIconSize = EditorPrefs.GetFloat(k_ItemIconSizePrefKey, itemIconSize);
 
@@ -276,6 +277,7 @@ namespace UnityEditor.Search
                 [nameof(ignoredProperties)] = ignoredProperties,
                 [nameof(helperWidgetCurrentArea)] = helperWidgetCurrentArea,
                 [nameof(disabledIndexers)] = string.Join(";;;", disabledIndexers),
+                [nameof(minIndexVariations)] = minIndexVariations,
 
             };
 

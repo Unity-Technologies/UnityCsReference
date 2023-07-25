@@ -586,25 +586,25 @@ namespace UnityEngine
         public static extern IntPtr ToByteArray(Byte[] array);
         // Convert a managed array of System.SByte to a Java array of <tt>byte</tt>.
         [ThreadSafe]
-        public static extern IntPtr ToSByteArray(SByte[] array);
+        public static extern IntPtr ToSByteArray([Unmarshalled] SByte[] array);
         // Convert a managed array of System.Char to a Java array of <tt>char</tt>.
         [ThreadSafe]
-        public static extern IntPtr ToCharArray(Char[] array);
+        public static extern IntPtr ToCharArray([Unmarshalled] Char[] array);
         // Convert a managed array of System.Int16 to a Java array of <tt>short</tt>.
         [ThreadSafe]
-        public static extern IntPtr ToShortArray(Int16[] array);
+        public static extern IntPtr ToShortArray([Unmarshalled] Int16[] array);
         // Convert a managed array of System.Int32 to a Java array of <tt>int</tt>.
         [ThreadSafe]
-        public static extern IntPtr ToIntArray(Int32[] array);
+        public static extern IntPtr ToIntArray([Unmarshalled] Int32[] array);
         // Convert a managed array of System.Int64 to a Java array of <tt>long</tt>.
         [ThreadSafe]
-        public static extern IntPtr ToLongArray(Int64[] array);
+        public static extern IntPtr ToLongArray([Unmarshalled] Int64[] array);
         // Convert a managed array of System.Single to a Java array of <tt>float</tt>.
         [ThreadSafe]
-        public static extern IntPtr ToFloatArray(float[] array);
+        public static extern IntPtr ToFloatArray([Unmarshalled] float[] array);
         // Convert a managed array of System.Double to a Java array of <tt>double</tt>.
         [ThreadSafe]
-        public static extern IntPtr ToDoubleArray(double[] array);
+        public static extern IntPtr ToDoubleArray([Unmarshalled] double[] array);
 
         // Convert a managed array of System.IntPtr, representing Java objects, to a Java array of <tt>java.lang.Object</tt>.
         [ThreadSafe]

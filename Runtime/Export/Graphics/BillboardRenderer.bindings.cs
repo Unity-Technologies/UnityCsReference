@@ -73,7 +73,7 @@ namespace UnityEngine
 
         // T[] version
         [FreeFunction(Name = "BillboardRenderer_Bindings::SetImageTexCoords", HasExplicitThis = true)]
-        extern public void SetImageTexCoords([NotNull] Vector4[] imageTexCoords);
+        extern public void SetImageTexCoords([NotNull][Unmarshalled] Vector4[] imageTexCoords);
 
         [FreeFunction(Name = "BillboardRenderer_Bindings::SetImageTexCoordsInternalList", HasExplicitThis = true)]
         extern internal void SetImageTexCoordsInternalList(object list);
@@ -105,7 +105,7 @@ namespace UnityEngine
 
         // T[] version
         [FreeFunction(Name = "BillboardRenderer_Bindings::SetVertices", HasExplicitThis = true)]
-        extern public void SetVertices([NotNull] Vector2[] vertices);
+        extern public void SetVertices([NotNull][Unmarshalled] Vector2[] vertices);
 
         [FreeFunction(Name = "BillboardRenderer_Bindings::SetVerticesInternalList", HasExplicitThis = true)]
         extern internal void SetVerticesInternalList(object list);
@@ -137,7 +137,7 @@ namespace UnityEngine
 
         // T[] version
         [FreeFunction(Name = "BillboardRenderer_Bindings::SetIndices", HasExplicitThis = true)]
-        extern public void SetIndices([NotNull] UInt16[] indices);
+        extern public void SetIndices([NotNull][Unmarshalled] UInt16[] indices);
 
         [FreeFunction(Name = "BillboardRenderer_Bindings::SetIndicesInternalList", HasExplicitThis = true)]
         extern internal void SetIndicesInternalList(object list);

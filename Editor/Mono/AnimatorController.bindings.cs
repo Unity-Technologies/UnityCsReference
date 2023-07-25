@@ -33,6 +33,7 @@ namespace UnityEditor.Animations
             [FreeFunction(Name = "AnimatorControllerBindings::GetLayers", HasExplicitThis = true)]
             get;
             [FreeFunction(Name = "AnimatorControllerBindings::SetLayers", HasExplicitThis = true, ThrowsException = true)]
+            [param: Unmarshalled]
             set;
         }
 
@@ -41,6 +42,7 @@ namespace UnityEditor.Animations
             [FreeFunction(Name = "AnimatorControllerBindings::GetParameters", HasExplicitThis = true)]
             get;
             [FreeFunction(Name = "AnimatorControllerBindings::SetParameters", HasExplicitThis = true, ThrowsException = true)]
+            [param: Unmarshalled]
             set;
         }
 
@@ -133,6 +135,6 @@ namespace UnityEditor.Animations
         extern internal ScriptableObject[] Internal_GetEffectiveBehaviours([NotNull] AnimatorState state, int layerIndex);
 
         [FreeFunction(Name = "AnimatorControllerBindings::Internal_SetEffectiveBehaviours", HasExplicitThis = true)]
-        extern internal void Internal_SetEffectiveBehaviours([NotNull] AnimatorState state, int layerIndex, ScriptableObject[] behaviours);
+        extern internal void Internal_SetEffectiveBehaviours([NotNull] AnimatorState state, int layerIndex, [Unmarshalled] ScriptableObject[] behaviours);
     }
 }

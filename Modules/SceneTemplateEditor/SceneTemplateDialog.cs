@@ -400,19 +400,15 @@ namespace UnityEditor.SceneTemplate
 
             rootContainer.RegisterCallback<GeometryChangedEvent>(evt => m_PreviewArea?.UpdatePreviewAreaSize());
 
-            // Text container
-            var scrollViewContainer = new ScrollView { style = { flexGrow = 1 } };
-            rootContainer.Add(scrollViewContainer);
-
             // Title
             var sceneTitleLabel = new Label();
-            scrollViewContainer.Add(sceneTitleLabel);
+            rootContainer.Add(sceneTitleLabel);
             sceneTitleLabel.name = k_SceneTemplateTitleLabelName;
             sceneTitleLabel.AddToClassList(Styles.classWrappingText);
 
             // Asset path
             var assetPathSection = new VisualElement();
-            scrollViewContainer.Add(assetPathSection);
+            rootContainer.Add(assetPathSection);
             assetPathSection.name = k_SceneTemplatePathSection;
             {
                 var scenePathLabel = new Label();
@@ -460,7 +456,7 @@ namespace UnityEditor.SceneTemplate
 
             // Description
             var descriptionSection = new VisualElement();
-            scrollViewContainer.Add(descriptionSection);
+            rootContainer.Add(descriptionSection);
             descriptionSection.name = k_SceneTemplateDescriptionSection;
             {
                 var descriptionLabel = new Label();
@@ -468,13 +464,15 @@ namespace UnityEditor.SceneTemplate
                 descriptionLabel.text = L10n.Tr("Description");
                 descriptionSection.Add(descriptionLabel);
 
+                // Text container
+                var scrollViewContainer = new ScrollView { style = { flexGrow = 1 } };
+                descriptionSection.Add(scrollViewContainer);
+
                 var sceneDescriptionLabel = new Label();
                 sceneDescriptionLabel.AddToClassList(Styles.classWrappingText);
                 sceneDescriptionLabel.name = k_SceneTemplateDescriptionName;
-                descriptionSection.Add(sceneDescriptionLabel);
+                scrollViewContainer.Add(sceneDescriptionLabel);
             }
-
-            rootContainer.Add(scrollViewContainer);
         }
 
         private void UpdateTemplateDescriptionUI(SceneTemplateInfo newSceneTemplateInfo)
@@ -552,11 +550,13 @@ namespace UnityEditor.SceneTemplate
             }
             else
             {
-                var infoObj = new SerializedObject(info.sceneTemplate);
-                var prop = infoObj.FindProperty("addToDefaults");
-                prop.boolValue = isPinned;
-                infoObj.ApplyModifiedProperties();
-                OnSceneTemplateAssetModified(info.sceneTemplate);
+                using (var infoObj = new SerializedObject(info.sceneTemplate))
+                {
+                    var prop = infoObj.FindProperty("addToDefaults");
+                    prop.boolValue = isPinned;
+                    infoObj.ApplyModifiedProperties();
+                    OnSceneTemplateAssetModified(info.sceneTemplate);
+                }
             }
         }
 

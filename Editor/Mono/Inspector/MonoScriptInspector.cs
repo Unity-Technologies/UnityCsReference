@@ -204,7 +204,8 @@ namespace UnityEditor
                 rect.x = 0;
                 rect.y -= 3;
                 rect.width = GUIClip.visibleRect.width + 1;
-                GUI.Box(rect, m_CachedPreview, m_TextStyle);
+                GUI.Box(rect, "");
+                EditorGUI.SelectableLabel(rect, m_CachedPreview.text, m_TextStyle);
             }
             GUI.enabled = enabledTemp;
         }

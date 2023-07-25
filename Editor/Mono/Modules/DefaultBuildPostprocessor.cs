@@ -63,7 +63,7 @@ namespace UnityEditor.Modules
 
         public virtual bool UsesBeeBuild() => false;
 
-        public virtual string PrepareForBuild(BuildOptions options, BuildTarget target)
+        public virtual string PrepareForBuild(BuildPlayerOptions buildPlayerOptions)
         {
             return null;
         }

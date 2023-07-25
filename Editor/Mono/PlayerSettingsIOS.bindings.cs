@@ -158,7 +158,7 @@ namespace UnityEditor
         private string m_VariantName;
 
         [FreeFunction("PlayerSettingsIOSBindings::SetOrAddDeviceRequirementForVariantNameImpl")]
-        extern private static void SetOrAddDeviceRequirementForVariantNameImpl(string name, int index, string[] keys, string[] values);
+        extern private static void SetOrAddDeviceRequirementForVariantNameImpl(string name, int index, [Unmarshalled] string[] keys, [Unmarshalled] string[] values);
 
         [NativeMethod(Name = "GetIOSDeviceRequirementCountForVariantName")]
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
@@ -361,7 +361,7 @@ namespace UnityEditor
             }
 
             [NativeProperty("HideHomeButton")]
-            public static bool hideHomeButton { get; set; }
+            public extern static bool hideHomeButton { get; set; }
 
             [NativeProperty("IOSAppInBackgroundBehavior")]
             private extern static int  appInBackgroundBehaviorInternal

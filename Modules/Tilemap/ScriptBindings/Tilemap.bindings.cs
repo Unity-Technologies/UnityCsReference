@@ -135,7 +135,7 @@ namespace UnityEngine.Tilemaps
         }
 
         [FreeFunction(Name = "TilemapBindings::GetTileAssetsBlockNonAlloc", HasExplicitThis = true)]
-        internal extern int GetTileAssetsBlockNonAlloc(Vector3Int startPosition, Vector3Int endPosition, Object[] tiles);
+        internal extern int GetTileAssetsBlockNonAlloc(Vector3Int startPosition, Vector3Int endPosition, [Unmarshalled] Object[] tiles);
 
         public int GetTilesBlockNonAlloc(BoundsInt bounds, TileBase[] tiles)
         {
@@ -145,7 +145,7 @@ namespace UnityEngine.Tilemaps
         public extern int GetTilesRangeCount(Vector3Int startPosition, Vector3Int endPosition);
 
         [FreeFunction(Name = "TilemapBindings::GetTileAssetsRangeNonAlloc", HasExplicitThis = true)]
-        internal extern int GetTileAssetsRangeNonAlloc(Vector3Int startPosition, Vector3Int endPosition, Vector3Int[] positions, Object[] tiles);
+        internal extern int GetTileAssetsRangeNonAlloc(Vector3Int startPosition, Vector3Int endPosition, [Unmarshalled] Vector3Int[] positions, [Unmarshalled] Object[] tiles);
 
         public int GetTilesRangeNonAlloc(Vector3Int startPosition, Vector3Int endPosition, Vector3Int[] positions, TileBase[] tiles)
         {
@@ -202,10 +202,10 @@ namespace UnityEngine.Tilemaps
         }
 
         [FreeFunction(Name = "TilemapBindings::GetUsedTilesNonAlloc", HasExplicitThis = true)]
-        internal extern int Internal_GetUsedTilesNonAlloc(Object[] usedTiles);
+        internal extern int Internal_GetUsedTilesNonAlloc([Unmarshalled] Object[] usedTiles);
 
         [FreeFunction(Name = "TilemapBindings::GetUsedSpritesNonAlloc", HasExplicitThis = true)]
-        internal extern int Internal_GetUsedSpritesNonAlloc(Object[] usedSprites);
+        internal extern int Internal_GetUsedSpritesNonAlloc([Unmarshalled] Object[] usedSprites);
 
         public extern Sprite GetSprite(Vector3Int position);
 

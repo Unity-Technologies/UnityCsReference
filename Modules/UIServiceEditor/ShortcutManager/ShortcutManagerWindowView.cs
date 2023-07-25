@@ -319,11 +319,25 @@ namespace UnityEditor.ShortcutManagement
 
         void OnCreateProfileClicked()
         {
+            const string initialValueForNewProfile = "New profile";
+            int uniqueProfileNumber = 1;
+            var profiles = m_ViewController.GetAvailableProfiles();
+            string newProfileName = initialValueForNewProfile;
+            if (profiles.Contains(initialValueForNewProfile))
+            {
+                newProfileName = initialValueForNewProfile + string.Format(" ({0})", uniqueProfileNumber);
+
+                while (profiles.Contains(newProfileName) && uniqueProfileNumber < 999999)
+                {
+                    newProfileName = initialValueForNewProfile + string.Format(" ({0})", ++uniqueProfileNumber);
+                }
+            }
+        
             PromptWindow.Show(L10n.Tr("Create profile"),
                 L10n.Tr("Create a shortcut profile"),
                 L10n.Tr("Enter the name of the profile you want to create"),
                 L10n.Tr("Profile Name:"),
-                L10n.Tr("New profile"),
+                L10n.Tr(newProfileName),
                 L10n.Tr("Create"),
                 m_ViewController.CanCreateProfile,
                 m_ViewController.CreateProfile);

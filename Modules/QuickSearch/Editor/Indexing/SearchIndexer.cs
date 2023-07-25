@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -388,10 +389,25 @@ namespace UnityEditor.Search
         /// </summary>
         public Func<string, string> resolveDocumentHandler { get; set; }
 
+        Func<IEnumerable<string>> m_FetchDefaultFilter;
+        internal Func<IEnumerable<string>> fetchDefaultFilter {
+            get => m_FetchDefaultFilter;
+            set
+            {
+                if (m_FetchDefaultFilter != value)
+                {
+                    m_RebuildFilters = true;
+                    m_FetchDefaultFilter = value;
+                }
+            }
+        }
+
         /// <summary>
         /// Minimal indexed word size.
         /// </summary>
         public int minWordIndexationLength { get; set; } = 2;
+
+        internal int minQueryLength { get; set; } = 1;
 
         internal IEnumerable<SearchIndexEntry> indexes => m_Indexes;
 
@@ -421,12 +437,20 @@ namespace UnityEditor.Search
         private ConcurrentDictionary<string, string> m_MetaInfo;
         internal ConcurrentDictionary<string, int> m_IndexByDocuments;
 
+        static readonly ProfilerMarker k_MapPropertyMarker = new($"{nameof(SearchIndexer)}.{nameof(MapProperty)}");
+        static readonly ProfilerMarker k_AddWordMarker = new($"{nameof(SearchIndexer)}.{nameof(AddWord)}");
+        static readonly ProfilerMarker k_AddExactWordMarker = new($"{nameof(SearchIndexer)}.{nameof(AddExactWord)}");
+        static readonly ProfilerMarker k_AddNumberMarker = new($"{nameof(SearchIndexer)}.{nameof(AddNumber)}");
+        static readonly ProfilerMarker k_AddPropertyMarker = new($"{nameof(SearchIndexer)}.{nameof(AddProperty)}");
+        static readonly ProfilerMarker k_AddExactPropertyMarker = new($"{nameof(SearchIndexer)}.{nameof(AddExactProperty)}");
+
         /// <summary>
         /// Create a new default SearchIndexer.
         /// </summary>
         public SearchIndexer()
             : this(String.Empty)
         {
+            minWordIndexationLength = SearchSettings.minIndexVariations;
         }
 
         /// <summary>
@@ -449,6 +473,7 @@ namespace UnityEditor.Search
             m_FixedRanges = new Dictionary<RangeSet, IndexRange>();
             m_SourceDocuments = new ConcurrentDictionary<string, Hash128>();
             m_MetaInfo = new ConcurrentDictionary<string, string>();
+            minWordIndexationLength = SearchSettings.minIndexVariations;
         }
 
         private Query<SearchResult, object> BuildQuery(string searchQuery)
@@ -458,7 +483,7 @@ namespace UnityEditor.Search
                 if (m_QueryEngine == null)
                 {
                     m_QueryEngine = new QueryEngine<SearchResult>(k_QueryEngineOptions);
-                    m_QueryEngine.SetSearchDataCallback(e => null, s => s.Length < minWordIndexationLength ? null : s, StringComparison.Ordinal);
+                    m_QueryEngine.SetSearchDataCallback(e => null, s => s.Length < minQueryLength ? null : s, StringComparison.Ordinal);
                     m_QueryPool = new ConcurrentDictionary<string, Query<SearchResult, object>>();
                 }
 
@@ -969,6 +994,7 @@ namespace UnityEditor.Search
 
         internal void MapProperty(in string name, in string label, in string help, in string propertyType, in string ownerTypeName, bool removeNestedKeys = false)
         {
+            using var _ = k_MapPropertyMarker.Auto();
             MapKeyword(name + ":", $"{label}|{help}|{propertyType}|{ownerTypeName}");
             if (removeNestedKeys)
             {
@@ -1258,6 +1284,14 @@ namespace UnityEditor.Search
 
         void AddFilters()
         {
+            if (fetchDefaultFilter != null)
+            {
+                var defaultFilters = fetchDefaultFilter();
+                foreach (var f in defaultFilters)
+                    if (!m_QueryEngine.HasFilter(f))
+                        m_QueryEngine.AddFilter(f);
+            }
+
             foreach (var kw in m_Keywords)
             {
                 var filter = kw;
@@ -1386,11 +1420,13 @@ namespace UnityEditor.Search
 
         internal void AddExactWord(string word, int score, int documentIndex, List<SearchIndexEntry> indexes)
         {
+            using var _ = k_AddExactWordMarker.Auto();
             indexes.Add(new SearchIndexEntry(word.GetHashCode(), int.MaxValue, SearchIndexEntry.Type.Word, documentIndex, score));
         }
 
         internal void AddWord(string word, int minVariations, int maxVariations, int score, int documentIndex, List<SearchIndexEntry> indexes)
         {
+            using var _ = k_AddWordMarker.Auto();
             if (word == null || word.Length == 0)
                 return;
 
@@ -1420,6 +1456,7 @@ namespace UnityEditor.Search
 
         internal void AddExactProperty(string name, string value, int score, int documentIndex, List<SearchIndexEntry> indexes, bool saveKeyword)
         {
+            using var _ = k_AddExactPropertyMarker.Auto();
             var nameHash = name.GetHashCode();
             var valueHash = value.GetHashCode();
 
@@ -1436,6 +1473,7 @@ namespace UnityEditor.Search
 
         internal void AddProperty(string name, string value, int minVariations, int maxVariations, int score, int documentIndex, List<SearchIndexEntry> indexes, bool exact, bool saveKeyword)
         {
+            using var _ = k_AddPropertyMarker.Auto();
             var nameHash = name.GetHashCode();
             var valueHash = value.GetHashCode();
             maxVariations = Math.Min(maxVariations, value.Length);
@@ -1468,6 +1506,7 @@ namespace UnityEditor.Search
 
         internal void AddNumber(string key, double value, int score, int documentIndex, List<SearchIndexEntry> indexes)
         {
+            using var _ = k_AddNumberMarker.Auto();
             var keyHash = key.GetHashCode();
             var longNumber = BitConverter.DoubleToInt64Bits(value);
             indexes.Add(new SearchIndexEntry(longNumber, keyHash, SearchIndexEntry.Type.Number, documentIndex, score));
@@ -1593,7 +1632,15 @@ namespace UnityEditor.Search
                 UpdateIndexes(m_BatchIndexes, null);
                 m_BatchIndexes.Clear();
             }
+
+            if (UnityEditorInternal.InternalEditorUtility.CurrentThreadIsMainThread())
+                OnFinish();
+            else
+                Dispatcher.Enqueue(OnFinish);
         }
+
+        private protected virtual void OnFinish()
+        {}
 
         internal string Print(IEnumerable<SearchIndexEntry> indexes)
         {

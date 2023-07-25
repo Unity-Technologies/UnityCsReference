@@ -691,7 +691,7 @@ namespace UnityEngine
     static public class FrameTimingManager
     {
         static extern public void CaptureFrameTimings();
-        static extern public UInt32 GetLatestTimings(UInt32 numFrames, FrameTiming[] timings);
+        static extern public UInt32 GetLatestTimings(UInt32 numFrames, [Unmarshalled] FrameTiming[] timings);
 
         static extern public float GetVSyncsPerSecond();
         static extern public UInt64 GetGpuTimerFrequency();
@@ -739,7 +739,7 @@ namespace UnityEngine
         private LightmapSettings() {}
 
         // Lightmap array.
-        public extern static LightmapData[] lightmaps {[FreeFunction] get; [FreeFunction(ThrowsException = true)] set; }
+        public extern static LightmapData[] lightmaps {[FreeFunction] get; [FreeFunction(ThrowsException = true)][param: Unmarshalled] set; }
 
         public extern static LightmapsMode lightmapsMode { get; [FreeFunction(ThrowsException = true)] set; }
 
@@ -837,7 +837,7 @@ namespace UnityEngine
 
         [FreeFunction]
         [NativeName("CalculateInterpolatedLightAndOcclusionProbes")]
-        internal extern static void CalculateInterpolatedLightAndOcclusionProbes_Internal(Vector3[] positions, int positionsCount, SphericalHarmonicsL2[] lightProbes, Vector4[] occlusionProbes);
+        internal extern static void CalculateInterpolatedLightAndOcclusionProbes_Internal([Unmarshalled] Vector3[] positions, int positionsCount, [Unmarshalled] SphericalHarmonicsL2[] lightProbes, [Unmarshalled] Vector4[] occlusionProbes);
 
         // Positions of the baked light probes.
         public extern Vector3[] positions

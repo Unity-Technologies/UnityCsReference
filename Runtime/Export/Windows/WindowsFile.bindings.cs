@@ -12,7 +12,7 @@ namespace UnityEngine.Windows
         public extern static byte[] ReadAllBytes(string path);
 
         [NativeHeader("PlatformDependent/MetroPlayer/Bindings/WindowsFileBindings.h")]
-        public extern static void WriteAllBytes(string path, byte[] bytes);
+        public extern static void WriteAllBytes(string path, [Unmarshalled] byte[] bytes);
 
         [NativeHeader("PlatformDependent/MetroPlayer/Bindings/WindowsFileBindings.h")]
         public extern static bool Exists(string path);

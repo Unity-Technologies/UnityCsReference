@@ -60,7 +60,7 @@ namespace UnityEditor.Search
         /// </summary>
         /// <param name="source"></param>
         /// <returns></returns>
-        static readonly Regex s_CamelCaseSplit = new Regex(@"(?<!^)(?=[A-Z0-9])", RegexOptions.Compiled);
+        static readonly Regex s_CamelCaseSplit = new Regex(@"(?<!^)(?=[A-Z])", RegexOptions.Compiled);
         public static string[] SplitCamelCase(string source)
         {
             return s_CamelCaseSplit.Split(source);
@@ -133,17 +133,22 @@ namespace UnityEditor.Search
         /// <returns>Returns list of tokens and variations in lowercase</returns>
         public static IEnumerable<string> SplitFileEntryComponents(string path, in char[] entrySeparators)
         {
+            return SplitFileEntryComponents(path, entrySeparators, 1);
+        }
+
+        internal static IEnumerable<string> SplitFileEntryComponents(string path, in char[] entrySeparators, int minTokenLength)
+        {
             path = Utils.RemoveInvalidCharsFromPath(path, '_');
             var name = Path.GetFileNameWithoutExtension(path);
             var nameTokens = name.Split(entrySeparators).Distinct().ToArray();
             var scc = nameTokens.SelectMany(s => SplitCamelCase(s)).Where(s => s.Length > 0).ToArray();
             var fcc = scc.Aggregate("", (current, s) => current + s[0]);
             return new[] { Path.GetExtension(path).Replace(".", "") }
-                .Concat(scc.Where(s => s.Length > 1))
+                .Concat(scc)
                 .Concat(FindShiftLeftVariations(fcc))
                 .Concat(nameTokens)
                 .Concat(path.Split(entrySeparators).Reverse())
-                .Where(s => s.Length > 1)
+                .Where(s => s.Length >= minTokenLength)
                 .Select(s => s.ToLowerInvariant())
                 .Distinct();
         }
@@ -392,13 +397,36 @@ namespace UnityEditor.Search
             if (prefabStage != null)
                 return SceneModeUtility.GetObjects(new[] { prefabStage.prefabContentsRoot }, true);
 
-            var goRoots = new List<UnityEngine.Object>();
-            for (int i = 0; i < SceneManager.sceneCount; ++i)
+            void AddScene(Scene scene, List<Scene> outScenes)
             {
-                var scene = SceneManager.GetSceneAt(i);
                 if (!scene.IsValid() || !scene.isLoaded)
-                    continue;
+                    return;
+                outScenes.Add(scene);
+            }
 
+
+            var scenes = new List<Scene>();
+            var stage = StageUtility.GetCurrentStage();
+            if (stage != null)
+            {
+                for (int i = 0, c = stage.sceneCount; i < c; ++i)
+                {
+                    var scene = stage.GetSceneAt(i);
+                    AddScene(scene, scenes);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < SceneManager.sceneCount; ++i)
+                {
+                    var scene = SceneManager.GetSceneAt(i);
+                    AddScene(scene, scenes);
+                }
+            }
+
+            var goRoots = new List<UnityEngine.Object>();
+            foreach (var scene in scenes)
+            {
                 var sceneRootObjects = scene.GetRootGameObjects();
                 if (sceneRootObjects != null && sceneRootObjects.Length > 0)
                     goRoots.AddRange(sceneRootObjects);
@@ -565,7 +593,7 @@ namespace UnityEditor.Search
                 return SearchProposition.invalid;
             return new SearchProposition(
                 priority: (ownerType.Name[0] << 4) + tokens[1][0],
-                category: $"Properties/{ownerType.Name}",
+                category: $"Properties/{ObjectNames.NicifyVariableName(ownerType.Name)}",
                 label: $"{tokens[1]} ({blockType?.Name ?? valueType})",
                 replacement: replacement,
                 help: tokens[2],
@@ -728,7 +756,7 @@ namespace UnityEditor.Search
                     return false;
             }
 
-            return !p.isArray && !p.isFixedBuffer && p.propertyPath.LastIndexOf('[') == -1;
+            return (p.propertyType == SerializedPropertyType.String || !p.isArray) && !p.isFixedBuffer && p.propertyPath.LastIndexOf('[') == -1;
         }
 
         internal static IEnumerable<UnityEngine.Object> GetTemplates(IEnumerable<UnityEngine.Object> objects)
@@ -1009,6 +1037,7 @@ namespace UnityEditor.Search
             return Utils.GetMainWindowCenteredPosition(size);
         }
 
+        
         internal static Texture2D GetAssetThumbnailFromPath(string path)
         {
             return Utils.GetAssetThumbnailFromPath(path);
@@ -1027,6 +1056,41 @@ namespace UnityEditor.Search
         internal static void FrameAssetFromPath(string path)
         {
             Utils.FrameAssetFromPath(path);
+        }
+        
+        internal static ISearchView OpenWithContextualProvider(params string[] providerIds)
+        {
+            return OpenWithContextualProvider(null, providerIds, SearchFlags.OpenContextual);
+        }
+
+        internal static ISearchView OpenWithContextualProvider(string searchQuery, string[] providerIds, SearchFlags flags, string topic = null, bool useExplicitProvidersAsNormalProviders = false)
+        {
+            var providers = SearchService.GetProviders(providerIds).ToArray();
+            if (providers.Length != providerIds.Length)
+                Debug.LogWarning($"Cannot find one of these search providers {string.Join(", ", providerIds)}");
+
+            if (providers.Length == 0)
+                return QuickSearch.OpenDefaultQuickSearch();
+
+            var context = SearchService.CreateContext(providers, searchQuery, flags);
+            context.useExplicitProvidersAsNormalProviders = useExplicitProvidersAsNormalProviders;
+            topic = topic ?? string.Join(", ", providers.Select(p => p.name.ToLower()));
+            var qsWindow = QuickSearch.Create<QuickSearch>(context, topic);
+
+            var evt = SearchAnalytics.GenericEvent.Create(qsWindow.windowId, SearchAnalytics.GenericEventType.QuickSearchOpen, "Contextual");
+            evt.message = providers[0].id;
+            if (providers.Length > 1)
+                evt.description = providers[1].id;
+            if (providers.Length > 2)
+                evt.description = providers[2].id;
+            if (providers.Length > 3)
+                evt.stringPayload1 = providers[3].id;
+            if (providers.Length > 4)
+                evt.stringPayload1 = providers[4].id;
+
+            SearchAnalytics.SendEvent(evt);
+
+            return qsWindow.ShowWindow();
         }
     }
 }

@@ -568,7 +568,7 @@ namespace UnityEditor
 
             if (Application.platform == RuntimePlatform.WindowsEditor)
             {
-                var progressDialogDelay = EditorGUILayout.DelayedFloatField(GeneralProperties.progressDialogDelay, m_ProgressDialogDelay);
+                var progressDialogDelay = EditorGUILayout.FloatField(GeneralProperties.progressDialogDelay, m_ProgressDialogDelay);
                 progressDialogDelay = Mathf.Clamp(progressDialogDelay, 0.1f, 1000.0f);
                 if (progressDialogDelay != m_ProgressDialogDelay)
                 {

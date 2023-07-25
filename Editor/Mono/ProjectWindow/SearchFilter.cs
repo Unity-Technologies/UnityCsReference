@@ -7,8 +7,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using UnityEditor.Collaboration;
-using UnityEditor.Connect;
 
 namespace UnityEditor
 {
@@ -43,10 +41,6 @@ namespace UnityEditor
         [SerializeField]
         private string[] m_AssetBundleNames = new string[0];
         [SerializeField]
-        private string[] m_VersionControlStates = new string[0];
-        [SerializeField]
-        private string[] m_SoftLockControlStates = new string[0];
-        [SerializeField]
         private int[] m_ReferencingInstanceIDs = new int[0];
         [SerializeField]
         private int[] m_SceneHandles;
@@ -64,12 +58,13 @@ namespace UnityEditor
         [SerializeField]
         private string m_OriginalText = "";
 
+        [SerializeField]
+        private bool m_FilterByTypeIntersection;
+
         // Interface
         public string nameFilter { get { return m_NameFilter; } set { m_NameFilter = value; }}
         public string[] classNames { get { return m_ClassNames; } set { m_ClassNames = value; }}
         public string[] assetLabels { get { return m_AssetLabels; } set { m_AssetLabels = value; }}
-        public string[] versionControlStates { get { return m_VersionControlStates; } set { m_VersionControlStates = value; }}
-        public string[] softLockControlStates { get { return m_SoftLockControlStates; } set { m_SoftLockControlStates = value; }}
         public string[] assetBundleNames { get { return m_AssetBundleNames; } set { m_AssetBundleNames = value; }}
         public int[] referencingInstanceIDs { get { return m_ReferencingInstanceIDs; } set { m_ReferencingInstanceIDs = value; }}
         public int[] sceneHandles { get { return m_SceneHandles; } set { m_SceneHandles = value; }}
@@ -79,6 +74,7 @@ namespace UnityEditor
         public SearchArea searchArea {  get { return m_SearchArea; } set { m_SearchArea = value; }}
         public string[] globs { get { return m_Globs; } set { m_Globs = value; }}
         public string originalText { get => m_OriginalText; set => m_OriginalText = value; }
+        internal bool filterByTypeIntersection { get => m_FilterByTypeIntersection; set => m_FilterByTypeIntersection = value; }
 
         public void ClearSearch()
         {
@@ -90,10 +86,9 @@ namespace UnityEditor
             m_ReferencingInstanceIDs = new int[0];
             m_SceneHandles = new int[0];
             m_Globs = new string[0];
-            m_VersionControlStates = new string[0];
-            m_SoftLockControlStates = new string[0];
             m_ShowAllHits = false;
             m_SkipHidden = false;
+            m_FilterByTypeIntersection = false;
         }
 
         bool IsNullOrEmpty<T>(T[] list)
@@ -110,8 +105,6 @@ namespace UnityEditor
                 !IsNullOrEmpty(m_Globs) ||
                 !IsNullOrEmpty(m_ReferencingInstanceIDs);
 
-            isSearchActive = isSearchActive || !IsNullOrEmpty(m_VersionControlStates);
-            isSearchActive = isSearchActive || !IsNullOrEmpty(m_SoftLockControlStates);
 
 
             bool foldersActive = !IsNullOrEmpty(m_Folders);
@@ -173,16 +166,6 @@ namespace UnityEditor
                 m_Folders = newFilter.m_Folders;
                 changed = true;
             }
-            if (newFilter.m_VersionControlStates != m_VersionControlStates)
-            {
-                m_VersionControlStates = newFilter.m_VersionControlStates;
-                changed = true;
-            }
-            if (newFilter.m_SoftLockControlStates != m_SoftLockControlStates)
-            {
-                m_SoftLockControlStates = newFilter.m_SoftLockControlStates;
-                changed = true;
-            }
             if (newFilter.m_AssetLabels != m_AssetLabels)
             {
                 m_AssetLabels = newFilter.m_AssetLabels;
@@ -226,6 +209,13 @@ namespace UnityEditor
                 m_Globs = newFilter.m_Globs;
                 changed = true;
             }
+            
+            if (newFilter.m_FilterByTypeIntersection != m_FilterByTypeIntersection)
+            {
+                m_FilterByTypeIntersection = newFilter.m_FilterByTypeIntersection;
+                changed = true;
+            }
+
 
             return changed;
         }
@@ -243,11 +233,6 @@ namespace UnityEditor
             if (m_AssetLabels != null && m_AssetLabels.Length > 0)
                 result += "[Labels: " + m_AssetLabels[0] + "]";
 
-            if (m_VersionControlStates != null && m_VersionControlStates.Length > 0)
-                result += "[VersionStates: " + m_VersionControlStates[0] + "]";
-
-            if (m_SoftLockControlStates != null && m_SoftLockControlStates.Length > 0)
-                result += "[SoftLockStates: " + m_SoftLockControlStates[0] + "]";
 
             if (m_AssetBundleNames != null && m_AssetBundleNames.Length > 0)
                 result += "[AssetBundleNames: " + m_AssetBundleNames[0] + "]";
@@ -266,6 +251,11 @@ namespace UnityEditor
 
             result += "[ShowAllHits: " + showAllHits + "]";
             result += "[SkipHidden: " + skipHidden + "]";
+
+            if (m_FilterByTypeIntersection)
+            {
+                result += $"[FilterByTypeIntersection]";
+            }
             return result;
         }
 
@@ -278,8 +268,6 @@ namespace UnityEditor
             // See SearchUtility.cs for search tokens
             AddToString("t:", m_ClassNames, ref result);
             AddToString("l:", m_AssetLabels, ref result);
-            AddToString("v:", m_VersionControlStates, ref result);
-            AddToString("s:", m_SoftLockControlStates, ref result);
             AddToString("b:", m_AssetBundleNames, ref result);
             AddToString("glob:", m_Globs.Select(a => $"\"{a}\"").ToArray(), ref result);
 

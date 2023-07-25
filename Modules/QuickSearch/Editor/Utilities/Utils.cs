@@ -913,9 +913,15 @@ namespace UnityEditor.Search
         public static bool TryParse<T>(string expression, out T result, bool supportNamedNumber = true)
         {
             expression = expression.Replace(',', '.');
-            expression = expression.TrimEnd('f');
             expression = expression.ToLowerInvariant();
 
+            return TryParseLowerInvariant(expression.GetStringView(), out result, supportNamedNumber);
+        }
+
+        public static bool TryParseLowerInvariant<T>(StringView sv, out T result, bool supportNamedNumber = true)
+        {
+            sv = sv.TrimEnd('f');
+            var expression = sv.ToString();
             bool success = false;
             result = default;
             if (typeof(T) == typeof(float))
@@ -1218,6 +1224,44 @@ namespace UnityEditor.Search
             if (attrs == null || attrs.Length == 0)
                 return null;
             return attrs[0] as T;
+        }
+
+        internal static bool TryParseObjectValue(in string value, out UnityEngine.Object objValue)
+        {            
+            objValue = null;
+            if (string.IsNullOrEmpty(value))
+            {
+                return false;
+            }
+
+            if (string.Equals("none", value, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (value.StartsWith("GlobalObjectId", StringComparison.Ordinal) && GlobalObjectId.TryParse(value, out var gid))
+            {
+                objValue = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(gid);
+                return objValue != null;
+            }
+
+            // ADB prints a warning if the path starts with /
+            if (!value.StartsWith("/") && File.Exists(value))
+            {
+                var guid = AssetDatabase.AssetPathToGUID(value);
+                if (!string.IsNullOrEmpty(guid))
+                {
+                    objValue = AssetDatabase.LoadMainAssetAtPath(value);
+                    return true;
+                }
+            }
+
+            // Try to get the corresponding gameObject from the scene.
+            var go = GameObject.Find(value);
+            if (go)
+            {
+                objValue = go;
+                return true;
+            }
+            return false;
         }
 
         internal static bool IsBuiltInResource(UnityEngine.Object obj)

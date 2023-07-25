@@ -43,7 +43,7 @@ namespace UnityEngine
         [FreeFunction(Name = "MeshScripting::SetVertexBufferParamsFromPtr", HasExplicitThis = true, ThrowsException = true)]
         extern private void SetVertexBufferParamsFromPtr(int vertexCount, IntPtr attributesPtr, int attributesCount);
         [FreeFunction(Name = "MeshScripting::SetVertexBufferParamsFromArray", HasExplicitThis = true, ThrowsException = true)]
-        extern private void SetVertexBufferParamsFromArray(int vertexCount, params UnityEngine.Rendering.VertexAttributeDescriptor[] attributes);
+        extern private void SetVertexBufferParamsFromArray(int vertexCount, [Unmarshalled] params UnityEngine.Rendering.VertexAttributeDescriptor[] attributes);
 
         [FreeFunction(Name = "MeshScripting::InternalSetVertexBufferData", HasExplicitThis = true)]
         extern private void InternalSetVertexBufferData(int stream, IntPtr data, int dataStart, int meshBufferStart, int count, int elemSize, UnityEngine.Rendering.MeshUpdateFlags flags);
@@ -53,7 +53,7 @@ namespace UnityEngine
         [FreeFunction(Name = "MeshScripting::GetVertexAttributesAlloc", HasExplicitThis = true)]
         extern private System.Array GetVertexAttributesAlloc();
         [FreeFunction(Name = "MeshScripting::GetVertexAttributesArray", HasExplicitThis = true)]
-        extern private int GetVertexAttributesArray([NotNull] UnityEngine.Rendering.VertexAttributeDescriptor[] attributes);
+        extern private int GetVertexAttributesArray([NotNull][Unmarshalled] UnityEngine.Rendering.VertexAttributeDescriptor[] attributes);
         [FreeFunction(Name = "MeshScripting::GetVertexAttributesList", HasExplicitThis = true)]
         extern private int GetVertexAttributesList([NotNull] System.Collections.Generic.List<UnityEngine.Rendering.VertexAttributeDescriptor> attributes);
         [FreeFunction(Name = "MeshScripting::GetVertexAttributesCount", HasExplicitThis = true)]
@@ -169,10 +169,10 @@ namespace UnityEngine
         extern public float GetBlendShapeFrameWeight(int shapeIndex, int frameIndex);
 
         [FreeFunction(Name = "GetBlendShapeFrameVerticesFromScript", HasExplicitThis = true, ThrowsException = true)]
-        extern public void GetBlendShapeFrameVertices(int shapeIndex, int frameIndex, Vector3[] deltaVertices, Vector3[] deltaNormals, Vector3[] deltaTangents);
+        extern public void GetBlendShapeFrameVertices(int shapeIndex, int frameIndex, [Unmarshalled] Vector3[] deltaVertices,  [Unmarshalled] Vector3[] deltaNormals,  [Unmarshalled] Vector3[] deltaTangents);
 
         [FreeFunction(Name = "AddBlendShapeFrameFromScript", HasExplicitThis = true, ThrowsException = true)]
-        extern public void AddBlendShapeFrame(string shapeName, float frameWeight, Vector3[] deltaVertices, Vector3[] deltaNormals, Vector3[] deltaTangents);
+        extern public void AddBlendShapeFrame(string shapeName, float frameWeight,  [Unmarshalled] Vector3[] deltaVertices,  [Unmarshalled] Vector3[] deltaNormals,  [Unmarshalled] Vector3[] deltaTangents);
 
         // skinning
 

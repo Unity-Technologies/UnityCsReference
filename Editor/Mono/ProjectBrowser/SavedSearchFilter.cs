@@ -10,7 +10,6 @@ using System.IO;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEditorInternal;
-using UnityEditor.Collaboration;
 using Object = UnityEngine.Object;
 
 
@@ -465,22 +464,6 @@ namespace UnityEditor
                     root = item;
                 else
                 {
-                    if (Collab.instance.collabFilters.ContainsSearchFilter(savedFilter.m_Name, savedFilter.m_Filter.FilterToSearchFieldString()))
-                    {
-                        if (!Collab.instance.IsCollabEnabledForCurrentProject())
-                            continue;
-                    }
-
-                    if (SoftlockViewController.Instance.softLockFilters.ContainsSearchFilter(savedFilter.m_Name, savedFilter.m_Filter.FilterToSearchFieldString()))
-                    {
-                        if (CollabSettingsManager.IsAvailable(CollabSettingType.InProgressEnabled))
-                        {
-                            if (!Collab.instance.IsCollabEnabledForCurrentProject() || !CollabSettingsManager.inProgressEnabled)
-                                continue;
-                        }
-                        else
-                            continue;
-                    }
                     items.Add(item);
                 }
             }

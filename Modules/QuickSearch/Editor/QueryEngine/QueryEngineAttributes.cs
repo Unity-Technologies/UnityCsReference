@@ -52,6 +52,8 @@ namespace UnityEditor.Search
         /// </summary>
         public bool useRegularExpressionToken;
 
+        internal string propositionReplacement;
+
         /// <summary>
         /// Create a filter with the corresponding token and supported operators.
         /// </summary>

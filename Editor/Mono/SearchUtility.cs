@@ -4,8 +4,6 @@
 
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
-using UnityEditor.Collaboration;
-using UnityEditor.Connect;
 
 namespace UnityEditor
 {
@@ -113,27 +111,6 @@ namespace UnityEditor
                 parsed = true;
             }
 
-            // Support: 'v:versionState' syntax
-            index = searchString.IndexOf("v:");
-            if (index >= 0)
-            {
-                string versionStateString = searchString.Substring(index + 2);
-                List<string> tmp = new List<string>(filter.versionControlStates);
-                tmp.Add(versionStateString);
-                filter.versionControlStates = tmp.ToArray();
-                parsed = true;
-            }
-
-            // Support: 's:softLockState' syntax
-            index = searchString.IndexOf("s:");
-            if (index >= 0)
-            {
-                string softLockStateString = searchString.Substring(index + 2);
-                List<string> tmp = new List<string>(filter.softLockControlStates);
-                tmp.Add(softLockStateString);
-                filter.softLockControlStates = tmp.ToArray();
-                parsed = true;
-            }
 
             // Support: 'a:area' syntax
             index = searchString.IndexOf("a:");

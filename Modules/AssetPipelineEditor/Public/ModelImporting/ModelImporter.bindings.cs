@@ -1029,7 +1029,7 @@ namespace UnityEditor
         [FreeFunction("ModelImporterBindings::GetClipAnimations")]
         private extern static ModelImporterClipAnimation[] GetClipAnimations(ModelImporter self);
         [FreeFunction("ModelImporterBindings::SetClipAnimations", ThrowsException = true)]
-        private extern static void SetClipAnimations([Writable, NotNull("NullExceptionObject")] ModelImporter self, ModelImporterClipAnimation[] value);
+        private extern static void SetClipAnimations([Writable, NotNull("NullExceptionObject")] ModelImporter self, [Unmarshalled] ModelImporterClipAnimation[] value);
 
         public ModelImporterClipAnimation[] defaultClipAnimations
         {

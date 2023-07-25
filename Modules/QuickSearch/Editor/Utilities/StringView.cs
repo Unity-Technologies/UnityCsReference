@@ -146,10 +146,26 @@ namespace UnityEditor.Search
             return Trim(chrs);
         }
 
+        internal StringView TrimEnd(params char[] chrs)
+        {
+            FindTrimEnd(m_StartIndex, m_EndIndex, m_BaseString, chrs, out var end);
+            return new StringView(m_BaseString, m_StartIndex, end);
+        }
+
+        IStringView IStringView.TrimEnd(params char[] chrs)
+        {
+            return TrimEnd(chrs);
+        }
+
         static void FindTrimStartEnd(int localStart, int localEnd, string baseString, char[] chrs, out int trimStart, out int trimEnd)
         {
+            FindTrimStart(localStart, localEnd, baseString, chrs, out trimStart);
+            FindTrimEnd(trimStart, localEnd, baseString, chrs, out trimEnd);
+        }
+
+        static void FindTrimStart(int localStart, int localEnd, string baseString, char[] chrs, out int trimStart)
+        {
             trimStart = localStart;
-            trimEnd = localEnd;
             for (; trimStart < localEnd;)
             {
                 var globalIndex = trimStart;
@@ -159,8 +175,12 @@ namespace UnityEditor.Search
                 else
                     break;
             }
+        }
 
-            for (; trimEnd > trimStart;)
+        static void FindTrimEnd(int localStart, int localEnd, string baseString, char[] chrs, out int trimEnd)
+        {
+            trimEnd = localEnd;
+            for (; trimEnd > localStart;)
             {
                 var globalIndex = trimEnd - 1;
                 var c = baseString[globalIndex];

@@ -35,7 +35,7 @@ namespace UnityEditor.Connect
         const int k_IntervalSeconds = 15;
 
         const string k_BuildFinishedWithStatusMsg = "Build #{0} {1} {2}.";
-        const string k_MessageErrorForApiStatusData = "An unexpected error occurred while querying Cloud Build for api status. See the console for more information.";
+        const string k_MessageErrorForApiStatusData = "An unexpected error occurred while querying Unity Build Automation for api status. See the console for more information.";
 
         bool m_Enabled;
         bool m_EnabledOnce;

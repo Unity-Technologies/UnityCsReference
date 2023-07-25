@@ -257,10 +257,16 @@ namespace UnityEditor.Search
             var providerTypes = new HashSet<string>(context.providers.Select(p => p.type));
 
             // In case there is a valid search group selected in the search view, lets use that instead.
-            if (context.searchView is QuickSearch qs && !string.IsNullOrEmpty(qs.currentGroup) && !string.Equals(qs.currentGroup, "all"))
+            var currentGroup = "";
+            if (context.searchView != null)
+            {
+                currentGroup = ((QuickSearch)context.searchView).currentGroup;
+            }
+            
+            if (!string.IsNullOrEmpty(currentGroup) && !string.Equals(currentGroup, "all", StringComparison.Ordinal))
             {
                 providerTypes.Clear();
-                providerTypes.Add(qs.currentGroup);
+                providerTypes.Add(currentGroup);
             }
 
             foreach (var s in SelectorManager.selectors)

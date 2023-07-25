@@ -74,7 +74,7 @@ namespace UnityEditor.Audio
         private extern void ValidateSnapshots();
 
         [NativeMethod("AudioMixerControllerBindings::GetGroupVUInfo", HasExplicitThis = true, IsFreeFunction = true)]
-        public extern int GetGroupVUInfo(GUID group, bool fader, float[] vuLevel, float[] vuPeak);
+        public extern int GetGroupVUInfo(GUID group, bool fader, [Unmarshalled] float[] vuLevel, [Unmarshalled] float[] vuPeak);
 
         public extern void UpdateMuteSolo();
 

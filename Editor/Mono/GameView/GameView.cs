@@ -56,7 +56,7 @@ namespace UnityEditor
             {
                 var clampedMinScale = Mathf.Min(kMinScale, ScaleThatFitsTargetInView(targetRenderSize, viewInWindow.size));
                 if (m_LowResolutionForAspectRatios[(int)currentSizeGroupType] && currentGameViewSize.sizeType == GameViewSizeType.AspectRatio)
-                    clampedMinScale = Mathf.Max(clampedMinScale, Mathf.Floor(EditorGUIUtility.pixelsPerPoint));
+                    clampedMinScale = Mathf.Max(clampedMinScale, EditorGUIUtility.pixelsPerPoint);
                 return clampedMinScale;
             }
         }
@@ -146,6 +146,9 @@ namespace UnityEditor
                 {
                     m_LowResolutionForAspectRatios[(int)currentSizeGroupType] = value;
                     UpdateZoomAreaAndParent();
+
+                    if (currentGameViewSize.sizeType == GameViewSizeType.AspectRatio)
+                        SnapZoom(minScale);
                 }
             }
         }
@@ -396,6 +399,14 @@ namespace UnityEditor
 
         internal override void OnBackgroundViewResized(Rect pos)
         {
+            // If we are switching from GameView to Simulator, this call will overwrite the value already written
+            //   by the SimulatorView since both tabs exist for a brief period of time. Don't do anything here
+            //   if this view is the one being switched out.
+            if (m_SwitchingPlayModeViewType)
+            {
+                return;
+            }
+
             // Should only update the game view size if it's in Aspect Ratio mode, otherwise
             // we keep the static size
 

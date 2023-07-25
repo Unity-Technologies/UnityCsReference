@@ -74,7 +74,7 @@ namespace UnityEditor.Build.Player
         private static extern IntPtr Internal_Create();
 
         [NativeMethod(IsThreadSafe = true)]
-        internal extern void AddAssemblyInfo(AssemblyInfoManaged[] assemblyInfos, string assembliesPath);
+        internal extern void AddAssemblyInfo([Unmarshalled] AssemblyInfoManaged[] assemblyInfos, string assembliesPath);
 
         [NativeMethod(IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);

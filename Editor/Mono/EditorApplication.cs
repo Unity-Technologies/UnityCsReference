@@ -336,7 +336,7 @@ namespace UnityEditor
 
             var desc = new ApplicationTitleDescriptor(
                 isTemporaryProject ? PlayerSettings.productName : Path.GetFileName(Path.GetDirectoryName(Application.dataPath)),
-                InternalEditorUtility.GetUnityDisplayVersion(),
+                (Unsupported.IsSourceBuild() || Unsupported.IsDeveloperMode()) ? InternalEditorUtility.GetUnityDisplayVersion() : Application.unityVersion,
                 activeSceneName,
                 GetLicenseType(),
                 BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)),
