@@ -548,7 +548,11 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             }
             EditorGUILayout.EndHorizontal();
 
-            m_Preview?.OnPreviewGUI(previewRect, EditorStyles.helpBox);
+            var evt = Event.current;
+            if (FrameDebuggerHelper.IsHoveringRect(previewRect) || evt.type != EventType.ScrollWheel)
+            {
+                m_Preview?.OnPreviewGUI(previewRect, EditorStyles.helpBox);
+            }
         }
 
         private void DrawEventMeshBackground(float viewportWidth, float viewportHeight)

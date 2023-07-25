@@ -10,6 +10,7 @@ using Unity.Collections;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Scripting;
 
@@ -169,6 +170,14 @@ namespace UnityEditor
 
         RenderTexture m_TargetTexture;
         ColorSpace m_CurrentColorSpace = ColorSpace.Uninitialized;
+
+        [FreeFunction]
+        extern protected static bool NeedToPerformRendering();
+
+        protected static bool renderViewCallNeededInOnGUI =>
+            !EditorApplication.isPlaying ||
+            (EditorApplication.isPlaying && NeedToPerformRendering() && !Unsupported.IsEditorPlayerLoopWaiting());
+
 
         class RenderingView : IDisposable
         {
