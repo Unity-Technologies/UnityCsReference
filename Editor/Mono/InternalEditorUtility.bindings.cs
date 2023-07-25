@@ -668,7 +668,7 @@ namespace UnityEditorInternal
 
         [StaticAccessor("CustomLighting::Get()", StaticAccessorType.Dot)]
         [NativeMethod("SetCustomLighting")]
-        extern public static void SetCustomLightingInternal(Light[] lights, Color ambient);
+        extern public static void SetCustomLightingInternal([Unmarshalled] Light[] lights, Color ambient);
 
         public static void SetCustomLighting(Light[] lights, Color ambient)
         {

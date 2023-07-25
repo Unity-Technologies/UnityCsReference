@@ -202,7 +202,7 @@ namespace UnityEditor.SceneManagement
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("SaveScenes")]
-        public extern static bool SaveScenes(Scene[] scenes);
+        public extern static bool SaveScenes([Unmarshalled] Scene[] scenes);
 
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
@@ -212,7 +212,7 @@ namespace UnityEditor.SceneManagement
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("SaveModifiedScenesIfUserWantsTo")]
-        public extern static bool SaveModifiedScenesIfUserWantsTo(Scene[] scenes);
+        public extern static bool SaveModifiedScenesIfUserWantsTo([Unmarshalled] Scene[] scenes);
 
         [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
         [NativeMethod("EnsureUntitledSceneHasBeenSaved")]
@@ -240,7 +240,7 @@ namespace UnityEditor.SceneManagement
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("RestoreSceneManagerSetup")]
-        public extern static void RestoreSceneManagerSetup(SceneSetup[] value);
+        public extern static void RestoreSceneManagerSetup([Unmarshalled] SceneSetup[] value);
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("LoadSceneManagerSetup")]

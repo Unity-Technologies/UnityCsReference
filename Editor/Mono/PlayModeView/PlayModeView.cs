@@ -45,6 +45,8 @@ namespace UnityEditor
         [SerializeField] EnterPlayModeBehavior m_EnterPlayModeBehavior;
         [SerializeField] bool m_UseMipMap;
 
+        protected bool m_SwitchingPlayModeViewType = false;
+
         private Dictionary<Type, string> m_AvailableWindowTypes;
 
         protected string playModeViewName
@@ -296,6 +298,11 @@ namespace UnityEditor
 
                 if (m_Parent is DockArea dockAreaParent)
                 {
+                    // Mark that this view is the one switching out so when we do the tab management we don't have
+                    //   the old tab rewrite the desired size when GameView.OnBackgroundResized() is called during
+                    //   SplitView.Reflow().
+                    m_SwitchingPlayModeViewType = true;
+
                     dockAreaParent.AddTab(window);
                     dockAreaParent.RemoveTab(this);
                     DestroyImmediate(this, true);

@@ -496,7 +496,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetInterpolatedHeights", HasExplicitThis = true)]
-        private extern void Internal_GetInterpolatedHeights(float[,] results, int resultXDimension, int resultXOffset, int resultYOffset, float xBase, float yBase, int xCount, int yCount, float xInterval, float yInterval);
+        private extern void Internal_GetInterpolatedHeights([Unmarshalled] float[,] results, int resultXDimension, int resultXOffset, int resultYOffset, float xBase, float yBase, int xCount, int yCount, float xInterval, float yInterval);
 
         public float[,] GetHeights(int xBase, int yBase, int width, int height)
         {
@@ -742,6 +742,7 @@ namespace UnityEngine
             get;
 
             [FreeFunction(k_ScriptingInterfacePrefix + "SetDetailPrototypes", HasExplicitThis = true, ThrowsException = true)]
+            [param: Unmarshalled]
             set;
         }
 
@@ -811,6 +812,7 @@ namespace UnityEngine
             get;
 
             [FreeFunction(k_ScriptingInterfacePrefix + "SetTreePrototypes", HasExplicitThis = true, ThrowsException = true)]
+            [param: Unmarshalled]
             set;
         }
 
@@ -947,6 +949,7 @@ namespace UnityEngine
             get;
 
             [FreeFunction(k_ScriptingInterfacePrefix + "SetSplatPrototypes", HasExplicitThis = true, ThrowsException = true)]
+            [param: Unmarshalled]
             set;
         }
 
@@ -956,6 +959,7 @@ namespace UnityEngine
             get;
 
             [FreeFunction(k_ScriptingInterfacePrefix + "SetTerrainLayers", HasExplicitThis = true)]
+            [param: Unmarshalled]
             set;
         }
 
@@ -971,7 +975,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "SetTerrainLayersRegisterUndo", HasExplicitThis = true)]
-        extern private void Internal_SetTerrainLayersRegisterUndo(TerrainLayer[] terrainLayers, string undoName);
+        extern private void Internal_SetTerrainLayersRegisterUndo([Unmarshalled] TerrainLayer[] terrainLayers, string undoName);
 
         [NativeName(k_TreeDatabasePrefix + "AddTree")]
         extern internal void AddTree(ref TreeInstance tree);

@@ -9,9 +9,9 @@ namespace UnityEngine.Windows
     public static class Crypto
     {
         [NativeHeader("PlatformDependent/MetroPlayer/Bindings/WindowsCryptoBindings.h")]
-        public extern static byte[] ComputeMD5Hash(byte[] buffer);
+        public extern static byte[] ComputeMD5Hash([Unmarshalled] byte[] buffer);
 
         [NativeHeader("PlatformDependent/MetroPlayer/Bindings/WindowsCryptoBindings.h")]
-        public extern static byte[] ComputeSHA1Hash(byte[] buffer);
+        public extern static byte[] ComputeSHA1Hash([Unmarshalled] byte[] buffer);
     }
 }

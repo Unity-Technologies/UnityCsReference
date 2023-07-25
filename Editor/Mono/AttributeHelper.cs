@@ -166,6 +166,11 @@ namespace UnityEditor
                 if (!System.IO.Path.HasExtension(fileName))
                     fileName = fileName + ".asset";
 
+                // trim the trailing space from the menu name:
+                // 1. visually it is hard to differentialte menu names with or without spaces.
+                // 2. when asset menu is searched, it will search the trimmed menu name, so it will create a edge case where a menu name with space could not be found after creation.
+                menuItemName = menuItemName.TrimEnd();
+
                 var item = new MonoCreateAssetItem
                 {
                     menuItem = menuItemName,

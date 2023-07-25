@@ -407,19 +407,19 @@ namespace UnityEngine.Rendering
         extern public void SetComputeVectorParam([NotNull] ComputeShader computeShader, int nameID, Vector4 val);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetComputeVectorArrayParam", HasExplicitThis = true)]
-        extern public void SetComputeVectorArrayParam([NotNull] ComputeShader computeShader, int nameID, Vector4[] values);
+        extern public void SetComputeVectorArrayParam([NotNull] ComputeShader computeShader, int nameID, [Unmarshalled] Vector4[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetComputeMatrixParam", HasExplicitThis = true)]
         extern public void SetComputeMatrixParam([NotNull] ComputeShader computeShader, int nameID, Matrix4x4 val);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetComputeMatrixArrayParam", HasExplicitThis = true)]
-        extern public void SetComputeMatrixArrayParam([NotNull] ComputeShader computeShader, int nameID, Matrix4x4[] values);
+        extern public void SetComputeMatrixArrayParam([NotNull] ComputeShader computeShader, int nameID, [Unmarshalled] Matrix4x4[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetComputeFloats", HasExplicitThis = true)]
-        extern private void Internal_SetComputeFloats([NotNull] ComputeShader computeShader, int nameID, float[] values);
+        extern private void Internal_SetComputeFloats([NotNull] ComputeShader computeShader, int nameID, [Unmarshalled] float[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetComputeInts", HasExplicitThis = true)]
-        extern private void Internal_SetComputeInts([NotNull] ComputeShader computeShader, int nameID, int[] values);
+        extern private void Internal_SetComputeInts([NotNull] ComputeShader computeShader, int nameID, [Unmarshalled] int[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetComputeTextureParam", HasExplicitThis = true)]
         extern private void Internal_SetComputeTextureParam([NotNull] ComputeShader computeShader, int kernelIndex, int nameID, ref UnityEngine.Rendering.RenderTargetIdentifier rt, int mipLevel, RenderTextureSubElement element);
@@ -466,19 +466,19 @@ namespace UnityEngine.Rendering
         extern private void Internal_SetRayTracingVectorParam([NotNull] RayTracingShader rayTracingShader, int nameID, Vector4 val);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingVectorArrayParam", HasExplicitThis = true)]
-        extern private void Internal_SetRayTracingVectorArrayParam([NotNull] RayTracingShader rayTracingShader, int nameID, Vector4[] values);
+        extern private void Internal_SetRayTracingVectorArrayParam([NotNull] RayTracingShader rayTracingShader, int nameID, [Unmarshalled] Vector4[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingMatrixParam", HasExplicitThis = true)]
         extern private void Internal_SetRayTracingMatrixParam([NotNull] RayTracingShader rayTracingShader, int nameID, Matrix4x4 val);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingMatrixArrayParam", HasExplicitThis = true)]
-        extern private void Internal_SetRayTracingMatrixArrayParam([NotNull] RayTracingShader rayTracingShader, int nameID, Matrix4x4[] values);
+        extern private void Internal_SetRayTracingMatrixArrayParam([NotNull] RayTracingShader rayTracingShader, int nameID, [Unmarshalled] Matrix4x4[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingFloats", HasExplicitThis = true)]
-        extern private void Internal_SetRayTracingFloats([NotNull] RayTracingShader rayTracingShader, int nameID, float[] values);
+        extern private void Internal_SetRayTracingFloats([NotNull] RayTracingShader rayTracingShader, int nameID,  [Unmarshalled] float[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingInts", HasExplicitThis = true)]
-        extern private void Internal_SetRayTracingInts([NotNull] RayTracingShader rayTracingShader, int nameID, int[] values);
+        extern private void Internal_SetRayTracingInts([NotNull] RayTracingShader rayTracingShader, int nameID, [Unmarshalled] int[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_BuildRayTracingAccelerationStructure", HasExplicitThis = true)]
         extern private void Internal_BuildRayTracingAccelerationStructure([NotNull] RayTracingAccelerationStructure accelerationStructure, Vector3 relativeOrigin);
@@ -553,7 +553,7 @@ namespace UnityEngine.Rendering
         extern private void Internal_DrawProceduralIndexedIndirectGraphicsBuffer(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_DrawMeshInstanced", HasExplicitThis = true)]
-        extern private void Internal_DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, int shaderPass, Matrix4x4[] matrices, int count, MaterialPropertyBlock properties);
+        extern private void Internal_DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, int shaderPass, [Unmarshalled] Matrix4x4[] matrices, int count, MaterialPropertyBlock properties);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_DrawMeshInstancedProcedural", HasExplicitThis = true)]
         extern private void Internal_DrawMeshInstancedProcedural(Mesh mesh, int submeshIndex, Material material, int shaderPass, int count, MaterialPropertyBlock properties);
@@ -836,16 +836,16 @@ namespace UnityEngine.Rendering
         extern private void SetGlobalMatrixArrayListImpl(int nameID, object values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalFloatArray", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetGlobalFloatArray(int nameID, float[] values);
+        extern public void SetGlobalFloatArray(int nameID, [Unmarshalled] float[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalVectorArray", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetGlobalVectorArray(int nameID, Vector4[] values);
+        extern public void SetGlobalVectorArray(int nameID, [Unmarshalled] Vector4[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalMatrixArray", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetGlobalMatrixArray(int nameID, Matrix4x4[] values);
+        extern public void SetGlobalMatrixArray(int nameID, [Unmarshalled] Matrix4x4[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetLateLatchProjectionMatrices", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetLateLatchProjectionMatrices(Matrix4x4[] projectionMat);
+        extern public void SetLateLatchProjectionMatrices([Unmarshalled] Matrix4x4[] projectionMat);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::MarkLateLatchMatrixShaderPropertyID", HasExplicitThis = true)]
         extern public void MarkLateLatchMatrixShaderPropertyID(CameraLateLatchMatrixType matrixPropertyType, int shaderPropertyID);

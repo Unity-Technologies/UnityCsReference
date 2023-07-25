@@ -249,10 +249,10 @@ namespace UnityEngine
         private extern static void OverridePhysicsShapeCount(Sprite sprite, int physicsShapeCount);
 
         [FreeFunction("SpritesBindings::OverridePhysicsShape", ThrowsException = true)]
-        private extern static void OverridePhysicsShape(Sprite sprite, Vector2[] physicsShape, int idx);
+        private extern static void OverridePhysicsShape(Sprite sprite, [Unmarshalled] Vector2[] physicsShape, int idx);
 
         [FreeFunction("SpritesBindings::OverrideGeometry", HasExplicitThis = true)]
-        public extern void OverrideGeometry([NotNull] Vector2[] vertices, [NotNull] UInt16[] triangles);
+        public extern void OverrideGeometry([NotNull][Unmarshalled] Vector2[] vertices, [NotNull][Unmarshalled] UInt16[] triangles);
 
         // Workaround for Overloads as described in
         internal static Sprite Create(Rect rect, Vector2 pivot, float pixelsToUnits, Texture2D texture)

@@ -86,7 +86,7 @@ namespace UnityEngine
         extern public bool enabled { get; set; }
         extern public Camera targetCamera { get; set; }
 
-        extern public void SetBoundingSpheres(BoundingSphere[] array);
+        extern public void SetBoundingSpheres([Unmarshalled] BoundingSphere[] array);
         extern public void SetBoundingSphereCount(int count);
         extern public void EraseSwapBack(int index);
 
@@ -114,7 +114,7 @@ namespace UnityEngine
 
         [NativeThrows]
         [FreeFunction("CullingGroup_Bindings::QueryIndices", HasExplicitThis = true)]
-        extern private int QueryIndices(bool visible, int distanceIndex, CullingQueryOptions options, int[] result, int firstIndex);
+        extern private int QueryIndices(bool visible, int distanceIndex, CullingQueryOptions options, [Unmarshalled] int[] result, int firstIndex);
 
         [NativeThrows]
         [FreeFunction("CullingGroup_Bindings::IsVisible", HasExplicitThis = true)]
@@ -125,7 +125,7 @@ namespace UnityEngine
         extern public int GetDistance(int index);
 
         [FreeFunction("CullingGroup_Bindings::SetBoundingDistances", HasExplicitThis = true)]
-        extern public void SetBoundingDistances(float[] distances);
+        extern public void SetBoundingDistances([Unmarshalled] float[] distances);
 
         [FreeFunction("CullingGroup_Bindings::SetDistanceReferencePoint", HasExplicitThis = true)]
         extern private void SetDistanceReferencePoint_InternalVector3(Vector3 point);

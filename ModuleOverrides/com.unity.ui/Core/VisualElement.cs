@@ -1237,6 +1237,8 @@ namespace UnityEngine.UIElements
                 using (pDispatcherGate)
                 using (panelDispatcherGate)
                 {
+
+                    panel?.dispatcher?.m_ClickDetector.Cleanup(elements);
                     foreach (var e in elements)
                     {
                         e.WillChangePanel(p);
@@ -1275,6 +1277,10 @@ namespace UnityEngine.UIElements
         {
             if (panel != null)
             {
+                // Better to do some things here before we call the user's callback as some state may be modified during the callback.
+
+                UnregisterRunningAnimations();
+
                 // Only send this event if the element isn't waiting for an attach event already
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == 0)
                 {
@@ -1283,11 +1289,7 @@ namespace UnityEngine.UIElements
                         e.target = this;
                         elementPanel.SendEvent(e, DispatchMode.Immediate);
                     }
-
-                    panel.dispatcher.m_ClickDetector.Cleanup(this);
                 }
-
-                UnregisterRunningAnimations();
             }
         }
 

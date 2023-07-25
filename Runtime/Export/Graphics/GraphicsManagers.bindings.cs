@@ -84,6 +84,7 @@ namespace UnityEngine
         extern public static bool  softParticles         { get; set; }
         extern public static bool  softVegetation        { get; set; }
         extern public static int   vSyncCount            { get; set; }
+        extern public static int   realtimeGICPUUsage    { get; set; }
         extern public static int   antiAliasing          { get; set; }
         extern public static int   asyncUploadTimeSlice  { get; set; }
         extern public static int   asyncUploadBufferSize { get; set; }
