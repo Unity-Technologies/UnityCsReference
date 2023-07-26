@@ -387,6 +387,7 @@ namespace UnityEditor
             }
 
             DestroyImmediate(this, true);
+            EditorWindow.UpdateWindowMenuListing();
         }
 
         [RequiredByNativeCode]

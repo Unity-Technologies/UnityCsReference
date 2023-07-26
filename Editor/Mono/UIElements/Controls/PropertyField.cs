@@ -798,6 +798,12 @@ namespace UnityEditor.UIElements
                         {
                             if (!objectTypes.Name.Equals(targetTypeName, StringComparison.OrdinalIgnoreCase))
                                 continue;
+
+                            // We ignore C# types as they can can be confused with a built-in type with the same name,
+                            // we can use the FieldInfo to find MonoScript types. (UUM-29499)
+                            if (typeof(MonoBehaviour).IsAssignableFrom(objectTypes) || typeof(ScriptableObject).IsAssignableFrom(objectTypes))
+                                continue;
+
                             requiredType = objectTypes;
                             break;
                         }

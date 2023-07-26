@@ -203,6 +203,7 @@ namespace UnityEditor.Search
 
             if (selectionCount == 0)
             {
+                m_EditorContainer?.Clear();
                 return;
             }
 

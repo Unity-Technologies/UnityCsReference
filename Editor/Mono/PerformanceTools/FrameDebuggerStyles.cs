@@ -58,8 +58,13 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         // Tree
         internal struct Tree
         {
-            internal static readonly GUIStyle s_RowText = "OL Label";
-            internal static readonly GUIStyle s_RowTextRight = "OL RightLabel";
+            internal static readonly GUIStyle s_RowText = new GUIStyle(EditorStyles.label);
+            internal static readonly GUIStyle s_RowTextBold = new GUIStyle(EditorStyles.boldLabel);
+            internal static readonly GUIStyle s_RowTextRight = new GUIStyle(EditorStyles.boldLabel)
+            {
+                alignment = TextAnchor.MiddleRight
+            };
+
             internal const string k_UnknownScopeString = "<unknown scope>";
         }
 

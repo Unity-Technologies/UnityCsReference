@@ -14,7 +14,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_SkipRemoveConfirmationPrefs = "PackageManager.SkipRemoveConfirmation";
         private const string k_SkipMultiSelectRemoveConfirmationPrefs = "PackageManager.SkipMultiSelectRemoveConfirmation";
         private const string k_SkipDisableConfirmationPrefs = "PackageManager.SkipDisableConfirmation";
-        private const string k_SplitterFlexGrowPrefs = "PackageManager.SplitterFlexGrowPrefs";
+        private const string k_LeftContainerWidthPrefs = "PackageManager.LeftContainerWidthPrefs";
+        private const string k_SidebarWidthPrefs = "PackageManager.SidebarWidthPrefs";
         private const string k_LastActivePageIdPrefsPrefix = "PackageManager.PageId_";
 
         public const int k_DefaultPageSize = 25;
@@ -40,14 +41,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             set => EditorPrefs.SetBool(k_SkipDisableConfirmationPrefs, value);
         }
 
-        public virtual float splitterFlexGrow
+        public virtual float leftContainerWidth
         {
-            get => EditorPrefs.GetFloat(k_SplitterFlexGrowPrefs, 0.3f);
+            get => EditorPrefs.GetFloat(k_LeftContainerWidthPrefs, 300);
             set
             {
                 if (float.IsNaN(value) || float.IsInfinity(value))
                     return;
-                EditorPrefs.SetFloat(k_SplitterFlexGrowPrefs, value);
+                EditorPrefs.SetFloat(k_LeftContainerWidthPrefs, value);
+            }
+        }
+
+        public virtual float sidebarWidth
+        {
+            get => EditorPrefs.GetFloat(k_SidebarWidthPrefs, 225);
+            set
+            {
+                if (float.IsNaN(value) || float.IsInfinity(value))
+                    return;
+                EditorPrefs.SetFloat(k_SidebarWidthPrefs, value);
             }
         }
 

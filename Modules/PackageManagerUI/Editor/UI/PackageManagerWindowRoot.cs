@@ -93,8 +93,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             RegisterEventsToAdaptFocus();
 
-            leftColumnContainer.style.flexGrow = m_PackageManagerPrefs.splitterFlexGrow;
-            rightColumnContainer.style.flexGrow = 1 - m_PackageManagerPrefs.splitterFlexGrow;
+            globalSplitter.fixedPaneInitialDimension = m_PackageManagerPrefs.sidebarWidth;
+            mainContainerSplitter.fixedPaneInitialDimension = m_PackageManagerPrefs.leftContainerWidth;
 
             m_PageRefreshHandler.onRefreshOperationFinish += OnRefreshOperationFinish;
             m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
@@ -234,7 +234,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             EditorApplication.focusChanged -= OnFocusChanged;
             m_Selection.onSelectionChanged -= RefreshSelectedInInspectorClass;
 
-            m_PackageManagerPrefs.splitterFlexGrow = leftColumnContainer.resolvedStyle.flexGrow;
+            m_PackageManagerPrefs.sidebarWidth = sidebar.layout.width;
+            m_PackageManagerPrefs.leftContainerWidth = leftColumnContainer.layout.width;
         }
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
@@ -469,9 +470,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public PackageManagerToolbar packageManagerToolbar => cache.Get<PackageManagerToolbar>("topMenuToolbar");
         public PackageStatusBar packageStatusbar => cache.Get<PackageStatusBar>("packageStatusBar");
         private VisualElement leftColumnContainer => cache.Get<VisualElement>("leftColumnContainer");
-        private VisualElement rightColumnContainer => cache.Get<VisualElement>("rightColumnContainer");
         private VisualElement rightContainer => cache.Get<VisualElement>("rightSideContainer");
         private Sidebar sidebar => cache.Get<Sidebar>("sidebar");
+        private TwoPaneSplitView globalSplitter => cache.Get<TwoPaneSplitView>("globalSplitter");
+        private TwoPaneSplitView mainContainerSplitter => cache.Get<TwoPaneSplitView>("mainContainer");
     }
 
     internal class PackageAndPageSelectionArgs

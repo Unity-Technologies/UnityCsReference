@@ -78,6 +78,7 @@ namespace UnityEditor.PackageManager.UI
 
             titleContent = GetLocalizedTitleContent();
 
+            minSize = new Vector2(1050, 250);
             BuildGUI();
 
             Events.registeredPackages += OnRegisteredPackages;
@@ -302,7 +303,7 @@ namespace UnityEditor.PackageManager.UI
         internal static void SelectPackageAndPageStatic(string packageToSelect = null, string pageId = null, bool refresh = false, string searchText = "")
         {
             instance = GetWindow<PackageManagerWindow>();
-            instance.minSize = new Vector2(800, 250);
+            instance.minSize = new Vector2(1050, 250);
             instance.m_Root.SelectPackageAndPage(packageToSelect, pageId, refresh, searchText);
             instance.Show();
         }
