@@ -19,6 +19,7 @@ namespace UnityEditor.UIElements
         private static readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
         internal static readonly string foldoutTitleBoundLabelProperty = "unity-foldout-bound-title";
         internal static readonly string decoratorDrawersContainerClassName = "unity-decorator-drawers-container";
+        internal static readonly string listViewBoundFieldProperty = "unity-list-view-property-field-bound";
         static readonly string listViewNamePrefix = "unity-list-";
 
         /// <summary>
@@ -668,6 +669,7 @@ namespace UnityEditor.UIElements
             {
                 listView = factory();
                 listView.showBorder = true;
+                listView.selectionType = SelectionType.Multiple;
                 listView.showAddRemoveFooter = true;
                 listView.showBoundCollectionSize = true;
                 listView.showFoldoutHeader = true;
@@ -682,6 +684,7 @@ namespace UnityEditor.UIElements
             listView.bindingPath = property.propertyPath;
             listView.viewDataKey = listViewName;
             listView.name = listViewName;
+            listView.SetProperty(listViewBoundFieldProperty, this);
 
             // Make list view foldout react even when disabled, like EditorGUILayout.Foldout.
             var toggle = listView.Q<Toggle>(className: Foldout.toggleUssClassName);
@@ -766,12 +769,17 @@ namespace UnityEditor.UIElements
                         {
                             if (!objectTypes.Name.Equals(targetTypeName, StringComparison.OrdinalIgnoreCase))
                                 continue;
+
+                            // We ignore C# types as they can can be confused with a built-in type with the same name,
+                            // we can use the FieldInfo to find MonoScript types. (UUM-29499)
+                            if (typeof(MonoBehaviour).IsAssignableFrom(objectTypes) || typeof(ScriptableObject).IsAssignableFrom(objectTypes))
+                                continue;
+
                             requiredType = objectTypes;
                             break;
                         }
                     }
 
-                    field.SetProperty(ObjectField.serializedPropertyKey, property);
                     field.SetObjectTypeWithoutDisplayUpdate(requiredType);
                     field.UpdateDisplay();
 

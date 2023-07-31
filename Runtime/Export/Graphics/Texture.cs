@@ -42,7 +42,17 @@ namespace UnityEngine
 
         public RenderTextureFormat colorFormat
         {
-            get { return GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat); }
+            get
+            {
+                if (graphicsFormat != GraphicsFormat.None)
+                {
+                    return GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat);
+                }
+                else
+                {
+                    return shadowSamplingMode != ShadowSamplingMode.None ? RenderTextureFormat.Shadowmap : RenderTextureFormat.Depth;
+                }
+            }
             set
             {
                 GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB);
@@ -53,13 +63,15 @@ namespace UnityEngine
         public bool sRGB
         {
             get { return GraphicsFormatUtility.IsSRGBFormat(graphicsFormat); }
-            set { graphicsFormat = GraphicsFormatUtility.GetGraphicsFormat(colorFormat, value); }
-            // The code below does not work (while it feels like it should)
-            // This is because it does not take the project settings into account (unlike GraphicsFormatUtility.GetGraphicsFormat) and so we don't have the fallback kicking in (problem when some formats are not supported)
-            // We should fix this once we do a cleanup of colorspace management inside Unity
-            //set { graphicsFormat = (value) ? GraphicsFormatUtility.GetSRGBFormat(graphicsFormat)  : GraphicsFormatUtility.GetLinearFormat(graphicsFormat); }
+            set
+            {
+                graphicsFormat = (value && QualitySettings.activeColorSpace == ColorSpace.Linear
+                    && colorFormat != RenderTextureFormat.R8 && colorFormat != RenderTextureFormat.RG16)
+                    // ^ Maintain parity with old behaviour: respect project color space + do not consider R8_SRGB / R8G8_SRGB.
+                    ? GraphicsFormatUtility.GetSRGBFormat(graphicsFormat)
+                    : GraphicsFormatUtility.GetLinearFormat(graphicsFormat);
+            }
         }
-
 
         public int depthBufferBits
         {
@@ -78,16 +90,19 @@ namespace UnityEngine
         public RenderTextureCreationFlags flags { get { return _flags; } }
         public RenderTextureMemoryless memoryless { get; set; }
 
+        [uei.ExcludeFromDocs]
         public RenderTextureDescriptor(int width, int height)
             : this(width, height, RenderTextureFormat.Default)
         {
         }
 
+        [uei.ExcludeFromDocs]
         public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat)
             : this(width, height, colorFormat, 0)
         {
         }
 
+        [uei.ExcludeFromDocs]
         public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat, int depthBufferBits)
             : this(width, height, colorFormat, depthBufferBits, Texture.GenerateAllMips)
         {
@@ -99,10 +114,17 @@ namespace UnityEngine
         {
         }
 
+        [uei.ExcludeFromDocs]
         public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat, int depthBufferBits, int mipCount)
+            : this(width, height, colorFormat, depthBufferBits, mipCount, RenderTextureReadWrite.Linear)
         {
-            GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(colorFormat, false);
-            this = new RenderTextureDescriptor(width, height, SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render), depthBufferBits, mipCount);
+        }
+
+        public RenderTextureDescriptor(int width, int height, [uei.DefaultValue("RenderTextureFormat.Default")] RenderTextureFormat colorFormat, [uei.DefaultValue("0")] int depthBufferBits, [uei.DefaultValue("Texture.GenerateAllMips")] int mipCount, [uei.DefaultValue("RenderTextureReadWrite.Linear")] RenderTextureReadWrite readWrite)
+        {
+            GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(colorFormat, readWrite);
+            GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
+            this = new RenderTextureDescriptor(width, height, compatibleFormat, RenderTexture.GetDepthStencilFormatLegacy(depthBufferBits, colorFormat), mipCount);
         }
 
         [uei.ExcludeFromDocs]
@@ -219,7 +241,7 @@ namespace UnityEngine
 
         [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth, DefaultFormat format)
-            : this(width, height, depth, SystemInfo.GetGraphicsFormat(format))
+            : this(width, height, GetDefaultColorFormat(format), GetDefaultDepthStencilFormat(format, depth), Texture.GenerateAllMips)
         {
         }
 
@@ -234,7 +256,7 @@ namespace UnityEngine
         {
             // Note: the code duplication here is because you can't set a descriptor with
             // zero width/height, which our own code (and possibly existing user code) relies on.
-            if (!ValidateFormat(format, FormatUsage.Render))
+            if (format != GraphicsFormat.None && !ValidateFormat(format, FormatUsage.Render))
                 return;
 
             Internal_Create(this);
@@ -293,12 +315,10 @@ namespace UnityEngine
             // Note this may return the deprecated GraphicsFormat.ShadowAuto & DepthAuto for now. They will be filtered out internally
             // by RenderTexture creation code on the c++ side.
             GraphicsFormat colorFormat = GetCompatibleFormat(format, readWrite);
-
-            GraphicsFormat depthStencilFormat = GetDepthStencilFormatLegacy(depth, colorFormat);
+            GraphicsFormat depthStencilFormat = GetDepthStencilFormatLegacy(depth, format);
 
             // Note: the code duplication here is because you can't set a descriptor with
             // zero width/height, which our own code (and possibly existing user code) relies on.
-
             if (colorFormat != GraphicsFormat.None)
             {
                 if (!ValidateFormat(colorFormat, FormatUsage.Render))
@@ -319,6 +339,21 @@ namespace UnityEngine
 #pragma warning restore 618
                 GraphicsFormatUtility.GetDepthStencilFormat(depthBits, 0)
                 : GraphicsFormatUtility.GetDepthStencilFormat(depthBits);
+        }
+
+        internal static GraphicsFormat GetDepthStencilFormatLegacy(int depthBits, RenderTextureFormat format)
+        {
+            return GetDepthStencilFormatLegacy(depthBits, format == RenderTextureFormat.Shadowmap);
+        }
+
+        internal static GraphicsFormat GetDepthStencilFormatLegacy(int depthBits, DefaultFormat format)
+        {
+            return GetDepthStencilFormatLegacy(depthBits, format == DefaultFormat.Shadow);
+        }
+
+        internal static GraphicsFormat GetDepthStencilFormatLegacy(int depthBits, bool requestedShadowMap)
+        {
+            return requestedShadowMap ? GraphicsFormatUtility.GetDepthStencilFormat(depthBits, 0) : GraphicsFormatUtility.GetDepthStencilFormat(depthBits);
         }
 
         public RenderTextureDescriptor descriptor
@@ -354,6 +389,33 @@ namespace UnityEngine
                 throw new ArgumentException("RenderTextureDesc graphicsFormat must not be a depth/stencil format. " + desc.graphicsFormat + " is not supported.", "desc.graphicsFormat");
 #pragma warning restore 618
         }
+
+        internal static GraphicsFormat GetDefaultColorFormat(DefaultFormat format)
+        {
+            switch (format)
+            {
+#pragma warning disable 618 // Disable deprecation warnings on the ShadowAuto and DepthAuto formats
+                case DefaultFormat.DepthStencil:
+                    return GraphicsFormat.DepthAuto;
+                case DefaultFormat.Shadow:
+                    return GraphicsFormat.ShadowAuto;
+#pragma warning restore 618
+                default:
+                    return SystemInfo.GetGraphicsFormat(format);
+            }
+        }
+
+        internal static GraphicsFormat GetDefaultDepthStencilFormat(DefaultFormat format, int depth)
+        {
+            switch (format)
+            {
+                case DefaultFormat.DepthStencil:
+                case DefaultFormat.Shadow:
+                    return SystemInfo.GetGraphicsFormat(format); // Note that "depth" is explicitly ignored in this case.
+                default:
+                    return GetDepthStencilFormatLegacy(depth, format);
+            }
+        }
     }
 
     public partial class RenderTexture : Texture
@@ -383,12 +445,12 @@ namespace UnityEngine
         // in old bindings "default args" were expanded into overloads and we must mimic that when migrating to new bindings
         // to keep things sane we will do internal methods WITH default args and do overloads that simply call it
 
-        private static RenderTexture GetTemporaryImpl(int width, int height, int depthBuffer,
+        private static RenderTexture GetTemporaryImpl(int width, int height, GraphicsFormat depthStencilFormat,
             GraphicsFormat colorFormat,
             int antiAliasing = 1, RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None,
             VRTextureUsage vrUsage = VRTextureUsage.None, bool useDynamicScale = false)
         {
-            RenderTextureDescriptor desc = new RenderTextureDescriptor(width, height, colorFormat, GetDepthStencilFormatLegacy(depthBuffer, colorFormat));
+            RenderTextureDescriptor desc = new RenderTextureDescriptor(width, height, colorFormat, depthStencilFormat);
             desc.msaaSamples = antiAliasing;
             desc.memoryless = memorylessMode;
             desc.vrUsage = vrUsage;
@@ -404,32 +466,32 @@ namespace UnityEngine
             [uei.DefaultValue("VRTextureUsage.None")] VRTextureUsage vrUsage,
             [uei.DefaultValue("false")] bool useDynamicScale)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, format, antiAliasing, memorylessMode, vrUsage, useDynamicScale);
+            return GetTemporaryImpl(width, height, GetDepthStencilFormatLegacy(depthBuffer, format), format, antiAliasing, memorylessMode, vrUsage, useDynamicScale);
         }
 
         // the rest will be excluded from docs (to "pretend" we have one method with default args)
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, GraphicsFormat format, int antiAliasing, RenderTextureMemoryless memorylessMode, VRTextureUsage vrUsage)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, format, antiAliasing, memorylessMode, vrUsage);
+            return GetTemporary(width, height, depthBuffer, format, antiAliasing, memorylessMode, vrUsage, false);
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, GraphicsFormat format, int antiAliasing, RenderTextureMemoryless memorylessMode)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, format, antiAliasing, memorylessMode);
+            return GetTemporary(width, height, depthBuffer, format, antiAliasing, memorylessMode, VRTextureUsage.None);
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, GraphicsFormat format, int antiAliasing)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, format, antiAliasing);
+            return GetTemporary(width, height, depthBuffer, format, antiAliasing, RenderTextureMemoryless.None);
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, GraphicsFormat format)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, format);
+            return GetTemporary(width, height, depthBuffer, format, 1);
         }
 
         // most detailed overload: use it to specify default values for docs
@@ -440,50 +502,53 @@ namespace UnityEngine
             [uei.DefaultValue("VRTextureUsage.None")] VRTextureUsage vrUsage, [uei.DefaultValue("false")] bool useDynamicScale
         )
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(format, readWrite), antiAliasing, memorylessMode, vrUsage, useDynamicScale);
+            GraphicsFormat graphicsFormat = GetCompatibleFormat(format, readWrite);
+            GraphicsFormat depthStencilFormat = GetDepthStencilFormatLegacy(depthBuffer, format);
+
+            return GetTemporaryImpl(width, height, depthStencilFormat, graphicsFormat, antiAliasing, memorylessMode, vrUsage, useDynamicScale);
         }
 
         // the rest will be excluded from docs (to "pretend" we have one method with default args)
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format, RenderTextureReadWrite readWrite, int antiAliasing, RenderTextureMemoryless memorylessMode, VRTextureUsage vrUsage)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(format, readWrite), antiAliasing, memorylessMode, vrUsage);
+            return GetTemporary(width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage, false);
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format, RenderTextureReadWrite readWrite, int antiAliasing, RenderTextureMemoryless memorylessMode)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(format, readWrite), antiAliasing, memorylessMode);
+            return GetTemporary(width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, VRTextureUsage.None);
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format, RenderTextureReadWrite readWrite, int antiAliasing)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(format, readWrite), antiAliasing);
+            return GetTemporary(width, height, depthBuffer, format, readWrite, antiAliasing, RenderTextureMemoryless.None);
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format, RenderTextureReadWrite readWrite)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(format, readWrite));
+            return GetTemporary(width, height, depthBuffer, format, readWrite, 1);
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(format, RenderTextureReadWrite.Default));
+            return GetTemporary(width, height, depthBuffer, format, RenderTextureReadWrite.Default);
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(RenderTextureFormat.Default, RenderTextureReadWrite.Default));
+            return GetTemporary(width, height, depthBuffer, RenderTextureFormat.Default);
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height)
         {
-            return GetTemporaryImpl(width, height, 0, GetCompatibleFormat(RenderTextureFormat.Default, RenderTextureReadWrite.Default));
+            return GetTemporary(width, height, 0);
         }
     }
 
@@ -497,7 +562,7 @@ namespace UnityEngine
 
         [uei.ExcludeFromDocs]
         public CustomRenderTexture(int width, int height, RenderTextureFormat format)
-            : this(width, height, GetCompatibleFormat(format, RenderTextureReadWrite.Default))
+            : this(width, height, format, RenderTextureReadWrite.Default)
         {
         }
 
@@ -509,14 +574,24 @@ namespace UnityEngine
 
         [uei.ExcludeFromDocs]
         public CustomRenderTexture(int width, int height, [uei.DefaultValue("DefaultFormat.LDR")] DefaultFormat defaultFormat)
-            : this(width, height, SystemInfo.GetGraphicsFormat(defaultFormat))
+            : this(width, height, GetDefaultColorFormat(defaultFormat))
         {
+            // CustomRenderTexture's 'depthStencilFormat' is DefaultFormat.Depth by default. This is different from
+            // RenderTexture, because the CRT constructors don't touch 'depthStencilFormat', so the
+            // RenderTextureDescriptor's 'depthStencilFormat' is left unmodified after construction on the C++ side.
+            // As such: to avoid changing behavior here, leave 'depthStencilFormat' alone, unless we are dealing
+            // with a depth related 'defaultFormat'. (in which case, we indeed should ensure that
+            // 'depthStencilFormat' is correct with regards to the user's request)
+            if (defaultFormat == DefaultFormat.DepthStencil || defaultFormat == DefaultFormat.Shadow)
+            {
+                this.depthStencilFormat = SystemInfo.GetGraphicsFormat(defaultFormat);
+            }
         }
 
         [uei.ExcludeFromDocs]
         public CustomRenderTexture(int width, int height, GraphicsFormat format)
         {
-            if (!ValidateFormat(format, FormatUsage.Render))
+            if (format != GraphicsFormat.None && !ValidateFormat(format, FormatUsage.Render))
                 return;
 
             Internal_CreateCustomRenderTexture(this);
@@ -531,6 +606,29 @@ namespace UnityEngine
     public partial class Texture : Object
     {
         public static readonly int GenerateAllMips = -1;
+
+        // In TextureFormat constructors, we eventually need to convert the TextureFormat to a GraphicsFormat
+        // in order to call Internal_Create.
+        // When a GraphicsFormat is obtained (with GetGraphicsFormat), Unity is allowed to choose one that
+        // doesn't necessarily reflect what the user asked (sRGB / Linear) -- this is by design, TextureFormat
+        // should be easy to use, so the GraphicsFormat may indeed be UNorm instead of SRGB in gamma projects.
+        // However, if the Internal_Create only receives colorspace information through the GraphicsFormat,
+        // then the texture does not know what the (CPU) data colorspace really should have been.
+        // The texture then re-uses the GraphicsFormat information, which can cause issues if the user then
+        // converts the texture to an asset.
+        // That is why we separately pass the result of "GetTextureColorSpace" here to Internal_Create,
+        // so that we can have a proper distinction between CPU data colorspace & GPU colorspace.
+        internal TextureColorSpace GetTextureColorSpace(bool linear)
+        {
+            return linear ? TextureColorSpace.Linear : TextureColorSpace.sRGB;
+        }
+
+        // Do not use this in TextureFormat constructors, you would otherwise obtain a TextureColorSpace that
+        // may not reflect what the user asked. Always use the above in TextureFormat constructors instead.
+        internal TextureColorSpace GetTextureColorSpace(GraphicsFormat format)
+        {
+            return GetTextureColorSpace(!GraphicsFormatUtility.IsSRGBFormat(format));
+        }
 
         internal bool ValidateFormat(RenderTextureFormat format)
         {
@@ -633,7 +731,7 @@ namespace UnityEngine
         internal Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags, int mipCount, IntPtr nativeTex, string mipmapLimitGroupName)
         {
             if (ValidateFormat(format, width, height))
-                Internal_Create(this, width, height, mipCount, format, flags, nativeTex, mipmapLimitGroupName);
+                Internal_Create(this, width, height, mipCount, format, GetTextureColorSpace(format), flags, nativeTex, mipmapLimitGroupName);
         }
 
         [uei.ExcludeFromDocs]
@@ -685,7 +783,7 @@ namespace UnityEngine
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             if (ignoreMipmapLimit)
                 flags |= TextureCreationFlags.IgnoreMipmapLimit;
-            Internal_Create(this, width, height, mipCount, format, flags, nativeTex, mipmapLimitGroupName);
+            Internal_Create(this, width, height, mipCount, format, GetTextureColorSpace(linear), flags, nativeTex, mipmapLimitGroupName);
         }
 
         public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("-1")] int mipCount, [uei.DefaultValue("false")] bool linear)
@@ -1047,7 +1145,7 @@ namespace UnityEngine
 
             ValidateIsNotCrunched(flags); // Script created Crunched Cubemaps not supported
 
-            Internal_Create(this, width, mipCount, format, flags, IntPtr.Zero);
+            Internal_Create(this, width, mipCount, format, GetTextureColorSpace(format), flags, IntPtr.Zero);
         }
 
         internal Cubemap(int width, TextureFormat textureFormat, int mipCount, IntPtr nativeTex, bool createUninitialized)
@@ -1055,14 +1153,15 @@ namespace UnityEngine
             if (!ValidateFormat(textureFormat, width))
                 return;
 
-            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
+            const bool linear = true;
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
             TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             ValidateIsNotCrunched(flags); // Script created Crunched Cubemaps not supported
-            Internal_Create(this, width, mipCount, format, flags, nativeTex);
+            Internal_Create(this, width, mipCount, format, GetTextureColorSpace(linear), flags, nativeTex);
         }
 
         public Cubemap(int width, TextureFormat textureFormat, bool mipChain)
@@ -1200,7 +1299,7 @@ namespace UnityEngine
                 return;
 
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags, IntPtr.Zero);
+            Internal_Create(this, width, height, depth, mipCount, format, GetTextureColorSpace(format), flags, IntPtr.Zero);
         }
 
         [uei.ExcludeFromDocs]
@@ -1219,14 +1318,15 @@ namespace UnityEngine
             if (!ValidateFormat(textureFormat))
                 return;
 
-            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
+            const bool linear = true;
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
             TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags, nativeTex);
+            Internal_Create(this, width, height, depth, mipCount, format, GetTextureColorSpace(linear), flags, nativeTex);
         }
 
         [uei.ExcludeFromDocs]
@@ -1388,7 +1488,7 @@ namespace UnityEngine
                 return;
 
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, gfxFormat, flags);
+            Internal_Create(this, width, height, depth, mipCount, gfxFormat, GetTextureColorSpace(gfxFormat), flags);
         }
 
 
@@ -1405,7 +1505,7 @@ namespace UnityEngine
                 return;
 
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags);
+            Internal_Create(this, width, height, depth, mipCount, format, GetTextureColorSpace(format), flags);
         }
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, bool linear, bool createUninitialized)
@@ -1420,7 +1520,7 @@ namespace UnityEngine
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags);
+            Internal_Create(this, width, height, depth, mipCount, format, GetTextureColorSpace(linear), flags);
         }
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, bool linear)
@@ -1527,7 +1627,7 @@ namespace UnityEngine
                 return;
 
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, cubemapCount, mipCount, format, flags);
+            Internal_Create(this, width, cubemapCount, mipCount, format, GetTextureColorSpace(format), flags);
         }
 
         public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, int mipCount, bool linear, [uei.DefaultValue("false")] bool createUninitialized)
@@ -1542,7 +1642,7 @@ namespace UnityEngine
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, cubemapCount, mipCount, format, flags);
+            Internal_Create(this, width, cubemapCount, mipCount, format, GetTextureColorSpace(linear), flags);
         }
 
         public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, int mipCount, bool linear)
@@ -1681,7 +1781,7 @@ namespace UnityEngine
             if (!ValidateSize(width, height, format))
                 return;
 
-            Internal_Create(this, width, height, format, mipCount);
+            Internal_Create(this, width, height, format, GetTextureColorSpace(format), mipCount);
         }
 
         [uei.ExcludeFromDocs]
@@ -1718,7 +1818,7 @@ namespace UnityEngine
             if (!ValidateSize(width, height, format))
                 return;
 
-            Internal_Create(this, width, height, format, mipCount);
+            Internal_Create(this, width, height, format, GetTextureColorSpace(linear), mipCount);
         }
     }
 }

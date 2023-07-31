@@ -137,7 +137,9 @@ namespace UnityEditor.DeviceSimulation
             {
                 m_Main.ScreenSimulation.ApplyChanges();
                 targetSize = m_Main.targetSize;
-                m_Main.displayTexture = RenderView(m_Main.mousePositionInUICoordinates, false);
+
+                if (renderViewCallNeededInOnGUI)
+                    m_Main.displayTexture = RenderView(m_Main.mousePositionInUICoordinates, false);
 
                 viewPadding = simulatorViewPadding;
                 viewMouseScale = simulatorViewMouseScale;

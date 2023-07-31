@@ -42,7 +42,7 @@ namespace UnityEngine.iOS
         extern public static bool enabled {[FreeFunction("OnDemandResourcesScripting::Enabled")] get; }
 
         [FreeFunction("OnDemandResourcesScripting::PreloadAsync")]
-        extern private static OnDemandResourcesRequest PreloadAsyncImpl(string[] tags);
+        extern private static OnDemandResourcesRequest PreloadAsyncImpl([Unmarshalled] string[] tags);
 
         public static OnDemandResourcesRequest PreloadAsync(string[] tags)
         {

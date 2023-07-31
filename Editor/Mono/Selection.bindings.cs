@@ -82,17 +82,17 @@ namespace UnityEditor
         }
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern internal static void SetSelectionWithActiveObject(Object[] newSelection, Object activeObject);
+        extern internal static void SetSelectionWithActiveObject([Unmarshalled] Object[] newSelection, Object activeObject);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern internal static void SetSelectionWithActiveInstanceID(int[] newSelection, int activeObject);
+        extern internal static void SetSelectionWithActiveInstanceID([Unmarshalled] int[] newSelection, int activeObject);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        internal static extern void SetFullSelection(Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint);
+        internal static extern void SetFullSelection([Unmarshalled] Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon), NativeThrows]
-        internal static extern void SetFullSelectionByID(int[] newSelection, int activeObjectInstanceID, int contextInstanceID, DataMode dataModeHint);
+        internal static extern void SetFullSelectionByID([Unmarshalled] int[] newSelection, int activeObjectInstanceID, int contextInstanceID, DataMode dataModeHint);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         internal static extern void UpdateSelectionMetaData(Object context, DataMode dataModeHint);
@@ -122,11 +122,11 @@ namespace UnityEditor
 
         // The actual unfiltered selection from the Scene.
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern public static Object[] objects { get; set; }
+        extern public static Object[] objects { get; [param:Unmarshalled] set; }
 
         // The actual unfiltered selection from the Scene returned as instance ids instead of ::ref::objects.
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern public static int[] instanceIDs { get; [NativeThrows] set; }
+        extern public static int[] instanceIDs { get; [NativeThrows][param: Unmarshalled] set; }
 
         [StaticAccessor("GetSceneTracker()", StaticAccessorType.Dot)]
         [NativeMethod("IsSelected")]

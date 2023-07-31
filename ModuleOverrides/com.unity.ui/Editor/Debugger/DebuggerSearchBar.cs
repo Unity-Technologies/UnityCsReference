@@ -75,7 +75,7 @@ namespace UnityEditor.UIElements.Debugger
                 var targetField = m_SearchTextField;
                 if (e.keyCode == KeyCode.F3 || e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)
                 {
-                    if (e.modifiers == EventModifiers.Shift)
+                    if (e.modifiers.HasFlag(EventModifiers.Shift))
                         SelectPrev();
                     else
                         SelectNext();

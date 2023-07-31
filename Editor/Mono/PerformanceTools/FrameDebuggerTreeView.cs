@@ -77,13 +77,9 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
         public void ReselectFrameEventIndex()
         {
-            int[] selection = m_TreeView.GetSelection();
-            if (selection.Length > 0)
-            {
-                FrameDebuggerTreeViewItem item = m_TreeView.FindItem(selection[0]) as FrameDebuggerTreeViewItem;
-                if (item != null)
-                    m_TreeView.SetSelection(new[] { item.m_EventIndex }, true);
-            }
+            FrameDebuggerTreeViewItem item = GetSelectedTreeViewItem();
+            if (item != null)
+                SetSelection(item.m_EventIndex);
         }
 
         public void SelectFrameEventIndex(int eventIndex)
@@ -92,14 +88,24 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             // different tree nodes could result in the same frame debugger event
             // limit, e.g. a hierarchy node sets last child event as the limit.
             // If the limit event is the same, then do not change the currently selected item.
+            FrameDebuggerTreeViewItem item = GetSelectedTreeViewItem();
+            if (item == null || item.m_EventIndex != eventIndex)
+                SetSelection(eventIndex);
+        }
+
+        private FrameDebuggerTreeViewItem GetSelectedTreeViewItem()
+        {
             int[] selection = m_TreeView.GetSelection();
             if (selection.Length > 0)
-            {
-                FrameDebuggerTreeViewItem item = m_TreeView.FindItem(selection[0]) as FrameDebuggerTreeViewItem;
-                if (item != null && eventIndex == item.m_EventIndex)
-                    return;
-            }
+                return m_TreeView.FindItem(selection[0]) as FrameDebuggerTreeViewItem;
+
+            return null;
+        }
+
+        private void SetSelection(int eventIndex)
+        {
             m_TreeView.SetSelection(new[] { eventIndex }, true);
+            m_FrameDebugger.RepaintOnLimitChange();
         }
 
         public void DrawTree(Rect rect)

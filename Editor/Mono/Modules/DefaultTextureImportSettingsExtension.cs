@@ -59,7 +59,11 @@ namespace UnityEditor.Modules
         {
             // Max texture size
             Rect controlRect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
-            GUIContent label = EditorGUI.BeginProperty(controlRect, maxSize, editor.model.maxTextureSizeProperty);
+            GUIContent label = maxSize;
+            if (editor.model.maxTextureSizeProperty != null)
+            {
+                label = EditorGUI.BeginProperty(controlRect, label, editor.model.maxTextureSizeProperty);
+            }
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = editor.model.maxTextureSizeIsDifferent;
             int maxTextureSize = EditorGUI.IntPopup(controlRect, label, editor.model.platformTextureSettings.maxTextureSize, GUIContent.Temp(kMaxTextureSizeStrings), kMaxTextureSizeValues);
@@ -67,7 +71,10 @@ namespace UnityEditor.Modules
             {
                 editor.model.SetMaxTextureSizeForAll(maxTextureSize);
             }
-            EditorGUI.EndProperty();
+            if (editor.model.maxTextureSizeProperty != null)
+            {
+                EditorGUI.EndProperty();
+            }
 
             // Show a note if max size is overriden globally by the user
             var userMaxSizeOverride = EditorUserBuildSettings.overrideMaxTextureSize;
@@ -76,7 +83,11 @@ namespace UnityEditor.Modules
 
             // Resize Algorithm
             controlRect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
-            label = EditorGUI.BeginProperty(controlRect, kResizeAlgorithm, editor.model.resizeAlgorithmProperty);
+            label = kResizeAlgorithm;
+            if (editor.model.resizeAlgorithmProperty != null)
+            {
+                label = EditorGUI.BeginProperty(controlRect, label, editor.model.resizeAlgorithmProperty);
+            }
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = editor.model.resizeAlgorithmIsDifferent;
             int resizeAlgorithmVal = EditorGUI.IntPopup(controlRect, label, (int)editor.model.platformTextureSettings.resizeAlgorithm, GUIContent.Temp(kResizeAlgorithmStrings), kResizeAlgorithmValues);
@@ -84,7 +95,10 @@ namespace UnityEditor.Modules
             {
                 editor.model.SetResizeAlgorithmForAll((TextureResizeAlgorithm)resizeAlgorithmVal);
             }
-            EditorGUI.EndProperty();
+            if (editor.model.resizeAlgorithmProperty != null)
+            {
+                EditorGUI.EndProperty();
+            }
 
             // Texture format
             int[] formatValuesForAll = {};
@@ -149,7 +163,11 @@ namespace UnityEditor.Modules
             using (new EditorGUI.DisabledScope(formatOptionsAreDifferent || formatStringsForAll.Length == 1))
             {
                 controlRect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
-                label = EditorGUI.BeginProperty(controlRect, kTextureFormat, editor.model.textureFormatProperty);
+                label = kTextureFormat;
+                if (editor.model.textureFormatProperty != null)
+                {
+                    label = EditorGUI.BeginProperty(controlRect, label, editor.model.textureFormatProperty);
+                }
                 EditorGUI.BeginChangeCheck();
                 bool mixedValues = formatOptionsAreDifferent || editor.model.textureFormatIsDifferent;
                 EditorGUI.showMixedValue = mixedValues;
@@ -159,7 +177,10 @@ namespace UnityEditor.Modules
                     editor.model.SetTextureFormatForAll((TextureImporterFormat)selectionResult);
                     formatForAll = selectionResult;
                 }
-                EditorGUI.EndProperty();
+                if (editor.model.textureFormatProperty != null)
+                {
+                    EditorGUI.EndProperty();
+                }
 
                 if (!mixedValues && !Array.Exists(formatValuesForAll, i => i == formatForAll))
                 {
@@ -171,7 +192,11 @@ namespace UnityEditor.Modules
             if (editor.model.isDefault && editor.model.platformTextureSettings.format == TextureImporterFormat.Automatic)
             {
                 controlRect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
-                label = EditorGUI.BeginProperty(controlRect, kTextureCompression, editor.model.textureCompressionProperty);
+                label = kTextureCompression;
+                if (editor.model.textureCompressionProperty != null)
+                {
+                    label = EditorGUI.BeginProperty(controlRect, label, editor.model.textureCompressionProperty);
+                }
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = editor.model.overriddenIsDifferent ||
                     editor.model.textureCompressionIsDifferent;
@@ -183,7 +208,10 @@ namespace UnityEditor.Modules
                 {
                     editor.model.SetTextureCompressionForAll(textureCompression);
                 }
-                EditorGUI.EndProperty();
+                if (editor.model.textureCompressionProperty != null)
+                {
+                    EditorGUI.EndProperty();
+                }
             }
 
             // Use Crunch Compression
@@ -193,7 +221,11 @@ namespace UnityEditor.Modules
                 (textureShape == TextureImporterShape.Texture2D || textureShape == TextureImporterShape.TextureCube)) // 2DArray & 3D don't support Crunch
             {
                 controlRect = EditorGUILayout.GetToggleRect(true);
-                label = EditorGUI.BeginProperty(controlRect, kCrunchedCompression, editor.model.crunchedCompressionProperty);
+                label = kCrunchedCompression;
+                if (editor.model.crunchedCompressionProperty != null)
+                {
+                    label = EditorGUI.BeginProperty(controlRect, label, editor.model.crunchedCompressionProperty);
+                }
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = editor.model.overriddenIsDifferent ||
                     editor.model.crunchedCompressionIsDifferent;
@@ -203,7 +235,10 @@ namespace UnityEditor.Modules
                 {
                     editor.model.SetCrunchedCompressionForAll(crunchedCompression);
                 }
-                EditorGUI.EndProperty();
+                if (editor.model.crunchedCompressionProperty != null)
+                {
+                    EditorGUI.EndProperty();
+                }
             }
 
             // compression quality
@@ -233,7 +268,11 @@ namespace UnityEditor.Modules
             if (isETCPlatform && isDealingWithSprite && isETCFormatSelected)
             {
                 controlRect = EditorGUILayout.GetToggleRect(true);
-                label = EditorGUI.BeginProperty(controlRect, kUseAlphaSplitLabel, editor.model.alphaSplitProperty);
+                label = kUseAlphaSplitLabel;
+                if (editor.model.alphaSplitProperty != null)
+                {
+                    label = EditorGUI.BeginProperty(controlRect, label, editor.model.alphaSplitProperty);
+                }
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = editor.model.overriddenIsDifferent || editor.model.allowsAlphaSplitIsDifferent;
                 bool allowsAlphaSplit = EditorGUI.Toggle(controlRect, label, editor.model.platformTextureSettings.allowsAlphaSplitting);
@@ -241,7 +280,10 @@ namespace UnityEditor.Modules
                 {
                     editor.model.SetAllowsAlphaSplitForAll(allowsAlphaSplit);
                 }
-                EditorGUI.EndProperty();
+                if (editor.model.alphaSplitProperty != null)
+                {
+                    EditorGUI.EndProperty();
+                }
             }
         }
 
@@ -250,7 +292,11 @@ namespace UnityEditor.Modules
             bool showAsEnum = !isCrunchedFormat && (BuildTargetDiscovery.PlatformHasFlag(editor.model.buildTarget, TargetAttributes.HasIntegratedGPU) || (textureFormat == TextureImporterFormat.BC6H) || (textureFormat == TextureImporterFormat.BC7));
 
             Rect controlRect = showAsEnum ? EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup) : EditorGUILayout.GetSliderRect(true);
-            GUIContent label = EditorGUI.BeginProperty(controlRect, showAsEnum ? kCompressionQuality : kCompressionQualitySlider, editor.model.compressionQualityProperty);
+            GUIContent label = showAsEnum ? kCompressionQuality : kCompressionQualitySlider;
+            if (editor.model.compressionQualityProperty != null)
+            {
+                label = EditorGUI.BeginProperty(controlRect, label, editor.model.compressionQualityProperty);
+            }
 
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = editor.model.overriddenIsDifferent ||
@@ -298,7 +344,10 @@ namespace UnityEditor.Modules
                 editor.model.SetCompressionQualityForAll(compression);
                 //SyncPlatformSettings ();
             }
-            EditorGUI.EndProperty();
+            if (editor.model.compressionQualityProperty != null)
+            {
+                EditorGUI.EndProperty();
+            }
         }
     }
 }

@@ -78,6 +78,7 @@ namespace UnityEditor.UIElements.Bindings
 
             listView = lv;
             listView.SetProperty(BaseVerticalCollectionView.internalBindingKey, this);
+            var parentField = listView.GetProperty(PropertyField.listViewBoundFieldProperty);
 
             if (listView.makeItem == null)
             {
@@ -98,13 +99,21 @@ namespace UnityEditor.UIElements.Bindings
             listView.scrollView.contentContainer.RegisterCallback(m_SerializedObjectBindEventCallback);
             listView.scrollView.contentContainer.RegisterCallback(m_SerializedPropertyBindEventCallback);
 
-            var isReorderable = PropertyHandler.IsArrayReorderable(m_DataList.ArrayProperty);
+            // ListViews instantiated by users are driven by users. We only change the reordering options if the user
+            // has used a PropertyField to display the list. (Cases UUM-33402 and UUM-27687)
+            var isReorderable = listView.reorderable;
+            if (parentField != null)
+            {
+                isReorderable = PropertyHandler.IsArrayReorderable(m_DataList.ArrayProperty);
+                listView.reorderMode = isReorderable ? ListViewReorderMode.Animated : ListViewReorderMode.Simple;
+            }
+
             listView.SetViewController(new EditorListViewController());
             listView.SetDragAndDropController(new SerializedObjectListReorderableDragAndDropController(listView)
             {
                 enableReordering = isReorderable,
             });
-            listView.reorderMode = isReorderable ? ListViewReorderMode.Animated : ListViewReorderMode.Simple;
+
             listView.itemsSource = m_DataList;
 
             var foldoutInput = listView.headerFoldout?.toggle?.visualInput;
@@ -146,7 +155,6 @@ namespace UnityEditor.UIElements.Bindings
             listView.scrollView.contentContainer.UnregisterCallback(m_SerializedPropertyBindEventCallback);
 
             listView.SetViewController(null);
-            listView.SetDragAndDropController(null);
 
             var foldoutInput = listView.headerFoldout?.toggle?.visualInput;
             if (foldoutInput != null)
@@ -227,7 +235,7 @@ namespace UnityEditor.UIElements.Bindings
 
         void SerializedPropertyBindEventCallback(SerializedPropertyBindEvent evt)
         {
-            if (m_IsBinding || listView.bindItem != m_DefaultBindItem) 
+            if (m_IsBinding || listView.bindItem != m_DefaultBindItem)
                 return;
 
             evt.PreventDefault();
@@ -539,11 +547,13 @@ namespace UnityEditor.UIElements.Bindings
             RemoveAt(IndexOf(value));
         }
 
-        public void RemoveAt(int index)
+        public void RemoveAt(int index) => RemoveAt(index, Count);
+
+        public void RemoveAt(int index, int listCount)
         {
-            if (index >= 0 && index < Count)
+            if (index >= 0 && index < listCount)
             {
-                var newCount = Count - 1;
+                var newCount = listCount - 1;
                 ArrayProperty.DeleteArrayElementAtIndex(index);
 
                 if (index < newCount - 1)
@@ -552,7 +562,7 @@ namespace UnityEditor.UIElements.Bindings
                     for (var i = index + 1; i < newCount; i++)
                     {
                         var nextProperty = ArrayProperty.GetArrayElementAtIndex(i);
-                        if (nextProperty != null)
+                        if (nextProperty != null && currentProperty != null)
                         {
                             currentProperty.isExpanded = nextProperty.isExpanded;
                             currentProperty = nextProperty;

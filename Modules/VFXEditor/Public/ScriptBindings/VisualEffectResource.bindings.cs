@@ -150,6 +150,7 @@ namespace UnityEditor.VFX
         public VFXMapping[] values;
         public VFXMapping[] parameters;
         private UnityObject processor;
+        public uint instanceSplitIndex;
         private int m_ShaderSourceIndex;
         public UnityObject model;
 
@@ -179,6 +180,14 @@ namespace UnityEditor.VFX
             }
         }
     }
+
+    [UsedByNativeCode]
+    [NativeType(CodegenOptions.Custom, "ScriptingVFXInstanceSplitDesc")]
+    internal struct VFXInstanceSplitDesc
+    {
+        public uint[] values;
+    }
+
     [UsedByNativeCode]
     [NativeType(CodegenOptions.Custom, "ScriptingVFXEditorSystemDesc")]
     internal struct VFXEditorSystemDesc
@@ -191,6 +200,7 @@ namespace UnityEditor.VFX
         public VFXMapping[] buffers;
         public VFXMapping[] values;
         public VFXEditorTaskDesc[] tasks;
+        public VFXInstanceSplitDesc[] instanceSplitDescs;
     }
 
     [NativeType(CodegenOptions.Custom, "ScriptingVFXEventDesc")]

@@ -300,6 +300,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// This is the key used to save/load the view data from the view data store. Not setting this key will disable persistence for this <see cref="VisualElement"/>.
+        /// For further information on view data persistence, see the [[wiki:UIE-ViewData|Unity Manual]].
         /// </remarks>
         public string viewDataKey
         {
@@ -725,7 +726,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// AABB after applying the world transform to <c>rect</c>.
+        /// Returns a <see cref="Rect"/> representing the Axis-aligned Bounding Box (AABB) after applying the world transform.
         /// </summary>
         public Rect worldBound
         {
@@ -738,7 +739,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// AABB after applying the transform to the rect, but before applying the layout translation.
+        /// Returns a <see cref="Rect"/> representing the Axis-aligned Bounding Box (AABB) after applying the transform, but before applying the layout translation.
         /// </summary>
         public Rect localBound
         {
@@ -1324,6 +1325,8 @@ namespace UnityEngine.UIElements
                 using (panelDispatcherGate)
                 {
                     elementPanel?.liveReloadSystem.StopTracking(elements);
+
+                    panel?.dispatcher?.m_ClickDetector.Cleanup(elements);
                     foreach (var e in elements)
                     {
                         e.WillChangePanel(p);
@@ -1364,6 +1367,9 @@ namespace UnityEngine.UIElements
         {
             if (panel != null)
             {
+                // Better to do some things here before we call the user's callback as some state may be modified during the callback.
+                UnregisterRunningAnimations();
+
                 // Only send this event if the element isn't waiting for an attach event already
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == 0)
                 {
@@ -1375,11 +1381,7 @@ namespace UnityEngine.UIElements
                             HandleEventAtTargetAndDefaultPhase(e);
                         }
                     }
-
-                    panel.dispatcher.m_ClickDetector.Cleanup(this);
                 }
-
-                UnregisterRunningAnimations();
             }
         }
 
@@ -1636,6 +1638,9 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Triggers a repaint of the <see cref="VisualElement"/> on the next frame.
+        /// This method is called internally when a change occurs that requires a repaint, such as when BaseField::ref::value is changed or the text in a <see cref="Label"/>.
+        /// If you are implementing a custom control, you can call this method to trigger a repaint when a change occurs that requires a repaint such as when using
+        /// ::ref::generateVisualContent to render a mesh and the mesh data has now changed.
         /// </summary>
         public void MarkDirtyRepaint()
         {
@@ -2023,7 +2028,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Adds a class to the class list of the element in order to assign styles from USS.
+        /// Adds a class to the class list of the element in order to assign styles from USS. Note the class name is case-sensitive.
         /// </summary>
         /// <param name="className">The name of the class to add to the list.</param>
         public void AddToClassList(string className)

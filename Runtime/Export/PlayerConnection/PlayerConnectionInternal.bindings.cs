@@ -95,11 +95,11 @@ namespace UnityEngine
 
         //playerId 0 is ANY_PLAYERCONNECTION
         [FreeFunction("PlayerConnection_Bindings::SendMessage")]
-        extern static void SendMessage(string messageId, byte[] data, int playerId);
+        extern static void SendMessage(string messageId, [Unmarshalled] byte[] data, int playerId);
 
         //playerId 0 is ANY_PLAYERCONNECTION
         [FreeFunction("PlayerConnection_Bindings::TrySendMessage")]
-        extern static bool TrySendMessage(string messageId, byte[] data, int playerId);
+        extern static bool TrySendMessage(string messageId, [Unmarshalled] byte[] data, int playerId);
 
         [FreeFunction("PlayerConnection_Bindings::PollInternal")]
         extern static void PollInternal();

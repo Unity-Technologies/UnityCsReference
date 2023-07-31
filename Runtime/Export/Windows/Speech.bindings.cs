@@ -34,7 +34,7 @@ namespace UnityEngine.Windows.Speech
     {
         [NativeThrows]
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
-        protected static extern IntPtr CreateFromKeywords(object self, string[] keywords, ConfidenceLevel minimumConfidence);
+        protected static extern IntPtr CreateFromKeywords(object self, [Unmarshalled] string[] keywords, ConfidenceLevel minimumConfidence);
 
         [NativeThrows]
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]

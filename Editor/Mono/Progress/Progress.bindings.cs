@@ -479,7 +479,7 @@ namespace UnityEditor
             return maxElapsedTime;
         }
 
-        // For testing purposes only.
+        // Anything below this line is for testing purposes only.
         internal static void ClearProgressItems()
         {
             s_ProgressItems.Clear();
@@ -513,6 +513,21 @@ namespace UnityEditor
 
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = false, Name = "Editor::Progress::Internal_SetExplicitWarningLoggingState")]
         static extern void SetExplicitWarningLoggingState(ExplicitLoggingState state);
+
+        internal static bool manualUpdate
+        {
+            get => IsManualUpdate();
+            set => SetManualUpdate(value);
+        }
+
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = false, Name = "Editor::Progress::Internal_IsManualUpdate")]
+        static extern bool IsManualUpdate();
+
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = false, Name = "Editor::Progress::Internal_SetManualUpdate")]
+        static extern void SetManualUpdate(bool manualUpdate);
+
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = false, Name = "Editor::Progress::ForceUpdateProgress")]
+        internal static extern void ForceUpdate();
     }
 
     static class ProgressEnumExtensions

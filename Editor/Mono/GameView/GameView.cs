@@ -123,9 +123,6 @@ namespace UnityEditor
 
         static double s_LastScrollTime;
 
-        [FreeFunction]
-        extern private static bool NeedToPerformRendering();
-
         public GameView()
         {
             autoRepaintOnSceneChange = true;
@@ -402,6 +399,14 @@ namespace UnityEditor
 
         internal override void OnBackgroundViewResized(Rect pos)
         {
+            // If we are switching from GameView to Simulator, this call will overwrite the value already written
+            //   by the SimulatorView since both tabs exist for a brief period of time. Don't do anything here
+            //   if this view is the one being switched out.
+            if (m_SwitchingPlayModeViewType)
+            {
+                return;
+            }
+
             // Should only update the game view size if it's in Aspect Ratio mode, otherwise
             // we keep the static size
             Rect viewInWindow = GetViewInWindow(pos);
@@ -971,8 +976,7 @@ namespace UnityEditor
                 viewPadding = targetInParent.position;
                 viewMouseScale = gameMouseScale;
 
-                if (!EditorApplication.isPlaying ||
-                    (EditorApplication.isPlaying && NeedToPerformRendering() && !Unsupported.IsEditorPlayerLoopWaiting()))
+                if (renderViewCallNeededInOnGUI)
                     m_RenderTexture = RenderView(gameMousePosition, clearTexture);
 
                 if (m_TargetClamped)

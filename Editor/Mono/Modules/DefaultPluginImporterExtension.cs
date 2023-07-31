@@ -19,6 +19,7 @@ namespace UnityEditor.Modules
     {
         protected bool hasModified = false;
         protected Property[] properties = null;
+        protected const string cpuKey = "CPU";
 
         internal class Property
         {
@@ -129,6 +130,9 @@ namespace UnityEditor.Modules
             EditorGUI.BeginChangeCheck();
             foreach (var p in properties)
             {
+                // skip CPU property for things that aren't native libs
+                if (p.key == cpuKey && !inspector.importer.isNativePlugin)
+                    continue;
                 p.OnGUI(inspector);
             }
             if (EditorGUI.EndChangeCheck()) hasModified = true;
@@ -145,7 +149,7 @@ namespace UnityEditor.Modules
 
         public virtual string CalculateFinalPluginPath(string platformName, PluginImporter imp)
         {
-            string cpu = imp.GetPlatformData(platformName, "CPU");
+            string cpu = imp.GetPlatformData(platformName, cpuKey);
 
             if (!string.IsNullOrEmpty(cpu) && (string.Compare(cpu, "AnyCPU", true) != 0) && (string.Compare(cpu, "None", true) != 0))
                 return Path.Combine(cpu, Path.GetFileName(imp.assetPath));

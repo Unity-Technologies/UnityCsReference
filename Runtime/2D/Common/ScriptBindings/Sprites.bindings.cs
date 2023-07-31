@@ -82,7 +82,7 @@ namespace UnityEngine
         internal extern static Sprite CreateSpriteWithoutTextureScripting(Rect rect, Vector2 pivot, float pixelsToUnits, Texture2D texture);
 
         [FreeFunction("SpritesBindings::CreateSprite", ThrowsException = true)]
-        internal extern static Sprite CreateSprite(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape, SecondarySpriteTexture[] secondaryTexture);
+        internal extern static Sprite CreateSprite(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape, [Unmarshalled] SecondarySpriteTexture[] secondaryTexture);
 
         public extern Bounds bounds
         {
@@ -109,7 +109,7 @@ namespace UnityEngine
         // Get Secondary Texture count
         public extern int GetSecondaryTextureCount();
         [FreeFunction("SpritesBindings::GetSecondaryTextures", ThrowsException = true, HasExplicitThis = true)]
-        public extern int GetSecondaryTextures([NotNull] SecondarySpriteTexture[] secondaryTexture);
+        public extern int GetSecondaryTextures([NotNull][Unmarshalled] SecondarySpriteTexture[] secondaryTexture);
 
         // The number of pixels in one unit. Note: The C++ side still uses the name pixelsToUnits which is misleading,
         // but has not been changed yet to minimize merge conflicts.
@@ -249,10 +249,10 @@ namespace UnityEngine
         private extern static void OverridePhysicsShapeCount(Sprite sprite, int physicsShapeCount);
 
         [FreeFunction("SpritesBindings::OverridePhysicsShape", ThrowsException = true)]
-        private extern static void OverridePhysicsShape(Sprite sprite, Vector2[] physicsShape, int idx);
+        private extern static void OverridePhysicsShape(Sprite sprite, [Unmarshalled] Vector2[] physicsShape, int idx);
 
         [FreeFunction("SpritesBindings::OverrideGeometry", HasExplicitThis = true)]
-        public extern void OverrideGeometry([NotNull] Vector2[] vertices, [NotNull] UInt16[] triangles);
+        public extern void OverrideGeometry([NotNull][Unmarshalled] Vector2[] vertices, [NotNull][Unmarshalled] UInt16[] triangles);
 
         // Workaround for Overloads as described in
         internal static Sprite Create(Rect rect, Vector2 pivot, float pixelsToUnits, Texture2D texture)

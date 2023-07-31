@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
+using static UnityEngine.EnumDataUtility;
 
 namespace UnityEngine.UIElements
 {
@@ -225,7 +226,7 @@ namespace UnityEngine.UIElements
         internal void PopulateDataFromType(Type enumType)
         {
             m_EnumType = enumType;
-            m_EnumData = EnumDataUtility.GetCachedEnumData(m_EnumType, !includeObsoleteValues);
+            m_EnumData = GetCachedEnumData(m_EnumType, includeObsoleteValues ? CachedType.IncludeObsoleteExceptErrors : CachedType.ExcludeObsolete);
         }
 
         public override void SetValueWithoutNotify(Enum newValue)
@@ -332,6 +333,10 @@ namespace UnityEngine.UIElements
             if (showMixedValue)
             {
                 m_TextElement.text = mixedValueString;
+            }
+            else
+            {
+                UpdateValueLabel(value);
             }
 
             m_TextElement.EnableInClassList(labelUssClassName, showMixedValue);

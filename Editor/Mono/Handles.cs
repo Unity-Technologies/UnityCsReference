@@ -1146,15 +1146,6 @@ namespace UnityEditor
             HandleUtility.ApplyWireMaterial(zTest);
 
             Color defaultColor = new Color(1, 1, 1, alpha);
-
-            if (colors != null)
-            {
-                for (int i = 0; i < colors.Length; i++)
-                    colors[i] *= defaultColor;
-            }
-            else
-                defaultColor *= color;
-
             Internal_DrawAAPolyLine(colors, points, defaultColor, actualNumberOfPoints, lineTex, width, matrix);
         }
 

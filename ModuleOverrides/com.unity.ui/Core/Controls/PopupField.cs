@@ -73,6 +73,7 @@ namespace UnityEngine.UIElements
         private int m_Index = kPopupFieldDefaultIndex;
         /// <summary>
         /// The currently selected index in the popup menu.
+        /// Setting the index will update the ::ref::value field and send a property change notification.
         /// </summary>
         public int index
         {

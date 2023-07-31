@@ -566,7 +566,6 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         // Usually this does nothing, but when dragging the window between monitors that have different scaling
         // it can resize the RT as necessary.
         SetupRenderTexture();
-        var prevCamera = Camera.current;
         SetupCamera(view);
 
         //Handle transparency when rotation is locked
@@ -601,8 +600,6 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
             labelRect.y += gizmoRect.height;
             DrawLabels(view, labelRect);
         }
-
-        Camera.SetupCurrent(prevCamera);
     }
 
     void DoOrientationHandles(SceneView view, Camera camera, bool isMouseHovering)

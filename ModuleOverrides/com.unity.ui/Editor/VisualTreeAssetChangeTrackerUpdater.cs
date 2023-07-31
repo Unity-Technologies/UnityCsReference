@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Unity.Profiling;
 using UnityEngine;
@@ -162,7 +163,9 @@ namespace UnityEditor.UIElements
                         currentAsset = ve.visualTreeAssetSource;
                         tracker = FindTracker(ve);
                     }
-                    StartVisualTreeAssetTracking(tracker, ve.visualTreeAssetSource);
+
+                    if(tracker != null)
+                        StartVisualTreeAssetTracking(tracker, ve.visualTreeAssetSource);
                 }
 
                 if (ve.styleSheetList?.Count > 0)
@@ -220,7 +223,7 @@ namespace UnityEditor.UIElements
             m_LiveReloadStyleSheetAssetTracker.OnAssetsImported(changedAssets, deletedAssets);
         }
 
-        private void StartVisualTreeAssetTracking(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset)
+        private void StartVisualTreeAssetTracking([NotNull] ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset)
         {
             int dirtyCount = tracker.StartTrackingAsset(asset);
 

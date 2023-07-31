@@ -24,18 +24,24 @@ namespace UnityEngine
 
     internal static class EnumDataUtility
     {
-        private static readonly Dictionary<Type, EnumData> s_NonObsoleteEnumData = new Dictionary<Type, EnumData>();
-        private static readonly Dictionary<Type, EnumData> s_EnumData = new Dictionary<Type, EnumData>();
+        public enum CachedType
+        {
+            // Excludes all obsolete enum values.
+            ExcludeObsolete,
 
-        internal static EnumData GetCachedEnumData(Type enumType, bool excludeObsolete = true, Func<string, string> nicifyName = null)
+            // Includes all enum values except those marked as Obsolete IsError.
+            IncludeObsoleteExceptErrors,
+
+            // Includes all enum values.
+            IncludeAllObsolete
+        }
+
+        private static readonly Dictionary<(CachedType, Type), EnumData> s_EnumData = new();
+
+        public static EnumData GetCachedEnumData(Type enumType, CachedType cachedType = CachedType.IncludeObsoleteExceptErrors, Func<string, string> nicifyName = null)
         {
             EnumData enumData;
-            if (excludeObsolete && s_NonObsoleteEnumData.TryGetValue(enumType, out enumData))
-            {
-                return enumData;
-            }
-
-            if (!excludeObsolete && s_EnumData.TryGetValue(enumType, out enumData))
+            if (s_EnumData.TryGetValue((cachedType, enumType), out enumData))
             {
                 return enumData;
             }
@@ -51,7 +57,7 @@ namespace UnityEngine
             int enumFieldslen = enumFields.Length;
             for (int j = 0; j < enumFieldslen; j++)
             {
-                if (CheckObsoleteAddition(enumFields[j], excludeObsolete))
+                if (CheckObsoleteAddition(enumFields[j], cachedType))
                     enumfieldlist.Add(enumFields[j]);
             }
 
@@ -98,12 +104,10 @@ namespace UnityEngine
                 ? enumData.values.Select(v => unchecked((int)Convert.ToUInt64(v))).ToArray()
                 : enumData.values.Select(v => unchecked((int)Convert.ToInt64(v))).ToArray();
 
-            // We use the actual names of the enums for ordering options in the UI, so we cache the values with the rest
-            // of its data to avoid doing it repeatedly.
             enumData.names = new string[enumData.values.Length];
-            for (int i = 0; i < enumData.values.Length; ++i)
+            for (int i = 0; i < enumfieldlist.Count; ++i)
             {
-                enumData.names[i] = enumData.values[i].ToString();
+                enumData.names[i] = enumfieldlist[i].Name;
             }
 
             // convert "everything" values to ~0 for unsigned 8- and 16-bit types
@@ -128,11 +132,7 @@ namespace UnityEngine
             enumData.serializable = enumData.underlyingType != typeof(long) && enumData.underlyingType != typeof(ulong);
 
             HandleInspectorOrderAttribute(enumType, ref enumData);
-
-            if (excludeObsolete)
-                s_NonObsoleteEnumData[enumType] = enumData;
-            else
-                s_EnumData[enumType] = enumData;
+            s_EnumData[(cachedType, enumType)] = enumData;
 
             return enumData;
         }
@@ -241,15 +241,18 @@ namespace UnityEngine
             enumData.tooltip = tooltip;
         }
 
-        private static bool CheckObsoleteAddition(FieldInfo field, bool excludeObsolete)
+        private static bool CheckObsoleteAddition(FieldInfo field, CachedType cachedType)
         {
             var obsolete = field.GetCustomAttributes(typeof(ObsoleteAttribute), false);
             if (obsolete.Length > 0)
             {
-                if (excludeObsolete)
+                if (cachedType == CachedType.ExcludeObsolete)
                 {
                     return false;
                 }
+
+                if (cachedType == CachedType.IncludeAllObsolete)
+                    return true;
 
                 return !((ObsoleteAttribute)obsolete.First()).IsError;
             }

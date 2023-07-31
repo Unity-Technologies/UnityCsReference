@@ -322,17 +322,14 @@ namespace UnityEditor
 			{
 				string number = NextWord;
 
-				if (number.IndexOf ('.') == -1)
-				{
-					long parsedInt;
-					Int64.TryParse (number, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out parsedInt);
-					return parsedInt;
-				}
+                if (Int64.TryParse(number, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedInt))
+                {
+                    return parsedInt;
+                }
 
-				double parsedDouble;
-				Double.TryParse (number, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out parsedDouble);
-				return parsedDouble;
-			}
+                Double.TryParse(number, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedDouble);
+                return parsedDouble;
+            }
 
 			void EatWhitespace ()
 			{
