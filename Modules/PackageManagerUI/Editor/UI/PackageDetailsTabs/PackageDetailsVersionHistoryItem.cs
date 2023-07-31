@@ -71,7 +71,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void VersionHistoryItemChangeLogClicked()
         {
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog", m_Version, m_Version.package, m_ApplicationProxy);
+            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo, m_Version != null && m_Version.HasTag(PackageTag.Unity)), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog", m_Version, m_Version.package, m_ApplicationProxy);
         }
 
         private void Refresh(bool multipleVersionsVisible, bool isLatestVersion)

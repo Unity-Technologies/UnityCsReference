@@ -654,7 +654,7 @@ namespace UnityEditor
                     name = ObjectNames.NicifyVariableName(names[0]);
                     menuName = $"{legacyRootMenu}/{name} ({names[1]})";
                 }
-                Menu.AddMenuItem(menuName, "", false, layoutMenuItemPriority++, () => LoadWindowLayout(layoutPath, false, true, false), null);
+                Menu.AddMenuItem(menuName, "", false, layoutMenuItemPriority++, () => TryLoadWindowLayout(layoutPath, false), null);
             }
         }
 
@@ -1168,6 +1168,14 @@ namespace UnityEditor
             ShortcutIntegration.instance.RebuildShortcuts();
         }
 
+        public static bool TryLoadWindowLayout(string path, bool newProjectLayoutWasCreated)
+        {
+            if (LoadWindowLayout(path, newProjectLayoutWasCreated, true, false))
+                return true;
+            LoadCurrentModeLayout(FindMainWindow());
+            return false;
+        }
+
         public static bool LoadWindowLayout(string path, bool newProjectLayoutWasCreated)
         {
             return LoadWindowLayout(path, newProjectLayoutWasCreated, true, false);
@@ -1487,11 +1495,9 @@ namespace UnityEditor
         public static void LoadFromFile()
         {
             var layoutFilePath = EditorUtility.OpenFilePanelWithFilters("Load layout from disk...", "", new[] {"Layout", "wlt"});
-            if (String.IsNullOrEmpty(layoutFilePath))
+            if (string.IsNullOrEmpty(layoutFilePath))
                 return;
-
-            if (LoadWindowLayout(layoutFilePath, false))
-                Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "Loaded layout from " + layoutFilePath);
+            TryLoadWindowLayout(layoutFilePath, false);
         }
 
         public static void SaveToFile()

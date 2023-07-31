@@ -41,6 +41,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         internal static bool IsAHierarchyLevelBreakEvent(FrameEventType eventType) => eventType == FrameEventType.HierarchyLevelBreak;
         internal static bool IsCurrentEventMouseDown() => Event.current.type == EventType.MouseDown;
         internal static bool IsClickingRect(Rect rect) => rect.Contains(Event.current.mousePosition) && Event.current.type == EventType.MouseDown;
+        internal static bool IsHoveringRect(Rect rect) => rect.Contains(Event.current.mousePosition);
         internal static bool IsARenderTexture(ref Texture t) => t != null && (t as RenderTexture) != null;
         internal static bool IsADepthTexture(ref Texture t) => IsARenderTexture(ref t) && ((t as RenderTexture).graphicsFormat == GraphicsFormat.None);
 

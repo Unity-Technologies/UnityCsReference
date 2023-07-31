@@ -32,6 +32,7 @@ namespace UnityEngine.UIElements
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
             UxmlBoolAttributeDescription m_EnableRichText = new UxmlBoolAttributeDescription { name = "enable-rich-text", defaultValue = true };
+            UxmlBoolAttributeDescription m_ParseEscapeSequences = new UxmlBoolAttributeDescription { name = "parse-escape-sequences", defaultValue = false };
 
             UxmlBoolAttributeDescription m_DisplayTooltipWhenElided = new UxmlBoolAttributeDescription { name = "display-tooltip-when-elided" };
 
@@ -56,6 +57,7 @@ namespace UnityEngine.UIElements
                 var textElement = (TextElement)ve;
                 textElement.text = m_Text.GetValueFromBag(bag, cc);
                 textElement.enableRichText = m_EnableRichText.GetValueFromBag(bag, cc);
+                textElement.parseEscapeSequences = m_ParseEscapeSequences.GetValueFromBag(bag, cc);
                 textElement.displayTooltipWhenElided = m_DisplayTooltipWhenElided.GetValueFromBag(bag, cc);
             }
         }

@@ -134,7 +134,7 @@ namespace UnityEditor.ShortcutManagement
 
         public IEnumerable<ShortcutProfile> GetProfiles()
         {
-            return m_LoadedProfiles.Values;
+            return m_LoadedProfiles.Values.OrderBy(profile => profile.id);
         }
 
         public ShortcutProfile GetProfileById(string profileId)

@@ -19,7 +19,9 @@ namespace UnityEditor.Search
     [HelpURL("search-usage")]
     class SearchQueryAsset : ScriptableObject, ISearchQuery
     {
+        static bool s_ListeningToAssetChanges = false;
         static List<SearchQueryAsset> s_SavedQueries;
+        internal static event Action projectQueriesChanged;
 
         private long m_CreationTime;
         public long creationTime
@@ -106,7 +108,7 @@ namespace UnityEditor.Search
 
         [Multiline]
         public string description;
-        
+
         public ICollection<string> providerIds
         {
             get => viewState?.providerIds ?? new string[0];
@@ -116,7 +118,7 @@ namespace UnityEditor.Search
                     viewState.providerIds = value?.ToArray();
             }
         }
-        
+
         public SearchViewState viewState;
         public Texture2D icon;
 
@@ -144,13 +146,28 @@ namespace UnityEditor.Search
             }
         }
 
+        internal static void ContentRefreshed(string[] updated, string[] removed, string[] moved)
+        {
+            if (updated.Any(p => p.EndsWith(".asset")) || removed.Any(p => p.EndsWith(".asset")))
+            {
+                ResetSearchQueryItems();
+                projectQueriesChanged?.Invoke();
+            }
+        }
+
         internal static IEnumerable<SearchQueryAsset> savedQueries
         {
             get
             {
-                if (s_SavedQueries == null || s_SavedQueries.Any(qs => !qs))
-                    s_SavedQueries = EnumerateAll().Where(asset => asset != null).ToList();
-
+                if (s_SavedQueries == null)
+                {
+                    if (!s_ListeningToAssetChanges)
+                    {
+                        SearchMonitor.contentRefreshed += ContentRefreshed;
+                        s_ListeningToAssetChanges = true;
+                    }
+                    s_SavedQueries = EnumerateAll().Where(asset => asset).ToList();
+                }
                 return s_SavedQueries.Where(s => s);
             }
         }
@@ -216,7 +233,7 @@ namespace UnityEditor.Search
         {
             return SaveQuery(asset, context, new SearchViewState(context), folder, name);
         }
-        
+
         public static bool SaveQuery(SearchQueryAsset asset, SearchContext context, SearchViewState sourceViewState, string folder, string name = null)
         {
             if (!Directory.Exists(folder))
@@ -243,12 +260,12 @@ namespace UnityEditor.Search
             }
             return createNew;
         }
-        
+
         public static void RemoveQuery(SearchQueryAsset queryAsset)
         {
             RemoveQuery(queryAsset, false);
         }
-        
+
         internal static void RemoveQuery(SearchQueryAsset queryAsset, bool skipDialog)
         {
             if (skipDialog || EditorUtility.DisplayDialog($"Deleting search query {queryAsset.name}?",

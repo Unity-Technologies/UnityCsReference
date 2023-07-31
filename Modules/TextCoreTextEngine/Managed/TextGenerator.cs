@@ -6893,7 +6893,7 @@ namespace UnityEngine.TextCore.Text
 
                     // Compute Preferred Width & Height
                     renderedWidth = Mathf.Max(renderedWidth, textWidth + m_MarginLeft + m_MarginRight);
-                    renderedHeight = m_MaxAscender - m_MaxDescender;
+                    renderedHeight = Mathf.Max(renderedHeight, m_MaxAscender - m_MaxDescender);
 
                 }
                 #endregion Handle Visible Characters

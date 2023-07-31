@@ -880,6 +880,7 @@ namespace UnityEngine.UIElements
             {
                 if (recycledItem.index == index)
                 {
+                    viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                     viewController.InvokeBindItem(recycledItem, recycledItem.index);
                     break;
                 }
@@ -1325,10 +1326,24 @@ namespace UnityEngine.UIElements
 
                     break;
                 case 2:
-                    if (itemsChosen != null)
+                    if (itemsChosen == null)
+                        return;
+
+                    var wasClickedIndexInSelection = false;
+                    foreach (var index in selectedIndices)
                     {
-                        ProcessSingleClick(clickedIndex);
+                        if (clickedIndex == index)
+                        {
+                            wasClickedIndexInSelection = true;
+                            break;
+                        }
                     }
+
+                    ProcessSingleClick(clickedIndex);
+
+                    // Only invoke itemsChosen if we're clicking on the same entry. Case UUM-42450.
+                    if (!wasClickedIndexInSelection)
+                        return;
 
                     itemsChosen?.Invoke(m_SelectedItems);
                     break;

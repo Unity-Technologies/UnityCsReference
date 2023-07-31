@@ -24,6 +24,7 @@ namespace UnityEditor.SceneTemplate
         private const string k_ThumbnailAreaName = "scene-template-asset-inspector-thumbnail-area";
         private const string k_DependencyListView = "scene-template-asset-inspector-list-view";
         private const string k_NoLabelRowName = "scene-template-asset-inspector-no-label-row";
+        private const string k_DynamicResize = "scene-template-control-dynamic-resize";
 
         static readonly string k_SceneTemplateInfo = L10n.Tr("Scene Template Pipeline must be a Mono Script whose main class derives from ISceneTemplatePipeline or SceneTemplatePipelineAdapter. The main class and the script must have the same name.");
 
@@ -188,6 +189,8 @@ namespace UnityEditor.SceneTemplate
 
             // Dependencies
             root.Add(CreateFoldoutInspector(BuildDependencyRows(), L10n.Tr("Dependencies"), "SceneTemplateDependenciesFoldout"));
+
+            root.RegisterCallback<GeometryChangedEvent>(OnInspectorFieldGeometryChanged);
             return root;
         }
 
@@ -199,6 +202,33 @@ namespace UnityEditor.SceneTemplate
         protected override bool ShouldHideOpenButton()
         {
             return true;
+        }
+
+        private void OnInspectorFieldGeometryChanged(GeometryChangedEvent e)
+        {
+            var foldouts = Root.Query<Foldout>();
+            if (foldouts == null)
+                return;
+            Foldout openFoldout = null;
+            foreach (var foldout in foldouts.ToList())
+            {
+                if (foldout.value)
+                {
+                    openFoldout = foldout;
+                    break;
+                }
+            }
+            if (openFoldout == null)
+                return;
+
+            var referenceLabel = openFoldout.Q<Label>(null, "unity-property-field__label");
+            if (referenceLabel == null)
+                return;
+            var dynResizeControls = Root.Query(null, k_DynamicResize).ToList();
+            foreach (var control in dynResizeControls)
+            {
+                control.style.width = referenceLabel.style.width;
+            }
         }
 
         void OnCreateSceneTemplatePipeline()
@@ -363,6 +393,7 @@ namespace UnityEditor.SceneTemplate
             cameraNames.Add(new SnapshotTargetInfo()); // Separator
             cameraNames.Add(new SnapshotTargetInfo { Name = L10n.Tr("Game View"), OnSnapshotAction = (info, callback) => TakeSnapshotFromGameView(callback) });
             var snapshotTargetPopup = new PopupField<SnapshotTargetInfo>(L10n.Tr("View"), cameraNames, Camera.allCameras.Length == 0 ? 1 : 0);
+            snapshotTargetPopup.Q(null, "unity-popup-field__label").AddToClassList(k_DynamicResize);
             snapshotTargetPopup.tooltip = L10n.Tr("View or Camera to use as the source of the snapshot.");
             snapshotTargetPopup.formatListItemCallback = info => info.Name;
             snapshotTargetPopup.formatSelectedValueCallback = info => info.Name;
@@ -382,6 +413,7 @@ namespace UnityEditor.SceneTemplate
             snapshotButton.tooltip = k_SnapshotTooltip;
             snapshotButton.text = k_SnapshotButtonLabel;
             snapshotButton.AddToClassList(Styles.classUnityBaseFieldInput);
+            snapshotButton.AddToClassList(k_DynamicResize);
             snapshotSecondRowElement.Add(snapshotButton);
 
             return propertyElement;
@@ -535,6 +567,7 @@ namespace UnityEditor.SceneTemplate
                 emptyLabel.AddToClassList(hiddenLabelClass);
             }
             emptyLabel.AddToClassList(Styles.classUnityBaseFieldLabel);
+            emptyLabel.AddToClassList(k_DynamicResize);
             emptyLabelRow.Add(emptyLabel);
             return emptyLabelRow;
         }

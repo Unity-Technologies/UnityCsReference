@@ -339,11 +339,8 @@ namespace UnityEngine.UIElements
             {
                 m_ForcedFirstVisibleItem = 0;
             }
-            else
-            {
-                m_StickToBottom = scrollableHeight > 0 && Math.Abs(scrollOffset.y - m_ScrollView.verticalScroller.highValue) < float.Epsilon;
-            }
 
+            m_StickToBottom = scrollableHeight > 0 && Math.Abs(scrollOffset.y - m_ScrollView.verticalScroller.highValue) < float.Epsilon;
             serializedData.scrollOffset = scrollOffset;
             m_CollectionView.SaveViewData();
 
@@ -552,11 +549,11 @@ namespace UnityEngine.UIElements
                     m_ActiveItems.RemoveAt(m_ActiveItems.Count - 1); // we remove from the end
                     last.rootElement.SendToBack();
 
-                    --firstVisibleIndex;
-                    Setup(last, firstVisibleIndex);
+                    var newIndex = --firstVisibleIndex;
+                    Setup(last, newIndex);
                     MarkWaitingForLayout(last);
 
-                    firstVisiblePadding -= GetExpectedItemHeight(firstVisibleIndex);
+                    firstVisiblePadding -= GetExpectedItemHeight(newIndex);
                     if (firstVisiblePadding < serializedData.scrollOffset.y)
                         break;
                 }
@@ -632,6 +629,12 @@ namespace UnityEngine.UIElements
             {
                 scrollOffset = scrollableHeight;
             }
+            else if (m_ForcedLastVisibleItem != -1)
+            {
+                var lastItemHeight = GetContentHeightForIndex(m_ForcedLastVisibleItem);
+                var lastItemViewportOffset = lastItemHeight + BaseVerticalCollectionView.s_DefaultItemHeight - m_ScrollView.contentViewport.layout.height;
+                scrollOffset = lastItemViewportOffset;
+            }
 
             // Don't notify to avoid coming back in the scroll update for no reason.
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
@@ -699,7 +702,6 @@ namespace UnityEngine.UIElements
                 }
 
                 ScheduleScrollDirectionReset();
-                m_StickToBottom = false;
                 m_ForcedLastVisibleItem = -1;
                 m_CollectionView.SaveViewData();
             }
@@ -752,6 +754,8 @@ namespace UnityEngine.UIElements
             m_ScrollDirection = ScrollDirection.Idle;
             m_LastChange = VirtualizationChange.None;
             m_ScrollView.UpdateContentViewTransform();
+            UpdateAnchor();
+            m_CollectionView.SaveViewData();
         }
 
         public override int GetIndexFromPosition(Vector2 position)
@@ -922,7 +926,7 @@ namespace UnityEngine.UIElements
 
         void OnRecycledItemGeometryChanged(ReusableCollectionItem item)
         {
-            if (item.index == ReusableCollectionItem.UndefinedIndex || float.IsNaN(item.rootElement.layout.height) || item.rootElement.layout.height == 0)
+            if (item.index == ReusableCollectionItem.UndefinedIndex || item.isDragGhost || float.IsNaN(item.rootElement.layout.height) || item.rootElement.layout.height == 0)
                 return;
 
             if (UpdateRegisteredHeight(item))
@@ -933,7 +937,7 @@ namespace UnityEngine.UIElements
 
         bool UpdateRegisteredHeight(ReusableCollectionItem item)
         {
-            if (item.index == ReusableCollectionItem.UndefinedIndex || float.IsNaN(item.rootElement.layout.height) || item.rootElement.layout.height == 0)
+            if (item.index == ReusableCollectionItem.UndefinedIndex || item.isDragGhost || float.IsNaN(item.rootElement.layout.height) || item.rootElement.layout.height == 0)
                 return false;
 
             if (item.rootElement.layout.height < defaultExpectedHeight)
@@ -945,6 +949,23 @@ namespace UnityEngine.UIElements
             var targetHeight = item.rootElement.layout.height - item.rootElement.resolvedStyle.paddingTop;
             var wasCached = m_ItemHeightCache.TryGetValue(item.index, out var height);
             var previousHeight = wasCached ? GetExpectedItemHeight(item.index) : defaultExpectedHeight;
+
+            // Update the m_StickToBottom variable.
+            if (m_WaitingCache.Count == 0)
+            {
+                // When the size increases on an item that wasn't waiting for layout, we are certainly not sticking
+                // to the bottom. Otherwise, we should check if we should.
+                if (targetHeight > previousHeight)
+                {
+                    m_StickToBottom = false;
+                }
+                else
+                {
+                    var deltaHeight = targetHeight - previousHeight;
+                    var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
+                    m_StickToBottom = scrollableHeight > 0 && serializedData.scrollOffset.y >= m_ScrollView.verticalScroller.highValue + deltaHeight;
+                }
+            }
 
             if (!wasCached || !Mathf.Approximately(targetHeight, height))
             {
@@ -991,10 +1012,10 @@ namespace UnityEngine.UIElements
         {
             // Update item height of active items to support index changes (reordering).
             var draggingDown = m_DraggedItem.index < dropIndex;
-            var startIndex = draggingDown ? m_DraggedItem.index : dropIndex;
-            var endIndex = draggingDown ? dropIndex : m_DraggedItem.index;
+            var startIndex = m_DraggedItem.index;
             var increment = draggingDown ? 1 : -1;
-            for (var i = startIndex; i < endIndex; i++)
+            var startItemHeight = GetExpectedItemHeight(startIndex);
+            for (var i = startIndex; i != dropIndex; i += increment)
             {
                 var height = GetExpectedItemHeight(i);
                 var nextHeight = GetExpectedItemHeight(i + increment);
@@ -1003,6 +1024,8 @@ namespace UnityEngine.UIElements
 
                 RegisterItemHeight(i, nextHeight);
             }
+
+            RegisterItemHeight(draggingDown ? dropIndex - 1 : dropIndex, startItemHeight);
 
             // With the new updated height, we need to grab anchors on the new first element if needed.
             if (firstVisibleIndex > m_DraggedItem.index)
@@ -1032,6 +1055,12 @@ namespace UnityEngine.UIElements
                 return;
 
             m_WaitingCache.Add(item.index);
+
+            // This will ensure the GeometryChangedEvent is triggered no matter what.
+            // We depend on it to know when all items are laid out to update the contentContainer size,
+            // so we need to make sure it is going to be called when we track it.
+            item.rootElement.lastLayout = Rect.zero;
+            item.rootElement.MarkDirtyRepaint();
         }
 
         bool IsIndexOutOfBounds(int i)

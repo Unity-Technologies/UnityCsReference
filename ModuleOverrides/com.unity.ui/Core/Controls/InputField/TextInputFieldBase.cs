@@ -690,6 +690,7 @@ namespace UnityEngine.UIElements
                 delegatesFocus = true;
 
                 textElement = new TextElement();
+                textElement.parseEscapeSequences = false;
                 textElement.selection.isSelectable = true;
                 textEdition.isReadOnly = false;
                 textEdition.keyboardType = TouchScreenKeyboardType.Default;
