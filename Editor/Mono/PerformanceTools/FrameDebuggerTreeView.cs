@@ -77,13 +77,9 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
         public void ReselectFrameEventIndex()
         {
-            int[] selection = m_TreeView.GetSelection();
-            if (selection.Length > 0)
-            {
-                FrameDebuggerTreeViewItem item = m_TreeView.FindItem(selection[0]) as FrameDebuggerTreeViewItem;
-                if (item != null)
-                    m_TreeView.SetSelection(new[] { item.m_EventIndex }, true);
-            }
+            FrameDebuggerTreeViewItem item = GetSelectedTreeViewItem();
+            if (item != null)
+                SetSelection(item.m_EventIndex);
         }
 
         public void SelectFrameEventIndex(int eventIndex)
@@ -92,14 +88,24 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             // different tree nodes could result in the same frame debugger event
             // limit, e.g. a hierarchy node sets last child event as the limit.
             // If the limit event is the same, then do not change the currently selected item.
+            FrameDebuggerTreeViewItem item = GetSelectedTreeViewItem();
+            if (item == null || item.m_EventIndex != eventIndex)
+                SetSelection(eventIndex);
+        }
+
+        private FrameDebuggerTreeViewItem GetSelectedTreeViewItem()
+        {
             int[] selection = m_TreeView.GetSelection();
             if (selection.Length > 0)
-            {
-                FrameDebuggerTreeViewItem item = m_TreeView.FindItem(selection[0]) as FrameDebuggerTreeViewItem;
-                if (item != null && eventIndex == item.m_EventIndex)
-                    return;
-            }
+                return m_TreeView.FindItem(selection[0]) as FrameDebuggerTreeViewItem;
+
+            return null;
+        }
+
+        private void SetSelection(int eventIndex)
+        {
             m_TreeView.SetSelection(new[] { eventIndex }, true);
+            m_FrameDebugger.RepaintOnLimitChange();
         }
 
         public void DrawTree(Rect rect)
@@ -148,17 +154,15 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                     return;
 
                 FrameDebuggerTreeViewItem item = (FrameDebuggerTreeViewItem)itemRaw;
-                string text;
                 GUIContent tempContent;
                 GUIStyle style;
 
                 bool isParent = (item.hasChildren);
-                FontStyle fontStyle = (isParent) ? FontStyle.Bold : FontStyle.Normal;
                 childCounter = (isParent) ? 1 : (childCounter + 1);
 
                 // Draw background
-                style = FrameDebuggerStyles.Tree.s_RowText;
                 tempContent = EditorGUIUtility.TempContent("");
+                style = FrameDebuggerStyles.Tree.s_RowText;
                 style.Draw(rect, tempContent, false, false, false, false);
 
                 // indent
@@ -169,30 +173,25 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 // child event count
                 if (isParent)
                 {
-                    text = item.m_ChildEventCount.ToString(CultureInfo.InvariantCulture);
-                    tempContent = EditorGUIUtility.TempContent(text);
-
-                    style = FrameDebuggerStyles.Tree.s_RowTextRight;
-                    style.fontStyle = fontStyle;
+                    tempContent = EditorGUIUtility.TempContent(item.m_ChildEventCount.ToString(CultureInfo.InvariantCulture));
 
                     Rect r = rect;
                     r.width -= kSmallMargin;
+                    style = FrameDebuggerStyles.Tree.s_RowTextRight;
                     style.Draw(r, tempContent, false, false, false, false);
 
                     // reduce width of available space for the name, so that it does not overlap event count
                     rect.width -= style.CalcSize(tempContent).x + kSmallMargin * 2;
                 }
 
-                style = FrameDebuggerStyles.Tree.s_RowText;
-                style.fontStyle = fontStyle;
 
                 // draw event name
-                text = item.displayName;
+                if (string.IsNullOrEmpty(item.displayName))
+                    tempContent = EditorGUIUtility.TempContent(FrameDebuggerStyles.Tree.k_UnknownScopeString);
+                else
+                    tempContent = EditorGUIUtility.TempContent(item.displayName);
 
-                if (string.IsNullOrEmpty(text))
-                    text = FrameDebuggerStyles.Tree.k_UnknownScopeString;
-
-                tempContent = EditorGUIUtility.TempContent(text);
+                style = isParent ? FrameDebuggerStyles.Tree.s_RowTextBold : FrameDebuggerStyles.Tree.s_RowText;
                 style.Draw(rect, tempContent, false, false, false, selected && focused);
             }
 
