@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightTransport
 {
     internal struct BufferID
@@ -50,6 +49,7 @@ namespace UnityEngine.LightTransport
         void ReadBuffer(BufferID id, NativeArray<byte> result);
         EventID EnqueueBufferRead(BufferID id, NativeArray<byte> result);
         bool IsAsyncOperationComplete(EventID id);
+        bool Flush();
     }
     [StructLayout(LayoutKind.Sequential)]
     internal class ReferenceContext : IDeviceContext
@@ -113,6 +113,11 @@ namespace UnityEngine.LightTransport
         public NativeArray<byte> GetNativeArray(BufferID id)
         {
             return buffers[id];
+        }
+
+        public bool Flush()
+        {
+            return true;
         }
     }
 }

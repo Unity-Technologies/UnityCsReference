@@ -31,8 +31,10 @@ namespace UnityEngine.UIElements
             {
                 base.Deserialize(obj);
 
+                // rely on multiline to set verticalScrollerVisibility, see: https://jira.unity3d.com/browse/UIT-2027
                 var e = (TextField)obj;
                 e.multiline = multiline;
+                e.verticalScrollerVisibility = verticalScrollerVisibility;
             }
 
             void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
@@ -92,13 +94,6 @@ namespace UnityEngine.UIElements
                 }
 
                 field.multiline = m_Multiline.GetValueFromBag(bag, cc);
-
-                // \n characters in the string are only removed when multiline goes from true to false.
-                // If the field value in the bag contains \n and multiline is false in the bag, we remove any \n here.
-                if (!field.multiline && !string.IsNullOrEmpty(field.value) && field.value.Contains("\n"))
-                {
-                    field.SetValueWithoutNotify(field.value.Replace("\n",""));
-                }
             }
         }
 
@@ -190,7 +185,13 @@ namespace UnityEngine.UIElements
         public override void SetValueWithoutNotify(string newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            ((INotifyValueChanged<string>)textInput.textElement).SetValueWithoutNotify(rawValue);
+
+            var textValue = rawValue;
+
+            if (!multiline && rawValue != null)
+                textValue = rawValue.Replace("\n", "");
+
+            ((INotifyValueChanged<string>)textInput.textElement).SetValueWithoutNotify(textValue);
         }
 
         [EventInterest(typeof(FocusOutEvent))]
@@ -229,12 +230,18 @@ namespace UnityEngine.UIElements
                 get { return textEdition.multiline; }
                 set
                 {
-                    if (textEdition.multiline == value)
+                    var textMatchesMultiline = !(!value && !string.IsNullOrEmpty(text) && text.Contains("\n"));
+
+                    if (textMatchesMultiline && textEdition.multiline == value)
                         return;
 
                     textEdition.multiline = value;
                     if (value)
+                    {
+                        // resetting the input's text to raw value to ensure any removed new lines are added back
+                        text = parentTextField.rawValue;
                         SetMultiline();
+                    }
                     else
                     {
                         text = text.Replace("\n", "");

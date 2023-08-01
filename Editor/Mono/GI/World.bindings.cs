@@ -4,7 +4,6 @@
 
 using UnityEngine.LightBaking;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightTransport
 {
     internal interface IWorld

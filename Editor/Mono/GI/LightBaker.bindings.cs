@@ -10,7 +10,6 @@ using UnityEngine.LightBaking;
 using UnityEngine.LightTransport;
 using static UnityEditor.LightBaking.LightBaker;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEditor.LightBaking
 {
     [NativeHeader("Editor/Src/GI/LightBaker/LightBaker.Bindings.h")]

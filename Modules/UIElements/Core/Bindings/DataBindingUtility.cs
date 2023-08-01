@@ -487,13 +487,18 @@ namespace UnityEngine.UIElements
             {
                 visitor.Path = new PropertyPath(path);
 
+                if (properties == null)
+                {
+                    visitor.ReturnCode = VisitReturnCode.MissingPropertyBag;
+                }
+
                 if (dataSource == null)
                 {
-                    properties.Accept(visitor);
+                    properties?.Accept(visitor);
                 }
                 else
                 {
-                    properties.Accept(visitor, ref dataSource);
+                    properties?.Accept(visitor, ref dataSource);
                 }
 
                 if (visitor.ReturnCode == VisitReturnCode.Ok)

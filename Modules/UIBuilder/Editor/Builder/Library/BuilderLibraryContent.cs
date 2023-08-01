@@ -249,10 +249,14 @@ namespace Unity.UI.Builder
                     (inVta, inParent, ve) =>
                     {
                         var vea = inVta.AddElement(inParent, ve);
-                        BuilderStyleUtilities.SetInlineStyleValue(inVta, vea, ve, "flex-grow",
-                            k_DefaultVisualElementFlexGrow);
-                        BuilderStyleUtilities.SetInlineStyleValue(inVta, vea, ve, "background-color",
-                            k_DefaultVisualElementBackgroundColor);
+
+                        const int visualElementStyled = (int)BuilderLibrary.DefaultVisualElementType.Styled;
+                        if (EditorPrefs.GetInt(BuilderConstants.LibraryDefaultVisualElementType, visualElementStyled) == visualElementStyled)
+                        {
+                            BuilderStyleUtilities.SetInlineStyleValue(inVta, vea, ve, "flex-grow",
+                                k_DefaultVisualElementFlexGrow);
+                        }
+
                         return vea;
                     }),
                 CreateItem("Scroll View", "ScrollView", typeof(ScrollView), () => new ScrollView()),

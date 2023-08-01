@@ -8,7 +8,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightTransport
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -102,6 +101,9 @@ namespace UnityEngine.LightTransport
 
         [NativeMethod(IsThreadSafe = true)]
         public extern bool IsAsyncOperationComplete(EventID id);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern bool Flush();
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern bool InitializePostProcessingInternal(RadeonRaysContext context);

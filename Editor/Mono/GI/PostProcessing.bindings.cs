@@ -7,7 +7,6 @@ using Unity.Jobs;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightTransport
 {
     namespace PostProcessing

@@ -35,7 +35,7 @@ namespace Unity.UI.Builder
             m_LocalStylesSection = m_Inspector.Q<PersistedFoldout>("inspector-local-styles-foldout");
 
             var styleCategories = m_LocalStylesSection.Query<PersistedFoldout>(
-                className: "unity-builder-inspector__style-category-foldout").ToList();
+                className: "unity-builder-inspector__style-category-foldout").Build();
 
             foreach (var styleCategory in styleCategories)
             {
@@ -43,11 +43,11 @@ namespace Unity.UI.Builder
                     .AddManipulator(new ContextualMenuManipulator(StyleCategoryContextualMenu));
 
                 var categoryStyleFields = new List<VisualElement>();
-                var styleRows = styleCategory.Query<BuilderStyleRow>().ToList();
+                var styleRows = styleCategory.Query<BuilderStyleRow>().Build();
                 foreach (var styleRow in styleRows)
                 {
                     var bindingPath = styleRow.bindingPath;
-                    var currentStyleFields = styleRow.Query<BindableElement>().ToList();
+                    var currentStyleFields = styleRow.Query<BindableElement>().Build();
 
                     if (styleRow.ClassListContains(BuilderConstants.InspectorMultiFieldsRowClassName))
                         m_StyleFields.BindDoubleFieldRow(styleRow);
@@ -161,12 +161,12 @@ namespace Unity.UI.Builder
             else
                 m_LocalStylesSection.text = BuilderConstants.InspectorLocalStylesSectionTitleForElement;
 
-            var styleRows = m_LocalStylesSection.Query<BuilderStyleRow>().ToList();
+            var styleRows = m_LocalStylesSection.Query<BuilderStyleRow>().Build();
 
             foreach (var styleRow in styleRows)
             {
                 var bindingPath = styleRow.bindingPath;
-                var styleFields = styleRow.Query<BindableElement>().ToList();
+                var styleFields = styleRow.Query<BindableElement>().Build();
 
                 foreach (var styleField in styleFields)
                 {

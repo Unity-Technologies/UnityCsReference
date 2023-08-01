@@ -9,6 +9,7 @@ using UnityEditor.UIElements.Debugger;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using UnityEngine.Pool;
 
 namespace Unity.UI.Builder
 {
@@ -427,7 +428,7 @@ namespace Unity.UI.Builder
                         // If the value does not come from a matching stylesheet selector then check if it comes from inheritance
                         if (!sourceIsSet)
                         {
-                            var result = new Dictionary<StylePropertyId, int>();
+                            var result = DictionaryPool<StylePropertyId, int>.Get();
                             StyleDebug.FindSpecifiedStyles(inspector.currentVisualElement.computedStyle,
                                 inspector.matchingSelectors.matchedRulesExtractor.matchRecords, result);
 
@@ -444,6 +445,8 @@ namespace Unity.UI.Builder
                                     }
                                 }
                             }
+
+                            DictionaryPool<StylePropertyId, int>.Release(result);
                         }
                     }
 

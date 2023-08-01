@@ -55,7 +55,7 @@ namespace UnityEngine.UIElements
             [UxmlAttribute("readonly")]
             [SerializeField] private bool isReadOnly;
             [SerializeField] private bool isDelayed;
-            [SerializeField] private ScrollerVisibility verticalScrollerVisibility;
+            [SerializeField] private protected ScrollerVisibility verticalScrollerVisibility;
             [SerializeField] private bool selectAllOnMouseUp;
             [SerializeField] private bool selectAllOnFocus;
             [UxmlAttribute("select-word-by-double-click")]

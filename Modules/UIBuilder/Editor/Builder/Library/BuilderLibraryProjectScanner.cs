@@ -118,6 +118,10 @@ namespace Unity.UI.Builder
                     if (elementType.GetCustomAttribute<HideInInspector>() != null)
                         continue;
 
+                    // Ignore elements with generic parameters
+                    if (elementType.ContainsGenericParameters)
+                        continue;
+
                     // UxmlElements with a custom name appear in SerializedDataTypes twice, we only need 1 item with the custom name.
                     if (shownTypes.Contains(type))
                         continue;
@@ -257,6 +261,10 @@ namespace Unity.UI.Builder
                 }
 
                 if (elementType == typeof(TemplateContainer))
+                    continue;
+
+                // Ignore UxmlSerialized elements in non-developer mode
+                if (!Unsupported.IsDeveloperMode() && UxmlSerializedDataRegistry.GetDescription(elementType?.FullName) != null)
                     continue;
 
                 TreeViewItemData<BuilderLibraryTreeItem> newItem = default;

@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UIEHelpBox = UnityEngine.UIElements.HelpBox;
 
@@ -150,6 +152,62 @@ namespace Unity.UI.Builder
             UpdateConverterCompleter();
         }
 
+        internal override void UnsetAllAttributes()
+        {
+            var undoGroup = Undo.GetCurrentGroup();
+            UndoRecordDocument(BuilderConstants.ChangeAttributeValueUndoMessage);
+            var builder = Builder.ActiveWindow;
+
+            var styleRows = fieldsContainer.Query<BuilderStyleRow>().ToList();
+            foreach (var styleRow in styleRows)
+            {
+                var fields = styleRow.GetLinkedFieldElements();
+
+                // needed for data source and data source type that are sharing a style row
+                foreach (var fieldElement in fields)
+                {
+                    var attributeName = GetAttributeName(fieldElement);
+
+                    var currentAttributesUxmlOwner = attributesUxmlOwner;
+                    var currentSerializedData = uxmlSerializedData;
+
+                    if (fieldElement.GetFirstAncestorOfType<UxmlAssetSerializedDataRoot>() is { } dataRoot && dataRoot.dataDescription.isUxmlObject)
+                    {
+                        SynchronizePath(dataRoot.rootPath, false, out var uxmlOwner, out var serializedData, out var _);
+                        currentAttributesUxmlOwner = uxmlOwner as UxmlAsset;
+                        currentSerializedData = serializedData as UxmlSerializedData;
+
+                        if (currentAttributesUxmlOwner != null)
+                        {
+                            var entry = uxmlDocument.GetUxmlObjectEntry(currentAttributesUxmlOwner.id);
+                            if (entry.uxmlObjectAssets?.Count > 0)
+                            {
+                                for (var i = entry.uxmlObjectAssets.Count - 1 ; i >= 0; i--)
+                                {
+                                    uxmlDocument.RemoveUxmlObject(entry.uxmlObjectAssets[i].id);
+                                }
+                            }
+                        }
+                    }
+
+                    if (currentSerializedData == null)
+                        continue;
+
+                    currentAttributesUxmlOwner.RemoveAttribute(attributeName);
+                    var description = fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
+                    description.SetSerializedValue(currentSerializedData, description.defaultValue);
+                    CallDeserializeOnElement();
+                    UnsetEnumValue(attributeName, false);
+                }
+            }
+
+            // Notify of changes.
+            NotifyAttributesChanged();
+            Refresh();
+            builder.inspector.headerSection.Refresh();
+            Undo.CollapseUndoOperations(undoGroup);
+        }
+
         /// <inheritdoc/>
         protected override void GenerateSerializedAttributeFields()
         {
@@ -233,7 +291,7 @@ namespace Unity.UI.Builder
 
         void UpdateConverterCompleter()
         {
-            // Make sure we have all the required fields available. 
+            // Make sure we have all the required fields available.
             if (m_ConvertersToUi == null || m_ConvertersToSource == null || m_DataSourceField == null || m_DataSourceTypeField == null || m_DataSourcePathField == null)
                 return;
 
@@ -316,7 +374,7 @@ namespace Unity.UI.Builder
             {
                 if (!attributeDescription.isUxmlObject)
                     continue;
-        
+
                 var attributePath = $"{path}.{attributeDescription.serializedField.Name}";
                 if (attributeDescription.isList)
                 {
@@ -330,7 +388,7 @@ namespace Unity.UI.Builder
                         targetView.SynchronizePath(arrayPath, true, out var newUxmlAsset, out _, out _);
 
                         CopyAttributesRecursively(arrayPath, (UxmlAsset)uxmlAsset, (UxmlAsset)newUxmlAsset, targetView);
-        
+
                         arrayProperty = targetView.m_CurrentElementSerializedObject.FindProperty($"{attributePath}.Array.data[{++i}]");
                     }
                 }

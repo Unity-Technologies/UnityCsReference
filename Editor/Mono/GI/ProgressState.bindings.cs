@@ -6,7 +6,6 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightBaking
 {
     [StructLayout(LayoutKind.Sequential)]

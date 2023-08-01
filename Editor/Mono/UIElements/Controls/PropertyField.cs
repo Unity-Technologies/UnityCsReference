@@ -676,6 +676,13 @@ namespace UnityEditor.UIElements
             field.name = "unity-input-" + property.propertyPath;
             field.label = fieldLabel;
 
+            ConfigureFieldStyles<TField, TValue>(field);
+
+            return field;
+        }
+
+        internal static void ConfigureFieldStyles<TField, TValue>(TField field) where TField : BaseField<TValue>
+        {
             field.labelElement.AddToClassList(labelUssClassName);
             field.visualInput.AddToClassList(inputUssClassName);
             field.AddToClassList(BaseField<TValue>.alignedFieldUssClassName);
@@ -687,9 +694,6 @@ namespace UnityEditor.UIElements
             {
                 x.AddToClassList(BaseField<TValue>.alignedFieldUssClassName);
             });
-
-
-            return field;
         }
 
         VisualElement ConfigureListView(ListView listView, SerializedProperty property, Func<ListView> factory)
@@ -809,7 +813,6 @@ namespace UnityEditor.UIElements
                         }
                     }
 
-                    field.SetProperty(ObjectField.serializedPropertyKey, property);
                     field.SetObjectTypeWithoutDisplayUpdate(requiredType);
                     field.UpdateDisplay();
 

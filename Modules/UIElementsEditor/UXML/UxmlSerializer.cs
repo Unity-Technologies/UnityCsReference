@@ -106,7 +106,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// The UxmlObject types that can be applied to this attribute.
         /// </summary>
-        public IList<Type> uxmlObjectAcceptedTypes 
+        public IList<Type> uxmlObjectAcceptedTypes
         {
             get
             {
@@ -134,7 +134,7 @@ namespace UnityEditor.UIElements
                         var uxmlSerializedDataType = type.GetNestedType(nameof(UxmlSerializedData));
                         if (uxmlSerializedDataType == null)
                             return;
-                        
+
                         acceptedTypes.Add(uxmlSerializedDataType);
                     }
 
@@ -312,6 +312,10 @@ namespace UnityEditor.UIElements
 
     internal class UxmlSerializedUxmlObjectAttributeDescription : UxmlSerializedAttributeDescription
     {
+        internal static readonly string k_MultipleUxmlObjectsWarning = "Multiple UxmlObjects Found for UxmlObjectReference Field {0}. " +
+            "Only the first UxmlObject will be used in the current configuration. " +
+            "If you intend to use multiple UxmlObjects, it is recommended to convert the field into a list.";
+
         public string rootName { get; set; }
 
         internal override object GetValueFromBagAsObject(IUxmlAttributes bag, CreationContext cc)
@@ -365,6 +369,21 @@ namespace UnityEditor.UIElements
                             if (assetDescription != null && objectType.IsAssignableFrom(assetDescription.serializedDataType))
                             {
                                 foundObjects.Add((asset, assetDescription));
+                            }
+                        }
+
+                        // Display a warning when uxml file contains more than one named UxmlObject of a type defined in a single instance attribute
+                        if (entry.uxmlObjectAssets.Count > 1 && isUxmlObject && !isList)
+                        {
+                            var foundTypes = new HashSet<string>();
+                            foreach (var asset in entry.uxmlObjectAssets)
+                            {
+                                if (foundTypes.Contains(asset.fullTypeName))
+                                {
+                                    Debug.LogWarning(string.Format(k_MultipleUxmlObjectsWarning, asset.fullTypeName));
+                                    break;
+                                }
+                                foundTypes.Add(asset.fullTypeName);
                             }
                         }
 

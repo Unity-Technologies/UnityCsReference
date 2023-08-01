@@ -10,8 +10,6 @@ using UnityEngine.Internal;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.UIR;
-using PropertyBagValue = System.Collections.Generic.KeyValuePair<UnityEngine.PropertyName, object>;
-using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -350,7 +348,7 @@ namespace UnityEngine.UIElements
 
         string m_Name;
         List<string> m_ClassList;
-        private List<PropertyBagValue> m_PropertyBag;
+        private Dictionary<PropertyName, object> m_PropertyBag;
         internal VisualElementFlags m_Flags;
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
@@ -401,8 +399,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                TryGetPropertyInternal(userDataPropertyKey, out object value);
-                return value;
+                if (m_PropertyBag != null)
+                {
+                    m_PropertyBag.TryGetValue(userDataPropertyKey, out var value);
+                    return value;
+                }
+                return null;
             }
             set
             {
@@ -2271,8 +2273,12 @@ namespace UnityEngine.UIElements
         internal object GetProperty(PropertyName key)
         {
             CheckUserKeyArgument(key);
-            TryGetPropertyInternal(key, out object value);
-            return value;
+            if (m_PropertyBag != null)
+            {
+                m_PropertyBag.TryGetValue(key, out object value);
+                return value;
+            }
+            return null;
         }
 
         internal void SetProperty(PropertyName key, object value)
@@ -2284,24 +2290,7 @@ namespace UnityEngine.UIElements
         internal bool HasProperty(PropertyName key)
         {
             CheckUserKeyArgument(key);
-            return TryGetPropertyInternal(key, out var tmp);
-        }
-
-        bool TryGetPropertyInternal(PropertyName key, out object value)
-        {
-            value = null;
-            if (m_PropertyBag != null)
-            {
-                for (int i = 0; i < m_PropertyBag.Count; ++i)
-                {
-                    if (m_PropertyBag[i].Key == key)
-                    {
-                        value = m_PropertyBag[i].Value;
-                        return true;
-                    }
-                }
-            }
-            return false;
+            return m_PropertyBag?.ContainsKey(key) == true;
         }
 
         static void CheckUserKeyArgument(PropertyName key)
@@ -2315,31 +2304,8 @@ namespace UnityEngine.UIElements
 
         void SetPropertyInternal(PropertyName key, object value)
         {
-            var kv = new PropertyBagValue(key, value);
-
-            if (m_PropertyBag == null)
-            {
-                m_PropertyBag = new List<PropertyBagValue>(1);
-                m_PropertyBag.Add(kv);
-            }
-            else
-            {
-                for (int i = 0; i < m_PropertyBag.Count; ++i)
-                {
-                    if (m_PropertyBag[i].Key == key)
-                    {
-                        m_PropertyBag[i] = kv;
-                        return;
-                    }
-                }
-
-                if (m_PropertyBag.Capacity == m_PropertyBag.Count)
-                {
-                    m_PropertyBag.Capacity += 1;
-                }
-
-                m_PropertyBag.Add(kv);
-            }
+            m_PropertyBag ??= new Dictionary<PropertyName, object>();
+            m_PropertyBag[key] = value;
         }
 
         internal void UpdateCursorStyle(long eventType)

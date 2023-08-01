@@ -432,6 +432,14 @@ namespace Unity.UI.Builder
         {
             var fieldElement = styleRow.GetLinkedFieldElements()[0];
             var desc = fieldElement.GetLinkedAttributeDescription();
+
+            var currentUxmlAttributeOwner = attributesUxmlOwner;
+
+            if (isBinding && SynchronizePath(bindingSerializedPropertyPathRoot, false, out var uxmlAsset, out _, out _))
+            {
+                currentUxmlAttributeOwner = uxmlAsset as UxmlAsset;
+            }
+
             if (desc.name is k_BindingAttr_DataSource or k_BindingAttr_DataSourceType)
             {
                 menu.AppendAction(
@@ -447,7 +455,7 @@ namespace Unity.UI.Builder
                                 attributeName);
                         var canUnsetBinding = !isInTemplateInstance && DataBindingUtility.TryGetBinding(currentElement, new PropertyPath(bindingProperty), out _);
 
-                        return (attributesUxmlOwner != null && attributesUxmlOwner.HasAttribute(attributeName)) || isAttributeOverrideAttribute || canUnsetBinding
+                        return (attributesUxmlOwner != null && currentUxmlAttributeOwner.HasAttribute(attributeName)) || isAttributeOverrideAttribute || canUnsetBinding
                             ? DropdownMenuAction.Status.Normal
                             : DropdownMenuAction.Status.Disabled;
                     },
@@ -464,7 +472,7 @@ namespace Unity.UI.Builder
                             && BuilderAssetUtilities.HasAttributeOverrideInRootTemplate(currentElement, k_BindingAttr_DataSourceType);
                         var canUnsetBinding = !isInTemplateInstance && DataBindingUtility.TryGetBinding(currentElement, new PropertyPath(bindingProperty), out _);
 
-                        return (attributesUxmlOwner != null && attributesUxmlOwner.HasAttribute(k_BindingAttr_DataSourceType)) || isAttributeOverrideAttribute || canUnsetBinding
+                        return (attributesUxmlOwner != null && currentUxmlAttributeOwner.HasAttribute(k_BindingAttr_DataSourceType)) || isAttributeOverrideAttribute || canUnsetBinding
                             ? DropdownMenuAction.Status.Normal
                             : DropdownMenuAction.Status.Disabled;
                     },

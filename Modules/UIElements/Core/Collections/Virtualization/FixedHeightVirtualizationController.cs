@@ -36,6 +36,9 @@ namespace UnityEngine.UIElements
             if (visibleItemCount == 0 || index < -1)
                 return;
 
+            if (ShouldDeferScrollToItem(index))
+                ScheduleDeferredScrollToItem();
+
             var pixelAlignedItemHeight = resolvedItemHeight;
             if (index == -1)
             {

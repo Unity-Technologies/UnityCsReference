@@ -883,7 +883,7 @@ namespace Unity.UI.Builder
                 var targetTemplateAsset = parentOpenUXML.visualTreeAsset.templateAssets[childOpenUXML.openSubDocumentParentSourceTemplateAssetIndex];
                 var templateContainerQuery = rootElement.Query<TemplateContainer>().Where(container =>
                     container.GetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName) as TemplateAsset == targetTemplateAsset);
-                var foundTemplateContainer = templateContainerQuery.ToList().First();
+                var foundTemplateContainer = templateContainerQuery.First();
                 childRootElement = foundTemplateContainer;
             }
 

@@ -555,22 +555,25 @@ namespace Unity.UI.Builder
 
         public void BindDoubleFieldRow(BuilderStyleRow styleRow)
         {
-            var styleFields = styleRow.Query<BindableElement>().ToList()
-                .Where(element => !string.IsNullOrEmpty(element.bindingPath)).ToList();
-            if (styleFields.Count > 0)
+            var styleFields = styleRow.Query<BindableElement>().Where(element => !string.IsNullOrEmpty(element.bindingPath)).Build();
+            using (var enumerator = styleFields.GetEnumerator())
             {
-                var headerLabel = styleRow.Q<BindableElement>(classes: "unity-builder-composite-field-label");
-                headerLabel.AddManipulator(new ContextualMenuManipulator(action =>
+                // If there are no fields, we don't need to do anything.
+                if (enumerator.MoveNext())
                 {
-                    action.elementTarget.userData = styleFields;
-                    BuildStyleFieldContextualMenu(action);
-                }));
+                    var headerLabel = styleRow.Q<BindableElement>(classes: "unity-builder-composite-field-label");
+                    headerLabel.AddManipulator(new ContextualMenuManipulator(action =>
+                    {
+                        action.elementTarget.userData = styleFields.ToList();
+                        BuildStyleFieldContextualMenu(action);
+                    }));
+                }
             }
         }
 
         public void BindStyleField(BuilderStyleRow styleRow, FoldoutNumberField foldoutElement)
         {
-            var intFields = foldoutElement.Query<StyleFieldBase>().ToList();
+            var intFields = foldoutElement.Query<StyleFieldBase>().Build();
 
             foreach (var field in intFields)
             {
@@ -597,7 +600,7 @@ namespace Unity.UI.Builder
 
         public void BindStyleField(BuilderStyleRow styleRow, FoldoutColorField foldoutElement)
         {
-            var colorFields = foldoutElement.Query<ColorField>().ToList();
+            var colorFields = foldoutElement.Query<ColorField>().Build();
 
             foreach (var field in colorFields)
             {
@@ -733,7 +736,7 @@ namespace Unity.UI.Builder
             {
                 var cSharpStyleName = BuilderNameUtilities.ConvertUssNameToStyleName(styleName);
                 var styleProperty = GetLastStyleProperty(currentRule, cSharpStyleName);
-                UpdateFieldStatus(fieldElement, styleProperty);
+                m_Inspector.UpdateFieldStatus(fieldElement, styleProperty);
             }
         }
 
@@ -1170,12 +1173,6 @@ namespace Unity.UI.Builder
             return true;
         }
 
-        void UpdateFieldStatus(VisualElement fieldElement, StyleProperty styleProperty)
-        {
-            UpdateOverrideStyles(fieldElement, styleProperty);
-            m_Inspector.UpdateFieldStatus(fieldElement, styleProperty);
-        }
-
         internal void UpdateOverrideStyles(VisualElement fieldElement, StyleProperty styleProperty)
         {
             // Add override style to field if it is overwritten.
@@ -1191,7 +1188,7 @@ namespace Unity.UI.Builder
                 handler.RefreshField();
             }
 
-            var styleFields = styleRow.Query<BindableElement>().ToList();
+            var styleFields = styleRow.Query<BindableElement>().Build();
 
             bool isRowOverride = false;
 
@@ -1231,8 +1228,6 @@ namespace Unity.UI.Builder
                 var hasOverriddenField = BuilderInspectorUtilities.HasOverriddenField(foldout);
                 foldout.header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, hasOverriddenField);
             }
-
-            updateStyleCategoryFoldoutOverrides?.Invoke();
         }
 
         public void DispatchChangeEvent(string styleName, VisualElement fieldElement)
@@ -2035,10 +2030,10 @@ namespace Unity.UI.Builder
                 var styleRow = target.GetContainingRow();
                 styleRow.AddToClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
 
-                var styleFields = styleRow.Query<BindableElement>().ToList();
+                var styleFields = styleRow.Query<BindableElement>();
 
                 var bindableElement = target as BindableElement;
-                foreach (var styleField in styleFields)
+                foreach (var styleField in styleFields.Build())
                 {
                     styleField.RemoveFromClassList(BuilderConstants.InspectorLocalStyleResetClassName);
                     if (bindableElement.bindingPath == styleField.bindingPath)

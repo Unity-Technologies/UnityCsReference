@@ -38,7 +38,7 @@ namespace UnityEditor.UIElements
         {
             if (m_HelpVisualTree == null)
                 m_HelpVisualTree = uiToolkitTemplate.CloneTree();
-            foreach (var e in m_HelpVisualTree.Query<TextElement>().ToList())
+            foreach (var e in m_HelpVisualTree.Query<TextElement>().Build())
             {
                 if (e.text.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
                     return true;

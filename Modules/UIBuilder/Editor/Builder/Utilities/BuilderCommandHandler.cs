@@ -510,7 +510,7 @@ namespace Unity.UI.Builder
                     VisualElement tree = new VisualElement();
                     m_PaneWindow.document.activeOpenUXMLFile.visualTreeAsset.LinkedCloneTree(tree);
                     var newElement = tree.Query<VisualElement>().Where(x => x.GetVisualElementAsset() == rootUnpackedVEA).First();
-                    var newTemplates = newElement.Query<TemplateContainer>().Where(x => x.GetVisualElementAsset() != null).ToList();
+                    var newTemplates = newElement.Query<TemplateContainer>().Where(x => x.GetVisualElementAsset() != null).Build();
                     elementsToUnpack.AddRange(newTemplates);
                     isRootElement = false;
                 }

@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using Unity.Collections;
 using UnityEngine.Bindings;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightTransport
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -105,6 +104,11 @@ namespace UnityEngine.LightTransport
         public NativeArray<byte> GetNativeArray(BufferID id)
         {
             return buffers[id];
+        }
+
+        public bool Flush()
+        {
+            return true;
         }
     }
 }
