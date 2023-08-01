@@ -341,18 +341,35 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        private void DoPackageDescriptionLabel()
+        {
+            var descriptionStyle = EditorStyles.textArea;
+            var description = m_Description.stringValue ?? "";
+            var descriptionRect = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(description), descriptionStyle, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
+            EditorGUI.SelectableLabel(descriptionRect, description, descriptionStyle);
+        }
+
         private void DoPackageDescriptionLayout()
         {
+            var previousEnabled = GUI.enabled;
+            GUI.enabled = true;
+
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
-                using (var scrollView = new EditorGUILayout.VerticalScrollViewScope(descriptionScrollViewPosition,
-                    GUILayout.MinHeight(kMinHeightDescriptionScrollView)))
+                using (var scrollView = new EditorGUILayout.VerticalScrollViewScope(descriptionScrollViewPosition, GUILayout.MinHeight(kMinHeightDescriptionScrollView)))
                 {
                     descriptionScrollViewPosition = scrollView.scrollPosition;
-                    m_Description.stringValue = EditorGUILayout.TextArea(m_Description.stringValue ?? "" ,
+
+                    // We want to have text we can edit instead of selectable label when it's in Edit mode
+                    if (previousEnabled == true)
+                        m_Description.stringValue = EditorGUILayout.TextArea(m_Description.stringValue ?? "",
                         GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
+                    else
+                        DoPackageDescriptionLabel();
                 }
             }
+
+            GUI.enabled = previousEnabled;
         }
 
         private void PerformValidation()

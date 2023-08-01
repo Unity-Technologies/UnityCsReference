@@ -183,7 +183,10 @@ namespace UnityEditor
         //AssetBundleAllowEditorOnlyScriptableObjects = 1 << 14,
 
         //Removes the Unity Version number in the Archive File & Serialized File headers during the build.
-        AssetBundleStripUnityVersion = 32768 // 1 << 15
+        AssetBundleStripUnityVersion = 32768, // 1 << 15
+
+        // Calculate bundle hash on the bundle content
+        UseContentHash = 65536 // 1 << 16
     }
 
     // Keep in sync with CanAppendBuild in EditorUtility.h

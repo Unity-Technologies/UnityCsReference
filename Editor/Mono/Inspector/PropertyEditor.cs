@@ -1343,7 +1343,7 @@ namespace UnityEditor
 
             // This is used if more than one asset is selected
             // Ideally the tracker should be refactored to track not just editors but also the selection that caused them, so we wouldn't need this
-            return Selection.objects.Where(IsOpenForEdit).ToArray();
+            return Selection.objects.Where(EditorUtility.IsPersistent).ToArray();
         }
 
         protected virtual bool BeginDrawPreviewAndLabels() { return true; }
@@ -1513,7 +1513,7 @@ namespace UnityEditor
                 GUILayout.BeginVertical(Styles.footer);
                 if (hasLabels)
                 {
-                    using (new EditorGUI.DisabledScope(assets.Any(a => EditorUtility.IsPersistent(a) && !Editor.IsAppropriateFileOpenForEdit(a))))
+                    using (new EditorGUI.DisabledScope(assets.Any(a => !IsOpenForEdit(a) || !Editor.IsAppropriateFileOpenForEdit(a))))
                     {
                         m_LabelGUI.OnLabelGUI(assets);
                     }
@@ -1521,7 +1521,10 @@ namespace UnityEditor
 
                 if (hasBundleName)
                 {
-                    m_AssetBundleNameGUI.OnAssetBundleNameGUI(assets);
+                    using (new EditorGUI.DisabledScope(assets.Any(a => !IsOpenForEdit(a))))
+                    {
+                        m_AssetBundleNameGUI.OnAssetBundleNameGUI(assets);
+                    }
                 }
                 GUILayout.EndVertical();
             }

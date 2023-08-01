@@ -435,7 +435,7 @@ namespace UnityEditor
             m_TreeView = null;
         }
 
-        private void RepaintOnLimitChange()
+        internal void RepaintOnLimitChange()
         {
             m_RepaintFrames = k_NeedToRepaintFrames;
             RepaintAllNeededThings();
