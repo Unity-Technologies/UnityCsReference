@@ -780,7 +780,7 @@ namespace UnityEditor
 
         public void LoadTools()
         {
-            if ((m_ToolNameToType != null && m_TypeToToolName != null && m_ToolsMap != null) || IsTerrainPartOfPrefabOrAsset(target as Terrain)) return;
+            if ((m_ToolNameToType != null && m_TypeToToolName != null && m_ToolsMap != null)) return;
 
             m_ToolsMap = new Dictionary<string, ITerrainPaintTool>();
             m_ToolNameToType = new Dictionary<string, Type>();

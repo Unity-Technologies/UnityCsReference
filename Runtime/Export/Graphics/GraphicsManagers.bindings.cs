@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using UnityEngine.Bindings;
 using uei = UnityEngine.Internal;
 using UnityEngine.Rendering;
@@ -11,6 +12,7 @@ using AmbientMode = UnityEngine.Rendering.AmbientMode;
 using ReflectionMode = UnityEngine.Rendering.DefaultReflectionMode;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Assertions;
 
 namespace UnityEngine
 {
@@ -116,6 +118,46 @@ namespace UnityEngine
     [StaticAccessor("GetQualitySettings()", StaticAccessorType.Dot)]
     public sealed partial class QualitySettings : Object
     {
+        public static void ForEach(Action callback)
+        {
+            if (callback == null)
+                return;
+
+            int currentQuality = QualitySettings.GetQualityLevel();
+            try
+            {
+                for (int i = 0; i < QualitySettings.count; ++i)
+                {
+                    QualitySettings.SetQualityLevel(i, applyExpensiveChanges: false);
+                    callback();
+                }
+            }
+            finally
+            {
+                QualitySettings.SetQualityLevel(currentQuality, applyExpensiveChanges: false);
+            }
+        }
+
+        public static void ForEach(Action<int, string> callback)
+        {
+            if (callback == null)
+                return;
+
+            int currentQuality = QualitySettings.GetQualityLevel();
+            try
+            {
+                for (int i = 0; i < QualitySettings.count; ++i)
+                {
+                    QualitySettings.SetQualityLevel(i, applyExpensiveChanges: false);
+                    callback(i, names[i]);
+                }
+            }
+            finally
+            {
+                QualitySettings.SetQualityLevel(currentQuality, applyExpensiveChanges: false);
+            }
+        }
+
         private QualitySettings() {}
 
         extern public static int pixelLightCount { get; set; }

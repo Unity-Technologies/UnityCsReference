@@ -247,11 +247,12 @@ namespace UnityEditor.Search
                     prefix = path.Substring(0, ls);
                 }
 
+                var displayName = formatNames ? ObjectNames.NicifyVariableName(name) : name;
                 var newItem = new AdvancedDropdownItem(path)
                 {
-                    displayName = formatNames ? ObjectNames.NicifyVariableName(name) : name,
+                    displayName = displayName,
                     icon = p.icon ?? Icons.quicksearch,
-                    tooltip = p.help,
+                    tooltip = string.IsNullOrEmpty(p.help) ? $"Search {displayName}" : p.help,
                     userData = p
                 };
 

@@ -21,8 +21,10 @@ namespace UnityEngine.UIElements
     /// <see cref="BaseVerticalCollectionView.itemsSource">itemsSource</see>.
     ///
     /// It's also recommended to supply the following properties for more complex items:\\
-    /// - <see cref="BaseVerticalCollectionView.makeItem">makeItem</see> \\
-    /// - <see cref="BaseVerticalCollectionView.bindItem">bindItem</see> \\
+    /// - <see cref="ListView.makeItem">makeItem</see> \\
+    /// - <see cref="ListView.bindItem">bindItem</see> \\
+    /// - <see cref="ListView.unbindItem">unbindItem</see> \\
+    /// - <see cref="ListView.destroyItem">destroyItem</see> \\
     /// - <see cref="BaseVerticalCollectionView.fixedItemHeight">fixedItemHeight</see> when using <see cref="CollectionVirtualizationMethod.FixedHeight"/>\\
     ///
     /// The <c>ListView</c> creates multiple <see cref="VisualElement"/> objects for the visible items. As the user scrolls, the ListView
@@ -36,7 +38,7 @@ namespace UnityEngine.UIElements
     ///     \\
     /// By default, the user can select one element in the list at a time. To change the default selection
     /// use the <c>selection-type</c> property in UXML or the<see cref="ListView.selectionType"/> property in C#.
-    ///      To allow the user to select more than one element simultaneously, set the property to <c>Selection.Multiple</c>.
+    ///     To allow the user to select more than one element simultaneously, set the property to <c>Selection.Multiple</c>.
     ///     To prevent the user from selecting items, set the property to <c>Selection.None</c>.\\
     /// \\
     ///     By default, all rows in the ListView have same background color. To make the row background colors
@@ -58,52 +60,8 @@ namespace UnityEngine.UIElements
     ///     to <c>true</c>.
     /// </remarks>
     /// <example>
-    /// <code>
-    /// <![CDATA[
-    /// public class ListViewExampleWindow : EditorWindow
-    /// {
-    ///     [MenuItem("Window/ListViewExampleWindow")]
-    ///     public static void OpenDemoManual()
-    ///     {
-    ///         GetWindow<ListViewExampleWindow>().Show();
-    ///     }
-    ///
-    ///     public void OnEnable()
-    ///     {
-    ///         // Create a list of data. In this case, numbers from 1 to 1000.
-    ///         const int itemCount = 1000;
-    ///         var items = new List<string>(itemCount);
-    ///         for (int i = 1; i <= itemCount; i++)
-    ///             items.Add(i.ToString());
-    ///
-    ///         // The "makeItem" function is called when the
-    ///         // ListView needs more items to render.
-    ///         Func<VisualElement> makeItem = () => new Label();
-    ///
-    ///         // As the user scrolls through the list, the ListView object
-    ///         // recycles elements created by the "makeItem" function,
-    ///         // and invoke the "bindItem" callback to associate
-    ///         // the element with the matching data item (specified as an index in the list).
-    ///         Action<VisualElement, int> bindItem = (e, i) => (e as Label).text = items[i];
-    ///
-    ///         // Provide the list view with an explicit height for every row
-    ///         // so it can calculate how many items to actually display
-    ///         const int itemHeight = 16;
-    ///
-    ///         var listView = new ListView(items, itemHeight, makeItem, bindItem);
-    ///
-    ///         listView.selectionType = SelectionType.Multiple;
-    ///
-    ///         listView.itemsChosen += objects => Debug.Log(objects);
-    ///         listView.selectionChanged += objects => Debug.Log(objects);
-    ///
-    ///         listView.style.flexGrow = 1.0f;
-    ///
-    ///         rootVisualElement.Add(listView);
-    ///     }
-    /// }
-    /// ]]>
-    /// </code>
+    /// The following example creates an editor window with a list view of a thousand items.
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ListView_Example.cs"/>
     /// </example>
     public class ListView : BaseListView
     {

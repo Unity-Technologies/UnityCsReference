@@ -111,6 +111,8 @@ namespace UnityEngine.UIElements
         bool m_ResizePreview;
         string m_PrimaryColumnName;
 
+        internal IList<Column> columns => m_Columns;
+
         /// <summary>
         /// Indicates the column that needs to be considered as primary column, by id.
         /// </summary>

@@ -364,7 +364,7 @@ namespace UnityEditor
 
                 string sourcePath = AssetDatabase.GetAssetPath(go);
                 string sourceDir = Path.GetDirectoryName(sourcePath).ConvertSeparatorsToUnity();
-                string variantPath = GetPrefabVariantPath(sourceDir, go.name);
+                string variantPath = GetPrefabVariantPath(sourceDir, go);
 
                 StartNameEditingIfProjectWindowExists(
                     0,
@@ -395,7 +395,7 @@ namespace UnityEditor
             {
                 string sourcePath = AssetDatabase.GetAssetPath(go);
                 string sourceDir = Path.GetDirectoryName(sourcePath).ConvertSeparatorsToUnity();
-                string variantPath = GetPrefabVariantPath(sourceDir, go.name);
+                string variantPath = GetPrefabVariantPath(sourceDir, go);
                 variantPath = AssetDatabase.GenerateUniqueAssetPath(variantPath);
 
                 var variant = PrefabUtility.CreateVariant(go, variantPath);
@@ -412,9 +412,12 @@ namespace UnityEditor
             return createdVariants.ToArray();
         }
 
-        static string GetPrefabVariantPath(string folder, string gameObjectName)
+        static string GetPrefabVariantPath(string folder, GameObject gameObject)
         {
-            return string.Format("{0}/{1} Variant.prefab", folder, gameObjectName);
+            if (PrefabUtility.IsPartOfModelPrefab(gameObject))
+                return string.Format("{0}/{1}.prefab", folder, gameObject.name);
+            else
+                return string.Format("{0}/{1} Variant.prefab", folder, gameObject.name);
         }
 
         public static void CreateAssetWithContent(string filename, string content, Texture2D icon = null)
