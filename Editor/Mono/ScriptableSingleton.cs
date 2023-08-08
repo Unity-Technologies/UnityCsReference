@@ -102,7 +102,8 @@ namespace UnityEditor
             string filePath = GetFilePath();
             if (!string.IsNullOrEmpty(filePath))
             {
-                // If a file exists the
+                // If a file exists then load it and deserialize it.
+                // This creates an instance of T which will set s_Instance in the constructor. Then it will deserialize it and call relevant serialization callbacks.
                 InternalEditorUtility.LoadSerializedFileAndForget(filePath);
             }
 
@@ -134,6 +135,10 @@ namespace UnityEditor
                     Directory.CreateDirectory(folderPath);
 
                 InternalEditorUtility.SaveToSerializedFileAndForget(new[] { s_Instance }, filePath, saveAsText);
+            }
+            else
+            {
+                Debug.LogWarning($"Saving has no effect. Your class '{GetType()}' is missing the FilePathAttribute. Use this attribute to specify where to save your ScriptableSingleton.\nOnly call Save() and use this attribute if you want your state to survive between sessions of Unity.");
             }
         }
 

@@ -20,10 +20,6 @@ namespace UnityEditor.TextCore.Text
             bool textureImported = false;
             foreach (var asset in importedAssets)
             {
-                // Return if imported asset path is outside of the project.
-                if (asset.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase) == false)
-                    continue;
-
                 Type assetType = AssetDatabase.GetMainAssetTypeAtPath(asset);
                 if (assetType == typeof(FontAsset))
                 {
@@ -36,11 +32,21 @@ namespace UnityEditor.TextCore.Text
 
                 if (assetType == typeof(Texture2D))
                     textureImported = true;
+
+                if (assetType == typeof(Font))
+                    EditorApplication.delayCall += () => UpdateFallbackFontReferences(asset);
             }
 
             // If textures were imported, issue callback to any potential text objects that might require updating.
             if (textureImported)
                 TextEventManager.ON_SPRITE_ASSET_PROPERTY_CHANGED(true, null);
+        }
+
+        static void UpdateFallbackFontReferences(string fontPath)
+        {
+            TrueTypeFontImporter fontImporter = AssetImporter.GetAtPath(fontPath) as TrueTypeFontImporter;
+            if (fontImporter != null)
+                fontImporter.fontReferences = fontImporter.LookupFallbackFontReferences(fontImporter.fontNames);
         }
     }
 

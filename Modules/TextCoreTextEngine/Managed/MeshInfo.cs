@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine.Bindings;
+using UnityEngine.TextCore.LowLevel;
 
 namespace UnityEngine.TextCore.Text
 {
@@ -38,6 +39,7 @@ namespace UnityEngine.TextCore.Text
         public int[] triangles;
 
         public Material material;
+        internal GlyphRenderMode glyphRenderMode;
 
         /// <summary>
         /// Function to pre-allocate vertex attributes for a mesh of size X.
@@ -96,6 +98,7 @@ namespace UnityEngine.TextCore.Text
             mesh.triangles = triangles;
             mesh.bounds = k_DefaultBounds;
             material = null;
+            glyphRenderMode = 0;
         }
 
         /// <summary>
@@ -164,6 +167,7 @@ namespace UnityEngine.TextCore.Text
             mesh.triangles = triangles;
             mesh.bounds = k_DefaultBounds;
             material = null;
+            glyphRenderMode = 0;
         }
 
         /// <summary>
