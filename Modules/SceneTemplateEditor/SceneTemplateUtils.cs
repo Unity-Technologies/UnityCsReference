@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor.PackageManager;
 using UnityEditor.SceneManagement;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -143,9 +144,10 @@ namespace UnityEditor.SceneTemplate
             return lastFolder ?? "Assets";
         }
 
-        internal static string SaveFilePanelUniqueName(string title, string directory, string filename, string extension)
+        internal static string SaveFilePanelUniqueName(string title, string directory, string filename, string extension, bool showSaveFilePanel = true)
         {
-            var initialPath = Path.Combine(directory, filename + "." + extension).Replace("\\", "/");
+            var extensionWithDot = $".{extension}";
+            var initialPath = Path.Combine(directory, filename + extensionWithDot).Replace("\\", "/");
             if (Path.IsPathRooted(initialPath))
             {
                 initialPath = FileUtil.GetProjectRelativePath(initialPath);
@@ -153,7 +155,7 @@ namespace UnityEditor.SceneTemplate
             var uniqueAssetPath = AssetDatabase.GenerateUniqueAssetPath(initialPath);
             directory = Path.GetDirectoryName(uniqueAssetPath);
             filename = Path.GetFileName(uniqueAssetPath);
-            var result = EditorUtility.SaveFilePanel(title, directory, filename, extension);
+            var result = showSaveFilePanel ? EditorUtility.SaveFilePanel(title, directory, filename, extension) : new FileInfo(uniqueAssetPath).FullName;
             if (string.IsNullOrEmpty(result))
             {
                 // User has cancelled.
@@ -166,9 +168,9 @@ namespace UnityEditor.SceneTemplate
                 UnityEngine.Debug.LogWarning($"Not a valid folder to save an asset: {directory}.");
                 return null;
             }
-            if (!Paths.IsValidAssetPath(result, ".scenetemplate", out var errorMessage))
+            if (!Paths.IsValidAssetPath(result, extensionWithDot, out var errorMessage))
             {
-                UnityEngine.Debug.LogWarning($"Save SceneTemplate has failed. {errorMessage}.");
+                UnityEngine.Debug.LogWarning($"Invalid asset path: {errorMessage}.");
                 return null;
             }
 
@@ -178,9 +180,7 @@ namespace UnityEditor.SceneTemplate
 
         internal static void OpenDocumentationUrl()
         {
-            const string documentationUrl = "https://docs.unity3d.com/2021.1/Documentation/Manual/scene-templates.html";
-            var uri = new Uri(documentationUrl);
-            Process.Start(uri.AbsoluteUri);
+            Help.BrowseURL(Help.FindHelpNamed("scene-templates"));
         }
 
         internal static List<SceneTemplateInfo> GetSceneTemplateInfos()

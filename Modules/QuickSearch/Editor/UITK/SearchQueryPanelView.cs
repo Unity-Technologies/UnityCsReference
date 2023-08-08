@@ -197,9 +197,9 @@ namespace UnityEditor.Search
             SetActiveQuery(m_ViewModel.state.activeQuery);
             SetExpandedState(SearchSettings.expandedQueries);
 
-            SearchMonitor.contentRefreshed += CheckForDeletedQueries;
             OnAll(SearchEvent.UserQueryAdded, HandleUserQueriesChanged);
             OnAll(SearchEvent.UserQueryRemoved, HandleUserQueriesChanged);
+            OnAll(SearchEvent.ProjectQueryListChanged, HandleProjectQueriesChanged);
             OnAll(SearchEvent.ProjectQueryAdded, HandleProjectQueriesChanged);
             OnAll(SearchEvent.ProjectQueryRemoved, HandleProjectQueriesChanged);
             OnAll(SearchEvent.SearchQueryChanged, HandleSearchQueryChanged);
@@ -208,9 +208,9 @@ namespace UnityEditor.Search
 
         protected override void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            SearchMonitor.contentRefreshed -= CheckForDeletedQueries;
             Off(SearchEvent.UserQueryAdded, HandleUserQueriesChanged);
             Off(SearchEvent.UserQueryRemoved, HandleUserQueriesChanged);
+            Off(SearchEvent.ProjectQueryListChanged, HandleProjectQueriesChanged);
             Off(SearchEvent.ProjectQueryAdded, HandleProjectQueriesChanged);
             Off(SearchEvent.ProjectQueryRemoved, HandleProjectQueriesChanged);
             Off(SearchEvent.SearchQueryChanged, HandleSearchQueryChanged);
@@ -269,34 +269,6 @@ namespace UnityEditor.Search
                 return;
 
             UpdateListViewSelection(listView, m_LastSelectedQuery);
-        }
-
-        void CheckForDeletedQueries(string[] updated, string[] removed, string[] moved)
-        {
-            if (removed == null || removed.Length == 0)
-                return;
-            var potentialDeletedQueries = false;
-            foreach (var path in removed)
-            {
-                if (path.EndsWith(".asset"))
-                {
-                    potentialDeletedQueries = true;
-                    break;
-                }
-            }
-
-            if (!potentialDeletedQueries)
-                return;
-
-            var queries = GetListView(k_ProjectQueryId).itemSource;
-            foreach(var q in queries)
-            {
-                if (q == null || q.filePath == "")
-                {
-                    HandleProjectQueriesChanged(null);
-                    break;
-                }
-            }
         }
 
         void HandleProjectQueriesChanged(ISearchEvent evt)

@@ -28,6 +28,7 @@ namespace UnityEditor.Search
         public const string UserQueryRemoved = "search-user-query-removed";
         public const string ProjectQueryAdded = "search-project-query-added";
         public const string ProjectQueryRemoved = "search-project-query-removed";
+        public const string ProjectQueryListChanged = "search-project-query-list-changed";
         public const string ActiveQueryChanged = "search-active-query-changed";
         public const string SaveActiveSearchQuery = "search-save-active-search-query";
         public const string SearchQueryChanged = "search-query-changed";
