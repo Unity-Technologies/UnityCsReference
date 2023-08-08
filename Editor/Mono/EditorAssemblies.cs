@@ -122,6 +122,10 @@ namespace UnityEditor
                     {
                         RuntimeHelpers.RunClassConstructor(type.TypeHandle);
                     }
+                    catch (TypeLoadException x)
+                    {
+                        Debug.LogError(x.InnerException);
+                    }
                     catch (TypeInitializationException x)
                     {
                         Debug.LogError(x.InnerException);
@@ -134,7 +138,8 @@ namespace UnityEditor
         private static void ProcessInitializeOnLoadMethodAttributes()
         {
             bool reportTimes = (bool)Debug.GetDiagnosticSwitch("EnableDomainReloadTimings").value;
-            foreach (var method in TypeCache.GetMethodsWithAttribute<InitializeOnLoadMethodAttribute>())
+            var methods = TypeCache.GetMethodsWithAttribute<InitializeOnLoadMethodAttribute>();
+            foreach (var method in methods)
             {
                 using (new EditorPerformanceMarker($"InitializeOnLoad {method.DeclaringType?.Name}.{method.Name}", method.DeclaringType).Auto())
                 using (_profilerMarkerProcessInitializeOnLoadMethodAttributes.Auto(reportTimes, () => $"{method.DeclaringType?.FullName}::{method.Name}"))

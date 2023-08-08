@@ -4,6 +4,7 @@
 
 using System;
 using System.Text;
+using UnityEngine.TextCore.LowLevel;
 
 namespace UnityEngine.TextCore.Text
 {
@@ -1724,6 +1725,11 @@ namespace UnityEngine.TextCore.Text
             }
 
             return attributeCount;
+        }
+
+        public static bool IsBitmapRendering(GlyphRenderMode glyphRenderMode)
+        {
+            return glyphRenderMode == GlyphRenderMode.RASTER || glyphRenderMode == GlyphRenderMode.RASTER_HINTED || glyphRenderMode == GlyphRenderMode.SMOOTH || glyphRenderMode == GlyphRenderMode.SMOOTH_HINTED;
         }
 
         public static bool IsBaseGlyph(uint c)

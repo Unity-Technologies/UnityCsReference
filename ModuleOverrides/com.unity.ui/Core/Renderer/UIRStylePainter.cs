@@ -450,9 +450,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 m_CurrentEntry.stencilRef = m_StencilRef;
                 m_CurrentEntry.maskDepth = m_MaskDepth;
 
-                // It will need to be updated once we support BitMap font.
-                // Alternatively we could look at the MainText texture format (RGBA vs 8bit Alpha)
-                if (!textInfo.meshInfo[i].material.HasProperty(TextShaderUtilities.ID_GradientScale))
+                // SpriteAssets use an RGBA texture
+                if (((Texture2D)textInfo.meshInfo[i].material.mainTexture).format != TextureFormat.Alpha8)
                 {
                     // Assume a sprite asset
                     var texture = textInfo.meshInfo[i].material.mainTexture;
@@ -469,7 +468,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 else
                 {
                     var texture = textInfo.meshInfo[i].material.mainTexture;
-                    var sdfScale = textInfo.meshInfo[i].material.GetFloat(TextShaderUtilities.ID_GradientScale);
+                    // SDF scale is used to differentiate between Bitmap and SDF. The Bitmap Material doesn't have the
+                    // GradientScale property which results in sdfScale always being 0.
+                    float sdfScale = 0;
+                    if (!TextGeneratorUtilities.IsBitmapRendering(textInfo.meshInfo[i].glyphRenderMode))
+                        sdfScale = textInfo.meshInfo[i].material.GetFloat(TextShaderUtilities.ID_GradientScale);
 
                     m_CurrentEntry.isTextEntry = true;
                     m_CurrentEntry.fontTexSDFScale = sdfScale;
@@ -480,7 +483,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     // Set the dynamic-color hint on TextCore fancy-text or the EditorUIE shader applies the
                     // tint over the fragment output, affecting the outline/shadows.
                     if (useHints)
-                        isDynamicColor = isDynamicColor || RenderEvents.NeedsTextCoreSettings(currentElement);
+                        isDynamicColor = isDynamicColor || (sdfScale > 0 && RenderEvents.NeedsTextCoreSettings(currentElement));
 
                     MeshBuilder.MakeText(
                         textInfo.meshInfo[i],

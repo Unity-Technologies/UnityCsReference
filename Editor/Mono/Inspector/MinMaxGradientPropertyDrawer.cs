@@ -135,7 +135,9 @@ namespace UnityEditorInternal
         {
             Init(property);
 
-            return new MinMaxGradientField(m_Property, preferredLabel);
+            var field = new MinMaxGradientField(m_Property, preferredLabel);
+            PropertyField.ConfigureFieldStyles<MinMaxGradientField, ParticleSystem.MinMaxGradient>(field);
+            return field;
         }
     }
 }

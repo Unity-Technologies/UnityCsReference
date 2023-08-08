@@ -5884,6 +5884,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Assign material reference
                 textInfo.meshInfo[i].material = m_MaterialReferences[i].material;
+                textInfo.meshInfo[i].glyphRenderMode = m_MaterialReferences[i].fontAsset.atlasRenderMode;
             }
 
             return m_TotalCharacterCount;

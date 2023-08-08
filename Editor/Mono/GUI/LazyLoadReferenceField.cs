@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -35,11 +36,13 @@ namespace UnityEditor
         {
             ScriptAttributeUtility.GetFieldInfoFromProperty(property, out var fieldType);
 
-            var objectField = new UnityEditor.UIElements.ObjectField(preferredLabel);
+            var objectField = new ObjectField(preferredLabel);
             var genericType = fieldType.GetGenericArguments()[0];
             objectField.objectType = genericType;
             objectField.value = property.objectReferenceValue;
             objectField.bindingPath = property.propertyPath;
+
+            PropertyField.ConfigureFieldStyles<ObjectField, Object>(objectField);
 
             return objectField;
         }

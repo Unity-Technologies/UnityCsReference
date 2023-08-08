@@ -291,7 +291,10 @@ namespace UnityEditor
 
         extern public static System.Type GetMainAssetTypeAtPath(string assetPath);
 
+        extern public static System.Type GetMainAssetTypeFromGUID(GUID guid);
+
         extern public static System.Type GetTypeFromPathAndFileID(string assetPath, long localIdentifierInFile);
+
         extern public static bool IsMainAssetAtPathLoaded(string assetPath);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]

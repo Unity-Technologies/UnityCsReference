@@ -186,9 +186,15 @@ namespace UnityEditor.UIElements
 
         internal override string GetNothingName()
         {
-            if (m_EnumData.flagValues != null && m_EnumData.flagValues.Length > 0 && m_EnumData.flagValues[0] == 0)
+            if (m_EnumData.flagValues is not { Length: > 0 })
+                return base.GetNothingName();
+
+            for (var i = 0; i < m_EnumData.flagValues.Length; i++)
             {
-                return m_EnumData.displayNames[0];
+                if (m_EnumData.flagValues[i] == 0)
+                {
+                    return m_EnumData.displayNames[i];
+                }
             }
 
             return base.GetNothingName();
@@ -196,10 +202,15 @@ namespace UnityEditor.UIElements
 
         internal override string GetEverythingName()
         {
-            if (m_EnumData.flagValues != null && m_EnumData.flagValues.Length > 0
-                && m_EnumData.flagValues[^1] == ~0)
+            if (m_EnumData.flagValues is not { Length: > 0 })
+                return base.GetEverythingName();
+
+            for (var i = 0; i < m_EnumData.flagValues.Length; i++)
             {
-                return m_EnumData.displayNames[^1];
+                if (m_EnumData.flagValues[i] == ~0)
+                {
+                    return m_EnumData.displayNames[i];
+                }
             }
 
             return base.GetEverythingName();
