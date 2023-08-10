@@ -74,6 +74,7 @@ namespace Unity.UI.Builder
 
             matcherCallback = Matcher;
             getTextFromDataCallback = GetVarName;
+            SetupCompleterField(handler.variableField?.textField, false);
         }
 
         static string GetVarName(VariableInfo data)

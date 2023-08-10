@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class BuilderPaneWindow : EditorWindow
+    internal class BuilderPaneWindow : EditorWindow, IBuilderWindowResizeTracker
     {
         BuilderDocument m_Document;
         BuilderCommandHandler m_CommandHandler;
@@ -66,6 +66,20 @@ namespace Unity.UI.Builder
         /// Called when the window closes.
         /// </summary>
         public event Action closing;
+
+        event EventHandler m_OnRectChanged;
+
+        public event EventHandler onRectChanged
+        {
+            add => m_OnRectChanged += value;
+            remove => m_OnRectChanged -= value;
+        }
+
+        internal override void OnResized()
+        {
+            base.OnResized();
+            m_OnRectChanged?.Invoke(this, null);
+        }
 
         protected static T GetWindowAndInit<T>() where T : BuilderPaneWindow
         {

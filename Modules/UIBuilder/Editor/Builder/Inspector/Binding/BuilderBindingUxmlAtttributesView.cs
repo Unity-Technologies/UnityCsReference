@@ -3,10 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UIEHelpBox = UnityEngine.UIElements.HelpBox;
 
@@ -34,7 +32,7 @@ namespace Unity.UI.Builder
             public PersistedFoldout advancedSettings;
             public BindingConvertersField convertersToUi;
             public BindingConvertersField convertersToSource;
-            public EnumField updateTrigger;
+            public PopupField<string> updateTrigger;
         }
 
         // Note: They are internal only to be accessible in tests
@@ -65,7 +63,7 @@ namespace Unity.UI.Builder
         EnumField m_BindingModeField;
         BindingConvertersField m_ConvertersToUi;
         BindingConvertersField m_ConvertersToSource;
-        EnumField m_UpdateTrigger;
+        PopupField<string> m_UpdateTrigger;
 
         VisualElement m_RequiresConstantUpdateField;
         VisualElement m_ConvertersToUiField;
@@ -144,7 +142,7 @@ namespace Unity.UI.Builder
                     UpdateAdvancedSettingsOverride();
                     break;
                 case k_BindingAttr_UpdateTrigger:
-                    m_UpdateTrigger = target.Q<EnumField>();
+                    m_UpdateTrigger = target.Q<PopupField<string>>();
                     UpdateAdvancedSettingsOverride();
                     break;
             }
@@ -219,8 +217,25 @@ namespace Unity.UI.Builder
             var desc = bindingUxmlSerializedDataDescription;
             var root = new UxmlAssetSerializedDataRoot { dataDescription = desc, rootPath = bindingSerializedPropertyPathRoot + "." };
 
+            if (m_AdvancedSettings == null)
+            {
+                m_AdvancedSettings = new PersistedFoldout()
+                {
+                    text = "Advanced Settings",
+                    classList = { PersistedFoldout.unindentedUssClassName },
+                    value = false
+                };
+                m_ConvertersGroupBox = new GroupBox("Converters");
+            }
+            else
+            {
+                m_AdvancedSettings.Clear();
+                m_ConvertersGroupBox.Clear();
+            }
+
             // Only generate data binding fields for inheritors of DataBinding type.
-            if (typeof(DataBinding.UxmlSerializedData).IsAssignableFrom(uxmlSerializedDataDescription.serializedDataType))
+            var isDataBinding = typeof(DataBinding.UxmlSerializedData).IsAssignableFrom(uxmlSerializedDataDescription.serializedDataType);
+            if (isDataBinding)
             {
                 base.GenerateSerializedAttributeFields();
 
@@ -228,23 +243,6 @@ namespace Unity.UI.Builder
                 CreateSerializedAttributeRow(attribute, $"{root.rootPath}{attribute.serializedField.Name}", root);
 
                 root.Add(new VisualElement() { classList = { BuilderConstants.SeparatorLineStyleClassName } });
-
-                if (m_AdvancedSettings == null)
-                {
-                    m_AdvancedSettings = new PersistedFoldout()
-                    {
-                        text = "Advanced Settings",
-                        classList = { PersistedFoldout.unindentedUssClassName },
-                        value = false
-                    };
-                    m_ConvertersGroupBox = new GroupBox("Converters");
-                }
-                else
-                {
-                    m_AdvancedSettings.Clear();
-                    m_ConvertersGroupBox.Clear();
-                }
-
                 root.Add(m_AdvancedSettings);
 
                 attribute = desc.FindAttributeWithUxmlName(k_BindingAttr_UpdateTrigger);
@@ -266,6 +264,15 @@ namespace Unity.UI.Builder
 
             // Add any additional fields from inherited types.
             GenerateSerializedAttributeFields(uxmlSerializedDataDescription, root);
+
+            if (!isDataBinding)
+            {
+                root.Add(m_AdvancedSettings);
+
+                var attribute = desc.FindAttributeWithUxmlName(k_BindingAttr_UpdateTrigger);
+                var row = CreateSerializedAttributeRow(attribute, $"{root.rootPath}{attribute.serializedField.Name}", m_AdvancedSettings);
+                m_RequiresConstantUpdateField = row.GetLinkedFieldElements()[0];
+            }
         }
 
         /// <inheritdoc/>

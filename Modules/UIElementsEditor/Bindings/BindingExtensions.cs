@@ -210,12 +210,7 @@ namespace UnityEditor.UIElements.Bindings
             if (element is Foldout foldout)
             {
                 // We bind to the given propertyPath but we only bind to its 'isExpanded' state, not its value.
-                SerializedObjectBinding<bool>.CreateBind(
-                    foldout, this, prop,
-                    p => p.isExpanded,
-                    (p, v) => p.isExpanded = v,
-                    SerializedPropertyHelper.ValueEquals<bool>);
-
+                SerializedIsExpandedBinding.CreateBind(foldout, this, prop);
                 return;
             }
             else if (element is Label label && label.GetProperty(PropertyField.foldoutTitleBoundLabelProperty) != null)
@@ -1172,6 +1167,7 @@ namespace UnityEditor.UIElements.Bindings
     internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSourceProvider, IDataSourceViewHashProvider
     {
         private long m_LastUpdateTime;
+        private ulong m_LastVersion;
 
         private static long GetCurrentTime()
         {
@@ -1266,13 +1262,16 @@ namespace UnityEditor.UIElements.Bindings
         protected internal override BindingResult Update(in BindingContext context)
         {
             var currentTimeMs = GetCurrentTime();
-            if (VisualTreeBindingsUpdater.disableBindingsThrottling || (currentTimeMs - m_LastUpdateTime) >= VisualTreeBindingsUpdater.k_MinUpdateDelayMs)
+            if (VisualTreeBindingsUpdater.disableBindingsThrottling || (currentTimeMs - m_LastUpdateTime) >= VisualTreeBindingsUpdater.k_MinUpdateDelayMs ||
+                m_LastVersion != bindingContext?.serializedObject?.objectVersion)
             {
                 m_LastUpdateTime = currentTimeMs;
                 bindingContext?.UpdateIfNecessary(context.targetElement);
                 var result = OnUpdate(in context);
                 return result;
             }
+
+            m_LastVersion = bindingContext?.serializedObject?.objectVersion ?? 0;
             return new BindingResult(BindingStatus.Pending);
         }
 
@@ -1852,6 +1851,93 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
     }
+
+    class SerializedIsExpandedBinding : SerializedObjectBindingPropertyToBaseField<bool, bool>
+    {
+        static readonly ObjectPool<SerializedIsExpandedBinding> s_Pool =
+            new ObjectPool<SerializedIsExpandedBinding>(() => new SerializedIsExpandedBinding(), 32);
+
+        readonly Clickable m_ClickedWithAlt;
+
+        public SerializedIsExpandedBinding()
+        {
+            m_ClickedWithAlt = new Clickable(OnClickWithAlt);
+            m_ClickedWithAlt.activators.Clear();
+            m_ClickedWithAlt.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Alt });
+        }
+
+        public static void CreateBind(Foldout field, SerializedObjectBindingContext context, SerializedProperty property)
+        {
+            var newBinding = s_Pool.Get();
+            newBinding.isReleased = false;
+            field?.SetBinding(BindingExtensions.s_SerializedBindingId, newBinding);
+            newBinding.SetBinding(field, context, property);
+            newBinding.AddClickedManipulator();
+        }
+
+        protected void SetBinding(Foldout foldout, SerializedObjectBindingContext context, SerializedProperty property)
+        {
+            property.unsafeMode = true;
+            propGetValue = GetValue;
+            propSetValue = SetValue;
+            propCompareValues = SerializedPropertyHelper.ValueEquals<bool>;
+
+            SetContext(context, property);
+            var originalValue = this.lastFieldValue = foldout.value;
+            BindingsStyleHelpers.RegisterRightClickMenu(foldout, property);
+            field = foldout;
+
+            if (propCompareValues(originalValue, property, propGetValue)) //the value hasn't changed, but we want the binding to send an event no matter what
+            {
+                using (ChangeEvent<bool> evt = ChangeEvent<bool>.GetPooled(originalValue, originalValue))
+                {
+                    evt.elementTarget = foldout;
+                    foldout.SendEvent(evt);
+                }
+            }
+        }
+
+        public override void OnRelease()
+        {
+            if (isReleased)
+                return;
+
+            base.OnRelease();
+            RemoveClickedManipulator();
+            s_Pool.Release(this);
+        }
+
+        protected override void UpdateLastFieldValue()
+        {
+            if (field is Foldout foldout)
+                lastFieldValue = foldout.value;
+        }
+
+        protected override void AssignValueToField(bool lastValue)
+        {
+            if (field is Foldout foldout)
+                foldout.value = lastValue;
+        }
+
+        static bool GetValue(SerializedProperty property) => property.isExpanded;
+        static void SetValue(SerializedProperty property, bool value) => property.isExpanded = value;
+
+        void AddClickedManipulator() => ((Foldout)field).toggle.AddManipulator(m_ClickedWithAlt);
+        void RemoveClickedManipulator() => ((Foldout)field).RemoveManipulator(m_ClickedWithAlt);
+
+        void OnClickWithAlt()
+        {
+            EditorGUI.SetExpandedRecurse(boundProperty, !boundProperty.isExpanded);
+
+            // Force all visible field to update
+            foreach (var f in ((Foldout)field).Query<Foldout>().Build())
+            {
+                if (f.GetBinding(BindingExtensions.s_SerializedBindingId) is SerializedIsExpandedBinding binding)
+                    binding.OnPropertyValueChanged(binding.boundProperty);
+            }
+        }
+    }
+
     // specific enum version that binds on the index property of the BaseField<Enum>
     class SerializedManagedEnumBinding : SerializedObjectBindingToBaseField<Enum, BaseField<Enum>>
     {

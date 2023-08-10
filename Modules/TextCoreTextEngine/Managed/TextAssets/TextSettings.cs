@@ -297,7 +297,7 @@ namespace UnityEngine.TextCore.Text
                     continue;
                 }
 
-                int id = fontRef.font.GetInstanceID();
+                int id = fontRef.font.GetHashCode() + fontRef.fontAsset.material.shader.GetHashCode();
 
                 if (!m_FontLookup.ContainsKey(id))
                     m_FontLookup.Add(id, fontRef.fontAsset);

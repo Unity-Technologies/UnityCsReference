@@ -251,12 +251,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Allows to assign a binding between a target and a source.
+        /// Assigns a binding between a target and a source.
         /// </summary>
         /// <remarks>
-        /// Passing a value of <see langword="null"/> for <paramref name="binding"/> will remove the binding.
+        /// Passing a value of <see langword="null"/> for <see cref="binding"/> removes the binding.
         /// </remarks>
-        /// <param name="bindingId">The binding id.</param>
+        /// <param name="bindingId">The binding ID.</param>
         /// <param name="binding">The binding object.</param>
         public void SetBinding(BindingId bindingId, Binding binding)
         {
@@ -266,7 +266,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Gets the binding instance for the provided targeted property.
         /// </summary>
-        /// <param name="bindingId">The binding id.</param>
+        /// <param name="bindingId">The binding ID.</param>
         /// <returns>The binding instance, if it exists.</returns>
         public Binding GetBinding(BindingId bindingId)
         {
@@ -276,7 +276,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Gets the binding instance for the provided targeted property.
         /// </summary>
-        /// <param name="bindingId">The binding id.</param>
+        /// <param name="bindingId">The binding ID.</param>
         /// <param name="binding">When this method returns, contains the binding associated with the target property, if it exists; otherwise contains <see langword="null"/></param>
         /// <returns><see langword="true"/> if the binding exists; <see langword="false"/> otherwise.</returns>
         public bool TryGetBinding(BindingId bindingId, out Binding binding)
@@ -309,7 +309,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Allows to know if a target property has a binding associated to it.
         /// </summary>
-        /// <param name="bindingId">The binding id.</param>
+        /// <param name="bindingId">The binding ID.</param>
         /// <returns><see langword="true"/> if the property has a binding; <see langword="false"/> otherwise.</returns>
         public bool HasBinding(BindingId bindingId)
         {
@@ -369,7 +369,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Queries the <see cref="dataSource"/> and <see cref="dataSourcePath"/> of a binding object.
         /// </summary>
-        /// <param name="bindingId">The binding id to query.</param>
+        /// <param name="bindingId">The binding ID to query.</param>
         /// <returns>A context object with the data source and data source path of a binding object.</returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public DataSourceContext GetDataSourceContext(BindingId bindingId)
@@ -383,7 +383,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Queries the <see cref="dataSource"/> and <see cref="dataSourcePath"/> of a binding object.
         /// </summary>
-        /// <param name="bindingId">The binding id to query.</param>
+        /// <param name="bindingId">The binding ID to query.</param>
         /// <param name="context">The resulting context object.</param>
         /// <returns>Returns <see langword="true"/> if a binding with the provided id was registered on the element; <see langword="false"/> otherwise.</returns>
         public bool TryGetDataSourceContext(BindingId bindingId, out DataSourceContext context)

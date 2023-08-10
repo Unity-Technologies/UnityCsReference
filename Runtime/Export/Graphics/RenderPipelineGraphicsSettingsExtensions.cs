@@ -10,12 +10,17 @@ namespace UnityEngine.Rendering
     {
         public static void SetValueAndNotify<T>(this IRenderPipelineGraphicsSettings settings, ref T currentPropertyValue, T newValue, [CallerMemberName] string propertyName = null)
         {
-            if (GraphicsSettings.s_PropertyHelper.SetProperty(settings, ref currentPropertyValue, newValue,
-                    propertyName))
+            if (GraphicsSettings.s_PropertyHelper.SetProperty(settings, ref currentPropertyValue, newValue, propertyName))
             {
-                if (GraphicsSettings.TryGetCurrentRenderPipelineGlobalSettings(out var renderPipelineGlobalSettings))
-                    renderPipelineGlobalSettings.MarkDirty();
+                GraphicsSettings.Internal_SetAllRenderPipelineSettingsDirty();
             }
+        }
+
+        //will be public in 2023.3
+        internal static void NotifyValueChanged(this IRenderPipelineGraphicsSettings settings, [CallerMemberName] string propertyName = null)
+        {
+            GraphicsSettings.s_PropertyHelper.NotifyValueChange(settings, propertyName);
+            GraphicsSettings.Internal_SetAllRenderPipelineSettingsDirty();
         }
     }
 }

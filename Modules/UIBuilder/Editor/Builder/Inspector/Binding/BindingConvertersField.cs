@@ -50,7 +50,7 @@ namespace Unity.UI.Builder
             public Completer(BindingConvertersField field) : base(field.m_SearchField)
             {
                 m_Field = field;
-                usesNativePopupWindow = true;
+                SetupCompleterField(m_Field.searchField, true);
                 alwaysVisible = true;
                 dataSourceCallback = () => m_MatchingConverterGroups;
                 makeItem = () => new BindingConverterGroupViewItem();

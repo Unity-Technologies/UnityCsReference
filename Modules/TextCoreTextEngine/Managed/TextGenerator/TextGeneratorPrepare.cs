@@ -555,6 +555,9 @@ namespace UnityEngine.TextCore.Text
             if (character != null)
                 return character;
 
+            if (!isMainThread && character == null && fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
+                return null;
+
             // Search potential list of fallback font assets assigned to the font asset.
             if (fontAsset.m_FallbackFontAssetTable != null && fontAsset.m_FallbackFontAssetTable.Count > 0)
                 character = FontAssetUtilities.GetCharacterFromFontAssets(unicode, fontAsset, fontAsset.m_FallbackFontAssetTable, true, fontStyle, fontWeight, out isUsingAlternativeTypeface);

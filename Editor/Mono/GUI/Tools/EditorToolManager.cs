@@ -132,11 +132,11 @@ namespace UnityEditor.EditorTools
                 }
                 // If the previous tool was an additional tool from the context, return to the Previous Persistent Tool
                 // when moving to that new context
-                else if(wasAdditionalContextTool)
+                else if (wasAdditionalContextTool)
                 {
                     var isAdditionalContextTool = instance.m_ActiveToolContext.GetAdditionalToolTypes().Contains(activeTool.GetType());
 
-                    if(!isAdditionalContextTool)
+                    if (!isAdditionalContextTool)
                         RestorePreviousPersistentTool();
                 }
 
@@ -204,7 +204,7 @@ namespace UnityEditor.EditorTools
 
                 var meta = EditorToolUtility.GetMetaData(tool.GetType());
 
-                if(meta.variantGroup != null)
+                if (meta.variantGroup != null)
                     instance.variantPrefs.SetPreferredVariant(meta.variantGroup, meta.editor);
 
                 s_ChangingActiveTool = false;
@@ -305,7 +305,7 @@ namespace UnityEditor.EditorTools
             m_PreviousComponentToolCache = new ComponentToolCache(m_ActiveToolContext, m_ActiveTool);
         }
 
-        EditorToolManager() {}
+        EditorToolManager() { }
 
         void OnEnable()
         {
@@ -314,9 +314,9 @@ namespace UnityEditor.EditorTools
             Selection.selectedObjectWasDestroyed += SelectedObjectWasDestroyed;
             AssemblyReloadEvents.beforeAssemblyReload += BeforeAssemblyReload;
 
-            if(activeTool != null)
+            if (activeTool != null)
                 EditorApplication.delayCall += activeTool.Activate;
-            if(activeToolContext != null)
+            if (activeToolContext != null)
                 EditorApplication.delayCall += activeToolContext.Activate;
         }
 
@@ -501,16 +501,16 @@ namespace UnityEditor.EditorTools
         // Used by tests - EditModeAndPlayModeTests/EditorTools/EscKeyTests
         internal static bool TryPopToolState()
         {
-            if(Tools.viewToolActive)
+            if (Tools.viewToolActive)
                 return false;
 
-            if(!EditorToolUtility.IsBuiltinOverride(activeTool))
+            if (!EditorToolUtility.IsBuiltinOverride(activeTool))
             {
                 RestorePreviousPersistentTool();
                 return true;
             }
 
-            if(ToolManager.activeContextType != typeof(GameObjectToolContext))
+            if (ToolManager.activeContextType != typeof(GameObjectToolContext))
             {
                 //if is in a Manipulation or additional tool leaves the current context to return to GameObject Context
                 ToolManager.SetActiveContext<GameObjectToolContext>();
@@ -695,7 +695,7 @@ namespace UnityEditor.EditorTools
             if (typeAssociation.targetBehaviour != null && typeAssociation.targetBehaviour != typeof(NullTargetKey))
                 return (tool = GetComponentTool(typeAssociation.editor, false)) != null;
 
-            tool = (EditorTool) GetSingleton(typeAssociation.editor);
+            tool = (EditorTool)GetSingleton(typeAssociation.editor);
 
             return true;
         }
@@ -804,16 +804,16 @@ namespace UnityEditor.EditorTools
             {
                 var tool = context.ResolveTool((Tool)i);
                 if (tool != null)
-                    AddToolEntry(tool, (ToolEntry.Scope) i);
+                    AddToolEntry(tool, (ToolEntry.Scope)i);
             }
 
             // 2. builtin (additional) tools
-            foreach(var tool in context.GetAdditionalToolTypes())
+            foreach (var tool in context.GetAdditionalToolTypes())
                 AddToolEntry(tool, ToolEntry.Scope.BuiltinAdditional);
 
             // 3. custom global tools
-            foreach(var global in EditorToolUtility.GetCustomEditorToolsForType(null))
-                if(global.targetContext == null || global.targetContext == ToolManager.activeContextType)
+            foreach (var global in EditorToolUtility.GetCustomEditorToolsForType(null))
+                if (global.targetContext == null || global.targetContext == ToolManager.activeContextType)
                     AddToolEntry(global.editor, ToolEntry.Scope.CustomGlobal);
 
             // 4. component tools
@@ -823,6 +823,14 @@ namespace UnityEditor.EditorTools
                     && !tool.lockedInspector
                     && !tools.Any(entry => entry.tools.Any(x => x == tool.editor)))
                     AddToolEntry(tool.editorType, ToolEntry.Scope.Component);
+        }
+
+        internal static List<ToolEntry> OrderAvailableTools(List<ToolEntry> tools)
+        {
+            return tools.OrderBy(x => x.scope)
+                .ThenBy(x => x.priority)
+                .ThenBy(x => x.GetHashCode())
+                .ToList();
         }
     }
 }

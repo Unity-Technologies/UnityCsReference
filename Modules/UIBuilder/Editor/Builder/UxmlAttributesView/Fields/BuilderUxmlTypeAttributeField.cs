@@ -56,9 +56,9 @@ namespace Unity.UI.Builder
         public VisualElement CreateField(Type desiredType, string label, object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute, Action<VisualElement, UxmlAttributeDescription, object, string> onValueChange)
         {
             var uiField = new TextField(label) { isDelayed = true };
-            var completer = new FieldSearchCompleter<TypeInfo>(uiField);
+            var completer = new FieldSearchCompleter<TypeInfo>();
 
-            completer.usesNativePopupWindow = true;
+            completer.SetupCompleterField(uiField, true);
             // When possible, the popup should have the same width as the input field, so that the auto-complete
             // characters will try to match said input field.
             completer.matcherCallback += (str, info) => info.value.IndexOf(str, StringComparison.OrdinalIgnoreCase) >= 0;

@@ -8,8 +8,8 @@
     /// Base class for general purpose binding extensibility.
     /// </summary>
     /// <example>
-    /// The following example creates a custom binding that can be used to display the current time.
-    /// This could then be bound to the text field of a Label to create a clock.
+    /// The following example creates a custom binding that displays the current time.
+    /// You can bind it to the text field of a Label to create a clock.
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/CustomBinding_CurrentTime.cs"/>
     /// </example>
     [UxmlObject]

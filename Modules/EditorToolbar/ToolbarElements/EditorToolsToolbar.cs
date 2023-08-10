@@ -73,9 +73,7 @@ namespace UnityEditor.Toolbars
             foreach (var toolbar in m_Toolbars)
                 toolbar.Clear();
 
-            m_AvailableTools.OrderBy(x => x.scope)
-                .ThenBy(x => x.GetHashCode())
-                .ThenBy(x => x.priority);
+            m_AvailableTools = EditorToolManager.OrderAvailableTools(m_AvailableTools);
 
             Type currentComponentHeaderType = null;
             VisualElement componentTools = null;

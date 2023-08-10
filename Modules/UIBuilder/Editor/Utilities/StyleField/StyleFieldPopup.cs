@@ -76,7 +76,6 @@ namespace Unity.UI.Builder
 
             // Prevent PointerDownEvent on a child from switching focus.
             this.RegisterCallback<PointerDownEvent>(e => focusController.IgnoreEvent(e), TrickleDown.TrickleDown);
-            Hide();
         }
 
         public virtual void Show()

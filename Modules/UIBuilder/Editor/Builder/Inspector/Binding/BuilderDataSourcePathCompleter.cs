@@ -76,10 +76,10 @@ namespace Unity.UI.Builder
         /// Constructor.
         /// </summary>
         /// <param name="field">The attached text field used to edit the binding path property.</param>
-        public BuilderDataSourcePathCompleter(TextField field) : base(field)
+        public BuilderDataSourcePathCompleter(TextField field)
         {
-            usesNativePopupWindow = true;
             alwaysVisible = true;
+            SetupCompleterField(field, true);
 
             makeItem = () => new BuilderPropertyPathInfoViewItem();
             bindItem = (e, i) =>
