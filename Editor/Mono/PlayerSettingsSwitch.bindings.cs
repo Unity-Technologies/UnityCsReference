@@ -150,6 +150,7 @@ namespace UnityEditor
             extern public static bool useSwitchGOLDLinker { get; set; }
 
             // System Memory (used for virtual memory mapping).
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchSystemResourceMemory", TargetType.Field)]
             extern public static int systemResourceMemory { get; set; }
 
@@ -276,8 +277,8 @@ namespace UnityEditor
 
             [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
             extern public static int maximumSwitchNVNGraphicsFirmwareMemory { get; }
-			
-			[StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
             extern public static int switchMaxWorkerMultiple
             {
                 [NativeMethod("GetSwitchKMaxWorkerMultiple")]
@@ -386,6 +387,7 @@ namespace UnityEditor
                 set;
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             public static string manualHTMLPath
             {
                 get
@@ -411,6 +413,7 @@ namespace UnityEditor
                 }
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             public static string accessibleURLPath
             {
                 get
@@ -433,6 +436,7 @@ namespace UnityEditor
                 }
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             public static string legalInformationPath
             {
                 get

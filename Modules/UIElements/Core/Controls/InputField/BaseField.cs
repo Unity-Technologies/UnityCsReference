@@ -236,7 +236,7 @@ namespace UnityEngine.UIElements
                     {
                         if (!Contains(labelElement))
                         {
-                            Insert(0, labelElement);
+                            hierarchy.Insert(0, labelElement);
                             RemoveFromClassList(noLabelVariantUssClassName);
                         }
                     }

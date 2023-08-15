@@ -2036,6 +2036,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\IDataWatchService.cs">
       <Link>Modules\UIElements\Core\IDataWatchService.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\IEnumerableUtils.cs">
+      <Link>Modules\UIElements\Core\IEnumerableUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\IGroupBox.cs">
       <Link>Modules\UIElements\Core\IGroupBox.cs</Link>
     </Compile>

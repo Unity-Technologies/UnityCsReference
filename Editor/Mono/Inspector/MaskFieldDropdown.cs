@@ -125,10 +125,9 @@ namespace UnityEditor
             for (int i = 0; i < m_OptionNames.Length; i++)
             {
                 bool toggleVal = (m_SelectionMaskValues[0] & m_OptionMaskValues[i]) == m_OptionMaskValues[i];
-                if (m_SelectionMaskValues[0] != 0 && i == 0)
+                if ((m_SelectionMaskValues[0] != 0 && i == 0) || m_SelectionMaskValues[0] != -1 && i == 1)
                     toggleVal = false;
-                if ((m_SelectionMaskValues[0] == int.MaxValue || m_SelectionMaskValues[0] == m_AllLayersMask) && i == 1)
-                    toggleVal = true;
+                
 
                 var guiRect = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight);
                 guiRect.width = GetWindowSize().x;

@@ -107,7 +107,13 @@ namespace UnityEngine
         public bool freezeRotation
         {
             get => constraints.HasFlag(RigidbodyConstraints.FreezeRotation);
-            set => constraints |= value ? RigidbodyConstraints.FreezeRotation : ~RigidbodyConstraints.FreezeRotation;
+            set
+            {
+                if (value)
+                    constraints |= RigidbodyConstraints.FreezeRotation;
+                else
+                    constraints &= RigidbodyConstraints.FreezePosition;
+            }
         }
         extern public RigidbodyConstraints constraints { get; set; }
         extern public CollisionDetectionMode collisionDetectionMode { get; set; }

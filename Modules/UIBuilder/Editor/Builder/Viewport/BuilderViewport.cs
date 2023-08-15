@@ -364,7 +364,7 @@ namespace Unity.UI.Builder
             // Scale the target zoom
             targetOffset /= zoomScale / targetZoom;
 
-            // Center the target 
+            // Center the target
             targetOffset += new Vector2(
                 (m_Viewport.resolvedStyle.width - (elementWidth * targetZoom)) / 2,
                 (m_Viewport.resolvedStyle.height - (elementHeight * targetZoom)) / 2);
@@ -417,7 +417,7 @@ namespace Unity.UI.Builder
                 if (evt.clickCount == 2)
                 {
                     var posInViewport = m_PickOverlay.ChangeCoordinatesTo(this, evt.localMousePosition);
-                    BuilderInPlaceTextEditingUtilities.OpenEditor(pickedElement, this.ChangeCoordinatesTo(pickedElement, posInViewport));
+                    BuilderInPlaceTextEditingUtilities.OpenEditor(pickedElement, this.ChangeCoordinatesTo(pickedElement, posInViewport), documentRootElement);
                 }
             }
             else

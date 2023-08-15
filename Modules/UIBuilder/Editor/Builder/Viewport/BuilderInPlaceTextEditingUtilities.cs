@@ -13,14 +13,47 @@ namespace Unity.UI.Builder
 {
     static class BuilderInPlaceTextEditingUtilities
     {
-        static readonly string s_DummyText = " ";
-        static readonly string s_TextAttributeName = "text";
+        struct EditingContext
+        {
+            public VisualElement editedElement;
+            public TextElement targetTextElement;
+            public string uxmlAttributeName;
+            public string propertyName;
 
-        static BuilderViewport s_Viewport;
+            public bool CanEdit => null != targetTextElement
+                                   && null != targetTextElement.panel
+                                   && !string.IsNullOrWhiteSpace(uxmlAttributeName);
+        }
 
-        static UxmlAttributeDescription s_EditedTextAttribute;
-        static VisualElement s_EditedElement;
-        static TextElement s_EditedTextElement;
+
+        const string k_DummyText = " ";
+        const string k_TextAttributeName = "text";
+
+        private static bool CheckIfTransformIsUsed(VisualElement element, VisualElement root)
+        {
+            var parent = element.hierarchy.parent;
+
+            while (parent != null && parent != root)
+            {
+                var computedStyle = parent.computedStyle;
+
+                if (!computedStyle.translate.IsNone())
+                    return true;
+
+                if (!computedStyle.rotate.IsNone())
+                    return true;
+
+                if (computedStyle.scale != Scale.Initial())
+                    return true;
+
+                if (computedStyle.transformOrigin != TransformOrigin.Initial())
+                    return true;
+
+                parent = parent.hierarchy.parent;
+            }
+
+            return false;
+        }
 
         internal static void GetAlignmentFromTextAnchor(TextAnchor anchor, out Align align, out Justify justifyContent)
         {
@@ -56,197 +89,214 @@ namespace Unity.UI.Builder
             }
         }
 
-        static void GetAttributeToEdit(VisualElement editedElement, Vector2 pos, out TextElement textElement, out string attributeName)
+        static EditingContext GetAttributeToEdit(VisualElement editedElement, string uxmlAttributeName)
         {
-            TextElement labelElement = null;
-
-            textElement = null;
-            attributeName = null;
+            var context = new EditingContext
+            {
+                editedElement = editedElement
+            };
 
             switch (editedElement)
             {
-                case BaseField<bool> boolField: labelElement = boolField.labelElement; break;
-                case BaseField<int> inField: labelElement = inField.labelElement; break;
-                case BaseField<float> floatField: labelElement = floatField.labelElement; break;
-                case BaseField<long> longField: labelElement = longField.labelElement; break;
-                case BaseField<string> strField: labelElement = strField.labelElement; break;
-                case BaseField<Vector2> vec2Field: labelElement = vec2Field.labelElement; break;
-                case BaseField<Vector3> vec3Field: labelElement = vec3Field.labelElement; break;
-                case BaseField<Vector4> vec4Field: labelElement = vec4Field.labelElement; break;
-                case BaseField<Rect> rectField: labelElement = rectField.labelElement; break;
-                case BaseField<Color> colorField: labelElement = colorField.labelElement; break;
-                case BaseField<Gradient> gradField: labelElement = gradField.labelElement; break;
-                case BaseField<Object> objField: labelElement = objField.labelElement; break;
-                case BaseField<Bounds> boundsField: labelElement = boundsField.labelElement; break;
-                case BaseField<AnimationCurve> animCurveField: labelElement = animCurveField.labelElement; break;
-                case BaseField<Enum> enumField: labelElement = enumField.labelElement; break;
+                case IPrefixLabel prefixLabel:
+                    context.targetTextElement = prefixLabel.labelElement;
+                    context.uxmlAttributeName = nameof(IPrefixLabel.label);
+                    context.propertyName = nameof(IPrefixLabel.label);
+                    break;
+                case Foldout foldout:
+                    context.targetTextElement = foldout.toggle.boolFieldLabelElement;
+                    context.uxmlAttributeName = nameof(FoldoutField.text);
+                    context.propertyName = nameof(FoldoutField.text);
+                    break;
+                case TextElement textElement:
+                    context.targetTextElement = textElement;
+                    context.uxmlAttributeName = uxmlAttributeName;
+                    context.propertyName = BuilderNameUtilities.ConvertDashToCamel(uxmlAttributeName);;
+                    break;
+                case BaseListView {showFoldoutHeader: true} listView:
+                    context.targetTextElement = listView.headerFoldout.toggle.boolFieldLabelElement;
+                    context.uxmlAttributeName = "header-title";
+                    context.propertyName = nameof(BaseListView.headerTitle);
+                    break;
+                case Tab tab:
+                    context.targetTextElement = tab.headerLabel;
+                    context.uxmlAttributeName = nameof(Tab.label);
+                    context.propertyName = nameof(Tab.label);
+                    break;
+                case GroupBox groupBox:
+                    context.targetTextElement = groupBox.titleLabel;
+                    context.uxmlAttributeName = nameof(GroupBox.text);
+                    context.propertyName = nameof(GroupBox.text);
+                    break;
             }
 
-            if (labelElement != null)
-            {
-                textElement = labelElement;
-                attributeName = "label";
-            }
-            else if (editedElement is TextElement editorTextElement)
-            {
-                textElement = editorTextElement;
-                attributeName = s_TextAttributeName;
-            }
+            return context;
         }
 
-        public static void OpenEditor(VisualElement element, Vector2 pos)
+        public static void OpenEditor(VisualElement element, Vector2 pos, VisualElement documentRoot)
         {
-            BuilderViewport viewport = element.GetFirstAncestorOfType<BuilderViewport>();
+            var viewport = element.GetFirstAncestorOfType<BuilderViewport>();
             var editorLayer = viewport.editorLayer;
             var textEditor = viewport.textEditor;
 
-            GetAttributeToEdit(element, pos, out var textElement, out var attributeName);
+            var context = GetAttributeToEdit(element, k_TextAttributeName);
 
-            if (textElement == null || string.IsNullOrEmpty(attributeName))
+            if (context.targetTextElement == null || string.IsNullOrEmpty(context.uxmlAttributeName))
                 return;
 
-            var attributeList = element.GetAttributeDescriptions();
-
-            foreach (var attribute in attributeList)
+            if (CheckIfTransformIsUsed(context.targetTextElement, documentRoot))
             {
-                if (attribute?.name != null && attribute.name.Equals(attributeName))
-                {
-                    s_EditedTextAttribute = attribute;
-                    break;
-                }
-            }
-
-            if (s_EditedTextAttribute == null)
-                return;
-
-            if (viewport.bindingsCache.HasResolvedBinding(element, s_EditedTextAttribute.name))
-            {
-                Builder.ShowWarning(string.Format(BuilderConstants.CannotEditBoundPropertyMessage, s_EditedTextAttribute.name));
+                Builder.ShowWarning("In-place editing is not supported when any ancestor is setting a transform related style property.");
                 return;
             }
 
-            s_Viewport = viewport;
-            s_EditedElement = element;
-            s_EditedTextElement = textElement;
+            if (!context.CanEdit)
+                return;
 
-            var value = s_EditedElement.GetValueByReflection(s_EditedTextAttribute.name) as string;
+            if (viewport.bindingsCache.HasResolvedBinding(element, context.uxmlAttributeName))
+            {
+                Builder.ShowWarning(string.Format(BuilderConstants.CannotEditBoundPropertyMessage, context.uxmlAttributeName));
+                return;
+            }
+
+            var value = context.editedElement.GetValueByReflection(context.propertyName) as string;
 
             // To ensure the text element is visible
             if (string.IsNullOrEmpty(value))
             {
-                s_EditedElement.SetValueByReflection(s_EditedTextAttribute.name, s_DummyText);
+                context.editedElement.SetValueByReflection(context.propertyName, k_DummyText);
             }
 
             editorLayer.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
 
             var textInput = textEditor.Q(TextField.textInputUssName);
-            textEditor.value = value;
-            textInput.style.unityTextAlign = textElement.resolvedStyle.unityTextAlign;
-            textInput.style.fontSize = textElement.resolvedStyle.fontSize;
-            textInput.style.unityFontStyleAndWeight = textElement.resolvedStyle.unityFontStyleAndWeight;
-            textInput.style.whiteSpace = s_EditedTextElement.resolvedStyle.whiteSpace;
-            textInput.style.width = s_EditedTextElement.resolvedStyle.width;
-            textInput.style.height = s_EditedTextElement.resolvedStyle.height;
-            textEditor.multiline = s_EditedTextElement.edition.multiline;
+            textEditor.SetValueWithoutNotify(value);
 
-            GetAlignmentFromTextAnchor(textElement.resolvedStyle.unityTextAlign, out var alignItems, out var justifyContent);
+            textInput.style.unityTextAlign = context.targetTextElement.computedStyle.unityTextAlign;
+            textInput.style.fontSize = context.targetTextElement.computedStyle.fontSize;
+            textInput.style.unityFontStyleAndWeight = context.targetTextElement.computedStyle.unityFontStyleAndWeight;
+            textInput.style.whiteSpace = context.targetTextElement.computedStyle.whiteSpace;
+            textInput.style.width = context.targetTextElement.computedStyle.width;
+            textInput.style.height = context.targetTextElement.computedStyle.height;
+            textInput.style.borderBottomWidth = context.targetTextElement.computedStyle.borderBottomWidth;
+            textInput.style.borderTopWidth = context.targetTextElement.computedStyle.borderTopWidth;
+            textInput.style.borderLeftWidth = context.targetTextElement.computedStyle.borderLeftWidth;
+            textInput.style.borderRightWidth = context.targetTextElement.computedStyle.borderRightWidth;
+            textInput.style.paddingBottom = context.targetTextElement.computedStyle.paddingBottom;
+            textInput.style.paddingTop = context.targetTextElement.computedStyle.paddingTop;
+            textInput.style.paddingLeft = context.targetTextElement.computedStyle.paddingLeft;
+            textInput.style.paddingRight = context.targetTextElement.computedStyle.paddingRight;
+            textInput.style.letterSpacing = context.targetTextElement.computedStyle.letterSpacing;
+            textInput.style.wordSpacing = context.targetTextElement.computedStyle.wordSpacing;
+            textInput.style.unityParagraphSpacing = context.targetTextElement.computedStyle.unityParagraphSpacing;
+            textInput.style.textOverflow = context.targetTextElement.computedStyle.textOverflow;
+            textInput.style.overflow = context.targetTextElement.computedStyle.overflow == OverflowInternal.Visible ? Overflow.Visible : Overflow.Hidden;
 
-            var textEditorContainer = textEditor.parent;
-            textEditorContainer.style.paddingLeft = s_EditedTextElement.resolvedStyle.paddingLeft;
-            textEditorContainer.style.paddingTop = s_EditedTextElement.resolvedStyle.paddingTop;
-            textEditorContainer.style.paddingRight = s_EditedTextElement.resolvedStyle.paddingRight;
-            textEditorContainer.style.paddingBottom = s_EditedTextElement.resolvedStyle.paddingBottom;
-            textEditorContainer.style.alignItems = alignItems;
-            textEditorContainer.style.justifyContent = justifyContent;
-            UpdateTextEditorGeometry();
-            textElement.RegisterCallback<GeometryChangedEvent>(OnTextElementGeometryChanged);
+            textEditor.style.translate = context.targetTextElement.computedStyle.translate;
+            textEditor.style.transformOrigin = context.targetTextElement.computedStyle.transformOrigin;
+            textEditor.style.rotate = context.targetTextElement.computedStyle.rotate;
+            textEditor.style.scale = context.targetTextElement.computedStyle.scale;
+
+            GetAlignmentFromTextAnchor(context.targetTextElement.computedStyle.unityTextAlign, out var alignItems, out var justifyContent);
+
+            UpdateTextEditorGeometry(context);
+            context.targetTextElement.RegisterCallback<GeometryChangedEvent, EditingContext>(OnTextElementGeometryChanged, context);
 
             textEditor.schedule.Execute(a => textEditor.Focus());
             textEditor.textSelection.SelectAll();
 
-            textInput.RegisterCallback<FocusOutEvent>(OnFocusOutEvent, TrickleDown.TrickleDown);
-            textEditor.RegisterCallback<ChangeEvent<string>>(OnTextChanged);
+            textInput.RegisterCallback<FocusOutEvent, EditingContext>(OnFocusOutEvent, context, TrickleDown.TrickleDown);
+            textEditor.RegisterCallback<ChangeEvent<string>, EditingContext>(OnTextChanged, context);
         }
 
-        static void OnTextElementGeometryChanged(GeometryChangedEvent evt)
+        static void OnTextElementGeometryChanged(GeometryChangedEvent evt, EditingContext context)
         {
-            UpdateTextEditorGeometry();
+            UpdateTextEditorGeometry(context);
         }
 
-        static void UpdateTextEditorGeometry()
+        static void UpdateTextEditorGeometry(EditingContext context)
         {
-            // The text element may have been removed from its hierarchy if the text is empty. This is the case with Fields.
-            if (s_EditedTextElement.panel == null)
+            if (!context.CanEdit)
+                return;
+
+            var viewport = context.editedElement.GetFirstOfType<BuilderViewport>();
+            if (null == viewport)
                 return;
 
             var textElementPos =
-                s_EditedTextElement.parent.ChangeCoordinatesTo(s_Viewport.documentRootElement, new Vector2(s_EditedTextElement.layout.x, s_EditedTextElement.layout.y));
+                context.targetTextElement.parent.ChangeCoordinatesTo(viewport.documentRootElement, new Vector2(context.targetTextElement.layout.x, context.targetTextElement.layout.y));
 
-            var textEditorContainer = s_Viewport.textEditor.parent;
+            var textEditorContainer = viewport.textEditor.parent;
 
             // Note: Set the font here it because the font maybe still null of empty label of field in OpenEditor()
-            s_Viewport.textEditor.Q(TextField.textInputUssName).style.unityFont = s_EditedTextElement.resolvedStyle.unityFont;
-            s_Viewport.textEditor.Q(TextField.textInputUssName).style.unityFontDefinition = s_EditedTextElement.resolvedStyle.unityFontDefinition;
+            viewport.textEditor.Q(TextField.textInputUssName).style.unityFont = context.targetTextElement.computedStyle.unityFont;
+            viewport.textEditor.Q(TextField.textInputUssName).style.unityFontDefinition = context.targetTextElement.computedStyle.unityFontDefinition;
 
             textEditorContainer.style.left = textElementPos.x;
             textEditorContainer.style.top = textElementPos.y;
             var textInput = textEditorContainer.Q(TextField.textInputUssName);
-            textInput.style.width = s_EditedTextElement.layout.width;
-            textInput.style.height = s_EditedTextElement.layout.height;
+
+            textInput.style.width = context.targetTextElement.layout.width;
+            textInput.style.height = context.targetTextElement.layout.height;
         }
 
-        public static void CloseEditor()
+        private static void CloseEditor(EditingContext context)
         {
-            if (s_Viewport == null)
+            var viewport = context.editedElement.GetFirstAncestorOfType<BuilderViewport>();
+            if (null == viewport)
                 return;
 
-            s_Viewport.textEditor.UnregisterCallback<FocusOutEvent>(OnFocusOutEvent, TrickleDown.TrickleDown);
-            s_Viewport.textEditor.UnregisterCallback<ChangeEvent<string>>(OnTextChanged);
-            s_Viewport.editorLayer.AddToClassList(BuilderConstants.HiddenStyleClassName);
-            s_EditedTextElement.UnregisterCallback<GeometryChangedEvent>(OnTextElementGeometryChanged);
-            s_Viewport = null;
-            s_EditedElement = null;
-            s_EditedTextAttribute = null;
+            viewport.textEditor.UnregisterCallback<FocusOutEvent, EditingContext>(OnFocusOutEvent, TrickleDown.TrickleDown);
+            viewport.textEditor.UnregisterCallback<ChangeEvent<string>, EditingContext>(OnTextChanged);
+            viewport.editorLayer.AddToClassList(BuilderConstants.HiddenStyleClassName);
+            context.targetTextElement.UnregisterCallback<GeometryChangedEvent, EditingContext>(OnTextElementGeometryChanged);
         }
 
-        static void OnTextChanged(ChangeEvent<string> evt)
+        static void OnTextChanged(ChangeEvent<string> evt, EditingContext context)
         {
-            s_EditedElement.SetValueByReflection(s_EditedTextAttribute.name, string.IsNullOrEmpty(evt.newValue) ? s_DummyText : evt.newValue);
+            context.editedElement.SetValueByReflection(context.propertyName, string.IsNullOrEmpty(evt.newValue) ? k_DummyText : evt.newValue);
         }
 
-        static void OnFocusOutEvent(FocusOutEvent evt)
+        static void OnFocusOutEvent(FocusOutEvent evt, EditingContext context)
         {
-            OnEditTextFinished();
+            OnEditTextFinished(context);
         }
 
-        static void OnEditTextFinished()
+        static void OnEditTextFinished(EditingContext context)
         {
-            if (s_EditedElement == null)
+            if (!context.CanEdit)
                 return;
+
+            var viewport = context.editedElement.GetFirstAncestorOfType<BuilderViewport>();
+            if (null == viewport)
+                return;
+
+            var editedElement = context.editedElement;
+            var uxmlAttributeName = context.uxmlAttributeName;
 
             // Undo/Redo
-            Undo.RegisterCompleteObjectUndo(s_Viewport.paneWindow.document.visualTreeAsset, BuilderConstants.ChangeAttributeValueUndoMessage);
+            Undo.RegisterCompleteObjectUndo(viewport.paneWindow.document.visualTreeAsset, BuilderConstants.ChangeAttributeValueUndoMessage);
 
-            var newValue = s_Viewport.textEditor.value;
-            var type = s_EditedElement.GetType();
-            var vea = s_EditedElement.GetVisualElementAsset();
-            var oldValue = vea.GetAttributeValue(s_EditedTextAttribute.name);
+            var newValue = viewport.textEditor.value;
+            var type = editedElement.GetType();
+            var vea = editedElement.GetVisualElementAsset();
+            var oldValue = vea.GetAttributeValue(uxmlAttributeName);
 
             if (newValue != oldValue)
             {
                 // UxmlSerializedData
                 if (!BuilderUxmlAttributesView.alwaysUseUxmlTraits && vea.serializedData != null && UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName) is {} description)
                 {
-                    var attributeDescription = description.FindAttributeWithUxmlName(s_EditedTextAttribute.name);
+                    var attributeDescription = description.FindAttributeWithUxmlName(uxmlAttributeName);
                     if (attributeDescription != null)
                     {
                         attributeDescription.SetSerializedValue(vea.serializedData, newValue);
-                        vea.SetAttribute(s_EditedTextAttribute.name, newValue);
+                        vea.SetAttribute(uxmlAttributeName, newValue);
                     }
                 }
                 else // Fallback to factory
                 {
-                    vea.SetAttribute(s_EditedTextAttribute.name, newValue);
+                    vea.SetAttribute(context.uxmlAttributeName, newValue);
 
                     var fullTypeName = type.ToString();
 
@@ -256,18 +306,18 @@ namespace Unity.UI.Builder
 
                         if (traits == null)
                         {
-                            CloseEditor();
+                            CloseEditor(context);
                             return;
                         }
 
-                        var context = new CreationContext();
+                        var creationContext = new CreationContext();
 
                         try
                         {
                             // We need to clear bindings before calling Init to avoid corrupting the data source.
-                            BuilderBindingUtility.ClearUxmlBindings(s_EditedElement);
+                            BuilderBindingUtility.ClearUxmlBindings(editedElement);
 
-                            traits.Init(s_EditedElement, vea, context);
+                            traits.Init(editedElement, vea, creationContext);
                         }
                         catch
                         {
@@ -276,9 +326,9 @@ namespace Unity.UI.Builder
                     }
                 }
 
-                s_Viewport.selection.NotifyOfHierarchyChange(s_Viewport);
+                viewport.selection.NotifyOfHierarchyChange(viewport);
             }
-            CloseEditor();
+            CloseEditor(context);
         }
     }
 }

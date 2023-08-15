@@ -81,7 +81,7 @@ namespace UnityEditor.TextCore.Text
             if (RenderPipelineManager.currentPipeline == null)
                 Camera.onPostRender += OnCameraPostRender;
             else
-                RenderPipelineManager.endFrameRendering += OnEndOfFrame;
+                RenderPipelineManager.endContextRendering += OnEndOfFrame;
 
             Canvas.willRenderCanvases += OnPreRenderCanvases;
         }
@@ -100,7 +100,7 @@ namespace UnityEditor.TextCore.Text
             DoPreRenderUpdates();
         }
 
-        void OnEndOfFrame(ScriptableRenderContext renderContext, Camera[] cameras)
+        void OnEndOfFrame(ScriptableRenderContext renderContext, List<Camera> cameras)
         {
             DoPostRenderUpdates();
         }

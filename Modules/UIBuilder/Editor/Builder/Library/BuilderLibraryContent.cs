@@ -279,7 +279,7 @@ namespace Unity.UI.Builder
                 CreateItem("Toggle", nameof(Toggle), typeof(Toggle), () => new Toggle("Toggle")),
                 CreateItem("Toggle Button Group", nameof(ToggleButtonGroup), typeof(ToggleButtonGroup), () => new ToggleButtonGroup("Toggle Button Group")),
                 CreateItem("Scroller", nameof(Scroller), typeof(Scroller), () => new Scroller(0, 100, (v) => {}, SliderDirection.Horizontal) { value = 42 }),
-                CreateItem("Text Field", nameof(TextField), typeof(TextField), () => new TextField("Text Field") { value = "filler text", maskChar = TextInputBaseField<string>.kMaskCharDefault }),
+                CreateItem("Text Field", nameof(TextField), typeof(TextField), () => new TextField("Text Field") { placeholderText = "filler text", maskChar = TextInputBaseField<string>.kMaskCharDefault }),
                 CreateItem("Foldout", nameof(Foldout), typeof(Foldout), () => new Foldout { text = "Foldout" }),
                 CreateItem("Slider", nameof(Slider), typeof(Slider), () => new Slider("Slider", 0, 100) { value = 42 }),
                 CreateItem("Slider (Int)", nameof(SliderInt), typeof(SliderInt), () => new SliderInt("SliderInt", 0, 100) { value = 42 }),

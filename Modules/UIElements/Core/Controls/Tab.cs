@@ -183,6 +183,9 @@ namespace UnityEngine.UIElements
         Image m_TabHeaderImage;
         Label m_TabHeaderLabel;
 
+        // Needed by the UIBuilder for authoring in the viewport
+        internal Label headerLabel => m_TabHeaderLabel;
+
         /// <summary>
         /// Returns the Tab's header.
         /// </summary>

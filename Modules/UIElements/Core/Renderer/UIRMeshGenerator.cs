@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements.UIR
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams);
         public void DrawBorder(MeshGenerator.BorderParams borderParams);
         public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale);
-        public void DrawRectangleRepeat(MeshGenerator.RectangleParams rectParams, Rect totalRect);
+        public void DrawRectangleRepeat(MeshGenerator.RectangleParams rectParams, Rect totalRect, float scaledPixelsPerPoint);
 
         public void ScheduleJobs(MeshGenerationContext mgc);
     }
@@ -849,20 +849,19 @@ namespace UnityEngine.UIElements.UIR
             k_MarkerDrawVectorImage.End();
         }
 
-        public void DrawRectangleRepeat(RectangleParams rectParams, Rect totalRect)
+        public void DrawRectangleRepeat(RectangleParams rectParams, Rect totalRect, float scaledPixelsPerPoint)
         {
             k_MarkerDrawRectangleRepeat.Begin();
-            DoDrawRectangleRepeat(ref rectParams, totalRect);
+            DoDrawRectangleRepeat(ref rectParams, totalRect, scaledPixelsPerPoint);
             k_MarkerDrawRectangleRepeat.End();
         }
 
         // This method should not be called directly. Use the DrawRectangleRepeat wrapper instead which is properly
         // instrumented with performance counters.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void DoDrawRectangleRepeat(ref RectangleParams rectParams, Rect totalRect)
+        void DoDrawRectangleRepeat(ref RectangleParams rectParams, Rect totalRect, float scaledPixelsPerPoint)
         {
             var uv = new Rect(0, 0, 1, 1);
-            var targetRect = rectParams.rect;
 
             if (m_RepeatRectUVList == null)
             {
@@ -876,6 +875,8 @@ namespace UnityEngine.UIElements.UIR
                 m_RepeatRectUVList[1].Clear();
             }
 
+            // Compute the destination size for one repetition before clipping/offset is considered.
+            var targetRect = rectParams.rect;
             if (rectParams.backgroundSize.sizeType != BackgroundSizeType.Length)
             {
                 if (rectParams.backgroundSize.sizeType == BackgroundSizeType.Contain)
@@ -883,6 +884,8 @@ namespace UnityEngine.UIElements.UIR
                     float ratioX = totalRect.width / targetRect.width;
                     float ratioY = totalRect.height / targetRect.height;
 
+                    // The source is uniformly scaled to fit inside the total rect.
+                    // At this point, we ignore repetitions that may be used to fill the voids.
                     Rect rect = targetRect;
                     if (ratioX < ratioY)
                     {
@@ -902,6 +905,8 @@ namespace UnityEngine.UIElements.UIR
                     float ratioX = totalRect.width / targetRect.width;
                     float ratioY = totalRect.height / targetRect.height;
 
+                    // The source is uniformly scaled to completely cover the total rect.
+                    // At this point, we ignore cropping, but it will happen later.
                     Rect rect = targetRect;
                     if (ratioX > ratioY)
                     {
@@ -987,24 +992,24 @@ namespace UnityEngine.UIElements.UIR
             // Adjust size when background-repeat is round and other axis background-size is auto
             if ((rectParams.backgroundSize.x.IsAuto()) && (rectParams.backgroundRepeat.y == Repeat.Round))
             {
-                int count = (int)((totalRect.size[1] + targetRect.size[1] * 0.5f) / targetRect.size[1]);
+                float invTargetHeight = 1f / targetRect.height;
+                int count = (int)(totalRect.height * invTargetHeight + 0.5f);
                 count = Math.Max(count, 1);
 
-                float new_size = (totalRect.size[1] / count);
                 Rect rect = new Rect();
-                rect.height = new_size;
-                rect.width = rect.height * targetRect.width / targetRect.height;
+                rect.height = totalRect.height / count;
+                rect.width = rect.height * targetRect.width * invTargetHeight;
                 targetRect = rect;
             }
             else if ((rectParams.backgroundSize.y.IsAuto()) && (rectParams.backgroundRepeat.x == Repeat.Round))
             {
-                int count = (int)((totalRect.size[0] + targetRect.size[0] * 0.5f) / targetRect.size[0]);
+                float invTargetWidth = 1f / targetRect.width;
+                int count = (int)(totalRect.width * invTargetWidth + 0.5f);
                 count = Math.Max(count, 1);
 
-                float new_size = (totalRect.size[0] / count);
                 Rect rect = new Rect();
-                rect.width = new_size;
-                rect.height = rect.width * targetRect.height / targetRect.width;
+                rect.width = totalRect.width / count;
+                rect.height = rect.width * targetRect.height * invTargetWidth;
                 targetRect = rect;
             }
 
@@ -1029,21 +1034,21 @@ namespace UnityEngine.UIElements.UIR
                 {
                     Rect rect = targetRect;
 
-                    int count = (int)(totalRect.size[axis] / targetRect.size[axis]);
+                    // We might attempt to align the texture on the pixel grid. In this process, we will offset the
+                    // texture by a fraction of a pixel. For this reason, we add one pixel to the total rect size.
+                    int count = (int)((totalRect.size[axis] + 1 / scaledPixelsPerPoint) / targetRect.size[axis]);
 
                     if (backgroundPosition.keyword == BackgroundPositionKeyword.Center)
                     {
-                        if ((count % 2) == 1)
-                        {
+                        // For center, we must keep an odd number of repetitions
+                        if ((count & 1) == 1)
                             count += 2;
-                        }
                         else
-                        {
                             count++;
-                        }
                     }
                     else
                     {
+                        // For other alignment, always add 2, to avoid changing what's in the center.
                         count += 2;
                     }
 
@@ -1119,7 +1124,7 @@ namespace UnityEngine.UIElements.UIR
 
                     if (backgroundPosition.keyword == BackgroundPositionKeyword.Center)
                     {
-                        if ((count % 2) == 1)
+                        if ((count & 1) == 1)
                         {
                             count += 2;
                         }
@@ -1155,16 +1160,19 @@ namespace UnityEngine.UIElements.UIR
 
                 // Adjust for position
                 float offset = 0;
+                bool alignToGrid = false;
 
                 if (backgroundPosition.keyword == BackgroundPositionKeyword.Center)
                 {
                     offset = (totalRect.size[axis] - linear_size) * 0.5f;
+                    alignToGrid = true;
                 }
                 else if (repeat != Repeat.Space)
                 {
                     if (backgroundPosition.offset.unit == LengthUnit.Percent)
                     {
                         offset = (totalRect.size[axis] - targetRect.size[axis]) * backgroundPosition.offset.value / 100.0f;
+                        alignToGrid = true;
                     }
                     else if (backgroundPosition.offset.unit == LengthUnit.Pixel)
                     {
@@ -1178,6 +1186,26 @@ namespace UnityEngine.UIElements.UIR
                     }
                 }
 
+                // UUM-36753: we need to round the offset to the nearest pixel. Otherwise, when the texture
+                // junctions are not pixel aligned, we get a seam because of the blending with the background.
+                // If the mesh is transformed (e.g. dynamic transform or nudging), the issues is likely to happen
+                // again though. The ultimate fix will be to modify the generation algorithm to avoid blending
+                // with arc-aa in the seams.
+                //
+                // Note that this doesn't work for non-rectangular sprites and vector images because their size
+                // is based on their mesh, which can be of non-integer size. As a result, the provided rect is
+                // fractional and we can't round it in a way that makes sense.
+                if (alignToGrid && rectParams.sprite == null && rectParams.vectorImage == null)
+                {
+                    // If the height of the rect is not an integer, it's not worth aligning at all because the end
+                    // is doomed to not be aligned on the pixel grid.
+                    float sizeInPixels = targetRect.size[axis] * scaledPixelsPerPoint;
+                    if (Mathf.Abs(Mathf.Round(sizeInPixels) - sizeInPixels) < 0.001f)
+                    {
+                        offset = AlignmentUtils.CeilToPixelGrid(offset, scaledPixelsPerPoint);
+                    }
+                }
+
                 // adjust offset position for repeat and round
                 if (repeat == Repeat.Repeat || repeat == Repeat.Round)
                 {
@@ -1186,13 +1214,13 @@ namespace UnityEngine.UIElements.UIR
                     {
                         if (offset < -size)
                         {
-                            int mod = (int)(-offset/size);
+                            int mod = (int)(-offset / size);
                             offset += mod * size;
                         }
 
                         if (offset > 0.0f)
                         {
-                            int mod = (int)(offset/size);
+                            int mod = (int)(offset / size);
                             offset -= (1 + mod) * size;
                         }
                     }
