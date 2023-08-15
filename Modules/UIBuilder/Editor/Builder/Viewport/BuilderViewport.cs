@@ -160,7 +160,7 @@ namespace Unity.UI.Builder
             m_StyleSelectorElementContainer = this.Q(BuilderConstants.StyleSelectorElementContainerName);
             m_DocumentRootElement = this.Q("document");
             m_DocumentRootElement.StretchToParentSize();
-            
+
             // Fix UUM-16248 : Ensure the size of the document cannot be changed inside the builder with the :root selector
             m_DocumentRootElement.style.width = StyleKeyword.Initial;
             m_DocumentRootElement.style.height = StyleKeyword.Initial;
@@ -349,7 +349,7 @@ namespace Unity.UI.Builder
                 if (evt.clickCount == 2)
                 {
                     var posInViewport = m_PickOverlay.ChangeCoordinatesTo(this, evt.localMousePosition);
-                    BuilderInPlaceTextEditingUtilities.OpenEditor(pickedElement, this.ChangeCoordinatesTo(pickedElement, posInViewport));
+                    BuilderInPlaceTextEditingUtilities.OpenEditor(pickedElement, this.ChangeCoordinatesTo(pickedElement, posInViewport), documentRootElement);
                 }
             }
             else

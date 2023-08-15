@@ -4271,6 +4271,9 @@
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildSettings.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildSettings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildTargetSelection.cs">
+      <Link>Modules\BuildPipeline\Editor\Managed\BuildTargetSelection.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildUsageCache.bindings.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildUsageCache.bindings.cs</Link>
     </Compile>
@@ -6100,6 +6103,156 @@
     </Compile>
     <Compile Include="..\..\Modules\Licensing\Public\LicensingUtility.bindings.cs">
       <Link>Modules\Licensing\Public\LicensingUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\Base\Notification.cs">
+      <Link>Modules\Licensing\UI\Data\Events\Base\Notification.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\Base\NotificationReasons.cs">
+      <Link>Modules\Licensing\UI\Data\Events\Base\NotificationReasons.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\Base\NotificationType.cs">
+      <Link>Modules\Licensing\UI\Data\Events\Base\NotificationType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\Base\NotificationWithDetails.cs">
+      <Link>Modules\Licensing\UI\Data\Events\Base\NotificationWithDetails.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\LicenseExpiredNotification.cs">
+      <Link>Modules\Licensing\UI\Data\Events\LicenseExpiredNotification.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\LicenseOfflineValidityEndingNotification.cs">
+      <Link>Modules\Licensing\UI\Data\Events\LicenseOfflineValidityEndingNotification.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\LicenseUpdateNotification.cs">
+      <Link>Modules\Licensing\UI\Data\Events\LicenseUpdateNotification.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\CloseButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\CloseButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\CloseProjectButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\CloseProjectButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\EventsButtonFactory.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\EventsButtonFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\EventsButtonType.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\EventsButtonType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\IEventsButtonFactory.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\IEventsButtonFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\ManageLicenseButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\ManageLicenseButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\OkButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\OkButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\OpenUnityHubButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\OpenUnityHubButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\SaveAndQuitButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\SaveAndQuitButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\TemplateEventsButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\TemplateEventsButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\UpdateLicenseButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\UpdateLicenseButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Handlers\INotificationHandler.cs">
+      <Link>Modules\Licensing\UI\Events\Handlers\INotificationHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Handlers\LicenseExpiredHandler.cs">
+      <Link>Modules\Licensing\UI\Events\Handlers\LicenseExpiredHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Handlers\LicenseOfflineValidityEndingHandler.cs">
+      <Link>Modules\Licensing\UI\Events\Handlers\LicenseOfflineValidityEndingHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Handlers\LicenseUpdateHandler.cs">
+      <Link>Modules\Licensing\UI\Events\Handlers\LicenseUpdateHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\ILicenseNotificationHandlerFactory.cs">
+      <Link>Modules\Licensing\UI\Events\ILicenseNotificationHandlerFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\IModalWrapper.cs">
+      <Link>Modules\Licensing\UI\Events\IModalWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\INotificationDispatcher.cs">
+      <Link>Modules\Licensing\UI\Events\INotificationDispatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\LicenseNotificationDispatcher.cs">
+      <Link>Modules\Licensing\UI\Events\LicenseNotificationDispatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\LicenseNotificationHandlerFactory.cs">
+      <Link>Modules\Licensing\UI\Events\LicenseNotificationHandlerFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\ModalWrapper.cs">
+      <Link>Modules\Licensing\UI\Events\ModalWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Text\LicenseTrStrings.cs">
+      <Link>Modules\Licensing\UI\Events\Text\LicenseTrStrings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseExpiredWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseExpiredWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseExpiredWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseExpiredWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndedWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndedWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndedWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndedWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndingWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndingWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndingWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndingWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseRemovedWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseRemovedWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseRemovedWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseRemovedWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseReturnedWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseReturnedWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseReturnedWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseReturnedWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseRevokedWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseRevokedWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseRevokedWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseRevokedWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\TemplateLicenseEventWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\TemplateLicenseEventWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\TemplateLicenseEventWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\TemplateLicenseEventWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Helper\Constants.cs">
+      <Link>Modules\Licensing\UI\Helper\Constants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Helper\ILicenseLogger.cs">
+      <Link>Modules\Licensing\UI\Helper\ILicenseLogger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Helper\LicenseLogger.cs">
+      <Link>Modules\Licensing\UI\Helper\LicenseLogger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Helper\Utils.cs">
+      <Link>Modules\Licensing\UI\Helper\Utils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\INativeApiWrapper.cs">
+      <Link>Modules\Licensing\UI\INativeApiWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\LicenseManagedWrapper.cs">
+      <Link>Modules\Licensing\UI\LicenseManagedWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\NativeApiWrapper.cs">
+      <Link>Modules\Licensing\UI\NativeApiWrapper.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\LocalizationEditor\LocalizationAttribute.cs">
       <Link>Modules\LocalizationEditor\LocalizationAttribute.cs</Link>

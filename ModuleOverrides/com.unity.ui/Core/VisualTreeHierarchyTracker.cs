@@ -6,9 +6,9 @@ namespace UnityEngine.UIElements
 {
     internal enum HierarchyChangeType
     {
-        Add,
-        Remove,
-        Move
+        Add, // TODO: Rename to AddedToParent
+        Remove, // TODO: Rename to RemovedFromParent
+        Move // TODO: Rename to ChildrenReordered
     }
 
     internal abstract class BaseVisualTreeHierarchyTrackerUpdater : BaseVisualTreeUpdater

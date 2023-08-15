@@ -1438,8 +1438,8 @@ namespace UnityEditor.ShortcutManagement
         {
             input.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
             input.RegisterCallback<KeyUpEvent>(OnKeyUp, TrickleDown.TrickleDown);
-            input.RegisterCallback<MouseDownEvent>(OnMouse, TrickleDown.TrickleDown);
-            input.RegisterCallback<MouseUpEvent>(OnMouse, TrickleDown.TrickleDown);
+            input.RegisterCallback<PointerDownEvent>(OnPointer, TrickleDown.TrickleDown);
+            input.RegisterCallback<PointerUpEvent>(OnPointer, TrickleDown.TrickleDown);
             input.RegisterCallback<FocusEvent>((evt) => {
                 StartNewCombination();
                 evt.StopPropagation();
@@ -1496,9 +1496,9 @@ namespace UnityEditor.ShortcutManagement
             textSelection.MoveTextEnd();
         }
 
-        void OnMouse<T>(MouseEventBase<T> evt) where T : MouseEventBase<T>, new()
+        void OnPointer<T>(PointerEventBase<T> evt) where T : PointerEventBase<T>, new()
         {
-            if (evt.GetType() == typeof(MouseDownEvent))
+            if (evt.GetType() == typeof(PointerDownEvent))
             {
                 m_KeyDown.Add(KeyCode.Mouse0 + evt.button);
                 Apply();

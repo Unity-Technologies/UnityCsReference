@@ -250,6 +250,15 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     }
 
     /// <summary>
+    /// Resets the node for immediate re-use on the same element.
+    /// </summary>
+    public void SoftReset()
+    {
+        ref var data = ref m_Access.GetNodeData(m_Handle);
+        data.HasNewLayout = true;
+    }
+
+    /// <summary>
     /// Resets the node for re-use.
     /// </summary>
     public void Reset()

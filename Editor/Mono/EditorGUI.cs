@@ -3060,7 +3060,9 @@ namespace UnityEditor
                                 info.properties = properties;
                                 info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
                                 GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
-                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || !PrefabUtility.CanPropertyBeAppliedToTarget(property, rootObject))
+                                if (EditorUtility.IsPersistent(targetObject)
+                                    || !PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject)
+                                    || !PrefabUtility.CanPropertyBeAppliedToTarget(property, rootObject))
                                     pm.AddDisabledItem(menuItemContent);
                                 else
                                     pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabPropertyOverride, info);
@@ -4268,9 +4270,7 @@ namespace UnityEditor
 
         public static Enum EnumFlagsField(Rect position, GUIContent label, Enum enumValue, [DefaultValue("false")] bool includeObsolete, [DefaultValue("null")] GUIStyle style = null)
         {
-            int changedFlags;
-            bool changedToValue;
-            return EnumFlagsField(position, label, enumValue, includeObsolete, out changedFlags, out changedToValue, style ?? EditorStyles.popup);
+            return EnumFlagsField(position, label, enumValue, includeObsolete, out _, out _, style ?? EditorStyles.popup);
         }
 
         // Internal version that also gives you back which flags were changed and what they were changed to.

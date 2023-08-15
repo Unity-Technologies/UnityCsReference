@@ -33,11 +33,23 @@ namespace UnityEditor.Build.Content
         }
 
         [NativeName("target")]
-        internal BuildTarget m_Target;
-        public BuildTarget target
+        internal BuildTargetSelection m_Target;
+        internal BuildTargetSelection buildTargetSelection
         {
             get { return m_Target; }
             set { m_Target = value; }
+        }
+
+        public BuildTarget target
+        {
+            get { return m_Target.platform; }
+            set { m_Target.platform = value; }
+        }
+
+        public int subtarget
+        {
+            get { return m_Target.subTarget; }
+            set { m_Target.subTarget = value; }
         }
 
         [NativeName("group")]

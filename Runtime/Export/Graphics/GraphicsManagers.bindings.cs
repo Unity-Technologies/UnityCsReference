@@ -318,6 +318,9 @@ namespace UnityEngine
                 else
                     renderPipelineAssets.Add(GraphicsSettings.defaultRenderPipeline);
             }
+
+            if (renderPipelineAssets.Count == 0 && GraphicsSettings.defaultRenderPipeline != null)
+                renderPipelineAssets.Add(GraphicsSettings.defaultRenderPipeline);
         }
 
         static HashSet<Type> s_RenderPipelineAssetsTypes = new();

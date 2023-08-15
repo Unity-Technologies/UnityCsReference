@@ -310,6 +310,8 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public event Action<IEnumerable<int>> itemsRemoved;
 
+        internal event Action itemsSourceSizeChanged;
+
         private void AddItems(int itemCount)
         {
             viewController.AddItems(itemCount);
@@ -520,6 +522,8 @@ namespace UnityEngine.UIElements
             {
                 RefreshItems();
             }
+
+            itemsSourceSizeChanged?.Invoke();
         }
 
         ListViewReorderMode m_ReorderMode;
