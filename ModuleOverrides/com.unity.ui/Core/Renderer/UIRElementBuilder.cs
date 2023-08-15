@@ -275,11 +275,11 @@ namespace UnityEngine.UIElements.UIR
 
                 if (rectParams.texture != null)
                 {
-                    mgc.meshGenerator.DrawRectangleRepeat(rectParams, ve.rect);
+                    mgc.meshGenerator.DrawRectangleRepeat(rectParams, ve.rect, ve.scaledPixelsPerPoint);
                 }
                 else if (rectParams.vectorImage != null)
                 {
-                    mgc.meshGenerator.DrawRectangleRepeat(rectParams, ve.rect);
+                    mgc.meshGenerator.DrawRectangleRepeat(rectParams, ve.rect, ve.scaledPixelsPerPoint);
                 }
                 else
                 {

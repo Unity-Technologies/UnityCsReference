@@ -682,6 +682,7 @@ namespace UnityEditor.UIElements
                 listView.showFoldoutHeader = true;
                 listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
                 listView.showAlternatingRowBackgrounds = AlternatingRowBackground.None;
+                listView.itemsSourceSizeChanged += DispatchPropertyChangedEvent;
             }
 
             var propertyCopy = property.Copy();

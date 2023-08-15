@@ -100,7 +100,7 @@ namespace UnityEditor
             {
                 get
                 {
-                    var sceneViewFocus = EditorWindow.focusedWindow is SceneView;                    
+                    var sceneViewFocus = EditorWindow.focusedWindow is SceneView;
                     return sceneViewFocus && s_ViewportsUnderMouse;
                 }
             }
@@ -173,7 +173,9 @@ namespace UnityEditor
             Tools.s_LockedViewTool = Tools.viewTool = tool;
             s_CurrentState = MotionState.kDragging;
             HandleMouseDown(SceneView.lastActiveSceneView, s_ViewToolID, Event.current?.button ?? 0);
-            //Do not pass the event here to avoid string comparisons in the method as this is not needed here.
+            // We should only allow mouse jumping when the shortcuts are enabled.
+            EditorGUIUtility.SetWantsMouseJumping(1);
+            // Do not pass the event here to avoid string comparisons in the method as this is not needed here.
             UpdateViewToolState(null);
             if(Event.current != null)
                 shortcutKey = Event.current.isMouse ? KeyCode.Mouse0 + Event.current.button : Event.current.keyCode;
@@ -305,7 +307,7 @@ namespace UnityEditor
 
             if (Toolbar.get)
                 Toolbar.get.Repaint();
-            EditorGUIUtility.SetWantsMouseJumping(1);
+
             s_ActiveSceneView = s_CurrentSceneView;
 
             if (Tools.s_LockedViewTool == ViewTool.None && Tools.current == Tool.View)

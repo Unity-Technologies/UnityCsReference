@@ -65,7 +65,7 @@ namespace UnityEngine.UIElements
         DisableRendering = 1 << 14,
 
         // Element initial flags
-        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventCallbackParentCategoriesDirty | HierarchyDisplayed
+        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventCallbackParentCategoriesDirty
     }
 
     /// <summary>
@@ -1429,10 +1429,16 @@ namespace UnityEngine.UIElements
             if (elementPanel != null)
             {
                 layoutNode.Config = elementPanel.layoutConfig;
+                layoutNode.SoftReset();
+
                 RegisterRunningAnimations();
 
-                //We need to reset any visual pseudo state
+                // We need to reset any visual pseudo state
                 pseudoStates &= ~(PseudoStates.Focus | PseudoStates.Active | PseudoStates.Hover);
+
+                // UUM-42891: We must presume that we're not displayed because when it's the case (i.e. when we are not
+                // displayed), the layout updater will not process the children unless there is a display *change* in the ancestors.
+                m_Flags &= ~VisualElementFlags.HierarchyDisplayed;
 
                 // Only send this event if the element hasn't received it yet
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == VisualElementFlags.NeedsAttachToPanelEvent)

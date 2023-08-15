@@ -21,8 +21,8 @@ namespace UnityEditor
         SelectionModes[] m_SelectionMatch;
         string[] m_OptionNames;
         int[] m_flagValues;
-        uint[] m_OptionMaskValues;
-        uint[] m_SelectionMaskValues;
+        int[] m_OptionMaskValues;
+        int[] m_SelectionMaskValues;
 
          int m_AllLayersMask = 0;
 
@@ -46,15 +46,12 @@ namespace UnityEditor
             // these are not flag values, i.e. 1, 2, 4...
             // but the mask & flagValue[0..n] for each possible flag value
             // this is to ensure backwards compatibility with everything that uses MaskFieldGUI.GetSelectedValueForControl
-            m_OptionMaskValues = Array.ConvertAll(optionMaskValues, x=>(uint)x);
+            m_OptionMaskValues = (int[])optionMaskValues.Clone();
             m_OptionNames = (string[])optionNames.Clone();
 
             m_flagValues = new int[optionNames.Length];
-            if (flagValues == null || flagValues.Length == optionNames.Length - 2)
-            {
-                m_flagValues[0] = 0;
-                m_flagValues[1] = -1;
-            }
+            m_flagValues[0] = 0;
+            m_flagValues[1] = -1;
 
             if (flagValues == null)
             {
@@ -63,11 +60,23 @@ namespace UnityEditor
             }
             else
             {
-                Array.Copy(flagValues, 0, m_flagValues, optionNames.Length - flagValues.Length, flagValues.Length);
+                int index = 0;
+                int length = flagValues.Length;
+
+                if (flagValues[0] == 0)
+                {
+                    index = 1;
+                    length--;
+                }
+
+                if (flagValues[flagValues.Length - 1] == ~0)
+                    length--;
+
+                Array.Copy(flagValues, index, m_flagValues, 2, length);
             }
 
             m_SelectionMatch = new SelectionModes[] { SelectionModes.All };
-            m_SelectionMaskValues = new uint[] { (uint)mask };
+            m_SelectionMaskValues = new int[] { mask };
 
             m_SingleSelection = true;
             m_MaskChangeCallback = maskChangeCallback;
@@ -116,10 +125,9 @@ namespace UnityEditor
             for (int i = 0; i < m_OptionNames.Length; i++)
             {
                 bool toggleVal = (m_SelectionMaskValues[0] & m_OptionMaskValues[i]) == m_OptionMaskValues[i];
-                if (m_SelectionMaskValues[0] != 0 && i == 0)
+                if ((m_SelectionMaskValues[0] != 0 && i == 0) || m_SelectionMaskValues[0] != -1 && i == 1)
                     toggleVal = false;
-                if ((m_SelectionMaskValues[0] == int.MaxValue || m_SelectionMaskValues[0] == m_AllLayersMask) && i == 1)
-                    toggleVal = true;
+                
 
                 var guiRect = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight);
                 guiRect.width = GetWindowSize().x;
@@ -132,7 +140,7 @@ namespace UnityEditor
                 {
                     m_SelectionMaskValues[0] = m_OptionMaskValues[i];
                     var oldMaskValues = (uint[])m_OptionMaskValues.Clone();
-                    RecalculateMasks();
+                    MaskFieldGUI.CalculateMaskValues(m_SelectionMaskValues[0], m_flagValues, ref m_OptionMaskValues);
 
                     // If all flag options are selected the mask becomes everythingValue to be consistent with the "Everything" option
                     if (oldMaskValues[i] == (uint)m_AllLayersMask)
@@ -141,14 +149,6 @@ namespace UnityEditor
                     m_MaskChangeCallback.Invoke(oldMaskValues, null, i);
                 }
             }
-        }
-
-        void RecalculateMasks()
-        {
-            uint selectedValue = m_SelectionMaskValues[0] == ~0u ? (uint)m_AllLayersMask : m_SelectionMaskValues[0];
-
-            for (var flagIndex = 2; flagIndex < m_flagValues.Length; flagIndex++)
-                m_OptionMaskValues[flagIndex] = selectedValue ^ (uint)m_flagValues[flagIndex];
         }
 
         public override void OnGUI(Rect rect)
@@ -206,7 +206,7 @@ namespace UnityEditor
         {
             var selectionCount = m_SerializedProperty.serializedObject.targetObjects.Length;
 
-            m_SelectionMaskValues = new uint[selectionCount];
+            m_SelectionMaskValues = new int[selectionCount];
             for (int i = 0; i < selectionCount; i++)
             {
                 var serializedObject = new SerializedObject(m_SerializedProperty.serializedObject.targetObjects[i]);
@@ -234,7 +234,7 @@ namespace UnityEditor
                 if (property.intValue == m_AllLayersMask)
                     property.intValue = -1;
 
-                m_SelectionMaskValues[i] = (uint)property.intValue;
+                m_SelectionMaskValues[i] = property.intValue;
                 serializedObject.ApplyModifiedProperties();
             }
 
@@ -248,11 +248,10 @@ namespace UnityEditor
             {
                 m_SelectionMatch = new SelectionModes[m_LayerCount];
                 GetMultiSelectionValues(m_SerializedProperty, out m_SelectionMaskValues, out m_SelectionMatch, m_LayerCount);
-                int[] definedLayers = new int[m_SelectionMaskValues.Length];
-                TagManager.GetDefinedLayers(ref m_OptionNames, ref definedLayers);
-                m_OptionMaskValues = definedLayers.Select(v => (uint)v).ToArray();
+                m_OptionMaskValues = new int[m_SelectionMaskValues.Length];
+                TagManager.GetDefinedLayers(ref m_OptionNames, ref m_OptionMaskValues);
                 for (int i = 0; i < m_OptionMaskValues.Length; i++)
-                    m_AllLayersMask |= (int)m_OptionMaskValues[i];
+                    m_AllLayersMask |= m_OptionMaskValues[i];
             }
 
             for (int i = 0; i < m_OptionNames.Length; i++)
@@ -286,7 +285,7 @@ namespace UnityEditor
 
         SelectionModes[] m_SelectionMatch;
         string[] m_OptionNames;
-        uint[] m_SelectionMaskValues;
+        int[] m_SelectionMaskValues;
         int m_OptionCount;
         int m_AllLayersMask;
         List<int> m_FunctioningOptions = new List<int>();
@@ -365,12 +364,12 @@ namespace UnityEditor
         void ChangeMaskValues(int maskIndex, bool add)
         {
             var selectionCount = m_SerializedProperty.serializedObject.targetObjects.Length;
-            m_SelectionMaskValues = new uint[selectionCount];
+            m_SelectionMaskValues = new int[selectionCount];
 
             SceneModeUtility.SetStaticFlags(m_SerializedProperty.serializedObject.targetObjects, maskIndex, add);
 
             for (int i = 0; i < selectionCount; i++)
-                m_SelectionMaskValues[i] = (uint)m_SerializedProperty.intValue;
+                m_SelectionMaskValues[i] = m_SerializedProperty.intValue;
 
             m_SerializedProperty.serializedObject.ApplyModifiedProperties();
             m_SerializedProperty.serializedObject.SetIsDifferentCacheDirty();
@@ -490,32 +489,32 @@ namespace UnityEditor
             }
         }
 
-        internal static void GetMultiSelectionValues(SerializedProperty serializedProperty, out uint[] selectionMaskValues, out SelectionModes[] selectionMatch, int layerCount)
+        internal static void GetMultiSelectionValues(SerializedProperty serializedProperty, out int[] selectionMaskValues, out SelectionModes[] selectionMatch, int layerCount)
         {
             var selectionCount = serializedProperty.serializedObject.targetObjects.Length;
-            selectionMaskValues = new uint[selectionCount];
+            selectionMaskValues = new int[selectionCount];
             selectionMatch = new SelectionModes[layerCount];
 
             for (int i = 0; i < selectionCount; i++)
             {
                 var serializedObject = new SerializedObject(serializedProperty.serializedObject.targetObjects[i]);
                 var property = serializedObject.FindProperty(serializedProperty.propertyPath);
-                selectionMaskValues[i] = (uint)property.intValue;
+                selectionMaskValues[i] = property.intValue;
             }
 
             if (selectionCount == 1)
             {
-                GetSingleSelectionValues((int)selectionMaskValues[0], out selectionMatch, layerCount);
+                GetSingleSelectionValues(selectionMaskValues[0], out selectionMatch, layerCount);
                 return;
             }
 
             uint[] firstSelected;
-            GetSelected((int)selectionMaskValues[0], out firstSelected, layerCount);
+            GetSelected(selectionMaskValues[0], out firstSelected, layerCount);
 
             for (int i = 1; i < selectionCount; i++)
             {
                 uint[] secondSelected;
-                GetSelected((int)selectionMaskValues[i], out secondSelected, layerCount);
+                GetSelected(selectionMaskValues[i], out secondSelected, layerCount);
 
                 for (int j = 0; j < layerCount; j++)
                 {

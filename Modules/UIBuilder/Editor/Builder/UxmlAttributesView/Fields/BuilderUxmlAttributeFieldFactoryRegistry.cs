@@ -52,6 +52,7 @@ namespace Unity.UI.Builder
             RegisterFactory(new BuilderUxmlEnumAttributeFieldFactory());
             RegisterFactory(new BuilderUxmlTypeAttributeFieldFactory());
             RegisterFactory(new BuilderUxmlAssetAttributeFieldFactory());
+            RegisterFactory(new BuilderTypedUxmlAttributeFieldFactory<Hash128, Hash128Field>());
         }
 
         /// <summary>

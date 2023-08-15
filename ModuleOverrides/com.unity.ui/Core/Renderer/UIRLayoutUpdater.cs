@@ -24,6 +24,10 @@ namespace UnityEngine.UIElements
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
+        static readonly ProfilerMarker k_ComputeLayoutMarker = new("LayoutUpdater.ComputeLayout");
+        static readonly ProfilerMarker k_UpdateSubTreeMarker = new("LayoutUpdater.UpdateSubTree");
+        static readonly ProfilerMarker k_DispatchChangeEventsMarker = new("LayoutUpdater.DispatchChangeEvents");
+
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
             if ((versionChangeType & (VersionChangeType.Layout | VersionChangeType.Hierarchy)) == 0)
@@ -52,11 +56,17 @@ namespace UnityEngine.UIElements
                     panel.ApplyStyles();
 
                 panel.duringLayoutPhase = true;
+                    k_ComputeLayoutMarker.Begin();
                 visualTree.layoutNode.CalculateLayout();
+                    k_ComputeLayoutMarker.End();
                 panel.duringLayoutPhase = false;
 
+                    k_UpdateSubTreeMarker.Begin();
                 UpdateSubTree(visualTree, changeEventsList);
+                    k_UpdateSubTreeMarker.End();
+                    k_DispatchChangeEventsMarker.Begin();
                 DispatchChangeEvents(changeEventsList, validateLayoutCount);
+                    k_DispatchChangeEventsMarker.End();
 
                 if (validateLayoutCount++ >= kMaxValidateLayoutCount)
                 {
@@ -170,10 +180,13 @@ namespace UnityEngine.UIElements
             if (layoutPositionChanged || paddingPositionChanged || isDisplayedJustChanged)
                 changeType |= VersionChangeType.Transform;
 
+            if (isDisplayedJustChanged)
+                changeType |= VersionChangeType.Size;
+
             // If the scale or rotate value of the style are not default, a change in the size will affect the resulting
             // translation part of the local transform. Only when the transformOrigin is at (0, 0) we do not need to
             // update the transform.
-            if (((changeType & VersionChangeType.Size) != 0) && ((changeType & VersionChangeType.Transform) == 0))
+            if ((changeType & (VersionChangeType.Size | VersionChangeType.Transform)) == VersionChangeType.Size)
             {
                 if (!ve.hasDefaultRotationAndScale)
                 {
@@ -206,11 +219,6 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            if (isDisplayedJustChanged)
-            {
-                ve.IncrementVersion(VersionChangeType.Size);
-            }
-
             // Only send GeometryChanged events when the layout changes
             // (padding changes don't affect the element's outer geometry).
             if ((layoutSizeChanged || layoutPositionChanged || isDisplayedJustChanged) && ve.HasEventCallbacksOrDefaultActions(GeometryChangedEvent.EventCategory))
@@ -236,6 +244,5 @@ namespace UnityEngine.UIElements
                 }
             }
         }
-
     }
 }
