@@ -238,22 +238,22 @@ namespace UnityEditor
         {
             uint selectedValue = (uint)mask;
 
-            if (mask == int.MaxValue)
+            var flagStartIndex = 0;
+            if (flagValues[0] == 0)
+                flagStartIndex++;
+            if (flagValues.Length > 1 && flagValues[1] == -1)
+                flagStartIndex++;
+
+            if (mask == ~0)
             {
                 uint allLayersMask = 0;
-                for (var flagIndex = 2; flagIndex < flagValues.Length; flagIndex++)
+                for (var flagIndex = flagStartIndex; flagIndex < flagValues.Length; flagIndex++)
                 {
                     allLayersMask |= (uint)flagValues[flagIndex];
                 }
 
                 selectedValue = allLayersMask;
             }
-
-            var flagStartIndex = 0;
-            if (flagValues[0] == 0)
-                flagStartIndex++;
-            if (flagValues.Length > 1 && flagValues[1] == -1)
-                flagStartIndex++;
 
             var flagEndIndex = flagStartIndex + optionMaskValues.Length - 2;
 

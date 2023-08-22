@@ -178,7 +178,9 @@ namespace UnityEditor.Search
             if (xs == null) return 2;
             if (ys == null) return -2;
 
-            return DefaultCompare(xs, ys, sortAscending: true);
+            var c = DefaultCompare(xs, ys, sortAscending: true);
+            if (c != 0) return c;
+            return base.CompareItems(x, y);
         }
 
         public override int GetHashCode()

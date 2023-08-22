@@ -2,13 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Scripting;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
     internal static class AssetPreviewUpdater
     {
+        static readonly Type[] s_InspectorsRequireFullPipelineInitialization = new[] { typeof(MaterialEditor), typeof(ModelInspector), typeof(GameObjectInspector) };
         public static Texture2D CreatePreviewForAsset(Object obj, Object[] subAssets, string assetPath)
         {
             return CreatePreview(obj, subAssets, assetPath, 128, 128);
@@ -20,14 +24,11 @@ namespace UnityEditor
             if (obj == null)
                 return null;
 
-            if (!RenderPipelineManager.pipelineSwitchCompleted)
-                return null;
-
-            System.Type type = CustomEditorAttributes.FindCustomEditorType(obj, false);
+            var type = CustomEditorAttributes.FindCustomEditorType(obj, false);
             if (type == null)
                 return null;
 
-            System.Reflection.MethodInfo info = type.GetMethod("RenderStaticPreview");
+            var info = type.GetMethod("RenderStaticPreview");
             if (info == null)
             {
                 Debug.LogError("Fail to find RenderStaticPreview base method");
@@ -38,12 +39,29 @@ namespace UnityEditor
                 return null;
 
 
-            Editor editor = Editor.CreateEditor(obj);
+            var editor = Editor.CreateEditor(obj);
 
             if (editor == null)
                 return null;
 
-            Texture2D tex = editor.RenderStaticPreview(assetPath, subAssets, width, height);
+            //Check that Render Pipeline is ready
+            var pipelineWasNotInitialized = !RenderPipelineManager.pipelineSwitchCompleted;
+
+            //We keep this call to initialize Render Pipeline when Render Pipeline is not ready
+            var tex = editor.RenderStaticPreview(assetPath, subAssets, width, height);
+
+            //If Render Pipeline was not created before we will ignore the results and mark it dirty.
+            if (pipelineWasNotInitialized)
+            {
+                for (int i = 0; i < s_InspectorsRequireFullPipelineInitialization.Length; i++)
+                {
+                    if (type != s_InspectorsRequireFullPipelineInitialization[i])
+                        continue;
+                    EditorUtility.SetDirty(obj);
+                    Object.DestroyImmediate(editor);
+                    return null;
+                }
+            }
 
             // For debugging we write the preview to a file (keep)
             //{

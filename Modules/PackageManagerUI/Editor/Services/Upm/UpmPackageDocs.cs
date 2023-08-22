@@ -269,7 +269,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private static bool IsBuiltIn(PackageInfo packageInfo)
         {
-            return packageInfo.source == PackageSource.BuiltIn && packageInfo.type == "module";
+            // We add null check so that we don't have to mock setup packageInfo every time we do an indirect calls to Refresh in tests
+            return packageInfo != null && packageInfo.source == PackageSource.BuiltIn && packageInfo.type == "module";
         }
 
         private static bool IsFeature(PackageInfo packageInfo)

@@ -88,6 +88,10 @@ namespace UnityEditor.Experimental.Licensing
 
         [NativeMethod("HasEntitlementsExtended")]
         public extern static EntitlementInfo[] HasEntitlementsExtended(string[] entitlements, bool includeCustomData);
+
+        public static extern void InvokeLicenseUpdateCallbacks();
+
+        public static extern bool UpdateLicense();
     }
 
 }

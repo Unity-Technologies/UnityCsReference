@@ -267,7 +267,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
                 var labels = new List<GUIContent>();
-                if (!m_Package.Is(PackageType.AssetStore))
+                if (!string.IsNullOrEmpty(m_Version.name))
                     labels.Add(Styles.name);
                 labels.Add(Styles.displayName);
                 if (!m_Package.Is(PackageType.Feature))
@@ -275,7 +275,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 labels.Add(Styles.category);
 
                 var contents = new List<string>();
-                if (!m_Package.Is(PackageType.AssetStore))
+                if (!string.IsNullOrEmpty(m_Version.name))
                     contents.Add(m_Version.name);
                 contents.Add(m_Version.displayName);
                 if (!m_Package.Is(PackageType.Feature))

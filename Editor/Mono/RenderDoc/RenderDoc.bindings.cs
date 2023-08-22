@@ -19,7 +19,7 @@ namespace UnityEditorInternal
         static WindowAction RenderDocGlobalAction()
         {
             // Developer-mode render doc button to enable capturing any HostView content/panels
-            var action = WindowAction.CreateWindowActionButton("RenderDoc", CaptureRenderDocFullContent, null, ContainerWindow.kButtonWidth + 1, RenderDocCaptureButton);
+            var action = WindowAction.CreateWindowActionButton("RenderDoc", CaptureRenderDoc, null, ContainerWindow.kButtonWidth + 1, RenderDocCaptureButton);
             action.validateHandler = ShowRenderDocButton;
             return action;
         }
@@ -45,9 +45,12 @@ namespace UnityEditorInternal
             return GUI.Button(r2, s_RenderDocContent, EditorStyles.iconButton);
         }
 
-        private static void CaptureRenderDocFullContent(EditorWindow view, WindowAction self)
+        private static void CaptureRenderDoc(EditorWindow view, WindowAction self)
         {
-            view.m_Parent.CaptureRenderDocFullContent();
+            if (view is GameView)
+                view.m_Parent.CaptureRenderDocScene();
+            else
+                view.m_Parent.CaptureRenderDocFullContent();
         }
 
         private static bool ShowRenderDocButton(EditorWindow view, WindowAction self)
@@ -73,7 +76,7 @@ namespace UnityEditorInternal
             }
             else if (EditorWindow.focusedWindow != null)
             {
-                CaptureRenderDocFullContent(EditorWindow.focusedWindow, null);
+                CaptureRenderDoc(EditorWindow.focusedWindow, null);
             }
         }
 

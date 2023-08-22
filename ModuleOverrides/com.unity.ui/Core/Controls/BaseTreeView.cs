@@ -215,7 +215,7 @@ namespace UnityEngine.UIElements
             viewDataKey = ussClassName;
             AddToClassList(ussClassName);
 
-            RegisterCallback<MouseUpEvent>(OnTreeViewMouseUp, TrickleDown.TrickleDown);
+            RegisterCallback<PointerUpEvent>(OnTreeViewPointerUp, TrickleDown.TrickleDown);
         }
 
         /// <summary>
@@ -559,7 +559,7 @@ namespace UnityEngine.UIElements
             viewController.CollapseAll();
         }
 
-        private void OnTreeViewMouseUp(MouseUpEvent evt)
+        private void OnTreeViewPointerUp(PointerUpEvent evt)
         {
             scrollView.contentContainer.Focus();
         }

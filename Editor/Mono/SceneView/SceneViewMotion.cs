@@ -166,7 +166,9 @@ namespace UnityEditor
             Tools.s_LockedViewTool = Tools.viewTool = tool;
             s_CurrentState = MotionState.kDragging;
             HandleMouseDown(SceneView.lastActiveSceneView, s_ViewToolID, Event.current?.button ?? 0);
-            //Do not pass the event here to avoid string comparisons in the method as this is not needed here.
+            // We should only allow mouse jumping when the shortcuts are enabled.
+            EditorGUIUtility.SetWantsMouseJumping(1);
+            // Do not pass the event here to avoid string comparisons in the method as this is not needed here.
             UpdateViewToolState(null);
             if(Event.current != null)
                 shortcutKey = Event.current.isMouse ? KeyCode.Mouse0 + Event.current.button : Event.current.keyCode;
@@ -209,7 +211,6 @@ namespace UnityEditor
             {
                 case EventType.ScrollWheel: HandleScrollWheel(view, view.in2DMode == evt.alt); break; // Default to zooming to mouse position in 2D mode without alt
                 case EventType.MouseDown: HandleMouseDown(view, id, evt.button); break;
-                case EventType.KeyUp:
                 case EventType.MouseUp: HandleMouseUp(view, id, evt.button, evt.clickCount); break;
                 case EventType.KeyDown: HandleKeyDown(view, id); break;
                 case EventType.MouseMove:
@@ -298,7 +299,7 @@ namespace UnityEditor
 
             if (Toolbar.get)
                 Toolbar.get.Repaint();
-            EditorGUIUtility.SetWantsMouseJumping(1);
+
             s_ActiveSceneView = s_CurrentSceneView;
 
             if (Tools.s_LockedViewTool == ViewTool.None && Tools.current == Tool.View)
@@ -560,7 +561,11 @@ namespace UnityEditor
             if (Event.current.keyCode == KeyCode.Escape && GUIUtility.hotControl == s_ViewToolID)
             {
                 GUIUtility.hotControl = 0;
+                Tools.viewTool = ViewTool.Pan;
+                Tools.s_LockedViewTool = ViewTool.None;
+                shortcutKey = KeyCode.None;
                 ResetDragState();
+                viewToolActiveChanged?.Invoke();
             }
         }
 

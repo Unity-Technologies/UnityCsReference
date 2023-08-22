@@ -329,13 +329,18 @@ namespace UnityEditor.Search
         /// <returns>A list of search items matching the search query.</returns>
         public static List<SearchItem> GetItems(SearchContext context, SearchFlags options = SearchFlags.Default)
         {
+            return GetItems(context, GetNewSessionGuid(), options);
+        }
+
+        static List<SearchItem> GetItems(SearchContext context, Hash128 sessionGuid, SearchFlags options = SearchFlags.Default)
+        {
             // Stop all search sessions every time there is a new search.
             context.sessions.StopAllAsyncSearchSessions();
             context.searchFinishTime = context.searchStartTime = DateTime.UtcNow.Ticks;
             context.sessionEnded -= OnSearchEnded;
             context.sessionEnded += OnSearchEnded;
 
-            context.sessions.StartSessions(context);
+            context.sessions.StartSessions(context, sessionGuid);
 
             if (options.HasAny(SearchFlags.WantsMore))
                 context.wantsMore = true;
@@ -520,7 +525,7 @@ namespace UnityEditor.Search
             Action<SearchContext> onSearchCompleted,
             SearchFlags options = SearchFlags.None)
         {
-            var requestId = Guid.NewGuid().ToString("N");
+            var requestId = GetNewSessionGuid();
             context.options |= options;
             if (context.options.HasAny(SearchFlags.Debug))
                 Debug.Log($"{requestId} Request started {context.searchText} ({context.options})");
@@ -545,6 +550,8 @@ namespace UnityEditor.Search
 
             void OnSessionEnded(SearchContext c)
             {
+                if (c.sessions.currentSessionContext.guid != requestId)
+                    return;
                 if (context.options.HasAny(SearchFlags.Debug))
                     Debug.Log($"{requestId} Request session ended {context.searchText}");
                 --sessionCount;
@@ -563,7 +570,7 @@ namespace UnityEditor.Search
             context.asyncItemReceived += ReceiveItems;
             context.sessionStarted += OnSessionStarted;
             context.sessionEnded += OnSessionEnded;
-            var firstResults = GetItems(context, context.options);
+            var firstResults = GetItems(context, requestId, context.options);
             if (firstResults.Count > 0)
                 ReceiveItems(context, firstResults);
             firstBatchResolved = true;
@@ -576,6 +583,11 @@ namespace UnityEditor.Search
                 context.sessionEnded -= OnSessionEnded;
                 onSearchCompleted?.Invoke(context);
             }
+        }
+
+        static Hash128 GetNewSessionGuid()
+        {
+            return Hash128.Compute(Guid.NewGuid().ToByteArray());
         }
 
         private static void OnSearchEnded(SearchContext context)

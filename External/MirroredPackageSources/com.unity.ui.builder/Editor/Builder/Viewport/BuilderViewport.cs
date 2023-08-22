@@ -348,7 +348,7 @@ namespace Unity.UI.Builder
                 if (evt.clickCount == 2)
                 {
                     var posInViewport = m_PickOverlay.ChangeCoordinatesTo(this, evt.localMousePosition);
-                    BuilderInPlaceTextEditingUtilities.OpenEditor(pickedElement, this.ChangeCoordinatesTo(pickedElement, posInViewport));
+                    BuilderInPlaceTextEditingUtilities.OpenEditor(pickedElement, this.ChangeCoordinatesTo(pickedElement, posInViewport), documentRootElement);
                 }
             }
             else

@@ -235,7 +235,9 @@ namespace UnityEditor.SceneManagement
 
             if (warnList.Count > 0)
             {
-                string blockingNames = string.Join(", ", warnList.Select(e => MonoScript.FromMonoBehaviour(e).name).ToArray());
+                string blockingNames = string.Join(", ", warnList.Select(e => MonoScript.FromMonoBehaviour(e).name).Distinct().ToArray());
+                if (blockingNames.Length > 1000)
+                    blockingNames = blockingNames.Substring(0, 1000) + "\n...";
                 return EditorUtility.DisplayDialog(
                     L10n.Tr("Risk of unwanted modifications"),
                     string.Format(

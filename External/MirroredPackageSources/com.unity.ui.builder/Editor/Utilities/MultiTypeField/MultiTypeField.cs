@@ -70,7 +70,8 @@ namespace Unity.UI.Builder
             if (m_TypeOptions.Count > 0)
             {
                 m_ObjectField.objectType = m_TypeOptions[formatValue];
-                if (m_ObjectField.value != null && m_ObjectField.objectType != m_ObjectField.value.GetType())
+                if (!m_ObjectField.value) return formatValue;
+                if (!m_ObjectField.objectType.IsInstanceOfType(m_ObjectField.value))
                     m_ObjectField.value = null;
             }
 
@@ -79,18 +80,18 @@ namespace Unity.UI.Builder
 
         public void SetTypePopupValueWithoutNotify(Type type)
         {
-            var typeDisplayName = m_TypeOptions.FirstOrDefault(pair => pair.Value == type).Key;
+            var typeDisplayName = m_TypeOptions.FirstOrDefault(pair => pair.Value.IsAssignableFrom(type)).Key;
             m_TypePopup.SetValueWithoutNotify(typeDisplayName);
         }
 
         public override void SetValueWithoutNotify(Object newValue)
         {
             m_ObjectField.SetValueWithoutNotify(newValue);
-            if (newValue != null)
+            if (newValue)
             {
                 foreach (var pair in m_TypeOptions)
                 {
-                    if (pair.Value == newValue.GetType())
+                    if (pair.Value.IsInstanceOfType(newValue))
                     {
                         m_TypePopup.SetValueWithoutNotify(pair.Key);
                         break;

@@ -98,7 +98,7 @@ namespace UnityEditorInternal
                 {
                     m_Keys = new List<AnimationWindowKeyframe>();
                     foreach (AnimationWindowCurve curve in m_Curves)
-                        foreach (AnimationWindowKeyframe key in curve.m_Keyframes)
+                        foreach (AnimationWindowKeyframe key in curve.keyframes)
                             m_Keys.Add(key);
 
                     m_Keys.Sort((a, b) => a.time.CompareTo(b.time));

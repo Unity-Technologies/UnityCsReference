@@ -646,6 +646,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\IDataWatchService.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\IDataWatchService.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\IEnumerableUtils.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\IEnumerableUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\IGroupBox.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\IGroupBox.cs</Link>
     </Compile>
