@@ -177,7 +177,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             while (m_FetchDetailsQueue.Any() && numItemsAdded < k_FetchDetailsCountPerUpdate && m_CurrentFetchDetails.Count < k_MaxFetchDetailsCount)
             {
                 var packageId = m_FetchDetailsQueue.Dequeue();
-                if (!m_DetailsToFetch.Remove(packageId))
+                if (m_CurrentFetchDetails.Contains(packageId) || !m_DetailsToFetch.Remove(packageId) || m_AssetStoreCache.GetProductInfo(packageId) != null)
                     continue;
                 if (long.TryParse(packageId, out var productId))
                 {

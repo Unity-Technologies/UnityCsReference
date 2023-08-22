@@ -183,7 +183,10 @@ namespace UnityEditor
         //AssetBundleAllowEditorOnlyScriptableObjects = 1 << 14,
 
         //Removes the Unity Version number in the Archive File & Serialized File headers during the build.
-        AssetBundleStripUnityVersion = 32768 // 1 << 15
+        AssetBundleStripUnityVersion = 32768, // 1 << 15
+
+        // Calculate bundle hash on the bundle content
+        UseContentHash = 65536 // 1 << 16
     }
 
     // Keep in sync with CanAppendBuild in EditorUtility.h
@@ -233,6 +236,16 @@ namespace UnityEditor
         None,
         PlayerConnectsToHost,
         PlayerListens
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BuildAssetBundlesParameters
+    {
+        public string outputPath { get; set; }
+        public AssetBundleBuild[] bundleDefinitions { get; set; }
+        public BuildAssetBundleOptions options { get; set; }
+        public BuildTarget targetPlatform { get; set; }
+        public int subtarget { get; set; }
     }
 
     // Lets you programmatically build players or AssetBundles which can be loaded from the web.
@@ -625,7 +638,30 @@ namespace UnityEditor
             if (builds == null)
                 throw new ArgumentException("AssetBundleBuild cannot be null.");
 
+            // For Standalone platforms, the Default subtarget means to use the current active one
+            if (targetPlatformGroup == BuildTargetGroup.Standalone &&
+                (StandaloneBuildSubtarget)subtarget == StandaloneBuildSubtarget.NoSubtarget)
+            {
+                subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(targetPlatform);
+            }
+
             return BuildAssetBundlesWithInfoInternal(outputPath, builds, assetBundleOptions, targetPlatformGroup, targetPlatform, subtarget);
+        }
+
+        [NativeThrows]
+        public static AssetBundleManifest BuildAssetBundles(BuildAssetBundlesParameters buildParameters)
+        {
+            if (buildParameters.targetPlatform == 0 || buildParameters.targetPlatform == BuildTarget.NoTarget)
+            {
+                buildParameters.targetPlatform = EditorUserBuildSettings.activeBuildTarget;
+
+                // Note: subtarget is associated with multiple enums, and 0 may have a specific meaning,
+                // so we only auto-set it when the target is also coming from the build settings
+                buildParameters.subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(buildParameters.targetPlatform);
+            }
+
+            BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(buildParameters.targetPlatform);
+            return BuildAssetBundles(buildParameters.outputPath, buildParameters.bundleDefinitions, buildParameters.options, targetPlatformGroup, buildParameters.targetPlatform, buildParameters.subtarget);
         }
 
         [NativeThrows]

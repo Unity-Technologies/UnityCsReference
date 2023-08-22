@@ -16,15 +16,25 @@ namespace UnityEditor.Search
     {
         public readonly SearchContext searchContext;
         public readonly StackTrace stackTrace;
+        public readonly Hash128 guid;
 
-        public SearchSessionContext(SearchContext context, StackTrace stackTrace)
+        public SearchSessionContext(SearchContext context, StackTrace stackTrace, Hash128 guid)
         {
             this.searchContext = context;
             this.stackTrace = stackTrace;
+            this.guid = guid;
         }
 
+        public SearchSessionContext(SearchContext context, StackTrace stackTrace)
+            : this(context, stackTrace, Hash128.Compute(Guid.NewGuid().ToByteArray()))
+        {}
+
+        public SearchSessionContext(SearchContext context, Hash128 guid)
+            : this(context, new StackTrace(2, true), guid)
+        {}
+
         public SearchSessionContext(SearchContext context)
-            : this(context, new StackTrace(2, true))
+            : this(context, new StackTrace(2, true), Hash128.Compute(Guid.NewGuid().ToByteArray()))
         {}
     }
 
@@ -379,7 +389,7 @@ namespace UnityEditor.Search
             asyncItemReceived?.Invoke(context, items);
         }
 
-        public void StartSessions(SearchContext context)
+        public void StartSessions(SearchContext context, Hash128 sessionGuid)
         {
             if (m_CancelSource != null)
             {
@@ -388,7 +398,7 @@ namespace UnityEditor.Search
             }
             m_CancelSource = new System.Threading.CancellationTokenSource();
 
-            currentSessionContext = new SearchSessionContext(context);
+            currentSessionContext = new SearchSessionContext(context, sessionGuid);
         }
 
         /// <summary>

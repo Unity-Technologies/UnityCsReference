@@ -14,6 +14,9 @@ namespace UnityEngine.UIElements
 
         internal Clickable m_Clickable;
 
+        // Needed by the UIBuilder for authoring in the viewport
+        internal Label boolFieldLabelElement => m_Label;
+
         /// <summary>
         /// Creates a <see cref="BaseBoolField"/> with a Label and a default manipulator.
         /// </summary>

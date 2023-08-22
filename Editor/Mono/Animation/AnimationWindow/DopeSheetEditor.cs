@@ -805,7 +805,7 @@ namespace UnityEditorInternal
             if (rootGameObject == null)
                 return;
 
-            var hasValidCurve = curve.m_Keyframes.Count > 0 && curve.binding.type == typeof(SpriteRenderer);
+            var hasValidCurve = curve.keyframes.Count > 0 && curve.binding.type == typeof(SpriteRenderer);
             if (!hasValidCurve)
                 return;
 
@@ -814,7 +814,7 @@ namespace UnityEditorInternal
             if (!hasValidSpriteRenderer)
                 return;
 
-            var keyframe = curve.m_Keyframes[0];
+            var keyframe = curve.keyframes[0];
             var sprite = keyframe.value as Sprite;
             if (sprite != null)
             {
@@ -1112,12 +1112,12 @@ namespace UnityEditorInternal
                 {
                     foreach (AnimationWindowCurve curve in state.activeCurves)
                     {
-                        int keyCount = curve.m_Keyframes.Count;
+                        int keyCount = curve.keyframes.Count;
 
                         if (keyCount > 1)
                         {
-                            Vector2 pt1 = new Vector2(curve.m_Keyframes[0].time, 0.0f);
-                            Vector2 pt2 = new Vector2(curve.m_Keyframes[keyCount - 1].time, 0.0f);
+                            Vector2 pt1 = new Vector2(curve.keyframes[0].time, 0.0f);
+                            Vector2 pt2 = new Vector2(curve.keyframes[keyCount - 1].time, 0.0f);
 
                             if (firstKey)
                             {

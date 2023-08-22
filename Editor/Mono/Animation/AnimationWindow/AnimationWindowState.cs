@@ -532,7 +532,7 @@ namespace UnityEditorInternal
                 List<AnimationWindowKeyframe> toBeDeleted = new List<AnimationWindowKeyframe>();
 
                 // If selected keys are dragged over non-selected keyframe at exact same time, then delete the unselected ones underneath
-                foreach (AnimationWindowKeyframe other in snapshot.curve.m_Keyframes)
+                foreach (AnimationWindowKeyframe other in snapshot.curve.keyframes)
                 {
                     // Keyframe is in selection, skip.
                     if (snapshot.selectedKeys.Exists(liveEditKey => liveEditKey.key == other))
@@ -547,7 +547,7 @@ namespace UnityEditorInternal
 
                 foreach (AnimationWindowKeyframe deletedKey in toBeDeleted)
                 {
-                    snapshot.curve.m_Keyframes.Remove(deletedKey);
+                    snapshot.curve.RemoveKeyframe(deletedKey);
                 }
             }
 
@@ -806,7 +806,7 @@ namespace UnityEditorInternal
                 {
                     foreach (AnimationWindowCurve curve in allCurves)
                     {
-                        foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
+                        foreach (AnimationWindowKeyframe keyframe in curve.keyframes)
                         {
                             if (keyframe.GetHash() == m_ActiveKeyframeHash)
                                 m_ActiveKeyframeCache = keyframe;
@@ -831,7 +831,7 @@ namespace UnityEditorInternal
                     m_SelectedKeysCache = new List<AnimationWindowKeyframe>();
                     foreach (AnimationWindowCurve curve in allCurves)
                     {
-                        foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
+                        foreach (AnimationWindowKeyframe keyframe in curve.keyframes)
                         {
                             if (KeyIsSelected(keyframe))
                             {
@@ -961,7 +961,7 @@ namespace UnityEditorInternal
                 curves.Add(keyframe.curve);
 
                 UnselectKey(keyframe);
-                keyframe.curve.m_Keyframes.Remove(keyframe);
+                keyframe.curve.RemoveKeyframe(keyframe);
             }
 
             SaveCurves(activeAnimationClip, curves, kEditCurveUndoLabel);
@@ -984,7 +984,7 @@ namespace UnityEditorInternal
                 {
                     LiveEditCurve snapshot = new LiveEditCurve();
                     snapshot.curve = selectedKey.curve;
-                    foreach (AnimationWindowKeyframe key in selectedKey.curve.m_Keyframes)
+                    foreach (AnimationWindowKeyframe key in selectedKey.curve.keyframes)
                     {
                         LiveEditKeyframe liveEditKey = new LiveEditKeyframe();
                         liveEditKey.keySnapshot = new AnimationWindowKeyframe(key);
@@ -1222,7 +1222,7 @@ namespace UnityEditorInternal
         {
             foreach (AnimationWindowCurve curve in activeCurves)
             {
-                foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
+                foreach (AnimationWindowKeyframe keyframe in curve.keyframes)
                 {
                     s_KeyframeClipboard.Add(new AnimationWindowKeyframe(keyframe));
                 }
@@ -1298,14 +1298,16 @@ namespace UnityEditorInternal
                 //  Only allow pasting of key frame from numerical curves to numerical curves or from pptr curves to pptr curves.
                 if ((newKeyframe.time >= 0.0f) && (newKeyframe.curve != null) && (newKeyframe.curve.isPPtrCurve == keyframe.curve.isPPtrCurve))
                 {
-                    if (newKeyframe.curve.HasKeyframe(AnimationKeyTime.Time(newKeyframe.time, newKeyframe.curve.clip.frameRate)))
-                        newKeyframe.curve.RemoveKeyframe(AnimationKeyTime.Time(newKeyframe.time, newKeyframe.curve.clip.frameRate));
+                    var keyTime = AnimationKeyTime.Time(newKeyframe.time, newKeyframe.curve.clip.frameRate);
+
+                    if (newKeyframe.curve.HasKeyframe(keyTime))
+                        newKeyframe.curve.RemoveKeyframe(keyTime);
 
                     // When copy-pasting multiple keyframes (curve), its a continous thing. This is why we delete the existing keyframes in the pasted range.
                     if (lastTargetCurve == newKeyframe.curve)
                         newKeyframe.curve.RemoveKeysAtRange(lastTime, newKeyframe.time);
 
-                    newKeyframe.curve.m_Keyframes.Add(newKeyframe);
+                    newKeyframe.curve.AddKeyframe(newKeyframe, keyTime);
                     SelectKey(newKeyframe);
                     // TODO: Optimize to only save curve once instead once per keyframe
                     SaveCurve(newKeyframe.curve.clip, newKeyframe.curve, kEditCurveUndoLabel);
@@ -1660,7 +1662,7 @@ namespace UnityEditorInternal
                     // Reposition all keyframes to match the new sampling rate
                     foreach (var curve in selection.curves)
                     {
-                        foreach (var key in curve.m_Keyframes)
+                        foreach (var key in curve.keyframes)
                         {
                             int frame = AnimationKeyTime.Time(key.time, clipFrameRate).frame;
                             key.time = AnimationKeyTime.Frame(frame, value).time;

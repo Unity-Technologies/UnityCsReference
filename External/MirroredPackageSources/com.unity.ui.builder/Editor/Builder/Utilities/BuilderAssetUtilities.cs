@@ -192,6 +192,17 @@ namespace Unity.UI.Builder
                 var rightOrder = reorderedUSSList.IndexOf(right.styleSheet);
                 return leftOrder.CompareTo(rightOrder);
             });
+
+            var rootElement = openUXMLFile.visualTreeAsset.GetRootUXMLElement();
+            if (rootElement != null && rootElement.stylesheets != null)
+            {
+                rootElement.stylesheets.Sort((left, right) =>
+                {
+                    var leftOrder = reorderedUSSList.IndexOf(left);
+                    var rightOrder = reorderedUSSList.IndexOf(right);
+                    return leftOrder.CompareTo(rightOrder);
+                });
+            }
         }
 
         public static VisualElementAsset AddElementToAsset(

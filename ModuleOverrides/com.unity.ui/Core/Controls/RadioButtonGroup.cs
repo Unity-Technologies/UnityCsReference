@@ -73,9 +73,23 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                if (value == null)
+                if (!value.HasValues())
                 {
                     m_RadioButtonContainer.Clear();
+
+                    // Only need to clear radio buttons if we're attached to a panel, because we already
+                    // do the cleaning on detach to panel otherwise.
+                    if (panel != null)
+                    {
+                        return;
+                    }
+
+                    foreach (var radioButton in m_RadioButtons)
+                    {
+                        radioButton.UnregisterValueChangedCallback(m_RadioButtonValueChangedCallback);
+                    }
+                    m_RadioButtons.Clear();
+
                     return;
                 }
 
@@ -111,6 +125,8 @@ namespace UnityEngine.UIElements
         }
 
         VisualElement m_RadioButtonContainer;
+
+        public override VisualElement contentContainer => m_RadioButtonContainer ?? this;
 
         /// <summary>
         /// Initializes and returns an instance of RadioButtonGroup.

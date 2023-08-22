@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Mono.Cecil;
+using Unity.IO.LowLevel.Unsafe;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.Scripting;
 
@@ -321,7 +322,7 @@ namespace UnityEditor
             var precompiledAssemblies = EditorCompilationInterface.Instance
                 .PrecompiledAssemblyProvider.GetAllPrecompiledAssemblies()
                 .Where(x => x.Flags.HasFlag(AssemblyFlags.UserAssembly));
-            var allPrecompiledAssemblies = precompiledAssemblies.ToDictionary(x => AssetPath.ReplaceSeparators(x.Path));
+            var allPrecompiledAssemblies = precompiledAssemblies.ToDictionary(x => AssetPath.ReplaceSeparators(VirtualFileSystem.ToLogicalPath(x.Path)));
 
             for (int i = 0; i < assemblyPaths.Length; ++i)
             {

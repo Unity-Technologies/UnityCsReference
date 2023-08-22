@@ -903,7 +903,7 @@ namespace UnityEditorInternal
 
             foreach (AnimationWindowCurve curve in curves)
             {
-                foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
+                foreach (AnimationWindowKeyframe keyframe in curve.keyframes)
                 {
                     AnimationKeyTime keyTime = AnimationKeyTime.Time(keyframe.time, frameRate);
                     if (keyTime.frame <= candidateKeyTime.frame && keyTime.frame >= nextTime.frame)
@@ -929,7 +929,7 @@ namespace UnityEditorInternal
 
             foreach (AnimationWindowCurve curve in curves)
             {
-                foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
+                foreach (AnimationWindowKeyframe keyframe in curve.keyframes)
                 {
                     AnimationKeyTime keyTime = AnimationKeyTime.Time(keyframe.time, frameRate);
                     if (keyTime.frame >= candidateKeyTime.frame && keyTime.frame <= previousTime.frame)
@@ -1304,8 +1304,8 @@ namespace UnityEditorInternal
             {
                 int curveID = curve.GetHashCode();
                 if (curveID == curveSelection.curveID)
-                    if (curve.m_Keyframes.Count > curveSelection.key)
-                        return curve.m_Keyframes[curveSelection.key];
+                    if (curve.keyframes.Count > curveSelection.key)
+                        return curve.keyframes[curveSelection.key];
             }
 
             return null;

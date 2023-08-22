@@ -110,7 +110,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshName()
         {
-            if (!string.IsNullOrEmpty(m_Version.name) && !m_Package.Is(PackageType.AssetStore))
+            if (!string.IsNullOrEmpty(m_Version.name))
             {
                 UIUtils.SetElementDisplay(detailName, true);
                 detailName.SetValueWithoutNotify(m_Version.name);
