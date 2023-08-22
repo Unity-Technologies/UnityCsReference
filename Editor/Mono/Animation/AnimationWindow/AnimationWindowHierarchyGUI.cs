@@ -491,7 +491,7 @@ namespace UnityEditorInternal
             {
                 foreach (var curve in node.curves)
                 {
-                    if (curve.m_Keyframes.Any(key => state.time.ContainsTime(key.time)))
+                    if (curve.keyframes.Any(key => state.time.ContainsTime(key.time)))
                     {
                         hasKey = true;
                     }

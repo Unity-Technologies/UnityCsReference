@@ -78,6 +78,8 @@ namespace Unity.UI.Builder
             get { return m_Container; }
         }
 
+        internal TreeView treeView => m_TreeView;
+
         public ElementHierarchyView(
             BuilderPaneWindow paneWindow,
             VisualElement documentRootElement,

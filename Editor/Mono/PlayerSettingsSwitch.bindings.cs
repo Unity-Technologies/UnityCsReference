@@ -267,6 +267,15 @@ namespace UnityEditor
 
             [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
             extern public static int maximumSwitchNVNGraphicsFirmwareMemory { get; }
+			
+			[StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static int switchMaxWorkerMultiple
+            {
+                [NativeMethod("GetSwitchKMaxWorkerMultiple")]
+                get;
+                [NativeMethod("SetSwitchKMaxWorkerMultiple")]
+                set;
+            }
 
             // Controls the behavior of Switch's auto-changing screen resolution
             [NativeProperty("switchScreenResolutionBehavior", TargetType.Field)]

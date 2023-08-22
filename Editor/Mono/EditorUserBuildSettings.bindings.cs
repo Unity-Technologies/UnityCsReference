@@ -232,6 +232,13 @@ namespace UnityEditor
     }
 
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    public enum WindowsBuildAndRunDeployTarget
+    {
+        LocalMachine = 0,
+        DevicePortal = 2
+    }
+
+    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum WSABuildType
     {
         Debug = 0,
@@ -728,6 +735,13 @@ namespace UnityEditor
             set;
         }
 
+        public static extern WindowsBuildAndRunDeployTarget windowsBuildAndRunDeployTarget
+        {
+            [NativeMethod("GetSelectedWindowsBuildAndRunDeployTarget")]
+            get;
+            [NativeMethod("SetSelectedWindowsBuildAndRunDeployTarget")]
+            set;
+        }
         public static extern int overrideMaxTextureSize { get; set; }
         public static extern Build.OverrideTextureCompression overrideTextureCompression { get; set; }
 
