@@ -10,9 +10,9 @@ namespace UnityEditor;
 internal partial class CustomEditorAttributes
 {
     [RequiredByNativeCode]
-    internal static Type FindCustomEditorType(Object o, bool multiEdit)
+    internal static Type FindCustomEditorType(Object obj, bool multiEdit)
     {
-        return FindCustomEditorTypeByType(o.GetType(), multiEdit);
+        return obj == null ? null : FindCustomEditorTypeByType(obj.GetType(), multiEdit);
     }
 
     [RequiredByNativeCode]

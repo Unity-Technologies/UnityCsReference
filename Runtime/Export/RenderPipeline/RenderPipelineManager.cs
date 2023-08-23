@@ -42,6 +42,7 @@ namespace UnityEngine.Rendering
 
         public static event Action activeRenderPipelineCreated;
         public static event Action activeRenderPipelineDisposed;
+        public static bool pipelineSwitchCompleted => ReferenceEquals(s_CurrentPipelineAsset, GraphicsSettings.currentRenderPipeline) && !IsPipelineRequireCreation();
 
         internal static void BeginContextRendering(ScriptableRenderContext context, List<Camera> cameras)
         {
@@ -135,14 +136,13 @@ namespace UnityEngine.Rendering
         {
             HandleRenderPipelineChange(pipelineAsset);
 
-            if (s_CurrentPipelineAsset != null
-                && (currentPipeline == null || currentPipeline.disposed))
+            if (IsPipelineRequireCreation())
             {
                 currentPipeline = s_CurrentPipelineAsset.InternalCreatePipeline();
                 activeRenderPipelineCreated?.Invoke();
             }
         }
 
-        public static bool pipelineSwitchCompleted => ReferenceEquals(s_CurrentPipelineAsset, GraphicsSettings.currentRenderPipeline);
+        static bool IsPipelineRequireCreation() => s_CurrentPipelineAsset != null && (currentPipeline == null || currentPipeline.disposed);
     }
 }

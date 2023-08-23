@@ -8,8 +8,8 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditor.UIElements;
-
 using UnityEditor.PackageManager.UI.Internal;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -63,6 +63,7 @@ namespace UnityEditor.PackageManager.UI
         internal static PackageManagerWindow instance { get; private set; }
 
         private PackageManagerWindowRoot m_Root;
+        private ScrollView m_ScrollView;
 
         internal const string k_UpmUrl = "com.unity3d.kharma:upmpackage/";
 
@@ -100,11 +101,22 @@ namespace UnityEditor.PackageManager.UI
             var assetStoreCachePathProxy = container.Resolve<AssetStoreCachePathProxy>();
             var pageRefreshHandler = container.Resolve<PageRefreshHandler>();
 
+            // Adding the ScrollView object here because it really need to be the first child under rootVisualElement for it to work properly.
+            // Since the StyleSheet is added to PackageManagerRoot, the css is exceptionally added directly to the object  
+            m_ScrollView = new ScrollView
+            {
+                mode = ScrollViewMode.Horizontal,
+                style =
+                {
+                    flexGrow = 1
+                }
+            };
             m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler);
             try
             {
                 m_Root.OnEnable();
-                rootVisualElement.Add(m_Root);
+                rootVisualElement.Add(m_ScrollView);
+                m_ScrollView.Add(m_Root);
             }
             catch (ResourceLoaderException)
             {

@@ -3062,7 +3062,9 @@ namespace UnityEditor
                                 info.properties = properties;
                                 info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
                                 GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
-                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || !PrefabUtility.CanPropertyBeAppliedToTarget(property, rootObject))
+                                if (EditorUtility.IsPersistent(targetObject)
+                                    || !PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject)
+                                    || !PrefabUtility.CanPropertyBeAppliedToTarget(property, rootObject))
                                     pm.AddDisabledItem(menuItemContent);
                                 else
                                     pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabPropertyOverride, info);

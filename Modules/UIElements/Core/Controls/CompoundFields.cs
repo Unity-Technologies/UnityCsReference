@@ -383,7 +383,7 @@ namespace UnityEngine.UIElements
         public new class UxmlFactory : UxmlFactory<Vector3Field, UxmlTraits> {}
 
         /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Vetor3Field"/>.
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector3Field"/>.
         /// </summary>
         public new class UxmlTraits : BaseCompositeField<Vector3, FloatField, float>.UxmlTraits
         {

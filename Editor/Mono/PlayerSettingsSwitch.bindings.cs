@@ -667,10 +667,6 @@ namespace UnityEditor
             [NativeProperty("switchNetworkInterfaceManagerInitializeEnabled", TargetType.Field)]
             extern public static bool networkInterfaceManagerInitializeEnabled { get; set; }
 
-            // Player Connection Enabled
-            [NativeProperty("switchPlayerConnectionEnabled", TargetType.Field)]
-            extern public static bool playerConnectionEnabled { get; set; }
-
             // HTCS for player connection
             [NativeProperty("switchDisableHTCSPlayerConnection", TargetType.Field)]
             extern public static bool disableHTCSPlayerConnection { get; set; }
