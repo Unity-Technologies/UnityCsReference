@@ -1377,7 +1377,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 path = Path.Combine(projectDirectory, scriptPath);
             }
 
-            var matchedAssembly = GetAssemblyGraphBuilder().Match(new []{path});
+            var matchedAssembly = GetAssemblyGraphBuilder().Match(new []{path}, false);
 
             TargetAssembly targetAssembly;
             var scriptAssembly = matchedAssembly.Single().Key;

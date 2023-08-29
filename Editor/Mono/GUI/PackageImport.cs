@@ -436,6 +436,10 @@ namespace UnityEditor
             m_InitialImportItems = items;
             foreach (var item in items)
             {
+                // We don't want to add `ProjectVersion.txt` since it would override the project Editor version and if it's a lower version, it would be downgraded
+                if (item.destinationAssetPath == "ProjectSettings/ProjectVersion.txt")
+                    continue;
+
                 if (item.destinationAssetPath.StartsWith("ProjectSettings/"))
                     m_ProjectSettingItems.Add(item);
                 else
