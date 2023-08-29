@@ -126,8 +126,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal void SetCurrentSearch(string text)
         {
-            searchToolbar.SetValueWithoutNotify(text);
-            m_PackageFiltering.currentSearchText = text;
+            var value = text?.Trim() ?? string.Empty;
+            searchToolbar.SetValueWithoutNotify(value);
+            m_PackageFiltering.currentSearchText = value;
         }
 
         private void OnSearchTextChanged(ChangeEvent<string> evt)
@@ -143,8 +144,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (DateTime.Now.Ticks - m_SearchTextChangeTimestamp > k_SearchEventDelayTicks)
             {
                 EditorApplication.update -= DelayedSearchEvent;
-                m_PackageFiltering.currentSearchText = searchToolbar.value;
-                if (!string.IsNullOrEmpty(searchToolbar.value))
+                var value = searchToolbar.value.Trim();
+                m_PackageFiltering.currentSearchText = value;
+                if (!string.IsNullOrEmpty(value))
                     PackageManagerWindowAnalytics.SendEvent("search");
             }
         }

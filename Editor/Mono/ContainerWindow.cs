@@ -344,6 +344,7 @@ namespace UnityEditor
             }
 
             DestroyImmediate(this, true);
+            EditorWindow.UpdateWindowMenuListing();
         }
 
         private static List<EditorWindow> FindUnsavedChanges(View view)

@@ -15,7 +15,7 @@ namespace UnityEditorInternal
     {
         public const float timeEpsilon = 0.00001f;
 
-        public List<AnimationWindowKeyframe> m_Keyframes;
+        private List<AnimationWindowKeyframe> m_Keyframes;
 
         private EditorCurveBinding m_Binding;
         private int m_BindingHashCode;
@@ -44,6 +44,8 @@ namespace UnityEditorInternal
         public bool clipIsEditable { get { return m_SelectionBinding != null ? m_SelectionBinding.clipIsEditable : true; } }
         public bool animationIsEditable { get { return m_SelectionBinding != null ? m_SelectionBinding.animationIsEditable : true; } }
         public int selectionID { get { return m_SelectionBinding != null ? m_SelectionBinding.id : 0; } }
+
+        public IReadOnlyList<AnimationWindowKeyframe> keyframes => m_Keyframes;
 
         public AnimationWindowSelectionItem selectionBinding { get { return m_SelectionBinding; } set { m_SelectionBinding = value; } }
 
@@ -177,17 +179,10 @@ namespace UnityEditorInternal
             AnimationCurve animationCurve = new AnimationCurve();
             List<Keyframe> keys = new List<Keyframe>();
 
-            float lastFrameTime = float.MinValue;
-
             for (int i = 0; i < length; i++)
             {
-                // Make sure we don't get two keyframes in an exactly the same time. We just ignore those.
-                if (Mathf.Abs(m_Keyframes[i].time - lastFrameTime) > AnimationWindowCurve.timeEpsilon)
-                {
-                    Keyframe newKeyframe = m_Keyframes[i].ToKeyframe();
-                    keys.Add(newKeyframe);
-                    lastFrameTime = m_Keyframes[i].time;
-                }
+                Keyframe newKeyframe = m_Keyframes[i].ToKeyframe();
+                keys.Add(newKeyframe);
             }
 
             animationCurve.keys = keys.ToArray();
@@ -199,17 +194,10 @@ namespace UnityEditorInternal
             int length = m_Keyframes.Count;
             List<ObjectReferenceKeyframe> keys = new List<ObjectReferenceKeyframe>();
 
-            float lastFrameTime = float.MinValue;
-
             for (int i = 0; i < length; i++)
             {
-                // Make sure we don't get two keyframes in an exactly the same time. We just ignore those.
-                if (Mathf.Abs(m_Keyframes[i].time - lastFrameTime) > AnimationWindowCurve.timeEpsilon)
-                {
-                    ObjectReferenceKeyframe newKeyframe = m_Keyframes[i].ToObjectReferenceKeyframe();
-                    lastFrameTime = newKeyframe.time;
-                    keys.Add(newKeyframe);
-                }
+                ObjectReferenceKeyframe newKeyframe = m_Keyframes[i].ToObjectReferenceKeyframe();
+                keys.Add(newKeyframe);
             }
 
             keys.Sort((a, b) => a.time.CompareTo(b.time));
@@ -286,6 +274,11 @@ namespace UnityEditorInternal
                 if (time.ContainsTime(m_Keyframes[i].time))
                     m_Keyframes.RemoveAt(i);
             }
+        }
+
+        public void RemoveKeyframe(AnimationWindowKeyframe keyframe)
+        {
+            m_Keyframes.Remove(keyframe);
         }
 
         public bool HasKeyframe(AnimationKeyTime time)

@@ -93,7 +93,7 @@ namespace UnityEditor.Search
         public bool active;
         public int priority;
 
-        public override int Count => 3;
+        public override int Count => 2;
         public override ICollection Keys => new string[] { nameof(active), nameof(priority) };
         public override ICollection Values => new object[] { active, priority };
 
@@ -129,90 +129,100 @@ namespace UnityEditor.Search
         }
     }
 
-    static class SearchSettings
+    class SearchSettingsStorage
     {
-        internal static readonly string projectLocalSettingsFolder = Utils.CleanPath(new DirectoryInfo("UserSettings").FullName);
-        internal static readonly string projectLocalSettingsPath = $"{projectLocalSettingsFolder}/Search.settings";
+        public string settingsFolder { get; set; }
+        public string settingsPath { get; set; }
 
-        const string k_ItemIconSizePrefKey = "Search.ItemIconSize";
-        internal const string settingsPreferencesKey = "Preferences/Search";
+        public string itemIconSizePrefKey { get; set; }= "Search.ItemIconSize";
+        public string favoritesQueryPrefKey { get; set; } = "SearchQuery.Favorites";
+        public string ignoredPropertiesCustomDependency { get; set; } = "SearchIndexIgnoredProperties";
 
         // Per project settings
-        internal static bool trackSelection { get; set; }
-        internal static bool fetchPreview { get; set; }
-        internal static SearchFlags defaultFlags { get; set; }
-        internal static bool keepOpen { get; set; }
-        internal static string queryFolder { get; set; }
-        internal static bool onBoardingDoNotAskAgain { get; set; }
-        internal static bool showPackageIndexes { get; set; }
-        internal static bool showStatusBar { get; set; }
-        internal static SearchQuerySortOrder savedSearchesSortOrder { get; set; }
-        internal static bool showSavedSearchPanel { get; set; }
-        internal static Dictionary<string, string> scopes { get; private set; }
-        internal static Dictionary<string, SearchProviderSettings> providers { get; private set; }
-        internal static Dictionary<string, ObjectSelectorsSettings> objectSelectors { get; private set; }
-        internal static bool queryBuilder { get; set; }
-        internal static string ignoredProperties { get; set; }
-        internal static string helperWidgetCurrentArea { get; set; }
-        internal static int minIndexVariations { get; set; }
-        internal static int[] expandedQueries { get; set; }
+        public bool trackSelection { get; set; }
+        public bool fetchPreview { get; set; }
+        public SearchFlags defaultFlags { get; set; }
+        public bool keepOpen { get; set; }
+        public string queryFolder { get; set; }
+        public bool onBoardingDoNotAskAgain { get; set; }
+        public bool showPackageIndexes { get; set; }
+        public bool showStatusBar { get; set; }
+        public bool hideTabs { get; set; }
+        public SearchQuerySortOrder savedSearchesSortOrder { get; set; }
+        public bool showSavedSearchPanel { get; set; }
+        public Dictionary<string, string> scopes { get; private set; } = new();
+        public Dictionary<string, SearchProviderSettings> providers { get; private set; } = new();
+        public Dictionary<string, ObjectSelectorsSettings> objectSelectors { get; private set; } = new();
+        public bool queryBuilder { get; set; }
+        public string ignoredProperties { get; set; }
+        public string helperWidgetCurrentArea { get; set; }
+        public bool refreshSearchWindowsInPlayMode { get; set; }
+        public int minIndexVariations { get; set; }
+        public bool findProviderIndexHelper { get; set; }
+        public int[] expandedQueries { get; set; } = Array.Empty<int>();
 
-        // User editor pref
-        internal static float itemIconSize { get; set; } = (float)DisplayMode.List;
-
-        internal const int k_RecentSearchMaxCount = 20;
-        internal static List<string> recentSearches = new List<string>(k_RecentSearchMaxCount);
-
-        static string s_DisabledIndexersString;
-        static HashSet<string> s_DisabledIndexers;
-        internal static HashSet<string> disabledIndexers
+        public bool wantsMore
         {
-            get
+            get => defaultFlags.HasAny(SearchFlags.WantsMore);
+            set
             {
-                if (s_DisabledIndexers == null)
-                {
-                    var entries = s_DisabledIndexersString ?? string.Empty;
-                    s_DisabledIndexers = new HashSet<string>(entries.Split(new string[] { ";;;" }, StringSplitOptions.RemoveEmptyEntries));
-                }
-                return s_DisabledIndexers;
+                if (value)
+                    defaultFlags |= SearchFlags.WantsMore;
+                else
+                    defaultFlags &= ~SearchFlags.WantsMore;
             }
         }
 
-        public static HashSet<string> searchItemFavorites = new HashSet<string>();
-        internal static HashSet<string> searchQueryFavorites = new HashSet<string>();
+        // User editor pref
+        public float itemIconSize { get; set; } = (float)DisplayMode.List;
 
-        internal static event Action<string, bool> providerActivationChanged;
+        int m_RecentSearchMaxCount = 20;
+        public int recentSearchMaxCount
+        {
+            get => m_RecentSearchMaxCount;
+            set
+            {
+                m_RecentSearchMaxCount = value;
+                ApplyRecentSearchCapacity();
+            }
+        }
+        public List<string> recentSearches = new();
 
-        internal static int debounceMs
+        string m_DisabledIndexersString;
+        HashSet<string> m_DisabledIndexers;
+        public HashSet<string> disabledIndexers
+        {
+            get
+            {
+                if (m_DisabledIndexers == null)
+                {
+                    var entries = m_DisabledIndexersString ?? string.Empty;
+                    m_DisabledIndexers = new HashSet<string>(entries.Split(new string[] { ";;;" }, StringSplitOptions.RemoveEmptyEntries));
+                }
+                return m_DisabledIndexers;
+            }
+        }
+
+        public HashSet<string> searchItemFavorites = new();
+        public HashSet<string> searchQueryFavorites = new();
+
+        public int debounceMs
         {
             get { return UnityEditor.SearchUtils.debounceThresholdMs; }
 
             set { UnityEditor.SearchUtils.debounceThresholdMs = value; }
         }
 
-        static SearchSettings()
+        public void Load()
         {
-            expandedQueries = new int[0];
-            Load();
-        }
-
-        private static void Load()
-        {
-            if (!File.Exists(projectLocalSettingsPath))
-            {
-                if (!Directory.Exists("UserSettings/"))
-                    Directory.CreateDirectory("UserSettings/");
-                Utils.WriteTextFileToDisk(projectLocalSettingsPath, "{}");
-            }
-
             IDictionary settings = null;
             try
             {
-                settings = (IDictionary)SJSON.Load(projectLocalSettingsPath);
+                settings = (IDictionary)SJSON.Load(settingsPath);
             }
             catch (Exception ex)
             {
-                Debug.LogError($"We weren't able to parse search user settings at {projectLocalSettingsPath}. We will fallback to default settings.\n{ex}");
+                Debug.LogError($"We weren't able to parse search user settings at {settingsPath}. We will fallback to default settings.\n{ex}");
             }
 
             trackSelection = ReadSetting(settings, nameof(trackSelection), true);
@@ -223,15 +233,18 @@ namespace UnityEditor.Search
             onBoardingDoNotAskAgain = ReadSetting(settings, nameof(onBoardingDoNotAskAgain), false);
             showPackageIndexes = ReadSetting(settings, nameof(showPackageIndexes), false);
             showStatusBar = ReadSetting(settings, nameof(showStatusBar), false);
+            hideTabs = ReadSetting(settings, nameof(hideTabs), false);
             savedSearchesSortOrder = (SearchQuerySortOrder)ReadSetting(settings, nameof(savedSearchesSortOrder), 0);
             showSavedSearchPanel = ReadSetting(settings, nameof(showSavedSearchPanel), false);
             queryBuilder = ReadSetting(settings, nameof(queryBuilder), false);
             ignoredProperties = ReadSetting(settings, nameof(ignoredProperties), "id;name;classname;imagecontentshash");
             helperWidgetCurrentArea = ReadSetting(settings, nameof(helperWidgetCurrentArea), "all");
-            s_DisabledIndexersString = ReadSetting(settings, nameof(disabledIndexers), "");
+            m_DisabledIndexersString = ReadSetting(settings, nameof(disabledIndexers), "");
+            refreshSearchWindowsInPlayMode = ReadSetting(settings, nameof(refreshSearchWindowsInPlayMode), false);
             minIndexVariations = ReadSetting(settings, nameof(minIndexVariations), 2);
+            findProviderIndexHelper = ReadSetting(settings, nameof(findProviderIndexHelper), true);
 
-            itemIconSize = EditorPrefs.GetFloat(k_ItemIconSizePrefKey, itemIconSize);
+            itemIconSize = EditorPrefs.GetFloat(itemIconSizePrefKey, itemIconSize);
 
 
             var searches = ReadSetting<object[]>(settings, nameof(recentSearches));
@@ -251,13 +264,16 @@ namespace UnityEditor.Search
             objectSelectors = ReadPickerSettings(settings, nameof(objectSelectors));
 
             LoadFavorites();
+
+            RegisterIgnoredPropertiesCustomDependencies();
         }
 
-        internal static void Save()
+        public void Save()
         {
             var settings = new Dictionary<string, object>
             {
                 [nameof(trackSelection)] = trackSelection,
+                [nameof(refreshSearchWindowsInPlayMode)] = refreshSearchWindowsInPlayMode,
                 [nameof(fetchPreview)] = fetchPreview,
                 [nameof(defaultFlags)] = (int)defaultFlags,
                 [nameof(keepOpen)] = keepOpen,
@@ -272,46 +288,76 @@ namespace UnityEditor.Search
                 [nameof(searchItemFavorites)] = searchItemFavorites.ToList(),
                 [nameof(savedSearchesSortOrder)] = (int)savedSearchesSortOrder,
                 [nameof(showSavedSearchPanel)] = showSavedSearchPanel,
-                [nameof(expandedQueries)] = expandedQueries,
+                [nameof(hideTabs)] = hideTabs,
+                [nameof(expandedQueries)] = expandedQueries ?? Array.Empty<int>(),
                 [nameof(queryBuilder)] = queryBuilder,
                 [nameof(ignoredProperties)] = ignoredProperties,
                 [nameof(helperWidgetCurrentArea)] = helperWidgetCurrentArea,
                 [nameof(disabledIndexers)] = string.Join(";;;", disabledIndexers),
                 [nameof(minIndexVariations)] = minIndexVariations,
+                [nameof(findProviderIndexHelper)] = findProviderIndexHelper,
 
             };
 
-            SJSON.Save(settings, projectLocalSettingsPath);
+            RetriableOperation<IOException>.Execute(() =>
+            {
+                CreateFolderIfNeeded();
+                SJSON.Save(settings, settingsPath);
+            }, 5, TimeSpan.FromMilliseconds(10));
             SaveFavorites();
 
-            EditorPrefs.SetFloat(k_ItemIconSizePrefKey, itemIconSize);
+            EditorPrefs.SetFloat(itemIconSizePrefKey, itemIconSize);
 
-            AssetDatabaseAPI.RegisterCustomDependency("SearchIndexIgnoredProperties", Hash128.Compute(ignoredProperties));
+            RegisterIgnoredPropertiesCustomDependencies();
         }
 
-        internal static void SetScopeValue(string prefix, int hash, string value)
+        public void RegisterIgnoredPropertiesCustomDependencies()
+        {
+            if (AssetDatabase.IsAssetImportWorkerProcess() || EditorApplication.isUpdating)
+                return;
+            AssetDatabaseAPI.RegisterCustomDependency(ignoredPropertiesCustomDependency, Hash128.Compute(ignoredProperties));
+        }
+
+        public void ClearSettingsFile()
+        {
+            CreateFolderIfNeeded();
+            Utils.WriteTextFileToDisk(settingsPath, "{}");
+        }
+
+        void CreateFolderIfNeeded()
+        {
+            if (!Directory.Exists(settingsFolder))
+                Directory.CreateDirectory(settingsFolder);
+        }
+
+        public void SetScopeValue(string prefix, int hash, string value)
         {
             scopes[$"{prefix}.{hash:X8}"] = value;
         }
 
-        internal static void SetScopeValue(string prefix, int hash, int value)
+        public void SetScopeValue(string prefix, int hash, int value)
         {
             scopes[$"{prefix}.{hash:X8}"] = value.ToString();
         }
 
-        internal static void SetScopeValue(string prefix, int hash, float value)
+        public void SetScopeValue(string prefix, int hash, float value)
         {
             scopes[$"{prefix}.{hash:X8}"] = value.ToString();
         }
 
-        internal static string GetScopeValue(string prefix, int hash, string defaultValue)
+        public void SetScopeValue(string prefix, int hash, Rect rect)
+        {
+            scopes[$"{prefix}.{hash:X8}"] = $"{rect.x};{rect.y};{rect.width};{rect.height}";
+        }
+
+        public string GetScopeValue(string prefix, int hash, string defaultValue)
         {
             if (scopes.TryGetValue($"{prefix}.{hash:X8}", out var value))
                 return value;
             return defaultValue;
         }
 
-        internal static int GetScopeValue(string prefix, int hash, int defaultValue)
+        public int GetScopeValue(string prefix, int hash, int defaultValue)
         {
             if (scopes.TryGetValue($"{prefix}.{hash:X8}", out var value))
             {
@@ -320,13 +366,411 @@ namespace UnityEditor.Search
             return defaultValue;
         }
 
-        internal static float GetScopeValue(string prefix, int hash, float defaultValue)
+        public float GetScopeValue(string prefix, int hash, float defaultValue)
         {
             if (scopes.TryGetValue($"{prefix}.{hash:X8}", out var value))
             {
                 return Convert.ToSingle(value);
             }
             return defaultValue;
+        }
+
+        public Rect GetScopeValue(string prefix, int hash, Rect defaultValue)
+        {
+            if (scopes.TryGetValue($"{prefix}.{hash:X8}", out var value))
+            {
+                var rs = value.Split(';');
+                if (rs.Length == 4)
+                    return new Rect(Convert.ToSingle(rs[0]), Convert.ToSingle(rs[1]), Convert.ToSingle(rs[2]), Convert.ToSingle(rs[3]));
+            }
+            return defaultValue;
+        }
+
+        public void AddRecentSearch(string search)
+        {
+            recentSearches.Insert(0, search);
+            ApplyRecentSearchCapacity();
+            recentSearches = recentSearches.Distinct().ToList();
+        }
+
+        void ApplyRecentSearchCapacity()
+        {
+            if (recentSearches.Count > recentSearchMaxCount)
+                recentSearches.RemoveRange(recentSearchMaxCount, recentSearches.Count - recentSearchMaxCount);
+        }
+
+        public ObjectSelectorsSettings GetObjectSelectorSettings(string selectorId, bool defaultActive, int defaultPriority)
+        {
+            if (TryGetObjectSelectorSettings(selectorId, out var settings))
+                return settings;
+
+            objectSelectors[selectorId] = new ObjectSelectorsSettings() { active = defaultActive, priority = defaultPriority };
+            return objectSelectors[selectorId];
+        }
+
+        public bool TryGetObjectSelectorSettings(string selectorId, out ObjectSelectorsSettings settings)
+        {
+            return objectSelectors.TryGetValue(selectorId, out settings);
+        }
+
+        public void ResetObjectSelectorSettings()
+        {
+            objectSelectors.Clear();
+        }
+
+        public SearchProviderSettings GetProviderSettings(string providerId, bool defaultActive, int defaultPriority, string defaultAction, bool addToSettings = true)
+        {
+            if (TryGetProviderSettings(providerId, out var settings))
+                return settings;
+
+            var newSettings = new SearchProviderSettings() { active = defaultActive, priority = defaultPriority, defaultAction = defaultAction };
+            if (addToSettings)
+                providers[providerId] = newSettings;
+            return newSettings;
+        }
+
+        public bool TryGetProviderSettings(string providerId, out SearchProviderSettings settings)
+        {
+            return providers.TryGetValue(providerId, out settings);
+        }
+
+        public void ResetProviderSettings()
+        {
+            providers.Clear();
+        }
+
+        public void ToggleCustomIndexer(string name, bool enable)
+        {
+            if (enable)
+                disabledIndexers.Remove(name);
+            else
+                disabledIndexers.Add(name);
+            Save();
+        }
+
+        public void AddItemFavorite(string itemId)
+        {
+            searchItemFavorites.Add(itemId);
+        }
+
+        public void RemoveItemFavorite(string itemId)
+        {
+            searchItemFavorites.Remove(itemId);
+        }
+
+        public void LoadFavorites()
+        {
+            var favoriteString = EditorPrefs.GetString(favoritesQueryPrefKey, "");
+            searchQueryFavorites.UnionWith(favoriteString.Split(new string[] { ";;;" }, StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        public void SaveFavorites()
+        {
+            EditorPrefs.SetString(favoritesQueryPrefKey, string.Join(";;;", searchQueryFavorites));
+        }
+
+        static T ReadSetting<T>(IDictionary settings, string key, T defaultValue = default)
+        {
+            try
+            {
+                if (SJSON.TryGetValue(settings, key, out var value))
+                    return (T)value;
+            }
+            catch (Exception)
+            {
+                // Any error will return the default value.
+            }
+
+            return defaultValue;
+        }
+
+        static float ReadSetting(IDictionary settings, string key, float defaultValue = 0)
+        {
+            return (float)ReadSetting(settings, key, (double)defaultValue);
+        }
+
+        static int ReadSetting(IDictionary settings, string key, int defaultValue = 0)
+        {
+            return (int)ReadSetting(settings, key, (double)defaultValue);
+        }
+
+        static Dictionary<string, SearchProviderSettings> ReadProviderSettings(IDictionary settings, string fieldName)
+        {
+            return ReadDictionary<SearchProviderSettings>(settings, fieldName, vdict => new SearchProviderSettings()
+            {
+                active = Convert.ToBoolean(vdict[nameof(SearchProviderSettings.active)]),
+                priority = (int)(double)vdict[nameof(SearchProviderSettings.priority)],
+                defaultAction = vdict[nameof(SearchProviderSettings.defaultAction)] as string,
+            });
+        }
+
+        static Dictionary<string, ObjectSelectorsSettings> ReadPickerSettings(IDictionary settings, string fieldName)
+        {
+            return ReadDictionary<ObjectSelectorsSettings>(settings, fieldName, vdict => new ObjectSelectorsSettings()
+            {
+                active = Convert.ToBoolean(vdict[nameof(SearchProviderSettings.active)]),
+                priority = (int)(double)vdict[nameof(SearchProviderSettings.priority)]
+            });
+        }
+
+        static Dictionary<string, T> ReadProperties<T>(IDictionary settings, string fieldName)
+        {
+            return ReadDictionary(settings, fieldName, o => (T)o);
+        }
+
+        static Dictionary<string, T> ReadDictionary<T>(IDictionary settings, string fieldName, Func<object, T> valueCreator)
+        {
+            return ReadDictionary(settings, fieldName, e => true, valueCreator);
+        }
+
+        static Dictionary<string, T> ReadDictionary<T>(IDictionary settings, string fieldName, Func<IDictionary, BaseDictionarySettings> valueCreator)
+            where T : BaseDictionarySettings
+        {
+            return ReadDictionary(settings, fieldName, e => e.Value is IDictionary, o =>
+            {
+                var vdict = o as IDictionary;
+                return (T)valueCreator(vdict);
+            });
+        }
+
+        static Dictionary<string, T> ReadDictionary<T>(IDictionary settings, string fieldName, Func<DictionaryEntry, bool> extraPredicate, Func<object, T> valueCreator)
+        {
+            var d = new Dictionary<string, T>();
+            if (SJSON.TryGetValue(settings, fieldName, out var _data) && _data is IDictionary dataDict)
+            {
+                foreach (var p in dataDict)
+                {
+                    try
+                    {
+                        if (p is DictionaryEntry e && extraPredicate(e))
+                            d[(string)e.Key] = valueCreator(e.Value);
+                    }
+                    catch
+                    {
+                        // ignore copy
+                    }
+                }
+            }
+            return d;
+        }
+    }
+
+    static class SearchSettings
+    {
+        internal static readonly string projectLocalSettingsFolder = Utils.CleanPath(new DirectoryInfo("UserSettings").FullName);
+        internal static readonly string projectLocalSettingsPath = $"{projectLocalSettingsFolder}/Search.settings";
+        internal const string settingsPreferencesKey = "Preferences/Search";
+
+        static SearchSettingsStorage s_SettingsStorage;
+
+        // Per project settings
+        internal static bool trackSelection
+        {
+            get => s_SettingsStorage.trackSelection;
+            set => s_SettingsStorage.trackSelection = value;
+        }
+
+        internal static bool fetchPreview
+        {
+            get => s_SettingsStorage.fetchPreview;
+            set => s_SettingsStorage.fetchPreview = value;
+        }
+
+        internal static SearchFlags defaultFlags
+        {
+            get => s_SettingsStorage.defaultFlags;
+            set => s_SettingsStorage.defaultFlags = value;
+        }
+
+        internal static bool keepOpen
+        {
+            get => s_SettingsStorage.keepOpen;
+            set => s_SettingsStorage.keepOpen = value;
+        }
+
+        internal static string queryFolder
+        {
+            get => s_SettingsStorage.queryFolder;
+            set => s_SettingsStorage.queryFolder = value;
+        }
+
+        internal static bool onBoardingDoNotAskAgain
+        {
+            get => s_SettingsStorage.onBoardingDoNotAskAgain;
+            set => s_SettingsStorage.onBoardingDoNotAskAgain = value;
+        }
+
+        internal static bool showPackageIndexes
+        {
+            get => s_SettingsStorage.showPackageIndexes;
+            set => s_SettingsStorage.showPackageIndexes = value;
+        }
+
+        internal static bool showStatusBar
+        {
+            get => s_SettingsStorage.showStatusBar;
+            set => s_SettingsStorage.showStatusBar = value;
+        }
+
+        internal static bool hideTabs
+        {
+            get => s_SettingsStorage.hideTabs;
+            set => s_SettingsStorage.hideTabs = value;
+        }
+
+        internal static SearchQuerySortOrder savedSearchesSortOrder
+        {
+            get => s_SettingsStorage.savedSearchesSortOrder;
+            set => s_SettingsStorage.savedSearchesSortOrder = value;
+        }
+
+        internal static bool showSavedSearchPanel
+        {
+            get => s_SettingsStorage.showSavedSearchPanel;
+            set => s_SettingsStorage.showSavedSearchPanel = value;
+        }
+
+        internal static Dictionary<string, string> scopes => s_SettingsStorage.scopes;
+        internal static Dictionary<string, SearchProviderSettings> providers => s_SettingsStorage.providers;
+        internal static Dictionary<string, ObjectSelectorsSettings> objectSelectors => s_SettingsStorage.objectSelectors;
+
+        internal static bool queryBuilder
+        {
+            get => s_SettingsStorage.queryBuilder;
+            set => s_SettingsStorage.queryBuilder = value;
+        }
+
+        internal static string ignoredProperties
+        {
+            get => s_SettingsStorage.ignoredProperties;
+            set => s_SettingsStorage.ignoredProperties = value;
+        }
+
+        internal static string helperWidgetCurrentArea
+        {
+            get => s_SettingsStorage.helperWidgetCurrentArea;
+            set => s_SettingsStorage.helperWidgetCurrentArea = value;
+        }
+
+        internal static bool refreshSearchWindowsInPlayMode
+        {
+            get => s_SettingsStorage.refreshSearchWindowsInPlayMode;
+            set => s_SettingsStorage.refreshSearchWindowsInPlayMode = value;
+        }
+
+        internal static int minIndexVariations
+        {
+            get => s_SettingsStorage.minIndexVariations;
+            set => s_SettingsStorage.minIndexVariations = value;
+        }
+
+        internal static bool findProviderIndexHelper
+        {
+            get => s_SettingsStorage.findProviderIndexHelper;
+            set => s_SettingsStorage.findProviderIndexHelper = value;
+        }
+
+        internal static int[] expandedQueries
+        {
+            get => s_SettingsStorage.expandedQueries;
+            set => s_SettingsStorage.expandedQueries = value;
+        }
+
+        internal static bool wantsMore
+        {
+            get => s_SettingsStorage.wantsMore;
+            set => s_SettingsStorage.wantsMore = value;
+        }
+
+        const int k_RecentSearchMaxCount = 20;
+        internal static IReadOnlyList<string> recentSearches => s_SettingsStorage.recentSearches;
+
+        // User editor pref
+        internal static float itemIconSize
+        {
+            get => s_SettingsStorage.itemIconSize;
+            set => s_SettingsStorage.itemIconSize = value;
+        }
+
+        internal static HashSet<string> disabledIndexers => s_SettingsStorage.disabledIndexers;
+
+        // TODO: That's not good that it is public like that. Should have been a property.
+        internal static HashSet<string> searchItemFavorites = new();
+
+        internal static event Action<string, bool> providerActivationChanged;
+
+        internal static int debounceMs
+        {
+            get => s_SettingsStorage.debounceMs;
+            set => s_SettingsStorage.debounceMs = value;
+        }
+
+        static SearchSettings()
+        {
+            s_SettingsStorage = new SearchSettingsStorage()
+            {
+                settingsFolder = projectLocalSettingsFolder,
+                settingsPath = projectLocalSettingsPath,
+                recentSearchMaxCount = k_RecentSearchMaxCount,
+                itemIconSize = (float)DisplayMode.List,
+                expandedQueries = Array.Empty<int>()
+            };
+            Load();
+        }
+
+        internal static void Load()
+        {
+            if (!File.Exists(projectLocalSettingsPath))
+            {
+                s_SettingsStorage.ClearSettingsFile();
+            }
+            s_SettingsStorage.Load();
+            searchItemFavorites = s_SettingsStorage.searchItemFavorites;
+        }
+
+        internal static void Save()
+        {
+            s_SettingsStorage?.Save();
+        }
+
+        internal static void SetScopeValue(string prefix, int hash, string value)
+        {
+            s_SettingsStorage.SetScopeValue(prefix, hash, value);
+        }
+
+        internal static void SetScopeValue(string prefix, int hash, int value)
+        {
+            s_SettingsStorage.SetScopeValue(prefix, hash, value);
+        }
+
+        internal static void SetScopeValue(string prefix, int hash, float value)
+        {
+            s_SettingsStorage.SetScopeValue(prefix, hash, value);
+        }
+
+        internal static void SetScopeValue(string prefix, int hash, Rect rect)
+        {
+            s_SettingsStorage.SetScopeValue(prefix, hash, rect);
+        }
+
+        internal static string GetScopeValue(string prefix, int hash, string defaultValue)
+        {
+            return s_SettingsStorage.GetScopeValue(prefix, hash, defaultValue);
+        }
+
+        internal static int GetScopeValue(string prefix, int hash, int defaultValue)
+        {
+            return s_SettingsStorage.GetScopeValue(prefix, hash, defaultValue);
+        }
+
+        internal static float GetScopeValue(string prefix, int hash, float defaultValue)
+        {
+            return s_SettingsStorage.GetScopeValue(prefix, hash, defaultValue);
+        }
+
+        internal static Rect GetScopeValue(string prefix, int hash, Rect defaultValue)
+        {
+            return s_SettingsStorage.GetScopeValue(prefix, hash, defaultValue);
         }
 
         internal static SearchFlags GetContextOptions()
@@ -346,10 +790,7 @@ namespace UnityEditor.Search
 
         internal static void AddRecentSearch(string search)
         {
-            recentSearches.Insert(0, search);
-            if (recentSearches.Count > k_RecentSearchMaxCount)
-                recentSearches.RemoveRange(k_RecentSearchMaxCount, recentSearches.Count - k_RecentSearchMaxCount);
-            recentSearches = recentSearches.Distinct().ToList();
+            s_SettingsStorage.AddRecentSearch(search);
         }
 
         [SettingsProvider]
@@ -430,6 +871,11 @@ namespace UnityEditor.Search
         }
 
 
+        internal static bool TryGetObjectSelectorSettings(string selectorId, out ObjectSelectorsSettings settings)
+        {
+            return s_SettingsStorage.TryGetObjectSelectorSettings(selectorId, out settings);
+        }
+
         private static void DrawSearchSettings(string searchContext)
         {
             EditorGUIUtility.labelWidth = 350;
@@ -500,11 +946,7 @@ namespace UnityEditor.Search
 
         private static void ToggleCustomIndexer(string name, bool enable)
         {
-            if (enable)
-                disabledIndexers.Remove(name);
-            else
-                disabledIndexers.Add(name);
-            Save();
+            s_SettingsStorage.ToggleCustomIndexer(name, enable);
         }
 
         private static bool Toggle(GUIContent content, string propertyName, bool value)
@@ -513,91 +955,6 @@ namespace UnityEditor.Search
             if (newValue != value)
                 SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.PreferenceChanged, propertyName, newValue.ToString());
             return newValue;
-        }
-
-        private static T ReadSetting<T>(IDictionary settings, string key, T defaultValue = default)
-        {
-            try
-            {
-                if (SJSON.TryGetValue(settings, key, out var value))
-                    return (T)value;
-            }
-            catch (Exception)
-            {
-                // Any error will return the default value.
-            }
-
-            return defaultValue;
-        }
-
-        private static float ReadSetting(IDictionary settings, string key, float defaultValue = 0)
-        {
-            return (float)ReadSetting(settings, key, (double)defaultValue);
-        }
-
-        private static int ReadSetting(IDictionary settings, string key, int defaultValue = 0)
-        {
-            return (int)ReadSetting(settings, key, (double)defaultValue);
-        }
-
-        private static Dictionary<string, SearchProviderSettings> ReadProviderSettings(IDictionary settings, string fieldName)
-        {
-            return ReadDictionary<SearchProviderSettings>(settings, fieldName, vdict => new SearchProviderSettings()
-            {
-                active = Convert.ToBoolean(vdict[nameof(SearchProviderSettings.active)]),
-                priority = (int)(double)vdict[nameof(SearchProviderSettings.priority)],
-                defaultAction = vdict[nameof(SearchProviderSettings.defaultAction)] as string,
-            });
-        }
-
-        private static Dictionary<string, ObjectSelectorsSettings> ReadPickerSettings(IDictionary settings, string fieldName)
-        {
-            return ReadDictionary<ObjectSelectorsSettings>(settings, fieldName, vdict => new ObjectSelectorsSettings()
-            {
-                active = Convert.ToBoolean(vdict[nameof(SearchProviderSettings.active)]),
-                priority = (int)(double)vdict[nameof(SearchProviderSettings.priority)]
-            });
-        }
-
-        private static Dictionary<string, T> ReadProperties<T>(IDictionary settings, string fieldName)
-        {
-            return ReadDictionary(settings, fieldName, o => (T)o);
-        }
-
-        static Dictionary<string, T> ReadDictionary<T>(IDictionary settings, string fieldName, Func<object, T> valueCreator)
-        {
-            return ReadDictionary(settings, fieldName, e => true, valueCreator);
-        }
-
-        static Dictionary<string, T> ReadDictionary<T>(IDictionary settings, string fieldName, Func<IDictionary, BaseDictionarySettings> valueCreator)
-            where T : BaseDictionarySettings
-        {
-            return ReadDictionary(settings, fieldName, e => e.Value is IDictionary, o =>
-            {
-                var vdict = o as IDictionary;
-                return (T)valueCreator(vdict);
-            });
-        }
-
-        static Dictionary<string, T> ReadDictionary<T>(IDictionary settings, string fieldName, Func<DictionaryEntry, bool> extraPredicate, Func<object, T> valueCreator)
-        {
-            var d = new Dictionary<string, T>();
-            if (SJSON.TryGetValue(settings, fieldName, out var _data) && _data is IDictionary dataDict)
-            {
-                foreach (var p in dataDict)
-                {
-                    try
-                    {
-                        if (p is DictionaryEntry e && extraPredicate(e))
-                            d[(string)e.Key] = valueCreator(e.Value);
-                    }
-                    catch
-                    {
-                        // ignore copy
-                    }
-                }
-            }
-            return d;
         }
 
         private static void DrawProviderSettings()
@@ -675,26 +1032,23 @@ namespace UnityEditor.Search
 
         internal static SearchProviderSettings GetProviderSettings(string providerId)
         {
-            if (TryGetProviderSettings(providerId, out var settings))
-                return settings;
-
             var provider = SearchService.GetProvider(providerId);
+            SearchProviderSettings defaultSettings = null;
             if (provider == null)
-                return new SearchProviderSettings();
+                defaultSettings = new SearchProviderSettings();
 
-            providers[providerId] = new SearchProviderSettings() { active = provider.active, priority = provider.priority, defaultAction = null };
-            return providers[providerId];
+            return s_SettingsStorage.GetProviderSettings(providerId, provider?.active ?? defaultSettings.active, provider?.priority ?? defaultSettings.priority, null, provider != null);
         }
 
         internal static bool TryGetProviderSettings(string providerId, out SearchProviderSettings settings)
         {
-            return providers.TryGetValue(providerId, out settings);
+            return s_SettingsStorage.TryGetProviderSettings(providerId, out settings);
         }
 
         private static void ResetProviderSettings()
         {
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.PreferenceReset);
-            providers.Clear();
+            s_SettingsStorage.ResetProviderSettings();
             SearchService.Refresh();
         }
 
@@ -822,39 +1176,18 @@ namespace UnityEditor.Search
 
         }
 
-        internal static void AddSearchFavorite(string searchText)
-        {
-            searchQueryFavorites.Add(searchText);
-            SaveFavorites();
-        }
-
-        internal static void RemoveSearchFavorite(string searchText)
-        {
-            searchQueryFavorites.Remove(searchText);
-            SaveFavorites();
-        }
-
-        public static void AddItemFavorite(SearchItem item)
+        internal static void AddItemFavorite(SearchItem item)
         {
             searchItemFavorites.Add(item.id);
+            s_SettingsStorage.AddItemFavorite(item.id);
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchAddFavoriteItem, item.provider.id);
         }
 
-        public static void RemoveItemFavorite(SearchItem item)
+        internal static void RemoveItemFavorite(SearchItem item)
         {
             searchItemFavorites.Remove(item.id);
+            s_SettingsStorage.RemoveItemFavorite(item.id);
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchRemoveFavoriteItem, item.provider.id);
-        }
-
-        internal static void LoadFavorites()
-        {
-            var favoriteString = EditorPrefs.GetString("SearchQuery.Favorites", "");
-            searchQueryFavorites.UnionWith(favoriteString.Split(new string[] { ";;;" }, StringSplitOptions.RemoveEmptyEntries));
-        }
-
-        internal static void SaveFavorites()
-        {
-            EditorPrefs.SetString("SearchQuery.Favorites", string.Join(";;;", searchQueryFavorites));
         }
     }
 }

@@ -45,6 +45,7 @@ namespace UnityEditor
             public string noModuleLoaded = L10n.Tr("No {0} module loaded.");
             public GUIContent openDownloadPage = EditorGUIUtility.TrTextContent("Open Download Page");
             public GUIContent installModuleWithHub = EditorGUIUtility.TrTextContent("Install with Unity Hub");
+            public string EditorWillNeedToBeReloaded = L10n.Tr("Note: Editor will need to be restarted to load any newly installed modules");
             public string infoText = L10n.Tr("{0} is not included in your Unity Pro license. Your {0} build will include a Unity Personal Edition splash screen.\n\nYou must be eligible to use Unity Personal Edition to use this build option. Please refer to our EULA for further information.");
             public GUIContent eula = EditorGUIUtility.TrTextContent("Eula");
             public string addToYourPro = L10n.Tr("Add {0} to your Unity Pro license");
@@ -794,6 +795,7 @@ namespace UnityEditor
                         Help.BrowseURL(url);
                     }
                 }
+                GUILayout.Label(styles.EditorWillNeedToBeReloaded, EditorStyles.wordWrappedMiniLabel);
                 GUIBuildButtons(false, false, false, platform, postprocessor);
                 return;
             }

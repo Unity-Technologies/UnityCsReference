@@ -74,7 +74,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 packageNameField.visualInput.Focus();
             else
                 packageVersionField.visualInput.Focus();
-            submitButton.SetEnabled(!string.IsNullOrEmpty(packageNameField.value));
+            submitButton.SetEnabled(!string.IsNullOrWhiteSpace(packageNameField.value));
         }
 
         internal override void OnDropdownClosed()
@@ -134,12 +134,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             OnDropdownShown();
         }
 
-        private void SubmitClicked()
+        internal void SubmitClicked()
         {
-            var packageName = packageNameField.value;
+            var packageName = packageNameField.value.Trim();
             if (string.IsNullOrEmpty(packageName))
                 return;
-            var version = packageVersionField.value;
+            var version = packageVersionField.value.Trim();
 
             var package = m_PackageDatabase.GetPackage(packageName);
             if (package != null)
@@ -194,9 +194,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (packageInfo == null)
                 SetError(isNameError: true);
-            else if (packageInfo.name == packageNameField.value)
+            else if (packageInfo.name == packageNameField.value.Trim())
             {
-                var version = packageVersionField.value;
+                var version = packageVersionField.value.Trim();
                 if (string.IsNullOrEmpty(version) || packageInfo.versions.all.Contains(version))
                     InstallByNameAndVersion(packageInfo.name, version);
                 else
@@ -207,13 +207,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnExtraFetchError(IOperation operation, UIError error)
         {
             var searchOperation = operation as UpmSearchOperation;
-            if (searchOperation.packageName == packageNameField.value)
+            if (searchOperation.packageName == packageNameField.value.Trim())
                 SetError(isNameError: true);
         }
 
         private void OnTextFieldChange(ChangeEvent<string> evt)
         {
-            submitButton.SetEnabled(!string.IsNullOrEmpty(packageNameField.value));
+            submitButton.SetEnabled(!string.IsNullOrWhiteSpace(packageNameField.value));
         }
 
         private void OnKeyDownShortcut(KeyDownEvent evt)

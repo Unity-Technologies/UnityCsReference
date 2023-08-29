@@ -129,6 +129,10 @@ namespace UnityEditor
                     {
                         RuntimeHelpers.RunClassConstructor(type.TypeHandle);
                     }
+                    catch (TypeLoadException  x)
+                    {
+                        Debug.LogError(x.InnerException);
+                    }
                     catch (TypeInitializationException x)
                     {
                         Debug.LogError(x.InnerException);

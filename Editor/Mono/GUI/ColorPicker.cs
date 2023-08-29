@@ -1236,6 +1236,9 @@ namespace UnityEditor
 
         static void Start(GUIView viewToUpdate, Action<Color> colorPickedCallback)
         {
+            if(!InternalEditorUtility.IsAllowedToReadPixelOutsideUnity(out var errorMessage))
+                Debug.LogWarning(errorMessage);
+
             instance.m_DelegateView = viewToUpdate;
             instance.m_ColorPickedCallback = colorPickedCallback;
             ContainerWindow win = CreateInstance<ContainerWindow>();

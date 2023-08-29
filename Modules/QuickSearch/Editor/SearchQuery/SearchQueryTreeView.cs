@@ -61,6 +61,7 @@ namespace UnityEditor.Search
             showAlternatingRowBackgrounds = false;
             rowHeight = EditorGUIUtility.singleLineHeight + 4;
             this.searchView = searchView;
+            SearchQueryAsset.projectQueriesChanged += Reload;
             Reload();
             SortBy(SearchSettings.savedSearchesSortOrder);
         }

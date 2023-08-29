@@ -91,24 +91,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(icon, showIcon);
 
             submitButton.clickable.clicked += SubmitClicked;
-            submitButton.SetEnabled(!string.IsNullOrEmpty(inputTextField.value));
+            submitButton.SetEnabled(!string.IsNullOrWhiteSpace(inputTextField.value));
             submitButton.text = !string.IsNullOrEmpty(args.submitButtonText) ? args.submitButtonText : k_DefaultSubmitButtonText;
             if (args.onInputSubmitted != null)
                 submitClicked = args.onInputSubmitted;
         }
 
-        private void SubmitClicked()
+        internal void SubmitClicked()
         {
-            if (string.IsNullOrEmpty(inputTextField.value))
+            var value = inputTextField.value.Trim();
+            if (string.IsNullOrEmpty(value))
                 return;
 
-            submitClicked?.Invoke(inputTextField.value);
+            submitClicked?.Invoke(value);
             Close();
         }
 
         private void OnTextFieldChange(ChangeEvent<string> evt)
         {
-            submitButton.SetEnabled(!string.IsNullOrEmpty(inputTextField.value));
+            submitButton.SetEnabled(!string.IsNullOrWhiteSpace(inputTextField.value));
         }
 
         private void OnKeyDownShortcut(KeyDownEvent evt)

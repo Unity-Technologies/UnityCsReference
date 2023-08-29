@@ -47,6 +47,7 @@ namespace Unity.UI.Builder
         IList<ITreeViewItem> m_TreeRootItems;
 
         InternalTreeView m_TreeView;
+        internal InternalTreeView treeView => m_TreeView;
         PreSaveState m_RegisteredState;
         HighlightOverlayPainter m_TreeViewHoverOverlay;
 
@@ -68,7 +69,7 @@ namespace Unity.UI.Builder
         public VisualElement container
         {
             get { return m_Container; }
-        }
+        }        
 
         public ElementHierarchyView(
             BuilderPaneWindow paneWindow,

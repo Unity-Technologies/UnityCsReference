@@ -17,7 +17,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected string m_RegistryName;
         public new string name
         {
-            get => m_RegistryName;
+            get => m_RegistryName?.Trim() ?? string.Empty;
             set
             {
                 if (m_RegistryName == value)
@@ -30,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected string m_Url;
         public string url
         {
-            get => m_Url;
+            get => m_Url?.Trim() ?? string.Empty;
             set
             {
                 if (m_Url == value)
@@ -42,7 +42,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         protected List<string> m_Scopes;
         public ReadOnlyCollection<string> scopes => m_Scopes.AsReadOnly();
-        public ReadOnlyCollection<string> sanitizedScopes => m_Scopes.Where(scope => !string.IsNullOrEmpty(scope)).ToList().AsReadOnly();
+        public ReadOnlyCollection<string> sanitizedScopes => m_Scopes.Where(scope => !string.IsNullOrWhiteSpace(scope)).Select(s => s.Trim()).ToList().AsReadOnly();
         [SerializeField]
         private int m_SelectedScopeIndex;
         public int selectedScopeIndex

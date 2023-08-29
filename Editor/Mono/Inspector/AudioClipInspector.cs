@@ -28,6 +28,9 @@ namespace UnityEditor
         static GUIContent s_AutoPlayIcon;
         static GUIContent s_LoopIcon;
 
+        static private string s_PreviewDisabledMessage = "AudioClip preview not available when Unity Audio is disabled in Project Settings";
+        static private string s_TrPreviewDisabledMessage = L10n.Tr(s_PreviewDisabledMessage);
+
         static Texture2D s_DefaultIcon;
 
         private Material m_HandleLinesMaterial;
@@ -48,9 +51,11 @@ namespace UnityEditor
             s_AutoPlay = EditorPrefs.GetBool("AutoPlayAudio", false);
             s_Loop = false;
 
-            s_AutoPlayIcon = EditorGUIUtility.TrIconContent("preAudioAutoPlayOff", "Turn Auto Play on/off");
-            s_PlayIcon = EditorGUIUtility.TrIconContent("PlayButton", "Play");
-            s_LoopIcon = EditorGUIUtility.TrIconContent("preAudioLoopOff", "Loop on/off");
+            var unityAudioDisabled = AudioSettings.unityAudioDisabled;
+
+            s_AutoPlayIcon = EditorGUIUtility.TrIconContent("preAudioAutoPlayOff", unityAudioDisabled ? s_PreviewDisabledMessage : "Turn Auto Play on/off");
+            s_PlayIcon = EditorGUIUtility.TrIconContent("PlayButton", unityAudioDisabled ? s_PreviewDisabledMessage : "Play");
+            s_LoopIcon = EditorGUIUtility.TrIconContent("preAudioLoopOff", unityAudioDisabled ? s_PreviewDisabledMessage : "Loop on/off");
 
             s_DefaultIcon = EditorGUIUtility.LoadIcon("Profiler.Audio");
         }
@@ -118,6 +123,7 @@ namespace UnityEditor
             AudioClip clip = target as AudioClip;
             m_MultiEditing = targets.Length > 1;
 
+            using (new EditorGUI.DisabledScope(AudioSettings.unityAudioDisabled))
             {
                 using (new EditorGUI.DisabledScope(m_MultiEditing && !playing))
                 {
@@ -295,6 +301,11 @@ namespace UnityEditor
                 // Autoplay preview
                 PlayClip(clip, 0, s_Loop);
                 s_PlayFirst = false;
+            }
+
+            if (AudioSettings.unityAudioDisabled)
+            {
+                EditorGUILayout.HelpBox(s_TrPreviewDisabledMessage, MessageType.Info);
             }
 
             // force update GUI

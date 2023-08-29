@@ -388,7 +388,7 @@ namespace UnityEditorInternal
                         AnimationKeyTime newAnimationKeyTime = AnimationKeyTime.Time(state.currentTime, curve.clip.frameRate);
 
                         AnimationWindowKeyframe existingKeyframe = null;
-                        foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
+                        foreach (AnimationWindowKeyframe keyframe in curve.keyframes)
                         {
                             if (Mathf.Approximately(keyframe.time, state.currentTime))
                                 existingKeyframe = keyframe;
@@ -480,7 +480,7 @@ namespace UnityEditorInternal
             {
                 foreach (var curve in node.curves)
                 {
-                    if (curve.m_Keyframes.Any(key => state.time.ContainsTime(key.time)))
+                    if (curve.keyframes.Any(key => state.time.ContainsTime(key.time)))
                     {
                         hasKey = true;
                     }

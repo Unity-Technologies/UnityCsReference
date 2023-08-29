@@ -893,7 +893,7 @@ namespace UnityEditorInternal
                     int keyIndex = curve.GetKeyframeIndex(state.time);
                     if (keyIndex >= 0)
                     {
-                        keys.Add(curve.m_Keyframes[keyIndex]);
+                        keys.Add(curve.keyframes[keyIndex]);
                     }
                 }
             }

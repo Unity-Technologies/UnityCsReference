@@ -43,6 +43,8 @@ namespace UnityEngine.UIElements
     /// It's also recommended to supply the following properties for more complex items:\\
     /// - <see cref="BaseVerticalCollectionView.makeItem">makeItem</see> \\
     /// - <see cref="BaseVerticalCollectionView.bindItem">bindItem</see> \\
+    /// - <see cref="BaseVerticalCollectionView.unbindItem">unbindItem</see> \\
+    /// - <see cref="BaseVerticalCollectionView.destroyItem">destroyItem</see> \\
     /// - <see cref="BaseVerticalCollectionView.fixedItemHeight">fixedItemHeight</see> when using <see cref="CollectionVirtualizationMethod.FixedHeight"/>\\
     ///
     /// The <c>ListView</c> creates multiple <see cref="VisualElement"/> objects for the visible items. As the user scrolls, the ListView
@@ -56,7 +58,7 @@ namespace UnityEngine.UIElements
     ///     \\
     /// By default, the user can select one element in the list at a time. To change the default selection
     /// use the <c>selection-type</c> property in UXML or the<see cref="ListView.selectionType"/> property in C#.
-    ///      To allow the user to select more than one element simultaneously, set the property to <c>Selection.Multiple</c>.
+    ///     To allow the user to select more than one element simultaneously, set the property to <c>Selection.Multiple</c>.
     ///     To prevent the user from selecting items, set the property to <c>Selection.None</c>.\\
     /// \\
     ///     By default, all rows in the ListView have same background color. To make the row background colors
@@ -80,6 +82,12 @@ namespace UnityEngine.UIElements
     /// <example>
     /// <code>
     /// <![CDATA[
+    /// using System;
+    /// using System.Collections.Generic;
+    /// using UnityEditor;
+    /// using UnityEngine;
+    /// using UnityEngine.UIElements;
+    /// 
     /// public class ListViewExampleWindow : EditorWindow
     /// {
     ///     [MenuItem("Window/ListViewExampleWindow")]
@@ -110,12 +118,18 @@ namespace UnityEngine.UIElements
     ///         // so it can calculate how many items to actually display
     ///         const int itemHeight = 16;
     ///
-    ///         var listView = new ListView(items, itemHeight, makeItem, bindItem);
+    ///         var listView = new ListView(items, itemHeight, makeItem, bindItem)
+    ///         {
+    ///             // Enables multiple selection using shift or ctrl/cmd keys.
+    ///             selectionType = SelectionType.Multiple
+    ///         };
     ///
-    ///         listView.selectionType = SelectionType.Multiple;
-    ///
-    ///         listView.onItemsChosen += objects => Debug.Log(objects);
-    ///         listView.onSelectionChange += objects => Debug.Log(objects);
+    ///         // Single click triggers "onSelectionChange" with the selected items. ("selectionChanged" in 2022.3+)
+    ///         // Use "onSelectedIndicesChange" to get the indices of the selected items instead. ("selectedIndicesChanged" in 2022.3+)
+    ///         listView.onSelectionChange += objects => Debug.Log($"Selected: {string.Join(", ", objects)}"); 
+    /// 
+    ///         // Double-click triggers "onItemsChosen" with the selected items. ("itemsChosen" in 2022.3+)
+    ///         listView.onItemsChosen += objects => Debug.Log($"Double-clicked: {string.Join(", ", objects)}"); 
     ///
     ///         listView.style.flexGrow = 1.0f;
     ///
