@@ -13,7 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal const string k_NotAcquiredUpmErrorMessage = "Your account does not grant permission to use the package";
         internal const string k_NotSignedInUpmErrorMessage = "You are not signed in";
 
-        public static void ManagePackageManagerEntitlementErrorAndDeprecation(UpmClient upmClient)
+        public static void ManagePackageManagerEntitlementErrorAndDeprecation(IUpmClient upmClient)
         {
             upmClient.onListOperation += OnListOperation;
             upmClient.List(true);
@@ -27,7 +27,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 listOperation.onProcessResult += (request) =>
                 {
                     var servicesContainer = ServicesContainer.instance;
-                    var upmClient = servicesContainer.Resolve<UpmClient>();
+                    var upmClient = servicesContainer.Resolve<IUpmClient>();
                     upmClient.onListOperation -= OnListOperation;
 
                     // Package Manager Window always seems to default to name ascending order
@@ -66,7 +66,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static bool FindDeprecationPackagesAndOpenPackageManager(PackageCollection packages)
         {
             var servicesContainer = ServicesContainer.instance;
-            var settingsProxy = servicesContainer.Resolve<PackageManagerProjectSettingsProxy>();
+            var settingsProxy = servicesContainer.Resolve<IProjectSettingsProxy>();
             if (settingsProxy.oneTimeDeprecatedPopUpShown)
                 return false;
 
@@ -77,7 +77,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (deprecatedPackage == null)
                 return false;
 
-            var applicationProxy = servicesContainer.Resolve<ApplicationProxy>();
+            var applicationProxy = servicesContainer.Resolve<IApplicationProxy>();
             var dialogResult = applicationProxy.DisplayDialogComplex("openPackageManagerWithDeprecatedPackages",
                 L10n.Tr("Deprecated packages"),
                 L10n.Tr("This project contains one or more deprecated packages. Do you want to open Package Manager?"),

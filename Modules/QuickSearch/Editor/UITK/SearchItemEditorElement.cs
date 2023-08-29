@@ -161,6 +161,7 @@ namespace UnityEditor.Search
 
             GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
             EditorGUIUtility.ResetGUIState();
+            GUI.color = playModeTintColor;
 
             //set the current PropertyHandlerCache to the current editor
             ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;

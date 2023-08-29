@@ -8,9 +8,9 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class RemoveCustomAction : PackageAction
 {
-    private readonly PackageOperationDispatcher m_OperationDispatcher;
-    private readonly ApplicationProxy m_Application;
-    public RemoveCustomAction(PackageOperationDispatcher operationDispatcher, ApplicationProxy applicationProxy)
+    private readonly IPackageOperationDispatcher m_OperationDispatcher;
+    private readonly IApplicationProxy m_Application;
+    public RemoveCustomAction(IPackageOperationDispatcher operationDispatcher, IApplicationProxy applicationProxy)
     {
         m_OperationDispatcher = operationDispatcher;
         m_Application = applicationProxy;

@@ -7,28 +7,34 @@ using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
-internal class AssetSelectionHandler
+internal interface IAssetSelectionHandler : IService
 {
-    public virtual event Action<IEnumerable<Asset>> onRemoveSelectionDone = delegate {};
+    event Action<IEnumerable<Asset>> onRemoveSelectionDone;
 
-    private SelectionWindowProxy m_SelectionWindowProxy;
+    void Remove(IEnumerable<Asset> assets, string packageName, string versionString);
+}
 
-    public void ResolveDependencies(SelectionWindowProxy selectionWindowProxy)
+internal class AssetSelectionHandler : BaseService<IAssetSelectionHandler>, IAssetSelectionHandler
+{
+    public event Action<IEnumerable<Asset>> onRemoveSelectionDone = delegate {};
+
+    private readonly ISelectionWindowProxy m_SelectionWindowProxy;
+    public AssetSelectionHandler(ISelectionWindowProxy selectionWindowProxy)
     {
-        m_SelectionWindowProxy = selectionWindowProxy;
+        m_SelectionWindowProxy = RegisterDependency(selectionWindowProxy);
     }
 
-    public void OnEnable()
+    public override void OnEnable()
     {
         m_SelectionWindowProxy.onRemoveSelectionDone += OnRemoveSelectionDone;
     }
 
-    public void OnDisable()
+    public override void OnDisable()
     {
         m_SelectionWindowProxy.onRemoveSelectionDone -= OnRemoveSelectionDone;
     }
 
-    internal virtual void Remove(IEnumerable<Asset> assets, string packageName, string versionString)
+    public void Remove(IEnumerable<Asset> assets, string packageName, string versionString)
     {
         m_SelectionWindowProxy.Open(new SelectionWindowData(assets, packageName, versionString));
     }

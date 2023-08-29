@@ -109,5 +109,29 @@ namespace UnityEditor
         {
             return !String.IsNullOrEmpty(btInfo.assemblyName) ? btInfo.assemblyName : btInfo.nameList[0];
         }
+
+        public static bool TryGetBuildTarget(BuildTarget platform, out IBuildTarget buildTarget)
+        {
+            buildTarget = Modules.ModuleManager.GetIBuildTarget(platform);
+            return buildTarget != null;
+        }
+
+        public static bool TryGetProperties<T>(BuildTarget platform, out T properties) where T: IPlatformProperties
+        {
+            if (TryGetBuildTarget(platform, out var buildTarget))
+            {
+                return buildTarget.TryGetProperties(out properties);
+            }
+            properties = default(T);
+            return false;
+        }
+
+        public static BuildTarget[] StandaloneBuildTargets { get; internal set; } = new BuildTarget[]
+        {   
+            BuildTarget.StandaloneOSX,  
+            BuildTarget.StandaloneWindows,
+            BuildTarget.StandaloneWindows64,  
+            BuildTarget.StandaloneLinux64,  
+        };
     }
 }

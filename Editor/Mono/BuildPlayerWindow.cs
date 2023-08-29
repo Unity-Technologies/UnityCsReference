@@ -47,6 +47,7 @@ namespace UnityEditor
             public string noModuleLoaded = L10n.Tr("No {0} module loaded.");
             public GUIContent openDownloadPage = EditorGUIUtility.TrTextContent("Open Download Page");
             public GUIContent installModuleWithHub = EditorGUIUtility.TrTextContent("Install with Unity Hub");
+            public string EditorWillNeedToBeReloaded = L10n.Tr("Note: Editor will need to be restarted to load any newly installed modules");
             public string infoText = L10n.Tr("{0} is not included in your Unity Pro license. Your {0} build will include a Unity Personal Edition splash screen.\n\nYou must be eligible to use Unity Personal Edition to use this build option. Please refer to our EULA for further information.");
             public GUIContent eula = EditorGUIUtility.TrTextContent("Eula");
             public string addToYourPro = L10n.Tr("Add {0} to your Unity Pro license");
@@ -148,6 +149,8 @@ namespace UnityEditor
 
         static bool isEditorinstalledWithHub = IsEditorInstalledWithHub();
 
+        internal static event Action<NamedBuildTarget> drawingMultiplayerBuildOptions;
+
         [UsedImplicitly, RequiredByNativeCode]
         public static void ShowBuildPlayerWindow()
         {
@@ -166,7 +169,7 @@ namespace UnityEditor
             var buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
             NamedBuildTarget namedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
             BuildPlatform platform = BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget);
-            string module = ModuleManager.GetTargetStringFrom(platform.namedBuildTarget.ToBuildTargetGroup(), buildTarget);
+            string module = ModuleManager.GetTargetStringFrom(buildTarget);
             IBuildWindowExtension buildWindowExtension = ModuleManager.GetBuildWindowExtension(module);
 
             bool buildPlayerAndRunEnabled = buildWindowExtension != null ? buildWindowExtension.EnabledBuildAndRunButton() && !(EditorUserBuildSettings.installInBuildFolder) : !(EditorUserBuildSettings.installInBuildFolder);
@@ -182,11 +185,14 @@ namespace UnityEditor
             var lastBuildLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
             bool buildLocationIsValid = BuildLocationIsValid(lastBuildLocation);
 
-            if (buildLocationIsValid && (buildTarget == BuildTarget.StandaloneWindows || buildTarget == BuildTarget.StandaloneWindows64))
+            if (buildLocationIsValid && BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out var aBuildTarget))
             {
-                // Case 1208041: Windows Standalone .exe name depends on productName player setting
-                var newBuildLocation = Path.Combine(Path.GetDirectoryName(lastBuildLocation), Paths.MakeValidFileName(PlayerSettings.productName) + ".exe").Replace(Path.DirectorySeparatorChar, '/');
-                EditorUserBuildSettings.SetBuildLocation(buildTarget, newBuildLocation);
+                if (aBuildTarget.TryGetProperties(out IBuildPlatformProperties buildProperties))
+                {
+                    string buildLocation = buildProperties.ValidateBuildLocation();
+                    if (buildLocation != null)
+                        EditorUserBuildSettings.SetBuildLocation(buildTarget, buildLocation);
+                }
             }
 
             BuildPlayerAndRunInternal(!buildLocationIsValid);
@@ -666,7 +672,7 @@ namespace UnityEditor
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
             bool installed = BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget).installed;
 
-            string moduleName = ModuleManager.GetTargetStringFrom(namedBuildTarget.ToBuildTargetGroup(), buildTarget);
+            string moduleName = ModuleManager.GetTargetStringFrom(buildTarget);
 
             return !installed ||
                 (licensed && !string.IsNullOrEmpty(moduleName) &&
@@ -697,7 +703,7 @@ namespace UnityEditor
             BuildTarget buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
             NamedBuildTarget namedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
             BuildPlatform platform = BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget);
-            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(namedBuildTarget.ToBuildTargetGroup(), buildTarget);
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(buildTarget);
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
 
             // Draw the group name (text & icon separately to have some space between them)
@@ -710,7 +716,7 @@ namespace UnityEditor
 
             GUILayout.Space(10);
 
-            string moduleName = ModuleManager.GetTargetStringFrom(namedBuildTarget.ToBuildTargetGroup(), buildTarget);
+            string moduleName = ModuleManager.GetTargetStringFrom(buildTarget);
             if (namedBuildTarget == NamedBuildTarget.Server)
                 moduleName = moduleName.Replace("Standalone", "DedicatedServer");
 
@@ -735,6 +741,7 @@ namespace UnityEditor
                         Help.BrowseURL(url);
                     }
                 }
+                GUILayout.Label(styles.EditorWillNeedToBeReloaded, EditorStyles.wordWrappedMiniLabel);
                 GUIBuildButtons(false, false, false, platform, postprocessor);
                 return;
             }
@@ -806,7 +813,7 @@ namespace UnityEditor
 
             // FIXME: WHY IS THIS ALL IN ONE FUNCTION?!
             // Draw the side bar to the right. Different options like specific Standalone player to build, profiling and debugging options, etc.
-            string module = ModuleManager.GetTargetStringFrom(platform.namedBuildTarget.ToBuildTargetGroup(), buildTarget);
+            string module = ModuleManager.GetTargetStringFrom(buildTarget);
             IBuildWindowExtension buildWindowExtension = ModuleManager.GetBuildWindowExtension(module);
             if (buildWindowExtension != null)
                 buildWindowExtension.ShowPlatformBuildOptions();
@@ -934,7 +941,7 @@ namespace UnityEditor
                     EditorUserBuildSettings.SetCompressionType(namedBuildTarget.ToBuildTargetGroup(), styles.compressionTypes[cmpIdx]);
                 }
 
-                canInstallInBuildFolder = Unsupported.IsSourceBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(namedBuildTarget.ToBuildTargetGroup(), buildTarget);
+                canInstallInBuildFolder = Unsupported.IsSourceBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTarget);
 
                 if (enableBuildButton)
                 {
@@ -954,6 +961,8 @@ namespace UnityEditor
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
+
+            drawingMultiplayerBuildOptions?.Invoke(namedBuildTarget);
 
             GUILayout.EndScrollView();
 

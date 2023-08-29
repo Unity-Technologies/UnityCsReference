@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.Build;
+using UnityEditor.Inspector.GraphicsSettingsInspectors;
 using UnityEditor.Rendering.Settings;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
@@ -66,6 +67,8 @@ namespace UnityEditor.Rendering
             }
             else
                 Internal_UnregisterRenderPipeline(renderPipelineType.FullName);
+
+            GraphicsSettingsUtils.ReloadGraphicsSettingsEditor();
         }
 
         public static void SetRenderPipelineGlobalSettingsAsset<T>(RenderPipelineGlobalSettings newSettings)
@@ -84,6 +87,28 @@ namespace UnityEditor.Rendering
             where T : RenderPipeline
         {
             return GetRenderPipelineGlobalSettingsAsset(typeof(T));
+        }
+
+        public static bool TryGetRenderPipelineSettingsForPipeline<TSettings, TPipeline>(out TSettings settings)
+            where TSettings : class, IRenderPipelineGraphicsSettings
+            where TPipeline : RenderPipeline
+        {
+            return TryGetRenderPipelineSettingsForPipeline(typeof(TPipeline), out settings);
+        }
+
+        public static bool TryGetRenderPipelineSettingsForPipeline<TSettings>(Type renderPipelineType, out TSettings settings)
+            where TSettings : class, IRenderPipelineGraphicsSettings
+        {
+            settings = null;
+
+            var pipelineGlobalSettings = GraphicsSettings.GetSettingsForRenderPipeline(renderPipelineType);
+            if (pipelineGlobalSettings == null)
+                return false;
+
+            if (pipelineGlobalSettings.TryGet(typeof(TSettings), out var baseSettings))
+                settings = baseSettings as TSettings;
+
+            return settings != null;
         }
     }
 }

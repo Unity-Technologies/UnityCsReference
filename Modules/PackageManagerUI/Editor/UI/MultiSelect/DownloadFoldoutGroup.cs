@@ -6,10 +6,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class DownloadFoldoutGroup : MultiSelectFoldoutGroup
     {
-        public DownloadFoldoutGroup(AssetStoreDownloadManager assetStoreDownloadManager,
-                                    PackageOperationDispatcher operationDispatcher,
-                                    UnityConnectProxy unityConnect,
-                                    ApplicationProxy application)
+        public DownloadFoldoutGroup(IAssetStoreDownloadManager assetStoreDownloadManager,
+                                    IPackageOperationDispatcher operationDispatcher,
+                                    IUnityConnectProxy unityConnect,
+                                    IApplicationProxy application)
             : base(new DownloadNewAction(operationDispatcher, assetStoreDownloadManager, unityConnect, application),
                    new CancelDownloadAction(operationDispatcher, assetStoreDownloadManager, application))
         {

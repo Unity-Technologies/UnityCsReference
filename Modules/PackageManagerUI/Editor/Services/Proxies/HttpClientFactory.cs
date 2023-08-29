@@ -8,30 +8,38 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class HttpClientFactory
+    internal interface IHttpClientFactory : IService
+    {
+        IAsyncHTTPClient GetASyncHTTPClient(string url);
+        IAsyncHTTPClient PostASyncHTTPClient(string url, string postData);
+        void AbortByTag(string tag);
+        Dictionary<string, object> ParseResponseAsDictionary(IAsyncHTTPClient request);
+    }
+
+    internal class HttpClientFactory : BaseService<IHttpClientFactory>, IHttpClientFactory
     {
         public static readonly string k_InvalidJSONErrorMessage = L10n.Tr("Server response is not a valid JSON");
         public static readonly string k_ServerErrorMessage = L10n.Tr("Server response is");
 
         [ExcludeFromCodeCoverage]
-        public virtual IAsyncHTTPClient GetASyncHTTPClient(string url)
+        public IAsyncHTTPClient GetASyncHTTPClient(string url)
         {
             return new AsyncHTTPClient(url);
         }
 
         [ExcludeFromCodeCoverage]
-        public virtual IAsyncHTTPClient PostASyncHTTPClient(string url, string postData)
+        public IAsyncHTTPClient PostASyncHTTPClient(string url, string postData)
         {
             return new AsyncHTTPClient(url, "POST") { postData = postData };
         }
 
         [ExcludeFromCodeCoverage]
-        public virtual void AbortByTag(string tag)
+        public void AbortByTag(string tag)
         {
             AsyncHTTPClient.AbortByTag(tag);
         }
 
-        public virtual Dictionary<string, object> ParseResponseAsDictionary(IAsyncHTTPClient request)
+        public Dictionary<string, object> ParseResponseAsDictionary(IAsyncHTTPClient request)
         {
             string errorMessage;
             if (request.IsSuccess() && request.responseCode == 200)

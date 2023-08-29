@@ -15,7 +15,18 @@ namespace UnityEditor.UIElements
 {
     internal class UxmlSerializedAttributeDescription : UxmlAttributeDescription
     {
-        // Lazy loaded fields that are mostly used in the UI BUilder.
+        static readonly Dictionary<Type, string> k_BaseTypes = new()
+        {
+            { typeof(short), "short" },
+            { typeof(int), "int" },
+            { typeof(long), "long" },
+            { typeof(float), "float" },
+            { typeof(double), "double" },
+            { typeof(bool), "boolean" }
+        };
+
+
+        // Lazy loaded fields that are mostly used in the UI Builder.
         IList<Type> m_UxmlObjectAcceptedTypes;
         object m_ObjectField;
         bool? m_IsUnityObject;
@@ -106,7 +117,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// The UxmlObject types that can be applied to this attribute.
         /// </summary>
-        public IList<Type> uxmlObjectAcceptedTypes 
+        public IList<Type> uxmlObjectAcceptedTypes
         {
             get
             {
@@ -134,7 +145,7 @@ namespace UnityEditor.UIElements
                         var uxmlSerializedDataType = type.GetNestedType(nameof(UxmlSerializedData));
                         if (uxmlSerializedDataType == null)
                             return;
-                        
+
                         acceptedTypes.Add(uxmlSerializedDataType);
                     }
 
@@ -307,11 +318,52 @@ namespace UnityEditor.UIElements
             }
         }
 
+        public void UpdateSchemaRestriction()
+        {
+            if (type is { IsEnum: true })
+            {
+                var enumRestriction = new UxmlEnumeration();
+
+                var values = new List<string>();
+                foreach (var item in Enum.GetValues(type))
+                {
+                    values.Add(item.ToString());
+                }
+
+                enumRestriction.values = values;
+                restriction = enumRestriction;
+            }
+            else if (serializedField.GetCustomAttribute<RangeAttribute>() != null)
+            {
+                var attribute = serializedField.GetCustomAttribute<RangeAttribute>();
+                var uxmlValueBoundsRestriction = new UxmlValueBounds
+                {
+                    max = attribute.max.ToString(),
+                    min = attribute.min.ToString()
+                };
+
+                restriction = uxmlValueBoundsRestriction;
+            }
+        }
+
+        public void UpdateBaseType()
+        {
+            if (!k_BaseTypes.TryGetValue(type, out var baseType))
+                baseType = "string";
+
+            typeNamespace = xmlSchemaNamespace;
+            ((UxmlAttributeDescription)this).type = baseType;
+        }
+
         public override string ToString() => $"{serializedField.DeclaringType.ReflectedType.Name}.{serializedField.Name} ({serializedField.FieldType})";
     }
 
     internal class UxmlSerializedUxmlObjectAttributeDescription : UxmlSerializedAttributeDescription
     {
+        internal static readonly string k_MultipleUxmlObjectsWarning = "Multiple UxmlObjects Found for UxmlObjectReference Field {0}. " +
+            "Only the first UxmlObject will be used in the current configuration. " +
+            "If you intend to use multiple UxmlObjects, it is recommended to convert the field into a list.";
+
         public string rootName { get; set; }
 
         internal override object GetValueFromBagAsObject(IUxmlAttributes bag, CreationContext cc)
@@ -365,6 +417,21 @@ namespace UnityEditor.UIElements
                             if (assetDescription != null && objectType.IsAssignableFrom(assetDescription.serializedDataType))
                             {
                                 foundObjects.Add((asset, assetDescription));
+                            }
+                        }
+
+                        // Display a warning when uxml file contains more than one named UxmlObject of a type defined in a single instance attribute
+                        if (entry.uxmlObjectAssets.Count > 1 && isUxmlObject && !isList)
+                        {
+                            var foundTypes = new HashSet<string>();
+                            foreach (var asset in entry.uxmlObjectAssets)
+                            {
+                                if (foundTypes.Contains(asset.fullTypeName))
+                                {
+                                    Debug.LogWarning(string.Format(k_MultipleUxmlObjectsWarning, asset.fullTypeName));
+                                    break;
+                                }
+                                foundTypes.Add(asset.fullTypeName);
                             }
                         }
 

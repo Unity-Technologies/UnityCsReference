@@ -33,8 +33,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (state == PlayModeStateChange.ExitingEditMode)
             {
-                var assetStoreDownloadManager = ServicesContainer.instance.Resolve<AssetStoreDownloadManager>();
-                var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
+                var assetStoreDownloadManager = ServicesContainer.instance.Resolve<IAssetStoreDownloadManager>();
+                var applicationProxy = ServicesContainer.instance.Resolve<IApplicationProxy>();
                 if (assetStoreDownloadManager.IsAnyDownloadInProgress())
                 {
                     var title = L10n.Tr("Package download in progress");
@@ -65,7 +65,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!EditorApplication.isPlaying || PlayModeDownloadState.instance.skipShowDialog)
                 return true;
 
-            var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
+            var applicationProxy = ServicesContainer.instance.Resolve<IApplicationProxy>();
             var title = L10n.Tr("Play Mode in progress");
             var message = L10n.Tr("Please note that making changes in the Package Manager while in Play Mode may impact performance.");
             var accept = applicationProxy.DisplayDialog("startDownloadWhenInPlayMode", title, message, k_DefaultGotItButtonText, k_DefaultCancelButtonText);

@@ -8,10 +8,15 @@ using UnityEditor.Connect;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [ExcludeFromCodeCoverage]
-    internal class UnityOAuthProxy
+    internal interface IUnityOAuthProxy : IService
     {
-        public virtual void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback)
+        void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback);
+    }
+
+    [ExcludeFromCodeCoverage]
+    internal class UnityOAuthProxy : BaseService<IUnityOAuthProxy>, IUnityOAuthProxy
+    {
+        public void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback)
         {
             try
             {

@@ -12,25 +12,25 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<PackageDetails> {}
 
-        private ResourceLoader m_ResourceLoader;
-        private ExtensionManager m_ExtensionManager;
-        private ApplicationProxy m_Application;
-        private UpmCache m_UpmCache;
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        private PackageDatabase m_PackageDatabase;
-        private PageManager m_PageManager;
-        private UnityConnectProxy m_UnityConnectProxy;
+        private IResourceLoader m_ResourceLoader;
+        private IExtensionManager m_ExtensionManager;
+        private IApplicationProxy m_Application;
+        private IUpmCache m_UpmCache;
+        private IPackageManagerPrefs m_PackageManagerPrefs;
+        private IPackageDatabase m_PackageDatabase;
+        private IPageManager m_PageManager;
+        private IUnityConnectProxy m_UnityConnectProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_ExtensionManager = container.Resolve<ExtensionManager>();
-            m_Application = container.Resolve<ApplicationProxy>();
-            m_UpmCache = container.Resolve<UpmCache>();
-            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
-            m_PackageDatabase = container.Resolve<PackageDatabase>();
-            m_PageManager = container.Resolve<PageManager>();
-            m_UnityConnectProxy = container.Resolve<UnityConnectProxy>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
+            m_ExtensionManager = container.Resolve<IExtensionManager>();
+            m_Application = container.Resolve<IApplicationProxy>();
+            m_UpmCache = container.Resolve<IUpmCache>();
+            m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
+            m_PackageDatabase = container.Resolve<IPackageDatabase>();
+            m_PageManager = container.Resolve<IPageManager>();
+            m_UnityConnectProxy = container.Resolve<IUnityConnectProxy>();
         }
 
         public PackageDetails()

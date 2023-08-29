@@ -59,7 +59,6 @@ namespace UnityEngine
         extern public RenderingPath actualRenderingPath {[NativeName("CalculateRenderingPath")] get;  }
 
         extern public void Reset();
-
         extern public bool allowHDR { get; set; }
         extern public bool allowMSAA { get; set; }
         extern public bool allowDynamicResolution { get; set; }
@@ -81,7 +80,20 @@ namespace UnityEngine
 
         extern public int cullingMask { get; set; }
         extern public int eventMask { get; set; }
-        extern public bool layerCullSpherical { get; set; }
+        public bool layerCullSpherical
+        {
+            get { return layerCullSphericalInternal; }
+            set
+            {
+                if(RenderPipelineManager.currentPipeline != null)
+                {
+                    Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.layerCullSpherical only with the built-in renderer.");
+                }
+
+                layerCullSphericalInternal = value;
+            }
+        }
+        [NativeProperty("LayerCullSpherical")]extern internal bool layerCullSphericalInternal { get; set; }
         extern public CameraType cameraType { get; set; }
 
         extern internal Material skyboxMaterial { get; }
@@ -245,7 +257,13 @@ namespace UnityEngine
         extern public static float VerticalToHorizontalFieldOfView(float verticalFieldOfView, float aspectRatio);
 
         extern public static Camera main {[FreeFunction("FindMainCamera")] get; }
-        extern public static Camera current {[FreeFunction("GetCurrentCameraPPtr")] get; }
+        public static Camera current {
+            get
+            {
+                return currentInternal;
+            }
+        }
+        extern private static Camera currentInternal { [FreeFunction("GetCurrentCameraPPtr")] get; }
 
         extern public UnityEngine.SceneManagement.Scene scene
         {
@@ -265,7 +283,20 @@ namespace UnityEngine
         extern public float stereoSeparation  { get; set; }
         extern public float stereoConvergence { get; set; }
         extern public bool  areVRStereoViewMatricesWithinSingleCullTolerance {[NativeName("AreVRStereoViewMatricesWithinSingleCullTolerance")] get; }
-        extern public StereoTargetEyeMask stereoTargetEye { get; set; }
+        public StereoTargetEyeMask stereoTargetEye
+        {
+            get { return stereoTargetEyeInternal; }
+            set
+            {
+                if (RenderPipelineManager.currentPipeline != null)
+                {
+                    Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.stereoTargetEye only with the built-in renderer.");
+                }
+
+                stereoTargetEyeInternal = value;
+            }
+        }
+        [NativeProperty("StereoTargetEye")]extern internal StereoTargetEyeMask stereoTargetEyeInternal { get; set; }
         extern public MonoOrStereoscopicEye stereoActiveEye {[FreeFunction("CameraScripting::GetStereoActiveEye", HasExplicitThis = true)] get; }
 
         extern public Matrix4x4 GetStereoNonJitteredProjectionMatrix(StereoscopicEye eye);
@@ -471,14 +502,28 @@ namespace UnityEngine
 
         public void RemoveCommandBuffers(CameraEvent evt)
         {
-            m_NonSerializedVersion++;
-            RemoveCommandBuffersImpl(evt);
+		    if(RenderPipelineManager.currentPipeline != null)
+            {
+                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.RemoveCommandBuffers only with the built-in renderer.");
+            }
+            else
+            {
+			    m_NonSerializedVersion++;
+                RemoveCommandBuffersImpl(evt);
+            }
         }
 
         public void RemoveAllCommandBuffers()
         {
-            m_NonSerializedVersion++;
-            RemoveAllCommandBuffersImpl();
+            if (RenderPipelineManager.currentPipeline != null)
+            {
+                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.RemoveAllCommandBuffers only with the built-in renderer.");
+            }
+            else
+            {
+			    m_NonSerializedVersion++;
+                RemoveAllCommandBuffersImpl();
+            }
         }
 
         // in old bindings these functions code like this:
@@ -497,8 +542,16 @@ namespace UnityEngine
             if (!Rendering.CameraEventUtils.IsValid(evt))
                 throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
-            AddCommandBufferImpl(evt, buffer);
-            m_NonSerializedVersion++;
+
+            if (RenderPipelineManager.currentPipeline != null)
+            {
+                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.AddCommandBuffer only with the built-in renderer.");
+            }
+            else
+            {
+                AddCommandBufferImpl(evt, buffer);
+                m_NonSerializedVersion++;
+            }
         }
 
         public void AddCommandBufferAsync(CameraEvent evt, CommandBuffer buffer, ComputeQueueType queueType)
@@ -506,8 +559,16 @@ namespace UnityEngine
             if (!Rendering.CameraEventUtils.IsValid(evt))
                 throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
-            AddCommandBufferAsyncImpl(evt, buffer, queueType);
-            m_NonSerializedVersion++;
+
+            if (RenderPipelineManager.currentPipeline != null)
+            {
+                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.AddCommandBufferAsync only with the built-in renderer.");
+            }
+            else
+            {
+                AddCommandBufferAsyncImpl(evt, buffer, queueType);
+                m_NonSerializedVersion++;
+            }
         }
 
         public void RemoveCommandBuffer(CameraEvent evt, CommandBuffer buffer)
@@ -515,14 +576,31 @@ namespace UnityEngine
             if (!Rendering.CameraEventUtils.IsValid(evt))
                 throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
-            RemoveCommandBufferImpl(evt, buffer);
-            m_NonSerializedVersion++;
+
+            if (RenderPipelineManager.currentPipeline != null)
+            {
+                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.RemoveCommandBuffer only with the built-in renderer.");
+            }
+            else
+            {
+                RemoveCommandBufferImpl(evt, buffer);
+                m_NonSerializedVersion++;
+            }
+        }
+
+        public UnityEngine.Rendering.CommandBuffer[] GetCommandBuffers(UnityEngine.Rendering.CameraEvent evt)
+        {
+            if(RenderPipelineManager.currentPipeline != null)
+            {
+                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.GetCommandBuffers only with the built-in renderer.");
+            }
+
+            return GetCommandBuffersImpl(evt);
         }
 
         [FreeFunction("CameraScripting::GetCommandBuffers", HasExplicitThis = true)]
-        extern public UnityEngine.Rendering.CommandBuffer[] GetCommandBuffers(UnityEngine.Rendering.CameraEvent evt);
-
-        internal uint m_NonSerializedVersion;
+        extern internal UnityEngine.Rendering.CommandBuffer[] GetCommandBuffersImpl(UnityEngine.Rendering.CameraEvent evt);
+	    internal uint m_NonSerializedVersion;
     }
 
     public partial class Camera

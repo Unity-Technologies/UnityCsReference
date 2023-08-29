@@ -6,7 +6,6 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.LightBaking;
 using UnityEngine.LightTransport;
 using static UnityEditor.LightBaking.LightBaker;
 
@@ -158,6 +157,20 @@ namespace UnityEditor.LightBaking
             public Resolution resolution;
             public Vector4[] data;
         }
+
+        public struct TextureTransform
+        {
+            public Vector2 scale;
+            public Vector2 offset;
+        };
+
+        public struct TextureProperties
+        {
+            public TextureWrapMode wrapModeU;
+            public TextureWrapMode wrapModeV;
+            public FilterMode filterMode;
+            public TextureTransform textureST;
+        };
 
         public struct CookieData
         {
@@ -368,6 +381,13 @@ namespace UnityEditor.LightBaking
                 Instance instance = Internal_Instance(index);
                 return instance;
             }
+            extern void Internal_SetInstance(UInt32 index, Instance instance);
+            public void instance(UInt32 index, Instance instance)
+            {
+                if (index >= instanceCount)
+                    throw new ArgumentException(string.Format("index must be between 0 and " + (instanceCount - 1) + ", but was {0}", index));
+                Internal_SetInstance(index, instance);
+            }
 
             extern public UInt32 terrainCount { get; }
             extern Terrain Internal_GetTerrain(UInt32 index);
@@ -385,6 +405,8 @@ namespace UnityEditor.LightBaking
                     throw new ArgumentException(string.Format("index must be between 0 and " + (lightmapCount - 1) + ", but was {0}", index));
                 return Internal_InstanceCount(index);
             }
+
+            extern public  Vector2[] GetUV1VertexData(UInt32 meshIndex);
 
             extern public UInt32 meshCount { get; }
             extern public UInt32 heightmapCount { get; }
@@ -484,6 +506,7 @@ namespace UnityEditor.LightBaking
 
             extern public UInt32 emissiveTextureCount { get; }
             extern public UInt32 transmissiveTextureCount { get; }
+            extern public UInt32 transmissiveTexturePropertiesCount { get; }
             extern TextureData Internal_GetEmissiveTextureData(UInt32 index);
             extern void Internal_SetEmissiveTextureData(UInt32 index, TextureData textureData);
             public TextureData GetEmissiveTextureData(UInt32 index)
@@ -512,6 +535,13 @@ namespace UnityEditor.LightBaking
                 if (index >= emissiveTextureCount)
                     throw new ArgumentException(string.Format("index must be between 0 and " + (transmissiveTextureCount - 1) + ", but was {0}", index));
                 Internal_SetTransmissiveTextureData(index, textureData);
+            }
+            extern TextureProperties Internal_GetTransmissiveTextureProperties(UInt32 index);
+            public TextureProperties GetTransmissiveTextureProperties(UInt32 index)
+            {
+                if (index >= transmissiveTexturePropertiesCount)
+                    throw new ArgumentException(string.Format("index must be between 0 and " + (transmissiveTexturePropertiesCount - 1) + ", but was {0}", index));
+                return Internal_GetTransmissiveTextureProperties(index);
             }
 
             extern public UInt32 GetCookieCount();
@@ -544,6 +574,8 @@ namespace UnityEditor.LightBaking
 
             extern public void SetLightmapResolution(Resolution resolution);
             extern public void SetEnvironment(Vector4 color);
+            extern public void SetEnvironmentFromTextures(TextureData posX, TextureData negX, TextureData posY, TextureData negY, TextureData posZ, TextureData negZ);
+            extern public TextureData GetEnvironmentCubeTexture();
 
             public extern ProbeRequest[] GetProbeRequests();
             public extern void SetLightProbeRequests(ProbeRequest[] requests);

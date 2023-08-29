@@ -673,9 +673,10 @@ namespace UnityEngine.UIElements.UIR
             {
                 if (ve.panel.contextType == ContextType.Editor)
                 {
-                    settings.faceColor *= UIElementsUtility.editorPlayModeTintColor;
-                    settings.outlineColor *= UIElementsUtility.editorPlayModeTintColor;
-                    settings.underlayColor *= UIElementsUtility.editorPlayModeTintColor;
+                    var playModeTintColor = ve.playModeTintColor;
+                    settings.faceColor *= playModeTintColor;
+                    settings.outlineColor *= playModeTintColor;
+                    settings.underlayColor *= playModeTintColor;
                 }
                 renderChain.shaderInfoAllocator.SetTextCoreSettingValue(ve.renderChainData.textCoreSettingsID, settings, ve.panel.contextType == ContextType.Editor);
             }

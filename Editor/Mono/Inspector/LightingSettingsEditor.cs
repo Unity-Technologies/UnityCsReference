@@ -8,6 +8,7 @@ using UnityEngine.Rendering;
 using UnityEngine;
 using UnityEngineInternal;
 using Object = UnityEngine.Object;
+using System.Runtime.InteropServices;
 
 namespace UnityEditor
 {
@@ -177,7 +178,7 @@ namespace UnityEditor
             };
 
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
-            public static readonly GUIContent appleSiliconLightmapperWarning = EditorGUIUtility.TrTextContent("Progressive CPU Lightmapper is not available on Apple silicon. Use Progressive GPU Lightmapper instead.");
+            public static readonly GUIContent ARM64LightmapperWarning = EditorGUIUtility.TrTextContent("Progressive CPU Lightmapper is only available on Unity for x64 processors. Use Progressive GPU Lightmapper instead.");
             public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current Render Pipeline. Fallback mode is ");
             public static readonly GUIContent directionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
             public static readonly GUIContent denoiserNotSupportedWarning = EditorGUIUtility.TrTextContent("The current hardware or system configuration does not support the selected denoiser. Select a different denoiser.");
@@ -203,7 +204,7 @@ namespace UnityEditor
             public static readonly GUIContent trainingDataDestination = EditorGUIUtility.TrTextContent("Destination", "Destination for the training data, for example 'mysetup/30samples'. Will still be located at the first level in the project folder. ");
             public static readonly GUIContent concurrentJobs = EditorGUIUtility.TrTextContent("Concurrent Jobs", "The amount of simultaneously scheduled jobs.");
             public static readonly GUIContent indirectResolution = EditorGUIUtility.TrTextContent("Indirect Resolution", "Sets the resolution in texels that are used per unit for objects being lit by indirect lighting. The higher this value is, the more time the Editor needs to bake lighting.");
-            public static readonly GUIContent lightmapResolution = EditorGUIUtility.TrTextContent("Lightmap Resolution", "Sets the resolution in texels used per unit for objects lit by baked global illumination. The higher this value is, the more time the Editor needs to bake lighting.");
+            public static readonly GUIContent lightmapResolution = EditorGUIUtility.TrTextContent("Lightmap Resolution", "Sets the number of texels per unit assigned to objects receiving GI from lightmaps. Also affects the resolution of albedo and emission textures used in lighting calculations for both lightmaps and Light Probes. Higher values increase bake times.");
             public static readonly GUIContent padding = EditorGUIUtility.TrTextContent("Lightmap Padding", "Sets the separation in texels between shapes in the baked lightmap.");
             public static readonly GUIContent lightmapMaxSize = EditorGUIUtility.TrTextContent("Max Lightmap Size", "Sets the max size of the full lightmap Texture in pixels. Values are squared, so a setting of 1024 can produce a 1024x1024 pixel sized lightmap.");
             public static readonly GUIContent lightmapSizeFixed = EditorGUIUtility.TrTextContent("Fixed Lightmap Size", "Forces all lightmap textures to use the same size. These can be no larger than Max Lightmap Size.");
@@ -872,7 +873,7 @@ namespace UnityEditor
                 return false;
             if (denoiserType == LightingSettings.DenoiserType.OpenImage && !Lightmapping.IsOpenImageDenoiserSupported())
                 return false;
-            
+
             return true;
         }
 
@@ -890,7 +891,7 @@ namespace UnityEditor
 
         void BakeBackendGUI()
         {
-            bool isAppleSiliconEditor = SystemInfo.processorType.Contains("Apple") && !EditorUtility.IsRunningUnderCPUEmulation();
+            bool isOpenRLFunctionalForArchitecture = RuntimeInformation.ProcessArchitecture == Architecture.X64;
             var rect = EditorGUILayout.GetControlRect();
             EditorGUI.BeginProperty(rect, Styles.bakeBackend, m_BakeBackend);
             EditorGUI.BeginChangeCheck();
@@ -907,7 +908,7 @@ namespace UnityEditor
                     int value = Styles.bakeBackendValues[i];
                     bool selected = (value == m_BakeBackend.intValue);
 
-                    if (!SupportedRenderingFeatures.IsLightmapperSupported(value) || (isAppleSiliconEditor && value == (int)LightingSettings.Lightmapper.ProgressiveCPU))
+                    if (!SupportedRenderingFeatures.IsLightmapperSupported(value) || (!isOpenRLFunctionalForArchitecture && value == (int)LightingSettings.Lightmapper.ProgressiveCPU))
                     {
                         menu.AddDisabledItem(Styles.bakeBackendStrings[i], selected);
                     }
@@ -924,9 +925,9 @@ namespace UnityEditor
 
             EditorGUI.EndProperty();
 
-            if (isAppleSiliconEditor && m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.ProgressiveCPU)
+            if (!isOpenRLFunctionalForArchitecture && m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.ProgressiveCPU)
             {
-                EditorGUILayout.HelpBox(Styles.appleSiliconLightmapperWarning.text, MessageType.Warning);
+                EditorGUILayout.HelpBox(Styles.ARM64LightmapperWarning.text, MessageType.Warning);
             }
             else if (!SupportedRenderingFeatures.IsLightmapperSupported(m_BakeBackend.intValue))
             {

@@ -717,7 +717,21 @@ namespace UnityEditor
 
             if (srpHasAlternativeToLegacyProbes)
             {
-                EditorGUILayout.HelpBox(SupportedRenderingFeatures.active.overridesLightProbeSystemWarningMessage, MessageType.Warning, true);
+                GUIStyle helpboxStyle = new GUIStyle(EditorStyles.helpBox)
+                {
+                    wordWrap = true,
+                    alignment = TextAnchor.MiddleLeft,
+                    richText = true,
+                    padding = new RectOffset(36, 4, 4, 4)
+                };
+
+                GUIContent content = new GUIContent(SupportedRenderingFeatures.active.overridesLightProbeSystemWarningMessage);
+                float height = helpboxStyle.CalcHeight(content, EditorGUIUtility.currentViewWidth - helpboxStyle.padding.horizontal);
+
+                GUI.Box(GUILayoutUtility.GetRect(content, helpboxStyle, GUILayout.Height(height)), content, helpboxStyle);
+                Rect r = GUILayoutUtility.GetLastRect();
+
+                GUI.Label(new Rect(r.x + 4, r.y + height / 2 - 16, 32, 32), EditorGUIUtility.IconContent("console.warnicon"));
             }
             else
             {

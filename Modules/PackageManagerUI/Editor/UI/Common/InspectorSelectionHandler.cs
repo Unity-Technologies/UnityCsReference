@@ -9,26 +9,28 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal interface IInspectorSelectionHandler : IService
+    {
+        PackageSelectionObject GetPackageSelectionObject(PackageAndVersionIdPair pair, bool createIfNotFound = false);
+        PackageSelectionObject GetPackageSelectionObject(IPackage package, IPackageVersion version = null, bool createIfNotFound = false);
+    }
+
     [Serializable]
-    internal class InspectorSelectionHandler : ISerializationCallbackReceiver
+    internal class InspectorSelectionHandler : BaseService<IInspectorSelectionHandler>, IInspectorSelectionHandler, ISerializationCallbackReceiver
     {
         [SerializeField]
         private int[] m_SerializedPackageSelectionInstanceIds = Array.Empty<int>();
 
-        [NonSerialized]
         private Dictionary<string, PackageSelectionObject> m_PackageSelectionObjects = new();
 
-        [NonSerialized]
-        private SelectionProxy m_Selection;
-        [NonSerialized]
-        private PackageDatabase m_PackageDatabase;
-        [NonSerialized]
-        private PageManager m_PageManager;
-        public void ResolveDependencies(SelectionProxy selection, PackageDatabase packageDatabase, PageManager pageManager)
+        private readonly ISelectionProxy m_Selection;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPageManager m_PageManager;
+        public InspectorSelectionHandler(ISelectionProxy selection, IPackageDatabase packageDatabase, IPageManager pageManager)
         {
-            m_Selection = selection;
-            m_PackageDatabase = packageDatabase;
-            m_PageManager = pageManager;
+            m_Selection = RegisterDependency(selection);
+            m_PackageDatabase = RegisterDependency(packageDatabase);
+            m_PageManager = RegisterDependency(pageManager);
         }
 
         public void OnBeforeSerialize()
@@ -81,12 +83,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual PackageSelectionObject GetPackageSelectionObject(PackageAndVersionIdPair pair, bool createIfNotFound = false)
+        public PackageSelectionObject GetPackageSelectionObject(PackageAndVersionIdPair pair, bool createIfNotFound = false)
         {
             m_PackageDatabase.GetPackageAndVersion(pair?.packageUniqueId, pair?.versionUniqueId, out var package, out var version);
             return GetPackageSelectionObject(package, version, createIfNotFound);
         }
 
+        // The virtual keyword is needed for unit tests
         public virtual PackageSelectionObject GetPackageSelectionObject(IPackage package, IPackageVersion version = null, bool createIfNotFound = false)
         {
             if (package == null)
@@ -130,7 +133,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             InitializeSelectionObjects();
 
@@ -139,7 +142,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Selection.onSelectionChanged += OnEditorSelectionChanged;
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
             m_PageManager.onSelectionChanged -= OnPageSelectionChanged;

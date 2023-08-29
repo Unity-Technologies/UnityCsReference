@@ -274,17 +274,18 @@ namespace UnityEngine.UIElements
                 return;
 
             var alignedRect = GUIUtility.AlignRectToDevice(contentRect);
+            var playModeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
 
             var rectParams = new UIR.MeshGenerator.RectangleParams();
             if (image != null)
-                rectParams = UIR.MeshGenerator.RectangleParams.MakeTextured(alignedRect, uv, image, scaleMode, panel.contextType);
+                rectParams = UIR.MeshGenerator.RectangleParams.MakeTextured(alignedRect, uv, image, scaleMode, playModeTintColor);
             else if (sprite != null)
             {
                 var slices = Vector4.zero;
-                rectParams = UIR.MeshGenerator.RectangleParams.MakeSprite(alignedRect, uv, sprite, scaleMode, panel.contextType, false, ref slices);
+                rectParams = UIR.MeshGenerator.RectangleParams.MakeSprite(alignedRect, uv, sprite, scaleMode, playModeTintColor, false, ref slices);
             }
             else if (vectorImage != null)
-                rectParams = UIR.MeshGenerator.RectangleParams.MakeVectorTextured(alignedRect, uv, vectorImage, scaleMode, panel.contextType);
+                rectParams = UIR.MeshGenerator.RectangleParams.MakeVectorTextured(alignedRect, uv, vectorImage, scaleMode, playModeTintColor);
             rectParams.color = tintColor;
             mgc.meshGenerator.DrawRectangle(rectParams);
         }

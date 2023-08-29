@@ -9,8 +9,38 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal interface IUpmCache : IService
+    {
+        event Action<string, bool> onLoadAllVersionsChanged;
+        event Action<IEnumerable<PackageInfo>> onPackageInfosUpdated;
+        event Action<PackageInfo> onExtraPackageInfoFetched;
+
+        IEnumerable<PackageInfo> searchPackageInfos { get; }
+        IEnumerable<PackageInfo> installedPackageInfos  { get; }
+
+        bool IsLoadAllVersions(string packageUniqueId);
+        void SetLoadAllVersions(string packageUniqueId, bool value);
+        void AddExtraPackageInfo(PackageInfo packageInfo);
+        Dictionary<string, PackageInfo> GetExtraPackageInfos(string packageName);
+        PackageInfo GetExtraPackageInfo(string packageId);
+        void RemoveInstalledPackageInfo(string packageName);
+        bool IsPackageInstalled(string packageName);
+        PackageInfo GetInstalledPackageInfo(string packageName);
+        PackageInfo GetInstalledPackageInfoById(string packageId);
+        bool SetInstalledPackageInfo(PackageInfo info, string packageNamePreInstall);
+        void SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0);
+        PackageInfo GetSearchPackageInfo(string packageName);
+        PackageInfo GetBestMatchPackageInfo(string packageName, bool isInstalled, string version = null);
+        void SetSearchPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp);
+        PackageInfo GetProductSearchPackageInfo(string packageName);
+        void SetProductSearchPackageInfo(PackageInfo info);
+        Dictionary<string, object> ParseUpmReserved(PackageInfo packageInfo);
+        void ClearCache();
+        void ClearProductCache();
+    }
+
     [Serializable]
-    internal class UpmCache : ISerializationCallbackReceiver
+    internal class UpmCache : BaseService<IUpmCache>, IUpmCache, ISerializationCallbackReceiver
     {
         private Dictionary<string, PackageInfo> m_SearchPackageInfos = new();
         private Dictionary<string, PackageInfo> m_InstalledPackageInfos = new();
@@ -37,18 +67,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private string[] m_SerializedLoadAllVersions;
 
-        public virtual event Action<string, bool> onLoadAllVersionsChanged = delegate {};
-        public virtual event Action<IEnumerable<PackageInfo>> onPackageInfosUpdated;
-        public virtual event Action<PackageInfo> onExtraPackageInfoFetched;
+        public event Action<string, bool> onLoadAllVersionsChanged = delegate {};
+        public event Action<IEnumerable<PackageInfo>> onPackageInfosUpdated;
+        public event Action<PackageInfo> onExtraPackageInfoFetched;
 
-        public virtual IEnumerable<PackageInfo> searchPackageInfos => m_SearchPackageInfos.Values;
-        public virtual IEnumerable<PackageInfo> installedPackageInfos => m_InstalledPackageInfos.Values;
+        public IEnumerable<PackageInfo> searchPackageInfos => m_SearchPackageInfos.Values;
+        public IEnumerable<PackageInfo> installedPackageInfos => m_InstalledPackageInfos.Values;
 
-        [NonSerialized]
-        private UniqueIdMapper m_UniqueIdMapper;
-        public void ResolveDependencies(UniqueIdMapper uniqueIdMapper)
+        private readonly IUniqueIdMapper m_UniqueIdMapper;
+        public UpmCache(IUniqueIdMapper uniqueIdMapper)
         {
-            m_UniqueIdMapper = uniqueIdMapper;
+            m_UniqueIdMapper = RegisterDependency(uniqueIdMapper);
         }
 
         private static List<PackageInfo> FindUpdatedPackageInfos(Dictionary<string, PackageInfo> oldInfos, Dictionary<string, PackageInfo> newInfos)
@@ -95,12 +124,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             return true;
         }
 
-        public virtual bool IsLoadAllVersions(string packageUniqueId)
+        public bool IsLoadAllVersions(string packageUniqueId)
         {
             return m_LoadAllVersions.Contains(packageUniqueId);
         }
 
-        public virtual void SetLoadAllVersions(string packageUniqueId, bool value)
+        public void SetLoadAllVersions(string packageUniqueId, bool value)
         {
             if (string.IsNullOrEmpty(packageUniqueId) || value == IsLoadAllVersions(packageUniqueId))
                 return;
@@ -133,7 +162,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_LoadAllVersions = new HashSet<string>(m_SerializedLoadAllVersions);
         }
 
-        public virtual void AddExtraPackageInfo(PackageInfo packageInfo)
+        public void AddExtraPackageInfo(PackageInfo packageInfo)
         {
             if (packageInfo == null)
                 return;
@@ -147,9 +176,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             onExtraPackageInfoFetched?.Invoke(packageInfo);
         }
 
-        public virtual Dictionary<string, PackageInfo> GetExtraPackageInfos(string packageName) => m_ExtraPackageInfo.Get(packageName);
+        public Dictionary<string, PackageInfo> GetExtraPackageInfos(string packageName) => m_ExtraPackageInfo.Get(packageName);
 
-        public virtual PackageInfo GetExtraPackageInfo(string packageId)
+        public PackageInfo GetExtraPackageInfo(string packageId)
         {
             var packageIdSplit = packageId?.Split(new[] { '@' }, 2);
             if (packageIdSplit?.Length == 2)
@@ -157,7 +186,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return null;
         }
 
-        public virtual void RemoveInstalledPackageInfo(string packageName)
+        public void RemoveInstalledPackageInfo(string packageName)
         {
             var oldInfo = m_InstalledPackageInfos.Get(packageName);
             if (oldInfo == null)
@@ -167,17 +196,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             TriggerOnPackageInfosUpdated(new PackageInfo[] { oldInfo });
         }
 
-        public virtual bool IsPackageInstalled(string packageName) => m_InstalledPackageInfos.ContainsKey(packageName);
+        public bool IsPackageInstalled(string packageName) => m_InstalledPackageInfos.ContainsKey(packageName);
 
-        public virtual PackageInfo GetInstalledPackageInfo(string packageName) => m_InstalledPackageInfos.Get(packageName);
+        public PackageInfo GetInstalledPackageInfo(string packageName) => m_InstalledPackageInfos.Get(packageName);
 
-        public virtual PackageInfo GetInstalledPackageInfoById(string packageId)
+        public PackageInfo GetInstalledPackageInfoById(string packageId)
         {
             var idSplit = packageId?.Split(new[] { '@' }, 2);
             return idSplit?.Length == 2 ? GetInstalledPackageInfo(idSplit[0]) : null;
         }
 
-        public virtual bool SetInstalledPackageInfo(PackageInfo info, string packageNamePreInstall)
+        public bool SetInstalledPackageInfo(PackageInfo info, string packageNamePreInstall)
         {
             var oldInfo = m_InstalledPackageInfos.Get(info.name);
             m_InstalledPackageInfos[info.name] = info;
@@ -191,7 +220,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return false;
         }
 
-        public virtual void SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0)
+        public void SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0)
         {
             var newPackageInfos = packageInfos.ToDictionary(p => p.name, p => p);
 
@@ -215,9 +244,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 TriggerOnPackageInfosUpdated(updatedInfos);
         }
 
-        public virtual PackageInfo GetSearchPackageInfo(string packageName) => m_SearchPackageInfos.Get(packageName);
+        public PackageInfo GetSearchPackageInfo(string packageName) => m_SearchPackageInfos.Get(packageName);
 
-        public virtual PackageInfo GetBestMatchPackageInfo(string packageName, bool isInstalled, string version = null)
+        public PackageInfo GetBestMatchPackageInfo(string packageName, bool isInstalled, string version = null)
         {
             if (string.IsNullOrEmpty(packageName))
                 return null;
@@ -229,7 +258,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return GetExtraPackageInfos(packageName)?.Get(version) ?? searchInfo;
         }
 
-        public virtual void SetSearchPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp)
+        public void SetSearchPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp)
         {
             var newPackageInfos = packageInfos.ToDictionary(p => p.name, p => p);
 
@@ -243,8 +272,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SearchPackageInfosTimestamp = timestamp;
         }
 
-        public virtual PackageInfo GetProductSearchPackageInfo(string packageName) => m_ProductSearchPackageInfos.Get(packageName);
-        public virtual void SetProductSearchPackageInfo(PackageInfo info)
+        public PackageInfo GetProductSearchPackageInfo(string packageName) => m_ProductSearchPackageInfos.Get(packageName);
+        public void SetProductSearchPackageInfo(PackageInfo info)
         {
             var oldInfo = m_ProductSearchPackageInfos.Get(info.name);
             m_ProductSearchPackageInfos[info.name] = info;
@@ -260,7 +289,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             onPackageInfosUpdated?.Invoke(packageInfos);
         }
 
-        public virtual Dictionary<string, object> ParseUpmReserved(PackageInfo packageInfo)
+        public Dictionary<string, object> ParseUpmReserved(PackageInfo packageInfo)
         {
             if (string.IsNullOrEmpty(packageInfo?.upmReserved))
                 return null;
@@ -273,7 +302,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return result;
         }
 
-        public virtual void ClearCache()
+        public void ClearCache()
         {
             m_InstalledPackageInfos.Clear();
             m_SearchPackageInfos.Clear();
@@ -286,7 +315,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             ClearProductCache();
         }
 
-        public virtual void ClearProductCache()
+        public void ClearProductCache()
         {
             m_ProductSearchPackageInfos.Clear();
             m_SerializedProductSearchPackageInfos = new PackageInfo[0];

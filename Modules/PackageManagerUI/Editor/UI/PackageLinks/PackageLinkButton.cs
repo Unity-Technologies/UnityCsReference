@@ -12,12 +12,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageLinkButton : Button
     {
-        protected ApplicationProxy m_Application;
+        protected IApplicationProxy m_Application;
         protected PackageLink m_Link;
 
         public const string k_LinkClass = "link";
 
-        public PackageLinkButton(ApplicationProxy application, PackageLink link)
+        public PackageLinkButton(IApplicationProxy application, PackageLink link)
         {
             m_Link = link;
             m_Application = application;

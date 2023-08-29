@@ -19,7 +19,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version != null && version.package.product != null && !version.HasTag(PackageTag.UpmFormat);
         }
 
-        public PackageDetailsReleasesTab(UnityConnectProxy unityConnect) : base(unityConnect)
+        public PackageDetailsReleasesTab(IUnityConnectProxy unityConnect) : base(unityConnect)
         {
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Releases");

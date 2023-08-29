@@ -513,6 +513,9 @@ namespace Unity.UI.Builder
         public const string LibraryShowPackageFiles = "Show Package Files";
         public const string LibraryViewModeToggle = "Tree View";
         public const string LibraryEditorExtensionsAuthoring = "Editor Extension Authoring";
+        public const string LibraryDefaultVisualElementType = "Default Visual Element Type";
+        public const string LibraryDefaultVisualElementStyledName = "Styled";
+        public const string LibraryDefaultVisualElementNoStylesName = "No styles";
         public const string LibraryProjectTabName = "Project";
         public const string LibraryStandardControlsTabName = "Standard";
 
@@ -525,6 +528,10 @@ namespace Unity.UI.Builder
         public const string LibraryCustomControlsSectionUxmlSerializedData = "UxmlSerializedData";
         public const string LibraryCustomControlsSectionUxmTraits = "UxmlTraits";
         public const string EditorOnlyTag = "Editor Only";
+
+        // Messages
+        public const string LibraryUxmlAttributeUsedInNonUxmlElementClassMessage =
+            "Class {0} includes UxmlAttribute in its members, but the class does not contain a UxmlElement attribute. Please add the UxmlElement attribute to the class to enable code generation.";
 
         //
         // Selection

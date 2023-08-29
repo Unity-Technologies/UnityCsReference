@@ -26,15 +26,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string displayName => m_RegistryInfo.name;
 
         [NonSerialized]
-        private UpmCache m_UpmCache;
-        public void ResolveDependencies(PackageDatabase packageDatabase,
-            UpmCache upmCache)
+        private IUpmCache m_UpmCache;
+        public void ResolveDependencies(IPackageDatabase packageDatabase,
+            IUpmCache upmCache)
         {
             ResolveDependencies(packageDatabase);
             m_UpmCache = upmCache;
         }
 
-        public ScopedRegistryPage(PackageDatabase packageDatabase, UpmCache upmCache, RegistryInfo registryInfo)
+        public ScopedRegistryPage(IPackageDatabase packageDatabase, IUpmCache upmCache, RegistryInfo registryInfo)
             : base(packageDatabase)
         {
             ResolveDependencies(packageDatabase, upmCache);

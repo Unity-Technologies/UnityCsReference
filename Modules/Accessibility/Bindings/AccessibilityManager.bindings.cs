@@ -15,6 +15,7 @@ namespace UnityEngine.Accessibility
     /// platform.
     /// </summary>
     [NativeHeader("Modules/Accessibility/Native/AccessibilityManager.h")]
+    [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
     internal static class AccessibilityManager
     {
         public struct NotificationContext
@@ -74,7 +75,7 @@ namespace UnityEngine.Accessibility
         /// Retrieves the current accessibility language that assistive technologies
         /// use for the application.
         /// </summary>
-        internal static extern string GetApplicationAccessibilityLanguage();
+        internal static extern SystemLanguage GetApplicationAccessibilityLanguage();
 
         /// <summary>
         /// Sets the accessibility language that assistive technologies use for
@@ -83,7 +84,8 @@ namespace UnityEngine.Accessibility
         internal static extern void SetApplicationAccessibilityLanguage(SystemLanguage languageCode);
 
         [RequiredByNativeCode]
-        static void Internal_Initialize()
+        [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
+        internal static void Internal_Initialize()
         {
             AssistiveSupport.Initialize();
         }

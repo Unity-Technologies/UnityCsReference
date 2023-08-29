@@ -553,7 +553,7 @@ namespace UnityEditor
 
                 {
                     // Bake button if we are not currently baking
-                    bool showBakeButton = Lightmapping.isInteractive || !Lightmapping.isRunning;
+                    bool showBakeButton = Lightmapping.shouldBakeInteractively || !Lightmapping.isRunning;
                     if (showBakeButton)
                     {
                         bool anythingCompiling = ShaderUtil.anythingCompiling;

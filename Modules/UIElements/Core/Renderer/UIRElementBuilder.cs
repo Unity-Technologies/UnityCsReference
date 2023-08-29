@@ -151,7 +151,7 @@ namespace UnityEngine.UIElements.UIR
                     rect = ve.rect,
                     color = backgroundColor,
                     colorPage = ColorPage.Init(m_RenderChain, ve.renderChainData.backgroundColorID),
-                    playmodeTintColor = ve.panel.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
+                    playmodeTintColor = ve.playModeTintColor
                 };
                 MeshGenerator.GetVisualElementRadii(ve,
                     out rectParams.topLeftRadius,
@@ -183,6 +183,7 @@ namespace UnityEngine.UIElements.UIR
                 // Draw background image (be it from a texture or a vector image)
                 var rectParams = new MeshGenerator.RectangleParams();
                 float sliceScale = ve.resolvedStyle.unitySliceScale;
+                var playModeTintColor = ve.playModeTintColor;
 
                 if (background.texture != null)
                 {
@@ -191,7 +192,7 @@ namespace UnityEngine.UIElements.UIR
                         new Rect(0, 0, 1, 1),
                         background.texture,
                         ScaleMode.ScaleToFit,
-                        ve.panel.contextType);
+                        playModeTintColor);
 
                     rectParams.rect = new Rect(0, 0, rectParams.texture.width, rectParams.texture.height);
                 }
@@ -210,7 +211,7 @@ namespace UnityEngine.UIElements.UIR
                         new Rect(0, 0, 1, 1),
                         background.sprite,
                         useRepeat ? ScaleMode.StretchToFill : scaleMode,
-                        ve.panel.contextType,
+                        playModeTintColor,
                         radiusParams.HasRadius(MeshBuilderNative.kEpsilon),
                         ref slices,
                         useRepeat);
@@ -229,7 +230,7 @@ namespace UnityEngine.UIElements.UIR
                         new Rect(0, 0, 1, 1),
                         background.renderTexture,
                         ScaleMode.ScaleToFit,
-                        ve.panel.contextType);
+                        playModeTintColor);
 
                     rectParams.rect = new Rect(0, 0, rectParams.texture.width, rectParams.texture.height);
 
@@ -249,7 +250,7 @@ namespace UnityEngine.UIElements.UIR
                         new Rect(0, 0, 1, 1),
                         background.vectorImage,
                         useRepeat ? ScaleMode.StretchToFill : scaleMode,
-                        ve.panel.contextType);
+                        playModeTintColor);
 
                     rectParams.rect = new Rect(0, 0, rectParams.vectorImage.size.x, rectParams.vectorImage.size.y);
                 }
@@ -280,11 +281,11 @@ namespace UnityEngine.UIElements.UIR
 
                 if (rectParams.texture != null)
                 {
-                    mgc.meshGenerator.DrawRectangleRepeat(rectParams, ve.rect);
+                    mgc.meshGenerator.DrawRectangleRepeat(rectParams, ve.rect, ve.scaledPixelsPerPoint);
                 }
                 else if (rectParams.vectorImage != null)
                 {
-                    mgc.meshGenerator.DrawRectangleRepeat(rectParams, ve.rect);
+                    mgc.meshGenerator.DrawRectangleRepeat(rectParams, ve.rect, ve.scaledPixelsPerPoint);
                 }
                 else
                 {
@@ -320,7 +321,7 @@ namespace UnityEngine.UIElements.UIR
                         topColorPage = ColorPage.Init(m_RenderChain, ve.renderChainData.borderTopColorID),
                         rightColorPage = ColorPage.Init(m_RenderChain, ve.renderChainData.borderRightColorID),
                         bottomColorPage = ColorPage.Init(m_RenderChain, ve.renderChainData.borderBottomColorID),
-                        playmodeTintColor = ve.panel.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
+                        playmodeTintColor = ve.playModeTintColor
                     };
                     MeshGenerator.GetVisualElementRadii(
                         ve,
@@ -369,7 +370,7 @@ namespace UnityEngine.UIElements.UIR
                 topRightRadius = Vector2.Max(Vector2.zero, radTR - new Vector2(widthR, widthT)),
                 bottomLeftRadius = Vector2.Max(Vector2.zero, radBL - new Vector2(widthL, widthB)),
                 bottomRightRadius = Vector2.Max(Vector2.zero, radBR - new Vector2(widthR, widthB)),
-                playmodeTintColor = ve.panel.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
+                playmodeTintColor = ve.playModeTintColor
             };
 
             // Only clip the interior shape, skipping the border

@@ -2,40 +2,36 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Diagnostics.CodeAnalysis;
-using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
-internal class OperationFactory
+internal interface IOperationFactory : IService
 {
-    [NonSerialized]
-    private UnityConnectProxy m_UnityConnect;
-    [NonSerialized]
-    private AssetStoreRestAPI m_AssetStoreRestAPI;
-    [NonSerialized]
-    private AssetStoreCache m_AssetStoreCache;
-    [ExcludeFromCodeCoverage]
-    public void ResolveDependencies(UnityConnectProxy unityConnect, AssetStoreRestAPI assetStoreRestAPI, AssetStoreCache assetStoreCache)
+    void ResolveDependenciesForOperation(AssetStoreListOperation operation);
+    AssetStoreListOperation CreateAssetStoreListOperation();
+}
+
+internal class OperationFactory : BaseService<IOperationFactory>, IOperationFactory
+{
+    private readonly IUnityConnectProxy m_UnityConnect;
+    private readonly IAssetStoreRestAPI m_AssetStoreRestAPI;
+    private readonly IAssetStoreCache m_AssetStoreCache;
+
+    public OperationFactory(IUnityConnectProxy unityConnect, IAssetStoreRestAPI assetStoreRestAPI, IAssetStoreCache assetStoreCache)
     {
-        m_UnityConnect = unityConnect;
-        m_AssetStoreRestAPI = assetStoreRestAPI;
-        m_AssetStoreCache = assetStoreCache;
+        m_UnityConnect = RegisterDependency(unityConnect);
+        m_AssetStoreRestAPI = RegisterDependency(assetStoreRestAPI);
+        m_AssetStoreCache = RegisterDependency(assetStoreCache);
     }
 
     [ExcludeFromCodeCoverage]
-    public virtual void ResolveDependenciesForOperation(AssetStoreListOperation operation)
+    public void ResolveDependenciesForOperation(AssetStoreListOperation operation)
     {
-        if (m_UnityConnect == null || m_AssetStoreRestAPI == null || m_AssetStoreCache == null)
-        {
-            Debug.LogError("OperationFactory's dependencies need to resolved before ResolveDependenciesForOperation is called.");
-            return;
-        }
         operation?.ResolveDependencies(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache);
     }
 
-    public virtual AssetStoreListOperation CreateAssetStoreListOperation()
+    public AssetStoreListOperation CreateAssetStoreListOperation()
     {
         return new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache);
     }

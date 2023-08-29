@@ -55,12 +55,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual AssetStorePurchases result => m_Result;
 
         [NonSerialized]
-        private UnityConnectProxy m_UnityConnect;
+        private IUnityConnectProxy m_UnityConnect;
         [NonSerialized]
-        private AssetStoreRestAPI m_AssetStoreRestAPI;
+        private IAssetStoreRestAPI m_AssetStoreRestAPI;
         [NonSerialized]
-        private AssetStoreCache m_AssetStoreCache;
-        public void ResolveDependencies(UnityConnectProxy unityConnect, AssetStoreRestAPI assetStoreRestAPI, AssetStoreCache assetStoreCache)
+        private IAssetStoreCache m_AssetStoreCache;
+        public void ResolveDependencies(IUnityConnectProxy unityConnect, IAssetStoreRestAPI assetStoreRestAPI, IAssetStoreCache assetStoreCache)
         {
             m_UnityConnect = unityConnect;
             m_AssetStoreRestAPI = assetStoreRestAPI;
@@ -71,7 +71,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
         }
 
-        public AssetStoreListOperation(UnityConnectProxy unityConnect, AssetStoreRestAPI assetStoreRestAPI, AssetStoreCache assetStoreCache)
+        public AssetStoreListOperation(IUnityConnectProxy unityConnect, IAssetStoreRestAPI assetStoreRestAPI, IAssetStoreCache assetStoreCache)
         {
             ResolveDependencies(unityConnect, assetStoreRestAPI, assetStoreCache);
         }

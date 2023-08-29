@@ -184,7 +184,6 @@ namespace Unity.UI.Builder
             {
                 case k_BindingAttr_DataSource:
                     m_DataSourceField = target.Q<BuilderObjectField>();
-                    m_DataSourceField.label = " ";
                     if (m_DataSourceField.value == null)
                     {
                         m_DataSourceField.SetObjectWithoutNotify(inheritedDataSource);
@@ -195,7 +194,6 @@ namespace Unity.UI.Builder
                     break;
                 case k_BindingAttr_DataSourceType:
                     m_DataSourceTypeField = target.Q<TextField>();
-                    m_DataSourceTypeField.label = " ";
                     if (string.IsNullOrEmpty(m_DataSourceTypeField.value))
                     {
                         var type = inheritedDataSourceType;
@@ -210,8 +208,7 @@ namespace Unity.UI.Builder
                 case k_BindingAttr_DataSourcePath:
                     m_DataSourcePathField = target.Q<TextField>();
                     m_DataSourcePathField.isDelayed = true;
-                    m_DataSourcePathCompleter ??= new BuilderDataSourcePathCompleter(m_DataSourcePathField);
-                    m_DataSourcePathCompleter.textField = m_DataSourcePathField;
+                    m_DataSourcePathCompleter = new BuilderDataSourcePathCompleter(m_DataSourcePathField);
                     UpdateCompleter();
                     UpdateFoldoutOverride();
                     break;
@@ -287,6 +284,7 @@ namespace Unity.UI.Builder
             if (isBinding)
             {
                 m_DataSourceWarningBox ??= new UIEHelpBox(BuilderConstants.BindingWindowMissingDataSourceErrorMessage, HelpBoxMessageType.Warning);
+                m_DataSourceWarningBox.style.display = DisplayStyle.None;
 
                 // Insert the warning box right after the data source field.
                 m_BindingsFoldout.Add(m_DataSourceWarningBox);
@@ -299,6 +297,7 @@ namespace Unity.UI.Builder
             }
 
             m_PathWarningBox ??= new UIEHelpBox("", HelpBoxMessageType.Warning);
+            m_PathWarningBox.style.display = DisplayStyle.None;
             root.Add(m_PathWarningBox);
         }
 
@@ -432,6 +431,14 @@ namespace Unity.UI.Builder
         {
             var fieldElement = styleRow.GetLinkedFieldElements()[0];
             var desc = fieldElement.GetLinkedAttributeDescription();
+
+            var currentUxmlAttributeOwner = attributesUxmlOwner;
+
+            if (isBinding && SynchronizePath(bindingSerializedPropertyPathRoot, false, out var uxmlAsset, out _, out _))
+            {
+                currentUxmlAttributeOwner = uxmlAsset as UxmlAsset;
+            }
+
             if (desc.name is k_BindingAttr_DataSource or k_BindingAttr_DataSourceType)
             {
                 menu.AppendAction(
@@ -447,7 +454,7 @@ namespace Unity.UI.Builder
                                 attributeName);
                         var canUnsetBinding = !isInTemplateInstance && DataBindingUtility.TryGetBinding(currentElement, new PropertyPath(bindingProperty), out _);
 
-                        return (attributesUxmlOwner != null && attributesUxmlOwner.HasAttribute(attributeName)) || isAttributeOverrideAttribute || canUnsetBinding
+                        return (attributesUxmlOwner != null && currentUxmlAttributeOwner.HasAttribute(attributeName)) || isAttributeOverrideAttribute || canUnsetBinding
                             ? DropdownMenuAction.Status.Normal
                             : DropdownMenuAction.Status.Disabled;
                     },
@@ -464,7 +471,7 @@ namespace Unity.UI.Builder
                             && BuilderAssetUtilities.HasAttributeOverrideInRootTemplate(currentElement, k_BindingAttr_DataSourceType);
                         var canUnsetBinding = !isInTemplateInstance && DataBindingUtility.TryGetBinding(currentElement, new PropertyPath(bindingProperty), out _);
 
-                        return (attributesUxmlOwner != null && attributesUxmlOwner.HasAttribute(k_BindingAttr_DataSourceType)) || isAttributeOverrideAttribute || canUnsetBinding
+                        return (attributesUxmlOwner != null && currentUxmlAttributeOwner.HasAttribute(k_BindingAttr_DataSourceType)) || isAttributeOverrideAttribute || canUnsetBinding
                             ? DropdownMenuAction.Status.Normal
                             : DropdownMenuAction.Status.Disabled;
                     },

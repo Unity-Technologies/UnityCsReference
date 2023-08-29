@@ -210,9 +210,10 @@ namespace UnityEditor.UIElements.Inspector
                 PanelScaleMode scaleMode = PanelScaleMode.ConstantPixelSize;
 
                 if (m_ScaleModeField.value != null)
+                {
                     scaleMode = (PanelScaleMode)m_ScaleModeField.value;
-
-                UpdateScaleModeValues(scaleMode);
+                    UpdateScaleModeValues(scaleMode);
+                }
 
                 m_ScaleModeWorldSpace.style.display = DisplayStyle.None;
             }

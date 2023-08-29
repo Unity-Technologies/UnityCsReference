@@ -312,8 +312,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 var width = 1f / parent.transform.scale.x;
 
-                MeshDrawingHelpers_Internal.SolidRectangle(mgc, r, FillColor, ContextType.Editor);
-                MeshDrawingHelpers_Internal.Border(mgc, r, BorderColor, width, ContextType.Editor);
+                MeshDrawingHelpers_Internal.SolidRectangle(mgc, r, FillColor);
+                MeshDrawingHelpers_Internal.Border(mgc, r, BorderColor, width);
             }
         }
     }

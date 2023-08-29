@@ -379,28 +379,40 @@ namespace UnityEditor
         {
             if (!BeginLineDrawing(matrix, false, GL.LINES))
                 return;
-            for (int i = 0; i < lineSegments.Length; i += 2)
+            try
             {
-                var p1 = lineSegments[i + 0];
-                var p2 = lineSegments[i + 1];
-                GL.Vertex(p1);
-                GL.Vertex(p2);
+                for (int i = 0; i < lineSegments.Length; i += 2)
+                {
+                    var p1 = lineSegments[i + 0];
+                    var p2 = lineSegments[i + 1];
+                    GL.Vertex(p1);
+                    GL.Vertex(p2);
+                }
             }
-            EndLineDrawing();
+            finally
+            {
+                EndLineDrawing();
+            }
         }
 
         public static void DrawLines(Vector3[] points, int[] segmentIndices)
         {
             if (!BeginLineDrawing(matrix, false, GL.LINES))
                 return;
-            for (int i = 0; i < segmentIndices.Length; i += 2)
+            try
             {
-                var p1 = points[segmentIndices[i + 0]];
-                var p2 = points[segmentIndices[i + 1]];
-                GL.Vertex(p1);
-                GL.Vertex(p2);
+                for (int i = 0; i < segmentIndices.Length; i += 2)
+                {
+                    var p1 = points[segmentIndices[i + 0]];
+                    var p2 = points[segmentIndices[i + 1]];
+                    GL.Vertex(p1);
+                    GL.Vertex(p2);
+                }
             }
-            EndLineDrawing();
+            finally
+            {
+                EndLineDrawing();
+            }
         }
 
         public static void DrawDottedLine(Vector3 p1, Vector3 p2, float screenSpaceSize)
@@ -418,14 +430,20 @@ namespace UnityEditor
             if (!BeginLineDrawing(matrix, true, GL.LINES))
                 return;
             var dashSize = screenSpaceSize * EditorGUIUtility.pixelsPerPoint;
-            for (int i = 0; i < lineSegments.Length; i += 2)
+            try 
             {
-                var p1 = lineSegments[i + 0];
-                var p2 = lineSegments[i + 1];
-                GL.MultiTexCoord(1, p1); GL.MultiTexCoord2(2, dashSize, 0); GL.Vertex(p1);
-                GL.MultiTexCoord(1, p1); GL.MultiTexCoord2(2, dashSize, 0); GL.Vertex(p2);
+                for (int i = 0; i < lineSegments.Length; i += 2)
+                {
+                    var p1 = lineSegments[i + 0];
+                    var p2 = lineSegments[i + 1];
+                    GL.MultiTexCoord(1, p1); GL.MultiTexCoord2(2, dashSize, 0); GL.Vertex(p1);
+                    GL.MultiTexCoord(1, p1); GL.MultiTexCoord2(2, dashSize, 0); GL.Vertex(p2);
+                }
             }
-            EndLineDrawing();
+            finally
+            {
+                EndLineDrawing();
+            }
         }
 
         public static void DrawDottedLines(Vector3[] points, int[] segmentIndices, float screenSpaceSize)
@@ -433,14 +451,20 @@ namespace UnityEditor
             if (!BeginLineDrawing(matrix, true, GL.LINES))
                 return;
             var dashSize = screenSpaceSize * EditorGUIUtility.pixelsPerPoint;
-            for (int i = 0; i < segmentIndices.Length; i += 2)
+            try
             {
-                var p1 = points[segmentIndices[i + 0]];
-                var p2 = points[segmentIndices[i + 1]];
-                GL.MultiTexCoord(1, p1); GL.MultiTexCoord2(2, dashSize, 0); GL.Vertex(p1);
-                GL.MultiTexCoord(1, p1); GL.MultiTexCoord2(2, dashSize, 0); GL.Vertex(p2);
+                for (int i = 0; i < segmentIndices.Length; i += 2)
+                {
+                    var p1 = points[segmentIndices[i + 0]];
+                    var p2 = points[segmentIndices[i + 1]];
+                    GL.MultiTexCoord(1, p1); GL.MultiTexCoord2(2, dashSize, 0); GL.Vertex(p1);
+                    GL.MultiTexCoord(1, p1); GL.MultiTexCoord2(2, dashSize, 0); GL.Vertex(p2);
+                }
             }
-            EndLineDrawing();
+            finally
+            {
+                EndLineDrawing();
+            }
         }
 
         public static void DrawWireCube(Vector3 center, Vector3 size)
@@ -1146,15 +1170,6 @@ namespace UnityEditor
             HandleUtility.ApplyWireMaterial(zTest);
 
             Color defaultColor = new Color(1, 1, 1, alpha);
-
-            if (colors != null)
-            {
-                for (int i = 0; i < colors.Length; i++)
-                    colors[i] *= defaultColor;
-            }
-            else
-                defaultColor *= color;
-
             Internal_DrawAAPolyLine(colors, points, defaultColor, actualNumberOfPoints, lineTex, width, matrix);
         }
 

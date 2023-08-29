@@ -15,9 +15,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected readonly VisualElement m_ContentContainer;
         private readonly VisualElement m_SignInDetails;
 
-        private readonly UnityConnectProxy m_UnityConnect;
+        private readonly IUnityConnectProxy m_UnityConnect;
 
-        protected PackageDetailsTabElement(UnityConnectProxy unityConnect)
+        protected PackageDetailsTabElement(IUnityConnectProxy unityConnect)
         {
             m_UnityConnect = unityConnect;
 

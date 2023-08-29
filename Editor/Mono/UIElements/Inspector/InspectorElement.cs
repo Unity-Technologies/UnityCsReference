@@ -669,6 +669,8 @@ namespace UnityEditor.UIElements
                 }
 
                 EditorGUIUtility.ResetGUIState();
+                GUI.color = playModeTintColor;
+
                 using (new EditorGUI.DisabledScope(!targetEditor.IsEnabled() || !enabledInHierarchy))
                 {
                     //set the current PropertyHandlerCache to the current editor

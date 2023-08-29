@@ -104,7 +104,7 @@ namespace UnityEditor
 
             TextureUtil.SetFilterModeNoDirty(t, oldFilter);
 
-            int mipmapLimit = (t as Texture2DArray).activeMipmapLimit;
+            int mipmapLimit = GetMipmapLimit(t);
             int cpuMipLevel = Mathf.Min(TextureUtil.GetMipmapCount(t) - 1, (int)mipLevel + mipmapLimit);
             m_Pos = PreviewGUI.EndScrollView();
 
@@ -132,6 +132,15 @@ namespace UnityEditor
                 // If multiple objects are selected, we might be using a slice level before the maximum
                 return Mathf.Clamp(m_Slice, 0, renderTexture.volumeDepth - 1);
             }
+        }
+
+        int GetMipmapLimit(Texture t)
+        {
+            var texture2DArray = t as Texture2DArray;
+            if (texture2DArray != null)
+                return texture2DArray.activeMipmapLimit;
+
+            return 0;
         }
 
         void InitPreviewMaterialIfNeeded()

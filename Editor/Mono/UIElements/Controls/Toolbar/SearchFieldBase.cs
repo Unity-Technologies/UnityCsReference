@@ -2,9 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using Unity.Properties;
 using UnityEngine;
+using UnityEngine.Internal;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -16,6 +18,7 @@ namespace UnityEditor.UIElements
         where TextInputType : TextInputBaseField<T>, new()
     {
         internal static readonly BindingId valueProperty = nameof(value);
+        internal static readonly BindingId placeholderTextProperty = nameof(placeholderText);
 
         private readonly Button m_SearchButton;
         private readonly Button m_CancelButton;
@@ -81,6 +84,23 @@ namespace UnityEditor.UIElements
         /// </summary>
         public static readonly string popupVariantUssClassName = ussClassName + "--popup";
 
+        [Serializable, ExcludeFromDocs]
+        public abstract new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private string placeholderText;
+            #pragma warning restore 649
+
+            [ExcludeFromDocs]
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (SearchFieldBase<TextInputType, T>)obj;
+                e.placeholderText = placeholderText;
+            }
+        }
+
         /// <summary>
         /// Defines <see cref="SearchFieldBase.UxmlTraits"/> for the <see cref="SearchFieldBase"/>.
         /// </summary>
@@ -96,6 +116,23 @@ namespace UnityEditor.UIElements
             public UxmlTraits()
             {
                 focusable.defaultValue = true;
+            }
+        }
+
+        /// <summary>
+        /// The placeholder property represents a short hint intended to aid the users with data entry when the control has no value.
+        /// </summary>
+        [CreateProperty]
+        public string placeholderText
+        {
+            get => m_TextField.textEdition.placeholder;
+            set
+            {
+                if (value == m_TextField.textEdition.placeholder)
+                    return;
+
+                m_TextField.textEdition.placeholder = value;
+                NotifyPropertyChanged(placeholderTextProperty);
             }
         }
 

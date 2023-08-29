@@ -25,7 +25,7 @@ internal class InProjectPage : SimplePage
     public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.ImportedAssets | RefreshOptions.LocalInfo;
     public override PageCapability capability => PageCapability.DynamicEntitlementStatus | PageCapability.SupportLocalReordering;
 
-    public InProjectPage(PackageDatabase packageDatabase) : base(packageDatabase) {}
+    public InProjectPage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
 
     public override bool ShouldInclude(IPackage package)
     {

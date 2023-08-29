@@ -8,9 +8,14 @@ using UnityEngine.Analytics;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class EditorAnalyticsProxy
+    internal interface IEditorAnalyticsProxy : IService
     {
-        public virtual AnalyticsResult SendAnalytic(IAnalytic analytic)
+        AnalyticsResult SendAnalytic(IAnalytic analytic);
+    }
+
+    internal class EditorAnalyticsProxy : BaseService<IEditorAnalyticsProxy>, IEditorAnalyticsProxy
+    {
+        public AnalyticsResult SendAnalytic(IAnalytic analytic)
         {
             return EditorAnalytics.SendAnalytic(analytic);
         }

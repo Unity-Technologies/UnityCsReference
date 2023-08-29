@@ -386,10 +386,7 @@ namespace UnityEngine.UIElements
 
         private void DrawHighlighting(MeshGenerationContext mgc)
         {
-            var playmodeTintColor = panel.contextType == ContextType.Editor
-                ? UIElementsUtility.editorPlayModeTintColor
-                : Color.white;
-
+            var playmodeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
             var startIndex = Math.Min(selection.cursorIndex, selection.selectIndex);
             var endIndex = Math.Max(selection.cursorIndex, selection.selectIndex);
 
@@ -471,10 +468,7 @@ namespace UnityEngine.UIElements
         // used by unit tests
         internal void DrawCaret(MeshGenerationContext mgc)
         {
-            var playmodeTintColor = panel.contextType == ContextType.Editor
-                ? UIElementsUtility.editorPlayModeTintColor
-                : Color.white;
-
+            var playmodeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
             var characterHeight = uitkTextHandle.GetCharacterHeightFromIndex(selection.cursorIndex);
             var width = AlignmentUtils.CeilToPixelGrid(selection.cursorWidth, scaledPixelsPerPoint);
 

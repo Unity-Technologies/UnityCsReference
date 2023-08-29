@@ -68,9 +68,10 @@ namespace UnityEditor.UIElements.Samples
             }
         }
 
-        public void OnEnable()
+        public void CreateGUI()
         {
             var root = rootVisualElement;
+            root.disablePlayModeTint = true;
 
             var styleSheet = EditorGUIUtility.Load(s_StyleSheetPath) as StyleSheet;
             root.styleSheets.Add(styleSheet);

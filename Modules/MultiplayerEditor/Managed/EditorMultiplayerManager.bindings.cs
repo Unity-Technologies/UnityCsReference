@@ -9,6 +9,8 @@ using UnityEngine.Multiplayer.Internal;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using UnityEditor.Toolbars;
+using UnityEditor.Build;
 
 namespace UnityEditor.Multiplayer.Internal
 {
@@ -17,7 +19,7 @@ namespace UnityEditor.Multiplayer.Internal
     internal static class EditorMultiplayerManager
     {
         public static extern bool enableMultiplayerRoles { get; set; }
-        public static extern MultiplayerRole activeMultiplayerRole { get; set; }
+        public static extern MultiplayerRoleFlags activeMultiplayerRoleMask { get; set; }
 
         public static extern MultiplayerRoleFlags GetMultiplayerRoleMaskForGameObject(GameObject gameObject);
         public static extern MultiplayerRoleFlags GetMultiplayerRoleMaskForComponent(Component component);
@@ -27,10 +29,18 @@ namespace UnityEditor.Multiplayer.Internal
         public static extern void SetMultiplayerRoleMaskForComponent(Component component, MultiplayerRoleFlags mask);
         public static extern void SetStrippingTypesForRole(MultiplayerRole role, Type[] types);
 
+        public static extern bool ShouldStripComponentType(MultiplayerRoleFlags activeRoleMask, Component component);
+
+
         public static event Func<Rect, UnityEngine.Object[], bool> drawingMultiplayerRoleField;
-        public static event Action<ToolbarButton> creatingMultiplayerRoleDropdown;
+        public static event Action<EditorToolbarDropdown> creatingMultiplayerRoleDropdown;
         public static event Action activeMultiplayerRoleChanged;
         public static event Action enableMultiplayerRolesChanged;
+        public static event Action<NamedBuildTarget> drawingMultiplayerBuildOptions
+        {
+            add => BuildPlayerWindow.drawingMultiplayerBuildOptions += value;
+            remove => BuildPlayerWindow.drawingMultiplayerBuildOptions -= value;
+        }
 
         [EditorHeaderItem(typeof(UnityEngine.Object))]
         private static bool MultiplayerRoleHeaderItem(Rect rect, UnityEngine.Object[] objects)
@@ -41,7 +51,7 @@ namespace UnityEditor.Multiplayer.Internal
             return drawingMultiplayerRoleField(rect, objects);
         }
 
-        public static void CreateMultiplayerRoleDropdown(ToolbarButton toolbarButton)
+        public static void CreateMultiplayerRoleDropdown(EditorToolbarDropdown toolbarButton)
         {
             toolbarButton.style.display = DisplayStyle.None;
             creatingMultiplayerRoleDropdown?.Invoke(toolbarButton);

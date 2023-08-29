@@ -9,12 +9,33 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [Serializable]
-    internal class PageRefreshHandler : ISerializationCallbackReceiver
+    internal interface IPageRefreshHandler : IService
     {
-        public virtual event Action onRefreshOperationStart = delegate { };
-        public virtual event Action onRefreshOperationFinish = delegate { };
-        public virtual event Action<UIError> onRefreshOperationError = delegate { };
+        event Action onRefreshOperationStart;
+        event Action onRefreshOperationFinish;
+        event Action<UIError> onRefreshOperationError;
+
+        void Refresh(IPage page);
+        void Refresh(RefreshOptions options);
+        void CancelRefresh(RefreshOptions options);
+        bool IsRefreshInProgress(RefreshOptions options);
+        bool IsInitialFetchingDone(RefreshOptions options);
+        void SetRefreshTimestampSingleFlag(RefreshOptions option, long timestamp);
+        long GetRefreshTimestamp(RefreshOptions options);
+        void SetRefreshErrorSingleFlag(RefreshOptions option, UIError error);
+        UIError GetRefreshError(RefreshOptions options);
+        long GetRefreshTimestamp(IPage page);
+        UIError GetRefreshError(IPage page);
+        bool IsRefreshInProgress(IPage page);
+        bool IsInitialFetchingDone(IPage page);
+    }
+
+    [Serializable]
+    internal class PageRefreshHandler : BaseService<IPageRefreshHandler>, IPageRefreshHandler, ISerializationCallbackReceiver
+    {
+        public event Action onRefreshOperationStart = delegate { };
+        public event Action onRefreshOperationFinish = delegate { };
+        public event Action<UIError> onRefreshOperationError = delegate { };
 
         private Dictionary<RefreshOptions, long> m_RefreshTimestamps = new();
         private Dictionary<RefreshOptions, UIError> m_RefreshErrors = new();
@@ -35,40 +56,32 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private UIError[] m_SerializedRefreshErrorsValues = Array.Empty<UIError>();
 
-        [NonSerialized]
-        private ApplicationProxy m_Application;
-        [NonSerialized]
-        private UpmClient m_UpmClient;
-        [NonSerialized]
-        private UpmRegistryClient m_UpmRegistryClient;
-        [NonSerialized]
-        private PageManager m_PageManager;
-        [NonSerialized]
-        private UnityConnectProxy m_UnityConnect;
-        [NonSerialized]
-        private AssetDatabaseProxy m_AssetDatabase;
-        [NonSerialized]
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        [NonSerialized]
-        private AssetStoreClientV2 m_AssetStoreClient;
+        private readonly IApplicationProxy m_Application;
+        private readonly IUpmClient m_UpmClient;
+        private readonly IUpmRegistryClient m_UpmRegistryClient;
+        private readonly IPageManager m_PageManager;
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IAssetDatabaseProxy m_AssetDatabase;
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        private readonly IAssetStoreClient m_AssetStoreClient;
 
-        public void ResolveDependencies(PageManager pageManager,
-            ApplicationProxy application,
-            UnityConnectProxy unityConnect,
-            AssetDatabaseProxy assetDatabase,
-            PackageManagerPrefs packageManagerPrefs,
-            UpmClient upmClient,
-            UpmRegistryClient upmRegistryClient,
-            AssetStoreClientV2 assetStoreClient)
+        public PageRefreshHandler(IPageManager pageManager,
+            IApplicationProxy application,
+            IUnityConnectProxy unityConnect,
+            IAssetDatabaseProxy assetDatabase,
+            IPackageManagerPrefs packageManagerPrefs,
+            IUpmClient upmClient,
+            IUpmRegistryClient upmRegistryClient,
+            IAssetStoreClient assetStoreClient)
         {
-            m_PageManager = pageManager;
-            m_Application = application;
-            m_UpmClient = upmClient;
-            m_UpmRegistryClient = upmRegistryClient;
-            m_UnityConnect = unityConnect;
-            m_AssetDatabase = assetDatabase;
-            m_PackageManagerPrefs = packageManagerPrefs;
-            m_AssetStoreClient = assetStoreClient;
+            m_PageManager = RegisterDependency(pageManager);
+            m_Application = RegisterDependency(application);
+            m_UpmClient = RegisterDependency(upmClient);
+            m_UpmRegistryClient = RegisterDependency(upmRegistryClient);
+            m_UnityConnect = RegisterDependency(unityConnect);
+            m_AssetDatabase = RegisterDependency(assetDatabase);
+            m_PackageManagerPrefs = RegisterDependency(packageManagerPrefs);
+            m_AssetStoreClient = RegisterDependency(assetStoreClient);
         }
 
         public void OnBeforeSerialize()
@@ -94,11 +107,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Refresh(page);
         }
 
+        // The virtual keyword is needed for unit tests
         public virtual void Refresh(IPage page)
         {
             Refresh(page.refreshOptions);
         }
 
+        // The virtual keyword is needed for unit tests
         public virtual void Refresh(RefreshOptions options)
         {
             if (options.Contains(RefreshOptions.UpmSearch))
@@ -169,7 +184,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreClient.RefreshLocal();
         }
 
-        public virtual void CancelRefresh(RefreshOptions options)
+        public void CancelRefresh(RefreshOptions options)
         {
             if (options.Contains(RefreshOptions.Purchased))
                 m_AssetStoreClient.CancelListPurchases();
@@ -191,7 +206,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Refresh(RefreshOptions.Purchased);
         }
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             m_AssetDatabase.onPostprocessAllAssets += OnPostprocessAllAssets;
 
@@ -204,7 +219,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onActivePageChanged += OnActivePageChanged;
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
             m_AssetDatabase.onPostprocessAllAssets -= OnPostprocessAllAssets;
 
@@ -264,21 +279,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             onRefreshOperationFinish?.Invoke();
         }
 
+        // The virtual keyword is needed for unit tests
         public virtual bool IsRefreshInProgress(RefreshOptions options)
         {
             return m_RefreshOperationsInProgress.Any(i => options.Contains(i.refreshOptions));
         }
 
+        // The virtual keyword is needed for unit tests
         public virtual bool IsInitialFetchingDone(RefreshOptions options)
         {
             return options.Split().All(o => GetRefreshTimestampSingleFlag(o) != 0 || m_RefreshErrors.ContainsKey(o));
         }
 
-        public virtual void SetRefreshTimestampSingleFlag(RefreshOptions option, long timestamp)
+        public void SetRefreshTimestampSingleFlag(RefreshOptions option, long timestamp)
         {
             m_RefreshTimestamps[option] = timestamp;
         }
 
+        // The virtual keyword is needed for unit tests
         public virtual long GetRefreshTimestamp(RefreshOptions options)
         {
             return options == RefreshOptions.None ? 0 : options.Split().Min(GetRefreshTimestampSingleFlag);
@@ -292,11 +310,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_RefreshTimestamps.TryGetValue(option, out var value) ? value : 0;
         }
 
-        public virtual void SetRefreshErrorSingleFlag(RefreshOptions option, UIError error)
+        public void SetRefreshErrorSingleFlag(RefreshOptions option, UIError error)
         {
             m_RefreshErrors[option] = error;
         }
 
+        // The virtual keyword is needed for unit tests
         public virtual UIError GetRefreshError(RefreshOptions options)
         {
             return options.Split()
@@ -304,21 +323,22 @@ namespace UnityEditor.PackageManager.UI.Internal
                 .FirstOrDefault(e => e != null);
         }
 
-        public virtual long GetRefreshTimestamp(IPage page)
+        public long GetRefreshTimestamp(IPage page)
         {
             return GetRefreshTimestamp(page.refreshOptions);
         }
 
-        public virtual UIError GetRefreshError(IPage page)
+        public UIError GetRefreshError(IPage page)
         {
             return GetRefreshError(page.refreshOptions);
         }
 
-        public virtual bool IsRefreshInProgress(IPage page)
+        public bool IsRefreshInProgress(IPage page)
         {
             return IsRefreshInProgress(page.refreshOptions);
         }
 
+        // The virtual keyword is needed for unit tests
         public virtual bool IsInitialFetchingDone(IPage page)
         {
             return IsInitialFetchingDone(page.refreshOptions);

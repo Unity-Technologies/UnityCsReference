@@ -25,6 +25,7 @@ namespace Unity.UI.Builder
     {
         static readonly string s_AttributeFieldRowUssClassName = "unity-builder-attribute-field-row";
         static readonly string s_AttributeFieldUssClassName = "unity-builder-attribute-field";
+        static readonly string s_UxmlButtonUssClassName = "unity-builder-uxml-object-button";
         public static readonly string builderBoundPropertyFieldName = "unity-builder-bound-property-field";
         public static readonly string builderSerializedPropertyFieldName = "unity-builder-serialized-property-field";
 
@@ -193,8 +194,9 @@ namespace Unity.UI.Builder
         /// <param name="objectElement">The sub object that provides attributes to be edited</param>
         public void SetAttributesOwner(VisualTreeAsset uxmlDocument, VisualElement visualElement)
         {
+            var uxmlAsset = visualElement.GetVisualElementAsset();
             m_UxmlDocument = uxmlDocument;
-            m_CurrentUxmlElement = visualElement.GetVisualElementAsset();
+            m_CurrentUxmlElement = uxmlAsset;
             m_CurrentElement = visualElement;
             m_SerializedDataDescription = null;
             m_CurrentElementSerializedObject = null;
@@ -550,7 +552,7 @@ namespace Unity.UI.Builder
             return dataField ?? visualElement;
         }
 
-        static string GetAttributeName(VisualElement visualElement)
+        protected static string GetAttributeName(VisualElement visualElement)
         {
             var desc = visualElement.GetLinkedAttributeDescription();
             return desc != null ? desc.name : ((IBindable)visualElement).bindingPath;
@@ -586,8 +588,8 @@ namespace Unity.UI.Builder
         IEnumerable<VisualElement> GetAttributeFields()
         {
             if (currentFieldSource == AttributeFieldSource.UxmlSerializedData)
-                return fieldsContainer.Query<UxmlSerializedDataAttributeField>().Where(ve => ve.HasLinkedAttributeDescription()).Build().ToList();
-            return fieldsContainer.Query<BindableElement>().Where(e => !string.IsNullOrEmpty(e.bindingPath)).ToList();
+                return fieldsContainer.Query<UxmlSerializedDataAttributeField>().Where(ve => ve.HasLinkedAttributeDescription()).Build();
+            return fieldsContainer.Query<BindableElement>().Where(e => !string.IsNullOrEmpty(e.bindingPath)).Build();
         }
 
         /// <summary>
@@ -694,7 +696,7 @@ namespace Unity.UI.Builder
 
             if (serializedInstanced != null)
             {
-                var removeButton = new Button { name = buttonName, text = "Delete" };
+                var removeButton = new Button { name = buttonName, classList = { s_UxmlButtonUssClassName }, text = "Delete" };
                 removeButton.clicked += () =>
                 {
                     RemoveUxmlObjectInstance(property, 0);
@@ -710,7 +712,7 @@ namespace Unity.UI.Builder
             }
             else
             {
-                var addButton = new Button { name = buttonName, text = "Add" };
+                var addButton = new Button { name = buttonName, classList = { s_UxmlButtonUssClassName }, text = "Add" };
                 addButton.clicked += () =>
                 {
                     ShowAddUxmlObjectMenu(addButton, attribute, t =>
@@ -1516,7 +1518,7 @@ namespace Unity.UI.Builder
 
             if (currentFieldSource == AttributeFieldSource.UxmlTraits)
             {
-                var styleFields = styleRow.Query<BindableElement>().ToList();
+                var styleFields = styleRow.Query<BindableElement>().Build();
                 foreach (var styleField in styleFields)
                 {
                     styleField.RemoveFromClassList(BuilderConstants.InspectorLocalStyleResetClassName);
@@ -1637,7 +1639,7 @@ namespace Unity.UI.Builder
             return false;
         }
 
-        internal void UnsetAllAttributes()
+        internal virtual void UnsetAllAttributes()
         {
             var undoGroup = Undo.GetCurrentGroup();
             UndoRecordDocument(BuilderConstants.ChangeAttributeValueUndoMessage);
@@ -1877,7 +1879,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        void UnsetEnumValue(string attributeName, bool removeBinding)
+        protected void UnsetEnumValue(string attributeName, bool removeBinding)
         {
             if (attributeName != "type")
                 return;

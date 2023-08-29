@@ -18,21 +18,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private IPackageVersion m_Version;
         private readonly PackageToolBarButton m_Button;
-        private readonly PackageDatabase m_PackageDatabase;
-        private readonly PackageOperationDispatcher m_OperationDispatcher;
-        private readonly UpmCache m_UpmCache;
-        private readonly PackageLinkFactory m_PackageLinkFactory;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPackageOperationDispatcher m_OperationDispatcher;
+        private readonly IUpmCache m_UpmCache;
+        private readonly IPackageLinkFactory m_PackageLinkFactory;
 
         private PackageDynamicTagLabel m_VersionHistoryItemTag;
 
         public event Action<bool> onToggleChanged = delegate {};
 
-        public PackageDetailsVersionHistoryItem(ResourceLoader resourceLoader,
-            PackageDatabase packageDatabase,
-            PackageOperationDispatcher operationDispatcher,
-            UpmCache upmCache,
-            ApplicationProxy applicationProxy,
-            PackageLinkFactory packageLinkFactory,
+        public PackageDetailsVersionHistoryItem(IResourceLoader resourceLoader,
+            IPackageDatabase packageDatabase,
+            IPackageOperationDispatcher operationDispatcher,
+            IUpmCache upmCache,
+            IApplicationProxy applicationProxy,
+            IPackageLinkFactory packageLinkFactory,
             IPackageVersion version,
             bool multipleVersionsVisible,
             bool isLatestVersion,

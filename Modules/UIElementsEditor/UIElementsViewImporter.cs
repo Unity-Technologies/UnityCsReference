@@ -1059,10 +1059,26 @@ namespace UnityEditor.UIElements
 
                         if (response.result == URIValidationResult.OK && !vta.AssetEntryExists(xattr.Value, assetType))
                         {
-                            if (asset)
+                            if (asset && !assetType.IsAssignableFrom(asset.GetType()))
                             {
-                                // Force loading using correct attribute type to support cases like Texture2D vs Sprite,
-                                asset = AssetDatabase.LoadAssetAtPath(response.resolvedProjectRelativePath, assetType);
+                                if (string.IsNullOrEmpty(response.resolvedSubAssetPath))
+                                {
+                                    // Force loading using correct attribute type to support cases like Texture2D vs Sprite,
+                                    asset = AssetDatabase.LoadAssetAtPath(response.resolvedProjectRelativePath, assetType);
+                                }
+                                else
+                                {
+                                    // Force load the sub assets and find the asset by name and type
+                                    var subAssets = AssetDatabase.LoadAllAssetsAtPath(response.resolvedProjectRelativePath);
+                                    foreach (var subAsset in subAssets)
+                                    {
+                                        if (subAsset.name == response.resolvedSubAssetPath && assetType.IsAssignableFrom(subAsset.GetType()))
+                                        {
+                                            asset = subAsset;
+                                            break;
+                                        }
+                                    }
+                                }
                             }
                             vta.RegisterAssetEntry(xattr.Value, assetType, asset);
                         }

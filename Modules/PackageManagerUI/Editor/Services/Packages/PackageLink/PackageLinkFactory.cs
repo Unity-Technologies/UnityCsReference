@@ -2,30 +2,41 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageLinkFactory
+    internal interface IPackageLinkFactory : IService
     {
-        [NonSerialized]
-        private UpmCache m_UpmCache;
-        [NonSerialized]
-        private AssetStoreCache m_AssetStoreCache;
-        [NonSerialized]
-        private ApplicationProxy m_Application;
-        [NonSerialized]
-        private IOProxy m_IOProxy;
-        public void ResolveDependencies(UpmCache upmCache,
-            AssetStoreCache assetStoreCache,
-            ApplicationProxy application,
-            IOProxy iOProxy)
+        PackageLink CreateUpmDocumentationLink(IPackageVersion version);
+        PackageLink CreateUpmChangelogLink(IPackageVersion version);
+        PackageLink CreateVersionHistoryChangelogLink(IPackageVersion version);
+        PackageLink CreateUpmLicenseLink(IPackageVersion version);
+        PackageLink CreateUpmQuickStartLink(IPackageVersion version);
+        PackageLink CreateProductLink(IPackageVersion version);
+        PackageLink CreateAuthorLink(IPackageVersion version);
+        PackageLink CreatePublisherSupportLink(IPackageVersion version);
+        PackageLink CreatePublisherWebsiteLink(IPackageVersion version);
+
+        PackageLink CreateUseCasesLink(IPackageVersion version);
+        PackageLink CreateDashboardLink(IPackageVersion version);
+    }
+
+    internal class PackageLinkFactory : BaseService<IPackageLinkFactory>, IPackageLinkFactory
+    {
+        private readonly IUpmCache m_UpmCache;
+        private readonly IAssetStoreCache m_AssetStoreCache;
+        private readonly IApplicationProxy m_Application;
+        private readonly IIOProxy m_IOProxy;
+        public PackageLinkFactory(IUpmCache upmCache,
+            IAssetStoreCache assetStoreCache,
+            IApplicationProxy application,
+            IIOProxy iOProxy)
         {
-            m_UpmCache = upmCache;
-            m_AssetStoreCache = assetStoreCache;
-            m_Application = application;
-            m_IOProxy = iOProxy;
+            m_UpmCache = RegisterDependency(upmCache);
+            m_AssetStoreCache = RegisterDependency(assetStoreCache);
+            m_Application = RegisterDependency(application);
+            m_IOProxy = RegisterDependency(iOProxy);
         }
 
         private string GetDocumentationUrl(PackageInfo packageInfo, bool isUnityPackage)
@@ -158,7 +169,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.Empty;
         }
 
-        public virtual PackageLink CreateUpmDocumentationLink(IPackageVersion version)
+        public PackageLink CreateUpmDocumentationLink(IPackageVersion version)
         {
             var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
             var isUnityPackage = version.HasTag(PackageTag.Unity);
@@ -172,7 +183,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
-        public virtual PackageLink CreateUpmChangelogLink(IPackageVersion version)
+        public PackageLink CreateUpmChangelogLink(IPackageVersion version)
         {
             var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
             var isUnityPackage = version.HasTag(PackageTag.Unity);
@@ -186,7 +197,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
-        public virtual PackageLink CreateVersionHistoryChangelogLink(IPackageVersion version)
+        public PackageLink CreateVersionHistoryChangelogLink(IPackageVersion version)
         {
             var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
             var isUnityPackage = version.HasTag(PackageTag.Unity);
@@ -200,7 +211,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
-        public virtual PackageLink CreateUpmLicenseLink(IPackageVersion version)
+        public PackageLink CreateUpmLicenseLink(IPackageVersion version)
         {
             var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
             var isUnityPackage = version.HasTag(PackageTag.Unity);
@@ -214,7 +225,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
-        public virtual PackageLink CreateUpmQuickStartLink(IPackageVersion version)
+        public PackageLink CreateUpmQuickStartLink(IPackageVersion version)
         {
             var packageInfo = version != null && version.HasTag(PackageTag.Feature) ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
 
@@ -227,7 +238,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
-        public virtual PackageLink CreateProductLink(IPackageVersion version)
+        public PackageLink CreateProductLink(IPackageVersion version)
         {
             var productInfo = m_AssetStoreCache.GetProductInfo(version.package.product?.id);
 
@@ -240,7 +251,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
-        public virtual PackageLink CreateAuthorLink(IPackageVersion version)
+        public PackageLink CreateAuthorLink(IPackageVersion version)
         {
             var productInfo = m_AssetStoreCache.GetProductInfo(version?.package.product?.id);
 
@@ -253,7 +264,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
-        public virtual PackageLink CreatePublisherSupportLink(IPackageVersion version)
+        public PackageLink CreatePublisherSupportLink(IPackageVersion version)
         {
             var productInfo = m_AssetStoreCache.GetProductInfo(version.package.product?.id);
 
@@ -266,7 +277,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
-        public virtual PackageLink CreatePublisherWebsiteLink(IPackageVersion version)
+        public PackageLink CreatePublisherWebsiteLink(IPackageVersion version)
         {
             var productInfo = m_AssetStoreCache.GetProductInfo(version.package.product?.id);
 
@@ -279,7 +290,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
-        public virtual PackageLink CreateUseCasesLink(IPackageVersion version)
+        public PackageLink CreateUseCasesLink(IPackageVersion version)
         {
             return new PackageLink(version)
             {
@@ -290,7 +301,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
-        public virtual PackageLink CreateDashboardLink(IPackageVersion version)
+        public PackageLink CreateDashboardLink(IPackageVersion version)
         {
             return new PackageLink(version)
             {

@@ -8,7 +8,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class RemoveImportedFoldoutGroup : MultiSelectFoldoutGroup
     {
-        public RemoveImportedFoldoutGroup(ApplicationProxy applicationProxy, PackageOperationDispatcher operationDispatcher)
+        public RemoveImportedFoldoutGroup(IApplicationProxy applicationProxy, IPackageOperationDispatcher operationDispatcher)
             : base(new RemoveImportedAction(operationDispatcher, applicationProxy))
         {
         }

@@ -24,6 +24,8 @@ namespace UnityEditor.UIElements.ProjectSettings
 
         readonly List<TabButton> m_Tabs = new();
         TabButton m_ActiveTab;
+        internal TabButton ActiveTab => m_ActiveTab;
+        internal int ActiveTabIndex => m_ActiveTab != null ? m_Tabs.IndexOf(m_ActiveTab) : -1;
 
         public override VisualElement contentContainer => m_Content;
 
@@ -186,6 +188,16 @@ namespace UnityEditor.UIElements.ProjectSettings
                 child.style.borderTopRightRadius = 0;
                 break;
             }
+        }
+
+        public void SelectTab(int index)
+        {
+            if(index >= m_Tabs.Count || index < 0)
+                return;
+
+            if (m_ActiveTab != null)
+                DeselectTab(m_ActiveTab);
+            SelectTab(m_Tabs[index]);
         }
 
         void SelectTab(TabButton tabButton)

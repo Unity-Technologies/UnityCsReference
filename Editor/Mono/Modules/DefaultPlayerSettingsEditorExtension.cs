@@ -95,6 +95,11 @@ namespace UnityEditor.Modules
         {
             return false;
         }
+        
+        public virtual GraphicsJobMode AdjustGfxJobMode(GraphicsJobMode graphicsJobMode)
+        {
+            return graphicsJobMode;
+        }
 
         public virtual bool SupportsMultithreadedRendering()
         {
@@ -148,6 +153,11 @@ namespace UnityEditor.Modules
         public virtual void VulkanSectionGUI() {}
 
         public virtual bool SupportsForcedSrgbBlit()
+        {
+            return false;
+        }
+
+        public virtual bool SupportsStaticSplashScreenBackgroundColor()
         {
             return false;
         }

@@ -22,7 +22,6 @@ namespace UnityEditor
         {
             public static readonly GUIContent newLightingSettings = EditorGUIUtility.TrTextContent("New", "Create a new Lighting Settings Asset with default settings.");
             public static readonly GUIContent cloneLightingSettings = EditorGUIUtility.TrTextContent("Clone", "Create a new Lighting Settings Asset based on the current settings.");
-
             public static readonly GUIContent lightingSettings = EditorGUIUtility.TrTextContent("Lighting Settings");
         }
 
@@ -98,7 +97,7 @@ namespace UnityEditor
             else
             {
                 ls = Object.Instantiate(from);
-                ls.name = from.name;
+                ls.name = string.IsNullOrEmpty(from.name) ? "New Lighting Settings" : from.name;
             }
             Undo.RecordObject(m_LightmapSettings.targetObject, "New Lighting Settings");
             Lightmapping.lightingSettingsInternal = ls;

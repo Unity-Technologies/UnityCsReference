@@ -279,7 +279,7 @@ namespace UnityEditor.UIElements.Debugger
                     return;
 
                 var content = selected.Q(itemContentName);
-                var labelContainers = content.Query(classes: labelContainerUssClassName).ToList();
+                var labelContainers = content.Query(classes: labelContainerUssClassName).Build();
                 foreach (var labelContainer in labelContainers)
                 {
                     var label = labelContainer.Q<Label>();

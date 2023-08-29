@@ -125,7 +125,14 @@ namespace UnityEditor.Modules
 
                     EditorUtility.LoadPlatformSupportModuleNativeDllInternal(module.TargetName);
 
-                    module.OnLoad();
+                    try
+                    {
+                        module.OnLoad();
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogException(e);
+                    }
                 }
             }
 
@@ -215,6 +222,18 @@ namespace UnityEditor.Modules
             throw new ApplicationException("Couldn't create device API for device: " + deviceId);
         }
 
+        internal static IBuildTarget GetIBuildTarget(BuildTarget target)
+        {
+            IPlatformSupportModule module;
+            var targetModuleName = BuildTargetDiscovery.GetModuleNameForBuildTarget(target);
+            if (platformSupportModules.TryGetValue(targetModuleName, out module))
+            {
+                return module.PlatformBuildTarget;
+            }
+
+            return null;
+        }
+
         internal static IBuildPostprocessor GetBuildPostProcessor(string target)
         {
             if (target == null)
@@ -229,9 +248,9 @@ namespace UnityEditor.Modules
             return null;
         }
 
-        internal static IBuildPostprocessor GetBuildPostProcessor(BuildTargetGroup targetGroup, BuildTarget target)
+        internal static IBuildPostprocessor GetBuildPostProcessor(BuildTarget target)
         {
-            return GetBuildPostProcessor(GetTargetStringFrom(targetGroup, target));
+            return GetBuildPostProcessor(GetTargetStringFrom(target));
         }
 
         internal static IDeploymentTargetsExtension GetDeploymentTargetsExtension(string target)
@@ -248,9 +267,15 @@ namespace UnityEditor.Modules
             return null;
         }
 
+        internal static IDeploymentTargetsExtension GetDeploymentTargetsExtension(BuildTarget target)
+        {
+            return GetDeploymentTargetsExtension(GetTargetStringFrom(target));
+        }
+
+        [Obsolete("ModuleManager.GetDeploymentTargetsExtension(BuildTargetGroup targetGroup, BuildTarget target) has been deprecated. Use ModuleManager.GetDeploymentTargetsExtension(BuildTarget target) instead.")]
         internal static IDeploymentTargetsExtension GetDeploymentTargetsExtension(BuildTargetGroup targetGroup, BuildTarget target)
         {
-            return GetDeploymentTargetsExtension(GetTargetStringFrom(targetGroup, target));
+            return GetDeploymentTargetsExtension(target);
         }
 
         internal static ISettingEditorExtension GetEditorSettingsExtension(string target)
@@ -354,7 +379,7 @@ namespace UnityEditor.Modules
         {
             // Standalone Windows, Linux and OS X share player settings between each other, so they share scripting implementations too
             // However, since we can't pin BuildTargetGroup to any single platform support module, we have to explicitly check for this case
-            if (namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
+            if (namedBuildTarget == NamedBuildTarget.Standalone)
                 return new DesktopStandalonePostProcessor.ScriptingImplementations();
 
             return GetScriptingImplementations(GetTargetStringFromBuildTargetGroup(namedBuildTarget.ToBuildTargetGroup()));
@@ -405,15 +430,18 @@ namespace UnityEditor.Modules
         }
 
         // This function returns module name depending on the combination of targetGroup x target
+        internal static string GetTargetStringFrom(BuildTarget target)
+        {
+            if (target == BuildTarget.NoTarget)
+                throw new ArgumentException("target must be valid");
+    
+            return GetTargetStringFromBuildTarget(target);
+        }
+
+        [Obsolete("ModuleManager.GetTargetStringFrom(BuildTargetGroup targetGroup, BuildTarget target) is deprecated, please use ModuleManager.GetTargetStringFrom(BuildTarget target)")]
         internal static string GetTargetStringFrom(BuildTargetGroup targetGroup, BuildTarget target)
         {
-            if (targetGroup == BuildTargetGroup.Unknown)
-                throw new ArgumentException("targetGroup must be valid");
-
-            if (targetGroup == BuildTargetGroup.Standalone)
-                return GetTargetStringFromBuildTarget(target);
-
-            return GetTargetStringFromBuildTargetGroup(targetGroup);
+            return GetTargetStringFrom(target);
         }
 
         internal static bool IsPlatformSupported(BuildTarget target)
@@ -438,15 +466,19 @@ namespace UnityEditor.Modules
         internal static bool ShouldShowMultiDisplayOption()
         {
             GUIContent[] platformDisplayNames = Modules.ModuleManager.GetDisplayNames(EditorUserBuildSettings.activeBuildTarget.ToString());
+
+            if (platformDisplayNames != null)
+                return true;
+
             BuildTargetGroup curPlatform = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
-            return curPlatform == BuildTargetGroup.Standalone
-                || curPlatform == BuildTargetGroup.WSA
-                || curPlatform == BuildTargetGroup.iOS
-                || curPlatform == BuildTargetGroup.Android
-                || curPlatform == BuildTargetGroup.EmbeddedLinux
-                || curPlatform == BuildTargetGroup.QNX
-                || platformDisplayNames != null
-                ;
+            // In Editortests no platforms are installed and below would result in false, but we support. 
+            if (curPlatform == BuildTargetGroup.Standalone)
+                return true;
+
+            if (BuildTargetDiscovery.TryGetProperties(EditorUserBuildSettings.activeBuildTarget, out IGraphicsPlatformProperties properties))
+                return properties.HasMultiDisplayOption;
+
+            return false;
         }
 
         internal static GUIContent[] GetDisplayNames(string target)

@@ -52,6 +52,8 @@ namespace UnityEngine
         virtual public int height { get { return GetDataHeight(); } set { throw new NotImplementedException(); } }
         virtual public TextureDimension dimension { get { return GetDimension(); } set { throw new NotImplementedException(); } }
 
+        extern internal bool isNativeTexture { [NativeName("IsNativeTexture")] get; }
+
         extern virtual public bool isReadable { get; }
 
         extern internal bool allowReadingInEditor { get; set; }
@@ -792,7 +794,9 @@ namespace UnityEngine
         extern public bool bindTextureMS { get; set; }
         extern public bool enableRandomWrite { get; set; }
         extern public bool useDynamicScale { get; set; }
+        extern public bool useDynamicScaleExplicit { get; set; }
 
+        extern public void ApplyDynamicScale();
 
         // for some reason we are providing isPowerOfTwo setter which is empty (i dont know what the intent is/was)
         extern private bool GetIsPowerOfTwo();

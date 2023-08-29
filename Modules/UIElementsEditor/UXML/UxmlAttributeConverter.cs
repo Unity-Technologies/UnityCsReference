@@ -315,7 +315,7 @@ namespace UnityEditor.UIElements
         public Type type;
         public override Enum FromString(string value)
         {
-            if (Enum.TryParse(type, value, out var result))
+            if (Enum.TryParse(type, value, true, out var result))
                 return (Enum)result;
             return default;
         }

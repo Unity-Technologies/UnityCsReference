@@ -12,12 +12,42 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     using NiceIO;
 
+    internal interface IIOProxy : IService
+    {
+        void DirectoryCopy(string sourcePath, string destinationPath, bool makeWritable = false, Action<string, float> progressCallback = null);
+        ulong DirectorySizeInBytes(string path);
+        void RemovePathAndMeta(string path, bool removeEmptyParent = false);
+        string PathsCombine(params string[] components);
+
+        string CurrentDirectory { get; }
+
+        string GetParentDirectory(string path);
+        bool IsDirectoryEmpty(string directoryPath);
+        bool DirectoryExists(string directoryPath);
+        string[] DirectoryGetDirectories(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly);
+        string[] DirectoryGetFiles(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly);
+        void CreateDirectory(string directoryPath);
+        void DeleteDirectory(string directoryPath);
+        string GetProjectDirectory();
+        bool IsSamePackageDirectory(string a, string b);
+        void MakeFileWritable(string filePath, bool writable);
+        void CopyFile(string sourceFileName, string destFileName, bool overwrite);
+        ulong GetFileSize(string filePath);
+        string GetFileName(string filePath);
+        void DeleteIfExists(string filePath);
+        bool FileExists(string filePath);
+        byte[] FileReadAllBytes(string filePath);
+        string FileReadAllText(string filePath);
+        void FileWriteAllBytes(string filePath, byte[] bytes);
+        void FileWriteAllText(string filePath, string contents);
+    }
+
     [ExcludeFromCodeCoverage]
-    internal class IOProxy
+    internal class IOProxy : BaseService<IIOProxy>, IIOProxy
     {
         // Need to re-create this method since Unity's FileUtil equivalent (with overwrite) is internal only.
         // From: https://stackoverflow.com/questions/58744/copy-the-entire-contents-of-a-directory-in-c-sharp
-        public virtual void DirectoryCopy(string sourcePath, string destinationPath, bool makeWritable = false, Action<string, float> progressCallback = null)
+        public void DirectoryCopy(string sourcePath, string destinationPath, bool makeWritable = false, Action<string, float> progressCallback = null)
         {
             if (!DirectoryExists(destinationPath))
                 CreateDirectory(destinationPath);
@@ -44,13 +74,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual ulong DirectorySizeInBytes(string path)
+        public ulong DirectorySizeInBytes(string path)
         {
             return DirectoryGetFiles(path, "*", SearchOption.AllDirectories).
                 Aggregate<string, ulong>(0, (current, file) => current + GetFileSize(file));
         }
 
-        public virtual void RemovePathAndMeta(string path, bool removeEmptyParent = false)
+        public void RemovePathAndMeta(string path, bool removeEmptyParent = false)
         {
             while (true)
             {
@@ -72,29 +102,29 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual string PathsCombine(params string[] components)
+        public string PathsCombine(params string[] components)
         {
             return components.Where(s => !string.IsNullOrEmpty(s)).
                 Aggregate((path1, path2) => new NPath(path1).Combine(path2).ToString(SlashMode.Native));
         }
 
-        public virtual string CurrentDirectory => NPath.CurrentDirectory.ToString(SlashMode.Native);
+        public string CurrentDirectory => NPath.CurrentDirectory.ToString(SlashMode.Native);
 
-        public virtual string GetParentDirectory(string path) => new NPath(path).Parent.ToString(SlashMode.Native);
+        public string GetParentDirectory(string path) => new NPath(path).Parent.ToString(SlashMode.Native);
 
-        public virtual bool IsDirectoryEmpty(string directoryPath) => new NPath(directoryPath).Contents().Length == 0;
+        public bool IsDirectoryEmpty(string directoryPath) => new NPath(directoryPath).Contents().Length == 0;
 
-        public virtual bool DirectoryExists(string directoryPath) => new NPath(directoryPath).DirectoryExists();
+        public bool DirectoryExists(string directoryPath) => new NPath(directoryPath).DirectoryExists();
 
-        public virtual string[] DirectoryGetDirectories(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
+        public string[] DirectoryGetDirectories(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
             => new NPath(directoryPath).Directories(searchPattern, searchOption == SearchOption.AllDirectories).Select(p => p.ToString(SlashMode.Native)).ToArray();
 
-        public virtual string[] DirectoryGetFiles(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
+        public string[] DirectoryGetFiles(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
             => new NPath(directoryPath).Files(searchPattern, searchOption == SearchOption.AllDirectories).Select(p => p.ToString(SlashMode.Native)).ToArray();
 
-        public virtual void CreateDirectory(string directoryPath) => new NPath(directoryPath).CreateDirectory();
+        public void CreateDirectory(string directoryPath) => new NPath(directoryPath).CreateDirectory();
 
-        public virtual void DeleteDirectory(string directoryPath) => new NPath(directoryPath).DeleteIfExists();
+        public void DeleteDirectory(string directoryPath) => new NPath(directoryPath).DeleteIfExists();
 
         private NPath GetPackageAbsoluteDirectory(string relativePath)
         {
@@ -102,17 +132,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             return path.IsRelative ?  path.MakeAbsolute(new NPath(PathsCombine(GetProjectDirectory(), "Packages"))) : path;
         }
 
+        // The virtual keyword is needed for unit tests
         public virtual string GetProjectDirectory()
         {
             return GetParentDirectory(Application.dataPath);
         }
 
-        public virtual bool IsSamePackageDirectory(string a, string b)
+        public bool IsSamePackageDirectory(string a, string b)
         {
             return GetPackageAbsoluteDirectory(a) == GetPackageAbsoluteDirectory(b);
         }
 
-        public virtual void MakeFileWritable(string filePath, bool writable)
+        public void MakeFileWritable(string filePath, bool writable)
         {
             var npath = new NPath(filePath);
             var attributes = npath.Attributes;
@@ -124,7 +155,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 npath.Attributes |= FileAttributes.ReadOnly;
         }
 
-        public virtual void CopyFile(string sourceFileName, string destFileName, bool overwrite)
+        public void CopyFile(string sourceFileName, string destFileName, bool overwrite)
         {
             var npath = new NPath(destFileName);
             if (!overwrite && npath.FileExists())
@@ -133,7 +164,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             new NPath(sourceFileName).Copy(npath);
         }
 
-        public virtual ulong GetFileSize(string filePath)
+        public ulong GetFileSize(string filePath)
         {
             try
             {
@@ -146,18 +177,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual string GetFileName(string filePath) => new NPath(filePath).FileName;
+        public string GetFileName(string filePath) => new NPath(filePath).FileName;
 
-        public virtual void DeleteIfExists(string filePath) => new NPath(filePath).DeleteIfExists();
+        public void DeleteIfExists(string filePath) => new NPath(filePath).DeleteIfExists();
 
-        public virtual bool FileExists(string filePath) => new NPath(filePath).FileExists();
+        public bool FileExists(string filePath) => new NPath(filePath).FileExists();
 
-        public virtual byte[] FileReadAllBytes(string filePath) => new NPath(filePath).ReadAllBytes();
+        public byte[] FileReadAllBytes(string filePath) => new NPath(filePath).ReadAllBytes();
 
-        public virtual string FileReadAllText(string filePath) => new NPath(filePath).ReadAllText();
+        public string FileReadAllText(string filePath) => new NPath(filePath).ReadAllText();
 
-        public virtual void FileWriteAllBytes(string filePath, byte[] bytes) => new NPath(filePath).WriteAllBytes(bytes);
+        public void FileWriteAllBytes(string filePath, byte[] bytes) => new NPath(filePath).WriteAllBytes(bytes);
 
-        public virtual void FileWriteAllText(string filePath, string contents) => new NPath(filePath).WriteAllText(contents);
+        public void FileWriteAllText(string filePath, string contents) => new NPath(filePath).WriteAllText(contents);
     }
 }

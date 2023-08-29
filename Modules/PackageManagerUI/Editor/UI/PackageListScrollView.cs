@@ -34,17 +34,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private Dictionary<string, PackageItem> m_PackageItemsLookup;
 
-        private ResourceLoader m_ResourceLoader;
-        private PackageDatabase m_PackageDatabase;
-        private PageManager m_PageManager;
-        private PageRefreshHandler m_PageRefreshHandler;
+        private IResourceLoader m_ResourceLoader;
+        private IPackageDatabase m_PackageDatabase;
+        private IPageManager m_PageManager;
+        private IPageRefreshHandler m_PageRefreshHandler;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_PackageDatabase = container.Resolve<PackageDatabase>();
-            m_PageManager = container.Resolve<PageManager>();
-            m_PageRefreshHandler = container.Resolve<PageRefreshHandler>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
+            m_PackageDatabase = container.Resolve<IPackageDatabase>();
+            m_PageManager = container.Resolve<IPageManager>();
+            m_PageRefreshHandler = container.Resolve<IPageRefreshHandler>();
         }
 
         internal IEnumerable<PackageItem> packageItems => packageGroups.SelectMany(group => group.packageItems);

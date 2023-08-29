@@ -39,23 +39,7 @@ namespace UnityEngine.UIElements
 
     sealed class DataBindingManager : IDisposable
     {
-        class BindingDataComparer : IEqualityComparer<BindingData>
-        {
-            public bool Equals(BindingData lhs, BindingData rhs)
-            {
-                return lhs.binding == rhs.binding
-                       && lhs.target.element == rhs.target.element
-                       && lhs.target.bindingId == rhs.target.bindingId;
-            }
-
-            public int GetHashCode(BindingData data)
-            {
-                return HashCode.Combine(
-                    data.binding,
-                    data.target.element,
-                    data.target.bindingId);
-            }
-        }
+        private  readonly List<BindingData> m_BindingDataLocalPool = new List<BindingData>(64);
 
         static readonly PropertyName k_RequestBindingPropertyName = "__unity-binding-request";
         static readonly BindingId k_ClearBindingsToken = "$__BindingManager--ClearAllBindings";
@@ -82,7 +66,7 @@ namespace UnityEngine.UIElements
             public readonly Binding binding;
             public readonly bool shouldProcess;
 
-            public BindingRequest(BindingId bindingId, Binding binding, bool shouldProcess = true)
+            public BindingRequest(in BindingId bindingId, Binding binding, bool shouldProcess = true)
             {
                 this.bindingId = bindingId;
                 this.binding = binding;
@@ -119,7 +103,7 @@ namespace UnityEngine.UIElements
                 m_Bindings.Add(bindingData);
             }
 
-            public bool TryGetBindingData(BindingId bindingId, out BindingData data)
+            public bool TryGetBindingData(in BindingId bindingId, out BindingData data)
             {
                 return m_BindingPerId.TryGetValue(bindingId, out data);
             }
@@ -153,28 +137,60 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal readonly struct BindingData
+        internal class BindingData
         {
-            public readonly BindingTarget target;
-            public readonly Binding binding;
+            public long version;
+            public BindingTarget target;
+            public Binding binding;
 
-            public BindingData(BindingTarget target, Binding binding)
+            private DataSourceContext m_LastContext;
+
+            public object localDataSource { get; set; }
+
+            public void Reset()
             {
-                this.target = target;
-                this.binding = binding;
+                ++version;
+                target = default;
+                binding = default;
+                localDataSource = default;
+                m_LastContext = default;
+                m_SourceToUILastUpdate = null;
+                m_UIToSourceLastUpdate = null;
             }
+
+            public DataSourceContext context
+            {
+                get => m_LastContext;
+                set
+                {
+                    if (m_LastContext.dataSource == value.dataSource && m_LastContext.dataSourcePath == value.dataSourcePath)
+                        return;
+
+                    var previous = m_LastContext;
+                    m_LastContext = value;
+                    binding.OnDataSourceChanged(new DataSourceContextChanged(target.element, target.bindingId, previous, value));
+                    binding.MarkDirty();
+                }
+            }
+
+            public BindingResult? m_SourceToUILastUpdate;
+            public BindingResult? m_UIToSourceLastUpdate;
         }
 
-        readonly struct SourceOwner
+        internal readonly struct ChangesFromUI
         {
-            public readonly VisualElement element;
-            public readonly object dataSource;
+            public readonly long version;
+            public readonly Binding binding;
+            public readonly BindingData bindingData;
 
-            public SourceOwner(VisualElement element, object dataSource)
+            public ChangesFromUI(BindingData bindingData)
             {
-                this.element = element;
-                this.dataSource = dataSource;
+                this.bindingData = bindingData;
+                this.version = bindingData.version;
+                this.binding = bindingData.binding;
             }
+
+            public bool IsValid => version == bindingData.version && binding == bindingData.binding;
         }
 
         static readonly List<BindingData> s_Empty = new List<BindingData>();
@@ -243,6 +259,11 @@ namespace UnityEngine.UIElements
                 return m_BindingDataPerElement.TryGetValue(element, out collection);
             }
 
+            public bool IsTrackingElement(VisualElement element)
+            {
+                return m_BoundElements.Contains(element);
+            }
+
             public void StartTrackingBinding(VisualElement element, BindingData binding)
             {
                 BindingDataCollection collection;
@@ -276,7 +297,7 @@ namespace UnityEngine.UIElements
                 if (collection.TryGetBindingData(evt.property, out var bindingData) &&
                     target.TryGetBinding(evt.property, out var current) &&
                     bindingData.binding == current)
-                    m_Panel.dataBindingManager.m_DetectedChangesFromUI.Add(bindingData);
+                    m_Panel.dataBindingManager.m_DetectedChangesFromUI.Add(new ChangesFromUI(bindingData));
             }
 
             public void StopTrackingBinding(VisualElement element, BindingData binding)
@@ -338,13 +359,45 @@ namespace UnityEngine.UIElements
 
         class HierarchyDataSourceTracker : IDisposable
         {
+            private readonly List<SourceInfo> m_SourceInfosPool = new List<SourceInfo>();
+
+            private SourceInfo GetPooledSourceInfo()
+            {
+                SourceInfo info;
+
+                if (m_SourceInfosPool.Count > 0)
+                {
+                    info = m_SourceInfosPool[^1];
+                    m_SourceInfosPool.RemoveAt(m_SourceInfosPool.Count - 1);
+                }
+                else
+                    info = new SourceInfo();
+
+                return info;
+            }
+
+            private void ReleasePooledSourceInfo(SourceInfo info)
+            {
+                info.lastVersion = long.MinValue;
+                info.refCount = 0;
+                info.detectedChangesNoAlloc?.Clear();
+                m_SourceInfosPool.Add(info);
+            }
+
+            class SourceInfo
+            {
+                private List<PropertyPath> m_DetectedChanges;
+
+                public long lastVersion { get; set; }
+                public int refCount { get; set; }
+                public List<PropertyPath> detectedChanges => m_DetectedChanges ??= new List<PropertyPath>();
+                public List<PropertyPath> detectedChangesNoAlloc => m_DetectedChanges;
+            }
+
             class InvalidateDataSourcesTraversal : HierarchyTraversal
             {
                 readonly HierarchyDataSourceTracker m_DataSourceTracker;
                 readonly HashSet<VisualElement> m_VisitedElements;
-
-                bool m_ForceInvalidate;
-                bool m_ProcessingRemovedElements;
 
                 public InvalidateDataSourcesTraversal(HierarchyDataSourceTracker dataSourceTracker)
                 {
@@ -356,16 +409,12 @@ namespace UnityEngine.UIElements
                 {
                     m_VisitedElements.Clear();
 
-                    m_ForceInvalidate = false;
-                    m_ProcessingRemovedElements = false;
                     for (var i = 0; i < addedOrMovedElements.Count; ++i)
                     {
                         var element = addedOrMovedElements[i];
                         Traverse(element);
                     }
 
-                    m_ForceInvalidate = true;
-                    m_ProcessingRemovedElements = true;
                     foreach (var element in removedElements)
                     {
                         // If the element was visited as part of the addedOrMovedElements list, it means the removed
@@ -381,43 +430,24 @@ namespace UnityEngine.UIElements
                     if (m_VisitedElements.Contains(element))
                         return;
 
-                    m_VisitedElements.Add(element);
-
-                    // Whenever there is a data source change, we must re-run the bindings again
-                    foreach (var bindingData in m_DataSourceTracker.m_DataBindingManager.GetBindingData(element))
-                    {
-                        if (bindingData.binding is IDataSourceProvider {dataSource: null})
-                        {
-                            bindingData.binding.MarkDirty();
-                        }
-                    }
-
-                    m_DataSourceTracker.RemoveHierarchyDataSourceFromElement(element);
-                    m_DataSourceTracker.RemoveHierarchyDataSourcePathFromElement(element);
-
-                    if (null != element.dataSource && !m_ProcessingRemovedElements)
-                    {
-                        m_DataSourceTracker.AddHierarchyDataSourceForElement(new SourceOwner(element, element.dataSource), element);
-                        m_DataSourceTracker.AddHierarchyDataSourcePathForElement(element, m_DataSourceTracker.GetHierarchyDataSourcePath(element));
-                    }
-
-                    if (!m_ForceInvalidate && element.dataSource != null && depth > 0)
+                    if (depth > 0 && null != element.dataSource)
                         return;
+
+                    m_VisitedElements.Add(element);
+                    m_DataSourceTracker.RemoveHierarchyDataSourceContextFromElement(element);
+
                     Recurse(element, depth);
                 }
             }
 
             readonly DataBindingManager m_DataBindingManager;
-            readonly Dictionary<SourceOwner, List<VisualElement>> m_SourceOwnerForElements;
-            readonly Dictionary<VisualElement, SourceOwner> m_ResolvedSourceOwnerPerElement;
-            readonly Dictionary<VisualElement, PropertyPath> m_ResolvedHierarchicalDataSourcePathPerElement;
 
-            readonly Dictionary<Binding, object> m_LastBindingLocalDataSource;
-            readonly Dictionary<Binding, DataSourceContext> m_LastKnownDataSource;
+            private readonly Dictionary<VisualElement, DataSourceContext> m_ResolvedHierarchicalDataSourceContext;
+
             readonly Dictionary<Binding, int> m_BindingRefCount;
-            readonly Dictionary<object, long> m_LastDataSourceVersion;
-            readonly Dictionary<object, int> m_DataSourceRefCount;
-            readonly Dictionary<object, List<PropertyPath>> m_DetectedChangesFromSource;
+            readonly Dictionary<object, SourceInfo> m_SourceInfos;
+            private readonly HashSet<object> m_SourcesToRemove;
+
             readonly InvalidateDataSourcesTraversal m_InvalidateResolvedDataSources;
             readonly EventHandler<BindablePropertyChangedEventArgs> m_Handler;
             readonly EventCallback<PropertyChangedEvent, VisualElement> m_VisualElementHandler;
@@ -425,42 +455,39 @@ namespace UnityEngine.UIElements
             public HierarchyDataSourceTracker(DataBindingManager manager)
             {
                 m_DataBindingManager = manager;
-                m_SourceOwnerForElements = new Dictionary<SourceOwner, List<VisualElement>>();
-                m_ResolvedSourceOwnerPerElement = new Dictionary<VisualElement, SourceOwner>();
-                m_ResolvedHierarchicalDataSourcePathPerElement = new Dictionary<VisualElement, PropertyPath>();
-                m_LastBindingLocalDataSource = new Dictionary<Binding, object>();
-                m_LastKnownDataSource = new Dictionary<Binding, DataSourceContext>();
+                m_ResolvedHierarchicalDataSourceContext = new Dictionary<VisualElement, DataSourceContext>();
                 m_BindingRefCount = new Dictionary<Binding, int>();
-                m_LastDataSourceVersion = new Dictionary<object, long>();
-                m_DataSourceRefCount = new Dictionary<object, int>();
-                m_DetectedChangesFromSource = new Dictionary<object, List<PropertyPath>>();
+                m_SourceInfos = new Dictionary<object, SourceInfo>();
+                m_SourcesToRemove = new HashSet<object>();
 
                 m_InvalidateResolvedDataSources = new InvalidateDataSourcesTraversal(this);
                 m_Handler = TrackPropertyChanges;
                 m_VisualElementHandler = OnVisualElementPropertyChanged;
             }
 
-            internal void IncreaseBindingRefCount(Binding binding)
+            internal void IncreaseBindingRefCount(ref BindingData bindingData)
             {
+                var binding = bindingData.binding;
                 if (null == binding)
                     return;
 
                 if (!m_BindingRefCount.TryGetValue(binding, out var refCount))
                 {
                     refCount = 0;
+                }
 
-                    if (binding is IDataSourceProvider dataSourceProvider)
-                    {
-                        IncreaseRefCount(dataSourceProvider.dataSource);
-                        m_LastBindingLocalDataSource[binding] = dataSourceProvider.dataSource;
-                    }
+                if (binding is IDataSourceProvider dataSourceProvider)
+                {
+                    IncreaseRefCount(dataSourceProvider.dataSource);
+                    bindingData.localDataSource = dataSourceProvider.dataSource;
                 }
 
                 m_BindingRefCount[binding] = refCount + 1;
             }
 
-            internal void DecreaseBindingRefCount(Binding binding)
+            internal void DecreaseBindingRefCount(ref BindingData bindingData)
             {
+                var binding = bindingData.binding;
                 if (null == binding)
                     return;
 
@@ -472,16 +499,14 @@ namespace UnityEngine.UIElements
                 if (refCount == 1)
                 {
                     m_BindingRefCount.Remove(binding);
-                    m_LastBindingLocalDataSource.Remove(binding);
-                    m_LastKnownDataSource.Remove(binding);
-
-                    if (binding is IDataSourceProvider dataSourceProvider)
-                        DecreaseRefCount(dataSourceProvider.dataSource);
                 }
                 else
                 {
                     m_BindingRefCount[binding] = refCount - 1;
                 }
+
+                if (binding is IDataSourceProvider dataSourceProvider)
+                    DecreaseRefCount(dataSourceProvider.dataSource);
             }
 
             internal void IncreaseRefCount(object dataSource)
@@ -489,9 +514,11 @@ namespace UnityEngine.UIElements
                 if (null == dataSource)
                     return;
 
-                if (!m_DataSourceRefCount.TryGetValue(dataSource, out var refCount))
+                m_SourcesToRemove.Remove(dataSource);
+
+                if (!m_SourceInfos.TryGetValue(dataSource, out var info))
                 {
-                    refCount = 0;
+                    m_SourceInfos[dataSource] = info = GetPooledSourceInfo();
                     if (dataSource is INotifyBindablePropertyChanged notifier)
                         notifier.propertyChanged += m_Handler;
 
@@ -499,12 +526,12 @@ namespace UnityEngine.UIElements
                         element.RegisterCallback(m_VisualElementHandler, element);
                 }
 
-                m_DataSourceRefCount[dataSource] = refCount + 1;
+                ++info.refCount;
             }
 
             private void OnVisualElementPropertyChanged(PropertyChangedEvent evt, VisualElement element)
             {
-                TrackPropertyChanges(element,evt.property);
+                TrackPropertyChanges(element, evt.property);
             }
 
             internal void DecreaseRefCount(object dataSource)
@@ -512,15 +539,15 @@ namespace UnityEngine.UIElements
                 if (null == dataSource)
                     return;
 
-                if (!m_DataSourceRefCount.TryGetValue(dataSource, out var refCount))
-                {
+                if (!m_SourceInfos.TryGetValue(dataSource, out var info) || info.refCount == 0)
                     throw new InvalidOperationException("Trying to release a data source that isn't tracked. This is an internal bug. Please report using `Help > Report a Bug...`");
-                }
 
-                if (refCount == 1)
+
+                if (info.refCount == 1)
                 {
-                    m_DataSourceRefCount.Remove(dataSource);
-                    m_LastDataSourceVersion.Remove(dataSource);
+                    info.refCount = 0;
+                    m_SourcesToRemove.Add(dataSource);
+
                     if (dataSource is INotifyBindablePropertyChanged notifier)
                         notifier.propertyChanged -= m_Handler;
 
@@ -529,37 +556,36 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
-                    m_DataSourceRefCount[dataSource] = refCount - 1;
+                    --info.refCount;
                 }
             }
 
             public int GetRefCount(object dataSource)
             {
-                return m_DataSourceRefCount.TryGetValue(dataSource, out var refCount) ? refCount : 0;
+                return m_SourceInfos.TryGetValue(dataSource, out var info) ? info.refCount : 0;
             }
 
             public int GetTrackedDataSourcesCount()
             {
-                return m_ResolvedSourceOwnerPerElement.Count;
+                return m_ResolvedHierarchicalDataSourceContext.Count;
             }
 
             public bool IsTrackingDataSource(VisualElement element)
             {
-                return m_ResolvedSourceOwnerPerElement.ContainsKey(element);
+                return m_ResolvedHierarchicalDataSourceContext.ContainsKey(element);
             }
 
             public List<PropertyPath> GetChangesFromSource(object dataSource)
             {
-                return m_DetectedChangesFromSource.TryGetValue(dataSource, out var list) ? list : null;
+                return m_SourceInfos.TryGetValue(dataSource, out var info) ? info.detectedChangesNoAlloc : null;
             }
 
             public void ClearChangesFromSource(object dataSource)
             {
-                if (m_DetectedChangesFromSource.TryGetValue(dataSource, out var list))
-                {
-                    ListPool<PropertyPath>.Release(list);
-                    m_DetectedChangesFromSource.Remove(dataSource);
-                }
+                if (!m_SourceInfos.TryGetValue(dataSource, out var info))
+                    return;
+
+                info.detectedChangesNoAlloc?.Clear();
             }
 
             public void InvalidateCachedDataSource(HashSet<VisualElement> elements, HashSet<VisualElement> removedElements)
@@ -568,23 +594,8 @@ namespace UnityEngine.UIElements
 
                 try
                 {
-                    // Check for the case where the data source was changed on the element, because we can simply remap
-                    // the source owner.
                     foreach (var element in elements)
-                    {
-                        // Case where the data source is either added or removed on the element. We need to traverse
-                        // children and invalidate them as well.
-                        if (element.dataSource == null ||
-                            !TryGetSourceOwner(element, out var currentSourceOwner) ||
-                            currentSourceOwner.element != element)
-                        {
-                            toInvalidate.Add(element);
-                            continue;
-                        }
-
-                        RemapHierarchyDataSource(element);
-                        RemapHierarchyDataSourcePath(element);
-                    }
+                        toInvalidate.Add(element);
 
                     m_InvalidateResolvedDataSources.Invalidate(toInvalidate, removedElements);
                 }
@@ -605,7 +616,7 @@ namespace UnityEngine.UIElements
                     localDataSourcePath = dataSourceProvider.dataSourcePath;
                 }
 
-                var previouslyRegistered = m_LastBindingLocalDataSource.TryGetValue(bindingData.binding, out var lastLocalDatasource);
+                var lastLocalDataSource = bindingData.localDataSource;
                 var resolvedDataSource = localDataSource;
                 PropertyPath resolvedDataSourcePath = localDataSourcePath;
 
@@ -613,51 +624,31 @@ namespace UnityEngine.UIElements
                 {
                     if (null == localDataSource)
                     {
-                        if (previouslyRegistered)
-                        {
-                            // We need to untrack previous local source.
-                            DecreaseRefCount(lastLocalDatasource);
-                        }
+                        // We need to untrack previous local source.
+                        DecreaseRefCount(lastLocalDataSource);
 
-                        resolvedDataSource = TrackHierarchyDataSource(element);
-                        resolvedDataSourcePath = TrackHierarchyDataSourcePath(element);
-                        if (!localDataSourcePath.IsEmpty)
-                            resolvedDataSourcePath = PropertyPath.Combine(resolvedDataSourcePath, localDataSourcePath);
+                        var resolvedHierarchicalContext = GetHierarchicalDataSourceContext(element);
+                        resolvedDataSource = resolvedHierarchicalContext.dataSource;
+                        resolvedDataSourcePath = !localDataSourcePath.IsEmpty
+                            ? PropertyPath.Combine(resolvedHierarchicalContext.dataSourcePath, localDataSourcePath)
+                            : resolvedHierarchicalContext.dataSourcePath;
+
                         return new DataSourceContext(resolvedDataSource, resolvedDataSourcePath);
                     }
 
                     // We need to update the source
-                    if (localDataSource != lastLocalDatasource)
+                    if (localDataSource != lastLocalDataSource)
                     {
-                        if (previouslyRegistered)
-                        {
-                            DecreaseRefCount(lastLocalDatasource);
-                            IncreaseRefCount(localDataSource);
-                        }
+                        DecreaseRefCount(lastLocalDataSource);
+                        IncreaseRefCount(localDataSource);
                     }
                 }
                 finally
                 {
-                    m_LastBindingLocalDataSource[bindingData.binding] = localDataSource;
+                    bindingData.localDataSource = localDataSource;
                     var newResolvedContext = new DataSourceContext(resolvedDataSource, resolvedDataSourcePath);
 
-                    if (m_LastKnownDataSource.TryGetValue(bindingData.binding, out var previousResolvedDataSource))
-                    {
-                        if (previousResolvedDataSource.dataSource != resolvedDataSource ||
-                            previousResolvedDataSource.dataSourcePath != resolvedDataSourcePath)
-                        {
-                            bindingData.binding.OnDataSourceChanged(new DataSourceContextChanged(element, bindingData.target.bindingId, previousResolvedDataSource, newResolvedContext));
-                            bindingData.binding.MarkDirty();
-                        }
-                    }
-                    else
-                    {
-                        if (null != resolvedDataSource || default != resolvedDataSourcePath)
-                            bindingData.binding.OnDataSourceChanged(new DataSourceContextChanged(element, bindingData.target.bindingId,  default,  newResolvedContext));
-                        bindingData.binding.MarkDirty();
-                    }
-
-                    m_LastKnownDataSource[bindingData.binding] = newResolvedContext;
+                    bindingData.context = newResolvedContext;
                 }
 
                 return new DataSourceContext(resolvedDataSource, resolvedDataSourcePath);
@@ -668,22 +659,20 @@ namespace UnityEngine.UIElements
 
             private void TrackPropertyChanges(object sender, PropertyPath propertyPath)
             {
-                if (!m_DataSourceRefCount.ContainsKey(sender))
+                if (!m_SourceInfos.TryGetValue(sender, out var info))
                     return;
 
-                if (!m_DetectedChangesFromSource.TryGetValue(sender, out var list))
-                {
-                    list = ListPool<PropertyPath>.Get();
-                    m_DetectedChangesFromSource[sender] = list;
-                }
-
+                var list = info.detectedChanges;
                 list.Add(propertyPath);
             }
 
             public bool TryGetLastVersion(object source, out long version)
             {
-                if (null != source)
-                    return m_LastDataSourceVersion.TryGetValue(source, out version);
+                if (null != source && m_SourceInfos.TryGetValue(source, out var sourceInfo))
+                {
+                    version = sourceInfo.lastVersion;
+                    return true;
+                }
 
                 version = -1;
                 return false;
@@ -691,181 +680,92 @@ namespace UnityEngine.UIElements
 
             public void UpdateVersion(object source, long version)
             {
-                m_LastDataSourceVersion[source] = version;
-            }
-
-            public object TrackHierarchyDataSource(VisualElement element)
-            {
-                if (GetHierarchyDataSource(element, out var dataSource, out var sourceOwner))
-                {
-                    AddHierarchyDataSourceForElement(new SourceOwner(sourceOwner, dataSource), element);
-                }
-
-                return dataSource;
-            }
-
-            public PropertyPath TrackHierarchyDataSourcePath(VisualElement element)
-            {
-                var dataSourcePath = GetHierarchyDataSourcePath(element);
-                AddHierarchyDataSourcePathForElement(element, dataSourcePath);
-
-                return dataSourcePath;
+                var info = m_SourceInfos[source];
+                info.lastVersion = version;
+                m_SourceInfos[source] = info;
             }
 
             internal object GetHierarchyDataSource(VisualElement element)
             {
-                GetHierarchyDataSource(element, out var dataSource, out _);
-                return dataSource;
+                return GetHierarchicalDataSourceContext(element).dataSource;
             }
 
-            // Returns whether or not the owner of the hierarchy data source changed.
-            bool GetHierarchyDataSource(VisualElement element, out object dataSource, out VisualElement sourceOwnerElement)
+            internal DataSourceContext GetHierarchicalDataSourceContext(VisualElement element)
             {
-                var sourceElement = element;
-                while (sourceElement != null)
-                {
-                    if (TryGetSourceOwner(sourceElement, out var sourceOwner))
-                    {
-                        dataSource = sourceOwner.dataSource;
-                        sourceOwnerElement = sourceOwner.element;
-                        return sourceElement != element;
-                    }
+                if (m_ResolvedHierarchicalDataSourceContext.TryGetValue(element, out var context))
+                    return context;
 
-                    if (sourceElement.dataSource != null)
-                    {
-                        dataSource = sourceElement.dataSource;
-                        sourceOwnerElement = sourceElement;
-                        return true;
-                    }
-
-                    sourceElement = sourceElement.hierarchy.parent;
-                }
-
-                dataSource = null;
-                sourceOwnerElement = null;
-                return false;
-            }
-
-            bool TryGetSourceOwner(VisualElement element, out SourceOwner sourceOwner)
-            {
-                return m_ResolvedSourceOwnerPerElement.TryGetValue(element, out sourceOwner);
-            }
-
-            void AddHierarchyDataSourceForElement(SourceOwner owner, VisualElement element)
-            {
-                m_ResolvedSourceOwnerPerElement[element] = owner;
-                if (!m_SourceOwnerForElements.TryGetValue(owner, out var list))
-                    m_SourceOwnerForElements[owner] = list = new List<VisualElement>();
-                list.Add(element);
-            }
-
-            PropertyPath GetHierarchyDataSourcePath(VisualElement element)
-            {
+                var current = element;
                 var path = default(PropertyPath);
 
-                while (null != element)
+                while (null != current)
                 {
-                    if (!element.dataSourcePath.IsEmpty)
-                        path = PropertyPath.Combine(element.dataSourcePath, path);
+                    if (!current.dataSourcePath.IsEmpty)
+                        path = PropertyPath.Combine(current.dataSourcePath, path);
 
-                    if (null != element.dataSource)
-                        break;
-                    element = element.hierarchy.parent;
-                }
-
-                return path;
-            }
-
-            void AddHierarchyDataSourcePathForElement(VisualElement element, PropertyPath dataSourcePath)
-            {
-                m_ResolvedHierarchicalDataSourcePathPerElement[element] = dataSourcePath;
-            }
-
-            internal void RemoveHierarchyDataSourceFromElement(VisualElement element)
-            {
-                if (!TryGetSourceOwner(element, out var owner))
-                    return;
-
-                m_ResolvedSourceOwnerPerElement.Remove(element);
-
-                if (m_SourceOwnerForElements.TryGetValue(owner, out var list))
-                    list.Remove(element);
-            }
-
-            internal void RemoveHierarchyDataSourcePathFromElement(VisualElement element)
-            {
-                m_ResolvedHierarchicalDataSourcePathPerElement.Remove(element);
-            }
-
-            void RemapHierarchyDataSource(VisualElement element)
-            {
-                if (!TryGetSourceOwner(element, out var currentSourceOwner))
-                    return;
-
-                var current = m_SourceOwnerForElements[currentSourceOwner];
-                var newSourceOwner = new SourceOwner(element, element.dataSource);
-
-                // Update source owner and dirty bindings
-                m_ResolvedSourceOwnerPerElement[element] = newSourceOwner;
-
-                foreach (var t in current)
-                {
-                    foreach (var bindingData in m_DataBindingManager.GetBindingData(t))
+                    if (null != current.dataSource)
                     {
-                        if (bindingData.binding is IDataSourceProvider {dataSource: null})
-                            bindingData.binding.MarkDirty();
+                        var source = current.dataSource;
+                        return m_ResolvedHierarchicalDataSourceContext[element] = new DataSourceContext(source, path);
                     }
 
-                    m_ResolvedSourceOwnerPerElement[t] = newSourceOwner;
+                    current = current.hierarchy.parent;
                 }
 
-                m_SourceOwnerForElements[newSourceOwner] = current;
-
-                // Clean-up
-                if (!currentSourceOwner.dataSource.Equals(newSourceOwner.dataSource))
-                    m_SourceOwnerForElements.Remove(currentSourceOwner);
+                return m_ResolvedHierarchicalDataSourceContext[element] = new DataSourceContext(null, path);
             }
 
-            void RemapHierarchyDataSourcePath(VisualElement element)
+            internal void RemoveHierarchyDataSourceContextFromElement(VisualElement element)
             {
-                if (m_ResolvedHierarchicalDataSourcePathPerElement.ContainsKey(element))
-                    m_ResolvedHierarchicalDataSourcePathPerElement[element] = GetHierarchyDataSourcePath(element);
+                m_ResolvedHierarchicalDataSourceContext.Remove(element);
             }
 
             public void Dispose()
             {
-                m_SourceOwnerForElements.Clear();
-                m_ResolvedSourceOwnerPerElement.Clear();
-                m_LastBindingLocalDataSource.Clear();
-                m_LastKnownDataSource.Clear();
+                m_ResolvedHierarchicalDataSourceContext.Clear();
                 m_BindingRefCount.Clear();
-                m_LastDataSourceVersion.Clear();
-                m_DataSourceRefCount.Clear();
+                m_SourcesToRemove.Clear();
+                m_SourceInfosPool.Clear();
+                m_SourceInfos.Clear();
+            }
 
-                foreach (var list in m_DetectedChangesFromSource.Values)
+            public void ClearSourceCache()
+            {
+                foreach (var toRemove in m_SourcesToRemove)
                 {
-                    ListPool<PropertyPath>.Release(list);
+                    if (m_SourceInfos.TryGetValue(toRemove, out var info))
+                    {
+                        if (info.refCount == 0)
+                        {
+                            m_SourceInfos.Remove(toRemove);
+                            ReleasePooledSourceInfo(info);
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException("Trying to release a data source that is still being referenced. This is an internal bug. Please report using `Help > Report a Bug...`");
+                        }
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Trying to release a data source that isn't tracked. This is an internal bug. Please report using `Help > Report a Bug...`");
+                    }
                 }
-                m_DetectedChangesFromSource.Clear();
+
+                m_SourcesToRemove.Clear();
             }
         }
 
         readonly BaseVisualElementPanel m_Panel;
         readonly HierarchyDataSourceTracker m_DataSourceTracker;
         readonly HierarchyBindingTracker m_BindingsTracker;
-        readonly List<BindingData> m_DetectedChangesFromUI;
-        readonly Dictionary<BindingData, BindingResult> m_LastUIBindingResultsCache;
-        readonly Dictionary<BindingData, BindingResult> m_LastSourceBindingResultsCache;
+        readonly List<ChangesFromUI> m_DetectedChangesFromUI;
 
         internal DataBindingManager(BaseVisualElementPanel panel)
         {
             m_Panel = panel;
             m_DataSourceTracker = new HierarchyDataSourceTracker(this);
             m_BindingsTracker = new HierarchyBindingTracker(panel);
-            m_DetectedChangesFromUI = new List<BindingData>();
-            var comparer = new BindingDataComparer();
-            m_LastUIBindingResultsCache = new Dictionary<BindingData, BindingResult>(comparer);
-            m_LastSourceBindingResultsCache = new Dictionary<BindingData, BindingResult>(comparer);
+            m_DetectedChangesFromUI = new List<ChangesFromUI>();
         }
 
         internal int GetTrackedDataSourcesCount()
@@ -890,22 +790,36 @@ namespace UnityEngine.UIElements
 
         internal void CacheUIBindingResult(BindingData bindingData, BindingResult result)
         {
-            m_LastUIBindingResultsCache[bindingData] = result;
+            bindingData.m_SourceToUILastUpdate = result;
         }
 
         internal bool TryGetLastUIBindingResult(BindingData bindingData, out BindingResult result)
         {
-            return m_LastUIBindingResultsCache.TryGetValue(bindingData, out result);
+            if (bindingData.m_SourceToUILastUpdate.HasValue)
+            {
+                result = bindingData.m_SourceToUILastUpdate.Value;
+                return true;
+            }
+
+            result = default;
+            return false;
         }
 
         internal void CacheSourceBindingResult(BindingData bindingData, BindingResult result)
         {
-            m_LastSourceBindingResultsCache[bindingData] = result;
+            bindingData.m_UIToSourceLastUpdate = result;
         }
 
         internal bool TryGetLastSourceBindingResult(BindingData bindingData, out BindingResult result)
         {
-            return m_LastSourceBindingResultsCache.TryGetValue(bindingData, out result);
+            if (bindingData.m_UIToSourceLastUpdate.HasValue)
+            {
+                result = bindingData.m_UIToSourceLastUpdate.Value;
+                return true;
+            }
+
+            result = default;
+            return false;
         }
 
         internal DataSourceContext GetResolvedDataSourceContext(VisualElement element, BindingData bindingData)
@@ -913,14 +827,6 @@ namespace UnityEngine.UIElements
             return element.panel == m_Panel
                 ? m_DataSourceTracker.GetResolvedDataSourceContext(element, bindingData)
                 : default;
-        }
-
-        // Internal for tests
-        internal object TrackHierarchyDataSource(VisualElement element)
-        {
-            return element.panel == m_Panel
-                ? m_DataSourceTracker.TrackHierarchyDataSource(element)
-                : null;
         }
 
         internal bool TryGetSource(VisualElement element, out object dataSource)
@@ -934,6 +840,15 @@ namespace UnityEngine.UIElements
             dataSource = null;
             return false;
         }
+
+        // Internal for tests
+        internal object TrackHierarchyDataSource(VisualElement element)
+        {
+            return element.panel == m_Panel
+                ? m_DataSourceTracker.GetHierarchicalDataSourceContext(element).dataSource
+                : null;
+        }
+
 
         // Internal for tests
         internal int GetRefCount(object dataSource)
@@ -956,7 +871,7 @@ namespace UnityEngine.UIElements
             return m_BindingsTracker.GetUnorderedBoundElements();
         }
 
-        internal List<BindingData> GetChangedDetectedFromUI()
+        internal List<ChangesFromUI> GetChangedDetectedFromUI()
         {
             return m_DetectedChangesFromUI;
         }
@@ -980,7 +895,7 @@ namespace UnityEngine.UIElements
                 : s_Empty;
         }
 
-        internal bool TryGetBindingData(VisualElement element, BindingId bindingId, out BindingData bindingData)
+        internal bool TryGetBindingData(VisualElement element, in BindingId bindingId, out BindingData bindingData)
         {
             bindingData = default;
             if (element.panel == m_Panel && m_BindingsTracker.TryGetBindingCollection(element, out var collection))
@@ -992,10 +907,10 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        internal void RegisterBinding(VisualElement element, BindingId bindingId, Binding binding)
+        internal void RegisterBinding(VisualElement element, in BindingId bindingId, Binding binding)
         {
-            Assert.IsNotNull(binding);
-            Assert.IsFalse(((PropertyPath)bindingId).IsEmpty, $"[UI Toolkit] Could not register binding on element of type '{element.GetType().Name}': target property path is empty.");
+            Assert.IsFalse(null == binding);
+            Assert.IsFalse(((PropertyPath) bindingId).IsEmpty, $"[UI Toolkit] Could not register binding on element of type '{element.GetType().Name}': target property path is empty.");
 
             if (m_BindingsTracker.TryGetBindingCollection(element, out var collection) &&
                 collection.TryGetBindingData(bindingId, out var bindingData))
@@ -1008,15 +923,17 @@ namespace UnityEngine.UIElements
                 var newSourcePath = provider?.dataSourcePath ?? default;
                 if (currentResolvedContext.dataSource != newSource || currentResolvedContext.dataSourcePath != newSourcePath)
                     bindingData.binding.OnDataSourceChanged(new DataSourceContextChanged(element, bindingId, currentResolvedContext, new DataSourceContext(newSource, newSourcePath)));
-                m_DataSourceTracker.DecreaseBindingRefCount(bindingData.binding);
+                m_DataSourceTracker.DecreaseBindingRefCount(ref bindingData);
             }
 
-            m_BindingsTracker.StartTrackingBinding(element, new BindingData(new BindingTarget(element, bindingId), binding));
-            m_DataSourceTracker.IncreaseBindingRefCount(binding);
+            var newBindingData = GetPooledBindingData(new BindingTarget(element, bindingId), binding);
+            m_DataSourceTracker.IncreaseBindingRefCount(ref newBindingData);
+            m_BindingsTracker.StartTrackingBinding(element, newBindingData);
+
             binding.OnActivated(new BindingActivationContext(element, bindingId));
         }
 
-        internal void UnregisterBinding(VisualElement element, BindingId bindingId)
+        internal void UnregisterBinding(VisualElement element, in BindingId bindingId)
         {
             if (!m_BindingsTracker.TryGetBindingCollection(element, out var collection))
                 return;
@@ -1030,10 +947,11 @@ namespace UnityEngine.UIElements
                 if (currentResolvedContext.dataSource != newSource || currentResolvedContext.dataSourcePath != newSourcePath)
                     bindingData.binding.OnDataSourceChanged(new DataSourceContextChanged(element, bindingId, currentResolvedContext, new DataSourceContext(newSource, newSourcePath)));
                 bindingData.binding.OnDeactivated(new BindingActivationContext(element, bindingId));
-                m_DataSourceTracker.DecreaseBindingRefCount(bindingData.binding);
-            }
+                m_DataSourceTracker.DecreaseBindingRefCount(ref bindingData);
 
-            m_BindingsTracker.StopTrackingBinding(element, new BindingData(new BindingTarget(element, bindingId), null));
+                m_BindingsTracker.StopTrackingBinding(element, bindingData);
+                ReleasePoolBindingData(bindingData);
+            }
         }
 
         /// <summary>
@@ -1042,6 +960,9 @@ namespace UnityEngine.UIElements
         /// <param name="element"></param>
         internal void TransferBindingRequests(VisualElement element)
         {
+            if (!m_BindingsTracker.IsTrackingElement(element))
+                return;
+
             if (m_BindingsTracker.TryGetBindingCollection(element, out var collection))
             {
                 var bindings = collection.GetBindings();
@@ -1068,7 +989,7 @@ namespace UnityEngine.UIElements
             m_DetectedChangesFromUI.Clear();
         }
 
-        public static void CreateBindingRequest(VisualElement target, BindingId bindingId, Binding binding)
+        public static void CreateBindingRequest(VisualElement target, in BindingId bindingId, Binding binding)
         {
             var requests = (List<BindingRequest>) target.GetProperty(k_RequestBindingPropertyName);
             if (requests == null)
@@ -1086,6 +1007,7 @@ namespace UnityEngine.UIElements
                     requests[i] = request.CancelRequest();
                 }
             }
+
             requests.Add(new BindingRequest(bindingId, binding));
         }
 
@@ -1116,7 +1038,8 @@ namespace UnityEngine.UIElements
                 {
                     var panel = element.panel;
                     var panelName = (panel as Panel)?.name ?? panel.visualTree.name;
-                    Debug.LogError($"[UI Toolkit] Trying to set a binding on `{(string.IsNullOrWhiteSpace(element.name) ? "<no name>" : element.name)} ({TypeUtility.GetTypeDisplayName(element.GetType())})` without setting the \"property\" attribute is not supported ({panelName}).");
+                    Debug.LogError(
+                        $"[UI Toolkit] Trying to set a binding on `{(string.IsNullOrWhiteSpace(element.name) ? "<no name>" : element.name)} ({TypeUtility.GetTypeDisplayName(element.GetType())})` without setting the \"property\" attribute is not supported ({panelName}).");
                     continue;
                 }
 
@@ -1180,7 +1103,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static bool TryGetBindingRequest(VisualElement element, BindingId bindingId, out Binding binding)
+        internal static bool TryGetBindingRequest(VisualElement element, in BindingId bindingId, out Binding binding)
         {
             var requests = (List<BindingRequest>) element.GetProperty(k_RequestBindingPropertyName);
             if (requests == null)
@@ -1220,6 +1143,34 @@ namespace UnityEngine.UIElements
             var boundElements = m_BindingsTracker.GetTrackedElementsCount();
             var dataSources = m_DataSourceTracker.GetTrackedDataSourcesCount();
             return (boundElements, dataSources);
+        }
+
+        public void ClearSourceCache()
+        {
+            m_DataSourceTracker.ClearSourceCache();
+        }
+
+        public BindingData GetPooledBindingData(BindingTarget target, Binding binding)
+        {
+            BindingData data;
+
+            if (m_BindingDataLocalPool.Count > 0)
+            {
+                data = m_BindingDataLocalPool[^1];
+                m_BindingDataLocalPool.RemoveAt(m_BindingDataLocalPool.Count - 1);
+            }
+            else
+                data = new BindingData();
+
+            data.target = target;
+            data.binding = binding;
+            return data;
+        }
+
+        public void ReleasePoolBindingData(BindingData data)
+        {
+            data.Reset();
+            m_BindingDataLocalPool.Add(data);
         }
     }
 }

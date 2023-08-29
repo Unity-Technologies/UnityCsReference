@@ -7,23 +7,31 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [ExcludeFromCodeCoverage]
-    internal class SelectionProxy
+    internal interface ISelectionProxy : IService
     {
-        public virtual event Action onSelectionChanged = delegate {};
+        event Action onSelectionChanged;
+
+        UnityEngine.Object[] objects { get; set; }
+        UnityEngine.Object activeObject { get; set; }
+    }
+
+    [ExcludeFromCodeCoverage]
+    internal class SelectionProxy : BaseService<ISelectionProxy>, ISelectionProxy
+    {
+        public event Action onSelectionChanged = delegate {};
 
         public SelectionProxy()
         {
             Selection.selectionChanged += OnSelectionChanged;
         }
 
-        public virtual UnityEngine.Object[] objects
+        public UnityEngine.Object[] objects
         {
             get { return Selection.objects; }
             set { Selection.objects = value; }
         }
 
-        public virtual UnityEngine.Object activeObject
+        public UnityEngine.Object activeObject
         {
             get { return Selection.activeObject; }
             set { Selection.activeObject = value; }

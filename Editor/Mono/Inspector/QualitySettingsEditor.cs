@@ -32,13 +32,13 @@ namespace UnityEditor
             };
             public static readonly GUIContent[] kTextureMipmapLimitGroupsOffsetModeItems =
             {
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -3", "Upload 3 mips less compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -2", "Upload 2 mips less compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -1", "Upload 1 mip less compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -3", "Upload 3 mips extra compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -2", "Upload 2 mips extra compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -1", "Upload 1 mip extra compared to the Global Mipmap Limit."),
                 EditorGUIUtility.TrTextContent("Use Global Mipmap Limit", "No offset or override occurs, simply use the Global Mipmap Limit. (Default)"),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +1", "Upload 1 mip extra compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +2", "Upload 2 mips extra compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +3", "Upload 3 mips extra compared to the Global Mipmap Limit.")
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +1", "Upload 1 mip less compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +2", "Upload 2 mips less compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +3", "Upload 3 mips less compared to the Global Mipmap Limit.")
             };
             public static readonly GUIContent kTextureMipmapLimitGroupsOptions = EditorGUIUtility.TrIconContent("_Menu", "Show additional options");
             public static readonly GUIContent kTextureMipmapLimitGroupsOptionsIdentify = EditorGUIUtility.TrTextContent("Identify textures");
@@ -717,19 +717,19 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(vSyncCountProperty, Content.kVSyncCountLabel);
 
-            if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android ||
-                EditorUserBuildSettings.activeBuildTarget == BuildTarget.iOS ||
-                EditorUserBuildSettings.activeBuildTarget == BuildTarget.tvOS)
+            if (BuildTargetDiscovery.TryGetBuildTarget(EditorUserBuildSettings.activeBuildTarget, out var activeBuildTarget))
             {
-                if (vSyncCountProperty.intValue > 0)
-                    EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent($"VSync Count '{vSyncCountProperty.enumLocalizedDisplayNames[vSyncCountProperty.enumValueIndex]}' is ignored on Android, iOS and tvOS.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)));
+                if (activeBuildTarget.TryGetProperties(out IGraphicsPlatformProperties graphicsProperties))
+                {
+                    if (vSyncCountProperty.intValue > 0 && graphicsProperties.IgnoresVSyncCount)
+                        EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent($"VSync Count '{vSyncCountProperty.enumLocalizedDisplayNames[vSyncCountProperty.enumValueIndex]}' is ignored on {activeBuildTarget.DisplayName}.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)));
+                }
             }
 
             if (usingSRP)
                 EditorGUILayout.PropertyField(realtimeGICPUUsageProperty, Content.kRealtimeLGiCpuUsageLabel);
 
-            //EditorGUILayout.PropertyField(buildPlatform);
-
+            bool externalUI = false;
             if (vSyncCountProperty.intValue > 0)
             {
                 EditorGUILayout.BeginVertical();
@@ -745,8 +745,22 @@ namespace UnityEditor
                                 if (m_AdaptiveVsyncSettings[i] != null)
                                 {
                                     m_AdaptiveVsyncSettings[i].AdaptiveVsyncUI(currentSettings);
+                                    externalUI = true;
                                     break;
                                 }
+                            }
+                        }
+                        if (!externalUI)
+                        {
+                            GraphicsDeviceType[] gfxTypes = PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget);
+                            for (int i = 0;i < gfxTypes.Length; i++)
+                            {
+                                if (adaptiveVsyncProperty != null && gfxTypes[i] == GraphicsDeviceType.Vulkan)
+                                {
+                                    EditorGUILayout.PropertyField(adaptiveVsyncProperty);
+                                    EditorGUILayout.HelpBox("If Adaptive Vsync extension is available at runtime with Vulkan it will use this, else fallback to vsync.", MessageType.Info);
+                                }
+
                             }
                         }
                     }

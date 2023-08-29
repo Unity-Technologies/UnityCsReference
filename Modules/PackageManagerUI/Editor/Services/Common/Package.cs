@@ -160,7 +160,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         // We are making package factories inherit from a sub class of Package to make sure that we can keep all the package modifying code
         // private and that only Packages themselves and factories can actually modify packages. This way there won't be any accidental
         // package modifications that's not caught by the package change events.
-        internal class Factory
+        internal class Factory : BaseService
         {
             public Package CreatePackage(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null)
             {
@@ -185,6 +185,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 package.m_Progress = progress;
             }
+
+            public override Type registrationType => null;
         }
     }
 }

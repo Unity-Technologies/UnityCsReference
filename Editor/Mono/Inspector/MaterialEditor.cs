@@ -3111,6 +3111,15 @@ namespace UnityEditor
             mat.parent = null;
         }
 
+        [MenuItem("CONTEXT/Material/Remove Unused Properties...", false, 602)]
+        static void RemoveUnusedProperties(MenuCommand command)
+        {
+            Material mat = command.context as Material;
+
+            Undo.RegisterCompleteObjectUndo(mat, "Remove unused properties");
+            mat.RemoveUnusedProperties();
+        }
+
         // We need to access renderer data in the GenericMenu callback, which is called from a static function
         // So we backup these variables during header rendering in case context menu is openned
         static Renderer[] renderersForContextMenu = null;

@@ -223,7 +223,7 @@ namespace UnityEngine.UIElements
         /// <typeparam name="TValue">The value type to set.</typeparam>
         /// <returns><see langword="true"/> if the value was set correctly, and <see langword="false"/> otherwise.</returns>
         public static bool TrySetValueGlobal<TContainer, TValue>(ref TContainer container,
-            PropertyPath path, TValue value, out VisitReturnCode returnCode)
+            in PropertyPath path, TValue value, out VisitReturnCode returnCode)
         {
             if (path.IsEmpty)
             {

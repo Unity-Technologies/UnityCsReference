@@ -4,15 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Xml;
 using System.Linq;
-using UnityEngine;
-using Object = UnityEngine.Object;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
-using UnityEditor.Utils;
-using UnityEditor.PackageManager;
+using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -42,18 +38,19 @@ namespace UnityEditor
         private static bool s_EventSent = false;
         private static int s_NumOfSceneViews = 0;
         private static int s_NumOf2dSceneViews = 0;
-        private const string s_GradlePath = "Temp/gradleOut/build/intermediates/merged_manifests";
-        private const string s_StagingArea = "Temp/StagingArea";
-        private const string s_AndroidManifest = "AndroidManifest.xml";
 
         public int callbackOrder {get { return 0; }}
         public void OnPostprocessBuild(BuildReport report)
         {
             ReportSceneViewInfo();
             ReportBuildPackageIds(report.GetFiles());
-            if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android)
+
+            if (BuildTargetDiscovery.TryGetBuildTarget(EditorUserBuildSettings.activeBuildTarget, out var activeBuildTarget))
             {
-                ReportBuildTargetPermissions();
+                if (activeBuildTarget.TryGetProperties(out IBuildPlatformProperties buildProperties))
+                {
+                    buildProperties.ReportBuildTargetPermissions();
+                }
             }
         }
 
@@ -97,46 +94,6 @@ namespace UnityEditor
                 {
                     total_scene_views = s_NumOfSceneViews, num_of_2d_views = s_NumOf2dSceneViews,
                     is_default_2d_mode = EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D
-                });
-            }
-        }
-
-        private void ReportBuildTargetPermissions()
-        {
-            List<string> permissionsList = new List<string>();
-            List<string> featuresList = new List<string>();
-            string manifestFilePath = Path.Combine(s_StagingArea, s_AndroidManifest);
-            if (EditorUserBuildSettings.androidBuildSystem == AndroidBuildSystem.Gradle)
-            {
-                manifestFilePath = (EditorUserBuildSettings.androidBuildType == AndroidBuildType.Release)
-                    ? Paths.Combine(s_GradlePath, "release/processReleaseManifest/merged", s_AndroidManifest)
-                    : Paths.Combine(s_GradlePath, "debug/processDebugManifest/merged", s_AndroidManifest);
-            }
-
-            XmlDocument manifestFile = new XmlDocument();
-            if (File.Exists(manifestFilePath))
-            {
-                manifestFile.Load(manifestFilePath);
-                XmlNodeList permissions = manifestFile.GetElementsByTagName("uses-permission");
-                XmlNodeList features = manifestFile.GetElementsByTagName("uses-feature");
-                foreach (XmlNode permission in permissions)
-                {
-                    XmlNode attribute = permission.Attributes ? ["android:name"];
-                    if (attribute != null)
-                        permissionsList.Add(attribute.Value);
-                }
-
-                foreach (XmlNode feature in features)
-                {
-                    XmlNode attribute = feature.Attributes ? ["android:name"];
-                    if (attribute != null)
-                        featuresList.Add(attribute.Value);
-                }
-
-                EditorAnalytics.SendEventBuildTargetPermissions(new AndroidBuildPermissions()
-                {
-                    features = featuresList.ToArray(),
-                    permissions = permissionsList.ToArray()
                 });
             }
         }

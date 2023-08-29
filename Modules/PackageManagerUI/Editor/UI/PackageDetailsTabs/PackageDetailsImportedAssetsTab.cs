@@ -31,10 +31,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version?.importedAssets?.Any() == true;
         }
 
-        private readonly IOProxy m_IOProxy;
-        private readonly PackageManagerPrefs m_PackageManagerPrefs;
-        public PackageDetailsImportedAssetsTab(UnityConnectProxy unityConnect, IOProxy iOProxy,
-            PackageManagerPrefs packageManagerPrefs) : base(unityConnect)
+        private readonly IIOProxy m_IOProxy;
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        public PackageDetailsImportedAssetsTab(IUnityConnectProxy unityConnect, IIOProxy iOProxy,
+            IPackageManagerPrefs packageManagerPrefs) : base(unityConnect)
         {
             m_IOProxy = iOProxy;
             m_PackageManagerPrefs = packageManagerPrefs;
@@ -174,9 +174,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private class AssetComparer : IComparer<Asset>
         {
             private IEnumerable<SortColumnDescription> m_SortColumnDescriptions;
-            private IOProxy m_IOProxy;
+            private IIOProxy m_IOProxy;
 
-            public AssetComparer(IOProxy ioProxy, IEnumerable<SortColumnDescription> sortColumnDescriptions)
+            public AssetComparer(IIOProxy ioProxy, IEnumerable<SortColumnDescription> sortColumnDescriptions)
             {
                 m_SortColumnDescriptions = sortColumnDescriptions;
                 m_IOProxy = ioProxy;

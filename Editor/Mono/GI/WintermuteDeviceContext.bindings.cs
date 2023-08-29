@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using UnityEngine.Bindings;
+using UnityEngine.Rendering;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightTransport
@@ -70,41 +71,50 @@ namespace UnityEngine.LightTransport
             buffers[id] = buffer;
             return id;
         }
+
         public void DestroyBuffer(BufferID id)
         {
             Debug.Assert(buffers.ContainsKey(id), "Invalid buffer ID given.");
             buffers[id].Dispose();
             buffers.Remove(id);
         }
-        public void WriteBuffer(BufferID id, NativeArray<byte> data)
+        
+        public EventID WriteBuffer(BufferID id, NativeArray<byte> data)
         {
             Debug.Assert(buffers.ContainsKey(id), "Invalid buffer ID given.");
             var buffer = buffers[id];
             buffer.CopyFrom(data);
-        }
-        public EventID EnqueueBufferWrite(BufferID id, NativeArray<byte> data)
-        {
-            WriteBuffer(id, data);
             return new EventID();
         }
-        public void ReadBuffer(BufferID buffer, NativeArray<byte> result)
-        {
-            Debug.Assert(buffers.ContainsKey(buffer), "Invalid buffer ID given.");
-            buffers[buffer].CopyTo(result);
-        }
-        public EventID EnqueueBufferRead(BufferID buffer, NativeArray<byte> result)
+
+        public EventID ReadBuffer(BufferID buffer, NativeArray<byte> result)
         {
             Debug.Assert(buffers.ContainsKey(buffer), "Invalid buffer ID given.");
             buffers[buffer].CopyTo(result);
             return new EventID { Value = nextFreeEventId++ };
         }
+
         public bool IsAsyncOperationComplete(EventID id)
         {
             return true;
         }
+
+        public bool WaitForAsyncOperation(EventID id)
+        {
+            return true;
+        }
+
         public NativeArray<byte> GetNativeArray(BufferID id)
         {
             return buffers[id];
         }
+
+        public bool Flush()
+        {
+            return true;
+        }
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static unsafe extern bool DeringSphericalHarmonicsL2Internal(SphericalHarmonicsL2* shIn, SphericalHarmonicsL2* shOut, int probeCount);
     }
 }

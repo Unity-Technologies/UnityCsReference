@@ -8,8 +8,40 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal interface IProjectSettingsProxy : IService
+    {
+        event Action<bool> onEnablePreReleasePackagesChanged;
+        event Action<bool> onAdvancedSettingsFoldoutChanged;
+        event Action<bool> onScopedRegistriesSettingsFoldoutChanged;
+        event Action<bool> onSeeAllVersionsChanged;
+        event Action<long> onLoadAssetsChanged;
+        event Action onInitializationFinished;
+
+        bool dismissPreviewPackagesInUse { get; set; }
+        bool enablePreReleasePackages { get; set; }
+        bool advancedSettingsExpanded { get; set; }
+        bool scopedRegistriesSettingsExpanded { get; set; }
+        bool seeAllPackageVersions { get; set; }
+        long loadAssets { get; set; }
+        bool oneTimeWarningShown { get; set; }
+        bool oneTimeDeprecatedPopUpShown { get; set; }
+        bool isUserAddingNewScopedRegistry { get; set; }
+
+        IList<RegistryInfo> registries { get; }
+        IEnumerable<RegistryInfo> scopedRegistries { get; }
+        RegistryInfoDraft registryInfoDraft { get; }
+
+        void SetRegistries(RegistryInfo[] registries);
+        bool AddRegistry(RegistryInfo registry);
+        bool UpdateRegistry(string oldName, RegistryInfo newRegistry);
+        bool RemoveRegistry(string name);
+        void SelectRegistry(string name);
+
+        void Save();
+    }
+
     [ExcludeFromCodeCoverage]
-    internal class PackageManagerProjectSettingsProxy
+    internal class PackageManagerProjectSettingsProxy : BaseService<IProjectSettingsProxy>, IProjectSettingsProxy
     {
         public event Action<bool> onEnablePreReleasePackagesChanged = delegate {};
         public event Action<bool> onAdvancedSettingsFoldoutChanged = delegate {};
@@ -18,92 +50,92 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<long> onLoadAssetsChanged = delegate {};
         public event Action onInitializationFinished = delegate {};
 
-        public virtual bool dismissPreviewPackagesInUse
+        public bool dismissPreviewPackagesInUse
         {
             get => PackageManagerProjectSettings.instance.dismissPreviewPackagesInUse;
             set => PackageManagerProjectSettings.instance.dismissPreviewPackagesInUse = value;
         }
 
-        public virtual bool enablePreReleasePackages
+        public bool enablePreReleasePackages
         {
             get => PackageManagerProjectSettings.instance.enablePreReleasePackages;
             set => PackageManagerProjectSettings.instance.enablePreReleasePackages = value;
         }
 
-        public virtual bool advancedSettingsExpanded
+        public bool advancedSettingsExpanded
         {
             get => PackageManagerProjectSettings.instance.advancedSettingsExpanded;
             set => PackageManagerProjectSettings.instance.advancedSettingsExpanded = value;
         }
 
-        public virtual bool scopedRegistriesSettingsExpanded
+        public bool scopedRegistriesSettingsExpanded
         {
             get => PackageManagerProjectSettings.instance.scopedRegistriesSettingsExpanded;
             set => PackageManagerProjectSettings.instance.scopedRegistriesSettingsExpanded = value;
         }
 
-        public virtual bool seeAllPackageVersions
+        public bool seeAllPackageVersions
         {
             get => PackageManagerProjectSettings.instance.seeAllPackageVersions;
             set => PackageManagerProjectSettings.instance.seeAllPackageVersions = value;
         }
 
-        public virtual long loadAssets
+        public long loadAssets
         {
             get => PackageManagerProjectSettings.instance.loadAssets;
             set => PackageManagerProjectSettings.instance.loadAssets = value;
         }
 
-        public virtual bool oneTimeWarningShown
+        public bool oneTimeWarningShown
         {
             get => PackageManagerProjectSettings.instance.oneTimeWarningShown;
             set => PackageManagerProjectSettings.instance.oneTimeWarningShown = value;
         }
 
-        public virtual bool oneTimeDeprecatedPopUpShown
+        public bool oneTimeDeprecatedPopUpShown
         {
             get => PackageManagerProjectSettings.instance.oneTimeDeprecatedPopUpShown;
             set => PackageManagerProjectSettings.instance.oneTimeDeprecatedPopUpShown = value;
         }
 
-        public virtual bool isUserAddingNewScopedRegistry
+        public bool isUserAddingNewScopedRegistry
         {
             get => PackageManagerProjectSettings.instance.isUserAddingNewScopedRegistry;
             set => PackageManagerProjectSettings.instance.isUserAddingNewScopedRegistry = value;
         }
 
-        public virtual IList<RegistryInfo> registries => PackageManagerProjectSettings.instance.registries;
+        public IList<RegistryInfo> registries => PackageManagerProjectSettings.instance.registries;
 
-        public virtual void SetRegistries(RegistryInfo[] registries)
+        public void SetRegistries(RegistryInfo[] registries)
         {
             PackageManagerProjectSettings.instance.SetRegistries(registries);
         }
 
-        public virtual bool AddRegistry(RegistryInfo registry)
+        public bool AddRegistry(RegistryInfo registry)
         {
             return PackageManagerProjectSettings.instance.AddRegistry(registry);
         }
 
-        public virtual bool UpdateRegistry(string oldName, RegistryInfo newRegistry)
+        public bool UpdateRegistry(string oldName, RegistryInfo newRegistry)
         {
             return PackageManagerProjectSettings.instance.UpdateRegistry(oldName, newRegistry);
         }
 
-        public virtual bool RemoveRegistry(string name)
+        public bool RemoveRegistry(string name)
         {
             return PackageManagerProjectSettings.instance.RemoveRegistry(name);
         }
 
-        public virtual void SelectRegistry(string name)
+        public void SelectRegistry(string name)
         {
             PackageManagerProjectSettings.instance.SelectRegistry(name);
         }
 
-        public virtual IEnumerable<RegistryInfo> scopedRegistries => PackageManagerProjectSettings.instance.scopedRegistries;
+        public IEnumerable<RegistryInfo> scopedRegistries => PackageManagerProjectSettings.instance.scopedRegistries;
 
-        public virtual RegistryInfoDraft registryInfoDraft => PackageManagerProjectSettings.instance.registryInfoDraft;
+        public RegistryInfoDraft registryInfoDraft => PackageManagerProjectSettings.instance.registryInfoDraft;
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             PackageManagerProjectSettings.instance.onEnablePreReleasePackagesChanged += OnEnablePreReleasePackagesChanged;
             PackageManagerProjectSettings.instance.onAdvancedSettingsFoldoutChanged += OnAdvancedSettingsFoldoutChanged;
@@ -113,7 +145,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageManagerProjectSettings.instance.onInitializationFinished += OnInitializationFinished;
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
             PackageManagerProjectSettings.instance.onEnablePreReleasePackagesChanged -= OnEnablePreReleasePackagesChanged;
             PackageManagerProjectSettings.instance.onAdvancedSettingsFoldoutChanged -= OnAdvancedSettingsFoldoutChanged;
@@ -123,7 +155,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageManagerProjectSettings.instance.onInitializationFinished -= OnInitializationFinished;
         }
 
-        public virtual void Save()
+        public void Save()
         {
             PackageManagerProjectSettings.instance.Save();
         }

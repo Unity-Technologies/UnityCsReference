@@ -22,88 +22,12 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
         public sealed partial class Switch
         {
-            const string kPlayerSettingsAreObsoletedWarning = "NMETA Settings are deprecated in Unity 2023.2 and will be removed in 2023.3. Please use the Authoring Editor to create and edit NMETA files.";
-
-
             public enum ScreenResolutionBehavior
             {
                 Manual = 0,
                 OperationMode = 1,
                 PerformanceMode = 2,
                 Both = 3
-            }
-
-            // These language names should be match to the name descriptions where in an NMETA file and SwitchBuildUtils.Languages.
-            // And, please notice that you have to increase numSwitchLanguages in EditorOnlyPlayerSettings.h when you add a new language here.
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            public enum Languages
-            {
-                AmericanEnglish = 0,
-                BritishEnglish = 1,
-                Japanese = 2,
-                French = 3,
-                German = 4,
-                LatinAmericanSpanish = 5,
-                Spanish = 6,
-                Italian = 7,
-                Dutch = 8,
-                CanadianFrench = 9,
-                Portuguese = 10,
-                Russian = 11,
-                SimplifiedChinese = 12,
-                TraditionalChinese = 13,
-                Korean = 14,
-                BrazilianPortuguese = 15,
-            }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            public enum
-            StartupUserAccount
-            {
-                None = 0,
-                Required = 1,
-                RequiredWithNetworkServiceAccountAvailable = 2
-            }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            public enum LogoHandling
-            {
-                Auto = 0,
-                Manual = 1
-            }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            public enum LogoType
-            {
-                LicensedByNintendo = 0,
-                [Obsolete("This attribute is no longer available as of NintendoSDK 4.3.", true)]
-                DistributedByNintendo = 1,
-                Nintendo = 2
-            }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            public enum ApplicationAttribute
-            {
-                None = 0,
-                Demo = 1
-            }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            public enum RatingCategories
-            {
-                CERO = 0,
-                GRACGCRB = 1,
-                GSRMR = 2,
-                ESRB = 3,
-                ClassInd = 4,
-                USK = 5,
-                PEGI = 6,
-                PEGIPortugal = 7,
-                PEGIBBFC = 8,
-                Russian = 9,
-                ACB = 10,
-                OFLC = 11,
-                IARCGeneric = 12,
             }
 
             private enum SupportedNpadStyleBits
@@ -141,6 +65,10 @@ namespace UnityEditor
             [NativeProperty("switchUseCPUProfiler", TargetType.Field)]
             extern public static bool useSwitchCPUProfiler { get; set; }
 
+            // Whether to enable file system trace on Nintendo Switch CPU Profiler.
+            [NativeProperty("switchEnableFileSystemTrace", TargetType.Field)]
+            extern public static bool enableFileSystemTrace { get; set; }
+
             // What LTO setting to use on Switch.
             [NativeProperty("switchLTOSetting", TargetType.Field)]
             extern public static int switchLTOSetting { get; set; }
@@ -148,10 +76,6 @@ namespace UnityEditor
             // Whether to enable use of the old Nintendo GOLD linker.
             [NativeProperty("switchUseGOLDLinker", TargetType.Field)]
             extern public static bool useSwitchGOLDLinker { get; set; }
-
-            // System Memory (used for virtual memory mapping).
-            [NativeProperty("switchSystemResourceMemory", TargetType.Field)]
-            extern public static int systemResourceMemory { get; set; }
 
             [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
             extern public static int queueCommandMemory
@@ -276,8 +200,8 @@ namespace UnityEditor
 
             [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
             extern public static int maximumSwitchNVNGraphicsFirmwareMemory { get; }
-			
-			[StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
             extern public static int switchMaxWorkerMultiple
             {
                 [NativeMethod("GetSwitchKMaxWorkerMultiple")]
@@ -341,275 +265,13 @@ namespace UnityEditor
             [NativeProperty("switchCompilerFlags", TargetType.Function)]
             extern private static string compilerFlagsInternal { get; set; }
 
-            //Application ID (shows up in Application meta file)
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchApplicationID", TargetType.Function)]
-            extern public static string applicationID { get; set; }
 
             //Additional NSO Dependencies
             [NativeProperty("switchNSODependencies", TargetType.Function)]
             extern public static string nsoDependencies { get; set; }
 
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            extern public static string[] titleNames
-            {
-                [NativeMethod("GetSwitchTitleNames")]
-                get;
-                [NativeMethod("SetSwitchTitleNames")]
-                set;
-            }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            extern public static string[] publisherNames
-            {
-                [NativeMethod("GetSwitchPublisherNames")]
-                get;
-                [NativeMethod("SetSwitchPublisherNames")]
-                set;
-            }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            extern public static Texture2D[] icons
-            {
-                [NativeMethod("GetSwitchIcons")]
-                get;
-                [NativeMethod("SetSwitchIcons")]
-                set;
-            }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            extern public static Texture2D[] smallIcons
-            {
-                [NativeMethod("GetSwitchSmallIcons")]
-                get;
-                [NativeMethod("SetSwitchSmallIcons")]
-                set;
-            }
-
-            public static string manualHTMLPath
-            {
-                get
-                {
-                    string path = manualHTMLPathInternal;
-
-                    if (string.IsNullOrEmpty(path))
-                        return "";
-
-                    string fullPath = path;
-
-                    if (!Path.IsPathRooted(fullPath))
-                        fullPath = Path.GetFullPath(fullPath);
-
-                    if (!Directory.Exists(fullPath))
-                        return "";
-
-                    return fullPath;
-                }
-                set
-                {
-                    manualHTMLPathInternal = string.IsNullOrEmpty(value) ? "" : value;
-                }
-            }
-
-            public static string accessibleURLPath
-            {
-                get
-                {
-                    string path = accessibleURLPathInternal;
-
-                    if (string.IsNullOrEmpty(path))
-                        return "";
-
-                    string fullPath = path;
-
-                    if (!Path.IsPathRooted(fullPath))
-                        fullPath = Path.GetFullPath(fullPath);
-
-                    return fullPath;
-                }
-                set
-                {
-                    accessibleURLPathInternal = string.IsNullOrEmpty(value) ? "" : value;
-                }
-            }
-
-            public static string legalInformationPath
-            {
-                get
-                {
-                    string path = legalInformationPathInternal;
-
-                    if (string.IsNullOrEmpty(path))
-                        return "";
-
-                    if (!Path.IsPathRooted(path))
-                        path = Path.GetFullPath(path);
-
-                    return path;
-                }
-                set
-                {
-                    legalInformationPathInternal = string.IsNullOrEmpty(value) ? "" : value;
-                }
-            }
-
-            [NativeProperty("switchManualHTML", TargetType.Function)]
-            extern static private string manualHTMLPathInternal { get; set; }
-
-            [NativeProperty("switchAccessibleURLs", TargetType.Function)]
-            extern static private string accessibleURLPathInternal { get; set; }
-
-            [NativeProperty("switchLegalInformation", TargetType.Function)]
-            extern static private string legalInformationPathInternal { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchMainThreadStackSize", TargetType.Field)]
-            extern public static int mainThreadStackSize { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchPresenceGroupId", TargetType.Function)]
-            extern public static string presenceGroupId { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchLogoHandling", TargetType.Field)]
-            extern public static LogoHandling logoHandling { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            extern public static string releaseVersion
-            {
-                [NativeMethod("GetSwitchReleaseVersion")]
-                get;
-                [NativeMethod("SetSwitchReleaseVersion")]
-                set;
-            }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchDisplayVersion", TargetType.Function)]
-            extern public static string displayVersion { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchStartupUserAccount", TargetType.Field)]
-            extern public static StartupUserAccount startupUserAccount { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchSupportedLanguagesMask", TargetType.Field)]
-            extern public static int supportedLanguages { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchLogoType", TargetType.Field)]
-            extern public static LogoType logoType { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchApplicationErrorCodeCategory", TargetType.Function)]
-            extern public static string applicationErrorCodeCategory { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchUserAccountSaveDataSize", TargetType.Field)]
-            extern public static int userAccountSaveDataSize { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchUserAccountSaveDataJournalSize", TargetType.Field)]
-            extern public static int userAccountSaveDataJournalSize { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchApplicationAttribute", TargetType.Field)]
-            extern public static ApplicationAttribute applicationAttribute { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            public static int cardSpecSize
-            {
-                get
-                {
-                    return cardSpecSizeInternal;
-                }
-                set
-                {
-                    cardSpecSizeInternal = (value > 0) ? value : -1;
-                }
-            }
-
-            [NativeProperty("switchCardSpecSize", TargetType.Field)]
-            extern private static int cardSpecSizeInternal { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            public static int cardSpecClock
-            {
-                get
-                {
-                    return cardSpecClockInternal;
-                }
-                set
-                {
-                    cardSpecClockInternal = (value > 0) ? value : -1;
-                }
-            }
-
-            [NativeProperty("switchCardSpecClock", TargetType.Field)]
-            extern private static int cardSpecClockInternal { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchRatingsMask", TargetType.Field)]
-            extern public static int ratingsMask { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            extern public static string[] localCommunicationIds
-            {
-                [NativeMethod("GetSwitchLocalCommunicationIds")]
-                get;
-                [NativeMethod("SetSwitchLocalCommunicationIds")]
-                set;
-            }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchParentalControl", TargetType.Field)]
-            extern public static bool isUnderParentalControl { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchAllowsScreenshot", TargetType.Field)]
-            extern public static bool isScreenshotEnabled { get; set; }
-
-            [Obsolete("isAllowsScreenshot was renamed to isScreenshotEnabled")]
-            [NativeProperty("switchAllowsScreenshot", TargetType.Field)]
-            extern public static bool isAllowsScreenshot { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchAllowsVideoCapturing", TargetType.Field)]
-            extern public static bool isVideoCapturingEnabled { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchAllowsRuntimeAddOnContentInstall", TargetType.Field)]
-            extern public static bool isRuntimeAddOnContentInstallEnabled { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchDataLossConfirmation", TargetType.Field)]
-            extern public static bool isDataLossConfirmationEnabled { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            [NativeProperty("switchUserAccountLockEnabled", TargetType.Field)]
-            extern public static bool isUserAccountLockEnabled { get; set; }
-
-            [Obsolete("isDataLossConfirmation was renamed to isDataLossConfirmationEnabled")]
-            [NativeProperty("switchDataLossConfirmation", TargetType.Field)]
-            extern public static bool isDataLossConfirmation { get; set; }
-
-
             [NativeProperty("switchSupportedNpadStyles", TargetType.Field)]
             extern public static SupportedNpadStyle supportedNpadStyles { get; set; }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            public static int GetRatingAge(RatingCategories category)
-            {
-                return ratingAgeArray[(int)category];
-            }
-
-            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
-            extern public static int[] ratingAgeArray
-            {
-                [NativeMethod("GetSwitchRatingAges")]
-                get;
-                [NativeMethod("SetSwitchRatingAges")]
-                set;
-            }
 
             [NativeProperty("switchNativeFsCacheSize", TargetType.Field)]
             extern public static int nativeFsCacheSize { get; set; }
@@ -662,10 +324,6 @@ namespace UnityEditor
             // Network Interface Manager Initialize Enabled
             [NativeProperty("switchNetworkInterfaceManagerInitializeEnabled", TargetType.Field)]
             extern public static bool networkInterfaceManagerInitializeEnabled { get; set; }
-
-            // Player Connection Enabled
-            [NativeProperty("switchPlayerConnectionEnabled", TargetType.Field)]
-            extern public static bool playerConnectionEnabled { get; set; }
 
             // HTCS for player connection
             [NativeProperty("switchDisableHTCSPlayerConnection", TargetType.Field)]

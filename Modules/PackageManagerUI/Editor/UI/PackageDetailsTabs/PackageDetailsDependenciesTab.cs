@@ -20,9 +20,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version != null && version.HasTag(PackageTag.UpmFormat) && !version.HasTag(PackageTag.Feature) && !version.HasTag(PackageTag.Placeholder);
         }
 
-        private readonly PackageDatabase m_PackageDatabase;
-        public PackageDetailsDependenciesTab(UnityConnectProxy unityConnect, ResourceLoader resourceLoader,
-            PackageDatabase packageDatabase) : base(unityConnect)
+        private readonly IPackageDatabase m_PackageDatabase;
+        public PackageDetailsDependenciesTab(IUnityConnectProxy unityConnect, IResourceLoader resourceLoader,
+            IPackageDatabase packageDatabase) : base(unityConnect)
         {
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Dependencies");

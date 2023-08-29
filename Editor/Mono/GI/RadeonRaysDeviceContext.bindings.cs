@@ -65,43 +65,31 @@ namespace UnityEngine.LightTransport
         public extern void DestroyBuffer(BufferID id);
 
         [NativeMethod(IsThreadSafe = true)]
-        public unsafe extern EventID ReadBufferASync(BufferID id, void* result, int length);
+        public unsafe extern EventID EnqueueBufferRead(BufferID id, void* result, int length);
 
-        public unsafe EventID EnqueueBufferRead(BufferID id, NativeArray<byte> result)
+        public unsafe EventID ReadBuffer(BufferID id, NativeArray<byte> result)
         {
             void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(result);
-            return ReadBufferASync(id, ptr, result.Length);
+            return EnqueueBufferRead(id, ptr, result.Length);
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        public extern unsafe void ReadBufferBlocking(BufferID id, void* result, int length);
+        public extern unsafe EventID EnqueueBufferWrite(BufferID id, void* result, int length);
 
-        public unsafe void ReadBuffer(BufferID id, NativeArray<byte> result)
-        {
-            void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(result);
-            ReadBufferBlocking(id, ptr, result.Length);
-        }
-
-        [NativeMethod(IsThreadSafe = true)]
-        public extern unsafe EventID WriteBufferASync(BufferID id, void* result, int length);
-
-        public unsafe EventID EnqueueBufferWrite(BufferID id, NativeArray<byte> data)
+        public unsafe EventID WriteBuffer(BufferID id, NativeArray<byte> data)
         {
             void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(data);
-            return WriteBufferASync(id, ptr, data.Length);
-        }
-
-        [NativeMethod(IsThreadSafe = true)]
-        public extern unsafe void WriteBufferBlocking(BufferID id, void* result, int length);
-
-        public unsafe void WriteBuffer(BufferID id, NativeArray<byte> data)
-        {
-            void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(data);
-            WriteBufferBlocking(id, ptr, data.Length);
+            return EnqueueBufferWrite(id, ptr, data.Length);
         }
 
         [NativeMethod(IsThreadSafe = true)]
         public extern bool IsAsyncOperationComplete(EventID id);
+
+        [NativeMethod(IsThreadSafe = true)]
+		public extern bool WaitForAsyncOperation(EventID id);
+
+		[NativeMethod(IsThreadSafe = true)]
+        public extern bool Flush();
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern bool InitializePostProcessingInternal(RadeonRaysContext context);
@@ -114,5 +102,11 @@ namespace UnityEngine.LightTransport
         
         [NativeMethod(IsThreadSafe = true)]
         internal static extern bool AddSphericalHarmonicsL2Internal(RadeonRaysContext context, BufferID a, BufferID b, BufferID sum, int probeCount);
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern bool ScaleSphericalHarmonicsL2Internal(RadeonRaysContext context, BufferID shIn, BufferID shOut, int probeCount, float scale);
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern bool WindowSphericalHarmonicsL2Internal(RadeonRaysContext context, BufferID shIn, BufferID shOut, int probeCount);
     }
 }

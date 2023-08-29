@@ -8,7 +8,21 @@ using UnityEditor.Connect;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class AssetStoreRestAPI
+    internal interface IAssetStoreRestAPI : IService
+    {
+        string assetStoreUrl { get; }
+
+        IList<string> GetCategories();
+        void ListLabels(Action<List<string>> successCallback, Action<UIError> errorCallback);
+        void GetProductDetail(long productId, Action<AssetStoreProductInfo> successCallback, Action<UIError> errorCallback);
+        void GetUpdateDetail(CheckUpdateInfoArgs args, Action<List<AssetStoreUpdateInfo>> successCallback = null, Action<UIError> errorCallback = null);
+        void CheckTermsAndConditions(Action<bool> successCallback, Action<UIError> errorCallback);
+        void GetPurchases(PurchasesQueryArgs query, Action<AssetStorePurchases> successCallback, Action<UIError> errorCallback);
+        void AbortGetPurchases(PurchasesQueryArgs query);
+        void GetDownloadDetail(long productId, Action<AssetStoreDownloadInfo> successCallback, Action<UIError> errorCallback);
+    }
+
+    internal class AssetStoreRestAPI : BaseService<IAssetStoreRestAPI>, IAssetStoreRestAPI
     {
         private const string k_PurchasesUri = "/-/api/purchases";
         private const string k_TaggingsUri = "/-/api/taggings";
@@ -66,7 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private string m_AssetStoreUrl;
-        public virtual string assetStoreUrl
+        public string assetStoreUrl
         {
             get
             {
@@ -76,69 +90,65 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        [NonSerialized]
-        private UnityConnectProxy m_UnityConnect;
-        [NonSerialized]
-        private AssetStoreOAuth m_AssetStoreOAuth;
-        [NonSerialized]
-        private JsonParser m_JsonParser;
-        [NonSerialized]
-        private HttpClientFactory m_HttpClientFactory;
-        public void ResolveDependencies(UnityConnectProxy unityConnect,
-            AssetStoreOAuth assetStoreOAuth,
-            JsonParser jsonParser,
-            HttpClientFactory httpClientFactory)
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IAssetStoreOAuth m_AssetStoreOAuth;
+        private readonly IJsonParser m_JsonParser;
+        private readonly IHttpClientFactory m_HttpClientFactory;
+        public AssetStoreRestAPI(IUnityConnectProxy unityConnect,
+            IAssetStoreOAuth assetStoreOAuth,
+            IJsonParser jsonParser,
+            IHttpClientFactory httpClientFactory)
         {
-            m_UnityConnect = unityConnect;
-            m_AssetStoreOAuth = assetStoreOAuth;
-            m_JsonParser = jsonParser;
-            m_HttpClientFactory = httpClientFactory;
+            m_UnityConnect = RegisterDependency(unityConnect);
+            m_AssetStoreOAuth = RegisterDependency(assetStoreOAuth);
+            m_JsonParser = RegisterDependency(jsonParser);
+            m_HttpClientFactory = RegisterDependency(httpClientFactory);
         }
 
-        public virtual IList<string> GetCategories()
+        public IList<string> GetCategories()
         {
             return k_Categories;
         }
 
-        public virtual void ListLabels(Action<List<string>> successCallback, Action<UIError> errorCallback)
+        public void ListLabels(Action<List<string>> successCallback, Action<UIError> errorCallback)
         {
             var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParseLabels, L10n.Tr("Error parsing labels."), successCallback, errorCallback);
             HandleHttpRequest(k_TaggingsUri, parseDictionary, errorCallback, tag: "GetTaggings", abortPreviousRequest: true);
         }
 
-        public virtual void GetProductDetail(long productId, Action<AssetStoreProductInfo> successCallback, Action<UIError> errorCallback)
+        public void GetProductDetail(long productId, Action<AssetStoreProductInfo> successCallback, Action<UIError> errorCallback)
         {
             AssetStoreProductInfo ParseProductInfo(Dictionary<string, object> result) => m_JsonParser.ParseProductInfo(assetStoreUrl, productId, result);
             var parseDictionary = CreateParseDictionaryCallback(ParseProductInfo, L10n.Tr("Error parsing product details."), successCallback, errorCallback);
             HandleHttpRequest($"{k_ProductInfoUri}/{productId}", parseDictionary, errorCallback, tag: $"GetProductDetail{productId}", abortPreviousRequest: true);
         }
 
-        public virtual void GetUpdateDetail(CheckUpdateInfoArgs args, Action<List<AssetStoreUpdateInfo>> successCallback = null, Action<UIError> errorCallback = null)
+        public void GetUpdateDetail(CheckUpdateInfoArgs args, Action<List<AssetStoreUpdateInfo>> successCallback = null, Action<UIError> errorCallback = null)
         {
             var queryString = args.ToString();
             var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParseUpdateInfos, L10n.Tr("Error parsing update details."), successCallback, errorCallback);
             HandleHttpRequest($"{k_UpdateInfoUri}{queryString}", parseDictionary, errorCallback, tag: $"GetUpdateDetail{queryString}");
         }
 
-        public virtual void CheckTermsAndConditions(Action<bool> successCallback, Action<UIError> errorCallback)
+        public void CheckTermsAndConditions(Action<bool> successCallback, Action<UIError> errorCallback)
         {
             var parseDictionary = (Dictionary<string, object> result) => successCallback?.Invoke(result.Get<bool>("result"));
             HandleHttpRequest(k_TermsCheckUri, parseDictionary, errorCallback, tag: "CheckTermsAndConditions", abortPreviousRequest: true);
         }
 
-        public virtual void GetPurchases(PurchasesQueryArgs query, Action<AssetStorePurchases> successCallback, Action<UIError> errorCallback)
+        public void GetPurchases(PurchasesQueryArgs query, Action<AssetStorePurchases> successCallback, Action<UIError> errorCallback)
         {
             var queryString = query.ToString();
             var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParsePurchases, L10n.Tr("Error parsing purchase list."), successCallback, errorCallback);
             HandleHttpRequest($"{k_PurchasesUri}{queryString ?? string.Empty}", parseDictionary, errorCallback, tag: $"GetPurchases{queryString}");
         }
 
-        public virtual void AbortGetPurchases(PurchasesQueryArgs query)
+        public void AbortGetPurchases(PurchasesQueryArgs query)
         {
             m_HttpClientFactory.AbortByTag($"GetPurchases{query}");
         }
 
-        public virtual void GetDownloadDetail(long productId, Action<AssetStoreDownloadInfo> successCallback, Action<UIError> errorCallback)
+        public void GetDownloadDetail(long productId, Action<AssetStoreDownloadInfo> successCallback, Action<UIError> errorCallback)
         {
             var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParseDownloadInfo, L10n.Tr("Error parsing download details."), successCallback, errorCallback);
             HandleHttpRequest($"{k_DownloadInfoUri}/{productId}", parseDictionary, errorCallback, tag: $"GetDownloadDetail{productId}", abortPreviousRequest: true);

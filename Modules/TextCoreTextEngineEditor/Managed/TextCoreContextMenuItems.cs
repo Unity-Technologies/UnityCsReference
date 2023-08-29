@@ -307,7 +307,7 @@ namespace UnityEditor.TextCore.Text
         ///
         /// </summary>
         /// <param name="command"></param>
-        [MenuItem("CONTEXT/Font Asset/Update Atlas Texture...", priority = 2000)]
+        [MenuItem("CONTEXT/FontAsset/Update Atlas Texture...", priority = 2000)]
         static void RegenerateFontAsset(MenuCommand command)
         {
             FontAsset fontAsset = command.context as FontAsset;
@@ -322,13 +322,13 @@ namespace UnityEditor.TextCore.Text
         /// Clear Dynamic Font Asset data such as glyph, character and font features.
         /// </summary>
         /// <param name="command"></param>
-        [MenuItem("CONTEXT/Font Asset/Reset", validate = true)]
+        [MenuItem("CONTEXT/FontAsset/Reset", validate = true)]
         static bool ClearFontAssetDataValidate(MenuCommand command)
         {
             return AssetDatabase.IsOpenForEdit(command.context);
         }
 
-        [MenuItem("CONTEXT/Font Asset/Reset", priority = 2100)]
+        [MenuItem("CONTEXT/FontAsset/Reset", priority = 2100)]
         static void ClearFontAssetData(MenuCommand command)
         {
             FontAsset fontAsset = command.context as FontAsset;
@@ -339,13 +339,20 @@ namespace UnityEditor.TextCore.Text
             if (Selection.activeObject != fontAsset)
                 Selection.activeObject = fontAsset;
 
+            ClearFontAssetData(fontAsset);
+        }
+
+        internal static void ClearFontAssetData(FontAsset fontAsset)
+        {
+            if (fontAsset == null)
+                return;
+
             fontAsset.ClearFontAssetData(true);
             TextResourceManager.RebuildFontAssetCache();
 
             TextEventManager.ON_FONT_PROPERTY_CHANGED(true, fontAsset);
         }
 
-        // Context Menus for TMPro Font Assets
         //This function is used for debugging and fixing potentially broken font atlas links.
         [MenuItem("CONTEXT/Font Asset/Extract Atlas", priority = 2101)]
         static void ExtractAtlas(MenuCommand command)
@@ -375,17 +382,18 @@ namespace UnityEditor.TextCore.Text
             AssetDatabase.Refresh();
             DestroyImmediate(tex);
         }
+
         /// <summary>
         /// Clear Character and Glyph data (only).
         /// </summary>
         /// <param name="command"></param>
-        [MenuItem("CONTEXT/Font Asset/Clear Dynamic Data", validate = true)]
+        [MenuItem("CONTEXT/FontAsset/Clear Dynamic Data", validate = true, priority = 2102)]
         static bool ClearFontCharacterDataValidate(MenuCommand command)
         {
             return AssetDatabase.IsOpenForEdit(command.context);
         }
 
-        [MenuItem("CONTEXT/Font Asset/Clear Dynamic Data", priority = 2102)]
+        [MenuItem("CONTEXT/FontAsset/Clear Dynamic Data", priority = 2102)]
         static void ClearFontCharacterData(MenuCommand command)
         {
             FontAsset fontAsset = command.context as FontAsset;
@@ -396,6 +404,14 @@ namespace UnityEditor.TextCore.Text
             if (Selection.activeObject != fontAsset)
                 Selection.activeObject = fontAsset;
 
+            ClearFontCharacterData(fontAsset);
+        }
+
+        internal static void ClearFontCharacterData(FontAsset fontAsset)
+        {
+            if (fontAsset == null)
+                return;
+
             fontAsset.ClearCharacterAndGlyphTablesInternal();
 
             TextEventManager.ON_FONT_PROPERTY_CHANGED(true, fontAsset);
@@ -405,13 +421,13 @@ namespace UnityEditor.TextCore.Text
         /// Import all font features
         /// </summary>
         /// <param name="command"></param>
-        [MenuItem("CONTEXT/Font Asset/Import Font Features", validate = true)]
+        [MenuItem("CONTEXT/FontAsset/Import Font Features", validate = true, priority = 2110)]
         static bool ReimportFontFeaturesValidate(MenuCommand command)
         {
             return AssetDatabase.IsOpenForEdit(command.context);
         }
 
-        [MenuItem("CONTEXT/Font Asset/Import Font Features", priority = 2110)]
+        [MenuItem("CONTEXT/FontAsset/Import Font Features", priority = 2110)]
         static void ReimportFontFeatures(MenuCommand command)
         {
             FontAsset fontAsset = command.context as FontAsset;

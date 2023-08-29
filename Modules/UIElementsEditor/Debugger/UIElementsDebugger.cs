@@ -304,6 +304,7 @@ namespace UnityEditor.UIElements.Debugger
             m_Context = context;
             m_Context.onStateChange += OnContextChange;
 
+            m_Root.disablePlayModeTint = true;
             var sheet = EditorGUIUtility.Load(k_DefaultStyleSheetPath) as StyleSheet;
             m_Root.styleSheets.Add(sheet);
 

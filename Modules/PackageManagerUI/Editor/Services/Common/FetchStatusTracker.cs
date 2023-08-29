@@ -9,6 +9,19 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal interface IFetchStatusTracker : IService
+    {
+        event Action<FetchStatus> onFetchStatusChanged;
+
+        IEnumerable<FetchStatus> fetchStatuses { get; }
+
+        FetchStatus GetOrCreateFetchStatus(long productId);
+        void SetFetchInProgress(long productId, FetchType fetchType);
+        void SetFetchSuccess(long productId, FetchType fetchType);
+        void SetFetchError(long productId, FetchType fetchType, UIError error);
+        void ClearCache();
+    }
+
     [Flags]
     internal enum FetchType
     {
@@ -46,12 +59,12 @@ namespace UnityEditor.PackageManager.UI.Internal
     }
 
     [Serializable]
-    internal class FetchStatusTracker : ISerializationCallbackReceiver
+    internal class FetchStatusTracker : BaseService<IFetchStatusTracker>, IFetchStatusTracker, ISerializationCallbackReceiver
     {
         private Dictionary<long, FetchStatus> m_FetchStatuses = new Dictionary<long, FetchStatus>();
         public IEnumerable<FetchStatus> fetchStatuses => m_FetchStatuses.Values;
 
-        public virtual event Action<FetchStatus> onFetchStatusChanged;
+        public event Action<FetchStatus> onFetchStatusChanged;
 
         [SerializeField]
         private FetchStatus[] m_SerializedFetchStatuses = new FetchStatus[0];
@@ -67,14 +80,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             return status;
         }
 
-        public virtual void SetFetchInProgress(long productId, FetchType fetchType)
+        public void SetFetchInProgress(long productId, FetchType fetchType)
         {
             var status = GetOrCreateFetchStatus(productId);
             status.fetchingInProgress |= fetchType;
             onFetchStatusChanged?.Invoke(status);
         }
 
-        public virtual void SetFetchSuccess(long productId, FetchType fetchType)
+        public void SetFetchSuccess(long productId, FetchType fetchType)
         {
             var status = GetOrCreateFetchStatus(productId);
             status.fetchingInProgress &= ~fetchType;
@@ -83,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             onFetchStatusChanged?.Invoke(status);
         }
 
-        public virtual void SetFetchError(long productId, FetchType fetchType, UIError error)
+        public void SetFetchError(long productId, FetchType fetchType, UIError error)
         {
             var status = GetOrCreateFetchStatus(productId);
             status.fetchingInProgress &= ~fetchType;
@@ -92,7 +105,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             onFetchStatusChanged?.Invoke(status);
         }
 
-        public virtual void ClearCache()
+        public void ClearCache()
         {
             m_FetchStatuses.Clear();
         }

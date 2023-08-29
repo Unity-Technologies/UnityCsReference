@@ -219,6 +219,12 @@ namespace UnityEngine
             get { return (_flags & RenderTextureCreationFlags.DynamicallyScalable) != 0; }
             set { SetOrClearRenderTextureCreationFlag(value, RenderTextureCreationFlags.DynamicallyScalable); }
         }
+
+        public bool useDynamicScaleExplicit
+        {
+            get { return (_flags & RenderTextureCreationFlags.DynamicallyScalableExplicit) != 0; }
+            set { SetOrClearRenderTextureCreationFlag(value, RenderTextureCreationFlags.DynamicallyScalableExplicit); }
+        }
     }
 
     public partial class RenderTexture : Texture

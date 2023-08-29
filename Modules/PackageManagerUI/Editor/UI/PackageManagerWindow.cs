@@ -8,8 +8,8 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditor.UIElements;
-
 using UnityEditor.PackageManager.UI.Internal;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -63,11 +63,9 @@ namespace UnityEditor.PackageManager.UI
         internal static PackageManagerWindow instance { get; private set; }
 
         private PackageManagerWindowRoot m_Root;
+        private ScrollView m_ScrollView;
 
         internal const string k_UpmUrl = "com.unity3d.kharma:upmpackage/";
-
-        // This event is currently only used by integration tests to know when the package manager window is ready
-        public static event Action onPackageManagerReady = delegate { };
 
         void OnEnable()
         {
@@ -78,6 +76,7 @@ namespace UnityEditor.PackageManager.UI
 
             titleContent = GetLocalizedTitleContent();
 
+            minSize = new Vector2(1050, 250);
             BuildGUI();
 
             Events.registeredPackages += OnRegisteredPackages;
@@ -86,24 +85,39 @@ namespace UnityEditor.PackageManager.UI
         private void BuildGUI()
         {
             var container = ServicesContainer.instance;
-            var resourceLoader = container.Resolve<ResourceLoader>();
-            var extensionManager = container.Resolve<ExtensionManager>();
-            var selection = container.Resolve<SelectionProxy>();
-            var packageManagerPrefs = container.Resolve<PackageManagerPrefs>();
-            var packageDatabase = container.Resolve<PackageDatabase>();
-            var pageManager = container.Resolve<PageManager>();
-            var settingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
-            var unityConnectProxy = container.Resolve<UnityConnectProxy>();
-            var applicationProxy = container.Resolve<ApplicationProxy>();
-            var upmClient = container.Resolve<UpmClient>();
-            var assetStoreCachePathProxy = container.Resolve<AssetStoreCachePathProxy>();
-            var pageRefreshHandler = container.Resolve<PageRefreshHandler>();
+            // The services container only enables a service (and its dependencies) when it is resolved so that we can keep amount of services
+            // running in the background to as low as possible if the user never opens the Package Manager Window.
+            // However, this also means when the Package Manager Window is opened, the not all services are enabled and we need to manually do that here.
+            container.EnableAllServices();
+            var resourceLoader = container.Resolve<IResourceLoader>();
+            var extensionManager = container.Resolve<IExtensionManager>();
+            var selection = container.Resolve<ISelectionProxy>();
+            var packageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
+            var packageDatabase = container.Resolve<IPackageDatabase>();
+            var pageManager = container.Resolve<IPageManager>();
+            var settingsProxy = container.Resolve<IProjectSettingsProxy>();
+            var unityConnectProxy = container.Resolve<IUnityConnectProxy>();
+            var applicationProxy = container.Resolve<IApplicationProxy>();
+            var upmClient = container.Resolve<IUpmClient>();
+            var assetStoreCachePathProxy = container.Resolve<IAssetStoreCachePathProxy>();
+            var pageRefreshHandler = container.Resolve<IPageRefreshHandler>();
 
+            // Adding the ScrollView object here because it really need to be the first child under rootVisualElement for it to work properly.
+            // Since the StyleSheet is added to PackageManagerRoot, the css is exceptionally added directly to the object  
+            m_ScrollView = new ScrollView
+            {
+                mode = ScrollViewMode.Horizontal,
+                style =
+                {
+                    flexGrow = 1
+                }
+            };
             m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler);
             try
             {
                 m_Root.OnEnable();
-                rootVisualElement.Add(m_Root);
+                rootVisualElement.Add(m_ScrollView);
+                m_ScrollView.Add(m_Root);
             }
             catch (ResourceLoaderException)
             {
@@ -151,9 +165,8 @@ namespace UnityEditor.PackageManager.UI
         private void OnFirstRefreshOperationFinish()
         {
             var container = ServicesContainer.instance;
-            var pageRefreshHandler = container.Resolve<PageRefreshHandler>();
+            var pageRefreshHandler = container.Resolve<IPageRefreshHandler>();
             pageRefreshHandler.onRefreshOperationFinish -= OnFirstRefreshOperationFinish;
-            onPackageManagerReady?.Invoke();
         }
 
         void OnDisable()
@@ -220,7 +233,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
             }
             instance.Focus();
-            instance.m_Root.OpenAddPackageByNameDropdown(url);
+            instance.m_Root.OpenAddPackageByNameDropdown(url, instance);
         }
 
         [UsedByNativeCode]
@@ -234,7 +247,7 @@ namespace UnityEditor.PackageManager.UI
                 string packageId = null;
                 if (!string.IsNullOrEmpty(packageToSelect))
                 {
-                    var packageDatabase = ServicesContainer.instance.Resolve<PackageDatabase>();
+                    var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
                     packageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out var package, out var version, true);
 
                     packageId = version?.uniqueId ?? package?.versions.primary.uniqueId ?? string.Format("{0}@primary", packageToSelect);
@@ -255,17 +268,17 @@ namespace UnityEditor.PackageManager.UI
         [UsedByNativeCode("PackageManagerUI_OnPackageManagerResolve")]
         internal static void OnPackageManagerResolve()
         {
-            var packageDatabase = ServicesContainer.instance.Resolve<Internal.PackageDatabase>();
+            var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
             packageDatabase?.ClearSamplesCache();
 
-            var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
+            var applicationProxy = ServicesContainer.instance.Resolve<IApplicationProxy>();
             if (applicationProxy.isBatchMode)
                 return;
 
-            var upmRegistryClient = ServicesContainer.instance.Resolve<UpmRegistryClient>();
+            var upmRegistryClient = ServicesContainer.instance.Resolve<IUpmRegistryClient>();
             upmRegistryClient.CheckRegistriesChanged();
 
-            var upmClient = ServicesContainer.instance.Resolve<UpmClient>();
+            var upmClient = ServicesContainer.instance.Resolve<IUpmClient>();
             upmClient.List(true);
         }
 
@@ -280,10 +293,10 @@ namespace UnityEditor.PackageManager.UI
         internal static void OnEditorFinishLoadingProject()
         {
             var servicesContainer = ServicesContainer.instance;
-            var applicationProxy = servicesContainer.Resolve<ApplicationProxy>();
+            var applicationProxy = servicesContainer.Resolve<IApplicationProxy>();
             if (!applicationProxy.isBatchMode && applicationProxy.isUpmRunning)
             {
-                var upmClient = servicesContainer.Resolve<UpmClient>();
+                var upmClient = servicesContainer.Resolve<IUpmClient>();
                 EntitlementsErrorAndDeprecationChecker.ManagePackageManagerEntitlementErrorAndDeprecation(upmClient);
                 upmClient.List();
             }
@@ -291,18 +304,18 @@ namespace UnityEditor.PackageManager.UI
 
         private static void OnRegisteredPackages(PackageRegistrationEventArgs args)
         {
-            var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
+            var applicationProxy = ServicesContainer.instance.Resolve<IApplicationProxy>();
             if (applicationProxy.isBatchMode)
                 return;
 
-            var pageRefreshHandler = ServicesContainer.instance.Resolve<PageRefreshHandler>();
+            var pageRefreshHandler = ServicesContainer.instance.Resolve<IPageRefreshHandler>();
             pageRefreshHandler.Refresh(RefreshOptions.UpmListOffline);
         }
 
         internal static void SelectPackageAndPageStatic(string packageToSelect = null, string pageId = null, bool refresh = false, string searchText = "")
         {
             instance = GetWindow<PackageManagerWindow>();
-            instance.minSize = new Vector2(800, 250);
+            instance.minSize = new Vector2(1050, 250);
             instance.m_Root.SelectPackageAndPage(packageToSelect, pageId, refresh, searchText);
             instance.Show();
         }

@@ -38,15 +38,16 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
     // This node is not created through the SelectionWindowData.CreateNode function, because we don't want it to be
     // part of the final visible tree. We set the index to `-1` such that if it accidentally end up in the final tree,
     // we will get an InvalidIndexException. This hidden node is only used when we construct trees.
-    public Node hiddenRootNode = new() { index = -1, parentIndex = -1};
+    public Node hiddenRootNode = new() { index = -1, parentIndex = -1, isFolder = true};
 
     private HashSet<int> m_SelectedIndexes = new();
     [SerializeField]
     private int[] m_SerializedSelectedIndexes = Array.Empty<int>();
 
-    public IEnumerable<Asset> selectedAssets => m_SelectedIndexes
+    public IReadOnlyList<Asset> selectedAssets => m_SelectedIndexes
         .Where(index => !nodes[index].isFolder)
-        .Select(index => nodes[index].asset);
+        .Select(index => nodes[index].asset).ToArray();
+    public IReadOnlyList<Asset> assets => nodes.Where(n => !n.isFolder).Select(n => n.asset).ToArray();
 
     // This constructor only constructs an instance of SelectionWindowData for the remove case.
     public SelectionWindowData(IEnumerable<Asset> assetsList, string packageName, string description)

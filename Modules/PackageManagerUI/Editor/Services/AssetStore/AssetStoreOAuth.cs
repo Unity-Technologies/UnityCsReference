@@ -10,35 +10,40 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class AssetStoreOAuth
+    internal class AccessToken
     {
-        [Serializable]
-        public class AccessToken
+        public const long k_ExpirationBufferTime = 15L;
+
+        public string accessToken;
+
+        public string refreshToken;
+
+        [SerializeField]
+        private long m_ExpirationTimeTicks;
+
+        public AccessToken(DateTime creationTime, Dictionary<string, object> rawData)
         {
-            public const long k_ExpirationBufferTime = 15L;
+            accessToken = rawData.GetString("access_token");
+            refreshToken = rawData.GetString("refresh_token");
 
-            public string accessToken;
-
-            public string refreshToken;
-
-            [SerializeField]
-            private long m_ExpirationTimeTicks;
-
-            public AccessToken(DateTime creationTime, Dictionary<string, object> rawData)
-            {
-                accessToken = rawData.GetString("access_token");
-                refreshToken = rawData.GetString("refresh_token");
-
-                var expiresInSeconds = rawData.GetStringAsLong("expires_in");
-                m_ExpirationTimeTicks = creationTime.AddSeconds(expiresInSeconds - k_ExpirationBufferTime).Ticks;
-            }
-
-            public bool IsValid(DateTime currentTime)
-            {
-                return m_ExpirationTimeTicks > 0 && !string.IsNullOrEmpty(accessToken) && currentTime.Ticks < m_ExpirationTimeTicks;
-            }
+            var expiresInSeconds = rawData.GetStringAsLong("expires_in");
+            m_ExpirationTimeTicks = creationTime.AddSeconds(expiresInSeconds - k_ExpirationBufferTime).Ticks;
         }
 
+        public bool IsValid(DateTime currentTime)
+        {
+            return m_ExpirationTimeTicks > 0 && !string.IsNullOrEmpty(accessToken) && currentTime.Ticks < m_ExpirationTimeTicks;
+        }
+    }
+
+    internal interface IAssetStoreOAuth : IService
+    {
+        void FetchAccessToken(Action<AccessToken> doneCallback, Action<UIError> errorCallback);
+    }
+
+    [Serializable]
+    internal class AssetStoreOAuth : BaseService<IAssetStoreOAuth>, IAssetStoreOAuth
+    {
         private const string k_OAuthUri = "/v1/oauth2/token";
         private const string k_ServiceId = "packman";
 
@@ -58,31 +63,27 @@ namespace UnityEditor.PackageManager.UI.Internal
         private event Action<AccessToken> onAccessTokenFetched;
         private event Action<UIError> onError;
 
-        [NonSerialized]
-        private DateTimeProxy m_DateTime;
-        [NonSerialized]
-        private UnityConnectProxy m_UnityConnect;
-        [NonSerialized]
-        private UnityOAuthProxy m_UnityOAuth;
-        [NonSerialized]
-        private HttpClientFactory m_HttpClientFactory;
-        public void ResolveDependencies(DateTimeProxy dateTime,
-            UnityConnectProxy unityConnect,
-            UnityOAuthProxy unityOAuth,
-            HttpClientFactory httpClientFactory)
+        private readonly IDateTimeProxy m_DateTime;
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IUnityOAuthProxy m_UnityOAuth;
+        private readonly IHttpClientFactory m_HttpClientFactory;
+        public AssetStoreOAuth(IDateTimeProxy dateTime,
+            IUnityConnectProxy unityConnect,
+            IUnityOAuthProxy unityOAuth,
+            IHttpClientFactory httpClientFactory)
         {
-            m_DateTime = dateTime;
-            m_UnityConnect = unityConnect;
-            m_UnityOAuth = unityOAuth;
-            m_HttpClientFactory = httpClientFactory;
+            m_DateTime = RegisterDependency(dateTime);
+            m_UnityConnect = RegisterDependency(unityConnect);
+            m_UnityOAuth = RegisterDependency(unityOAuth);
+            m_HttpClientFactory = RegisterDependency(httpClientFactory);
         }
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
         }
@@ -92,6 +93,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             ClearCache();
         }
 
+        // The virtual keyword is needed for unit tests
         public virtual void ClearCache()
         {
             m_AuthCodeRequested = false;
@@ -104,7 +106,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             ClearAccessTokenCallbacks();
         }
 
-        public virtual void FetchAccessToken(Action<AccessToken> doneCallback, Action<UIError> errorCallback)
+        public void FetchAccessToken(Action<AccessToken> doneCallback, Action<UIError> errorCallback)
         {
             if (m_AccessToken?.IsValid(m_DateTime.utcNow) ?? false)
             {

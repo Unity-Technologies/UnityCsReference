@@ -45,7 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override IEnumerable<PageSortOption> supportedSortOptions => m_Args.supportedSortOptions ?? Enumerable.Empty<PageSortOption>();
         public override PageCapability capability => m_Args.capability;
 
-        public ExtensionPage(PackageDatabase packageDatabase, ExtensionPageArgs args)
+        public ExtensionPage(IPackageDatabase packageDatabase, ExtensionPageArgs args)
             : base(packageDatabase)
         {
             UpdateArgs(args);

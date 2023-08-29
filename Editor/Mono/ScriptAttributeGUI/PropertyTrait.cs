@@ -28,10 +28,5 @@ namespace UnityEditor
         {
             return EditorGUI.GetPropertyHeight(property, true);
         }
-
-        public override bool CanCacheInspectorGUI(SerializedProperty property)
-        {
-            return EditorGUI.CanCacheInspectorGUI(property);
-        }
     }
 }

@@ -580,7 +580,7 @@ namespace UnityEditor
                                 GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
                                 bool isPersistent = EditorUtility.IsPersistent(instanceOrAssetObject);
 
-                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || (!isPersistent && !PrefabUtility.HasApplicableObjectOverridesForTarget(instanceOrAssetObject, rootObject, false)))
+                                if (isPersistent || !PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || !PrefabUtility.HasApplicableObjectOverridesForTarget(instanceOrAssetObject, rootObject, false))
                                     pm.AddDisabledItem(menuItemContent);
                                 else
                                     pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabObjectOverride, info);

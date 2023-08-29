@@ -31,7 +31,7 @@ namespace UnityEngine.Analytics
         public SubsystemsAnalyticStart() : base("SubsystemStart") { }
 
         [UsedByNativeCode]
-        public static SubsystemsAnalyticStart CreateSubsystemsAnalyticStart() { return new SubsystemsAnalyticStart(); }
+        internal static SubsystemsAnalyticStart CreateSubsystemsAnalyticStart() { return new SubsystemsAnalyticStart(); }
 
     }
 
@@ -44,7 +44,7 @@ namespace UnityEngine.Analytics
         public SubsystemsAnalyticStop() : base("SubsystemStop") { }
 
         [UsedByNativeCode]
-        public static SubsystemsAnalyticStop CreateSubsystemsAnalyticStop() { return new SubsystemsAnalyticStop(); }
+        internal static SubsystemsAnalyticStop CreateSubsystemsAnalyticStop() { return new SubsystemsAnalyticStop(); }
 
     }
 
@@ -57,7 +57,7 @@ namespace UnityEngine.Analytics
         public SubsystemsAnalyticInfo() : base("SubsystemInfo") { }
 
         [UsedByNativeCode]
-        public static SubsystemsAnalyticInfo CreateSubsystemsAnalyticInfo() { return new SubsystemsAnalyticInfo(); }
+        internal static SubsystemsAnalyticInfo CreateSubsystemsAnalyticInfo() { return new SubsystemsAnalyticInfo(); }
 
         string id;
         string plugin_name;

@@ -80,13 +80,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract IVisualStateList visualStates { get; }
 
         [NonSerialized]
-        protected PackageDatabase m_PackageDatabase;
-        public void ResolveDependencies(PackageDatabase packageDatabase)
+        protected IPackageDatabase m_PackageDatabase;
+        public void ResolveDependencies(IPackageDatabase packageDatabase)
         {
             m_PackageDatabase = packageDatabase;
         }
 
-        protected BasePage(PackageDatabase packageDatabase)
+        protected BasePage(IPackageDatabase packageDatabase)
         {
             ResolveDependencies(packageDatabase);
         }
@@ -320,7 +320,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var invalidSelectionsToRemove = new List<PackageAndVersionIdPair>();
             foreach (var item in selection)
             {
-                m_PackageDatabase.GetPackageAndVersion(item, out var package, out var version);
+                m_PackageDatabase.GetPackageAndVersion(item, out var package, out var _);
                 var visualState = visualStates.Get(item.packageUniqueId);
                 if (package == null || visualState?.visible != true)
                     invalidSelectionsToRemove.Add(item);

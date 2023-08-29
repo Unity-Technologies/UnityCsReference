@@ -18,8 +18,8 @@ namespace UnityEditor.Analytics
     {
         public StallSummaryAnalytic() : base("editorStallSummary", 1) { }
 
-       [UsedByNativeCode]
-        public static StallSummaryAnalytic CreateStallSummaryAnalytic() { return new StallSummaryAnalytic(); }
+        [UsedByNativeCode]
+        internal static StallSummaryAnalytic CreateStallSummaryAnalytic() { return new StallSummaryAnalytic(); }
 
         public double Duration;
     }
@@ -33,7 +33,7 @@ namespace UnityEditor.Analytics
         public StallMarkerAnalytic() : base("editorStallMarker", 1) { }
 
         [UsedByNativeCode]
-        public static StallMarkerAnalytic CreateStallMarkerAnalytic() { return new StallMarkerAnalytic(); }
+        internal static StallMarkerAnalytic CreateStallMarkerAnalytic() { return new StallMarkerAnalytic(); }
 
         public string Name;
         public bool HasProgressMarkup;

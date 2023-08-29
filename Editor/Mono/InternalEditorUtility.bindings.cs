@@ -217,9 +217,6 @@ namespace UnityEditorInternal
         [FreeFunction]
         extern internal static void RegisterPrecompiledAssembly(string dllName, string dllLocation);
 
-        [FreeFunction("InternalEditorUtilityBindings::SetPlatformPath")]
-        extern internal static void SetPlatformPath(string path);
-
         // This lets you add a MonoScript to a game object directly without any type checks or requiring the .NET representation to be loaded already.
         [FreeFunction("InternalEditorUtilityBindings::AddScriptComponentUncheckedUndoable")]
         extern internal static int AddScriptComponentUncheckedUndoable([NotNull] GameObject gameObject, [NotNull] MonoScript script);
@@ -539,6 +536,9 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::ReadScreenPixelUnderCursor")]
         extern public static Color[] ReadScreenPixelUnderCursor(Vector2 cursorPosHint, int sizex, int sizey);
 
+        [FreeFunction("InternalEditorUtilityBindings::IsAllowedToReadPixelOutsideUnity")]
+        extern internal static bool IsAllowedToReadPixelOutsideUnity(out string errorMessage);
+
         [StaticAccessor("GetGpuDeviceManager()", StaticAccessorType.Dot)]
         [NativeMethod("SetDevice")]
         extern public static void SetGpuDeviceAndRecreateGraphics(int index, string name);
@@ -847,9 +847,6 @@ namespace UnityEditorInternal
             return false;
         }
 
-        [FreeFunction("ScriptingManager::GetClasslibsProfile")]
-        extern internal static string GetEditorProfile();
-
         [FreeFunction("UnityExtensions::IsValidExtensionPath")]
         extern internal static bool IsValidUnityExtensionPath(string path);
 
@@ -926,7 +923,7 @@ namespace UnityEditorInternal
         extern internal static bool SaveCursorToInMemoryResource(Texture2D image, Vector2 hotSpot, ushort cursorDataResourceId, IntPtr cursorDirectoryBuffer, uint cursorDirectoryBufferSize, IntPtr cursorDataBuffer, uint cursorDataBufferSize);
 
         [FreeFunction("GetScriptCompilationDefines")]
-        extern internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTargetGroup targetGroup, BuildTarget target, int subtarget, ApiCompatibilityLevel apiCompatibilityLevel,  string[] extraDefines = null);
+        extern internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTarget target, int subtarget, ApiCompatibilityLevel apiCompatibilityLevel, string[] extraDefines = null);
 
         //Launches an application that is kept alive, even during a domain reload
         [FreeFunction("LaunchApplication")]

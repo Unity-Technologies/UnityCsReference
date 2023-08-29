@@ -19,7 +19,7 @@ namespace UnityEditor.Analytics
         public NavmeshBakingAnalytic() : base("navigation_navmesh_baking", 1) { }
 
         [UsedByNativeCode]
-        public static NavmeshBakingAnalytic CreateNavmeshBakingAnalytic() { return new NavmeshBakingAnalytic(); }
+        internal static NavmeshBakingAnalytic CreateNavmeshBakingAnalytic() { return new NavmeshBakingAnalytic(); }
 
         bool new_nav_api;
         bool bake_at_runtime;
@@ -36,7 +36,7 @@ namespace UnityEditor.Analytics
         public ProjectSettingsInformationAnalytic() : base("navigation_project_settings_info", 1) { }
 
         [UsedByNativeCode]
-        public static ProjectSettingsInformationAnalytic CreateProjectSettingsInformationAnalytic() { return new ProjectSettingsInformationAnalytic(); }
+        internal static ProjectSettingsInformationAnalytic CreateProjectSettingsInformationAnalytic() { return new ProjectSettingsInformationAnalytic(); }
 
         int agent_types_count;
         int areas_count;
@@ -51,7 +51,7 @@ namespace UnityEditor.Analytics
         public SendGameBuildAnalytic() : base("navigation_gamebuild_info", 1, UnityEngine.Analytics.SendEventOptions.kAppendBuildGuid) { }
 
         [UsedByNativeCode]
-        public static SendGameBuildAnalytic CreateSendGameBuildAnalytic() { return new SendGameBuildAnalytic(); }
+        internal static SendGameBuildAnalytic CreateSendGameBuildAnalytic() { return new SendGameBuildAnalytic(); }
 
         int navmesh_count;
     }

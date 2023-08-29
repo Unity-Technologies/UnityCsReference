@@ -14,11 +14,10 @@ namespace UnityEditor
         {
             public static GUIContent vSyncToggleContent = EditorGUIUtility.TrTextContent("VSync (Game view only)", "Enable VSync only for the game view while in playmode.");
         }
-        const float kTopMargin = 7f;
-        const float kMargin = 9f;
+        readonly Vector3 kMargins = new (9f, 7f);
         IGameViewSizeMenuUser m_GameView;
 
-        float frameHeight { get { return kTopMargin * 2 + EditorGUI.kSingleLineHeight * (IsVSyncToggleVisible() ? 2 : 1);}}
+        float frameHeight { get { return kMargins.y * 2 + EditorGUI.kSingleLineHeight * (IsVSyncToggleVisible() ? 2 : 1);}}
         float contentOffset { get { return frameHeight + EditorGUI.kControlVerticalSpacing; } }
 
         public GameViewSizeMenu(IFlexibleMenuItemProvider itemProvider, int selectionIndex, FlexibleMenuModifyItemUI modifyItemUi, IGameViewSizeMenuUser gameView)
@@ -31,8 +30,8 @@ namespace UnityEditor
         {
             var lowAspectRatiosContentSize = EditorStyles.toggle.CalcSize(GameView.Styles.lowResAspectRatiosContextMenuContent);
             var size = CalcSize();
-            size.x = Mathf.Max(size.x, lowAspectRatiosContentSize.x + kMargin * 2);
-            size.y += frameHeight + EditorGUI.kControlVerticalSpacing;
+            size.x = Mathf.Max(size.x, lowAspectRatiosContentSize.x + kMargins.x * 2);
+            size.y += frameHeight + EditorGUI.kControlVerticalSpacing + kMargins.y;
             return size;
         }
 
@@ -63,7 +62,7 @@ namespace UnityEditor
 
             GUI.enabled = !m_GameView.forceLowResolutionAspectRatios;
 
-            var toggleRect = new Rect(kMargin, kTopMargin, rect.width, EditorGUI.kSingleLineHeight);
+            var toggleRect = new Rect(kMargins.x, kMargins.y, rect.width, EditorGUI.kSingleLineHeight);
             m_GameView.lowResolutionForAspectRatios = GUI.Toggle(toggleRect, m_GameView.forceLowResolutionAspectRatios || m_GameView.lowResolutionForAspectRatios, GameView.Styles.lowResAspectRatiosContextMenuContent);
 
             GUI.enabled = true;

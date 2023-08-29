@@ -46,7 +46,7 @@ namespace UnityEngine.TextCore.Text
         {
             if (string.IsNullOrEmpty(m_LinkTextString))
                 for (int i = linkTextfirstCharacterIndex; i < linkTextfirstCharacterIndex + linkTextLength; i++)
-                    m_LinkTextString += textInfo.textElementInfo[i].character;
+                    m_LinkTextString += (char)textInfo.textElementInfo[i].character;
 
             return m_LinkTextString;
         }

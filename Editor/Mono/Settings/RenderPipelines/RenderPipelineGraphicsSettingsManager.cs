@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEditor.Inspector.GraphicsSettingsInspectors;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -23,23 +24,13 @@ namespace UnityEditor.Rendering.Settings
             if (settings == null)
                 return;
 
-            var globalSettingsSupportedOn = FetchSupportedOnRenderPipelineAttribute(settings);
+            if (!GraphicsSettingsUtils.ExtractSupportedOnRenderPipelineAttribute(settings.GetType(), out var globalSettingsSupportedOn, out var message))
+                throw new InvalidOperationException(message);
+
             foreach (var info in FetchRenderPipelineGraphicsSettingInfos())
             {
                 UpdateRenderPipelineGlobalSettings(info, settings, globalSettingsSupportedOn);
             }
-        }
-
-        static SupportedOnRenderPipelineAttribute FetchSupportedOnRenderPipelineAttribute(RenderPipelineGlobalSettings settings)
-        {
-            var renderPipelineGlobalSettings = settings.GetType();
-            var supportedOnAttribute = renderPipelineGlobalSettings.GetCustomAttribute<SupportedOnRenderPipelineAttribute>();
-            if (supportedOnAttribute == null)
-                Debug.LogWarning($"{renderPipelineGlobalSettings.Name} will not be filtered by {nameof(SupportedOnRenderPipelineAttribute)}. You need to add {nameof(SupportedOnRenderPipelineAttribute)} and specify correct {nameof(RenderPipelineAsset)} type.");
-            else if (supportedOnAttribute.renderPipelineTypes.Length != 1)
-                    throw new InvalidOperationException($"You can specify only one {nameof(RenderPipelineAsset)} type because you can't have one {nameof(RenderPipelineGlobalSettings)} for few {nameof(RenderPipeline)}.");
-
-            return supportedOnAttribute;
         }
 
         static IEnumerable<RenderPipelineGraphicsSettingsInfo> FetchRenderPipelineGraphicsSettingInfos()
@@ -47,9 +38,18 @@ namespace UnityEditor.Rendering.Settings
             var graphicsSettingsTypes = TypeCache.GetTypesDerivedFrom(typeof(IRenderPipelineGraphicsSettings));
             foreach (var renderPipelineGraphicsSettingsType in graphicsSettingsTypes)
             {
+                if (renderPipelineGraphicsSettingsType.IsAbstract || renderPipelineGraphicsSettingsType.IsGenericType || renderPipelineGraphicsSettingsType.IsInterface)
+                    continue;
+
                 if (renderPipelineGraphicsSettingsType.GetCustomAttribute<SerializableAttribute>() == null)
                 {
                     Debug.LogWarning($"{nameof(SerializableAttribute)} must be added to {renderPipelineGraphicsSettingsType}, the setting will be skipped");
+                    continue;
+                }
+
+                if (renderPipelineGraphicsSettingsType.GetCustomAttribute<SupportedOnRenderPipelineAttribute>() == null)
+                {
+                    Debug.LogWarning($"{nameof(SupportedOnRenderPipelineAttribute)} must be added to {renderPipelineGraphicsSettingsType}, the setting will be skipped");
                     continue;
                 }
 
@@ -64,15 +64,20 @@ namespace UnityEditor.Rendering.Settings
         static void UpdateRenderPipelineGlobalSettings(RenderPipelineGraphicsSettingsInfo renderPipelineGraphicsSettingsType, RenderPipelineGlobalSettings asset,
             SupportedOnRenderPipelineAttribute globalSettingsSupportedOn)
         {
-            var isSettingsValid = IsSettingsValid(renderPipelineGraphicsSettingsType, globalSettingsSupportedOn);
-            var isSettingsExist = asset.TryGet(renderPipelineGraphicsSettingsType.type, out var type);
-            if (isSettingsValid)
+            bool isSettingsValid = IsSettingsValid(renderPipelineGraphicsSettingsType, globalSettingsSupportedOn);
+            bool isSettingsExist = asset.TryGet(renderPipelineGraphicsSettingsType.type, out var srpGraphicSetting);
+            if (!isSettingsValid)
             {
-                if (!isSettingsExist && TryCreateInstance<IRenderPipelineGraphicsSettings>(renderPipelineGraphicsSettingsType.type, true, out var renderPipelineGraphicsSettings))
-                    asset.Add(renderPipelineGraphicsSettings);
+                if (isSettingsExist)
+                    asset.Remove(srpGraphicSetting);
+                return;
             }
-            else if (isSettingsExist)
-                asset.Remove(type);
+
+            if (!isSettingsExist && TryCreateInstance(renderPipelineGraphicsSettingsType.type, true, out srpGraphicSetting))
+                asset.Add(srpGraphicSetting);
+                
+            if (srpGraphicSetting is IRenderPipelineResources resource)
+                RenderPipelineResourcesEditorUtils.TryReloadContainedNullFields(resource);
         }
 
         // The Setting has been completely deprecated or not supported on render pipeline anymore, that means that it will be removed from the settings as any usage on code will be an error

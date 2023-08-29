@@ -20,6 +20,8 @@ namespace UnityEditor.Modules
 
         public abstract string JamTarget { get; }
 
+        public abstract IBuildTarget PlatformBuildTarget { get; }
+
         public virtual string ExtensionVersion { get { return null; } }
 
         public virtual GUIContent[] GetDisplayNames() { return null; }

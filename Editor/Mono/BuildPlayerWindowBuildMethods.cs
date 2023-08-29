@@ -127,7 +127,7 @@ namespace UnityEditor
                 if (!BuildPipeline.IsBuildTargetSupported(options.targetGroup, options.target))
                     throw new BuildMethodException("Build target is not supported.");
 
-                string module = ModuleManager.GetTargetStringFrom(EditorUserBuildSettings.selectedBuildTargetGroup, options.target);
+                string module = ModuleManager.GetTargetStringFrom(options.target);
                 IBuildWindowExtension buildWindowExtension = ModuleManager.GetBuildWindowExtension(module);
                 if (buildWindowExtension != null && (options.options & BuildOptions.AutoRunPlayer) != 0 && !buildWindowExtension.EnabledBuildAndRunButton())
                     throw new BuildMethodException();
@@ -216,7 +216,7 @@ namespace UnityEditor
                 BuildTargetGroup buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
 
                 return EditorUserBuildSettings.installInBuildFolder &&
-                    PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTargetGroup, buildTarget) &&
+                    PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTarget) &&
                     (Unsupported.IsSourceBuild() || IsMetroPlayer(buildTarget));
             }
 
@@ -234,11 +234,11 @@ namespace UnityEditor
                 string newLocation = "";
 
                 //Check if Lz4 is supported for the current buildtargetgroup and enable it if need be
-                if (PostprocessBuildPlayer.SupportsLz4Compression(buildTargetGroup, buildTarget))
+                if (PostprocessBuildPlayer.SupportsLz4Compression(buildTarget))
                 {
                     var compression = EditorUserBuildSettings.GetCompressionType(buildTargetGroup);
                     if (compression < 0)
-                        compression = PostprocessBuildPlayer.GetDefaultCompression(buildTargetGroup, buildTarget);
+                        compression = PostprocessBuildPlayer.GetDefaultCompression(buildTarget);
                     if (compression == Compression.Lz4)
                         options.options |= BuildOptions.CompressWithLz4;
                     else if (compression == Compression.Lz4HC)
@@ -252,8 +252,13 @@ namespace UnityEditor
                     options.options |= BuildOptions.AllowDebugging;
                 if (EditorUserBuildSettings.symlinkSources)
                     options.options |= BuildOptions.SymlinkSources;
-                if (EditorUserBuildSettings.connectProfiler && (developmentBuild || buildTarget == BuildTarget.WSAPlayer))
-                    options.options |= BuildOptions.ConnectWithProfiler;
+
+                if(BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out IBuildTarget iBuildTarget))
+                {
+                    if (EditorUserBuildSettings.connectProfiler && (developmentBuild || (iBuildTarget.PlayerConnectionPlatformProperties?.ForceAllowProfilerConnection ?? false)) )
+                        options.options |= BuildOptions.ConnectWithProfiler;
+                }
+
                 if (EditorUserBuildSettings.buildWithDeepProfilingSupport && developmentBuild)
                     options.options |= BuildOptions.EnableDeepProfilingSupport;
                 if (EditorUserBuildSettings.buildScriptsOnly)
@@ -341,7 +346,7 @@ namespace UnityEditor
                     defaultName = FileUtil.GetLastPathNameComponent(previousPath);
                 }
 
-                string extension = PostprocessBuildPlayer.GetExtensionForBuildTarget(targetGroup, target, subtarget, options);
+                string extension = PostprocessBuildPlayer.GetExtensionForBuildTarget(target, subtarget, options);
                 // Invalidate default name, if extension mismatches the default file (for ex., when switching between folder type export to file type export, see Android)
                 if (extension != Path.GetExtension(defaultName).Replace(".", ""))
                     defaultName = string.Empty;

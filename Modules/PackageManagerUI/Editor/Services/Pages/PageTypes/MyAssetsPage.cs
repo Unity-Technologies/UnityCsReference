@@ -41,15 +41,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override IVisualStateList visualStates => m_VisualStateList;
 
         [NonSerialized]
-        private UnityConnectProxy m_UnityConnect;
+        private IUnityConnectProxy m_UnityConnect;
         [NonSerialized]
-        private AssetStoreClientV2 m_AssetStoreClient;
+        private IAssetStoreClient m_AssetStoreClient;
         [NonSerialized]
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        public void ResolveDependencies(PackageDatabase packageDatabase,
-                                        PackageManagerPrefs packageManagerPrefs,
-                                        UnityConnectProxy unityConnect,
-                                        AssetStoreClientV2 assetStoreClient)
+        private IPackageManagerPrefs m_PackageManagerPrefs;
+        public void ResolveDependencies(IPackageDatabase packageDatabase,
+                                        IPackageManagerPrefs packageManagerPrefs,
+                                        IUnityConnectProxy unityConnect,
+                                        IAssetStoreClient assetStoreClient)
         {
             ResolveDependencies(packageDatabase);
             m_UnityConnect = unityConnect;
@@ -57,10 +57,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageManagerPrefs = packageManagerPrefs;
         }
 
-        public MyAssetsPage(PackageDatabase packageDatabase,
-                            PackageManagerPrefs packageManagerPrefs,
-                            UnityConnectProxy unityConnect,
-                            AssetStoreClientV2 assetStoreClient)
+        public MyAssetsPage(IPackageDatabase packageDatabase,
+                            IPackageManagerPrefs packageManagerPrefs,
+                            IUnityConnectProxy unityConnect,
+                            IAssetStoreClient assetStoreClient)
             : base(packageDatabase)
         {
             ResolveDependencies(packageDatabase, packageManagerPrefs, unityConnect, assetStoreClient);

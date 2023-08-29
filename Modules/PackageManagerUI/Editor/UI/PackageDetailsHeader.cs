@@ -39,22 +39,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("This package is hosted on a Scoped Registry.")
         };
 
-        private ResourceLoader m_ResourceLoader;
-        private ApplicationProxy m_Application;
-        private PageManager m_PageManager;
-        private PackageDatabase m_PackageDatabase;
-        private UpmCache m_UpmCache;
-        private PackageLinkFactory m_PackageLinkFactory;
+        private IResourceLoader m_ResourceLoader;
+        private IApplicationProxy m_Application;
+        private IPageManager m_PageManager;
+        private IPackageDatabase m_PackageDatabase;
+        private IUpmCache m_UpmCache;
+        private IPackageLinkFactory m_PackageLinkFactory;
 
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_Application = container.Resolve<ApplicationProxy>();
-            m_PageManager = container.Resolve<PageManager>();
-            m_PackageDatabase = container.Resolve<PackageDatabase>();
-            m_UpmCache = container.Resolve<UpmCache>();
-            m_PackageLinkFactory = container.Resolve<PackageLinkFactory>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
+            m_Application = container.Resolve<IApplicationProxy>();
+            m_PageManager = container.Resolve<IPageManager>();
+            m_PackageDatabase = container.Resolve<IPackageDatabase>();
+            m_UpmCache = container.Resolve<IUpmCache>();
+            m_PackageLinkFactory = container.Resolve<IPackageLinkFactory>();
         }
 
         private IPackage m_Package;

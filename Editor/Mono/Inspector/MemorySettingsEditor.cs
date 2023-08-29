@@ -101,7 +101,7 @@ namespace UnityEditor
         bool[] m_ShowSettingsUI = new bool[kMaxGroupCount];
         AnimatedValues.AnimBool[] m_SettingsAnimator = new AnimatedValues.AnimBool[kMaxGroupCount];
 
-        Dictionary<BuildTargetGroup, SerializedProperty> m_MemorySettingsDictionary;
+        Dictionary<BuildTarget, SerializedProperty> m_MemorySettingsDictionary;
 
         public void OnEnable()
         {
@@ -111,11 +111,11 @@ namespace UnityEditor
             m_PlatformMemorySettingsProperty = serializedObject.FindProperty("m_PlatformMemorySettings");
             m_DefaultMemorySettingsProperty = serializedObject.FindProperty("m_DefaultMemorySettings");
 
-            m_MemorySettingsDictionary = new Dictionary<BuildTargetGroup, SerializedProperty>();
+            m_MemorySettingsDictionary = new Dictionary<BuildTarget, SerializedProperty>();
 
             foreach (SerializedProperty prop in m_PlatformMemorySettingsProperty)
             {
-                m_MemorySettingsDictionary.Add((BuildTargetGroup)prop.FindPropertyRelative("first").intValue, prop.FindPropertyRelative("second"));
+                m_MemorySettingsDictionary.Add((BuildTarget)prop.FindPropertyRelative("first").intValue, prop.FindPropertyRelative("second"));
             }
 
             for (var i = 0; i < m_SettingsAnimator.Length; i++)
@@ -369,14 +369,14 @@ namespace UnityEditor
                 GUILayout.Label("Settings for Players");
                 m_SelectedPlatform = EditorGUILayout.BeginPlatformGrouping(m_ValidPlatforms, null, Styles.settingsFramebox);
                 GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), m_ValidPlatforms[m_SelectedPlatform].title.text));
-                if (!m_MemorySettingsDictionary.TryGetValue(m_ValidPlatforms[m_SelectedPlatform].targetGroup, out currentSettings))
+                if (!m_MemorySettingsDictionary.TryGetValue(m_ValidPlatforms[m_SelectedPlatform].defaultTarget, out currentSettings))
                 {
-                    MemorySettingsUtils.SetPlatformDefaultValues((int)m_ValidPlatforms[m_SelectedPlatform].targetGroup);
+                    MemorySettingsUtils.SetPlatformDefaultValues((int)m_ValidPlatforms[m_SelectedPlatform].defaultTarget);
                     serializedObject.Update();
                     OnEnable();
-                    m_MemorySettingsDictionary.TryGetValue(m_ValidPlatforms[m_SelectedPlatform].targetGroup, out currentSettings);
+                    m_MemorySettingsDictionary.TryGetValue(m_ValidPlatforms[m_SelectedPlatform].defaultTarget, out currentSettings);
                 }
-                MemorySettingsUtils.InitializeDefaultsForPlatform((int)m_ValidPlatforms[m_SelectedPlatform].targetGroup);
+                MemorySettingsUtils.InitializeDefaultsForPlatform((int)m_ValidPlatforms[m_SelectedPlatform].defaultTarget);
             }
 
             if (BeginGroup(0, Content.kMainAllocatorsTitle))

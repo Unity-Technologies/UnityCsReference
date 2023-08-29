@@ -508,6 +508,8 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public event Action<IEnumerable<int>> itemsRemoved;
 
+        internal event Action itemsSourceSizeChanged;
+
         BindingSourceSelectionMode m_BindingSourceSelectionMode;
 
         /// <summary>
@@ -791,6 +793,8 @@ namespace UnityEngine.UIElements
             {
                 RefreshItems();
             }
+
+            itemsSourceSizeChanged?.Invoke();
         }
 
         ListViewReorderMode m_ReorderMode;

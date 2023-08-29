@@ -36,21 +36,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         private CacheRootConfig m_CurrentPackagesConfig = new CacheRootConfig();
         private string currentPackagesNormalizedPath => m_CurrentPackagesConfig?.path.NormalizePath() ?? string.Empty;
 
-        private ResourceLoader m_ResourceLoader;
-        private AssetStoreCachePathProxy m_AssetStoreCachePathProxy;
-        private UpmCacheRootClient m_UpmCacheRootClient;
-        private ApplicationProxy m_ApplicationProxy;
-        private ClientProxy m_ClientProxy;
-        private AssetStoreDownloadManager m_AssetStoreDownloadManager;
+        private IResourceLoader m_ResourceLoader;
+        private IAssetStoreCachePathProxy m_AssetStoreCachePathProxy;
+        private IUpmCacheRootClient m_UpmCacheRootClient;
+        private IApplicationProxy m_ApplicationProxy;
+        private IClientProxy m_ClientProxy;
+        private IAssetStoreDownloadManager m_AssetStoreDownloadManager;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_AssetStoreCachePathProxy = container.Resolve<AssetStoreCachePathProxy>();
-            m_UpmCacheRootClient = container.Resolve<UpmCacheRootClient>();
-            m_ApplicationProxy = container.Resolve<ApplicationProxy>();
-            m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
-            m_ClientProxy = container.Resolve<ClientProxy>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
+            m_AssetStoreCachePathProxy = container.Resolve<IAssetStoreCachePathProxy>();
+            m_UpmCacheRootClient = container.Resolve<IUpmCacheRootClient>();
+            m_ApplicationProxy = container.Resolve<IApplicationProxy>();
+            m_AssetStoreDownloadManager = container.Resolve<IAssetStoreDownloadManager>();
+            m_ClientProxy = container.Resolve<IClientProxy>();
         }
 
         private PackageManagerUserSettingsProvider(string path, IEnumerable<string> keywords = null) : base(path, SettingsScope.User, keywords)

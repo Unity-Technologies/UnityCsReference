@@ -21,6 +21,8 @@ namespace UnityEditor.Modules
         /// from Editor using CTRL + L shortcut, for ex., WP8EditorExtensions, MetroEditorExtensions, etc
         string JamTarget { get; }
 
+        IBuildTarget PlatformBuildTarget { get; }
+
         /// Returns an array of native libraries that are required by the extension and must be loaded
         /// by the editor.
         ///
@@ -239,6 +241,7 @@ namespace UnityEditor.Modules
         bool SupportsDynamicBatching();
         bool SupportsHighDynamicRangeDisplays();
         bool SupportsGfxJobModes();
+        GraphicsJobMode AdjustGfxJobMode(GraphicsJobMode graphicsJobMode);
 
         bool CanShowUnitySplashScreen();
 
@@ -271,6 +274,8 @@ namespace UnityEditor.Modules
         void SerializedObjectUpdated();
 
         bool SupportsForcedSrgbBlit();
+
+        bool SupportsStaticSplashScreenBackgroundColor();
     }
 
 

@@ -26,7 +26,11 @@ namespace UnityEngine
 
         public static void Init()
         {
-            System.Console.SetOut(new UnityLogWriter());
+            var logWriter = TextWriter.Synchronized(new UnityLogWriter());
+
+            // We want to tie both stdout and stderr to the same log writer.
+            System.Console.SetOut(logWriter);
+            System.Console.SetError(logWriter);
         }
 
         public override System.Text.Encoding Encoding

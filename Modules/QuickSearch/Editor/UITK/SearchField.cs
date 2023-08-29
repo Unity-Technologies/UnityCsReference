@@ -76,6 +76,8 @@ namespace UnityEditor.Search
         private readonly Label m_SearchPlaceholder;
         private readonly Label m_PressTabPlaceholder;
 
+        const float k_PlaceholdersTouchThreshold = 2f;
+
         public ToolbarSearchField searchField { get; private set; }
         internal QueryBuilder queryBuilder => (m_SearchTextInput as SearchQueryBuilderView)?.builder;
 
@@ -132,6 +134,10 @@ namespace UnityEditor.Search
             m_PressTabPlaceholder.style.paddingBottom = 3f;
             m_PressTabPlaceholder.focusable = false;
             m_PressTabPlaceholder.pickingMode = PickingMode.Ignore;
+            if (!context.empty)
+                m_PressTabPlaceholder.style.right = 12f;
+            else
+                m_PressTabPlaceholder.style.right = 2f;
 
             // Search field
             CreateSearchField(this);
@@ -173,7 +179,7 @@ namespace UnityEditor.Search
                 searchField.RegisterCallback<ChangeEvent<string>>(OnQueryChanged);
                 searchField.RegisterCallback<GeometryChangedEvent>(evt => UpdatePlaceholders());
 
-                m_SearchTextInput = searchField;
+                m_SearchTextInput = textField;
             }
 
             searchField.RegisterCallback<AttachToPanelEvent>(OnSearchFieldAttachToPanel);
@@ -229,11 +235,16 @@ namespace UnityEditor.Search
 
         private void UpdatePlaceholders()
         {
-            m_SearchPlaceholder.style.display = !context.empty ? DisplayStyle.None : DisplayStyle.Flex;
+            m_SearchPlaceholder.style.visibility = !context.empty ? Visibility.Hidden : Visibility.Visible;
+            if (m_SearchPlaceholder.worldBound.xMax + k_PlaceholdersTouchThreshold >= searchField.worldBound.xMax)
+                m_SearchPlaceholder.style.visibility = Visibility.Hidden;
+
+            var oldRight = m_PressTabPlaceholder.style.right.value.value;
             if (!context.empty)
                 m_PressTabPlaceholder.style.right = 12f;
             else
                 m_PressTabPlaceholder.style.right = 2f;
+            var offset = m_PressTabPlaceholder.style.right.value.value - oldRight;
 
             var te = searchField.Q<TextElement>();
             if (te != null)
@@ -243,6 +254,9 @@ namespace UnityEditor.Search
                     m_PressTabPlaceholder.style.visibility = Visibility.Hidden;
                 else
                     m_PressTabPlaceholder.style.visibility = Visibility.Visible;
+
+                if (m_PressTabPlaceholder.style.visibility == Visibility.Visible && (m_PressTabPlaceholder.worldBound.xMin - offset) <= m_SearchPlaceholder.worldBound.xMax + k_PlaceholdersTouchThreshold)
+                    m_PressTabPlaceholder.style.visibility = Visibility.Hidden;
             }
             else
                 m_PressTabPlaceholder.style.display = DisplayStyle.None;
@@ -250,6 +264,9 @@ namespace UnityEditor.Search
 
         private void OnQueryChanged(ChangeEvent<string> evt)
         {
+            if (m_SearchTextInput != evt.target)
+                return;
+
             m_ViewModel.SetSearchText(evt.newValue, TextCursorPlacement.None);
             m_ViewModel.SetSelection();
             UpdatePlaceholders();

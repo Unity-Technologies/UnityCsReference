@@ -577,7 +577,7 @@ namespace UnityEngine.Rendering
                 throw new ArgumentNullException("config.material");
 
             if (!config.material.enableInstancing)
-                throw new InvalidOperationException("config.material needs to enable instancing for use with AddInstances.");
+                throw new InvalidOperationException($"config.material ({config.material.name}) needs to enable GPU Instancing for use with AddInstances.");
 
             if (config.mesh == null)
                 throw new ArgumentNullException("config.mesh");
@@ -609,7 +609,7 @@ namespace UnityEngine.Rendering
                 throw new ArgumentNullException("config.material");
 
             if (!config.material.enableInstancing)
-                throw new InvalidOperationException("config.material needs to enable instancing for use with AddInstances.");
+                throw new InvalidOperationException($"config.material ({config.material.name}) needs to enable GPU Instancing for use with AddInstances.");
 
             if (config.mesh == null)
                 throw new ArgumentNullException("config.mesh");
@@ -638,7 +638,7 @@ namespace UnityEngine.Rendering
                 throw new ArgumentNullException("config.material");
 
             if (!config.material.enableInstancing)
-                throw new InvalidOperationException("config.material needs to enable instancing for use with AddInstances.");
+                throw new InvalidOperationException($"config.material ({config.material.name}) needs to enable GPU Instancing for use with AddInstances.");
 
             if (config.mesh == null)
                 throw new ArgumentNullException("config.mesh");
@@ -667,7 +667,7 @@ namespace UnityEngine.Rendering
                 throw new ArgumentNullException("config.material");
 
             if (!config.material.enableInstancing)
-                throw new InvalidOperationException("config.material needs to enable instancing for use with AddInstances.");
+                throw new InvalidOperationException($"config.material ({config.material.name}) needs to enable GPU Instancing for use with AddInstances.");
 
             if (config.mesh == null)
                 throw new ArgumentNullException("config.mesh");

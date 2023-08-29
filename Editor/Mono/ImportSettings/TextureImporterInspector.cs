@@ -989,26 +989,10 @@ namespace UnityEditor
                 if (textureImporterFormat == TextureImporterFormat.Automatic && t.textureCompression != TextureImporterCompression.Uncompressed)
                 {
                     TextureCompressionFormat defaultTexCompressionFormat = PlayerSettings.GetDefaultTextureCompressionFormat(BuildPipeline.GetBuildTargetGroup(buildTarget));
-                    switch (buildTarget)
-                    {
-                        case BuildTarget.Android:
-                            if (EditorUserBuildSettings.androidBuildSubtarget == MobileTextureSubtarget.ETC)
-                            {
-                                return true;
-                            }
-                            else if (defaultTexCompressionFormat == TextureCompressionFormat.ETC && EditorUserBuildSettings.androidBuildSubtarget == MobileTextureSubtarget.Generic)
-                            {
-                                return true;
-                            }
-                            break;
+                    if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out IBuildTarget iBuildTarget))
+                        if (iBuildTarget.GraphicsPlatformProperties?.IsETCUsedAsDefaultTextureImporter(defaultTexCompressionFormat) ?? false)
+                            return true;
 
-                        default:
-                            if (defaultTexCompressionFormat == TextureCompressionFormat.ETC)
-                            {
-                                return true;
-                            }
-                            break;
-                    }
                     continue; // ETC is not being used as default texture compression format.
                 }
 

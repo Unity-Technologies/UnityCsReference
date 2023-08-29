@@ -12,31 +12,31 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<MultiSelectDetails> {}
 
-        private ResourceLoader m_ResourceLoader;
-        private ApplicationProxy m_Application;
-        private PackageDatabase m_PackageDatabase;
-        private PackageOperationDispatcher m_OperationDispatcher;
-        private PageManager m_PageManager;
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        private AssetStoreClientV2 m_AssetStoreClient;
-        private AssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private AssetStoreCache m_AssetStoreCache;
-        private BackgroundFetchHandler m_BackgroundFetchHandler;
-        private UnityConnectProxy m_UnityConnect;
+        private IResourceLoader m_ResourceLoader;
+        private IApplicationProxy m_Application;
+        private IPackageDatabase m_PackageDatabase;
+        private IPackageOperationDispatcher m_OperationDispatcher;
+        private IPageManager m_PageManager;
+        private IPackageManagerPrefs m_PackageManagerPrefs;
+        private IAssetStoreClient m_AssetStoreClient;
+        private IAssetStoreDownloadManager m_AssetStoreDownloadManager;
+        private IAssetStoreCache m_AssetStoreCache;
+        private IBackgroundFetchHandler m_BackgroundFetchHandler;
+        private IUnityConnectProxy m_UnityConnect;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_Application = container.Resolve<ApplicationProxy>();
-            m_PackageDatabase = container.Resolve<PackageDatabase>();
-            m_OperationDispatcher = container.Resolve<PackageOperationDispatcher>();
-            m_PageManager = container.Resolve<PageManager>();
-            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
-            m_AssetStoreClient = container.Resolve<AssetStoreClientV2>();
-            m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
-            m_AssetStoreCache = container.Resolve<AssetStoreCache>();
-            m_BackgroundFetchHandler = container.Resolve<BackgroundFetchHandler>();
-            m_UnityConnect = container.Resolve<UnityConnectProxy>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
+            m_Application = container.Resolve<IApplicationProxy>();
+            m_PackageDatabase = container.Resolve<IPackageDatabase>();
+            m_OperationDispatcher = container.Resolve<IPackageOperationDispatcher>();
+            m_PageManager = container.Resolve<IPageManager>();
+            m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
+            m_AssetStoreClient = container.Resolve<IAssetStoreClient>();
+            m_AssetStoreDownloadManager = container.Resolve<IAssetStoreDownloadManager>();
+            m_AssetStoreCache = container.Resolve<IAssetStoreCache>();
+            m_BackgroundFetchHandler = container.Resolve<IBackgroundFetchHandler>();
+            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
         }
 
         private UnlockFoldout m_UnlockFoldout;

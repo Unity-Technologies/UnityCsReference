@@ -19,31 +19,31 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_SelectedInInspectorClassName = "selectedInInspector";
         public const string k_FocusedClassName = "focus";
 
-        private ResourceLoader m_ResourceLoader;
-        private ExtensionManager m_ExtensionManager;
-        private SelectionProxy m_Selection;
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        private PackageDatabase m_PackageDatabase;
-        private PageManager m_PageManager;
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private UnityConnectProxy m_UnityConnectProxy;
-        private ApplicationProxy m_ApplicationProxy;
-        private UpmClient m_UpmClient;
-        private AssetStoreCachePathProxy m_AssetStoreCachePathProxy;
-        private PageRefreshHandler m_PageRefreshHandler;
+        private IResourceLoader m_ResourceLoader;
+        private IExtensionManager m_ExtensionManager;
+        private ISelectionProxy m_Selection;
+        private IPackageManagerPrefs m_PackageManagerPrefs;
+        private IPackageDatabase m_PackageDatabase;
+        private IPageManager m_PageManager;
+        private IProjectSettingsProxy m_SettingsProxy;
+        private IUnityConnectProxy m_UnityConnectProxy;
+        private IApplicationProxy m_ApplicationProxy;
+        private IUpmClient m_UpmClient;
+        private IAssetStoreCachePathProxy m_AssetStoreCachePathProxy;
+        private IPageRefreshHandler m_PageRefreshHandler;
 
-        private void ResolveDependencies(ResourceLoader resourceLoader,
-            ExtensionManager extensionManager,
-            SelectionProxy selection,
-            PackageManagerPrefs packageManagerPrefs,
-            PackageDatabase packageDatabase,
-            PageManager pageManager,
-            PackageManagerProjectSettingsProxy settingsProxy,
-            UnityConnectProxy unityConnectProxy,
-            ApplicationProxy applicationProxy,
-            UpmClient upmClient,
-            AssetStoreCachePathProxy assetStoreCachePathProxy,
-            PageRefreshHandler pageRefreshHandler)
+        private void ResolveDependencies(IResourceLoader resourceLoader,
+            IExtensionManager extensionManager,
+            ISelectionProxy selection,
+            IPackageManagerPrefs packageManagerPrefs,
+            IPackageDatabase packageDatabase,
+            IPageManager pageManager,
+            IProjectSettingsProxy settingsProxy,
+            IUnityConnectProxy unityConnectProxy,
+            IApplicationProxy applicationProxy,
+            IUpmClient upmClient,
+            IAssetStoreCachePathProxy assetStoreCachePathProxy,
+            IPageRefreshHandler pageRefreshHandler)
         {
             m_ResourceLoader = resourceLoader;
             m_ExtensionManager = extensionManager;
@@ -59,18 +59,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageRefreshHandler = pageRefreshHandler;
         }
 
-        public PackageManagerWindowRoot(ResourceLoader resourceLoader,
-                                        ExtensionManager extensionManager,
-                                        SelectionProxy selection,
-                                        PackageManagerPrefs packageManagerPrefs,
-                                        PackageDatabase packageDatabase,
-                                        PageManager pageManager,
-                                        PackageManagerProjectSettingsProxy settingsProxy,
-                                        UnityConnectProxy unityConnectProxy,
-                                        ApplicationProxy applicationProxy,
-                                        UpmClient upmClient,
-                                        AssetStoreCachePathProxy assetStoreCachePathProxy,
-                                        PageRefreshHandler pageRefreshHandler)
+        public PackageManagerWindowRoot(IResourceLoader resourceLoader,
+                                        IExtensionManager extensionManager,
+                                        ISelectionProxy selection,
+                                        IPackageManagerPrefs packageManagerPrefs,
+                                        IPackageDatabase packageDatabase,
+                                        IPageManager pageManager,
+                                        IProjectSettingsProxy settingsProxy,
+                                        IUnityConnectProxy unityConnectProxy,
+                                        IApplicationProxy applicationProxy,
+                                        IUpmClient upmClient,
+                                        IAssetStoreCachePathProxy assetStoreCachePathProxy,
+                                        IPageRefreshHandler pageRefreshHandler)
         {
             ResolveDependencies(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler);
         }
@@ -93,8 +93,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             RegisterEventsToAdaptFocus();
 
-            leftColumnContainer.style.flexGrow = m_PackageManagerPrefs.splitterFlexGrow;
-            rightColumnContainer.style.flexGrow = 1 - m_PackageManagerPrefs.splitterFlexGrow;
+            globalSplitter.fixedPaneInitialDimension = m_PackageManagerPrefs.sidebarWidth;
+            mainContainerSplitter.fixedPaneInitialDimension = m_PackageManagerPrefs.leftContainerWidth;
 
             m_PageRefreshHandler.onRefreshOperationFinish += OnRefreshOperationFinish;
             m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
@@ -234,7 +234,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             EditorApplication.focusChanged -= OnFocusChanged;
             m_Selection.onSelectionChanged -= RefreshSelectedInInspectorClass;
 
-            m_PackageManagerPrefs.splitterFlexGrow = leftColumnContainer.resolvedStyle.flexGrow;
+            m_PackageManagerPrefs.sidebarWidth = sidebar.layout.width;
+            m_PackageManagerPrefs.leftContainerWidth = leftColumnContainer.layout.width;
         }
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
@@ -389,9 +390,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PendingPackageAndPageSelectionArgs = args;
         }
 
-        public AddPackageByNameDropdown OpenAddPackageByNameDropdown(string url)
+        public AddPackageByNameDropdown OpenAddPackageByNameDropdown(string url, EditorWindow anchorWindow)
         {
-            var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance);
+            var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, anchorWindow);
 
             var packageNameAndVersion = url.Replace(PackageManagerWindow.k_UpmUrl, string.Empty);
             var packageName = string.Empty;
@@ -469,9 +470,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public PackageManagerToolbar packageManagerToolbar => cache.Get<PackageManagerToolbar>("topMenuToolbar");
         public PackageStatusBar packageStatusbar => cache.Get<PackageStatusBar>("packageStatusBar");
         private VisualElement leftColumnContainer => cache.Get<VisualElement>("leftColumnContainer");
-        private VisualElement rightColumnContainer => cache.Get<VisualElement>("rightColumnContainer");
         private VisualElement rightContainer => cache.Get<VisualElement>("rightSideContainer");
         private Sidebar sidebar => cache.Get<Sidebar>("sidebar");
+        private TwoPaneSplitView globalSplitter => cache.Get<TwoPaneSplitView>("globalSplitter");
+        private TwoPaneSplitView mainContainerSplitter => cache.Get<TwoPaneSplitView>("mainContainer");
     }
 
     internal class PackageAndPageSelectionArgs

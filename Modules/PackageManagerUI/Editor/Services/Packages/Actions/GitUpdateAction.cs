@@ -8,10 +8,10 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class GitUpdateAction : PackageAction
 {
-    private readonly PackageOperationDispatcher m_OperationDispatcher;
-    private readonly UpmCache m_UpmCache;
-    private readonly ApplicationProxy m_Application;
-    public GitUpdateAction(PackageOperationDispatcher operationDispatcher, UpmCache upmCache, ApplicationProxy application)
+    private readonly IPackageOperationDispatcher m_OperationDispatcher;
+    private readonly IUpmCache m_UpmCache;
+    private readonly IApplicationProxy m_Application;
+    public GitUpdateAction(IPackageOperationDispatcher operationDispatcher, IUpmCache upmCache, IApplicationProxy application)
     {
         m_OperationDispatcher = operationDispatcher;
         m_UpmCache = upmCache;

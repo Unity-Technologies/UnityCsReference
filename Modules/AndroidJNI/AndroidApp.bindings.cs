@@ -31,5 +31,19 @@ namespace UnityEngine.Android
         }
 
         public static extern IntPtr UnityPlayerRaw { [ThreadSafe] get; }
+
+        private static AndroidJavaObject m_UnityPlayer;
+
+        public static AndroidJavaObject UnityPlayer
+        {
+            get
+            {
+                if (m_UnityPlayer != null)
+                    return m_UnityPlayer;
+
+                m_UnityPlayer = new AndroidJavaObject(UnityPlayerRaw);
+                return m_UnityPlayer;
+            }
+        }
     }
 }

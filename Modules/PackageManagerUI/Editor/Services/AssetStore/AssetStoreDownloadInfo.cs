@@ -29,7 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal partial class JsonParser
     {
-        public virtual AssetStoreDownloadInfo ParseDownloadInfo(IDictionary<string, object> rawInfo)
+        public AssetStoreDownloadInfo ParseDownloadInfo(IDictionary<string, object> rawInfo)
         {
             if (rawInfo?.Any() != true)
                 return null;

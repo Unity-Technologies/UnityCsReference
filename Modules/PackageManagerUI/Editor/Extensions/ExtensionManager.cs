@@ -10,7 +10,17 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class ExtensionManager
+    internal interface IExtensionManager : IService
+    {
+        DetailsExtension CreateDetailsExtension();
+        PackageExtensionAction CreatePackageActionButton();
+        PackageExtensionAction CreatePackageActionMenu();
+        void SendPackageSelectionChangedEvent(IPackage package, IPackageVersion version);
+        void OnWindowCreated(IWindow window, VisualElement detailsExtensionContainer, VisualElement toolbarExtensionsContainer);
+        void OnWindowDestroy();
+    }
+
+    internal class ExtensionManager : BaseService<IExtensionManager>, IExtensionManager
     {
         class EventDispatcher
         {
@@ -26,16 +36,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             private readonly Dictionary<Type, object> m_HandlerObjects = new Dictionary<Type, object>();
 
             private List<IWindowCreatedHandler> m_WindowCreatedHandlers;
-            public virtual List<IWindowCreatedHandler> windowCreatedHandlers =>
-                m_WindowCreatedHandlers ?? (m_WindowCreatedHandlers = CreateImplementedInstances<IWindowCreatedHandler>());
+            private List<IWindowCreatedHandler> windowCreatedHandlers =>
+                m_WindowCreatedHandlers ??= CreateImplementedInstances<IWindowCreatedHandler>();
 
             private List<IWindowDestroyHandler> m_WindowDestroyHandlers;
-            public virtual List<IWindowDestroyHandler> windowDestroyHandlers =>
-                m_WindowDestroyHandlers ?? (m_WindowDestroyHandlers = CreateImplementedInstances<IWindowDestroyHandler>());
+            private List<IWindowDestroyHandler> windowDestroyHandlers =>
+                m_WindowDestroyHandlers ??= CreateImplementedInstances<IWindowDestroyHandler>();
 
             private List<IPackageSelectionChangedHandler> m_PackageSelectionChangedHandlers;
-            public virtual List<IPackageSelectionChangedHandler> packageSelectionChangedHandlers =>
-                m_PackageSelectionChangedHandlers ?? (m_PackageSelectionChangedHandlers = CreateImplementedInstances<IPackageSelectionChangedHandler>());
+            private List<IPackageSelectionChangedHandler> packageSelectionChangedHandlers =>
+                m_PackageSelectionChangedHandlers ??= CreateImplementedInstances<IPackageSelectionChangedHandler>();
 
             private List<T> CreateImplementedInstances<T>()
             {
@@ -137,7 +147,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private EventDispatcher m_EventDispatcher = new EventDispatcher();
-        public virtual void SendPackageSelectionChangedEvent(IPackage package, IPackageVersion version) => m_EventDispatcher.SendPackageSelectionChangedEvent(package, version);
+        public void SendPackageSelectionChangedEvent(IPackage package, IPackageVersion version) => m_EventDispatcher.SendPackageSelectionChangedEvent(package, version);
 
         private IWindow m_Window = null;
         private VisualElement m_DetailsExtensionContainer;
@@ -150,13 +160,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private DropdownButton m_CollapsedPackageActions;
 
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        public void ResolveDependencies(PackageManagerPrefs packageManagerPrefs)
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        public ExtensionManager(IPackageManagerPrefs packageManagerPrefs)
         {
-            m_PackageManagerPrefs = packageManagerPrefs;
+            m_PackageManagerPrefs = RegisterDependency(packageManagerPrefs);
         }
 
-        public virtual void OnWindowCreated(IWindow window, VisualElement detailsExtensionContainer, VisualElement toolbarExtensionsContainer)
+        public void OnWindowCreated(IWindow window, VisualElement detailsExtensionContainer, VisualElement toolbarExtensionsContainer)
         {
             m_Window = window;
             m_DetailsExtensionContainer = detailsExtensionContainer;
@@ -178,7 +188,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_EventDispatcher.SendWindowCreatedEvent(window);
         }
 
-        public virtual void OnWindowDestroy()
+        public void OnWindowDestroy()
         {
             if (m_Window == null)
                 return;

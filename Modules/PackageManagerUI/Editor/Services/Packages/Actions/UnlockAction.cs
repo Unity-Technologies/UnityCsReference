@@ -9,8 +9,8 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class UnlockAction : PackageAction
 {
-    private readonly PageManager m_PageManager;
-    public UnlockAction(PageManager pageManager)
+    private readonly IPageManager m_PageManager;
+    public UnlockAction(IPageManager pageManager)
     {
         m_PageManager = pageManager;
     }

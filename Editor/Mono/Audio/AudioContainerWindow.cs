@@ -193,6 +193,7 @@ sealed class AudioContainerWindow : EditorWindow
 
             var styleSheet = UIToolkitUtilities.LoadStyleSheet("StyleSheets/Audio/AudioRandomContainer.uss");
             rootVisualElement.styleSheets.Add(styleSheet);
+            rootVisualElement.Add(State.GetResourceTrackerElement());
 
             m_ContainerRootVisualElement = UIToolkitUtilities.GetChildByName<ScrollView>(rootVisualElement, "ARC_ScrollView");
             m_Day0RootVisualElement = UIToolkitUtilities.GetChildByName<VisualElement>(rootVisualElement, "Day0");

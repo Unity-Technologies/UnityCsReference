@@ -26,8 +26,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool requiresUserSignIn => true;
 
-        private readonly AssetStoreCache m_AssetStoreCache;
-        public PackageDetailsImagesTab(UnityConnectProxy unityConnect, AssetStoreCache assetStoreCache) : base(unityConnect)
+        private readonly IAssetStoreCache m_AssetStoreCache;
+        public PackageDetailsImagesTab(IUnityConnectProxy unityConnect, IAssetStoreCache assetStoreCache) : base(unityConnect)
         {
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Images");

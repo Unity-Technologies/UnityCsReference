@@ -17,8 +17,9 @@ namespace UnityEngine.UIElements.Internal
         const int kMaxStableLayoutPassCount = 2; // Beyond this threshold, DoLayout must be performed in the next frame; otherwise, this may lead to Layout instabilities. This is caused by the dependencies between the geometries of the header, the viewport and the content.
 
         [Serializable]
-        class ViewState : ISerializationCallbackReceiver
+        class ViewState
         {
+            [SerializeField]
             bool m_HasPersistedData;
 
             /// <summary>
@@ -117,16 +118,6 @@ namespace UnityEngine.UIElements.Internal
                     header.sortDescriptions.Add(sortDesc);
                 }
             }
-
-            public void OnBeforeSerialize()
-            {
-                m_HasPersistedData = true;
-            }
-
-            public void OnAfterDeserialize()
-            {
-                m_HasPersistedData = true;
-            }
         }
 
         internal class ColumnData
@@ -174,6 +165,8 @@ namespace UnityEngine.UIElements.Internal
 
         ViewState m_ViewState;
         bool m_ApplyingViewState;
+
+        internal bool isApplyingViewState => m_ApplyingViewState;
 
         bool m_DoLayoutScheduled;
 
@@ -242,6 +235,11 @@ namespace UnityEngine.UIElements.Internal
         ///  Sent whenever a ContextMenuPopulate event sent allowing user code to add its own actions to the context menu.
         /// </summary>
         public event Action<ContextualMenuPopulateEvent, Column> contextMenuPopulateEvent;
+
+        /// <summary>
+        ///  Sent whenever a ContextMenuPopulate event sent allowing user code to add its own actions to the context menu.
+        /// </summary>
+        internal event Action viewDataRestored;
 
         /// <summary>
         /// Default constructor.
@@ -416,24 +414,30 @@ namespace UnityEngine.UIElements.Internal
                 return;
 
             var columnElement = new MultiColumnHeaderColumn(column);
+            var resizeHandle = new MultiColumnHeaderColumnResizeHandle();
 
             columnElement.RegisterCallback<GeometryChangedEvent>(OnColumnControlGeometryChanged);
             columnElement.clickable.clickedWithEventInfo += OnColumnClicked;
             // Prevent cursor change when hovering handles while drag reordering columns
             columnElement.mover.activeChanged += OnMoveManipulatorActivated;
 
-            columnContainer.Insert(column.visibleIndex, columnElement);
-
-            var resHandle = new MultiColumnHeaderColumnResizeHandle();
-
-            resizeHandleContainer.Insert(column.visibleIndex, resHandle);
-            resHandle.dragArea.AddManipulator(new ColumnResizer(column));
+            resizeHandle.dragArea.AddManipulator(new ColumnResizer(column));
 
             columnDataMap[column] = new ColumnData()
             {
                 control = columnElement,
-                resizeHandle = resHandle
+                resizeHandle = resizeHandle
             };
+
+            if (column.visible)
+            {
+                columnContainer.Insert(column.visibleIndex, columnElement);
+                resizeHandleContainer.Insert(column.visibleIndex, resizeHandle);
+            }
+            else
+            {
+                OnColumnRemoved(column);
+            }
 
             UpdateColumnControls();
             SaveViewState();
@@ -826,6 +830,8 @@ namespace UnityEngine.UIElements.Internal
 
                 m_ViewState = GetOrCreateViewData<ViewState>(m_ViewState, key);
                 m_ViewState.Apply(this);
+
+                viewDataRestored?.Invoke();
             }
             finally
             {

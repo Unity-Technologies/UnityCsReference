@@ -56,6 +56,8 @@ namespace UnityEditor.Rendering
 
     public sealed partial class EditorGraphicsSettings
     {
+        // Use the version with NamedBuildTarget passed instead.
+        // [Obsolete("Use SetTierSettings() instead (UnityUpgradable) -> SetTierSettings(*)", false)]
         public static void SetTierSettings(BuildTargetGroup target, GraphicsTier tier, TierSettings settings)
         {
             if (settings.renderingPath == RenderingPath.UsePlayerSettings)

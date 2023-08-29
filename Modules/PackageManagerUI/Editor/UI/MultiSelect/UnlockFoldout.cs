@@ -6,7 +6,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class UnlockFoldout : MultiSelectFoldout
     {
-        public UnlockFoldout(PageManager pageManager) : base(new UnlockAction(pageManager))
+        public UnlockFoldout(IPageManager pageManager) : base(new UnlockAction(pageManager))
         {
             headerTextTemplate = L10n.Tr("Unlock {0}");
         }

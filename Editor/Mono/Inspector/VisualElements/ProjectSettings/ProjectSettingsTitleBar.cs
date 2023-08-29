@@ -2,7 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using UnityEditor.Experimental;
+﻿using System;
+using UnityEditor.Experimental;
 using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -12,28 +13,30 @@ namespace UnityEditor.UIElements.ProjectSettings
 {
     internal class ProjectSettingsTitleBar : ProjectSettingsElementWithSO
     {
-        public new class UxmlFactory : UxmlFactory<ProjectSettingsTitleBar, UxmlTraits>
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-        }
+#pragma warning disable 649
+            [SerializeField] string label;
+#pragma warning restore 649
+            public override object CreateInstance() => new ProjectSettingsTitleBar();
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            readonly UxmlStringAttributeDescription m_Label = new() { name = "label" };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            public override void Deserialize(object obj)
             {
-                base.Init(ve, bag, cc);
+                base.Deserialize(obj);
 
-                ((ProjectSettingsTitleBar)ve).label = m_Label.GetValueFromBag(bag, cc);
+                var e = (ProjectSettingsTitleBar)obj;
+                e.label = label;
             }
         }
+
 
         internal class Styles
         {
             public static StyleBlock settingsBtn { get; } = EditorResources.GetStyle("sb-settings-icon-btn");
 
             public const string k_TitleBarClassName = "project-settings-title-bar";
-            public const string k_TitleLabelClassName = "project-settings-title-label";
+            public const string k_TitleLabelClassName = "project-settings-title-bar__label";
         }
 
         string m_Label;

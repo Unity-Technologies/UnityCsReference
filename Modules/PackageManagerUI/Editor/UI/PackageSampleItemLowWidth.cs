@@ -10,7 +10,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private VisualElementCache cache { get; set; }
 
-        public PackageSampleItemLowWidth(ResourceLoader resourceLoader, IPackageVersion version, Sample sample, SelectionProxy selection, AssetDatabaseProxy assetDatabase, ApplicationProxy application, IOProxy iOProxy)
+        public PackageSampleItemLowWidth(IResourceLoader resourceLoader, IPackageVersion version, Sample sample, ISelectionProxy selection, IAssetDatabaseProxy assetDatabase, IApplicationProxy application, IIOProxy iOProxy)
         {
             var root = resourceLoader.GetTemplate("PackageSampleItemLowWidth.uxml");
             Add(root);

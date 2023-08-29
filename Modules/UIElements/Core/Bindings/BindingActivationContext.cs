@@ -22,7 +22,7 @@
         /// </summary>
         public BindingId bindingId => m_BindingId;
 
-        internal BindingActivationContext(VisualElement element, BindingId property)
+        internal BindingActivationContext(VisualElement element, in BindingId property)
         {
             m_TargetElement = element;
             m_BindingId = property;

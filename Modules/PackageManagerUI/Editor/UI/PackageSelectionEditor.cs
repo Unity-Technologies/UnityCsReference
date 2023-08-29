@@ -61,17 +61,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private IPackageVersion m_Version;
 
-        private SelectionProxy m_Selection;
-        private AssetDatabaseProxy m_AssetDatabase;
-        private UpmCache m_UpmCache;
-        private PackageDatabase m_PackageDatabase;
+        private ISelectionProxy m_Selection;
+        private IAssetDatabaseProxy m_AssetDatabase;
+        private IUpmCache m_UpmCache;
+        private IPackageDatabase m_PackageDatabase;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_Selection = container.Resolve<SelectionProxy>();
-            m_AssetDatabase = container.Resolve<AssetDatabaseProxy>();
-            m_UpmCache = container.Resolve<UpmCache>();
-            m_PackageDatabase = container.Resolve<PackageDatabase>();
+            m_Selection = container.Resolve<ISelectionProxy>();
+            m_AssetDatabase = container.Resolve<IAssetDatabaseProxy>();
+            m_UpmCache = container.Resolve<IUpmCache>();
+            m_PackageDatabase = container.Resolve<IPackageDatabase>();
         }
 
         void OnEnable()
@@ -198,7 +198,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             base.OnForceReloadInspector();
 
-            var packageDatabase = ServicesContainer.instance.Resolve<PackageDatabase>();
+            var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
             if (packageSelectionObject != null && (m_Package == null || m_Version == null))
                 packageDatabase.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
         }

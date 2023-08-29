@@ -317,11 +317,12 @@ namespace UnityEditor.TextCore.Text
             // Create serialized object to allow us to use a serialized property of an empty kerning pair.
             m_SerializedPropertyHolder = CreateInstance<SerializedPropertyHolder>();
             m_SerializedPropertyHolder.fontAsset = m_fontAsset;
-            SerializedObject internalSerializedObject = new SerializedObject(m_SerializedPropertyHolder);
-            m_FirstCharacterUnicode_prop = internalSerializedObject.FindProperty("firstCharacter");
-            m_SecondCharacterUnicode_prop = internalSerializedObject.FindProperty("secondCharacter");
-            m_EmptyGlyphPairAdjustmentRecord_prop = internalSerializedObject.FindProperty("glyphPairAdjustmentRecord");
-
+            using (SerializedObject internalSerializedObject = new (m_SerializedPropertyHolder))
+            {
+                m_FirstCharacterUnicode_prop = internalSerializedObject.FindProperty("firstCharacter");
+                m_SecondCharacterUnicode_prop = internalSerializedObject.FindProperty("secondCharacter");
+                m_EmptyGlyphPairAdjustmentRecord_prop = internalSerializedObject.FindProperty("glyphPairAdjustmentRecord");
+            }
             m_materialPresets = TextCoreEditorUtilities.FindMaterialReferences(m_fontAsset);
 
             m_GlyphSearchList = new List<int>();

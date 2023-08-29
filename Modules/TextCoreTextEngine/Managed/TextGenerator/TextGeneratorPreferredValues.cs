@@ -815,8 +815,7 @@ namespace UnityEngine.TextCore.Text
 
                     // Compute Preferred Width & Height
                     renderedWidth = Mathf.Max(renderedWidth, textWidth + m_MarginLeft + m_MarginRight);
-                    renderedHeight = m_MaxAscender - m_MaxDescender;
-
+                    renderedHeight = Mathf.Max(renderedHeight, m_MaxAscender - m_MaxDescender);
                 }
 
                 #endregion Handle Visible Characters
@@ -965,7 +964,7 @@ namespace UnityEngine.TextCore.Text
                     if ((isWhiteSpace || charCode == k_ZeroWidthSpace || charCode == k_HyphenMinus || charCode == k_SoftHyphen) && (!m_IsNonBreakingSpace || ignoreNonBreakingSpace) && charCode != k_NoBreakSpace && charCode != k_FigureSpace && charCode != k_NonBreakingHyphen && charCode != k_NarrowNoBreakSpace && charCode != k_WordJoiner)
                     {
                         // Ignore Hyphen (0x2D) when preceded by a whitespace
-                        if ((charCode == k_HyphenMinus && m_CharacterCount > 0 && char.IsWhiteSpace(textInfo.textElementInfo[m_CharacterCount - 1].character)) == false)
+                        if ((charCode == k_HyphenMinus && m_CharacterCount > 0 && char.IsWhiteSpace((char)textInfo.textElementInfo[m_CharacterCount - 1].character)) == false)
                         {
                             isFirstWordOfLine = false;
                             shouldSaveHardLineBreak = true;

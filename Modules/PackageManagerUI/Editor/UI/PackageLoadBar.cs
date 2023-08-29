@@ -30,21 +30,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_LoadMoreInProgress;
         private bool m_LoadAllDiff;
 
-        private ResourceLoader m_ResourceLoader;
-        private ApplicationProxy m_Application;
-        private UnityConnectProxy m_UnityConnect;
-        private PageManager m_PageManager;
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private PageRefreshHandler m_PageRefreshHandler;
+        private IResourceLoader m_ResourceLoader;
+        private IApplicationProxy m_Application;
+        private IUnityConnectProxy m_UnityConnect;
+        private IPageManager m_PageManager;
+        private IProjectSettingsProxy m_SettingsProxy;
+        private IPageRefreshHandler m_PageRefreshHandler;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_Application = container.Resolve<ApplicationProxy>();
-            m_UnityConnect = container.Resolve<UnityConnectProxy>();
-            m_PageManager = container.Resolve<PageManager>();
-            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
-            m_PageRefreshHandler = container.Resolve<PageRefreshHandler>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
+            m_Application = container.Resolve<IApplicationProxy>();
+            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
+            m_PageManager = container.Resolve<IPageManager>();
+            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
+            m_PageRefreshHandler = container.Resolve<IPageRefreshHandler>();
         }
 
         public PackageLoadBar()

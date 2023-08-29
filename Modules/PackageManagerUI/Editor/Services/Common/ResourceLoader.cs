@@ -10,13 +10,24 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal interface IResourceLoader : IService
+    {
+        StyleSheet packageManagerCommonStyleSheet { get; }
+        StyleSheet packageManagerWindowStyleSheet { get; }
+        StyleSheet filtersDropdownStyleSheet { get; }
+        StyleSheet inputDropdownStyleSheet { get; }
+        StyleSheet inProgressDropdownStyleSheet { get; }
+        StyleSheet selectionWindowStyleSheet { get; }
+        VisualElement GetTemplate(string templateFilename, bool shouldThrowException = true);
+    }
+
     internal class ResourceLoaderException : Exception
     {
         public ResourceLoaderException(string message) : base(message) {}
     }
 
     [Serializable]
-    internal class ResourceLoader : ISerializationCallbackReceiver
+    internal class ResourceLoader : BaseService<IResourceLoader>, IResourceLoader, ISerializationCallbackReceiver
     {
         internal static class StyleSheetPath
         {
@@ -141,7 +152,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     var styleSheetsToResolve = StyleSheetPath.packageManagerComponents.Select(p =>
                     {
-                        var styleSheet = m_ApplicationProxy.Load<StyleSheet>(p);
+                        var styleSheet = Load<StyleSheet>(p);
                         if (styleSheet == null)
                             throw new ResourceLoaderException($"Unable to load styleSheet {p}");
                         return styleSheet;
@@ -152,40 +163,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public StyleSheet filtersDropdownStyleSheet
-        {
-            get
-            {
-                return FindResolvedStyleSheetFromType(StyleSheetType.FiltersDropdown)
-                    ?? ResolveStyleSheets(StyleSheetType.FiltersDropdown,
-                                          StyleSheetPath.packageManagerVariables,
-                                          StyleSheetPath.filtersDropdown);
-            }
-        }
+        public StyleSheet filtersDropdownStyleSheet =>
+            FindResolvedStyleSheetFromType(StyleSheetType.FiltersDropdown)
+            ?? ResolveStyleSheets(StyleSheetType.FiltersDropdown,
+                StyleSheetPath.packageManagerVariables,
+                StyleSheetPath.filtersDropdown);
 
-        public StyleSheet inputDropdownStyleSheet
-        {
-            get
-            {
-                return FindResolvedStyleSheetFromType(StyleSheetType.InputDropdown)
-                    ?? ResolveStyleSheets(StyleSheetType.InputDropdown,
-                                          StyleSheetPath.defaultCommon,
-                                          StyleSheetPath.packageManagerVariables,
-                                          StyleSheetPath.inputDropdown);
-            }
-        }
+        public StyleSheet inputDropdownStyleSheet =>
+            FindResolvedStyleSheetFromType(StyleSheetType.InputDropdown)
+            ?? ResolveStyleSheets(StyleSheetType.InputDropdown,
+                StyleSheetPath.defaultCommon,
+                StyleSheetPath.packageManagerVariables,
+                StyleSheetPath.inputDropdown);
 
-        public StyleSheet inProgressDropdownStyleSheet
-        {
-            get
-            {
-                return FindResolvedStyleSheetFromType(StyleSheetType.InProgressDropdown)
-                    ?? ResolveStyleSheets(StyleSheetType.InProgressDropdown,
-                                          StyleSheetPath.defaultCommon,
-                                          StyleSheetPath.packageManagerVariables,
-                                          StyleSheetPath.inProgressDropdown);
-            }
-        }
+        public StyleSheet inProgressDropdownStyleSheet =>
+            FindResolvedStyleSheetFromType(StyleSheetType.InProgressDropdown)
+            ?? ResolveStyleSheets(StyleSheetType.InProgressDropdown,
+                StyleSheetPath.defaultCommon,
+                StyleSheetPath.packageManagerVariables,
+                StyleSheetPath.inProgressDropdown);
 
         public StyleSheet selectionWindowStyleSheet
         {
@@ -204,7 +200,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return ResolveStyleSheets(styleSheetType, styleSheetPaths.Select(p =>
             {
-                var styleSheet = m_ApplicationProxy.Load<StyleSheet>(p);
+                var styleSheet = Load<StyleSheet>(p);
                 if (styleSheet == null)
                     throw new ResourceLoaderException($"Unable to load styleSheet {p}");
                 return styleSheet;
@@ -229,19 +225,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private int m_NestedGetTemplateDepth;
 
-        [NonSerialized]
-        private ApplicationProxy m_ApplicationProxy;
-
-        public void ResolveDependencies(ApplicationProxy applicationProxy)
-        {
-            m_ApplicationProxy = applicationProxy;
-        }
-
+        // The virtual keyword is needed for unit tests
         public virtual VisualElement GetTemplate(string templateFilename, bool shouldThrowException = true)
         {
             m_NestedGetTemplateDepth++;
             var fullTemplatePath = k_TemplateRoot + templateFilename;
-            var visualTreeAsset = m_ApplicationProxy.Load<VisualTreeAsset>(fullTemplatePath);
+            var visualTreeAsset = Load<VisualTreeAsset>(fullTemplatePath);
             var result = visualTreeAsset?.Instantiate();
             m_NestedGetTemplateDepth--;
 
@@ -255,6 +244,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             return result;
         }
 
+        // The virtual keyword is needed for unit tests
+        public virtual T Load<T>(string path) where T : UnityEngine.Object
+        {
+            return EditorGUIUtility.Load(path) as T;
+        }
+
+        // The virtual keyword is needed for unit tests
         public virtual void LocalizeVisualElement(VisualElement visualElement, Func<string, string> l10nFunc)
         {
             visualElement?.Query().Descendents<VisualElement>().ForEach((element) =>

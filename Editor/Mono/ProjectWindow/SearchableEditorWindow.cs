@@ -107,6 +107,18 @@ namespace UnityEditor
             return false;
         }
 
+        [MenuItem("Assets/Find References In Project", false, 26)]
+        private static void OnSearchForReferencesInProject()
+        {
+            SearchForReferencesInProject(Selection.activeObject);
+        }
+
+        [MenuItem("Assets/Find References In Project", true)]
+        private static bool OnSearchForReferencesInProjectValidate()
+        {
+            return Selection.activeObject && Selection.activeObject != null;
+        }
+
         virtual public void OnEnable()
         {
             SearchService.SearchService.syncSearchChanged += OnSyncSearchChanged;
@@ -182,6 +194,11 @@ namespace UnityEditor
         {
             get { return m_SearchMode; }
             set { m_SearchMode = value; }
+        }
+
+        internal static void SearchForReferencesInProject(UnityEngine.Object obj)
+        {
+            CommandService.Execute("OpenToFindReferenceOnObject", CommandHint.Menu, obj);
         }
 
         internal static void SearchForReferencesToInstanceID(int instanceID)

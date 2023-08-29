@@ -9,11 +9,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         [InitializeOnLoadMethod]
         private static void SubscribeToRegistriesAdded()
         {
-            var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
+            var applicationProxy = ServicesContainer.instance.Resolve<IApplicationProxy>();
 
             if (!applicationProxy.isBatchMode && applicationProxy.isUpmRunning)
             {
-                var upmRegistryClient = ServicesContainer.instance.Resolve<UpmRegistryClient>();
+                var upmRegistryClient = ServicesContainer.instance.Resolve<IUpmRegistryClient>();
                 upmRegistryClient.onRegistriesAdded += OnRegistriesAdded;
                 upmRegistryClient.CheckRegistriesChanged();
             }
@@ -35,8 +35,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 EditorApplication.update -= WaitForPackageManagerProjectSettings;
 
                 var servicesContainer = ServicesContainer.instance;
-                var packageManagerSettingsProxy = servicesContainer.Resolve<PackageManagerProjectSettingsProxy>();
-                var applicationProxy = servicesContainer.Resolve<ApplicationProxy>();
+                var packageManagerSettingsProxy = servicesContainer.Resolve<IProjectSettingsProxy>();
+                var applicationProxy = servicesContainer.Resolve<IApplicationProxy>();
                 packageManagerSettingsProxy.scopedRegistriesSettingsExpanded = true;
 
                 var message = registriesAddedCount.Pluralize(

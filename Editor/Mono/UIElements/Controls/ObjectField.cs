@@ -136,7 +136,7 @@ namespace UnityEditor.UIElements
             m_ObjectFieldDisplay.Update();
         }
 
-        private class ObjectFieldDisplay : VisualElement
+        internal class ObjectFieldDisplay : VisualElement
         {
             private readonly ObjectField m_ObjectField;
             private readonly Image m_ObjectIcon;
@@ -144,7 +144,7 @@ namespace UnityEditor.UIElements
 
             static readonly string ussClassName = "unity-object-field-display";
             static readonly string iconUssClassName = ussClassName + "__icon";
-            static readonly string labelUssClassName = ussClassName + "__label";
+            internal static readonly string labelUssClassName = ussClassName + "__label";
             static readonly string acceptDropVariantUssClassName = ussClassName + "--accept-drop";
 
             internal void ShowMixedValue(bool show)
@@ -281,6 +281,7 @@ namespace UnityEditor.UIElements
 
             private void OnKeyboardDelete()
             {
+                m_ObjectField.SetProperty(serializedPropertyKey, null);
                 m_ObjectField.value = null;
             }
 

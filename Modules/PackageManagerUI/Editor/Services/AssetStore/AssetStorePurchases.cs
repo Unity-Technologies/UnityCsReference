@@ -133,7 +133,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal partial class JsonParser
     {
-        public virtual AssetStorePurchases ParsePurchases(IDictionary<string, object> rawList)
+        public AssetStorePurchases ParsePurchases(IDictionary<string, object> rawList)
         {
             var purchases = new AssetStorePurchases();
             purchases.total = (long)rawList["total"];

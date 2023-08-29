@@ -245,9 +245,6 @@ namespace UnityEngine
         // In the Build Settings dialog there is a check box called "Development Build".
         public static extern bool isDebugBuild { get; }
 
-        [FreeFunction("DeveloperConsole_OpenConsoleFile")]
-        internal static extern void OpenConsoleFile();
-
         [NativeThrows]
         internal static extern DiagnosticSwitch[] diagnosticSwitches { get; }
 

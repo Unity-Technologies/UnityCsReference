@@ -7,9 +7,14 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [ExcludeFromCodeCoverage]
-    internal class DateTimeProxy
+    internal interface IDateTimeProxy : IService
     {
-        public virtual DateTime utcNow => DateTime.UtcNow;
+        DateTime utcNow { get; }
+    }
+
+    [ExcludeFromCodeCoverage]
+    internal class DateTimeProxy : BaseService<IDateTimeProxy>, IDateTimeProxy
+    {
+        public DateTime utcNow => DateTime.UtcNow;
     }
 }

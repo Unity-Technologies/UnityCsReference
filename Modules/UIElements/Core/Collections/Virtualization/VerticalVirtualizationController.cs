@@ -18,6 +18,9 @@ namespace UnityEngine.UIElements
         protected List<T> m_ActiveItems;
         protected T m_DraggedItem;
 
+        int? m_DeferredScrollToItemIndex;
+        readonly Action m_PerformDeferredScrollToItem;
+
         public override IEnumerable<ReusableCollectionItem> activeItems => m_ActiveItems;
 
         int m_LastFocusedElementIndex = -1;
@@ -59,6 +62,7 @@ namespace UnityEngine.UIElements
             m_CollectionView = collectionView;
             m_ActiveItems = new List<T>();
             m_VisibleItemPredicateDelegate = VisibleItemPredicate;
+            m_PerformDeferredScrollToItem = PerformDeferredScrollToItem;
 
             // ScrollView sets this to true to support Absolute position. It causes issues with the scrollbars with animated reordering.
             // In the case of a collection view, we know our ReusableCollectionItems need to be in Relative anyway, so no need for it.
@@ -185,6 +189,44 @@ namespace UnityEngine.UIElements
 
             // Handle focus cycling
             HandleFocus(recycledItem, previousIndex);
+        }
+
+        /// <summary>
+        /// If the content container is dirty, we need to defer the scroll to later to ensure we have the correct size.
+        /// <see cref="ScheduleDeferredScrollToItem"/> to start the deferred scroll.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns>true if the content container is dirty and the scroll will need to be deferred.</returns>
+        protected bool ShouldDeferScrollToItem(int index)
+        {
+            if (m_ScrollView.contentContainer.layoutNode.IsDirty)
+            {
+                m_DeferredScrollToItemIndex = index;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Scedule a deferred scroll to the item at the index provided to <see cref="ShouldDeferScrollToItem(int)"/> if it was deferred.
+        /// </summary>
+        protected void ScheduleDeferredScrollToItem()
+        {
+            if (m_DeferredScrollToItemIndex != null)
+            {
+                m_CollectionView.schedule.Execute(m_PerformDeferredScrollToItem);
+            }
+        }
+
+        void PerformDeferredScrollToItem()
+        {
+            if (m_DeferredScrollToItemIndex != null)
+            {
+                var index = m_DeferredScrollToItemIndex.Value;
+                m_DeferredScrollToItemIndex = null;
+                ScrollToItem(index);
+            }
         }
 
         public override void OnFocusIn(VisualElement leafTarget)

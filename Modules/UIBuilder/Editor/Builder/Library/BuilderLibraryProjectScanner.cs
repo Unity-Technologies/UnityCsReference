@@ -93,12 +93,12 @@ namespace Unity.UI.Builder
 
             var shownTypes = new HashSet<Type>();
             UxmlSerializedDataRegistry.Register();
-            foreach (var kvp in UxmlSerializedDataRegistry.SerializedDataTypes)
+
+            var sortedEntries = UxmlSerializedDataRegistry.SerializedDataTypes.Values.OrderBy(o => o.FullName);
+            foreach (var type in sortedEntries)
             {
                 try
                 {
-                    var fullname = kvp.Key;
-                    var type = kvp.Value;
                     var elementType = type.DeclaringType;
                     var hasNamespace = !string.IsNullOrEmpty(elementType.Namespace);
 
@@ -118,11 +118,15 @@ namespace Unity.UI.Builder
                     if (elementType.GetCustomAttribute<HideInInspector>() != null)
                         continue;
 
+                    // Ignore elements with generic parameters
+                    if (elementType.ContainsGenericParameters)
+                        continue;
+
                     // UxmlElements with a custom name appear in SerializedDataTypes twice, we only need 1 item with the custom name.
                     if (shownTypes.Contains(type))
                         continue;
 
-                    var description = UxmlSerializedDataRegistry.GetDescription(fullname);
+                    var description = UxmlSerializedDataRegistry.GetDescription(elementType.FullName);
                     Debug.AssertFormat(description != null, "Expected to find a description for {0}", elementType.FullName);
 
                     shownTypes.Add(type);
@@ -136,7 +140,7 @@ namespace Unity.UI.Builder
 
                     // Generate a unique id.
                     // We prepend the name as its possible the same Type may be displayed for both UxmlSerializedData and UxmlTraits so we need to ensure the ids do not conflict.
-                    var idCode = ("uxml-serialized-data" + kvp.Key + elementType.FullName).GetHashCode();
+                    var idCode = ("uxml-serialized-data" + elementType.FullName + elementType.FullName).GetHashCode();
 
                     var newItem = BuilderLibraryContent.CreateItem(name, "CustomCSharpElement", elementType, () =>
                     {
@@ -154,6 +158,8 @@ namespace Unity.UI.Builder
                         return instance as VisualElement;
                     }, id: idCode);
                     newItem.data.hasPreview = true;
+
+                    CheckForUxmlElementInClassHierarchy(elementType);
 
                     if (!hasNamespace)
                     {
@@ -175,6 +181,35 @@ namespace Unity.UI.Builder
             }
             sourceCategory.AddChildren(emptyNamespaceControls);
         }
+
+        private void CheckForUxmlElementInClassHierarchy(Type elementType)
+        {
+            var uxmlElementAttribute = elementType.GetCustomAttribute<UxmlElementAttribute>();
+
+            // Skip traits classes
+            if (uxmlElementAttribute == null) return;
+
+            var baseType = elementType.BaseType;
+
+            while (baseType != null)
+            {
+                uxmlElementAttribute = baseType.GetCustomAttribute<UxmlElementAttribute>();
+
+                if (uxmlElementAttribute == null)
+                {
+                    var memberFilter = new MemberFilter((x,_) => x.GetCustomAttribute<UxmlAttributeAttribute>() != null);
+                    var members = baseType.FindMembers(MemberTypes.Property | MemberTypes.Field, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly, memberFilter, null);
+
+                    if (members.Length > 0)
+                    {
+                        Debug.LogWarning(string.Format(BuilderConstants.LibraryUxmlAttributeUsedInNonUxmlElementClassMessage, baseType.FullName));
+                    }
+                }
+
+                baseType = baseType.BaseType;
+            }
+        }
+
 
         public void ImportFactoriesFromSource(BuilderLibraryItem sourceCategory)
         {
@@ -257,6 +292,10 @@ namespace Unity.UI.Builder
                 }
 
                 if (elementType == typeof(TemplateContainer))
+                    continue;
+
+                // Ignore UxmlSerialized elements in non-developer mode
+                if (!Unsupported.IsDeveloperMode() && UxmlSerializedDataRegistry.GetDescription(elementType?.FullName) != null)
                     continue;
 
                 TreeViewItemData<BuilderLibraryTreeItem> newItem = default;

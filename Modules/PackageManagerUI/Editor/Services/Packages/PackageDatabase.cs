@@ -10,6 +10,33 @@ using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal interface IPackageDatabase : IService
+    {
+        event Action<string, string> onPackageUniqueIdFinalize;
+        event Action<PackagesChangeArgs> onPackagesChanged;
+
+        bool isEmpty { get; }
+        IEnumerable<IPackage> allPackages { get; }
+
+
+        IPackage GetPackage(string uniqueId);
+        IPackage GetPackage(long productId);
+        void GetPackageAndVersionByIdOrName(string idOrName, out IPackage package, out IPackageVersion version, bool bruteForceSearch);
+        IPackage GetPackageByIdOrName(string idOrName);
+        void GetPackageAndVersion(string packageUniqueId, string versionUniqueId, out IPackage package, out IPackageVersion version);
+        void GetPackageAndVersion(PackageAndVersionIdPair pair, out IPackage package, out IPackageVersion version);
+        void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version);
+        IEnumerable<IPackageVersion> GetReverseDependencies(IPackageVersion version, bool directDependenciesOnly = false);
+        IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version);
+        IPackage[] GetCustomizedDependencies(IPackageVersion version, bool? rootDependenciesOnly = null);
+        IEnumerable<Sample> GetSamples(IPackageVersion version);
+        IPackageVersion GetLifecycleOrPrimaryVersion(string packageUniqueId);
+        void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false);
+        void UpdatePackages(IList<IPackage> toAddOrUpdate = null, IList<string> toRemove = null);
+
+        void ClearSamplesCache();
+    }
+
     internal class PackagesChangeArgs
     {
         public IList<IPackage> added = Array.Empty<IPackage>();
@@ -22,15 +49,15 @@ namespace UnityEditor.PackageManager.UI.Internal
     }
 
     [Serializable]
-    internal class PackageDatabase : ISerializationCallbackReceiver
+    internal class PackageDatabase : BaseService<IPackageDatabase>, IPackageDatabase, ISerializationCallbackReceiver
     {
         // Normally package unique Id never changes for a package, but when we are installing a package from git or a tarball
         // we only had a temporary unique id at first. For example, for `com.unity.a` is a unique id for a package, but when
         // we are installing from git, the only identifier we know is something like `git@example.com/com.unity.a.git`.
         // We only know the id `com.unity.a` after the package has been successfully installed, and we'll trigger an event for that.
-        public virtual event Action<string, string> onPackageUniqueIdFinalize = delegate {};
+        public event Action<string, string> onPackageUniqueIdFinalize = delegate {};
 
-        public virtual event Action<PackagesChangeArgs> onPackagesChanged = delegate {};
+        public event Action<PackagesChangeArgs> onPackagesChanged = delegate {};
 
         private readonly Dictionary<string, IPackage> m_Packages = new();
         // we added m_Feature to speed up reverse dependencies lookup
@@ -41,35 +68,31 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private Package[] m_SerializedPackages = Array.Empty<Package>();
 
-        [NonSerialized]
-        private UniqueIdMapper m_UniqueIdMapper;
-        [NonSerialized]
-        private AssetDatabaseProxy m_AssetDatabase;
-        [NonSerialized]
-        private UpmCache m_UpmCache;
-        [NonSerialized]
-        private IOProxy m_IOProxy;
-        public void ResolveDependencies(UniqueIdMapper uniqueIdMapper,
-            AssetDatabaseProxy assetDatabase,
-            UpmCache upmCache,
-            IOProxy ioProxy)
+        private readonly IUniqueIdMapper m_UniqueIdMapper;
+        private readonly IAssetDatabaseProxy m_AssetDatabase;
+        private readonly IUpmCache m_UpmCache;
+        private readonly IIOProxy m_IOProxy;
+        public PackageDatabase(IUniqueIdMapper uniqueIdMapper,
+            IAssetDatabaseProxy assetDatabase,
+            IUpmCache upmCache,
+            IIOProxy ioProxy)
         {
-            m_UniqueIdMapper = uniqueIdMapper;
-            m_AssetDatabase = assetDatabase;
-            m_UpmCache = upmCache;
-            m_IOProxy = ioProxy;
+            m_UniqueIdMapper = RegisterDependency(uniqueIdMapper);
+            m_AssetDatabase = RegisterDependency(assetDatabase);
+            m_UpmCache = RegisterDependency(upmCache);
+            m_IOProxy = RegisterDependency(ioProxy);
         }
 
-        public virtual bool isEmpty => !m_Packages.Any();
+        public bool isEmpty => !m_Packages.Any();
 
-        public virtual IEnumerable<IPackage> allPackages => m_Packages.Values;
+        public IEnumerable<IPackage> allPackages => m_Packages.Values;
 
-        public virtual IPackage GetPackage(string uniqueId)
+        public IPackage GetPackage(string uniqueId)
         {
             return GetPackage(uniqueId, false);
         }
 
-        public virtual IPackage GetPackage(long productId)
+        public IPackage GetPackage(long productId)
         {
             return GetPackage(productId.ToString(), false);
         }
@@ -90,7 +113,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         // In some situations, we only know an id (could be package unique id, or version unique id) or just a name (package Name, or display name)
         // but we still might be able to find a package and a version that matches the criteria
-        public virtual void GetPackageAndVersionByIdOrName(string idOrName, out IPackage package, out IPackageVersion version, bool bruteForceSearch)
+        public void GetPackageAndVersionByIdOrName(string idOrName, out IPackage package, out IPackageVersion version, bool bruteForceSearch)
         {
             // GetPackage by packageUniqueId itself is not an expensive operation, so we want to try and see if the input string is a packageUniqueId first.
             package = GetPackage(idOrName, true);
@@ -115,24 +138,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             version = null;
         }
 
-        public virtual IPackage GetPackageByIdOrName(string idOrName)
+        public IPackage GetPackageByIdOrName(string idOrName)
         {
             GetPackageAndVersionByIdOrName(idOrName, out var package, out _, false);
             return package;
         }
 
-        public virtual void GetPackageAndVersion(string packageUniqueId, string versionUniqueId, out IPackage package, out IPackageVersion version)
+        public void GetPackageAndVersion(string packageUniqueId, string versionUniqueId, out IPackage package, out IPackageVersion version)
         {
             package = GetPackage(packageUniqueId, true);
             version = package?.versions.FirstOrDefault(v => v.uniqueId == versionUniqueId);
         }
 
-        public virtual void GetPackageAndVersion(PackageAndVersionIdPair pair, out IPackage package, out IPackageVersion version)
+        public void GetPackageAndVersion(PackageAndVersionIdPair pair, out IPackage package, out IPackageVersion version)
         {
             GetPackageAndVersion(pair?.packageUniqueId, pair?.versionUniqueId, out package, out version);
         }
 
-        public virtual void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version)
+        public void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version)
         {
             package = GetPackage(info.name);
             if (package == null)
@@ -155,7 +178,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual IEnumerable<IPackageVersion> GetReverseDependencies(IPackageVersion version, bool directDependenciesOnly = false)
+        public IEnumerable<IPackageVersion> GetReverseDependencies(IPackageVersion version, bool directDependenciesOnly = false)
         {
             if (version?.dependencies == null)
                 return null;
@@ -165,7 +188,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 => (directDependenciesOnly ? p.dependencies : p.resolvedDependencies)?.Any(r => r.name == version.name) ?? false);
         }
 
-        public virtual IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version)
+        public IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version)
         {
             if (version?.dependencies == null)
                 return Enumerable.Empty<IPackageVersion>();
@@ -175,7 +198,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return installedFeatures.Where(f => f.dependencies?.Any(r => r.name == version.name) ?? false);
         }
 
-        public virtual IPackage[] GetCustomizedDependencies(IPackageVersion version, bool? rootDependenciesOnly = null)
+        public IPackage[] GetCustomizedDependencies(IPackageVersion version, bool? rootDependenciesOnly = null)
         {
             return version?.dependencies?.Select(d => GetPackage(d.name)).Where(p =>
             {
@@ -184,7 +207,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }).ToArray() ?? new IPackage[0];
         }
 
-        public virtual IEnumerable<Sample> GetSamples(IPackageVersion version)
+        public IEnumerable<Sample> GetSamples(IPackageVersion version)
         {
             var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
             if (packageInfo == null || packageInfo.version != version.version?.ToString())
@@ -198,7 +221,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return samples;
         }
 
-        public virtual IPackageVersion GetLifecycleOrPrimaryVersion(string packageUniqueId)
+        public IPackageVersion GetLifecycleOrPrimaryVersion(string packageUniqueId)
         {
             var versions = GetPackage(packageUniqueId)?.versions;
             return versions?.lifecycleVersion ?? versions?.primary;
@@ -229,12 +252,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             onPackagesChanged?.Invoke(new PackagesChangeArgs { added = added, updated = updated, removed = removed, preUpdate = preUpdate, progressUpdated = progressUpdated });
         }
 
-        public virtual void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false)
+        public void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false)
         {
             TriggerOnPackagesChanged(updated: modified, progressUpdated: isProgressUpdated ? modified : null);
         }
 
-        public virtual void UpdatePackages(IList<IPackage> toAddOrUpdate = null, IList<string> toRemove = null)
+        public void UpdatePackages(IList<IPackage> toAddOrUpdate = null, IList<string> toRemove = null)
         {
             toAddOrUpdate ??= Array.Empty<IPackage>();
             toRemove ??= Array.Empty<string>();

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -59,14 +60,7 @@ namespace UnityEditor
             return EditorGUI.kSingleLineHeight;
         }
 
-        internal bool CanCacheInspectorGUISafe(SerializedProperty property)
-        {
-            ScriptAttributeUtility.s_DrawerStack.Push(this);
-            bool canCache = CanCacheInspectorGUI(property);
-            ScriptAttributeUtility.s_DrawerStack.TryPop(out _);
-            return canCache;
-        }
-
+        [Obsolete("CanCacheInspectorGUI has been deprecated and is no longer used.", false)]
         public virtual bool CanCacheInspectorGUI(SerializedProperty property)
         {
             return true;

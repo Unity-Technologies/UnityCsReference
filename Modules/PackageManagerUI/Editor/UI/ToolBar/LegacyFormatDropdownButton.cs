@@ -31,10 +31,10 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
         }
     }
 
-    public LegacyFormatDropdownButton(PackageOperationDispatcher operationDispatcher,
-        AssetStoreDownloadManager assetStoreDownloadManager,
-        UnityConnectProxy unityConnect,
-        ApplicationProxy application)
+    public LegacyFormatDropdownButton(IPackageOperationDispatcher operationDispatcher,
+        IAssetStoreDownloadManager assetStoreDownloadManager,
+        IUnityConnectProxy unityConnect,
+        IApplicationProxy application)
     {
         // We use the order of the list to determine which action to show in priority as the main action.
         // E.g. If DownloadUpdate and Import are available actions, we will show DownloadUpdate as the main action,
@@ -43,9 +43,9 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
         {
             new DownloadNewAction(operationDispatcher, assetStoreDownloadManager, unityConnect, application),
             new DownloadUpdateAction(operationDispatcher, assetStoreDownloadManager, unityConnect, application),
-            new ImportNewAction(operationDispatcher, assetStoreDownloadManager, application),
-            new ImportUpdateAction(operationDispatcher, assetStoreDownloadManager, application),
-            new ReImportAction(operationDispatcher, assetStoreDownloadManager, application),
+            new ImportNewAction(operationDispatcher, assetStoreDownloadManager, application, unityConnect),
+            new ImportUpdateAction(operationDispatcher, assetStoreDownloadManager, application, unityConnect),
+            new ReImportAction(operationDispatcher, assetStoreDownloadManager, application, unityConnect),
             new RemoveImportedAction(operationDispatcher, application),
             new ReDownloadAction(operationDispatcher, assetStoreDownloadManager, unityConnect, application),
         };

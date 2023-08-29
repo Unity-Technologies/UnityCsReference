@@ -15,7 +15,6 @@ namespace UnityEngine.Multiplayer.Internal
     {
         Client = 0,
         Server = 1,
-        ClientHost = 2,
     }
 
     [VisibleToOtherModules]
@@ -24,8 +23,8 @@ namespace UnityEngine.Multiplayer.Internal
     {
         Client = 1 << MultiplayerRole.Client,
         Server = 1 << MultiplayerRole.Server,
-        ClientHost = 1 << MultiplayerRole.ClientHost,
+        ClientAndServer = Client | Server,
 
-        All = Client | Server | ClientHost,
+        All = Client | Server | ClientAndServer,
     }
 }

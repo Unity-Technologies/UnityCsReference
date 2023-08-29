@@ -16,18 +16,10 @@ namespace UnityEditor.UIElements.ProjectSettings
         protected Color HighlightSelectionColor = EditorResources.GetStyle("sb-settings-panel-client-area").GetColor("-unity-search-highlight-selection-color");
         protected Color HighlightColor = EditorResources.GetStyle("sb-settings-panel-client-area").GetColor("-unity-search-highlight-color");
 
-        const string k_StylePath = "StyleSheets/ProjectSettings/ProjectSettingsCommon.uss";
-
-        public ProjectSettingsElementWithSO()
-        {
-            if(!HasStyleSheetPath(k_StylePath))
-                AddStyleSheetPath(k_StylePath);
-        }
-
         internal void Initialize(SerializedObject serializedObject)
         {
             m_SerializedObject = serializedObject;
-            m_SettingsWindow = EditorWindow.GetWindow<SettingsWindow>();
+            m_SettingsWindow = EditorWindow.GetWindow<ProjectSettingsWindow>();
 
             Initialize();
         }

@@ -420,6 +420,10 @@ namespace UnityEngine.UIElements
             {
                 m_TextElement.text = mixedValueString;
             }
+            else
+            {
+                UpdateValueLabel(value);
+            }
 
             m_TextElement.EnableInClassList(labelUssClassName, showMixedValue);
             m_TextElement.EnableInClassList(mixedValueLabelUssClassName, showMixedValue);

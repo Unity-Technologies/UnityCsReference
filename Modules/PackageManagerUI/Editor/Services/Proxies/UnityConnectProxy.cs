@@ -9,9 +9,20 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal interface IUnityConnectProxy : IService
+    {
+        event Action<bool, bool> onUserLoginStateChange;
+        bool isUserInfoReady { get; }
+        bool isUserLoggedIn { get; }
+
+        string GetConfigurationURL(CloudConfigUrl config);
+        void ShowLogin();
+        void OpenAuthorizedURLInWebBrowser(string url);
+    }
+
     [Serializable]
     [ExcludeFromCodeCoverage]
-    internal class UnityConnectProxy
+    internal class UnityConnectProxy : BaseService<IUnityConnectProxy>, IUnityConnectProxy
     {
         [SerializeField]
         private bool m_IsUserInfoReady;
@@ -22,33 +33,33 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private string m_UserId = string.Empty;
 
-        public virtual event Action<bool, bool> onUserLoginStateChange = delegate {};
-        public virtual bool isUserInfoReady => m_IsUserInfoReady;
-        public virtual bool isUserLoggedIn => m_IsUserInfoReady && m_HasAccessToken;
+        public event Action<bool, bool> onUserLoginStateChange = delegate {};
+        public bool isUserInfoReady => m_IsUserInfoReady;
+        public bool isUserLoggedIn => m_IsUserInfoReady && m_HasAccessToken;
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             m_IsUserInfoReady = UnityConnect.instance.isUserInfoReady;
             m_HasAccessToken = !string.IsNullOrEmpty(UnityConnect.instance.userInfo.accessToken);
             UnityConnect.instance.UserStateChanged += OnUserStateChanged;
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
             UnityConnect.instance.UserStateChanged -= OnUserStateChanged;
         }
 
-        public virtual string GetConfigurationURL(CloudConfigUrl config)
+        public string GetConfigurationURL(CloudConfigUrl config)
         {
             return UnityConnect.instance.GetConfigurationURL(config);
         }
 
-        public virtual void ShowLogin()
+        public void ShowLogin()
         {
             UnityConnect.instance.ShowLogin();
         }
 
-        public virtual void OpenAuthorizedURLInWebBrowser(string url)
+        public void OpenAuthorizedURLInWebBrowser(string url)
         {
             UnityConnect.instance.OpenAuthorizedURLInWebBrowser(url);
         }

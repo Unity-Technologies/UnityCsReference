@@ -8,7 +8,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageQuickStartButton : PackageLinkButton
     {
-        public PackageQuickStartButton(ApplicationProxy application, PackageLink link): base(application, link)
+        public PackageQuickStartButton(IApplicationProxy application, PackageLink link): base(application, link)
         {
             m_Link = link;
             m_Application = application;

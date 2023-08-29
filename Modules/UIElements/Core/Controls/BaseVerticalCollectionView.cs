@@ -471,6 +471,8 @@ namespace UnityEngine.UIElements
         internal ListViewDragger dragger => m_Dragger;
         internal CollectionVirtualizationController virtualizationController => GetOrCreateVirtualizationController();
 
+        internal bool allowSingleClickChoice = false;
+
         /// <summary>
         /// The view controller for this view.
         /// </summary>
@@ -1006,6 +1008,7 @@ namespace UnityEngine.UIElements
             {
                 if (recycledItem.index == index)
                 {
+                    viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                     viewController.InvokeBindItem(recycledItem, recycledItem.index);
                     break;
                 }
@@ -1430,16 +1433,33 @@ namespace UnityEngine.UIElements
                         }
 
                         SetSelection(clickedIndex);
+                        if (allowSingleClickChoice)
+                            itemsChosen?.Invoke(m_SelectedItems);
                     }
 
                     break;
                 case 2:
-                    if (itemsChosen != null)
+                    if (itemsChosen == null)
+                        return;
+
+                    var wasClickedIndexInSelection = false;
+                    foreach (var index in selectedIndices)
                     {
-                        ProcessSingleClick(clickedIndex);
+                        if (clickedIndex == index)
+                        {
+                            wasClickedIndexInSelection = true;
+                            break;
+                        }
                     }
 
-                    itemsChosen?.Invoke(m_SelectedItems);
+                    ProcessSingleClick(clickedIndex);
+
+                    // Only invoke itemsChosen if we're clicking on the same entry. Case UUM-42450.
+                    if (!wasClickedIndexInSelection)
+                        return;
+
+                    if (!allowSingleClickChoice)
+                        itemsChosen?.Invoke(m_SelectedItems);
                     break;
             }
         }

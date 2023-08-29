@@ -11,24 +11,24 @@ namespace Unity.GraphToolsFoundation.Editor
 {
     static class MeshDrawingHelpers_Internal
     {
-        public static void SolidRectangle(MeshGenerationContext mgc, Rect rectParams, Color color, ContextType context)
+        public static void SolidRectangle(MeshGenerationContext mgc, Rect rectParams, Color color)
         {
-            mgc.meshGenerator.DrawRectangle(MeshGenerator.RectangleParams.MakeSolid(rectParams, color, context));
+            var playModeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
+            mgc.meshGenerator.DrawRectangle(MeshGenerator.RectangleParams.MakeSolid(rectParams, color, playModeTintColor));
         }
 
-        public static void Border(MeshGenerationContext mgc, Rect rectParams, Color color, float width, ContextType context)
+        public static void Border(MeshGenerationContext mgc, Rect rectParams, Color color, float width)
         {
-            Border(mgc, rectParams, color, width, Vector2.zero, context);
+            Border(mgc, rectParams, color, width, Vector2.zero);
         }
 
-        public static void Border(MeshGenerationContext mgc, Rect rectParams, Color[] colors, float borderWidth, Vector2[] radii, ContextType context)
+        public static void Border(MeshGenerationContext mgc, Rect rectParams, Color[] colors, float borderWidth, Vector2[] radii)
         {
+            var playModeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
             var borderParams = new MeshGenerator.BorderParams
             {
                 rect = rectParams,
-                playmodeTintColor = context == ContextType.Editor
-                    ? UIElementsUtility.editorPlayModeTintColor
-                    : Color.white,
+                playmodeTintColor = playModeTintColor,
                 bottomColor = colors[0],
                 topColor = colors[1],
                 leftColor = colors[2],
@@ -45,14 +45,13 @@ namespace Unity.GraphToolsFoundation.Editor
             mgc.meshGenerator.DrawBorder(borderParams);
         }
 
-        static void Border(MeshGenerationContext mgc, Rect rectParams, Color color,float borderWidth,Vector2 radius, ContextType context)
+        static void Border(MeshGenerationContext mgc, Rect rectParams, Color color, float borderWidth, Vector2 radius)
         {
+            var playModeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
             var borderParams = new MeshGenerator.BorderParams
             {
                 rect = rectParams,
-                playmodeTintColor = context == ContextType.Editor
-                    ? UIElementsUtility.editorPlayModeTintColor
-                    : Color.white,
+                playmodeTintColor = playModeTintColor,
                 bottomColor = color,
                 topColor = color,
                 leftColor = color,

@@ -11,40 +11,40 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<PackageDetailsBody> {}
 
-        private ResourceLoader m_ResourceLoader;
-        private PackageDatabase m_PackageDatabase;
-        private PackageOperationDispatcher m_OperationDispatcher;
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        private SelectionProxy m_Selection;
-        private AssetDatabaseProxy m_AssetDatabase;
-        private ApplicationProxy m_Application;
-        private IOProxy m_IOProxy;
-        private AssetStoreCache m_AssetStoreCache;
-        private PageManager m_PageManager;
-        private UpmCache m_UpmCache;
-        private UnityConnectProxy m_UnityConnect;
-        private PackageLinkFactory m_PackageLinkFactory;
+        private IResourceLoader m_ResourceLoader;
+        private IPackageDatabase m_PackageDatabase;
+        private IPackageOperationDispatcher m_OperationDispatcher;
+        private IProjectSettingsProxy m_SettingsProxy;
+        private IPackageManagerPrefs m_PackageManagerPrefs;
+        private ISelectionProxy m_Selection;
+        private IAssetDatabaseProxy m_AssetDatabase;
+        private IApplicationProxy m_Application;
+        private IIOProxy m_IOProxy;
+        private IAssetStoreCache m_AssetStoreCache;
+        private IPageManager m_PageManager;
+        private IUpmCache m_UpmCache;
+        private IUnityConnectProxy m_UnityConnect;
+        private IPackageLinkFactory m_PackageLinkFactory;
 
         private PackageDetailsTabView m_TabView;
 
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
-            m_PackageDatabase = container.Resolve<PackageDatabase>();
-            m_OperationDispatcher = container.Resolve<PackageOperationDispatcher>();
-            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
-            m_Selection = container.Resolve<SelectionProxy>();
-            m_AssetDatabase = container.Resolve<AssetDatabaseProxy>();
-            m_Application = container.Resolve<ApplicationProxy>();
-            m_IOProxy = container.Resolve<IOProxy>();
-            m_AssetStoreCache = container.Resolve<AssetStoreCache>();
-            m_PageManager = container.Resolve<PageManager>();
-            m_UpmCache = container.Resolve<UpmCache>();
-            m_UnityConnect = container.Resolve<UnityConnectProxy>();
-            m_PackageLinkFactory = container.Resolve<PackageLinkFactory>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
+            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
+            m_PackageDatabase = container.Resolve<IPackageDatabase>();
+            m_OperationDispatcher = container.Resolve<IPackageOperationDispatcher>();
+            m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
+            m_Selection = container.Resolve<ISelectionProxy>();
+            m_AssetDatabase = container.Resolve<IAssetDatabaseProxy>();
+            m_Application = container.Resolve<IApplicationProxy>();
+            m_IOProxy = container.Resolve<IIOProxy>();
+            m_AssetStoreCache = container.Resolve<IAssetStoreCache>();
+            m_PageManager = container.Resolve<IPageManager>();
+            m_UpmCache = container.Resolve<IUpmCache>();
+            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
+            m_PackageLinkFactory = container.Resolve<IPackageLinkFactory>();
         }
 
         private IPackageVersion m_Version;

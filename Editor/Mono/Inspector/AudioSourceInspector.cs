@@ -355,10 +355,7 @@ namespace UnityEditor
             UpdateWrappersAndLegend();
 
             EditorGUILayout.Space();
-            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_AudioResource, Styles.audioResourceLabel);
-
-            var refreshAudioContainerWindow = EditorGUI.EndChangeCheck() && AudioContainerWindow.Instance != null;
 
             EditorGUILayout.PropertyField(m_OutputAudioMixerGroup, Styles.outputMixerGroupLabel);
             EditorGUILayout.PropertyField(m_Mute);
@@ -426,11 +423,6 @@ namespace UnityEditor
 
             if (m_LowpassObject != null)
                 m_LowpassObject.ApplyModifiedProperties();
-
-            if (refreshAudioContainerWindow)
-            {
-                AudioContainerWindow.Instance.Refresh();
-            }
         }
 
         private static void SetRolloffToTarget(SerializedProperty property, Object target)

@@ -2,25 +2,32 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 
-namespace UnityEditor
+namespace UnityEditor;
+
+internal abstract class BaseBuildTarget : IBuildTarget
 {
-    internal abstract class BaseBuildTarget : IBuildTarget
+    public virtual bool CanBuildOnCurrentHostPlatform => false;
+    public virtual string DisplayName => TargetName;
+    public abstract RuntimePlatform RuntimePlatform { get; }
+    public abstract string TargetName { get; }
+    public abstract int GetLegacyId { get; }
+
+    public virtual IBuildPlatformProperties BuildPlatformProperties => Properties as IBuildPlatformProperties;
+    public virtual IGraphicsPlatformProperties GraphicsPlatformProperties => Properties as IGraphicsPlatformProperties;
+    public virtual IPlayerConnectionPlatformProperties PlayerConnectionPlatformProperties => Properties as IPlayerConnectionPlatformProperties;
+    protected virtual IPlatformProperties Properties => null;
+
+    public bool TryGetProperties<T>(out T properties) where T: IPlatformProperties
     {
-        public virtual bool CanBuildOnCurrentHostPlatform => false;
-        public virtual string DisplayName => TargetName;
-        public abstract RuntimePlatform RuntimePlatform { get; }
-        public abstract string TargetName { get; }
-
-        public int CompareTo(IBuildTarget other)
+        if (Properties is T)
         {
-            return TargetName.CompareTo(other.TargetName);
+            properties = (T)Properties;
+            return true;
         }
-
-        public bool Equals(IBuildTarget other)
-        {
-            return TargetName.Equals(other.TargetName);
-        }
+        properties = default(T);
+        return false;
     }
 }

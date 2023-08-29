@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements.Internal
         /// <summary>
         /// Returns the error code encountered while visiting the provided path.
         /// </summary>
-        public VisitReturnCode ReturnCode { get; private set; }
+        public VisitReturnCode ReturnCode { get; internal set; }
 
         Type m_LastType;
         int m_PathIndex;

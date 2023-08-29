@@ -88,23 +88,23 @@ namespace UnityEditor.PackageManager.UI.Internal
         public AssetStoreDownloadInfo downloadInfo => m_DownloadInfo;
 
         [NonSerialized]
-        private IOProxy m_IOProxy;
+        private IIOProxy m_IOProxy;
         [NonSerialized]
-        private AssetStoreUtils m_AssetStoreUtils;
+        private IAssetStoreUtils m_AssetStoreUtils;
         [NonSerialized]
-        private AssetStoreRestAPI m_AssetStoreRestAPI;
+        private IAssetStoreRestAPI m_AssetStoreRestAPI;
         [NonSerialized]
-        private AssetStoreCache m_AssetStoreCache;
+        private IAssetStoreCache m_AssetStoreCache;
         [NonSerialized]
-        private AssetStoreCachePathProxy m_AssetStoreCachePathProxy;
+        private IAssetStoreCachePathProxy m_AssetStoreCachePathProxy;
         [NonSerialized]
-        private LocalInfoHandler m_LocalInfoHandler;
-        public void ResolveDependencies(IOProxy ioProxy,
-            AssetStoreUtils assetStoreUtils,
-            AssetStoreRestAPI assetStoreRestAPI,
-            AssetStoreCache assetStoreCache,
-            AssetStoreCachePathProxy assetStoreCachePathProxy,
-            LocalInfoHandler localInfoHandler)
+        private ILocalInfoHandler m_LocalInfoHandler;
+        public void ResolveDependencies(IIOProxy ioProxy,
+            IAssetStoreUtils assetStoreUtils,
+            IAssetStoreRestAPI assetStoreRestAPI,
+            IAssetStoreCache assetStoreCache,
+            IAssetStoreCachePathProxy assetStoreCachePathProxy,
+            ILocalInfoHandler localInfoHandler)
         {
             m_IOProxy = ioProxy;
             m_AssetStoreUtils = assetStoreUtils;
@@ -114,7 +114,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_LocalInfoHandler = localInfoHandler;
         }
 
-        public AssetStoreDownloadOperation(IOProxy ioProxy, AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, AssetStoreCache assetStoreCache, AssetStoreCachePathProxy assetStoreCachePathProxy, LocalInfoHandler localInfoHandler, long productId, string oldPath)
+        public AssetStoreDownloadOperation(IIOProxy ioProxy, IAssetStoreUtils assetStoreUtils, IAssetStoreRestAPI assetStoreRestAPI, IAssetStoreCache assetStoreCache, IAssetStoreCachePathProxy assetStoreCachePathProxy, ILocalInfoHandler localInfoHandler, long productId, string oldPath)
         {
             ResolveDependencies(ioProxy, assetStoreUtils, assetStoreRestAPI, assetStoreCache, assetStoreCachePathProxy, localInfoHandler);
 

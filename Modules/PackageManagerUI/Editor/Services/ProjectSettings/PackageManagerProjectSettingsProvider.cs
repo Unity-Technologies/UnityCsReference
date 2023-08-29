@@ -19,15 +19,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             "Pre-release packages are in the process of becoming stable and will be available as production-ready by the end of this LTS release. \n" +
             "We recommend using these only for testing purposes and to give us direct feedback until then.");
 
-        private ResourceLoader m_ResourceLoader;
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private ApplicationProxy m_ApplicationProxy;
+        private IResourceLoader m_ResourceLoader;
+        private IProjectSettingsProxy m_SettingsProxy;
+        private IApplicationProxy m_Application;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
-            m_ApplicationProxy = container.Resolve<ApplicationProxy>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
+            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
+            m_Application = container.Resolve<IApplicationProxy>();
         }
 
         internal static class StylesheetPath
@@ -83,7 +83,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 preReleaseInfoBox.Q<Button>().clickable.clicked += () =>
                 {
-                    m_ApplicationProxy.OpenURL($"https://docs.unity3d.com/{m_ApplicationProxy.shortUnityVersion}/Documentation/Manual/pack-preview.html");
+                    m_Application.OpenURL($"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-preview.html");
                 };
 
                 enablePreReleasePackages.SetValueWithoutNotify(m_SettingsProxy.enablePreReleasePackages);
@@ -96,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var saveIt = true;
                         if (newValue && !m_SettingsProxy.oneTimeWarningShown)
                         {
-                            if (m_ApplicationProxy.DisplayDialog("showPreReleasePackages", L10n.Tr("Show pre-release packages"), k_Message, L10n.Tr("I understand"), L10n.Tr("Cancel")))
+                            if (m_Application.DisplayDialog("showPreReleasePackages", L10n.Tr("Show pre-release packages"), k_Message, L10n.Tr("I understand"), L10n.Tr("Cancel")))
                                 m_SettingsProxy.oneTimeWarningShown = true;
                             else
                                 saveIt = false;

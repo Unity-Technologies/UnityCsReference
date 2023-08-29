@@ -10,15 +10,16 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine.Rendering
 {
-    public static class RenderPipelineManager
+    public static partial class RenderPipelineManager
     {
         internal static RenderPipelineAsset s_CurrentPipelineAsset;
         static List<Camera> s_Cameras = new List<Camera>();
 
-        private static string s_CurrentPipelineType;
+        private static string s_CurrentPipelineType = k_BuiltinPipelineName;
         const string k_BuiltinPipelineName = "Built-in Pipeline";
 
         private static RenderPipeline s_CurrentPipeline = null;
+
         public static RenderPipeline currentPipeline
         {
             get => s_CurrentPipeline;
@@ -31,18 +32,22 @@ namespace UnityEngine.Rendering
 
         public static event Action<ScriptableRenderContext, List<Camera>> beginContextRendering;
         public static event Action<ScriptableRenderContext, List<Camera>> endContextRendering;
-        public static event Action<ScriptableRenderContext, Camera[]> beginFrameRendering;
         public static event Action<ScriptableRenderContext, Camera> beginCameraRendering;
-        public static event Action<ScriptableRenderContext, Camera[]> endFrameRendering;
         public static event Action<ScriptableRenderContext, Camera> endCameraRendering;
 
         public static event Action activeRenderPipelineTypeChanged;
         public static event Action<RenderPipelineAsset, RenderPipelineAsset> activeRenderPipelineAssetChanged;
 
+        public static event Action activeRenderPipelineCreated;
+        public static event Action activeRenderPipelineDisposed;
+        public static bool pipelineSwitchCompleted => ReferenceEquals(s_CurrentPipelineAsset, GraphicsSettings.currentRenderPipeline) && !IsPipelineRequireCreation();
+
         internal static void BeginContextRendering(ScriptableRenderContext context, List<Camera> cameras)
         {
-            beginFrameRendering?.Invoke(context, cameras.ToArray());
             beginContextRendering?.Invoke(context, cameras);
+#pragma warning disable CS0618
+            beginFrameRendering?.Invoke(context, cameras.ToArray());
+#pragma warning restore CS0618
         }
 
         internal static void BeginCameraRendering(ScriptableRenderContext context, Camera camera)
@@ -52,7 +57,9 @@ namespace UnityEngine.Rendering
 
         internal static void EndContextRendering(ScriptableRenderContext context, List<Camera> cameras)
         {
+#pragma warning disable CS0618
             endFrameRendering?.Invoke(context, cameras.ToArray());
+#pragma warning restore CS0618
             endContextRendering?.Invoke(context, cameras);
         }
 
@@ -92,6 +99,7 @@ namespace UnityEngine.Rendering
         {
             if (currentPipeline != null && !currentPipeline.disposed)
             {
+                activeRenderPipelineDisposed?.Invoke();
                 currentPipeline.Dispose();
                 s_CurrentPipelineAsset = null;
                 currentPipeline = null;
@@ -130,13 +138,13 @@ namespace UnityEngine.Rendering
         {
             HandleRenderPipelineChange(pipelineAsset);
 
-            if (s_CurrentPipelineAsset != null
-                && (currentPipeline == null || currentPipeline.disposed))
+            if (IsPipelineRequireCreation())
             {
                 currentPipeline = s_CurrentPipelineAsset.InternalCreatePipeline();
+                activeRenderPipelineCreated?.Invoke();
             }
         }
 
-        public static bool pipelineSwitchCompleted => ReferenceEquals(s_CurrentPipelineAsset, GraphicsSettings.currentRenderPipeline);
+        static bool IsPipelineRequireCreation() => s_CurrentPipelineAsset != null && (currentPipeline == null || currentPipeline.disposed);
     }
 }

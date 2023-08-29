@@ -96,8 +96,8 @@ namespace UnityEditor
             public static GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos");
             public static GUIContent zoomSliderContent = EditorGUIUtility.TrTextContent("Scale", "Size of the game view on the screen.");
             public static GUIContent vsyncContent = EditorGUIUtility.TrTextContent("VSync");
-            public static GUIContent muteOffContent = EditorGUIUtility.TrIconContent("SceneviewAudio On", "Mute Audio");
-            public static GUIContent muteOnContent = EditorGUIUtility.TrIconContent("SceneviewAudio", "Mute Audio");
+            public static GUIContent muteOffContent = EditorGUIUtility.TrIconContent("GameViewAudio On", "Mute Audio");
+            public static GUIContent muteOnContent = EditorGUIUtility.TrIconContent("GameViewAudio", "Mute Audio");
             public static GUIContent shortcutsOnContent = EditorGUIUtility.TrIconContent("Keyboard", "Unity Shortcuts");
             public static GUIContent shortcutsOffContent = EditorGUIUtility.TrIconContent("KeyboardShortcutsDisabled", "Unity Shortcuts");
             public static GUIContent statsContent = EditorGUIUtility.TrTextContent("Stats");
@@ -106,7 +106,7 @@ namespace UnityEditor
             public static GUIContent clearEveryFrameContextMenuContent = EditorGUIUtility.TrTextContent("Clear Every Frame in Edit Mode");
             public static GUIContent lowResAspectRatiosContextMenuContent = EditorGUIUtility.TrTextContent("Low Resolution Aspect Ratios");
             public static GUIContent metalFrameCaptureContent = EditorGUIUtility.TrIconContent("FrameCapture", "Capture the current view and open in Xcode frame debugger");
-            public static GUIContent frameDebuggerContent = EditorGUIUtility.TrIconContent("Debug_Frame_d", "Opens the Frame Debugger");
+            public static GUIContent frameDebuggerContent = EditorGUIUtility.TrIconContent("Debug", "Opens the Frame Debugger");
 
             public const string k_StatsShortcutID = "Game View/Toggle Stats";
             public const string k_StatsTooltip = "View general rendering information";
@@ -294,7 +294,11 @@ namespace UnityEditor
         }
 
         // Area for warnings such as no cameras rendering
-        Rect warningPosition { get { return new Rect((viewInWindow.size - kWarningSize) * 0.5f, kWarningSize); } }
+        Rect warningPosition => new Rect(
+            Mathf.Max((viewInWindow.size.x - kWarningSize.x) * 0.5f, viewInWindow.x),
+            Mathf.Max((viewInWindow.size.y - kWarningSize.y) * 0.5f, viewInWindow.y),
+            kWarningSize.x,
+            kWarningSize.y);
 
         Vector2 gameMouseOffset { get { return -viewInWindow.position - targetInView.position; } }
 
@@ -640,31 +644,34 @@ namespace UnityEditor
 
                 SubsystemManager.GetSubsystems(m_DisplaySubsystems);
                 // Allow the user to select how the XR device will be rendered during "Play In Editor"
-                if (VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)) || (m_DisplaySubsystems.Count != 0 && !m_DisplaySubsystems[0].disableLegacyRenderer))
+                if (m_DisplaySubsystems.Count != 0)
                 {
-                    EditorGUI.BeginChangeCheck();
-                    GameViewRenderMode currentGameViewRenderMode = UnityEngine.XR.XRSettings.gameViewRenderMode;
-                    int selectedRenderMode = EditorGUILayout.Popup(Mathf.Clamp(((int)currentGameViewRenderMode) - 1, 0, Styles.xrRenderingModes.Length - 1), Styles.xrRenderingModes, EditorStyles.toolbarPopup, GUILayout.Width(80));
-                    if (EditorGUI.EndChangeCheck() && currentGameViewRenderMode != GameViewRenderMode.None)
+                    if (m_DisplaySubsystems[0].disableLegacyRenderer)
                     {
-                        SetXRRenderMode(selectedRenderMode);
-                    }
-                }
-                // Handles the case where XRSDK is being used without the shim layer
-                else if (m_DisplaySubsystems.Count != 0 && m_DisplaySubsystems[0].disableLegacyRenderer)
-                {
-                    EditorGUI.BeginChangeCheck();
-                    int currentMirrorViewBlitMode = m_DisplaySubsystems[0].GetPreferredMirrorBlitMode();
-                    int currentRenderMode = XRTranslateMirrorViewBlitModeToRenderMode(currentMirrorViewBlitMode);
-                    int selectedRenderMode = EditorGUILayout.Popup(Mathf.Clamp(currentRenderMode , 0, Styles.xrRenderingModes.Length - 1), Styles.xrRenderingModes, EditorStyles.toolbarPopup, GUILayout.Width(80));
-                    int selectedMirrorViewBlitMode = XRTranslateRenderModeToMirrorViewBlitMode(selectedRenderMode);
-                    if (EditorGUI.EndChangeCheck() || currentMirrorViewBlitMode == 0)
-                    {
-                        m_DisplaySubsystems[0].SetPreferredMirrorBlitMode(selectedMirrorViewBlitMode);
-                        if (selectedMirrorViewBlitMode != m_XRRenderMode)
-                            ClearTargetTexture();
+                        // Handles the case where XRSDK is being used without the shim layer
+                        EditorGUI.BeginChangeCheck();
+                        int currentMirrorViewBlitMode = m_DisplaySubsystems[0].GetPreferredMirrorBlitMode();
+                        int currentRenderMode = XRTranslateMirrorViewBlitModeToRenderMode(currentMirrorViewBlitMode);
+                        int selectedRenderMode = EditorGUILayout.Popup(Mathf.Clamp(currentRenderMode, 0, Styles.xrRenderingModes.Length - 1), Styles.xrRenderingModes, EditorStyles.toolbarPopup, GUILayout.Width(80));
+                        int selectedMirrorViewBlitMode = XRTranslateRenderModeToMirrorViewBlitMode(selectedRenderMode);
+                        if (EditorGUI.EndChangeCheck() || currentMirrorViewBlitMode == 0)
+                        {
+                            m_DisplaySubsystems[0].SetPreferredMirrorBlitMode(selectedMirrorViewBlitMode);
+                            if (selectedMirrorViewBlitMode != m_XRRenderMode)
+                                ClearTargetTexture();
 
-                        m_XRRenderMode = selectedMirrorViewBlitMode;
+                            m_XRRenderMode = selectedMirrorViewBlitMode;
+                        }
+                    }
+                    else
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        GameViewRenderMode currentGameViewRenderMode = UnityEngine.XR.XRSettings.gameViewRenderMode;
+                        int selectedRenderMode = EditorGUILayout.Popup(Mathf.Clamp(((int)currentGameViewRenderMode) - 1, 0, Styles.xrRenderingModes.Length - 1), Styles.xrRenderingModes, EditorStyles.toolbarPopup, GUILayout.Width(80));
+                        if (EditorGUI.EndChangeCheck() && currentGameViewRenderMode != GameViewRenderMode.None)
+                        {
+                            SetXRRenderMode(selectedRenderMode);
+                        }
                     }
                 }
                 GUILayout.FlexibleSpace();

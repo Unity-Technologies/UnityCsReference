@@ -74,7 +74,7 @@ namespace Unity.UI.Builder
             if (targetField is DimensionStyleField || targetField is NumericStyleField || targetField is IntegerStyleField)
             {
                 m_CompleterOnTarget = CreateCompleter();
-                m_CompleterOnTarget.textField = targetField.Q<TextField>();
+                m_CompleterOnTarget.SetupCompleterField(targetField.Q<TextField>(), false);
             }
 
             labelElement = new Label();

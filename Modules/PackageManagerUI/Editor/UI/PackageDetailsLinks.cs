@@ -11,14 +11,13 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<PackageDetailsLinks> {}
 
-        private ApplicationProxy m_Application;
-        private PackageLinkFactory m_PackageLinkFactory;
-
+        private IApplicationProxy m_Application;
+        private IPackageLinkFactory m_PackageLinkFactory;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_Application = container.Resolve<ApplicationProxy>();
-            m_PackageLinkFactory = container.Resolve<PackageLinkFactory>();
+            m_Application = container.Resolve<IApplicationProxy>();
+            m_PackageLinkFactory = container.Resolve<IPackageLinkFactory>();
         }
 
         public PackageDetailsLinks()

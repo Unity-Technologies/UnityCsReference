@@ -9,15 +9,15 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal abstract class DownloadActionBase : PackageAction
 {
-    protected readonly PackageOperationDispatcher m_OperationDispatcher;
-    protected readonly AssetStoreDownloadManager m_AssetStoreDownloadManager;
-    protected readonly UnityConnectProxy m_UnityConnect;
-    protected readonly ApplicationProxy m_Application;
+    protected readonly IPackageOperationDispatcher m_OperationDispatcher;
+    protected readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
+    protected readonly IUnityConnectProxy m_UnityConnect;
+    protected readonly IApplicationProxy m_Application;
 
-    protected DownloadActionBase(PackageOperationDispatcher operationDispatcher,
-        AssetStoreDownloadManager assetStoreDownloadManager,
-        UnityConnectProxy unityConnect,
-        ApplicationProxy application)
+    protected DownloadActionBase(IPackageOperationDispatcher operationDispatcher,
+        IAssetStoreDownloadManager assetStoreDownloadManager,
+        IUnityConnectProxy unityConnect,
+        IApplicationProxy application)
     {
         m_OperationDispatcher = operationDispatcher;
         m_AssetStoreDownloadManager = assetStoreDownloadManager;

@@ -90,7 +90,7 @@ namespace UnityEditor
                 return;
             }
 
-            if (attribute is PropertyCollectionAttribute)
+            if (attribute.applyToCollection)
             {
                 // Do not apply this to array elements
                 if (!property.isArray)
@@ -98,10 +98,12 @@ namespace UnityEditor
 
                 if (!propertyType.IsArrayOrList())
                 {
-                    throw new NotSupportedException($"Cannot apply {nameof(PropertyCollectionAttribute)} on a field of type {propertyType.Name}." +
+                    throw new NotSupportedException($"Cannot apply {nameof(attribute)} on a field of type {propertyType.Name}." +
                         $"\nPlease use this attribute on a collection.");
                 }
             }
+
+
 
             // Look for its drawer type of this attribute
             HandleDrawnType(property, attribute.GetType(), propertyType, field, attribute);
@@ -119,7 +121,7 @@ namespace UnityEditor
                     // Use PropertyDrawer on array elements, not on array itself.
                     // If there's a PropertyAttribute on an array, we want to apply it to the individual array elements instead.
                     // This is the only convenient way we can let the user apply PropertyDrawer attributes to elements inside an array.
-                    if (propertyType != null && propertyType.IsArrayOrList() && attribute is not PropertyCollectionAttribute)
+                    if (propertyType != null && propertyType.IsArrayOrList() && !attribute.applyToCollection)
                         return;
 
                     var propertyDrawerForType = (PropertyDrawer)System.Activator.CreateInstance(drawerType);
@@ -371,45 +373,6 @@ namespace UnityEditor
             }
 
             return height;
-        }
-
-        public bool CanCacheInspectorGUI(SerializedProperty property)
-        {
-            if (m_DecoratorDrawers != null &&
-                !isCurrentlyNested &&
-                m_DecoratorDrawers.Any(decorator => !decorator.CanCacheInspectorGUI()))
-                return false;
-
-            if (propertyDrawer != null)
-            {
-                // Retrieve drawer BEFORE increasing nesting.
-                PropertyDrawer drawer = propertyDrawer;
-                using (var nestingContext = IncrementNestingContext())
-                {
-                    return drawer.CanCacheInspectorGUISafe(property.Copy());
-                }
-            }
-
-            property = property.Copy();
-
-            bool childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
-
-            // Loop through all child properties
-            if (childrenAreExpanded)
-            {
-                PropertyHandler handler = null;
-                SerializedProperty endProperty = property.GetEndProperty();
-                while (property.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(property, endProperty))
-                {
-                    if (handler == null)
-                        handler = ScriptAttributeUtility.GetHandler(property);
-                    if (!handler.CanCacheInspectorGUI(property))
-                        return false;
-                    childrenAreExpanded = false;
-                }
-            }
-
-            return true;
         }
 
         public void AddMenuItems(SerializedProperty property, GenericMenu menu)

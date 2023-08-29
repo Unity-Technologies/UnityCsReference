@@ -111,7 +111,9 @@ namespace UnityEditor
             {
                 // Create
                 T t = CreateInstance<T>();
-                t.hideFlags = HideFlags.HideAndDontSave;
+
+                // Editing should be allowed, but the user is responsible for calling Save() (case uum-40767)
+                t.hideFlags = HideFlags.HideAndDontSave & ~HideFlags.NotEditable;
             }
 
             System.Diagnostics.Debug.Assert(s_Instance != null);

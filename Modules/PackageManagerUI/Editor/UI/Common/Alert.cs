@@ -12,16 +12,16 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<Alert> {}
 
-        private ResourceLoader m_ResourceLoader;
-        private UnityConnectProxy m_UnityConnectProxy;
+        private IResourceLoader m_ResourceLoader;
+        private IUnityConnectProxy m_UnityConnectProxy;
 
         private Action m_OnActionButtonClicked;
 
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_UnityConnectProxy = container.Resolve<UnityConnectProxy>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
+            m_UnityConnectProxy = container.Resolve<IUnityConnectProxy>();
         }
 
         public Alert()

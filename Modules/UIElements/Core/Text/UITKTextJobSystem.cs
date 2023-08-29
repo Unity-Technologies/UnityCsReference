@@ -192,8 +192,7 @@ namespace UnityEngine.UIElements
                 ManagedJobData managedJobData = managedJobDatas[index];
                 var visualElement = managedJobData.visualElement;
                 visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings();
-                var settings = TextHandle.settings;
-                if (visualElement.uitkTextHandle.m_PreviousGenerationSettingsHash == settings.GetHashCode())
+                if (visualElement.uitkTextHandle.m_PreviousGenerationSettingsHash == TextHandle.settings.GetHashCode())
                 {
                     visualElement.uitkTextHandle.AddTextInfoToCache();
                 }
@@ -292,12 +291,6 @@ namespace UnityEngine.UIElements
             var managedJobDatas = (List<ManagedJobData>)textData.managedJobDataHandle.Target;
             foreach (var managedJobData in managedJobDatas)
             {
-                if (managedJobData.vertices == null || managedJobData.vertices.Count == 0)
-                {
-                    managedJobData.Release();
-                    continue;
-                }
-
                 mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.visualElement);
 
                 managedJobData.visualElement.uitkTextHandle.HandleLinkAndATagCallbacks();

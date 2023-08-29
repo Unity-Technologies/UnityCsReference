@@ -34,7 +34,7 @@ namespace Unity.UI.Builder
             {
                 bindingPath = property.propertyPath,
                 objectType = typeof(ScriptableObject),
-                label = "Object",
+                label = " ",
             };
             field.AddToClassList(BuilderObjectField.alignedFieldUssClassName);
             return field;
@@ -49,7 +49,7 @@ namespace Unity.UI.Builder
             var field = base.CreatePropertyGUI(property);
             var textField = field.Q<TextField>();
             textField.AddToClassList(TextField.alignedFieldUssClassName);
-            textField.label = "Type";
+            textField.label = " ";
             textField.isDelayed = true;
             return field;
         }

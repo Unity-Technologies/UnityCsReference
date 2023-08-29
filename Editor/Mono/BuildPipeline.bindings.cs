@@ -183,7 +183,10 @@ namespace UnityEditor
         //AssetBundleAllowEditorOnlyScriptableObjects = 1 << 14,
 
         //Removes the Unity Version number in the Archive File & Serialized File headers during the build.
-        AssetBundleStripUnityVersion = 32768 // 1 << 15
+        AssetBundleStripUnityVersion = 32768, // 1 << 15
+
+        // Calculate bundle hash on the bundle content
+        UseContentHash = 65536 // 1 << 16
     }
 
     // Keep in sync with CanAppendBuild in EditorUtility.h
@@ -322,13 +325,6 @@ namespace UnityEditor
 
         public static BuildReport BuildPlayer(BuildPlayerOptions buildPlayerOptions)
         {
-            if (GetBuildTargetGroup(buildPlayerOptions.target) == BuildTargetGroup.Standalone &&
-                buildPlayerOptions.subtarget == (int)StandaloneBuildSubtarget.Default)
-            {
-                buildPlayerOptions.subtarget = (int) EditorUserBuildSettings.standaloneBuildSubtarget;
-            }
-            EditorUserBuildSettings.standaloneBuildSubtarget = (StandaloneBuildSubtarget) buildPlayerOptions.subtarget;
-
             return BuildPlayer(buildPlayerOptions.scenes, buildPlayerOptions.locationPathName, buildPlayerOptions.assetBundleManifestPath, buildPlayerOptions.targetGroup, buildPlayerOptions.target, buildPlayerOptions.subtarget, buildPlayerOptions.options, buildPlayerOptions.extraScriptingDefines);
         }
 
@@ -341,7 +337,7 @@ namespace UnityEditor
                 buildTargetGroup = GetBuildTargetGroup(target);
 
             string locationPathNameError;
-            if (!ValidateLocationPathNameForBuildTargetGroup(locationPathName, buildTargetGroup, target, subtarget, options, out locationPathNameError))
+            if (!ValidateLocationPathNameForBuildTarget(locationPathName, target, subtarget, options, out locationPathNameError))
                 throw new ArgumentException(locationPathNameError);
 
             string scenesError;
@@ -381,12 +377,12 @@ namespace UnityEditor
             }
         }
 
-        internal static bool ValidateLocationPathNameForBuildTargetGroup(string locationPathName, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, BuildOptions options, out string errorMessage)
+        internal static bool ValidateLocationPathNameForBuildTarget(string locationPathName, BuildTarget target, int subtarget, BuildOptions options, out string errorMessage)
         {
             if (string.IsNullOrEmpty(locationPathName))
             {
                 var willInstallInBuildFolder = (options & BuildOptions.InstallInBuildFolder) != 0 &&
-                    PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTargetGroup, target);
+                    PostprocessBuildPlayer.SupportsInstallInBuildFolder(target);
                 if (!willInstallInBuildFolder)
                 {
                     errorMessage =
@@ -396,7 +392,7 @@ namespace UnityEditor
             }
             else if (string.IsNullOrEmpty(Path.GetFileName(locationPathName)))
             {
-                var extensionForBuildTarget = PostprocessBuildPlayer.GetExtensionForBuildTarget(buildTargetGroup, target, subtarget, options);
+                var extensionForBuildTarget = PostprocessBuildPlayer.GetExtensionForBuildTarget(target, subtarget, options);
 
                 if (!string.IsNullOrEmpty(extensionForBuildTarget))
                 {
@@ -473,6 +469,14 @@ namespace UnityEditor
         {
             if (!BuildPlayerWindow.DefaultBuildMethods.IsBuildPathValid(locationPathName, out var msg))
                 throw new ArgumentException($"Invalid build path: '{locationPathName}'. {msg}");
+
+            if (buildTargetGroup == BuildTargetGroup.Standalone)
+            {
+                if (subtarget == (int)StandaloneBuildSubtarget.Default)
+                    subtarget = (int)EditorUserBuildSettings.standaloneBuildSubtarget;
+
+                EditorUserBuildSettings.standaloneBuildSubtarget = (StandaloneBuildSubtarget)subtarget;
+            }
 
             return BuildPlayerInternalNoCheck(levels, locationPathName, assetBundleManifestPath, buildTargetGroup, target, subtarget, options, extraScriptingDefines, false);
         }
@@ -682,32 +686,21 @@ namespace UnityEditor
         [RequiredByNativeCode]
         private static bool DoesBuildTargetSupportPlayerConnectionPlayerToEditor(BuildTarget targetPlatform)
         {
-            return
-                targetPlatform == BuildTarget.StandaloneOSX ||
-                targetPlatform == BuildTarget.StandaloneWindows ||
-                targetPlatform == BuildTarget.StandaloneWindows64 ||
-                targetPlatform == BuildTarget.StandaloneLinux64 ||
-                targetPlatform == BuildTarget.iOS ||
-                // Android: support connection from player to Editor in both cases
-                //          connecting to 127.0.0.1 (when both Editor and Android are on localhost using USB cable)
-                //          connecting to <ip of machine where the Editor is running>, the Android and PC has to be on the same subnet
-                targetPlatform == BuildTarget.Android ||
-                // WebGL: only supports connecting from player to editor, so always use this when profiling is set up in WebGL.
-                targetPlatform == BuildTarget.WebGL ||
-                // WSA: When Editor and Windows Store Apps are running on the same device, only connection from Player-To-Editor works
-                //      Editor-To-Player doesn't work, seems something is wrong with listening. For ex.,
-                //      when player starts, it's starts listening to 10.37.1.227:55207, this is an ip of the machine the application is running on
-                //      On the same machine editor is running, and editor simply cannot connect. Tried http://www.nirsoft.net/utils/cports.html, and shows that there's no application listening to that port...
-                //      Update: This is actually mentioned in the docs https://msdn.microsoft.com/en-us/library/windows/apps/Hh780593.aspx -
-                //         'Windows Runtime app can use an IP loopback only as the target address for a client network request. So a Windows Runtime app that uses a DatagramSocket or StreamSocketListener to listen on an IP loopback address is prevented from receiving any incoming packets.'
-                //      Note: if application is launched on another device, and starts lisenting, then the Editor will be able to connect
-                targetPlatform == BuildTarget.WSAPlayer;
+            if (BuildTargetDiscovery.TryGetProperties(targetPlatform, out IPlayerConnectionPlatformProperties properties))
+            {
+                return properties.SupportsConnect;
+            }
+            return false;
         }
 
         [RequiredByNativeCode]
         private static bool DoesBuildTargetSupportPlayerConnectionListening(BuildTarget platform)
         {
-            return platform != BuildTarget.WebGL;
+            if (BuildTargetDiscovery.TryGetProperties(platform, out IPlayerConnectionPlatformProperties properties))
+            {
+                return properties.SupportsListen;
+            }
+            return true;
         }
     }
 }

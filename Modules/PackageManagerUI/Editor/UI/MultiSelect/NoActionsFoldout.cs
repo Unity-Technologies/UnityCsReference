@@ -6,7 +6,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class NoActionsFoldout : MultiSelectFoldout
     {
-        public NoActionsFoldout(PageManager pageManager)
+        public NoActionsFoldout(IPageManager pageManager)
             : base(new DeselectAction(pageManager, "deselectNoAction"))
         {
             headerTextTemplate = L10n.Tr("No common action available for {0}");

@@ -8,22 +8,28 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
+internal interface ISelectionWindowProxy : IService
+{
+    event Action<IEnumerable<Asset>> onRemoveSelectionDone;
+    void Open(SelectionWindowData data);
+}
+
 [ExcludeFromCodeCoverage]
-internal class SelectionWindowProxy
+internal class SelectionWindowProxy : BaseService<ISelectionWindowProxy>, ISelectionWindowProxy
 {
     public event Action<IEnumerable<Asset>> onRemoveSelectionDone = delegate {};
 
-    public virtual void Open(SelectionWindowData data)
+    public void Open(SelectionWindowData data)
     {
         SelectionWindow.Open(data);
     }
 
-    public void OnEnable()
+    public override void OnEnable()
     {
         SelectionWindow.onRemoveSelectionDone += OnRemoveSelectionDone;
     }
 
-    public void OnDisable()
+    public override void OnDisable()
     {
         SelectionWindow.onRemoveSelectionDone -= OnRemoveSelectionDone;
     }

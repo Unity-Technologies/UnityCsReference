@@ -4,59 +4,68 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [Serializable]
-    internal class AssetStoreClientV2
+    internal interface IAssetStoreClient : IService
     {
-        public virtual event Action<AssetStorePurchases> onProductListFetched = delegate {};
-        public virtual event Action<long> onProductExtraFetched = delegate {};
+        event Action<AssetStorePurchases> onProductListFetched;
+        event Action<long> onProductExtraFetched;
+        event Action<IOperation> onListOperation;
+        event Action<IEnumerable<long>> onUpdateChecked;
 
-        public virtual event Action<IOperation> onListOperation = delegate {};
+        void ExtraFetch(long productId);
+        void FetchPurchaseInfos(IEnumerable<long> productIds, Action doneCallback = null);
+        void ListPurchases(PurchasesQueryArgs queryArgs);
+        void CancelListPurchases();
+        void FetchProductInfo(long productId, Action doneCallback = null);
+        void RefreshLocal();
+        void FetchUpdateInfos(IEnumerable<long> productIds, Action doneCallback = null);
+        IEnumerable<Asset> ListImportedAssets();
+        void OnPostProcessAllAssets(string[] importedAssetPaths, string[] deletedAssetPaths, string[] movedAssetPaths, string[] movedFromAssetPaths);
+        void RefreshImportedAssets();
+    }
 
-        public virtual event Action<IEnumerable<long>> onUpdateChecked = delegate {};
+    [Serializable]
+    internal class AssetStoreClientV2 : BaseService<IAssetStoreClient>, IAssetStoreClient, ISerializationCallbackReceiver
+    {
+        public event Action<AssetStorePurchases> onProductListFetched = delegate {};
+        public event Action<long> onProductExtraFetched = delegate {};
+
+        public event Action<IOperation> onListOperation = delegate {};
+
+        public event Action<IEnumerable<long>> onUpdateChecked = delegate {};
 
         [SerializeField]
         private AssetStoreListOperation m_ListOperation;
 
-        [NonSerialized]
-        private AssetStoreCache m_AssetStoreCache;
-        [NonSerialized]
-        private AssetStoreRestAPI m_AssetStoreRestAPI;
-        [NonSerialized]
-        private FetchStatusTracker m_FetchStatusTracker;
-        [NonSerialized]
-        private AssetDatabaseProxy m_AssetDatabase;
-        [NonSerialized]
-        private OperationFactory m_OperationFactory;
-        [NonSerialized]
-        private LocalInfoHandler m_LocalInfoHandler;
+        private readonly IAssetStoreCache m_AssetStoreCache;
+        private readonly IAssetStoreRestAPI m_AssetStoreRestAPI;
+        private readonly IFetchStatusTracker m_FetchStatusTracker;
+        private readonly IAssetDatabaseProxy m_AssetDatabase;
+        private readonly IOperationFactory m_OperationFactory;
+        private readonly ILocalInfoHandler m_LocalInfoHandler;
 
-        [ExcludeFromCodeCoverage]
-        public void ResolveDependencies(AssetStoreCache assetStoreCache,
-            AssetStoreRestAPI assetStoreRestAPI,
-            FetchStatusTracker fetchStatusTracker,
-            AssetDatabaseProxy assetDatabase,
-            OperationFactory operationFactory,
-            LocalInfoHandler localInfoHandler)
+        public AssetStoreClientV2(IAssetStoreCache assetStoreCache,
+            IAssetStoreRestAPI assetStoreRestAPI,
+            IFetchStatusTracker fetchStatusTracker,
+            IAssetDatabaseProxy assetDatabase,
+            IOperationFactory operationFactory,
+            ILocalInfoHandler localInfoHandler)
         {
-            m_AssetStoreCache = assetStoreCache;
-            m_AssetStoreRestAPI = assetStoreRestAPI;
+            m_AssetStoreCache = RegisterDependency(assetStoreCache);
+            m_AssetStoreRestAPI = RegisterDependency(assetStoreRestAPI);
 
-            m_FetchStatusTracker = fetchStatusTracker;
-            m_AssetDatabase = assetDatabase;
+            m_FetchStatusTracker = RegisterDependency(fetchStatusTracker);
+            m_AssetDatabase = RegisterDependency(assetDatabase);
 
-            m_OperationFactory = operationFactory;
-            m_LocalInfoHandler = localInfoHandler;
-
-            m_OperationFactory.ResolveDependenciesForOperation(m_ListOperation);
+            m_OperationFactory = RegisterDependency(operationFactory);
+            m_LocalInfoHandler = RegisterDependency(localInfoHandler);
         }
 
-        public virtual void ExtraFetch(long productId)
+        public void ExtraFetch(long productId)
         {
             FetchPurchaseInfos(new[] { productId });
 
@@ -74,7 +83,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 FetchUpdateInfos(new[] { productId });
         }
 
-        public virtual void FetchPurchaseInfos(IEnumerable<long> productIds, Action doneCallback = null)
+        public void FetchPurchaseInfos(IEnumerable<long> productIds, Action doneCallback = null)
         {
             FetchPurchaseInfosWithRetry(productIds, false, doneCallback);
         }
@@ -120,7 +129,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             fetchOperation.Start(queryArgs);
         }
 
-        public virtual void ListPurchases(PurchasesQueryArgs queryArgs)
+        public void ListPurchases(PurchasesQueryArgs queryArgs)
         {
             CancelListPurchases();
             m_ListOperation ??= m_OperationFactory.CreateAssetStoreListOperation();
@@ -139,12 +148,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ListOperation.Start(queryArgs);
         }
 
-        public virtual void CancelListPurchases()
+        public void CancelListPurchases()
         {
             m_ListOperation?.Stop();
         }
 
-        public virtual void FetchProductInfo(long productId, Action doneCallback = null)
+        public void FetchProductInfo(long productId, Action doneCallback = null)
         {
             m_FetchStatusTracker.SetFetchInProgress(productId, FetchType.ProductInfo);
             m_AssetStoreRestAPI.GetProductDetail(productId,
@@ -161,12 +170,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 });
         }
 
-        public virtual void RefreshLocal()
+        public void RefreshLocal()
         {
             m_AssetStoreCache.SetLocalInfos(m_LocalInfoHandler.GetParsedLocalInfos());
         }
 
-        public virtual void FetchUpdateInfos(IEnumerable<long> productIds, Action doneCallback = null)
+        public void FetchUpdateInfos(IEnumerable<long> productIds, Action doneCallback = null)
         {
             if (productIds?.Any() != true)
                 return;
@@ -189,7 +198,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 });
         }
 
-        public virtual IEnumerable<Asset> ListImportedAssets()
+        public IEnumerable<Asset> ListImportedAssets()
         {
             // We need to manually create the SearchFilter so that we look for assetorigins
             var filter = new SearchFilter { searchArea = SearchFilter.SearchArea.AllAssets };
@@ -211,7 +220,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             });
         }
 
-        public virtual void OnPostProcessAllAssets(string[] importedAssetPaths, string[] deletedAssetPaths, string[] movedAssetPaths, string[] movedFromAssetPaths)
+        public void OnPostProcessAllAssets(string[] importedAssetPaths, string[] deletedAssetPaths, string[] movedAssetPaths, string[] movedFromAssetPaths)
         {
             var addedOrUpdatedAssets = new List<Asset>();
             var removedAssetPaths = deletedAssetPaths.Union(movedFromAssetPaths).ToHashSet();
@@ -235,9 +244,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.UpdateImportedAssets(addedOrUpdatedAssets, removedAssetPaths);
         }
 
-        public virtual void RefreshImportedAssets()
+        public void RefreshImportedAssets()
         {
             m_AssetStoreCache.UpdateImportedAssets(ListImportedAssets(), m_AssetStoreCache.importedAssets.Select(a => a.importedPath));
+        }
+
+        public void OnBeforeSerialize()
+        {
+        }
+
+        public void OnAfterDeserialize()
+        {
+            m_OperationFactory.ResolveDependenciesForOperation(m_ListOperation);
         }
     }
 }

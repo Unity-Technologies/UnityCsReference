@@ -8,11 +8,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class RemoveFoldoutGroup : MultiSelectFoldoutGroup
     {
-        public RemoveFoldoutGroup(ApplicationProxy applicationProxy,
-                                  PackageManagerPrefs packageManagerPrefs,
-                                  PackageDatabase packageDatabase,
-                                  PackageOperationDispatcher operationDispatcher,
-                                  PageManager pageManager)
+        public RemoveFoldoutGroup(IApplicationProxy applicationProxy,
+                                  IPackageManagerPrefs packageManagerPrefs,
+                                  IPackageDatabase packageDatabase,
+                                  IPackageOperationDispatcher operationDispatcher,
+                                  IPageManager pageManager)
             : base(new RemoveAction(operationDispatcher, applicationProxy, packageManagerPrefs, packageDatabase, pageManager))
         {
         }

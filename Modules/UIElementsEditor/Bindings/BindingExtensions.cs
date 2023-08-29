@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -20,6 +21,7 @@ namespace UnityEditor.UIElements.Bindings
         private bool m_DelayBind = false;
         private long m_BindingOperationStartTimeMs;
         private const int k_MaxBindingTimeMs = 50;
+        private long m_LastFrame = long.MinValue;
 
         public SerializedObjectBindingContext(SerializedObject so)
         {
@@ -208,12 +210,7 @@ namespace UnityEditor.UIElements.Bindings
             if (element is Foldout foldout)
             {
                 // We bind to the given propertyPath but we only bind to its 'isExpanded' state, not its value.
-                SerializedObjectBinding<bool>.CreateBind(
-                    foldout, this, prop,
-                    p => p.isExpanded,
-                    (p, v) => p.isExpanded = v,
-                    SerializedPropertyHelper.ValueEquals<bool>);
-
+                SerializedIsExpandedBinding.CreateBind(foldout, this, prop);
                 return;
             }
             else if (element is Label label && label.GetProperty(PropertyField.foldoutTitleBoundLabelProperty) != null)
@@ -542,18 +539,21 @@ namespace UnityEditor.UIElements.Bindings
             return serializedObject.isValid;
         }
 
-        internal void UpdateIfNecessary()
+        internal void UpdateIfNecessary(VisualElement element)
         {
             if (!wasUpdated)
             {
                 if (IsValid())
                 {
-                    serializedObject.UpdateIfRequiredOrScript();
+                    if (element.elementPanel?.GetUpdater(VisualTreeUpdatePhase.DataBinding) is VisualTreeDataBindingsUpdater updater && m_LastFrame != updater.frame)
+                    {
+                        serializedObject.UpdateIfRequiredOrScript();
 
-                    UpdateRevision();
+                        UpdateRevision();
+                        m_LastFrame = updater.frame;
+                        wasUpdated = true;
+                    }
                 }
-
-                wasUpdated = true;
             }
         }
 
@@ -842,6 +842,8 @@ namespace UnityEditor.UIElements.Bindings
             RemoveBindingRequest(element);
             (element.GetBinding(BindingExtensions.s_SerializedBindingId) as SerializedObjectBindingBase)?.OnRelease();
             (element.GetBinding(BindingExtensions.s_SerializedBindingContextUpdaterId) as SerializedObjectBindingBase)?.OnRelease();
+            element.ClearBinding(BindingExtensions.s_SerializedBindingId);
+            element.ClearBinding(BindingExtensions.s_SerializedBindingContextUpdaterId);
 
             if (context != null)
             {
@@ -1162,10 +1164,35 @@ namespace UnityEditor.UIElements.Bindings
         }
     }
 
-    //TODO: Pool this
-
-    internal abstract class SerializedObjectBindingBase : CustomBinding
+    internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSourceProvider, IDataSourceViewHashProvider
     {
+        private long m_LastUpdateTime;
+        private ulong m_LastVersion;
+
+        private static long GetCurrentTime()
+        {
+            return Panel.TimeSinceStartupMs();
+        }
+
+        // This is to ensure that getting the resolved data source is as fast as possible, since we don't need to fetch it from the hierarchy.
+        public object dataSource => this;
+        public PropertyPath dataSourcePath => default;
+
+        public long GetViewHashCode()
+        {
+            if (null == bindingContext)
+                return -1;
+
+            if (null == bindingContext.serializedObject)
+                return -1;
+
+            var element = boundElement as VisualElement;
+            if (null != element)
+                bindingContext.UpdateIfNecessary(element);
+
+            return bindingContext.serializedObject.objectVersion;
+        }
+
         protected abstract string bindingId { get; }
 
         public SerializedObjectBindingContext bindingContext
@@ -1225,11 +1252,27 @@ namespace UnityEditor.UIElements.Bindings
             OnRelease();
         }
 
+        protected internal override void OnActivated(in BindingActivationContext context)
+        {
+            // Resets the throttling and make sure it will get called on the next update.
+            m_LastUpdateTime = GetCurrentTime() - VisualTreeBindingsUpdater.k_MinUpdateDelayMs;
+            base.OnActivated(in context);
+        }
+
         protected internal override BindingResult Update(in BindingContext context)
         {
-            bindingContext?.UpdateIfNecessary();
-            var result = OnUpdate(in context);
-            return result;
+            var currentTimeMs = GetCurrentTime();
+            if (VisualTreeBindingsUpdater.disableBindingsThrottling || (currentTimeMs - m_LastUpdateTime) >= VisualTreeBindingsUpdater.k_MinUpdateDelayMs ||
+                m_LastVersion != bindingContext?.serializedObject?.objectVersion)
+            {
+                m_LastUpdateTime = currentTimeMs;
+                bindingContext?.UpdateIfNecessary(context.targetElement);
+                var result = OnUpdate(in context);
+                return result;
+            }
+
+            m_LastVersion = bindingContext?.serializedObject?.objectVersion ?? 0;
+            return new BindingResult(BindingStatus.Pending);
         }
 
         public abstract BindingResult OnUpdate(in BindingContext context);
@@ -1303,8 +1346,6 @@ namespace UnityEditor.UIElements.Bindings
                 }
             }
         }
-
-        protected SerializedObjectBindingBase FieldBinding => (m_Field as VisualElement)?.GetBinding(bindingId) as SerializedObjectBindingBase;
 
         protected bool isFieldAttached
         {
@@ -1564,6 +1605,11 @@ namespace UnityEditor.UIElements.Bindings
         {
             UpdateLastFieldValue();
             UpdateFieldIsAttached();
+
+            if (field is ObjectField objectField)
+            {
+                objectField.SetProperty(ObjectField.serializedPropertyKey, boundProperty);
+            }
         }
 
         public override void OnPropertyValueChanged(SerializedProperty currentPropertyIterator)
@@ -1600,6 +1646,7 @@ namespace UnityEditor.UIElements.Bindings
             {
                 return new BindingResult(BindingStatus.Pending);
             }
+
             try
             {
                 ResetUpdate();
@@ -1611,20 +1658,18 @@ namespace UnityEditor.UIElements.Bindings
 
                 isUpdating = true;
 
-                if (FieldBinding == this)
-                {
-                    var veField = field as VisualElement;
 
-                    // Value might not have changed but prefab state could have been reverted, so we need to
-                    // at least update the prefab override visual if necessary. Happens when user reverts a
-                    // field where the value is the same as the prefab registered value. Case 1276154.
-                    BindingsStyleHelpers.UpdatePrefabStateStyle(veField, boundProperty);
+                var veField = field as VisualElement;
 
-                    if (EditorApplication.isPlaying && SerializedObject.GetLivePropertyFeatureGlobalState() && boundProperty.isLiveModified)
-                        BindingsStyleHelpers.UpdateLivePropertyStateStyle(veField, boundProperty);
+                // Value might not have changed but prefab state could have been reverted, so we need to
+                // at least update the prefab override visual if necessary. Happens when user reverts a
+                // field where the value is the same as the prefab registered value. Case 1276154.
+                BindingsStyleHelpers.UpdatePrefabStateStyle(veField, boundProperty);
 
-                    return default;
-                }
+                if (EditorApplication.isPlaying && SerializedObject.GetLivePropertyFeatureGlobalState() && boundProperty.isLiveModified)
+                    BindingsStyleHelpers.UpdateLivePropertyStateStyle(veField, boundProperty);
+
+                return default;
             }
             catch (ArgumentNullException)
             {
@@ -1673,6 +1718,13 @@ namespace UnityEditor.UIElements.Bindings
             {
                 propSetValue(boundProperty, lastFieldValue);
                 boundProperty.m_SerializedObject.ApplyModifiedProperties();
+
+                // Force the field to update its display as its label is dependent on having an up to date SerializedProperty. (UUM-27629)
+                if (field is ObjectField objectField)
+                {
+                    objectField.UpdateDisplay();
+                }
+
                 return true;
             }
             return false;
@@ -1685,15 +1737,13 @@ namespace UnityEditor.UIElements.Bindings
             if (isReleased)
                 return;
 
-            if (FieldBinding == this)
+            if (field is BaseField<TValue> bf)
             {
-                if (field is BaseField<TValue> bf)
-                {
-                    BindingsStyleHelpers.UnregisterRightClickMenu(bf);
-                }else if (field is Foldout foldout)
-                {
-                    BindingsStyleHelpers.UnregisterRightClickMenu(foldout);
-                }
+                BindingsStyleHelpers.UnregisterRightClickMenu(bf);
+            }
+            else if (field is Foldout foldout)
+            {
+                BindingsStyleHelpers.UnregisterRightClickMenu(foldout);
             }
 
             ResetContext();
@@ -1705,6 +1755,7 @@ namespace UnityEditor.UIElements.Bindings
             isReleased = true;
         }
     }
+
     class SerializedObjectBinding<TValue> : SerializedObjectBindingPropertyToBaseField<TValue, TValue>
     {
         public static ObjectPool<SerializedObjectBinding<TValue>> s_Pool =
@@ -1800,6 +1851,93 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
     }
+
+    class SerializedIsExpandedBinding : SerializedObjectBindingPropertyToBaseField<bool, bool>
+    {
+        static readonly ObjectPool<SerializedIsExpandedBinding> s_Pool =
+            new ObjectPool<SerializedIsExpandedBinding>(() => new SerializedIsExpandedBinding(), 32);
+
+        readonly Clickable m_ClickedWithAlt;
+
+        public SerializedIsExpandedBinding()
+        {
+            m_ClickedWithAlt = new Clickable(OnClickWithAlt);
+            m_ClickedWithAlt.activators.Clear();
+            m_ClickedWithAlt.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Alt });
+        }
+
+        public static void CreateBind(Foldout field, SerializedObjectBindingContext context, SerializedProperty property)
+        {
+            var newBinding = s_Pool.Get();
+            newBinding.isReleased = false;
+            field?.SetBinding(BindingExtensions.s_SerializedBindingId, newBinding);
+            newBinding.SetBinding(field, context, property);
+            newBinding.AddClickedManipulator();
+        }
+
+        protected void SetBinding(Foldout foldout, SerializedObjectBindingContext context, SerializedProperty property)
+        {
+            property.unsafeMode = true;
+            propGetValue = GetValue;
+            propSetValue = SetValue;
+            propCompareValues = SerializedPropertyHelper.ValueEquals<bool>;
+
+            SetContext(context, property);
+            var originalValue = this.lastFieldValue = foldout.value;
+            BindingsStyleHelpers.RegisterRightClickMenu(foldout, property);
+            field = foldout;
+
+            if (propCompareValues(originalValue, property, propGetValue)) //the value hasn't changed, but we want the binding to send an event no matter what
+            {
+                using (ChangeEvent<bool> evt = ChangeEvent<bool>.GetPooled(originalValue, originalValue))
+                {
+                    evt.elementTarget = foldout;
+                    foldout.SendEvent(evt);
+                }
+            }
+        }
+
+        public override void OnRelease()
+        {
+            if (isReleased)
+                return;
+
+            base.OnRelease();
+            RemoveClickedManipulator();
+            s_Pool.Release(this);
+        }
+
+        protected override void UpdateLastFieldValue()
+        {
+            if (field is Foldout foldout)
+                lastFieldValue = foldout.value;
+        }
+
+        protected override void AssignValueToField(bool lastValue)
+        {
+            if (field is Foldout foldout)
+                foldout.value = lastValue;
+        }
+
+        static bool GetValue(SerializedProperty property) => property.isExpanded;
+        static void SetValue(SerializedProperty property, bool value) => property.isExpanded = value;
+
+        void AddClickedManipulator() => ((Foldout)field).toggle.AddManipulator(m_ClickedWithAlt);
+        void RemoveClickedManipulator() => ((Foldout)field).RemoveManipulator(m_ClickedWithAlt);
+
+        void OnClickWithAlt()
+        {
+            EditorGUI.SetExpandedRecurse(boundProperty, !boundProperty.isExpanded);
+
+            // Force all visible field to update
+            foreach (var f in ((Foldout)field).Query<Foldout>().Build())
+            {
+                if (f.GetBinding(BindingExtensions.s_SerializedBindingId) is SerializedIsExpandedBinding binding)
+                    binding.OnPropertyValueChanged(binding.boundProperty);
+            }
+        }
+    }
+
     // specific enum version that binds on the index property of the BaseField<Enum>
     class SerializedManagedEnumBinding : SerializedObjectBindingToBaseField<Enum, BaseField<Enum>>
     {
@@ -1982,15 +2120,12 @@ namespace UnityEditor.UIElements.Bindings
             if (isReleased)
                 return;
 
-            if (FieldBinding == this)
-            {
-                // Make sure to nullify the field to unbind before reverting the enum value
-                var saveField = field;
-                BindingsStyleHelpers.UnregisterRightClickMenu(saveField);
+            // Make sure to nullify the field to unbind before reverting the enum value
+            var saveField = field;
+            BindingsStyleHelpers.UnregisterRightClickMenu(saveField);
 
-                field = null;
-                saveField.value = null;
-            }
+            field = null;
+            saveField.value = null;
 
             ResetContext();
 
@@ -2189,24 +2324,20 @@ namespace UnityEditor.UIElements.Bindings
             if (isReleased)
                 return;
 
-            if (FieldBinding == this)
+            //we set the popup values to the original ones
+            try
             {
-                //we set the popup values to the original ones
-                try
-                {
-                    var previousField = field;
-                    BindingsStyleHelpers.UnregisterRightClickMenu(previousField);
+                var previousField = field;
+                BindingsStyleHelpers.UnregisterRightClickMenu(previousField);
 
-                    field = null;
-                    previousField.choices = originalChoices;
-                    previousField.index = originalIndex;
-                }
-                catch (ArgumentException)
-                {
-                    //we did our best
-                }
+                field = null;
+                previousField.choices = originalChoices;
+                previousField.index = originalIndex;
             }
-
+            catch (ArgumentException)
+            {
+                //we did our best
+            }
 
             ResetContext();
             field = null;

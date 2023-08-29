@@ -401,7 +401,7 @@ namespace Unity.UI.Builder
         {
             var fullTypeName = visualElement.GetType().ToString();
 
-            var desc = UxmlSerializedDataRegistry.GetDescription(fullTypeName);            
+            var desc = UxmlSerializedDataRegistry.GetDescription(fullTypeName);
             var vea = new VisualElementAsset(desc != null ? desc.uxmlFullName : fullTypeName);
             VisualTreeAssetUtilities.InitializeElement(vea);
 
@@ -540,6 +540,18 @@ namespace Unity.UI.Builder
                 vta.templateAssets.Add(vea);
             }
 
+            if (other.uxmlObjectEntries != null)
+            {
+                foreach (var uxmlObjectEntry in other.uxmlObjectEntries)
+                {
+                    vta.uxmlObjectEntries.Add(uxmlObjectEntry);
+                    foreach (var uoa in uxmlObjectEntry.uxmlObjectAssets)
+                    {
+                        vta.uxmlObjectIds.Add(uoa.id);
+                    }
+                }
+            }
+
             VisualTreeAssetUtilities.ReOrderDocument(vta);
         }
 
@@ -565,6 +577,40 @@ namespace Unity.UI.Builder
             if (otherIdToChildren.TryGetValue(oldId, out children) && children != null)
                 foreach (var child in children)
                     child.parentId = vea.id;
+
+            UpdateUxmlObjectEntriesParentId(other, oldId, vea.id);
+        }
+
+        static void UpdateUxmlObjectEntriesParentId(VisualTreeAsset vta, int oldId, int newId)
+        {
+            if (vta.uxmlObjectEntries == null)
+                return;
+
+            var otherIdToUxmlObjectEntry = new Dictionary<int, VisualTreeAsset.UxmlObjectEntry>();
+            for (var i = 0; i < vta.uxmlObjectEntries.Count; i++)
+            {
+                var modifiedEntry = false;
+                foreach (var uoa in vta.uxmlObjectEntries[i].uxmlObjectAssets)
+                {
+                    if (uoa.parentId == oldId)
+                    {
+                        uoa.parentId = newId;
+                        modifiedEntry = true;
+                    }
+                }
+
+                if (modifiedEntry)
+                {
+                    var modifiedUxmlObject = vta.uxmlObjectEntries[i];
+                    modifiedUxmlObject.parentId = newId;
+                    otherIdToUxmlObjectEntry.Add(i, modifiedUxmlObject);
+                }
+            }
+
+            foreach (var uxmlObjectEntry in otherIdToUxmlObjectEntry)
+            {
+                vta.uxmlObjectEntries[uxmlObjectEntry.Key] = uxmlObjectEntry.Value;
+            }
         }
 
         static void SwallowStyleRule(VisualTreeAsset vta, VisualTreeAsset other, VisualElementAsset vea)

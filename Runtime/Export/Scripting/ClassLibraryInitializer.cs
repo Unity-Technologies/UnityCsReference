@@ -23,17 +23,6 @@ namespace UnityEngine
             UnityLogWriter.Init();
         }
 
-        [RequiredByNativeCode]
-        static void InitStdErrWithHandle(IntPtr fileHandle)
-        {
-            var sfh = new SafeFileHandle(fileHandle, false);
-            if (!sfh.IsInvalid)
-            {
-                var writer = new StreamWriter(new FileStream(sfh, FileAccess.Write)) { AutoFlush = true };
-                Console.SetError(writer);
-            }
-        }
-
         // If the AssemblyResolve call fails to load the assembly, this could lead
         // to infinite recursion.  Mono projects against this, but CoreCLR does not,
         // So this causes infinite recursion on CoreCLR.

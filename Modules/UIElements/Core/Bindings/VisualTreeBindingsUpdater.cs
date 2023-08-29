@@ -34,7 +34,7 @@ namespace UnityEngine.UIElements
         private readonly HashSet<VisualElement> m_ElementsWithBindings = new HashSet<VisualElement>();
         private readonly HashSet<VisualElement> m_ElementsToAdd = new HashSet<VisualElement>();
         private readonly HashSet<VisualElement> m_ElementsToRemove = new HashSet<VisualElement>();
-        private const int k_MinUpdateDelayMs = 100;
+        internal const int k_MinUpdateDelayMs = 100;
         private const int k_MaxBindingTimeMs = 100;
         private long m_LastUpdateTime = 0;
 
@@ -220,7 +220,7 @@ namespace UnityEngine.UIElements
             return Panel.TimeSinceStartupMs();
         }
 
-        public static bool ShouldThrottle(long startTime)
+        public static bool ShouldProcessBindings(long startTime)
         {
             return disableBindingsThrottling || (CurrentTime() - startTime) < k_MaxBindingTimeMs;
         }
@@ -256,7 +256,7 @@ namespace UnityEngine.UIElements
                 using (s_ProfilerBindingRequestsMarker.Auto())
                 {
                     long startTime = CurrentTime();
-                    while (m_ElementsToBind.Count > 0 && ShouldThrottle(startTime))
+                    while (m_ElementsToBind.Count > 0 && ShouldProcessBindings(startTime))
                     {
                         var element = m_ElementsToBind.FirstOrDefault();
 

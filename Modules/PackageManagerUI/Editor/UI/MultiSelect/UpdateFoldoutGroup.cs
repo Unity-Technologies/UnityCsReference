@@ -6,10 +6,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class UpdateFoldoutGroup : MultiSelectFoldoutGroup
     {
-        public UpdateFoldoutGroup(ApplicationProxy applicationProxy,
-                                  PackageDatabase packageDatabase,
-                                  PackageOperationDispatcher operationDispatcher,
-                                  PageManager pageManager)
+        public UpdateFoldoutGroup(IApplicationProxy applicationProxy,
+                                  IPackageDatabase packageDatabase,
+                                  IPackageOperationDispatcher operationDispatcher,
+                                  IPageManager pageManager)
             : base(new UpdateFoldout(applicationProxy, packageDatabase, operationDispatcher, pageManager), new MultiSelectFoldout())
         {
             mainFoldout.headerTextTemplate = L10n.Tr("Update {0}");

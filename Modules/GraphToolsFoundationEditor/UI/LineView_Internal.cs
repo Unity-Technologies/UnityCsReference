@@ -55,6 +55,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 return;
             }
+
             var container = m_GraphView.ContentViewContainer;
             foreach (var line in lines)
             {
@@ -66,7 +67,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 var height = Math.Max(1, Math.Abs(start.y - end.y));
                 var r = new Rect(x, y, width, height);
 
-                MeshDrawingHelpers_Internal.SolidRectangle(mgc, r, m_LineColor, ContextType.Editor);
+                MeshDrawingHelpers_Internal.SolidRectangle(mgc, r, m_LineColor);
             }
         }
     }

@@ -21,11 +21,11 @@ namespace UnityEditor.Toolbars
         private bool m_IsPreviewPackagesInUse;
 
         [NonSerialized]
-        private ApplicationProxy m_ApplicationProxy;
+        private IApplicationProxy m_ApplicationProxy;
         [NonSerialized]
-        private UpmClient m_UpmClient;
+        private IUpmClient m_UpmClient;
         [NonSerialized]
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private IProjectSettingsProxy m_SettingsProxy;
 
         private const string previewLabel = "unity-editor-toolbar-element-preview-packages-in-use__label";
         private const string previewIcon = "unity-editor-toolbar-preview-package-in-use__icon";
@@ -33,9 +33,9 @@ namespace UnityEditor.Toolbars
 
         public PreviewPackagesInUseDropdown()
         {
-            m_ApplicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
-            m_UpmClient = ServicesContainer.instance.Resolve<UpmClient>();
-            m_SettingsProxy = ServicesContainer.instance.Resolve<PackageManagerProjectSettingsProxy>();
+            m_ApplicationProxy = ServicesContainer.instance.Resolve<IApplicationProxy>();
+            m_UpmClient = ServicesContainer.instance.Resolve<IUpmClient>();
+            m_SettingsProxy = ServicesContainer.instance.Resolve<IProjectSettingsProxy>();
 
             name = "PreviewPackagesInUseDropdown";
 

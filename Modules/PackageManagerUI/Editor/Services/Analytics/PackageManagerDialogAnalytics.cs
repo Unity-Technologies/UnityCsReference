@@ -7,48 +7,44 @@ using UnityEngine.Analytics;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [Serializable]
-    internal struct PackageManagerDialogAnalytics
+    [AnalyticInfo(eventName: k_EventName, vendorKey: k_VendorKey)]
+    internal class PackageManagerDialogAnalytics : IAnalytic
     {
         private const string k_EventName = "packageManagerDialogs";
         private const string k_VendorKey = "unity.package-manager-ui";
 
-        [AnalyticInfo(eventName: k_EventName, vendorKey: k_VendorKey)]
-        internal class PackageManagerDialogAnalytic : IAnalytic
+        [Serializable]
+        private class Data : IAnalytic.IData
         {
-            [Serializable]
-            internal class PackageManagerDialogAnalyticsData : IAnalytic.IData
-            {
-                public string id;
-                public string title;
-                public string message;
-                public string user_response;
-            }
-            public PackageManagerDialogAnalytic(string id, string title, string message, string userResponse)
-            {
-                m_data = new PackageManagerDialogAnalyticsData
-                {
-                    id = id,
-                    title = title,
-                    message = message,
-                    user_response = userResponse
-                };
-            }
+            public string id;
+            public string title;
+            public string message;
+            public string user_response;
+        }
 
-            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+        private Data m_Data;
+        private PackageManagerDialogAnalytics(string id, string title, string message, string userResponse)
+        {
+            m_Data = new Data
             {
-                data = m_data;
-                error = null;
-                return true;
-            }
+                id = id,
+                title = title,
+                message = message,
+                user_response = userResponse
+            };
+        }
 
-            private PackageManagerDialogAnalyticsData m_data;
+        public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+        {
+            data = m_Data;
+            error = null;
+            return m_Data != null;
         }
 
         public static void SendEvent(string id, string title, string message, string userResponse)
         {
-            var editorAnalyticsProxy = ServicesContainer.instance.Resolve<EditorAnalyticsProxy>();
-            editorAnalyticsProxy.SendAnalytic(new PackageManagerDialogAnalytic(id, title, message, userResponse));
+            var editorAnalyticsProxy = ServicesContainer.instance.Resolve<IEditorAnalyticsProxy>();
+            editorAnalyticsProxy.SendAnalytic(new PackageManagerDialogAnalytics(id, title, message, userResponse));
         }
     }
 }

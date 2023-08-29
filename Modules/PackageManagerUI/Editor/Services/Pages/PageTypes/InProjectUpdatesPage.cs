@@ -15,7 +15,7 @@ internal class InProjectUpdatesPage : InProjectPage
     public override string displayName => L10n.Tr("Updates");
     public override Icon icon => Icon.UpdatesPage;
 
-    public InProjectUpdatesPage(PackageDatabase packageDatabase) : base(packageDatabase) {}
+    public InProjectUpdatesPage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
 
     public override bool ShouldInclude(IPackage package)
     {

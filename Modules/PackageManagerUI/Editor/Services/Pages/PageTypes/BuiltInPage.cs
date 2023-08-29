@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override IEnumerable<PageFilters.Status> supportedStatusFilters => Enumerable.Empty<PageFilters.Status>();
         public override IEnumerable<PageSortOption> supportedSortOptions => k_SupportedSortOptions;
 
-        public BuiltInPage(PackageDatabase packageDatabase) : base(packageDatabase) {}
+        public BuiltInPage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
 
         public override bool ShouldInclude(IPackage package)
         {

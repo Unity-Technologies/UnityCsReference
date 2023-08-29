@@ -19,11 +19,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private TextFieldPlaceholder m_PackageNamePlaceholder;
         private TextFieldPlaceholder m_PackageVersionPlaceholder;
 
-        private ResourceLoader m_ResourceLoader;
-        private UpmClient m_UpmClient;
-        private PackageDatabase m_PackageDatabase;
-        private PageManager m_PageManager;
-        private void ResolveDependencies(ResourceLoader resourceLoader, UpmClient upmClient, PackageDatabase packageDatabase, PageManager packageManager)
+        private IResourceLoader m_ResourceLoader;
+        private IUpmClient m_UpmClient;
+        private IPackageDatabase m_PackageDatabase;
+        private IPageManager m_PageManager;
+        private void ResolveDependencies(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager)
         {
             m_ResourceLoader = resourceLoader;
             m_UpmClient = upmClient;
@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager = packageManager;
         }
 
-        public AddPackageByNameDropdown(ResourceLoader resourceLoader, UpmClient upmClient, PackageDatabase packageDatabase, PageManager packageManager, EditorWindow anchorWindow)
+        public AddPackageByNameDropdown(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, EditorWindow anchorWindow)
         {
             ResolveDependencies(resourceLoader, upmClient, packageDatabase, packageManager);
 

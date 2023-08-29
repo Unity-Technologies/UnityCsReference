@@ -55,10 +55,10 @@ namespace Unity.GraphToolsFoundation.Editor
         int ThickLines { get; set; } = DefaultThickLines;
 
         Color m_LineColor = DefaultLineColor;
-        Color LineColor => m_LineColor * UIElementsUtility.editorPlayModeTintColor;
+        Color LineColor => m_LineColor * playModeTintColor;
 
         Color m_ThickLineColor = DefaultThickLineColor;
-        Color ThickLineColor => m_ThickLineColor * UIElementsUtility.editorPlayModeTintColor;
+        Color ThickLineColor => m_ThickLineColor * playModeTintColor;
 
         VisualElement m_Container;
 

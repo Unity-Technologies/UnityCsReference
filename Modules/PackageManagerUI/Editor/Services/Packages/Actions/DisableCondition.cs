@@ -14,7 +14,7 @@ internal abstract class DisableCondition
 internal class DisableIfCompiling : DisableCondition
 {
     private static readonly string k_Tooltip = L10n.Tr("You need to wait until the compilation is finished to perform this action.");
-    public DisableIfCompiling(ApplicationProxy application)
+    public DisableIfCompiling(IApplicationProxy application)
     {
         active = application.isCompiling;
         tooltip = k_Tooltip;
@@ -24,7 +24,7 @@ internal class DisableIfCompiling : DisableCondition
 internal class DisableIfNoNetwork : DisableCondition
 {
     private static readonly string k_Tooltip = L10n.Tr("You need to restore your network connection to perform this action.");
-    public DisableIfNoNetwork(ApplicationProxy application)
+    public DisableIfNoNetwork(IApplicationProxy application)
     {
         active = !application.isInternetReachable;
         tooltip = k_Tooltip;
@@ -34,7 +34,7 @@ internal class DisableIfNoNetwork : DisableCondition
 internal class DisableIfInstallOrUninstallInProgress : DisableCondition
 {
     private static readonly string k_Tooltip = L10n.Tr("You need to wait until other install or uninstall operations are finished to perform this action.");
-    public DisableIfInstallOrUninstallInProgress(PackageOperationDispatcher operationDispatcher)
+    public DisableIfInstallOrUninstallInProgress(IPackageOperationDispatcher operationDispatcher)
     {
         active = operationDispatcher.isInstallOrUninstallInProgress;
         tooltip = k_Tooltip;

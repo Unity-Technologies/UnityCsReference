@@ -8,13 +8,38 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal interface IPackageManagerPrefs : IService
+    {
+        bool skipRemoveConfirmation { get; set; }
+        bool skipMultiSelectRemoveConfirmation { get; set; }
+        bool skipDisableConfirmation { get; set; }
+        float leftContainerWidth { get; set; }
+        float sidebarWidth { get; set; }
+        string activePageIdFromLastUnitySession { get; set; }
+        int? numItemsPerPage { get; set; }
+        string selectedFeatureDependency { get; set; }
+        bool overviewFoldoutExpanded { get; set; }
+        float packageDetailVerticalScrollOffset { get; set; }
+        string selectedPackageDetailsTabIdentifier { get; set; }
+        SortedColumn[] importedAssetsSortedColumns { get; set; }
+
+        bool IsDetailsExtensionExpanded(string extensionTitle);
+        void SetDetailsExtensionExpanded(string extensionTitle, bool value);
+
+        string packageDisplayedInVersionHistoryTab { get; set; }
+        void SetVersionHistoryItemExpanded(string uniqueId, bool expanded);
+        bool IsVersionHistoryItemExpanded(string uniqueId);
+        void ClearExpandedVersionHistoryItems();
+    }
+
     [Serializable]
-    internal class PackageManagerPrefs
+    internal class PackageManagerPrefs : BaseService<IPackageManagerPrefs>, IPackageManagerPrefs
     {
         private const string k_SkipRemoveConfirmationPrefs = "PackageManager.SkipRemoveConfirmation";
         private const string k_SkipMultiSelectRemoveConfirmationPrefs = "PackageManager.SkipMultiSelectRemoveConfirmation";
         private const string k_SkipDisableConfirmationPrefs = "PackageManager.SkipDisableConfirmation";
-        private const string k_SplitterFlexGrowPrefs = "PackageManager.SplitterFlexGrowPrefs";
+        private const string k_LeftContainerWidthPrefs = "PackageManager.LeftContainerWidthPrefs";
+        private const string k_SidebarWidthPrefs = "PackageManager.SidebarWidthPrefs";
         private const string k_LastActivePageIdPrefsPrefix = "PackageManager.PageId_";
 
         public const int k_DefaultPageSize = 25;
@@ -22,36 +47,47 @@ namespace UnityEditor.PackageManager.UI.Internal
         // PlayerSettings.productGUID is already used as LocalProjectID by Analytics, so we use it too
         private static string lastActivePageIdForProjectPrefs => k_LastActivePageIdPrefsPrefix + PlayerSettings.productGUID;
 
-        public virtual bool skipRemoveConfirmation
+        public bool skipRemoveConfirmation
         {
             get => EditorPrefs.GetBool(k_SkipRemoveConfirmationPrefs, false);
             set => EditorPrefs.SetBool(k_SkipRemoveConfirmationPrefs, value);
         }
 
-        public virtual bool skipMultiSelectRemoveConfirmation
+        public bool skipMultiSelectRemoveConfirmation
         {
             get => EditorPrefs.GetBool(k_SkipMultiSelectRemoveConfirmationPrefs, false);
             set => EditorPrefs.SetBool(k_SkipMultiSelectRemoveConfirmationPrefs, value);
         }
 
-        public virtual bool skipDisableConfirmation
+        public bool skipDisableConfirmation
         {
             get => EditorPrefs.GetBool(k_SkipDisableConfirmationPrefs, false);
             set => EditorPrefs.SetBool(k_SkipDisableConfirmationPrefs, value);
         }
 
-        public virtual float splitterFlexGrow
+        public float leftContainerWidth
         {
-            get => EditorPrefs.GetFloat(k_SplitterFlexGrowPrefs, 0.3f);
+            get => EditorPrefs.GetFloat(k_LeftContainerWidthPrefs, 300);
             set
             {
                 if (float.IsNaN(value) || float.IsInfinity(value))
                     return;
-                EditorPrefs.SetFloat(k_SplitterFlexGrowPrefs, value);
+                EditorPrefs.SetFloat(k_LeftContainerWidthPrefs, value);
             }
         }
 
-        public virtual string activePageIdFromLastUnitySession
+        public float sidebarWidth
+        {
+            get => EditorPrefs.GetFloat(k_SidebarWidthPrefs, 225);
+            set
+            {
+                if (float.IsNaN(value) || float.IsInfinity(value))
+                    return;
+                EditorPrefs.SetFloat(k_SidebarWidthPrefs, value);
+            }
+        }
+
+        public string activePageIdFromLastUnitySession
         {
             get => EditorPrefs.GetString(lastActivePageIdForProjectPrefs, null);
             set => EditorPrefs.SetString(lastActivePageIdForProjectPrefs, value);
@@ -61,7 +97,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private int m_NumItemsPerPage;
         // The number of items per page is used to decide how many items to fetch in the initial refresh and it should always be a positive number
         // When the number is set to 0, we consider this value not set (null)
-        public virtual int? numItemsPerPage
+        public int? numItemsPerPage
         {
             get => m_NumItemsPerPage <= 0 ? null : m_NumItemsPerPage;
             set => m_NumItemsPerPage = value ?? 0;
@@ -69,7 +105,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private string m_SelectedFeatureDependency;
-        public virtual string selectedFeatureDependency
+        public string selectedFeatureDependency
         {
             get => m_SelectedFeatureDependency;
             set => m_SelectedFeatureDependency = value;
@@ -77,7 +113,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private bool m_OverviewFoldoutExpanded = true;
-        public virtual bool overviewFoldoutExpanded
+        public bool overviewFoldoutExpanded
         {
             get => m_OverviewFoldoutExpanded;
             set => m_OverviewFoldoutExpanded = value;
@@ -102,7 +138,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private SortedColumn[] m_ImportedAssetsSortedColumns = Array.Empty<SortedColumn>();
 
-        public virtual SortedColumn[] importedAssetsSortedColumns
+        public SortedColumn[] importedAssetsSortedColumns
         {
             get => m_ImportedAssetsSortedColumns;
             set => m_ImportedAssetsSortedColumns = value ?? Array.Empty<SortedColumn>();
@@ -110,12 +146,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private List<string> m_ExpandedDetailsExtensions = new();
-        public virtual bool IsDetailsExtensionExpanded(string extensionTitle)
+        public bool IsDetailsExtensionExpanded(string extensionTitle)
         {
             return !string.IsNullOrEmpty(extensionTitle) && m_ExpandedDetailsExtensions.Contains(extensionTitle);
         }
 
-        public virtual void SetDetailsExtensionExpanded(string extensionTitle, bool value)
+        public void SetDetailsExtensionExpanded(string extensionTitle, bool value)
         {
             if (string.IsNullOrEmpty(extensionTitle))
                 return;
@@ -129,7 +165,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private string m_PackageDisplayedInVersionHistoryTab;
-        public virtual string packageDisplayedInVersionHistoryTab
+        public string packageDisplayedInVersionHistoryTab
         {
             get => m_PackageDisplayedInVersionHistoryTab;
             set => m_PackageDisplayedInVersionHistoryTab = value;
@@ -137,7 +173,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private List<string> m_ExpandedVersionHistoryItems = new();
-        public virtual void SetVersionHistoryItemExpanded(string uniqueId, bool expanded)
+        public void SetVersionHistoryItemExpanded(string uniqueId, bool expanded)
         {
             if (string.IsNullOrEmpty(uniqueId))
                 return;
@@ -149,12 +185,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_ExpandedVersionHistoryItems.RemoveAt(index);
         }
 
-        public virtual bool IsVersionHistoryItemExpanded(string uniqueId)
+        public bool IsVersionHistoryItemExpanded(string uniqueId)
         {
             return !string.IsNullOrEmpty(uniqueId) && m_ExpandedVersionHistoryItems.Contains(uniqueId);
         }
 
-        public virtual void ClearExpandedVersionHistoryItems()
+        public void ClearExpandedVersionHistoryItems()
         {
             m_ExpandedVersionHistoryItems.Clear();
         }

@@ -17,30 +17,31 @@ namespace UnityEditor.UIElements.ProjectSettings
             Custom
         }
 
-        public new class UxmlFactory : UxmlFactory<BuiltInShaderElement, UxmlTraits>
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-        }
+#pragma warning disable 649
+            [SerializeField, UxmlAttribute("shader-mode")]
+            string shaderMode;
+            [SerializeField, UxmlAttribute("custom-shader")]
+            string customShader;
 
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="EnumField"/>.
-        /// </summary>
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_ShaderMode = new() { name = "shader-mode" };
-            UxmlStringAttributeDescription m_CustomShader = new() { name = "custom-shader" };
+            [SerializeField, UxmlAttribute("shader-mode-label")]
+            string shaderModeLabel;
+            [SerializeField, UxmlAttribute("custom-shader-label")]
+            string customShaderLabel;
+#pragma warning restore 649
+            public override object CreateInstance() => new BuiltInShaderElement();
 
-            UxmlStringAttributeDescription m_ShaderModeLabel = new() { name = "shader-mode-label" };
-            UxmlStringAttributeDescription m_CustomShaderLabel = new() { name = "custom-shader-label" };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            public override void Deserialize(object obj)
             {
-                base.Init(ve, bag, cc);
+                base.Deserialize(obj);
 
-                ((BuiltInShaderElement)ve).shaderMode = m_ShaderMode.GetValueFromBag(bag, cc);
-                ((BuiltInShaderElement)ve).customShader = m_CustomShader.GetValueFromBag(bag, cc);
-
-                ((BuiltInShaderElement)ve).shaderModeLabel = m_ShaderModeLabel.GetValueFromBag(bag, cc);
-                ((BuiltInShaderElement)ve).customShaderLabel = m_CustomShaderLabel.GetValueFromBag(bag, cc);
+                var e = (BuiltInShaderElement)obj;
+                e.shaderMode = shaderMode;
+                e.customShader = customShader;
+                e.shaderModeLabel = shaderModeLabel;
+                e.customShaderLabel = customShaderLabel;
             }
         }
 
@@ -106,10 +107,8 @@ namespace UnityEditor.UIElements.ProjectSettings
         public BuiltInShaderElement()
         {
             m_ShaderModeField = new PropertyField();
-            m_CustomShaderObjectField = new ObjectField
-            {
-                objectType = typeof(Shader)
-            };
+            m_CustomShaderObjectField = new ObjectField();
+            m_CustomShaderObjectField.SetObjectTypeWithoutDisplayUpdate(typeof(Shader));
 
             m_ShaderModeField.RegisterValueChangeCallback(evt =>
             {

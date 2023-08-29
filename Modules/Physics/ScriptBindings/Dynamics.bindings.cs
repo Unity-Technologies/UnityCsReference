@@ -107,7 +107,13 @@ namespace UnityEngine
         public bool freezeRotation
         {
             get => constraints.HasFlag(RigidbodyConstraints.FreezeRotation);
-            set => constraints |= value ? RigidbodyConstraints.FreezeRotation : ~RigidbodyConstraints.FreezeRotation;
+            set
+            {
+                if (value)
+                    constraints |= RigidbodyConstraints.FreezeRotation;
+                else
+                    constraints &= RigidbodyConstraints.FreezePosition;
+            }
         }
         extern public RigidbodyConstraints constraints { get; set; }
         extern public CollisionDetectionMode collisionDetectionMode { get; set; }
@@ -987,6 +993,43 @@ namespace UnityEngine
         All = SyncTransforms | IgnoreEmptyScenes
     }
 
+    [StructLayout(LayoutKind.Explicit)]
+    internal unsafe struct IntegrationInfo
+    {
+        [Flags]
+        public enum SupportedUnityFeatures
+        {
+            None = 0,
+            RigidbodySupport = 1 << 0,
+            ShapeSupport = 1 << 1,
+            JointSupport = 1 << 2,
+            ArticulationSupport = 1 << 3,
+            VehicleSupport = 1 << 4,
+            AllSupport = RigidbodySupport | ShapeSupport | JointSupport | ArticulationSupport | VehicleSupport
+        };
+
+        const uint k_InvalidID = 0;
+
+        [FieldOffset(0)]
+        fixed byte m_Name[16];
+        [FieldOffset(16)]
+        public fixed ushort IntegrationVersion[3];
+        [FieldOffset(22)]
+        public fixed ushort SdkVersion[3];
+        [FieldOffset(28)]
+        public readonly uint Id;
+        [FieldOffset(32)]
+        public readonly SupportedUnityFeatures m_Features;
+
+        public unsafe string Name {
+            get
+            {
+                fixed(byte* ptr = m_Name)
+                    return Marshal.PtrToStringAnsi(new IntPtr(ptr));
+            }
+        }
+    }
+
     [NativeHeader("Modules/Physics/PhysicsManager.h")]
     [StaticAccessor("GetPhysicsManager()", StaticAccessorType.Dot)]
     public partial class Physics
@@ -997,6 +1040,20 @@ namespace UnityEngine
         public const int IgnoreRaycastLayer = 1 << 2;
         public const int DefaultRaycastLayers = ~IgnoreRaycastLayer;
         public const int AllLayers = ~0;
+
+        extern private unsafe static void GetIntegrationInfos(out IntPtr integrations, out ulong integrationCount);
+
+        internal static ReadOnlySpan<IntegrationInfo> GetIntegrationInfos()
+        {
+            unsafe
+            {
+                IntPtr integrations;
+                ulong count;
+                GetIntegrationInfos(out integrations, out count);
+
+                return new ReadOnlySpan<IntegrationInfo>(integrations.ToPointer(), (int)count);
+            }
+        }
 
         extern public static Vector3 gravity { [ThreadSafe] get; set; }
         extern public static float defaultContactOffset { get; set; }

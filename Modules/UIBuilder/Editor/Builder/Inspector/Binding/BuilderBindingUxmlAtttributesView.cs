@@ -32,7 +32,7 @@ namespace Unity.UI.Builder
             public PersistedFoldout advancedSettings;
             public BindingConvertersField convertersToUi;
             public BindingConvertersField convertersToSource;
-            public EnumField updateTrigger;
+            public PopupField<string> updateTrigger;
         }
 
         // Note: They are internal only to be accessible in tests
@@ -63,7 +63,7 @@ namespace Unity.UI.Builder
         EnumField m_BindingModeField;
         BindingConvertersField m_ConvertersToUi;
         BindingConvertersField m_ConvertersToSource;
-        EnumField m_UpdateTrigger;
+        PopupField<string> m_UpdateTrigger;
 
         VisualElement m_RequiresConstantUpdateField;
         VisualElement m_ConvertersToUiField;
@@ -142,12 +142,68 @@ namespace Unity.UI.Builder
                     UpdateAdvancedSettingsOverride();
                     break;
                 case k_BindingAttr_UpdateTrigger:
-                    m_UpdateTrigger = target.Q<EnumField>();
+                    m_UpdateTrigger = target.Q<PopupField<string>>();
                     UpdateAdvancedSettingsOverride();
                     break;
             }
 
             UpdateConverterCompleter();
+        }
+
+        internal override void UnsetAllAttributes()
+        {
+            var undoGroup = Undo.GetCurrentGroup();
+            UndoRecordDocument(BuilderConstants.ChangeAttributeValueUndoMessage);
+            var builder = Builder.ActiveWindow;
+
+            var styleRows = fieldsContainer.Query<BuilderStyleRow>().ToList();
+            foreach (var styleRow in styleRows)
+            {
+                var fields = styleRow.GetLinkedFieldElements();
+
+                // needed for data source and data source type that are sharing a style row
+                foreach (var fieldElement in fields)
+                {
+                    var attributeName = GetAttributeName(fieldElement);
+
+                    var currentAttributesUxmlOwner = attributesUxmlOwner;
+                    var currentSerializedData = uxmlSerializedData;
+
+                    if (fieldElement.GetFirstAncestorOfType<UxmlAssetSerializedDataRoot>() is { } dataRoot && dataRoot.dataDescription.isUxmlObject)
+                    {
+                        SynchronizePath(dataRoot.rootPath, false, out var uxmlOwner, out var serializedData, out var _);
+                        currentAttributesUxmlOwner = uxmlOwner as UxmlAsset;
+                        currentSerializedData = serializedData as UxmlSerializedData;
+
+                        if (currentAttributesUxmlOwner != null)
+                        {
+                            var entry = uxmlDocument.GetUxmlObjectEntry(currentAttributesUxmlOwner.id);
+                            if (entry.uxmlObjectAssets?.Count > 0)
+                            {
+                                for (var i = entry.uxmlObjectAssets.Count - 1 ; i >= 0; i--)
+                                {
+                                    uxmlDocument.RemoveUxmlObject(entry.uxmlObjectAssets[i].id);
+                                }
+                            }
+                        }
+                    }
+
+                    if (currentSerializedData == null)
+                        continue;
+
+                    currentAttributesUxmlOwner.RemoveAttribute(attributeName);
+                    var description = fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
+                    description.SetSerializedValue(currentSerializedData, description.defaultValue);
+                    CallDeserializeOnElement();
+                    UnsetEnumValue(attributeName, false);
+                }
+            }
+
+            // Notify of changes.
+            NotifyAttributesChanged();
+            Refresh();
+            builder.inspector.headerSection.Refresh();
+            Undo.CollapseUndoOperations(undoGroup);
         }
 
         /// <inheritdoc/>
@@ -161,8 +217,25 @@ namespace Unity.UI.Builder
             var desc = bindingUxmlSerializedDataDescription;
             var root = new UxmlAssetSerializedDataRoot { dataDescription = desc, rootPath = bindingSerializedPropertyPathRoot + "." };
 
+            if (m_AdvancedSettings == null)
+            {
+                m_AdvancedSettings = new PersistedFoldout()
+                {
+                    text = "Advanced Settings",
+                    classList = { PersistedFoldout.unindentedUssClassName },
+                    value = false
+                };
+                m_ConvertersGroupBox = new GroupBox("Converters");
+            }
+            else
+            {
+                m_AdvancedSettings.Clear();
+                m_ConvertersGroupBox.Clear();
+            }
+
             // Only generate data binding fields for inheritors of DataBinding type.
-            if (typeof(DataBinding.UxmlSerializedData).IsAssignableFrom(uxmlSerializedDataDescription.serializedDataType))
+            var isDataBinding = typeof(DataBinding.UxmlSerializedData).IsAssignableFrom(uxmlSerializedDataDescription.serializedDataType);
+            if (isDataBinding)
             {
                 base.GenerateSerializedAttributeFields();
 
@@ -170,23 +243,6 @@ namespace Unity.UI.Builder
                 CreateSerializedAttributeRow(attribute, $"{root.rootPath}{attribute.serializedField.Name}", root);
 
                 root.Add(new VisualElement() { classList = { BuilderConstants.SeparatorLineStyleClassName } });
-
-                if (m_AdvancedSettings == null)
-                {
-                    m_AdvancedSettings = new PersistedFoldout()
-                    {
-                        text = "Advanced Settings",
-                        classList = { PersistedFoldout.unindentedUssClassName },
-                        value = false
-                    };
-                    m_ConvertersGroupBox = new GroupBox("Converters");
-                }
-                else
-                {
-                    m_AdvancedSettings.Clear();
-                    m_ConvertersGroupBox.Clear();
-                }
-
                 root.Add(m_AdvancedSettings);
 
                 attribute = desc.FindAttributeWithUxmlName(k_BindingAttr_UpdateTrigger);
@@ -208,6 +264,15 @@ namespace Unity.UI.Builder
 
             // Add any additional fields from inherited types.
             GenerateSerializedAttributeFields(uxmlSerializedDataDescription, root);
+
+            if (!isDataBinding)
+            {
+                root.Add(m_AdvancedSettings);
+
+                var attribute = desc.FindAttributeWithUxmlName(k_BindingAttr_UpdateTrigger);
+                var row = CreateSerializedAttributeRow(attribute, $"{root.rootPath}{attribute.serializedField.Name}", m_AdvancedSettings);
+                m_RequiresConstantUpdateField = row.GetLinkedFieldElements()[0];
+            }
         }
 
         /// <inheritdoc/>
@@ -233,7 +298,7 @@ namespace Unity.UI.Builder
 
         void UpdateConverterCompleter()
         {
-            // Make sure we have all the required fields available. 
+            // Make sure we have all the required fields available.
             if (m_ConvertersToUi == null || m_ConvertersToSource == null || m_DataSourceField == null || m_DataSourceTypeField == null || m_DataSourcePathField == null)
                 return;
 
@@ -316,7 +381,7 @@ namespace Unity.UI.Builder
             {
                 if (!attributeDescription.isUxmlObject)
                     continue;
-        
+
                 var attributePath = $"{path}.{attributeDescription.serializedField.Name}";
                 if (attributeDescription.isList)
                 {
@@ -330,7 +395,7 @@ namespace Unity.UI.Builder
                         targetView.SynchronizePath(arrayPath, true, out var newUxmlAsset, out _, out _);
 
                         CopyAttributesRecursively(arrayPath, (UxmlAsset)uxmlAsset, (UxmlAsset)newUxmlAsset, targetView);
-        
+
                         arrayProperty = targetView.m_CurrentElementSerializedObject.FindProperty($"{attributePath}.Array.data[{++i}]");
                     }
                 }

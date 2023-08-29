@@ -43,15 +43,19 @@ namespace Unity.UI.Builder
         ListView            = 1 << 7,
         TreeView            = 1 << 8,
         DataBinding         = 1 << 9,
-        UserDataBinding   = 1 << 10,
+        UserDataBinding     = 1 << 10,
         CustomBinding       = 1 << 11,
+        UxmlTraits          = 1 << 12,
+        UxmlSerialization   = 1 << 13
     }
-    
+
     internal static class BuilderAnalyticsUtility
     {
+        internal const string uieCoreModule = "UnityEngine.UIElementsModule";
+
         // Used in tests
         public static BuilderSaveEventData cachedSaveEventData { get; private set; }
-        
+
         /// <summary>
         /// Gets the feature usage in a uxml file
         /// </summary>
@@ -63,14 +67,14 @@ namespace Unity.UI.Builder
 
             if (vta.inlineSheet != null)
             {
-                stylesheets.Add(vta.inlineSheet);    
+                stylesheets.Add(vta.inlineSheet);
             }
 
             foreach (var stylesheet in stylesheets)
             {
                 if (stylesheet.imports?.Length > 0)
                     features |= Features.Imports;
-                
+
                 foreach (var rule in stylesheet.rules)
                 {
                     if (rule.customPropertiesCount > 0)
@@ -83,12 +87,12 @@ namespace Unity.UI.Builder
                         {
                             features |= Features.Transitions;
                         }
-                        else if (id is StylePropertyId.TransformOrigin or StylePropertyId.Translate 
+                        else if (id is StylePropertyId.TransformOrigin or StylePropertyId.Translate
                                  or StylePropertyId.Rotate or StylePropertyId.Scale)
                         {
                             features |= Features.Transforms;
                         }
-                        
+
                         if (property.IsVariable())
                         {
                             features |= Features.Variables;
@@ -100,13 +104,13 @@ namespace Unity.UI.Builder
             if (vta.templateAssets.Count > 0)
             {
                 features |= Features.Instances;
-                
+
                 if (vta.templateAssets.Any(x => x.attributeOverrides.Count > 0))
                 {
-                    features |= Features.AttributeOverrides;    
+                    features |= Features.AttributeOverrides;
                 }
             }
-            
+
             if (vta.visualElementAssets.Any(x => x.fullTypeName == typeof(ListView).FullName))
             {
                 features |= Features.ListView;
@@ -127,8 +131,16 @@ namespace Unity.UI.Builder
             {
                 features |= Features.CustomBinding;
             }
+            if (vta.visualElementAssets.Any(x => HasUxmlTraits(x) && IsCustomElement(x)))
+            {
+                features |= Features.UxmlTraits;
+            }
+            if (vta.visualElementAssets.Any(x => x.serializedData != null && IsCustomElement(x)))
+            {
+                features |= Features.UxmlSerialization;
+            }
 
-            return features == 0 ? Array.Empty<string>() : features.ToString().Split();
+            return features == 0 ? Array.Empty<string>() : features.ToString().Replace(" ", "").Split(",");
         }
 
         static bool IsCustomBinding<T>(UxmlObjectAsset o)
@@ -140,6 +152,33 @@ namespace Unity.UI.Builder
                 return type != uxmlType && type.IsAssignableFrom(uxmlType) && uxmlType.Assembly.GetName().Name != UxmlObjectFactoryRegistry.uieCoreModule;
             }
 
+            return false;
+        }
+
+        static bool HasUxmlTraits(VisualElementAsset vta)
+        {
+            return vta.fullTypeName != BuilderConstants.UxmlTagTypeName &&
+                VisualElementFactoryRegistry.TryGetValue(vta.fullTypeName, out _);
+        }
+
+        static bool IsCustomElement(VisualElementAsset vta)
+        {
+            var userAssemblies = new HashSet<string>(ScriptingRuntime.GetAllUserAssemblies());
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            foreach (var assembly in assemblies)
+            {
+                if (!userAssemblies.Contains(assembly.GetName().Name + ".dll")
+                    // Exclude core UIElements factories which are registered manually
+                    || assembly.GetName().Name == uieCoreModule)
+                    continue;
+
+                var types = assembly.GetTypes();
+                foreach (var t in types)
+                {
+                    if (t.FullName == vta.fullTypeName)
+                        return true;
+                }
+            }
             return false;
         }
 
@@ -160,7 +199,7 @@ namespace Unity.UI.Builder
                 var idToChildren = VisualTreeAssetUtilities.GenerateIdToChildren(vta);
                 var elementsInfo = VisualTreeAssetUtilities.GetElementsInfo(idToChildren);
                 var features = GetFeatureUsage(vta);
-            
+
                 var selectorCount = 0;
                 foreach (var styleSheetFile in openUssFiles)
                 {
@@ -174,7 +213,7 @@ namespace Unity.UI.Builder
                     {
                         continue;
                     }
-                
+
                     foreach (var styleRule in openUxmlFile.visualTreeAsset.inlineSheet.rules)
                     {
                         inlineStyleCount += styleRule.properties.Length;
@@ -182,7 +221,7 @@ namespace Unity.UI.Builder
                 }
 
                 var guid = AssetDatabase.AssetPathToGUID(uxmlPath);
-                
+
                 var saveEventData = new BuilderSaveEventData
                 {
                     assetGuid = guid,
@@ -206,7 +245,7 @@ namespace Unity.UI.Builder
                 // This check avoids analytics sent by tests or batch mode
                 if (InternalEditorUtility.isHumanControllingUs)
                 {
-                    UsabilityAnalytics.SendEvent("uiBuilderSave", now, duration, true, saveEventData);    
+                    UsabilityAnalytics.SendEvent("uiBuilderSave", now, duration, true, saveEventData);
                 }
             }
             catch (Exception e)

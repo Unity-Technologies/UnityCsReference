@@ -8,33 +8,36 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PageFactory
+    internal interface IPageFactory : IService
     {
-        [NonSerialized]
-        private UnityConnectProxy m_UnityConnect;
-        [NonSerialized]
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        [NonSerialized]
-        private AssetStoreClientV2 m_AssetStoreClient;
-        [NonSerialized]
-        private PackageDatabase m_PackageDatabase;
-        [NonSerialized]
-        private UpmCache m_UpmCache;
+        IPage CreatePageFromId(string pageId);
+        IPage CreateExtensionPage(ExtensionPageArgs args);
+        IPage CreateScopedRegistryPage(RegistryInfo registryInfo);
+        void ResolveDependenciesForPage(IPage page);
+    }
+
+    internal class PageFactory : BaseService<IPageFactory>, IPageFactory
+    {
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        private readonly IAssetStoreClient m_AssetStoreClient;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IUpmCache m_UpmCache;
         [ExcludeFromCodeCoverage]
-        public void ResolveDependencies(UnityConnectProxy unityConnect,
-                                        PackageManagerPrefs packageManagerPrefs,
-                                        AssetStoreClientV2 assetStoreClient,
-                                        PackageDatabase packageDatabase,
-                                        UpmCache upmCache)
+        public PageFactory(IUnityConnectProxy unityConnect,
+                           IPackageManagerPrefs packageManagerPrefs,
+                           IAssetStoreClient assetStoreClient,
+                           IPackageDatabase packageDatabase,
+                           IUpmCache upmCache)
         {
-            m_UnityConnect = unityConnect;
-            m_PackageManagerPrefs = packageManagerPrefs;
-            m_AssetStoreClient = assetStoreClient;
-            m_PackageDatabase = packageDatabase;
-            m_UpmCache = upmCache;
+            m_UnityConnect = RegisterDependency(unityConnect);
+            m_PackageManagerPrefs = RegisterDependency(packageManagerPrefs);
+            m_AssetStoreClient = RegisterDependency(assetStoreClient);
+            m_PackageDatabase = RegisterDependency(packageDatabase);
+            m_UpmCache = RegisterDependency(upmCache);
         }
 
-        public virtual IPage CreatePageFromId(string pageId)
+        public IPage CreatePageFromId(string pageId)
         {
             return pageId switch
             {
@@ -48,24 +51,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
-        public virtual IPage CreateExtensionPage(ExtensionPageArgs args)
+        public IPage CreateExtensionPage(ExtensionPageArgs args)
         {
             return new ExtensionPage(m_PackageDatabase, args);
         }
 
-        public virtual IPage CreateScopedRegistryPage(RegistryInfo registryInfo)
+        public IPage CreateScopedRegistryPage(RegistryInfo registryInfo)
         {
             return new ScopedRegistryPage(m_PackageDatabase, m_UpmCache, registryInfo);
         }
 
         [ExcludeFromCodeCoverage]
-        public virtual void ResolveDependenciesForPage(IPage page)
+        public void ResolveDependenciesForPage(IPage page)
         {
-            if (m_PackageDatabase == null || m_PackageManagerPrefs == null || m_UnityConnect == null || m_AssetStoreClient == null || m_UpmCache == null)
-            {
-                Debug.LogError("PageFactory's dependencies need to resolved before ResolveDependenciesForPage is called.");
-                return;
-            }
             switch (page)
             {
                 case MyAssetsPage myAssetsPage:

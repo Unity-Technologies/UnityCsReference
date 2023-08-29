@@ -156,7 +156,6 @@ namespace UnityEditor
                     continue;
 
                 UnityEngine.Object.DestroyImmediate(w, true);
-                EditorWindow.UpdateWindowMenuListing();
             }
 
             m_Panes.Clear();
@@ -358,6 +357,9 @@ namespace UnityEditor
             // Exit if the window was destroyed after entering play mode or on domain-reload.
             if (window == null)
                 return;
+
+            if (actualView)
+                GUI.color = actualView.rootVisualElement.playModeTintColor;
 
             var borderSize = GetBorderSize();
 
@@ -1086,7 +1088,7 @@ namespace UnityEditor
                         Interlocked.Exchange(ref pendingSelect, -1);
                         break;
                     }
-                
+
                 case EventType.Repaint:
                     xPos = tabAreaRect.xMin;
                     if (actualView)
@@ -1256,8 +1258,10 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
-            // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
+
+            if (actualView)
+                GUI.color = actualView.rootVisualElement.playModeTintColor;
 
             Rect maximizedViewRect = Rect.zero;
 

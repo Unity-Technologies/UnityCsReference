@@ -133,5 +133,8 @@ namespace UnityEngine.Rendering
 
             return settings != null;
         }
+
+        [NativeName("SetAllRenderPipelineSettingsDirty")] internal static extern void Internal_SetAllRenderPipelineSettingsDirty();
+
     }
 }

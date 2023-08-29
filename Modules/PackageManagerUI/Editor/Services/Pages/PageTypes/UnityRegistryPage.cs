@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PageFilters.Status[] m_SupportedStatusFilters = { PageFilters.Status.UpdateAvailable };
         public override IEnumerable<PageFilters.Status> supportedStatusFilters => m_SupportedStatusFilters;
 
-        public UnityRegistryPage(PackageDatabase packageDatabase) : base(packageDatabase) {}
+        public UnityRegistryPage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
 
         public override bool ShouldInclude(IPackage package)
         {

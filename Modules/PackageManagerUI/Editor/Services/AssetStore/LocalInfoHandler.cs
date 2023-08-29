@@ -7,18 +7,24 @@ using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
-internal class LocalInfoHandler
+internal interface ILocalInfoHandler : IService
 {
-    private AssetStoreUtils m_AssetStoreUtils;
-    private IOProxy m_IOProxy;
+    IList<AssetStoreLocalInfo> GetParsedLocalInfos();
+    AssetStoreLocalInfo GetParsedLocalInfo(string productPath);
+    void UpdateExtraInfoInCacheIfNeeded(string productPath, AssetStoreDownloadInfo downloadInfo);
+}
 
-    public void ResolveDependencies(AssetStoreUtils assetStoreUtils, IOProxy ioProxy)
+internal class LocalInfoHandler : BaseService<ILocalInfoHandler>, ILocalInfoHandler
+{
+    private readonly IAssetStoreUtils m_AssetStoreUtils;
+    private readonly IIOProxy m_IOProxy;
+    public LocalInfoHandler(IAssetStoreUtils assetStoreUtils, IIOProxy ioProxy)
     {
-        m_AssetStoreUtils = assetStoreUtils;
-        m_IOProxy = ioProxy;
+        m_AssetStoreUtils = RegisterDependency(assetStoreUtils);
+        m_IOProxy = RegisterDependency(ioProxy);
     }
 
-    public virtual IList<AssetStoreLocalInfo> GetParsedLocalInfos()
+    public IList<AssetStoreLocalInfo> GetParsedLocalInfos()
     {
         var localInfos = new List<AssetStoreLocalInfo>();
         var packageInfos = m_AssetStoreUtils.GetLocalPackageList();
@@ -31,7 +37,7 @@ internal class LocalInfoHandler
         return localInfos;
     }
 
-    public virtual AssetStoreLocalInfo GetParsedLocalInfo(string productPath)
+    public AssetStoreLocalInfo GetParsedLocalInfo(string productPath)
     {
         if (string.IsNullOrEmpty(productPath))
             return null;
@@ -59,7 +65,7 @@ internal class LocalInfoHandler
         }
     }
 
-    public virtual void UpdateExtraInfoInCacheIfNeeded(string productPath, AssetStoreDownloadInfo downloadInfo)
+    public void UpdateExtraInfoInCacheIfNeeded(string productPath, AssetStoreDownloadInfo downloadInfo)
     {
         if (string.IsNullOrEmpty(productPath) || downloadInfo == null || downloadInfo.uploadId == 0) return;
 

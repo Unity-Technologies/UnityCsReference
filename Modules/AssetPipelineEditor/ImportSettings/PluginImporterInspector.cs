@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
+using UnityEditor;
 using UnityEditorInternal;
 using UnityEditor.Modules;
 using UnityEditor.Build;
@@ -95,13 +96,7 @@ namespace UnityEditor
 
         private Compatibility m_Preload;
 
-        private readonly static BuildTarget[] m_StandaloneTargets = new BuildTarget[]
-        {
-            BuildTarget.StandaloneOSX,
-            BuildTarget.StandaloneWindows,
-            BuildTarget.StandaloneWindows64,
-            BuildTarget.StandaloneLinux64,
-        };
+        private readonly static BuildTarget[] m_StandaloneTargets = BuildTargetDiscovery.StandaloneBuildTargets;
 
         internal class DefineConstraint
         {
@@ -567,7 +562,7 @@ namespace UnityEditor
             var textFieldValue = EditorGUI.TextField(textFieldRect, mixed ? L10n.Tr("(Multiple Values)") : label);
             EditorGUI.showMixedValue = false;
 
-            var defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(EditorUserBuildSettings.activeBuildTarget));
+            var defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(EditorUserBuildSettings.activeBuildTarget));
 
             if (defines != null)
             {
@@ -765,7 +760,7 @@ namespace UnityEditor
 
                     if (m_DefineConstraints.list.Count > 0)
                     {
-                        var defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(EditorUserBuildSettings.activeBuildTarget));
+                        var defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(EditorUserBuildSettings.activeBuildTarget));
 
                         var defineConstraintsCompatible = true;
 

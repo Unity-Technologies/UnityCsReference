@@ -67,7 +67,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Attribute type.
         /// </summary>
-        public string type { get; protected set; }
+        public string type { get; protected internal set; }
         /// <summary>
         /// Attribute namespace.
         /// </summary>

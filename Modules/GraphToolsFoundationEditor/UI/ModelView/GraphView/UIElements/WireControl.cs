@@ -385,8 +385,8 @@ namespace Unity.GraphToolsFoundation.Editor
             Color inColor = InputColor;
             Color outColor = OutputColor;
 
-            inColor *= UIElementsUtility.editorPlayModeTintColor;
-            outColor *= UIElementsUtility.editorPlayModeTintColor;
+            inColor *= playModeTintColor;
+            outColor *= playModeTintColor;
 
             var painter2D = mgc.painter2D;
 

@@ -9,7 +9,7 @@ using UnityEditor.Toolbars;
 namespace UnityEditor.Multiplayer.Internal
 {
     [EditorToolbarElement("Multiplayer/MultiplayerRole", typeof(DefaultMainToolbar))]
-    class MultiplayerRoleDropdown : ToolbarButton
+    class MultiplayerRoleDropdown : EditorToolbarDropdown
     {
         public MultiplayerRoleDropdown()
         {

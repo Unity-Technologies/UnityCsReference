@@ -12,25 +12,25 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<PackageToolbar> {}
 
-        private ApplicationProxy m_Application;
-        private AssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private UpmCache m_UpmCache;
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        private PackageDatabase m_PackageDatabase;
-        private PackageOperationDispatcher m_OperationDispatcher;
-        private PageManager m_PageManager;
-        private UnityConnectProxy m_UnityConnect;
+        private IApplicationProxy m_Application;
+        private IAssetStoreDownloadManager m_AssetStoreDownloadManager;
+        private IUpmCache m_UpmCache;
+        private IPackageManagerPrefs m_PackageManagerPrefs;
+        private IPackageDatabase m_PackageDatabase;
+        private IPackageOperationDispatcher m_OperationDispatcher;
+        private IPageManager m_PageManager;
+        private IUnityConnectProxy m_UnityConnect;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_Application = container.Resolve<ApplicationProxy>();
-            m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
-            m_UpmCache = container.Resolve<UpmCache>();
-            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
-            m_PackageDatabase = container.Resolve<PackageDatabase>();
-            m_OperationDispatcher = container.Resolve<PackageOperationDispatcher>();
-            m_PageManager = container.Resolve<PageManager>();
-            m_UnityConnect = container.Resolve<UnityConnectProxy>();
+            m_Application = container.Resolve<IApplicationProxy>();
+            m_AssetStoreDownloadManager = container.Resolve<IAssetStoreDownloadManager>();
+            m_UpmCache = container.Resolve<IUpmCache>();
+            m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
+            m_PackageDatabase = container.Resolve<IPackageDatabase>();
+            m_OperationDispatcher = container.Resolve<IPackageOperationDispatcher>();
+            m_PageManager = container.Resolve<IPageManager>();
+            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
         }
 
         private IPackage m_Package;

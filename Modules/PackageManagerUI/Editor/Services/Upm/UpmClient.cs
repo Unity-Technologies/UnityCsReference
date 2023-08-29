@@ -10,17 +10,49 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal interface IUpmClient : IService
+    {
+        event Action<IEnumerable<(string packageIdOrName, PackageProgress progress)>> onPackagesProgressChange;
+        event Action<string, UIError> onPackageOperationError;
+        event Action<IOperation> onListOperation;
+        event Action<IOperation> onSearchAllOperation;
+        event Action<IOperation> onAddOperation;
+
+        bool isAddOrRemoveInProgress { get; }
+        IEnumerable<string> packageIdsOrNamesInstalling { get; }
+
+        bool IsAnyExperimentalPackagesInUse();
+        bool IsRemoveInProgress(string packageName);
+        bool IsAddInProgress(string packageId);
+        void AddById(string packageId);
+        bool AddByPath(string path, out string tempPackageId);
+        void AddByUrl(string url);
+        void AddByIds(IEnumerable<string> versionIds);
+        void RemoveByNames(IEnumerable<string> packagesNames);
+        void AddAndResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames);
+        void ResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames);
+        void List(bool offlineMode = false);
+        void RemoveByName(string packageName);
+        void RemoveEmbeddedByName(string packageName);
+        void SearchAll(bool offlineMode = false);
+        void ExtraFetchPackageInfo(string packageIdOrName, long productId = 0, Action<PackageInfo> successCallback = null, Action<UIError> errorCallback = null, Action doneCallback = null);
+        void ClearCache();
+        void Resolve();
+        RegistryType GetAvailableRegistryType(PackageInfo packageInfo);
+        bool IsUnityPackage(PackageInfo packageInfo);
+    }
+
     [Serializable]
-    internal class UpmClient : ISerializationCallbackReceiver
+    internal class UpmClient : BaseService<IUpmClient>, IUpmClient, ISerializationCallbackReceiver
     {
         private static readonly string[] k_UnityRegistryUrlsHosts = { ".unity.com", ".unity3d.com" };
 
-        public virtual event Action<IEnumerable<(string packageIdOrName, PackageProgress progress)>> onPackagesProgressChange = delegate { };
-        public virtual event Action<string, UIError> onPackageOperationError = delegate { };
+        public event Action<IEnumerable<(string packageIdOrName, PackageProgress progress)>> onPackagesProgressChange = delegate { };
+        public event Action<string, UIError> onPackageOperationError = delegate { };
 
-        public virtual event Action<IOperation> onListOperation = delegate {};
-        public virtual event Action<IOperation> onSearchAllOperation = delegate {};
-        public virtual event Action<IOperation> onAddOperation = delegate {};
+        public event Action<IOperation> onListOperation = delegate {};
+        public event Action<IOperation> onSearchAllOperation = delegate {};
+        public event Action<IOperation> onAddOperation = delegate {};
 
         [SerializeField]
         private UpmSearchOperation m_SearchOperation;
@@ -56,41 +88,27 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private RegistryType[] m_SerializedRegistryUrlsValues;
 
-        internal Dictionary<string, RegistryType> m_RegistryUrls = new Dictionary<string, RegistryType>();
+        private Dictionary<string, RegistryType> m_RegistryUrls = new();
 
-        [NonSerialized]
-        private UpmCache m_UpmCache;
-        [NonSerialized]
-        private FetchStatusTracker m_FetchStatusTracker;
-        [NonSerialized]
-        private IOProxy m_IOProxy;
-        [NonSerialized]
-        private ClientProxy m_ClientProxy;
-        [NonSerialized]
-        private ApplicationProxy m_ApplicationProxy;
-        public void ResolveDependencies(UpmCache upmCache,
-            FetchStatusTracker fetchStatusTracker,
-            IOProxy IOProxy,
-            PackageManagerProjectSettingsProxy settingsProxy,
-            ClientProxy clientProxy,
-            ApplicationProxy applicationProxy)
+        private readonly IUpmCache m_UpmCache;
+        private readonly IFetchStatusTracker m_FetchStatusTracker;
+        private readonly IIOProxy m_IOProxy;
+        private readonly IClientProxy m_ClientProxy;
+        private readonly IApplicationProxy m_Application;
+        public UpmClient(IUpmCache upmCache,
+            IFetchStatusTracker fetchStatusTracker,
+            IIOProxy ioProxy,
+            IClientProxy clientProxy,
+            IApplicationProxy applicationProxy)
         {
-            m_UpmCache = upmCache;
-            m_FetchStatusTracker = fetchStatusTracker;
-            m_IOProxy = IOProxy;
-            m_ClientProxy = clientProxy;
-            m_ApplicationProxy = applicationProxy;
-
-            m_SearchOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_SearchOfflineOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_ListOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_ListOfflineOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_AddOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_RemoveOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_AddAndRemoveOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_UpmCache = RegisterDependency(upmCache);
+            m_FetchStatusTracker = RegisterDependency(fetchStatusTracker);
+            m_IOProxy = RegisterDependency(ioProxy);
+            m_ClientProxy = RegisterDependency(clientProxy);
+            m_Application = RegisterDependency(applicationProxy);
         }
 
-        public virtual bool IsAnyExperimentalPackagesInUse()
+        public bool IsAnyExperimentalPackagesInUse()
         {
             return PackageInfo.GetAllRegisteredPackages().Any(info => (info.version.Contains("-preview") || info.version.Contains("-exp.") || info.version.StartsWith("0.")) && IsUnityPackage(info));
         }
@@ -107,12 +125,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             for (var i = 0; i < m_SerializedRegistryUrlsKeys.Length; i++)
                 m_RegistryUrls[m_SerializedRegistryUrlsKeys[i]] = m_SerializedRegistryUrlsValues[i];
+
+            m_SearchOperation?.ResolveDependencies(m_ClientProxy, m_Application);
+            m_SearchOfflineOperation?.ResolveDependencies(m_ClientProxy, m_Application);
+            m_ListOperation?.ResolveDependencies(m_ClientProxy, m_Application);
+            m_ListOfflineOperation?.ResolveDependencies(m_ClientProxy, m_Application);
+            m_AddOperation?.ResolveDependencies(m_ClientProxy, m_Application);
+            m_RemoveOperation?.ResolveDependencies(m_ClientProxy, m_Application);
+            m_AddAndRemoveOperation?.ResolveDependencies(m_ClientProxy, m_Application);
         }
 
-        public virtual bool isAddOrRemoveInProgress => m_AddOperation?.isInProgress == true ||
+        public bool isAddOrRemoveInProgress => m_AddOperation?.isInProgress == true ||
             m_RemoveOperation?.isInProgress == true || m_AddAndRemoveOperation?.isInProgress == true;
 
-        public virtual IEnumerable<string> packageIdsOrNamesInstalling
+        public IEnumerable<string> packageIdsOrNamesInstalling
         {
             get
             {
@@ -124,19 +150,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual bool IsRemoveInProgress(string packageName)
+        public bool IsRemoveInProgress(string packageName)
         {
             return (m_RemoveOperation?.isInProgress == true && m_RemoveOperation.packageName == packageName) ||
                 (m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packagesNamesToRemove.Contains(packageName));
         }
 
-        public virtual bool IsAddInProgress(string packageId)
+        public bool IsAddInProgress(string packageId)
         {
             return (m_AddOperation?.isInProgress == true && m_AddOperation.packageIdOrName == packageId) ||
                 (m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packageIdsToAdd.Contains(packageId));
         }
 
-        public virtual void AddById(string packageId)
+        public void AddById(string packageId)
         {
             if (isAddOrRemoveInProgress)
                 return;
@@ -177,7 +203,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             List(true);
         }
 
-        public virtual bool AddByPath(string path, out string tempPackageId)
+        public bool AddByPath(string path, out string tempPackageId)
         {
             tempPackageId = string.Empty;
             if (isAddOrRemoveInProgress)
@@ -212,7 +238,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return $"file:../{relativePathToProjectRoot}";
         }
 
-        public virtual void AddByUrl(string url)
+        public void AddByUrl(string url)
         {
             if (isAddOrRemoveInProgress)
                 return;
@@ -221,7 +247,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetupAddOperation();
         }
 
-        public virtual void AddByIds(IEnumerable<string> versionIds)
+        public void AddByIds(IEnumerable<string> versionIds)
         {
             if (isAddOrRemoveInProgress)
                 return;
@@ -229,7 +255,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetupAddAndRemoveOperation();
         }
 
-        public virtual void RemoveByNames(IEnumerable<string> packagesNames)
+        public void RemoveByNames(IEnumerable<string> packagesNames)
         {
             if (isAddOrRemoveInProgress)
                 return;
@@ -237,7 +263,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetupAddAndRemoveOperation();
         }
 
-        public virtual void AddAndResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
+        public void AddAndResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
         {
             if (isAddOrRemoveInProgress)
                 return;
@@ -245,7 +271,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetupAddAndRemoveOperation();
         }
 
-        public virtual void ResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
+        public void ResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
         {
             if (isAddOrRemoveInProgress)
                 return;
@@ -299,7 +325,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             });
         }
 
-        public virtual void List(bool offlineMode = false)
+        public void List(bool offlineMode = false)
         {
             var operation = offlineMode ? listOfflineOperation : listOperation;
             if (operation.isInProgress)
@@ -322,7 +348,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.SetInstalledPackageInfos(request.Result, listOperation.lastSuccessTimestamp);
         }
 
-        public virtual void RemoveByName(string packageName)
+        public void RemoveByName(string packageName)
         {
             if (isAddOrRemoveInProgress)
                 return;
@@ -330,7 +356,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetupRemoveOperation();
         }
 
-        public virtual void RemoveEmbeddedByName(string packageName)
+        public void RemoveEmbeddedByName(string packageName)
         {
             if (isAddOrRemoveInProgress)
                 return;
@@ -383,7 +409,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             List(true);
         }
 
-        public virtual void SearchAll(bool offlineMode = false)
+        public void SearchAll(bool offlineMode = false)
         {
             var operation = offlineMode ? searchOfflineOperation : searchOperation;
             if (operation.isInProgress)
@@ -406,12 +432,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.SetSearchPackageInfos(request.Result, searchOperation.lastSuccessTimestamp);
         }
 
-        public virtual void ExtraFetchPackageInfo(string packageIdOrName, long productId = 0, Action<PackageInfo> successCallback = null, Action<UIError> errorCallback = null, Action doneCallback = null)
+        public void ExtraFetchPackageInfo(string packageIdOrName, long productId = 0, Action<PackageInfo> successCallback = null, Action<UIError> errorCallback = null, Action doneCallback = null)
         {
             if (!m_ExtraFetchOperations.TryGetValue(packageIdOrName, out var operation))
             {
                 operation = new UpmSearchOperation();
-                operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+                operation.ResolveDependencies(m_ClientProxy, m_Application);
                 operation.Search(packageIdOrName, productId);
                 operation.onProcessResult += (request) => OnProcessExtraFetchResult(request, productId);
                 operation.onOperationFinalized += (op) => m_ExtraFetchOperations.Remove(packageIdOrName);
@@ -487,27 +513,27 @@ namespace UnityEditor.PackageManager.UI.Internal
                 ExtraFetchPackageInfo(operation.packageIdOrName, operation.productId);
         }
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             RestoreInProgressOperations();
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
         }
 
-        public virtual void ClearCache()
+        public void ClearCache()
         {
             m_ExtraFetchOperations.Clear();
             m_UpmCache.ClearCache();
         }
 
-        public virtual void Resolve()
+        public void Resolve()
         {
             m_ClientProxy.Resolve();
         }
 
-        public virtual RegistryType GetAvailableRegistryType(PackageInfo packageInfo)
+        public RegistryType GetAvailableRegistryType(PackageInfo packageInfo)
         {
             // Special handling for packages that's built in/bundled with unity, we always consider them from the Unity registry
             if (packageInfo?.source == PackageSource.BuiltIn)
@@ -527,7 +553,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return result;
         }
 
-        public virtual bool IsUnityPackage(PackageInfo packageInfo)
+        public bool IsUnityPackage(PackageInfo packageInfo)
         {
             return packageInfo is { source: PackageSource.BuiltIn or PackageSource.Registry } &&
                    GetAvailableRegistryType(packageInfo) == RegistryType.UnityRegistry;
@@ -553,12 +579,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (operation != null)
             {
-                operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+                operation.ResolveDependencies(m_ClientProxy, m_Application);
                 return operation;
             }
 
             operation = new T();
-            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            operation.ResolveDependencies(m_ClientProxy, m_Application);
             return operation;
         }
     }

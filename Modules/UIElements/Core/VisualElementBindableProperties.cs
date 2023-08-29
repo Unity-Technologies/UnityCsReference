@@ -8,6 +8,7 @@ namespace UnityEngine.UIElements
     {
         internal static readonly BindingId viewDataKeyProperty = nameof(viewDataKey);
         internal static readonly BindingId userDataProperty = nameof(userData);
+        internal static readonly BindingId disablePlayModeTintProperty = nameof(disablePlayModeTint);
         internal static readonly BindingId usageHintsProperty = nameof(usageHints);
         internal static readonly BindingId layoutProperty = nameof(layout);
         internal static readonly BindingId contentRectProperty = nameof(contentRect);

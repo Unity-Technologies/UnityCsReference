@@ -5,15 +5,41 @@
 using System;
 using UnityEditorInternal;
 using UnityEngine;
-using Object = UnityEngine.Object;
 using System.Diagnostics.CodeAnalysis;
 using UnityEngine.Networking;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal interface IApplicationProxy : IService
+    {
+        event Action<bool> onInternetReachabilityChange;
+        event Action onFinishCompiling;
+        event Action<PlayModeStateChange> onPlayModeStateChanged;
+        event Action update;
+
+        string userAppDataPath { get; }
+        bool isInternetReachable { get; }
+        bool isBatchMode { get; }
+        bool isUpmRunning { get; }
+        bool isCompiling { get; }
+
+        string unityVersion { get; }
+        string shortUnityVersion { get; }
+        string docsUrlWithShortUnityVersion { get; }
+        bool isDeveloperBuild { get; }
+
+        void OpenURL(string url);
+        void RevealInFinder(string path);
+        string OpenFilePanelWithFilters(string title, string directory, string[] filters);
+        string OpenFolderPanel(string title, string folder);
+        bool DisplayDialog(string idForAnalytics, string title, string message, string ok, string cancel = "");
+        int DisplayDialogComplex(string idForAnalytics, string title, string message, string ok, string cancel, string alt);
+        void CheckUrlValidity(string uri, Action success, Action failure);
+    }
+
     [Serializable]
     [ExcludeFromCodeCoverage]
-    internal class ApplicationProxy
+    internal class ApplicationProxy : BaseService<IApplicationProxy>, IApplicationProxy
     {
         [SerializeField]
         private bool m_CheckingCompilation = false;
@@ -24,20 +50,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private double m_LastInternetCheck;
 
-        public virtual event Action<bool> onInternetReachabilityChange = delegate {};
-        public virtual event Action onFinishCompiling = delegate {};
-        public virtual event Action<PlayModeStateChange> onPlayModeStateChanged = delegate {};
-        public virtual event Action update = delegate {};
+        public event Action<bool> onInternetReachabilityChange = delegate {};
+        public event Action onFinishCompiling = delegate {};
+        public event Action<PlayModeStateChange> onPlayModeStateChanged = delegate {};
+        public event Action update = delegate {};
 
-        public virtual string userAppDataPath => InternalEditorUtility.userAppDataFolder;
+        public string userAppDataPath => InternalEditorUtility.userAppDataFolder;
 
-        public virtual bool isInternetReachable => m_IsInternetReachable;
+        public bool isInternetReachable => m_IsInternetReachable;
 
-        public virtual bool isBatchMode => Application.isBatchMode;
+        public bool isBatchMode => Application.isBatchMode;
 
-        public virtual bool isUpmRunning => !EditorApplication.isPackageManagerDisabled;
+        public bool isUpmRunning => !EditorApplication.isPackageManagerDisabled;
 
-        public virtual bool isCompiling
+        public bool isCompiling
         {
             get
             {
@@ -52,9 +78,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual string unityVersion => Application.unityVersion;
+        public string unityVersion => Application.unityVersion;
 
-        public virtual string shortUnityVersion
+        public string shortUnityVersion
         {
             get
             {
@@ -64,11 +90,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public const string k_UnityDocsUrl = "https://docs.unity3d.com/";
-        public virtual string docsUrlWithShortUnityVersion => $"{k_UnityDocsUrl}{shortUnityVersion}/";
+        public string docsUrlWithShortUnityVersion => $"{k_UnityDocsUrl}{shortUnityVersion}/";
 
-        public virtual bool isDeveloperBuild => Unsupported.IsDeveloperBuild();
+        public bool isDeveloperBuild => Unsupported.IsDeveloperBuild();
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             m_IsInternetReachable = Application.internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork;
             m_LastInternetCheck = EditorApplication.timeSinceStartup;
@@ -76,7 +102,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
             EditorApplication.update -= OnUpdate;
             EditorApplication.playModeStateChanged -= PlayModeStateChanged;
@@ -119,46 +145,41 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         // Eventually we want a better way of opening urls, to be further addressed in  https://jira.unity3d.com/browse/PAX-2592
-        public virtual void OpenURL(string url)
+        public void OpenURL(string url)
         {
             Application.OpenURL(url);
         }
 
-        public virtual void RevealInFinder(string path)
+        public void RevealInFinder(string path)
         {
             EditorUtility.RevealInFinder(path);
         }
 
-        public virtual string OpenFilePanelWithFilters(string title, string directory, string[] filters)
+        public string OpenFilePanelWithFilters(string title, string directory, string[] filters)
         {
             return EditorUtility.OpenFilePanelWithFilters(title, directory, filters);
         }
 
-        public virtual string OpenFolderPanel(string title, string folder)
+        public string OpenFolderPanel(string title, string folder)
         {
             return EditorUtility.OpenFolderPanel(title, folder, string.Empty);
         }
 
-        public virtual bool DisplayDialog(string idForAnalytics, string title, string message, string ok, string cancel = "")
+        public bool DisplayDialog(string idForAnalytics, string title, string message, string ok, string cancel = "")
         {
             var result = EditorUtility.DisplayDialog(title, message, ok, cancel);
             PackageManagerDialogAnalytics.SendEvent(idForAnalytics, title, message, result ? ok : cancel);
             return result;
         }
 
-        public virtual int DisplayDialogComplex(string idForAnalytics, string title, string message, string ok, string cancel, string alt)
+        public int DisplayDialogComplex(string idForAnalytics, string title, string message, string ok, string cancel, string alt)
         {
             var result = EditorUtility.DisplayDialogComplex(title, message, ok, cancel, alt);
             PackageManagerDialogAnalytics.SendEvent(idForAnalytics, title, message, result == 1 ? cancel : (result == 2 ? alt : ok));
             return result;
         }
 
-        public virtual T Load<T>(string path) where T : Object
-        {
-            return EditorGUIUtility.Load(path) as T;
-        }
-
-        public virtual void CheckUrlValidity(string uri, Action success, Action failure)
+        public void CheckUrlValidity(string uri, Action success, Action failure)
         {
             var request = UnityWebRequest.Head(uri);
             var operation = request.SendWebRequest();

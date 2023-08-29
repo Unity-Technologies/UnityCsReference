@@ -52,9 +52,7 @@ namespace UnityEditor
 
         private VisualElement m_UIRootElement;
 
-        internal VisualElement baseRootVisualElement => m_UIRootElement == null
-        ? m_UIRootElement = CreateRoot()
-            : m_UIRootElement;
+        internal VisualElement baseRootVisualElement => m_UIRootElement ??= CreateRoot();
 
         public VisualElement rootVisualElement
         {
@@ -337,8 +335,7 @@ namespace UnityEditor
             if (warningSize.y > targetHeight)
                 warningSize.y = targetHeight;
 
-            Rect r = new Rect((position.width - warningSize.x) * .5f, 20 + (position.height - 20 - warningSize.y) * .7f, warningSize.x, warningSize.y);
-
+            Rect r = new Rect((position.width - warningSize.x - EditorStyles.notificationText.margin.horizontal) * .5f, 20 + (position.height - 20 - warningSize.y) * .7f, warningSize.x + EditorStyles.notificationText.margin.horizontal, warningSize.y);
             double time = EditorApplication.timeSinceStartup;
             if (time > m_FadeoutTime)
                 GUI.color = new Color(1, 1, 1, 1 - (float)((time - m_FadeoutTime) / kWarningFadeoutTime));
@@ -1338,19 +1335,19 @@ namespace UnityEditor
             }
         }
 
-        private static VisualElement CreateRoot()
+        private VisualElement CreateRoot()
         {
-            var name = VisualElement.k_RootVisualContainerName;
+            const string rootName = VisualElement.k_RootVisualContainerName;
             var root = new VisualElement()
             {
-                name = VisualElementUtils.GetUniqueName(name),
+                name = VisualElementUtils.GetUniqueName(rootName),
                 pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
-                viewDataKey = name,
+                viewDataKey = rootName,
                 renderHints = RenderHints.ClipWithScissors
             };
             root.pseudoStates |= PseudoStates.Root;
             UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
-            root.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
+            root.style.overflow = Overflow.Hidden;
             return root;
         }
 

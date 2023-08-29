@@ -149,9 +149,9 @@ namespace UnityEditorInternal
 
         public int GetIndex()
         {
-            for (int i = 0; i < curve.m_Keyframes.Count; i++)
+            for (int i = 0; i < curve.keyframes.Count; i++)
             {
-                if (curve.m_Keyframes[i] == this)
+                if (curve.keyframes[i] == this)
                 {
                     return i;
                 }

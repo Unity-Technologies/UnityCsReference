@@ -2,16 +2,22 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 using UnityEditor;
 using UnityEngine;
 
 namespace Unity.UI.Builder
 {
+    internal interface IBuilderWindowResizeTracker
+    {
+        public event EventHandler onRectChanged;
+    }
+
     /// <summary>
     ///  Window used to create and edit bindings.
     /// </summary>
-    class BuilderBindingWindow : EditorWindow
+    class BuilderBindingWindow : EditorWindow, IBuilderWindowResizeTracker
     {
         private static BuilderBindingWindow s_Window;
         private BuilderBindingView m_View;
@@ -58,6 +64,12 @@ namespace Unity.UI.Builder
             s_Window = null;
         }
 
+        internal override void OnResized()
+        {
+            base.OnResized();
+            m_OnRectChanged?.Invoke(this, null);
+        }
+
         private void CreateGUI()
         {
             var root = rootVisualElement;
@@ -77,6 +89,14 @@ namespace Unity.UI.Builder
             m_View = new BuilderBindingView();
             rootVisualElement.Add(m_View);
             m_View.closeRequested += Close;
+        }
+
+        event EventHandler m_OnRectChanged;
+
+        public event EventHandler onRectChanged
+        {
+            add => m_OnRectChanged += value;
+            remove => m_OnRectChanged -= value;
         }
     }
 }

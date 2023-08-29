@@ -18,30 +18,30 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private IPackageVersion m_Version;
 
-        private readonly ResourceLoader m_ResourceLoader;
-        private readonly ApplicationProxy m_ApplicationProxy;
-        private readonly PackageManagerPrefs m_PackageManagerPrefs;
-        private readonly PackageDatabase m_PackageDatabase;
-        private readonly PackageOperationDispatcher m_OperationDispatcher;
-        private readonly PageManager m_PageManager;
-        private readonly PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private readonly UpmCache m_UpmCache;
-        private readonly PackageLinkFactory m_PackageLinkFactory;
-        public PackageDetailsVersionsTab(UnityConnectProxy unityConnect,
-            ResourceLoader resourceLoader,
-            ApplicationProxy applicationProxyProxy,
-            PackageManagerPrefs packageManagerPrefs,
-            PackageDatabase packageDatabase,
-            PackageOperationDispatcher operationDispatcher,
-            PageManager pageManager,
-            PackageManagerProjectSettingsProxy settingsProxy,
-            UpmCache upmCache,
-            PackageLinkFactory packageLinkFactory) : base(unityConnect)
+        private readonly IResourceLoader m_ResourceLoader;
+        private readonly IApplicationProxy m_ApplicationProxy;
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPackageOperationDispatcher m_OperationDispatcher;
+        private readonly IPageManager m_PageManager;
+        private readonly IProjectSettingsProxy m_SettingsProxy;
+        private readonly IUpmCache m_UpmCache;
+        private readonly IPackageLinkFactory m_PackageLinkFactory;
+        public PackageDetailsVersionsTab(IUnityConnectProxy unityConnect,
+            IResourceLoader resourceLoader,
+            IApplicationProxy applicationProxy,
+            IPackageManagerPrefs packageManagerPrefs,
+            IPackageDatabase packageDatabase,
+            IPackageOperationDispatcher operationDispatcher,
+            IPageManager pageManager,
+            IProjectSettingsProxy settingsProxy,
+            IUpmCache upmCache,
+            IPackageLinkFactory packageLinkFactory) : base(unityConnect)
         {
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Version History");
             m_ResourceLoader = resourceLoader;
-            m_ApplicationProxy = applicationProxyProxy;
+            m_ApplicationProxy = applicationProxy;
             m_PackageManagerPrefs = packageManagerPrefs;
             m_PackageDatabase = packageDatabase;
             m_OperationDispatcher = operationDispatcher;

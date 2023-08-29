@@ -9,10 +9,10 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class CancelDownloadAction : PackageAction
 {
-    private readonly PackageOperationDispatcher m_OperationDispatcher;
-    private readonly AssetStoreDownloadManager m_AssetStoreDownloadManager;
-    private readonly ApplicationProxy m_Application;
-    public CancelDownloadAction(PackageOperationDispatcher operationDispatcher, AssetStoreDownloadManager assetStoreDownloadManager, ApplicationProxy application)
+    private readonly IPackageOperationDispatcher m_OperationDispatcher;
+    private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
+    private readonly IApplicationProxy m_Application;
+    public CancelDownloadAction(IPackageOperationDispatcher operationDispatcher, IAssetStoreDownloadManager assetStoreDownloadManager, IApplicationProxy application)
     {
         m_OperationDispatcher = operationDispatcher;
         m_AssetStoreDownloadManager = assetStoreDownloadManager;
@@ -56,7 +56,7 @@ internal class CancelDownloadAction : PackageAction
     internal class DisableIfResumeRequestSent : DisableCondition
     {
         private static readonly string k_Tooltip = L10n.Tr("A resume request has been sent. You cannot cancel this download until it is resumed.");
-        public DisableIfResumeRequestSent(AssetStoreDownloadManager downloadManager, IPackageVersion version)
+        public DisableIfResumeRequestSent(IAssetStoreDownloadManager downloadManager, IPackageVersion version)
         {
             active = downloadManager.GetDownloadOperation(version?.package.product?.id).state == DownloadState.ResumeRequested;
             tooltip = k_Tooltip;

@@ -18,14 +18,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private List<string> m_Labels;
 
-        private AssetStoreRestAPI m_AssetStoreRestAPI;
-        private BackgroundFetchHandler m_BackgroundFetchHandler;
+        private IAssetStoreRestAPI m_AssetStoreRestAPI;
+        private IBackgroundFetchHandler m_BackgroundFetchHandler;
         protected override void ResolveDependencies()
         {
             base.ResolveDependencies();
             var container = ServicesContainer.instance;
-            m_AssetStoreRestAPI = container.Resolve<AssetStoreRestAPI>();
-            m_BackgroundFetchHandler = container.Resolve<BackgroundFetchHandler>();
+            m_AssetStoreRestAPI = container.Resolve<IAssetStoreRestAPI>();
+            m_BackgroundFetchHandler = container.Resolve<IBackgroundFetchHandler>();
         }
 
         protected override Vector2 GetSize(IPage page)

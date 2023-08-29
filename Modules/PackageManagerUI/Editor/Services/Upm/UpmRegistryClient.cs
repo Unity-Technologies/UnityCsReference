@@ -10,12 +10,25 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [Serializable]
-    internal class UpmRegistryClient
+    internal interface IUpmRegistryClient : IService
     {
-        public virtual event Action<int> onRegistriesAdded = delegate {};
-        public virtual event Action onRegistriesModified = delegate {};
-        public virtual event Action<string, UIError> onRegistryOperationError = delegate {};
+        event Action<int> onRegistriesAdded;
+        event Action onRegistriesModified;
+        event Action<string, UIError> onRegistryOperationError;
+
+        void AddRegistry(string name, string url, string[] scopes);
+        void UpdateRegistry(string oldName, string newName, string url, string[] scopes);
+        void RemoveRegistry(string name);
+
+        void CheckRegistriesChanged();
+    }
+
+    [Serializable]
+    internal class UpmRegistryClient : BaseService<IUpmRegistryClient>, IUpmRegistryClient, ISerializationCallbackReceiver
+    {
+        public event Action<int> onRegistriesAdded = delegate {};
+        public event Action onRegistriesModified = delegate {};
+        public event Action<string, UIError> onRegistryOperationError = delegate {};
 
         [SerializeField]
         private UpmGetRegistriesOperation m_GetRegistriesOperation;
@@ -33,31 +46,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UpmRemoveRegistryOperation m_RemoveRegistryOperation;
         private UpmRemoveRegistryOperation removeRegistryOperation => CreateOperation(ref m_RemoveRegistryOperation);
 
-        [NonSerialized]
-        private UpmCache m_UpmCache;
-        [NonSerialized]
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        [NonSerialized]
-        private ClientProxy m_ClientProxy;
-        [NonSerialized]
-        private ApplicationProxy m_ApplicationProxy;
-        public void ResolveDependencies(UpmCache upmCache,
-            PackageManagerProjectSettingsProxy settingsProxy,
-            ClientProxy clientProxy,
-            ApplicationProxy applicationProxy)
+        private readonly IUpmCache m_UpmCache;
+        private readonly IProjectSettingsProxy m_SettingsProxy;
+        private readonly IClientProxy m_ClientProxy;
+        private readonly IApplicationProxy m_ApplicationProxy;
+        public UpmRegistryClient(IUpmCache upmCache,
+            IProjectSettingsProxy settingsProxy,
+            IClientProxy clientProxy,
+            IApplicationProxy applicationProxy)
         {
-            m_UpmCache = upmCache;
-            m_SettingsProxy = settingsProxy;
-            m_ClientProxy = clientProxy;
-            m_ApplicationProxy = applicationProxy;
-
-            m_GetRegistriesOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_AddRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_UpdateRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_RemoveRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_UpmCache = RegisterDependency(upmCache);
+            m_SettingsProxy = RegisterDependency(settingsProxy);
+            m_ClientProxy = RegisterDependency(clientProxy);
+            m_ApplicationProxy = RegisterDependency(applicationProxy);
         }
 
-        public virtual void AddRegistry(string name, string url, string[] scopes)
+        public void AddRegistry(string name, string url, string[] scopes)
         {
             addRegistryOperation.Add(name, url, scopes);
             addRegistryOperation.onProcessResult += OnProcessAddRegistryResult;
@@ -75,7 +79,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual void UpdateRegistry(string oldName, string newName, string url, string[] scopes)
+        public void UpdateRegistry(string oldName, string newName, string url, string[] scopes)
         {
             updateRegistryOperation.Update(oldName, newName, url, scopes);
             updateRegistryOperation.onProcessResult += OnProcessUpdateRegistryResult;
@@ -93,7 +97,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual void RemoveRegistry(string name)
+        public void RemoveRegistry(string name)
         {
             if (string.IsNullOrEmpty(name))
                 return;
@@ -194,6 +198,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                 hashCode = (hashCode * 397) ^ obj.isDefault.GetHashCode();
                 return hashCode;
             }
+        }
+
+        public void OnBeforeSerialize()
+        {
+        }
+
+        public void OnAfterDeserialize()
+        {
+            m_GetRegistriesOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_AddRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_UpdateRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_RemoveRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
         }
     }
 }

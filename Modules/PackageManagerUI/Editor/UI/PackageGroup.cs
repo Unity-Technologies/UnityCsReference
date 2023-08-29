@@ -17,10 +17,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IEnumerable<PackageItem> packageItems => groupContainer.Children().Cast<PackageItem>();
 
-        private readonly PageManager m_PageManager;
-        private readonly PackageDatabase m_PackageDatabase;
+        private readonly IPageManager m_PageManager;
+        private readonly IPackageDatabase m_PackageDatabase;
 
-        public PackageGroup(ResourceLoader resourceLoader, PageManager pageManager, PackageDatabase packageDatabase, string groupName, bool expanded = true, bool hidden = false)
+        public PackageGroup(IResourceLoader resourceLoader, IPageManager pageManager, IPackageDatabase packageDatabase, string groupName, bool expanded = true, bool hidden = false)
         {
             m_PageManager = pageManager;
             m_PackageDatabase = packageDatabase;

@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<ProgressBar> {}
 
-        private ResourceLoader m_ResourceLoader;
+        private IResourceLoader m_ResourceLoader;
 
         static private double s_LastWidthTime;
         private const double k_PaintInterval = 1f; // Time interval to repaint
@@ -19,7 +19,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
         }
 
         public ProgressBar()

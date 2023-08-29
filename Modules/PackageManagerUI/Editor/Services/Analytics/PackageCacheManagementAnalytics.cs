@@ -7,13 +7,14 @@ using UnityEngine.Analytics;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal struct PackageCacheManagementAnalytics
+    [AnalyticInfo(eventName: k_EventName, vendorKey: k_VendorKey)]
+    internal class PackageCacheManagementAnalytics : IAnalytic
     {
         private const string k_EventName = "packageCacheManagementUserAction";
         private const string k_VendorKey = "unity.package-manager-ui";
 
         [Serializable]
-        internal class PackageCacheManagementAnalyticData : IAnalytic.IData
+        private class Data : IAnalytic.IData
         {
             public string action;
             public string type;
@@ -21,35 +22,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             public string[] new_path_statuses;
         }
 
-        [AnalyticInfo(eventName: k_EventName, vendorKey: k_VendorKey)]
-        internal class PackageCacheManagementAnalytic : IAnalytic
+        private Data m_Data;
+        private PackageCacheManagementAnalytics(string action, string type, string[] oldPathStatuses, string[] newPathStatuses)
         {
-            public PackageCacheManagementAnalytic(string action, string type, string[] oldPathStatuses, string[] newPathStatuses)
+            m_Data = new Data
             {
-                this.m_Action = action;
-                this.m_Type = type;
-                this.m_OldPathStatuses = oldPathStatuses;
-                this.m_NewPathStatuses = newPathStatuses;
-            }
+                action = action,
+                type = type,
+                old_path_statuses = oldPathStatuses,
+                new_path_statuses = newPathStatuses
+            };
+        }
 
-            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
-            {
-                data =  new PackageCacheManagementAnalyticData
-                {
-                    action = m_Action,
-                    type = m_Type,
-                    old_path_statuses = m_OldPathStatuses,
-                    new_path_statuses = m_NewPathStatuses
-                };
-             
-                error = null;
-                return true;
-            }
-
-            private string m_Action;
-            private string m_Type;
-            private string[] m_OldPathStatuses;
-            private string[] m_NewPathStatuses;
+        public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+        {
+            data = m_Data;
+            error = null;
+            return data != null;
         }
 
         public static void SendAssetStoreEvent(string action, string[] oldPathStatuses, string[] newPathStatuses = null)
@@ -64,8 +53,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private static void SendEvent(string action, string type, string[] oldPathStatuses, string[] newPathStatuses)
         {
-            var editorAnalyticsProxy = ServicesContainer.instance.Resolve<EditorAnalyticsProxy>();
-            editorAnalyticsProxy.SendAnalytic(new PackageCacheManagementAnalytic(action, type, oldPathStatuses, newPathStatuses));
+            var editorAnalyticsProxy = ServicesContainer.instance.Resolve<IEditorAnalyticsProxy>();
+            editorAnalyticsProxy.SendAnalytic(new PackageCacheManagementAnalytics(action, type, oldPathStatuses, newPathStatuses));
         }
     }
 }

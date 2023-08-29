@@ -3,49 +3,56 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 ﻿using System;
+using UnityEngine;
 using UnityEngine.UIElements;
+using Object = System.Object;
 
 namespace UnityEditor.UIElements.ProjectSettings
 {
     internal class ProjectSettingsSection : VisualElement
     {
-        public new class UxmlFactory : UxmlFactory<ProjectSettingsSection, UxmlTraits>
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-        }
+#pragma warning disable 649
+            [SerializeField] string label;
+#pragma warning restore 649
+            public override object CreateInstance() => new ProjectSettingsSection();
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_Label = new() { name = "label" };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            public override void Deserialize(object obj)
             {
-                base.Init(ve, bag, cc);
-                var ate = ve as ProjectSettingsSection;
-                ate.label = m_Label.GetValueFromBag(bag, cc);
+                base.Deserialize(obj);
+
+                var e = (ProjectSettingsSection)obj;
+                e.label = label;
             }
         }
 
         internal static class Styles
         {
             public static readonly string section = "project-settings-section";
-            public static readonly string title = "project-settings-section-title";
-            public static readonly string label = "project-settings-section-label";
-            public static readonly string content = "project-settings-section-content";
+            public static readonly string title = "project-settings-section__title";
+            public static readonly string content = "project-settings-section__content";
         }
 
         public Label labelElement { get; private set; }
 
         public string label
         {
-            get => labelElement.text;
+            get => labelElement?.text;
             set
             {
-                if (labelElement.text == value) return;
+                if (labelElement == null && !string.IsNullOrEmpty(value))
+                    CreateLabelElement(value);
+
+                if (labelElement == null || labelElement.text == value)
+                    return;
+
                 labelElement.text = value;
             }
         }
 
-        private VisualElement m_ContentContainer;
+        VisualElement m_ContentContainer;
 
         /// <summary>
         /// Contains full content, potentially partially visible.
@@ -67,10 +74,8 @@ namespace UnityEditor.UIElements.ProjectSettings
             AddToClassList(Styles.section);
             AddToClassList(InspectorElement.ussClassName);
 
-            labelElement = new Label($"I am the render pipeline");
-            labelElement.AddToClassList(Styles.title);
-            labelElement.AddToClassList(Styles.label);
-            hierarchy.Add(labelElement);
+            if (!string.IsNullOrEmpty(label))
+                CreateLabelElement(label);
 
             m_ContentContainer = new VisualElement() { name = "unity-content-container" };
             m_ContentContainer.AddToClassList(Styles.content);
@@ -80,15 +85,20 @@ namespace UnityEditor.UIElements.ProjectSettings
             m_ContentContainer.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
-        static bool IsSubclassOfRawGeneric(Type generic, Type toCheck) {
-            while (toCheck != null && toCheck != typeof(object))
+        void CreateLabelElement(string newLabel)
+        {
+            labelElement = new Label(newLabel);
+            labelElement.AddToClassList(Styles.title);
+            hierarchy.Insert(0, labelElement);
+        }
+
+        static bool IsSubclassOfGeneric(Type genericType, Type typeToCheck) {
+            while (typeToCheck != null && typeToCheck != typeof(object))
             {
-                var cur = toCheck.IsGenericType ?
-                    toCheck.GetGenericTypeDefinition() :
-                    toCheck;
-                if (generic == cur)
+                var currentType = typeToCheck.IsGenericType ? typeToCheck.GetGenericTypeDefinition() : typeToCheck;
+                if (genericType == currentType)
                     return true;
-                toCheck = toCheck.BaseType;
+                typeToCheck = typeToCheck.BaseType;
             }
             return false;
         }
@@ -101,7 +111,7 @@ namespace UnityEditor.UIElements.ProjectSettings
             var type = typeof(BaseField<>);
             evt.elementTarget.Query<BindableElement>()
                 .Where(e =>
-                    IsSubclassOfRawGeneric(type, e.GetType()))
+                    IsSubclassOfGeneric(type, e.GetType()))
                 .ForEach(e =>
                     e.EnableInClassList(BaseField<bool>.alignedFieldUssClassName, true));
         }

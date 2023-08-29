@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal partial class JsonParser
     {
-        public virtual AssetStorePurchaseInfo ParsePurchaseInfo(IDictionary<string, object> rawInfo)
+        public AssetStorePurchaseInfo ParsePurchaseInfo(IDictionary<string, object> rawInfo)
         {
             if (rawInfo?.Any() != true)
                 return null;

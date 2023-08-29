@@ -13,7 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_EmptyDescriptionClass = "empty";
         private const int k_maxDescriptionCharacters = 10000;
 
-        public PackageDetailsOverviewTabContent(ResourceLoader resourceLoader)
+        public PackageDetailsOverviewTabContent(IResourceLoader resourceLoader)
         {
             name = "packageOverviewContent";
             var root = resourceLoader.GetTemplate("DetailsTabs/PackageDetailsOverviewTab.uxml");

@@ -11,7 +11,7 @@ namespace UnityEngine.Multiplayer.Internal
     [StaticAccessor("GetMultiplayerManager()", StaticAccessorType.Dot)]
     internal static class MultiplayerManager
     {
-        public static extern MultiplayerRole activeMultiplayerRole { get; }
+        public static extern MultiplayerRoleFlags activeMultiplayerRoleMask { get; }
 
         public static extern MultiplayerRoleFlags GetMultiplayerRoleMaskForGameObject(GameObject gameObject);
         public static extern MultiplayerRoleFlags GetMultiplayerRoleMaskForComponent(Component component);

@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Collections;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
+using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
@@ -46,7 +47,7 @@ namespace UnityEngine
         public float shadowSoftness
         {
             get { return 4.0f; }
-            set {}
+            set { }
         }
 
         // Note: do not remove (so that projects with assembly-only scritps using this will continue working),
@@ -56,7 +57,7 @@ namespace UnityEngine
         public float shadowSoftnessFade
         {
             get { return 1.0f; }
-            set {}
+            set { }
         }
 
         extern public float[] layerShadowCullDistances
@@ -102,25 +103,76 @@ namespace UnityEngine
             AddCommandBuffer(evt, buffer, UnityEngine.Rendering.ShadowMapPass.All);
         }
 
+
+        public void AddCommandBuffer(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ShadowMapPass shadowPassMask)
+        {
+            if (RenderPipelineManager.currentPipeline != null)
+            {
+                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Light.AddCommandBuffer only with the built-in renderer.");
+            }
+            AddCommandBufferInternal(evt, buffer, shadowPassMask);
+        }
+
         [FreeFunction("Light_Bindings::AddCommandBuffer", HasExplicitThis = true)]
-        public extern void AddCommandBuffer(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ShadowMapPass shadowPassMask);
+        internal extern void AddCommandBufferInternal(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ShadowMapPass shadowPassMask);
 
         public void AddCommandBufferAsync(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ComputeQueueType queueType)
         {
             AddCommandBufferAsync(evt, buffer, UnityEngine.Rendering.ShadowMapPass.All, queueType);
         }
 
+        public void AddCommandBufferAsync(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ShadowMapPass shadowPassMask, UnityEngine.Rendering.ComputeQueueType queueType)
+        {
+            if (RenderPipelineManager.currentPipeline != null)
+            {
+                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Light.AddCommandBufferAsync only with the built-in renderer.");
+            }
+            AddCommandBufferAsyncInternal(evt, buffer, shadowPassMask, queueType);
+        }
+
         [FreeFunction("Light_Bindings::AddCommandBufferAsync", HasExplicitThis = true)]
-        public extern void AddCommandBufferAsync(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ShadowMapPass shadowPassMask, UnityEngine.Rendering.ComputeQueueType queueType);
+        internal extern void AddCommandBufferAsyncInternal(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ShadowMapPass shadowPassMask, UnityEngine.Rendering.ComputeQueueType queueType);
 
-        extern public void RemoveCommandBuffer(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer);
+        public void RemoveCommandBuffer(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer)
+        {
+            if (RenderPipelineManager.currentPipeline != null)
+            {
+                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Light.RemoveCommandBuffer only with the built-in renderer.");
+            }
+            RemoveCommandBufferInternal(evt, buffer);
+        }
+        [NativeMethod("RemoveCommandBuffer")]extern internal void RemoveCommandBufferInternal(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer);
 
-        extern public void RemoveCommandBuffers(UnityEngine.Rendering.LightEvent evt);
+        public void RemoveCommandBuffers(UnityEngine.Rendering.LightEvent evt)
+        {
+            if (RenderPipelineManager.currentPipeline != null)
+            {
+                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Light.RemoveCommandBuffer only with the built-in renderer.");
+            }
+            RemoveCommandBuffersInternal(evt);
+        }
+        [NativeMethod("RemoveCommandBuffers")] extern internal void RemoveCommandBuffersInternal(UnityEngine.Rendering.LightEvent evt);
 
-        extern public void RemoveAllCommandBuffers();
+        public void RemoveAllCommandBuffers()
+        {
+            if (RenderPipelineManager.currentPipeline != null)
+            {
+                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Light.RemoveAllCommandBuffers only with the built-in renderer.");
+            }
+            RemoveAllCommandBuffersInternal();
+        }
+        [NativeMethod("RemoveAllCommandBuffers")] extern internal void RemoveAllCommandBuffersInternal();
 
+        public UnityEngine.Rendering.CommandBuffer[] GetCommandBuffers(UnityEngine.Rendering.LightEvent evt)
+        {
+            if(RenderPipelineManager.currentPipeline != null)
+            {
+                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Light.GetCommandBuffers only with the built-in renderer.");
+            }
+            return GetCommandBuffersInternal(evt);
+        }
         [FreeFunction("Light_Bindings::GetCommandBuffers", HasExplicitThis = true)]
-        extern public UnityEngine.Rendering.CommandBuffer[] GetCommandBuffers(UnityEngine.Rendering.LightEvent evt);
+        extern internal UnityEngine.Rendering.CommandBuffer[] GetCommandBuffersInternal(UnityEngine.Rendering.LightEvent evt);
 
         extern public int commandBufferCount { get; }
 

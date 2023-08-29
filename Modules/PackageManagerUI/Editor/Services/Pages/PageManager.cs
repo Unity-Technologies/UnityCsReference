@@ -10,19 +10,43 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal interface IPageManager : IService
+    {
+        event Action<IPage> onActivePageChanged;
+        event Action<IPage> onListRebuild;
+        event Action<IPage, PageFilters> onFiltersChange;
+        event Action<IPage, string> onTrimmedSearchTextChanged;
+        event Action<PageSelectionChangeArgs> onSelectionChanged;
+        event Action<VisualStateChangeArgs> onVisualStateChange;
+        event Action<ListUpdateArgs> onListUpdate;
+        event Action<IPage> onSupportedStatusFiltersChanged;
+
+        IPage lastActivePage { get; }
+        IPage activePage { get; set; }
+        IEnumerable<IPage> orderedExtensionPages { get; }
+
+        void AddExtensionPage(ExtensionPageArgs args);
+        IPage GetPage(string pageId);
+        IPage GetPage(RegistryInfo registryInfo);
+        IPage FindPage(IPackage package, IPackageVersion version = null);
+        IPage FindPage(IList<IPackageVersion> packageVersions);
+
+        void OnWindowDestroy();
+    }
+
     [Serializable]
-    internal class PageManager : ISerializationCallbackReceiver
+    internal class PageManager : BaseService<IPageManager>, IPageManager, ISerializationCallbackReceiver
     {
         public const string k_DefaultPageId = InProjectPage.k_Id;
 
-        public virtual event Action<IPage> onActivePageChanged = delegate {};
-        public virtual event Action<IPage> onListRebuild = delegate {};
-        public virtual event Action<IPage, PageFilters> onFiltersChange = delegate {};
-        public virtual event Action<IPage, string> onTrimmedSearchTextChanged = delegate {};
-        public virtual event Action<PageSelectionChangeArgs> onSelectionChanged = delegate {};
-        public virtual event Action<VisualStateChangeArgs> onVisualStateChange = delegate {};
-        public virtual event Action<ListUpdateArgs> onListUpdate = delegate {};
-        public virtual event Action<IPage> onSupportedStatusFiltersChanged = delegate {};
+        public event Action<IPage> onActivePageChanged = delegate {};
+        public event Action<IPage> onListRebuild = delegate {};
+        public event Action<IPage, PageFilters> onFiltersChange = delegate {};
+        public event Action<IPage, string> onTrimmedSearchTextChanged = delegate {};
+        public event Action<PageSelectionChangeArgs> onSelectionChanged = delegate {};
+        public event Action<VisualStateChangeArgs> onVisualStateChange = delegate {};
+        public event Action<ListUpdateArgs> onListUpdate = delegate {};
+        public event Action<IPage> onSupportedStatusFiltersChanged = delegate {};
 
         private Dictionary<string, IPage> m_Pages = new();
 
@@ -30,9 +54,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string m_SerializedLastActivePageId;
         [SerializeField]
         private string m_SerializedActivePageId;
-        public virtual IPage lastActivePage { get; private set; }
+        public IPage lastActivePage { get; private set; }
         private IPage m_ActivePage;
-        public virtual IPage activePage
+        public IPage activePage
         {
             get
             {
@@ -58,36 +82,29 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [NonSerialized]
         private List<ExtensionPageArgs> m_OrderedExtensionPageArgs = new();
-        public virtual IEnumerable<IPage> orderedExtensionPages => m_OrderedExtensionPageArgs.Select(a => GetPage(a.id));
+        public IEnumerable<IPage> orderedExtensionPages => m_OrderedExtensionPageArgs.Select(a => GetPage(a.id));
 
         [SerializeReference]
         private IPage[] m_SerializedPages = Array.Empty<IPage>();
 
-        [NonSerialized]
-        private UnityConnectProxy m_UnityConnect;
-        [NonSerialized]
-        private PackageDatabase m_PackageDatabase;
-        [NonSerialized]
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        [NonSerialized]
-        private UpmRegistryClient m_UpmRegistryClient;
-        [NonSerialized]
-        private PageFactory m_PageFactory;
 
-        public void ResolveDependencies(UnityConnectProxy unityConnect,
-                                        PackageDatabase packageDatabase,
-                                        PackageManagerProjectSettingsProxy settingsProxy,
-                                        UpmRegistryClient upmRegistryClient,
-                                        PageFactory pageFactory)
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IProjectSettingsProxy m_SettingsProxy;
+        private readonly IUpmRegistryClient m_UpmRegistryClient;
+        private readonly IPageFactory m_PageFactory;
+
+        public PageManager(IUnityConnectProxy unityConnect,
+            IPackageDatabase packageDatabase,
+            IProjectSettingsProxy settingsProxy,
+            IUpmRegistryClient upmRegistryClient,
+            IPageFactory pageFactory)
         {
-            m_UnityConnect = unityConnect;
-            m_PackageDatabase = packageDatabase;
-            m_SettingsProxy = settingsProxy;
-            m_UpmRegistryClient = upmRegistryClient;
-            m_PageFactory = pageFactory;
-
-            foreach (var page in m_Pages.Values)
-                m_PageFactory.ResolveDependenciesForPage(page);
+            m_UnityConnect = RegisterDependency(unityConnect);
+            m_PackageDatabase = RegisterDependency(packageDatabase);
+            m_SettingsProxy = RegisterDependency(settingsProxy);
+            m_UpmRegistryClient = RegisterDependency(upmRegistryClient);
+            m_PageFactory = RegisterDependency(pageFactory);
         }
 
         public void OnBeforeSerialize()
@@ -106,6 +123,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             lastActivePage = string.IsNullOrEmpty(m_SerializedLastActivePageId) ? null : GetPage(m_SerializedLastActivePageId);
             m_ActivePage = string.IsNullOrEmpty(m_SerializedActivePageId) ? null : GetPage(m_SerializedActivePageId);
+
+            foreach (var page in m_Pages.Values)
+                m_PageFactory.ResolveDependenciesForPage(page);
         }
 
         private IPage CreatePageFromId(string pageId)
@@ -133,7 +153,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             page.onSupportedStatusFiltersChanged += p => onSupportedStatusFiltersChanged?.Invoke(p);
         }
 
-        public virtual void AddExtensionPage(ExtensionPageArgs args)
+        public void AddExtensionPage(ExtensionPageArgs args)
         {
             if (string.IsNullOrEmpty(args.name))
             {
@@ -159,12 +179,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 OnNewPageCreated(m_PageFactory.CreateExtensionPage(args));
         }
 
-        public virtual IPage GetPage(string pageId)
+        public IPage GetPage(string pageId)
         {
             return !string.IsNullOrEmpty(pageId) && m_Pages.TryGetValue(pageId, out var page) ? page : CreatePageFromId(pageId);
         }
 
-        public virtual IPage GetPage(RegistryInfo registryInfo)
+        public IPage GetPage(RegistryInfo registryInfo)
         {
             if (registryInfo == null)
                 return null;
@@ -208,12 +228,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             GetPage(MyAssetsPage.k_Id).ClearFilters(true);
         }
 
-        public virtual IPage FindPage(IPackage package, IPackageVersion version = null)
+        public IPage FindPage(IPackage package, IPackageVersion version = null)
         {
             return FindPage(new[] { version ?? package?.versions.primary });
         }
 
-        public virtual IPage FindPage(IList<IPackageVersion> packageVersions)
+        public IPage FindPage(IList<IPackageVersion> packageVersions)
         {
             if (packageVersions?.Any() != true || packageVersions.All(v => activePage.visualStates.Contains(v.package.uniqueId) || activePage.ShouldInclude(v.package)))
                 return activePage;
@@ -229,7 +249,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [ExcludeFromCodeCoverage]
-        public void OnEnable()
+        public override void OnEnable()
         {
             foreach (var page in m_Pages.Values)
                 page.OnEnable();
@@ -240,7 +260,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [ExcludeFromCodeCoverage]
-        public void OnDisable()
+        public override void OnDisable()
         {
             foreach (var page in m_Pages.Values)
                 page.OnDisable();

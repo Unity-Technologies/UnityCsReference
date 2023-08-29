@@ -35,7 +35,7 @@ namespace UnityEditor.Analytics
         public PackageManagerAddPackageAnalytic() : base("addPackage") { }
 
         [UsedByNativeCode]
-        public static PackageManagerAddPackageAnalytic CreatePackageManagerAddPackageAnalytic() { return new PackageManagerAddPackageAnalytic(); }
+        internal static PackageManagerAddPackageAnalytic CreatePackageManagerAddPackageAnalytic() { return new PackageManagerAddPackageAnalytic(); }
     }
 
     [RequiredByNativeCode(GenerateProxy = true)]
@@ -47,7 +47,7 @@ namespace UnityEditor.Analytics
         public PackageManagerTestAnalytic() : base("PackageManager") { }
 
         [UsedByNativeCode]
-        public static PackageManagerTestAnalytic CreatePackageManagerTestAnalytic() { return new PackageManagerTestAnalytic(); }
+        internal static PackageManagerTestAnalytic CreatePackageManagerTestAnalytic() { return new PackageManagerTestAnalytic(); }
     }
 
     [RequiredByNativeCode(GenerateProxy = true)]
@@ -59,7 +59,7 @@ namespace UnityEditor.Analytics
         public PackageManagerRemovePackageAnalytic() : base("removePackage") { }
 
         [UsedByNativeCode]
-        public static PackageManagerRemovePackageAnalytic CreatePackageManagerRemovePackageAnalytic() { return new PackageManagerRemovePackageAnalytic(); }
+        internal static PackageManagerRemovePackageAnalytic CreatePackageManagerRemovePackageAnalytic() { return new PackageManagerRemovePackageAnalytic(); }
     }
 
     [RequiredByNativeCode(GenerateProxy = true)]
@@ -71,7 +71,7 @@ namespace UnityEditor.Analytics
         public PackageManagerResolvePackageAnalytic() : base("resolvePackages") { }
 
         [UsedByNativeCode]
-        public static PackageManagerResolvePackageAnalytic CreatePackageManagerResolvePackageAnalytic() { return new PackageManagerResolvePackageAnalytic(); }
+        internal static PackageManagerResolvePackageAnalytic CreatePackageManagerResolvePackageAnalytic() { return new PackageManagerResolvePackageAnalytic(); }
 
         public string[] packages;
         public string[] package_registries;
@@ -89,7 +89,7 @@ namespace UnityEditor.Analytics
         public PackageManagerEmbedPackageAnalytic() : base("embedPackage") { }
 
         [UsedByNativeCode]
-        public static PackageManagerEmbedPackageAnalytic CreatePackageManagerEmbedPackageAnalytic() { return new PackageManagerEmbedPackageAnalytic(); }
+        internal static PackageManagerEmbedPackageAnalytic CreatePackageManagerEmbedPackageAnalytic() { return new PackageManagerEmbedPackageAnalytic(); }
     }
 
     [RequiredByNativeCode(GenerateProxy = true)]
@@ -101,7 +101,7 @@ namespace UnityEditor.Analytics
         public PackageManagerResetPackageAnalytic() : base("resetToDefaultDependencies") { }
 
         [UsedByNativeCode]
-        public static PackageManagerResetPackageAnalytic CreatePackageManagerResetPackageAnalytic() { return new PackageManagerResetPackageAnalytic(); }
+        internal static PackageManagerResetPackageAnalytic CreatePackageManagerResetPackageAnalytic() { return new PackageManagerResetPackageAnalytic(); }
     }
 
     [RequiredByNativeCode(GenerateProxy = true)]
@@ -113,7 +113,7 @@ namespace UnityEditor.Analytics
         public PackageManagerResolveErrorPackageAnalytic() : base("resolveErrorUserAction") { }
 
         [UsedByNativeCode]
-        public static PackageManagerResolveErrorPackageAnalytic CreatePackageManagerResolveErrorPackageAnalytic() { return new PackageManagerResolveErrorPackageAnalytic(); }
+        internal static PackageManagerResolveErrorPackageAnalytic CreatePackageManagerResolveErrorPackageAnalytic() { return new PackageManagerResolveErrorPackageAnalytic(); }
 
         public string reason;
         public string action;
@@ -128,6 +128,6 @@ namespace UnityEditor.Analytics
         public PackageManagerStartServerPackageAnalytic() : base("startPackageManagerServer") { }
 
         [UsedByNativeCode]
-        public static PackageManagerStartServerPackageAnalytic CreatePackageManagerStartServerPackageAnalytic() { return new PackageManagerStartServerPackageAnalytic(); }
+        internal static PackageManagerStartServerPackageAnalytic CreatePackageManagerStartServerPackageAnalytic() { return new PackageManagerStartServerPackageAnalytic(); }
     }
 }

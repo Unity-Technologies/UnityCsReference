@@ -12,9 +12,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string k_Message = L10n.Tr("You must sign in before Unity can display all information about this package.");
         private static readonly string k_ButtonText = L10n.Tr("Sign in");
 
-        private UnityConnectProxy m_UnityConnect;
+        private IUnityConnectProxy m_UnityConnect;
 
-        public SignInDetails(UnityConnectProxy unityConnect)
+        public SignInDetails(IUnityConnectProxy unityConnect)
         {
             m_UnityConnect = unityConnect;
 

@@ -7,5 +7,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.Modules.Multiplayer.Tests.MultiplayerRoles")]
 [assembly: InternalsVisibleTo("UnityEditor.Modules.Multiplayer.Tests.MultiplayerRoles.Performance")]
 [assembly: InternalsVisibleTo("UnityEditor.CoreModule")]
+[assembly: InternalsVisibleTo("UnityEditor.MultiplayerModule")]
 [assembly: InternalsVisibleTo("Unity.DedicatedServer.MultiplayerRoles")]
 [assembly: InternalsVisibleTo("Unity.DedicatedServer.MultiplayerRoles.Editor")]

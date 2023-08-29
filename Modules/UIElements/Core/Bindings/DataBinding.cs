@@ -265,7 +265,7 @@ namespace UnityEngine.UIElements
         }
 
         // Internal for tests
-        internal static string GetSetValueErrorString<TValue>(VisitReturnCode returnCode, object source, PropertyPath sourcePath, object target, BindingId targetPath, TValue extractedValueFromSource)
+        internal static string GetSetValueErrorString<TValue>(VisitReturnCode returnCode, object source, in PropertyPath sourcePath, object target, in BindingId targetPath, TValue extractedValueFromSource)
         {
             var prefix = $"[UI Toolkit] Could not set value for target of type '<b>{target.GetType().Name}</b>' at path '<b>{targetPath}</b>':";
             switch (returnCode)

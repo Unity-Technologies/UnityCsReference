@@ -19,6 +19,7 @@ namespace UnityEditor.UIElements
         private static readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
         internal static readonly string foldoutTitleBoundLabelProperty = "unity-foldout-bound-title";
         internal static readonly string decoratorDrawersContainerClassName = "unity-decorator-drawers-container";
+        internal static readonly string listViewBoundFieldProperty = "unity-list-view-property-field-bound";
         static readonly string listViewNamePrefix = "unity-list-";
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
@@ -675,6 +676,13 @@ namespace UnityEditor.UIElements
             field.name = "unity-input-" + property.propertyPath;
             field.label = fieldLabel;
 
+            ConfigureFieldStyles<TField, TValue>(field);
+
+            return field;
+        }
+
+        internal static void ConfigureFieldStyles<TField, TValue>(TField field) where TField : BaseField<TValue>
+        {
             field.labelElement.AddToClassList(labelUssClassName);
             field.visualInput.AddToClassList(inputUssClassName);
             field.AddToClassList(BaseField<TValue>.alignedFieldUssClassName);
@@ -686,9 +694,6 @@ namespace UnityEditor.UIElements
             {
                 x.AddToClassList(BaseField<TValue>.alignedFieldUssClassName);
             });
-
-
-            return field;
         }
 
         VisualElement ConfigureListView(ListView listView, SerializedProperty property, Func<ListView> factory)
@@ -703,6 +708,7 @@ namespace UnityEditor.UIElements
                 listView.showFoldoutHeader = true;
                 listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
                 listView.showAlternatingRowBackgrounds = AlternatingRowBackground.None;
+                listView.itemsSourceSizeChanged += DispatchPropertyChangedEvent;
             }
 
             var propertyCopy = property.Copy();
@@ -712,6 +718,7 @@ namespace UnityEditor.UIElements
             listView.bindingPath = property.propertyPath;
             listView.viewDataKey = listViewName;
             listView.name = listViewName;
+            listView.SetProperty(listViewBoundFieldProperty, this);
 
             // Make list view foldout react even when disabled, like EditorGUILayout.Foldout.
             var toggle = listView.Q<Toggle>(className: Foldout.toggleUssClassName);
@@ -796,12 +803,17 @@ namespace UnityEditor.UIElements
                         {
                             if (!objectTypes.Name.Equals(targetTypeName, StringComparison.OrdinalIgnoreCase))
                                 continue;
+
+                            // We ignore C# types as they can can be confused with a built-in type with the same name,
+                            // we can use the FieldInfo to find MonoScript types. (UUM-29499)
+                            if (typeof(MonoBehaviour).IsAssignableFrom(objectTypes) || typeof(ScriptableObject).IsAssignableFrom(objectTypes))
+                                continue;
+
                             requiredType = objectTypes;
                             break;
                         }
                     }
 
-                    field.SetProperty(ObjectField.serializedPropertyKey, property);
                     field.SetObjectTypeWithoutDisplayUpdate(requiredType);
                     field.UpdateDisplay();
 

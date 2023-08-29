@@ -173,7 +173,7 @@ namespace UnityEngine.WSA
     }
 
     [NativeConditional("PLATFORM_WINRT")]
-    [NativeHeader("Runtime/Export/WSA/WSATiles.bindings.h")]
+    [NativeHeader("PlatformDependent/MetroPlayer/Bindings/WSATiles.bindings.h")]
     [StaticAccessor("WSATilesBindings::Tile", StaticAccessorType.DoubleColon)]
     public sealed class Tile
     {
@@ -451,7 +451,7 @@ namespace UnityEngine.WSA
     }
 
     [NativeConditional("PLATFORM_WINRT")]
-    [NativeHeader("Runtime/Export/WSA/WSATiles.bindings.h")]
+    [NativeHeader("PlatformDependent/MetroPlayer/Bindings/WSATiles.bindings.h")]
     [StaticAccessor("WSATilesBindings::Toast", StaticAccessorType.DoubleColon)]
     public sealed class Toast
     {

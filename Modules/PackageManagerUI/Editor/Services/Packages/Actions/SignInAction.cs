@@ -8,9 +8,9 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class SignInAction : PackageAction
 {
-    private readonly UnityConnectProxy m_UnityConnect;
-    private readonly ApplicationProxy m_Application;
-    public SignInAction(UnityConnectProxy unityConnect, ApplicationProxy application)
+    private readonly IUnityConnectProxy m_UnityConnect;
+    private readonly IApplicationProxy m_Application;
+    public SignInAction(IUnityConnectProxy unityConnect, IApplicationProxy application)
     {
         m_UnityConnect = unityConnect;
         m_Application = application;

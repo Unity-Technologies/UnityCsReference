@@ -29,7 +29,7 @@ namespace UnityEngine.UIElements
             return preferredSize;
         }
 
-        public virtual MeshInfo[] Update()
+        public MeshInfo[] Update()
         {
             ConvertUssToTextGenerationSettings();
 
@@ -318,7 +318,7 @@ namespace UnityEngine.UIElements
             return TextOverflowMode.Overflow;
         }
 
-        internal void ConvertUssToTextGenerationSettings()
+        internal virtual void ConvertUssToTextGenerationSettings()
         {
             var style = m_TextElement.computedStyle;
             var tgs = settings;
@@ -352,15 +352,11 @@ namespace UnityEngine.UIElements
             tgs.characterSpacing = style.letterSpacing.value;
             tgs.wordSpacing = style.wordSpacing.value;
             tgs.paragraphSpacing = style.unityParagraphSpacing.value;
-
             tgs.color = style.color;
+            tgs.color *= m_TextElement.playModeTintColor;
             tgs.shouldConvertToLinearSpace = false;
             tgs.parseControlCharacters = m_TextElement.parseEscapeSequences;
             tgs.isRightToLeft = m_TextElement.localLanguageDirection == LanguageDirection.RTL;
-
-            if (m_TextElement.panel?.contextType == ContextType.Editor)
-                tgs.color *= UIElementsUtility.editorPlayModeTintColor;
-
             tgs.inverseYAxis = true;
             tgs.fontFeatures = m_ActiveFontFeatures;
             tgs.emojiFallbackSupport = m_TextElement.emojiFallbackSupport;

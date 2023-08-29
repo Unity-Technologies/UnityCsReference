@@ -103,7 +103,8 @@ namespace UnityEditor.UIElements.Debugger
 
             color.a = alpha;
 
-            var rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(rect, color, mgc.visualElement.panel.contextType);
+            var playModeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
+            var rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(rect, color, playModeTintColor);
             mgc.meshGenerator.DrawRectangle(rectParams);
         }
 
@@ -125,16 +126,17 @@ namespace UnityEditor.UIElements.Debugger
             var rightRect = new Rect(rect.xMax, rect.yMin, 1, height);
             var lefRect = new Rect(rect.xMin, rect.yMin, 1, height);
 
-            var rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(topRect, color, mgc.visualElement.panel.contextType);
+            var playModeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
+            var rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(topRect, color, playModeTintColor);
             mgc.meshGenerator.DrawRectangle(rectParams);
 
-            rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(bottomRect, color, mgc.visualElement.panel.contextType);
+            rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(bottomRect, color, playModeTintColor);
             mgc.meshGenerator.DrawRectangle(rectParams);
 
-            rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(rightRect, color, mgc.visualElement.panel.contextType);
+            rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(rightRect, color, playModeTintColor);
             mgc.meshGenerator.DrawRectangle(rectParams);
 
-            rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(lefRect, color, mgc.visualElement.panel.contextType);
+            rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(lefRect, color, playModeTintColor);
             mgc.meshGenerator.DrawRectangle(rectParams);
         }
     }

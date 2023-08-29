@@ -329,5 +329,7 @@ namespace UnityEngine
         internal void GetPropertyState(MaterialSerializedProperty propertyName, out bool isOverriden, out bool isLockedInChildren, out bool isLockedByAncestor)
             => GetPropertyState_Serialized(propertyName, out isOverriden, out isLockedInChildren, out isLockedByAncestor);
 
+        // Clear stale references
+        [NativeName("RemoveUnusedProperties")] extern internal void RemoveUnusedProperties();
     }
 }

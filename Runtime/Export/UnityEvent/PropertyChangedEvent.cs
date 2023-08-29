@@ -17,9 +17,14 @@ namespace UnityEngine.Events
 
             currentPropertyValue = newValue;
 
-            propertyChangedEvent.Notify(instance, propertyName);
+            NotifyValueChange(instance, propertyName);
 
             return true;
+        }
+
+        public void NotifyValueChange(TBase instance, [CallerMemberName] string propertyName = "")
+        {
+            propertyChangedEvent.Notify(instance, propertyName);
         }
 
         interface IEventHolder

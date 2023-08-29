@@ -90,10 +90,10 @@ namespace Unity.UI.Builder
 
                     SetTransitionVariableEditors(foldoutTransitionField, i);
 
-                    UpdateFieldStatus(foldoutTransitionField.propertyField, setData.transitionProperty.styleProperty);
-                    UpdateFieldStatus(foldoutTransitionField.durationField, setData.transitionDuration.styleProperty);
-                    UpdateFieldStatus(foldoutTransitionField.timingFunctionField, setData.transitionTimingFunction.styleProperty);
-                    UpdateFieldStatus(foldoutTransitionField.delayField, setData.transitionDelay.styleProperty);
+                    m_Inspector.UpdateFieldStatus(foldoutTransitionField.propertyField, setData.transitionProperty.styleProperty);
+                    m_Inspector.UpdateFieldStatus(foldoutTransitionField.durationField, setData.transitionDuration.styleProperty);
+                    m_Inspector.UpdateFieldStatus(foldoutTransitionField.timingFunctionField, setData.transitionTimingFunction.styleProperty);
+                    m_Inspector.UpdateFieldStatus(foldoutTransitionField.delayField, setData.transitionDelay.styleProperty);
                 }
             }
             finally
@@ -102,7 +102,6 @@ namespace Unity.UI.Builder
             }
 
             transitionsListView.Refresh(setData.GetOverrides(), setData.GetKeywords(), setData.GetBindings());
-            updateStyleCategoryFoldoutOverrides();
         }
 
         void ClearTransitionStyleFieldLists()

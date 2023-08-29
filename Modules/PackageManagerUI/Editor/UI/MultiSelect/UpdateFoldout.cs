@@ -8,10 +8,10 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private static readonly string k_UpdateInfoTextFormat = L10n.Tr("Version {0} available");
 
-        public UpdateFoldout(ApplicationProxy applicationProxy,
-                             PackageDatabase packageDatabase,
-                             PackageOperationDispatcher operationDispatcher,
-                             PageManager pageManager)
+        public UpdateFoldout(IApplicationProxy applicationProxy,
+                             IPackageDatabase packageDatabase,
+                             IPackageOperationDispatcher operationDispatcher,
+                             IPageManager pageManager)
             : base(new UpdateAction(operationDispatcher, applicationProxy, packageDatabase, pageManager))
         {
         }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor;
+using Object = System.Object;
 
 namespace Unity.UI.Builder
 {
@@ -55,6 +56,8 @@ namespace Unity.UI.Builder
         VisualElement m_Footer;
         TextField m_TextField;
 
+        private Rect m_PreviousTextFieldWorldPosition;
+
         private bool m_TemporarilyDontShowPopup;
 
         private bool m_IsEvaluatingFocus;
@@ -65,7 +68,7 @@ namespace Unity.UI.Builder
         /// Indicates whether the popup is a native popup window rather than a overlay VisualElement.
         /// The default value is false.
         /// </summary>
-        public bool usesNativePopupWindow { get; set; }
+        public bool usesNativePopupWindow { get; private set; }
 
         public bool enabled
         {
@@ -254,19 +257,22 @@ namespace Unity.UI.Builder
         public TextField textField
         {
             get => m_TextField;
-            set
-            {
-                if (m_TextField == value)
-                    return;
+        }
 
-                DisconnectFromField();
+        public void SetupCompleterField(TextField field, bool useNativeWindow)
+        {
+            usesNativePopupWindow = useNativeWindow;
 
-                m_TextField = value;
+            if (m_TextField == field)
+                return;
 
-                ConnectToField();
-                if (m_Popup != null)
-                    m_Popup.anchoredControl = m_TextField.visualInput;
-            }
+            DisconnectFromField();
+
+            m_TextField = field;
+
+            ConnectToField();
+            if (m_Popup != null)
+                m_Popup.anchoredControl = m_TextField.visualInput;
         }
 
         void EnsurePopupIsCreated()
@@ -321,8 +327,10 @@ namespace Unity.UI.Builder
 
                         itemChosen?.Invoke(index);
                     };
-                    m_Popup.hoveredItemChanged += (index) => hoveredItemChanged?.Invoke(index != -1 ? results[index] : default(TData));
-                    m_Popup.selectionChanged += (index) => selectionChanged?.Invoke(index != -1 ? results[index] : default(TData));
+                    m_Popup.hoveredItemChanged += (index) =>
+                        hoveredItemChanged?.Invoke(index != -1 ? results[index] : default(TData));
+                    m_Popup.selectionChanged += (index) =>
+                        selectionChanged?.Invoke(index != -1 ? results[index] : default(TData));
                     m_Popup.onHide += OnPopupWindowClose;
                     UpdatePopup();
                 }
@@ -336,9 +344,77 @@ namespace Unity.UI.Builder
                 m_TextField.RegisterCallback<FocusInEvent>(OnFocusIn, TrickleDown.TrickleDown);
                 m_TextField.RegisterCallback<FocusOutEvent>(OnFocusOut, TrickleDown.TrickleDown);
                 m_TextField.RegisterValueChangedCallback(OnTextValueChange);
-                m_TextField.Q(TextField.textInputUssName).RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
+                m_TextField.Q(TextField.textInputUssName)
+                    .RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
                 m_TextField.RegisterCallback<DetachFromPanelEvent>(OnTextFieldDetached);
+                m_TextField.RegisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
+                m_TextField.RegisterCallback<FocusInEvent>(OnTextFieldFocusInPrepareTracking);
+                m_TextField.RegisterCallback<GeometryChangedEvent>(OnTextFieldGeometryChangedEvent);
+                m_PreviousTextFieldWorldPosition = GUIUtility.GUIToScreenRect(textField.visualInput.worldBound);
             }
+        }
+
+        void OnTextFieldFocusInPrepareTracking(FocusInEvent _)
+        {
+            PrepareWindowTracking();
+        }
+
+        void PrepareWindowTracking()
+        {
+            if (!usesNativePopupWindow)
+                return;
+
+            var window = GetEditorWindow();
+            if (window == null)
+                return;
+
+            UpdateAnchoredControlScreenPosition();
+            if (window is IBuilderWindowResizeTracker windowWithTracker)
+            {
+                windowWithTracker.onRectChanged += HandlePopupWindowPositionChanged;
+            }
+        }
+
+        void HandlePopupWindowPositionChanged(object obj, EventArgs args)
+        {
+            HandlePopupWindowPositionChanged();
+        }
+
+        // If the window which hosts the textfield is moved/resized, popup must be forcefully hidden.
+        void HandlePopupWindowPositionChanged()
+        {
+            if (m_TextField?.elementPanel?.ownerObject == null)
+            {
+                return;
+            }
+
+            // Use the element panel to find which window "owns" field
+            var window = GetEditorWindow();
+
+            if (window == null || window.rootVisualElement == null)
+                return;
+
+            UpdateAnchoredControlScreenPosition();
+
+            // If the window is moved, we need to hide the popup
+            var textFieldPositionPostUpdate = (Rect) m_TextField.visualInput
+                .GetProperty(BuilderConstants.CompleterAnchoredControlScreenRectVEPropertyName);
+
+            if (m_PreviousTextFieldWorldPosition.Equals(textFieldPositionPostUpdate))
+                return;
+
+            if (window.baseRootVisualElement.focusController.focusedElement == m_TextField)
+            {
+                m_TextField.Blur();
+            }
+
+            if (window.baseRootVisualElement.focusController.m_LastPendingFocusedElement == m_TextField)
+            {
+                window.baseRootVisualElement.focusController.BlurLastFocusedElement();
+            }
+
+            m_PreviousTextFieldWorldPosition = textFieldPositionPostUpdate;
+            m_Popup?.Hide();
         }
 
         void DisconnectFromField()
@@ -346,14 +422,39 @@ namespace Unity.UI.Builder
             if (m_TextField != null)
             {
                 m_TextField.UnregisterCallback<DetachFromPanelEvent>(OnTextFieldDetached);
+                m_TextField.UnregisterCallback<FocusInEvent>(OnTextFieldFocusInPrepareTracking);
+                m_TextField.UnregisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
+                m_TextField.UnregisterCallback<GeometryChangedEvent>(OnTextFieldGeometryChangedEvent);
                 m_TextField.UnregisterValueChangedCallback(OnTextValueChange);
                 m_TextField.UnregisterCallback<FocusInEvent>(OnFocusIn, TrickleDown.TrickleDown);
                 m_TextField.UnregisterCallback<FocusOutEvent>(OnFocusOut, TrickleDown.TrickleDown);
-                m_TextField.Q(TextField.textInputUssName).UnregisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
+                m_TextField.Q(TextField.textInputUssName)
+                    .UnregisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
             }
         }
 
         void OnTextFieldDetached(DetachFromPanelEvent evt)
+        {
+            if (m_Popup != null && m_Popup.isOpened)
+            {
+                m_Popup.Hide();
+            }
+        }
+
+        void OnTextFieldFocusOut(FocusOutEvent evt)
+        {
+            var window = GetEditorWindow();
+            if (window != null && window is IBuilderWindowResizeTracker windowWithTracker)
+            {
+                windowWithTracker.onRectChanged -= HandlePopupWindowPositionChanged;
+                if (evt.relatedTarget != null && ((VisualElement) evt.relatedTarget).GetFirstAncestorWhere((element => element == m_Popup?.GetRoot())) == null)
+                {
+                    m_Popup?.Hide();
+                }
+            }
+        }
+
+        void OnTextFieldGeometryChangedEvent(GeometryChangedEvent evt)
         {
             if (m_Popup != null && m_Popup.isOpened)
             {
@@ -367,7 +468,6 @@ namespace Unity.UI.Builder
 
         public FieldSearchCompleter(TextField field)
         {
-            textField = field;
             itemHeight = k_ItemHeight;
             makeItem = () =>
             {
@@ -400,7 +500,8 @@ namespace Unity.UI.Builder
 
             if (field != null)
             {
-                field.SetProperty(BuilderConstants.CompleterAnchoredControlScreenRectVEPropertyName, GUIUtility.GUIToScreenRect(field.worldBound));
+                field.SetProperty(BuilderConstants.CompleterAnchoredControlScreenRectVEPropertyName,
+                    GUIUtility.GUIToScreenRect(field.worldBound));
             }
         }
 
@@ -454,6 +555,7 @@ namespace Unity.UI.Builder
                 popup?.Hide();
                 return;
             }
+
             SetFilter(GetFilterFromText(text));
         }
 
@@ -577,7 +679,7 @@ namespace Unity.UI.Builder
         {
             if (m_IsEvaluatingFocus)
                 return;
-            
+
             m_IsEvaluatingFocus = true;
             m_TextField.schedule.Execute(EvaluateFocus);
         }
@@ -713,6 +815,22 @@ namespace Unity.UI.Builder
                 ScheduleTextChange();
             }
         }
+
+        EditorWindow GetEditorWindow()
+        {
+            if (m_TextField.elementPanel == null)
+            {
+                return null;
+            }
+
+            return m_TextField.elementPanel.ownerObject switch
+            {
+                EditorWindow editorWindow => editorWindow,
+                HostView hostView => hostView.actualView,
+                IEditorWindowModel ewm => ewm.window,
+                _ => null
+            };
+        }
     }
 
     class FieldSearchCompleterPopup : StyleFieldPopup
@@ -762,6 +880,8 @@ namespace Unity.UI.Builder
             {
                 selectionChanged?.Invoke(listView.selectedIndex);
             };
+
+            listView.allowSingleClickChoice = true;
 
             Add(listView);
             Add(resultLabel = new Label());

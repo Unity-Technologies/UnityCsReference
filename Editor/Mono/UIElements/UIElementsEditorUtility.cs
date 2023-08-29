@@ -158,10 +158,15 @@ namespace UnityEditor.UIElements
             }
         }
 
+        internal static void SetVisibility(VisualElement element, bool isVisible)
+        {
+            element.EnableInClassList(hiddenClassName, !isVisible);
+        }
+
         internal static Action CreateDynamicVisibilityCallback(VisualElement element, Func<bool> visibilityCheck)
         {
-            var messageCheck = () => element.EnableInClassList(hiddenClassName, !visibilityCheck.Invoke());
-            messageCheck?.Invoke();
+            var messageCheck = () => SetVisibility(element, visibilityCheck.Invoke());
+            messageCheck();
             return messageCheck;
         }
 

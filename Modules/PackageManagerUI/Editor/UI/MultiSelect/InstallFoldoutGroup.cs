@@ -8,7 +8,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class InstallFoldoutGroup : MultiSelectFoldoutGroup
     {
-        public InstallFoldoutGroup(ApplicationProxy applicationProxy, PackageDatabase packageDatabase, PackageOperationDispatcher operationDispatcher)
+        public InstallFoldoutGroup(IApplicationProxy applicationProxy, IPackageDatabase packageDatabase, IPackageOperationDispatcher operationDispatcher)
             : base(new AddAction(operationDispatcher, applicationProxy, packageDatabase))
         {
         }

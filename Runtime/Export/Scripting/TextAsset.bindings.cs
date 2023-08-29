@@ -12,8 +12,9 @@ namespace UnityEngine
     public partial class TextAsset : Object
     {
         // The raw bytes of the text asset. (RO)
-        public extern byte[] bytes { get; }
+        public extern byte[] bytes { [return:Unmarshalled] get; }
 
+        [return: Unmarshalled]
         extern byte[] GetPreviewBytes(int maxByteCount);
 
         extern static void Internal_CreateInstance([Writable] TextAsset self, string text);

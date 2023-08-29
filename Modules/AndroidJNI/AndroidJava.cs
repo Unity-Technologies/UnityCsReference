@@ -88,7 +88,7 @@ namespace UnityEngine
     public class AndroidJavaProxy
     {
         public readonly AndroidJavaClass javaInterface;
-        public AndroidJavaProxy(string javaInterface) : this(new AndroidJavaClass(javaInterface)) {}
+        public AndroidJavaProxy(string javaInterface) : this(new AndroidJavaClass(javaInterface)) { }
         public AndroidJavaProxy(AndroidJavaClass javaInterface)
         {
             this.javaInterface = javaInterface;
@@ -103,15 +103,80 @@ namespace UnityEngine
         {
             Exception error = null;
             BindingFlags binderFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-
+            int NullArgs = 0;
             Type[] argTypes = new Type[args.Length];
+
             for (int i = 0; i < args.Length; ++i)
-                argTypes[i] = args[i] == null ? typeof(AndroidJavaObject) : args[i].GetType();
+            {
+                if (args[i] == null)
+                {
+                    argTypes[i] = null;
+                    NullArgs ++;
+                }
+                else
+                {
+                    argTypes[i] = args[i].GetType();
+                }
+            }
+
             try
             {
-                MethodInfo method = GetType().GetMethod(methodName, binderFlags, null, argTypes, null);
-                if (method != null)
-                    return _AndroidJNIHelper.Box(method.Invoke(this, args));
+                MethodInfo methodResult = null;
+                if (NullArgs > 0)
+                {
+                    MethodInfo[] methods = this.GetType().GetMethods(binderFlags);
+
+                    var matches = 0;
+
+                    foreach (var method in methods)
+                    {
+                        //exit loop if dont have same name
+                        if (methodName != method.Name)
+                            continue;
+
+                        ParameterInfo[] methodParameters = method.GetParameters();
+
+                        //exit loop of dont have same number of paramters
+                        if (methodParameters.Length != args.Length)
+                            continue;
+
+                        var isOk = true;
+
+                        for (int j = 0; j < methodParameters.Length; j++)
+                        {
+                            if (argTypes[j] == null)
+                            {
+                                if (methodParameters[j].ParameterType.IsValueType)
+                                {
+                                    isOk = false;
+                                    break;
+                                }
+                            }
+                            else if (!methodParameters[j].ParameterType.IsAssignableFrom(argTypes[j]))
+                            {
+                                isOk = false;
+                                break;
+                            }
+                        }
+
+                        if (!isOk)
+                            continue;
+                        else
+                            matches++;
+
+                        methodResult = method;
+                    }
+
+                    if (matches > 1)
+                        throw new Exception($"Ambiguous overloads found for {methodName} with given parameters");
+
+                }
+                else
+                    methodResult = GetType().GetMethod(methodName, binderFlags, null, argTypes, null);
+
+                if (methodResult != null)
+                    return _AndroidJNIHelper.Box(methodResult.Invoke(this, args));
+
             }
             catch (TargetInvocationException invocationError)
             {
@@ -122,22 +187,30 @@ namespace UnityEngine
                 error = invocationError;
             }
 
-            // Log error
+            //Log Error
             string[] argTypeNames = new string[args.Length];
-            for (int i = 0; i < argTypes.Length; ++i)
-                argTypeNames[i] = argTypes[i].ToString();
+            for (int i = 0; i < argTypeNames.Length; ++i)
+            {
+                if (argTypes[i] == null)
+                    argTypeNames[i] = "null";
+                else
+                    argTypeNames[i] = argTypes[i].ToString();
+            }
 
             if (error != null)
                 throw new TargetInvocationException(GetType() + "." + methodName + "(" + string.Join(",", argTypeNames) + ")", error);
 
             AndroidReflection.SetNativeExceptionOnProxy(GetRawProxy(),
                 new Exception("No such proxy method: " + GetType() + "." + methodName + "(" + string.Join(",", argTypeNames) + ")"), true);
+
+
+
             return null;
         }
 
         public virtual AndroidJavaObject Invoke(string methodName, AndroidJavaObject[] javaArgs)
         {
-            object[] args =  new object[javaArgs.Length];
+            object[] args = new object[javaArgs.Length];
             for (int i = 0; i < javaArgs.Length; ++i)
             {
                 args[i] = _AndroidJNIHelper.Unbox(javaArgs[i]);
@@ -1056,14 +1129,14 @@ namespace UnityEngine
         }
 
         private const string RELECTION_HELPER_CLASS_NAME = "com/unity3d/player/ReflectionHelper";
-        private static readonly GlobalJavaObjectRef s_ReflectionHelperClass  = new GlobalJavaObjectRef(AndroidJNISafe.FindClass(RELECTION_HELPER_CLASS_NAME));
-        private static readonly IntPtr s_ReflectionHelperGetConstructorID    = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getConstructorID", "(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/reflect/Constructor;");
-        private static readonly IntPtr s_ReflectionHelperGetMethodID         = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getMethodID", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Method;");
-        private static readonly IntPtr s_ReflectionHelperGetFieldID          = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getFieldID", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Field;");
-        private static readonly IntPtr s_ReflectionHelperGetFieldSignature   = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getFieldSignature", "(Ljava/lang/reflect/Field;)Ljava/lang/String;");
-        private static readonly IntPtr s_ReflectionHelperNewProxyInstance    = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "newProxyInstance", "(Lcom/unity3d/player/UnityPlayer;JLjava/lang/Class;)Ljava/lang/Object;");
+        private static readonly GlobalJavaObjectRef s_ReflectionHelperClass = new GlobalJavaObjectRef(AndroidJNISafe.FindClass(RELECTION_HELPER_CLASS_NAME));
+        private static readonly IntPtr s_ReflectionHelperGetConstructorID = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getConstructorID", "(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/reflect/Constructor;");
+        private static readonly IntPtr s_ReflectionHelperGetMethodID = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getMethodID", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Method;");
+        private static readonly IntPtr s_ReflectionHelperGetFieldID = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getFieldID", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Field;");
+        private static readonly IntPtr s_ReflectionHelperGetFieldSignature = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getFieldSignature", "(Ljava/lang/reflect/Field;)Ljava/lang/String;");
+        private static readonly IntPtr s_ReflectionHelperNewProxyInstance = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "newProxyInstance", "(Lcom/unity3d/player/UnityPlayer;JLjava/lang/Class;)Ljava/lang/Object;");
         private static readonly IntPtr s_ReflectionHelperSetNativeExceptionOnProxy = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "setNativeExceptionOnProxy", "(Ljava/lang/Object;JZ)V");
-        private static readonly IntPtr s_FieldGetDeclaringClass              = GetMethodID("java/lang/reflect/Field", "getDeclaringClass", "()Ljava/lang/Class;");
+        private static readonly IntPtr s_FieldGetDeclaringClass = GetMethodID("java/lang/reflect/Field", "getDeclaringClass", "()Ljava/lang/Class;");
 
         public static IntPtr GetConstructorMember(IntPtr jclass, string signature)
         {
@@ -1190,7 +1263,7 @@ namespace UnityEngine
                     else if (obj is System.Byte)
                     {
                         Debug.LogWarning("Passing Byte arguments to Java methods is obsolete, pass SByte parameters instead");
-                        ret[i].b = (System.SByte)(System.Byte) obj;
+                        ret[i].b = (System.SByte)(System.Byte)obj;
                     }
                     else if (obj is System.SByte)
                         ret[i].b = (System.SByte)obj;
@@ -1242,10 +1315,10 @@ namespace UnityEngine
             if (obj == null)
                 return null;
 
-            AndroidJavaClass arrayUtil  = new AndroidJavaClass("java/lang/reflect/Array");
-            AndroidJavaObject objClass  = obj.Call<AndroidJavaObject>("getClass");
+            AndroidJavaClass arrayUtil = new AndroidJavaClass("java/lang/reflect/Array");
+            AndroidJavaObject objClass = obj.Call<AndroidJavaObject>("getClass");
             AndroidJavaObject compClass = objClass.Call<AndroidJavaObject>("getComponentType");
-            string className            = compClass.Call<string>("getName");
+            string className = compClass.Call<string>("getName");
 
             int arrayLength = arrayUtil.CallStatic<int>("getLength", obj);
             Array array;
@@ -1291,7 +1364,7 @@ namespace UnityEngine
 
             using (AndroidJavaObject clazz = obj.Call<AndroidJavaObject>("getClass"))
             {
-                string className        = clazz.Call<string>("getName");
+                string className = clazz.Call<string>("getName");
                 if ("java.lang.Integer" == className)
                     return obj.Call<System.Int32>("intValue");
                 else if ("java.lang.Boolean" == className)
@@ -1545,7 +1618,8 @@ namespace UnityEngine
                 int frameSize = arrayLen > FRAME_SIZE_FOR_ARRAYS ? FRAME_SIZE_FOR_ARRAYS : arrayLen;
                 AndroidJNISafe.PushLocalFrame(frameSize);
                 bool framePushed = true;
-                try {
+                try
+                {
                     for (int i = 0; i < arrayLen; ++i)
                     {
                         if (i % FRAME_SIZE_FOR_ARRAYS == 0)

@@ -648,9 +648,9 @@ namespace UnityEditorInternal
             return Path.Combine(dir, "UnityEngine.dll");
         }
 
-        internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTargetGroup targetGroup, BuildTarget target, int subtarget)
+        internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTarget target, int subtarget)
         {
-            return GetCompilationDefines(options, targetGroup, target, subtarget, PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.FromActiveSettings(target)));
+            return GetCompilationDefines(options, target, subtarget, PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.FromActiveSettings(target)));
         }
 
         public static void SetShowGizmos(bool value)

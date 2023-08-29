@@ -6,10 +6,10 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class DownloadNewAction : DownloadActionBase
 {
-    public DownloadNewAction(PackageOperationDispatcher operationDispatcher,
-        AssetStoreDownloadManager assetStoreDownloadManager,
-        UnityConnectProxy unityConnect,
-        ApplicationProxy application) : base(operationDispatcher, assetStoreDownloadManager, unityConnect, application)
+    public DownloadNewAction(IPackageOperationDispatcher operationDispatcher,
+        IAssetStoreDownloadManager assetStoreDownloadManager,
+        IUnityConnectProxy unityConnect,
+        IApplicationProxy application) : base(operationDispatcher, assetStoreDownloadManager, unityConnect, application)
     {
     }
 

@@ -394,7 +394,7 @@ namespace UnityEditor.Experimental.GraphView
             }
 
             // ... then the other elements
-            Color darken = UIElementsUtility.editorPlayModeTintColor;
+            Color darken = playModeTintColor;
             graphView.graphElements.ForEach(elem =>
             {
                 if (!elem.showInMiniMap || !elem.visible || elem is Placemat)

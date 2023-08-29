@@ -10,42 +10,31 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class AssetStorePackageFactory : Package.Factory
     {
-        [NonSerialized]
-        private UniqueIdMapper m_UniqueIdMapper;
-        [NonSerialized]
-        private UnityConnectProxy m_UnityConnect;
-        [NonSerialized]
-        private AssetStoreCache m_AssetStoreCache;
-        [NonSerialized]
-        private AssetStoreClientV2 m_AssetStoreClient;
-        [NonSerialized]
-        private AssetStoreDownloadManager m_AssetStoreDownloadManager;
-        [NonSerialized]
-        private PackageDatabase m_PackageDatabase;
-        [NonSerialized]
-        private FetchStatusTracker m_FetchStatusTracker;
-        [NonSerialized]
-        private BackgroundFetchHandler m_BackgroundFetchHandler;
-        public void ResolveDependencies(UniqueIdMapper uniqueIdMapper,
-            UnityConnectProxy unityConnect,
-            AssetStoreCache assetStoreCache,
-            AssetStoreClientV2 assetStoreClient,
-            AssetStoreDownloadManager assetStoreDownloadManager,
-            PackageDatabase packageDatabase,
-            FetchStatusTracker fetchStatusTracker,
-            BackgroundFetchHandler backgroundFetchHandler)
+        private readonly IUniqueIdMapper m_UniqueIdMapper;
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IAssetStoreCache m_AssetStoreCache;
+        private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IFetchStatusTracker m_FetchStatusTracker;
+        private readonly IBackgroundFetchHandler m_BackgroundFetchHandler;
+        public AssetStorePackageFactory(IUniqueIdMapper uniqueIdMapper,
+            IUnityConnectProxy unityConnect,
+            IAssetStoreCache assetStoreCache,
+            IAssetStoreDownloadManager assetStoreDownloadManager,
+            IPackageDatabase packageDatabase,
+            IFetchStatusTracker fetchStatusTracker,
+            IBackgroundFetchHandler backgroundFetchHandler)
         {
-            m_UniqueIdMapper = uniqueIdMapper;
-            m_UnityConnect = unityConnect;
-            m_AssetStoreCache = assetStoreCache;
-            m_AssetStoreClient = assetStoreClient;
-            m_AssetStoreDownloadManager = assetStoreDownloadManager;
-            m_PackageDatabase = packageDatabase;
-            m_FetchStatusTracker = fetchStatusTracker;
-            m_BackgroundFetchHandler = backgroundFetchHandler;
+            m_UniqueIdMapper = RegisterDependency(uniqueIdMapper);
+            m_UnityConnect = RegisterDependency(unityConnect);
+            m_AssetStoreCache = RegisterDependency(assetStoreCache);
+            m_AssetStoreDownloadManager = RegisterDependency(assetStoreDownloadManager);
+            m_PackageDatabase = RegisterDependency(packageDatabase);
+            m_FetchStatusTracker = RegisterDependency(fetchStatusTracker);
+            m_BackgroundFetchHandler = RegisterDependency(backgroundFetchHandler);
         }
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
 
@@ -64,7 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_FetchStatusTracker.onFetchStatusChanged += OnFetchStatusChanged;
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
 

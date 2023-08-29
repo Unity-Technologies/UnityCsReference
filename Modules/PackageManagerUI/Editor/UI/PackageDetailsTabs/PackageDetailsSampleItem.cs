@@ -14,16 +14,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPackageVersion m_Version;
         private Sample m_Sample;
 
-        private readonly SelectionProxy m_Selection;
-        private readonly AssetDatabaseProxy m_AssetDatabase;
-        private readonly ApplicationProxy m_ApplicationProxy;
-        private readonly IOProxy m_IOProxy;
+        private readonly ISelectionProxy m_Selection;
+        private readonly IAssetDatabaseProxy m_AssetDatabase;
+        private readonly IApplicationProxy m_Application;
+        private readonly IIOProxy m_IOProxy;
 
-        public PackageDetailsSampleItem(IPackageVersion version, Sample sample, SelectionProxy selection, AssetDatabaseProxy assetDatabase, ApplicationProxy application, IOProxy iOProxy)
+        public PackageDetailsSampleItem(IPackageVersion version, Sample sample, ISelectionProxy selection, IAssetDatabaseProxy assetDatabase, IApplicationProxy application, IIOProxy iOProxy)
         {
             m_Selection = selection;
             m_AssetDatabase = assetDatabase;
-            m_ApplicationProxy = application;
+            m_Application = application;
             m_IOProxy = iOProxy;
 
             m_Version = version;
@@ -64,7 +64,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             if (!string.IsNullOrEmpty(warningMessage) &&
-                !m_ApplicationProxy.DisplayDialog("importPackageSample",
+                !m_Application.DisplayDialog("importPackageSample",
                     L10n.Tr("Importing package sample"),
                     warningMessage + L10n.Tr(" Are you sure you want to continue?"),
                     L10n.Tr("Yes"), L10n.Tr("No")))

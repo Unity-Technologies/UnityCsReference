@@ -30,7 +30,7 @@ internal class SelectionWindow : EditorWindow
     public void OnEnable()
     {
         var container = ServicesContainer.instance;
-        m_Root = new SelectionWindowRoot(container.Resolve<ResourceLoader>(), container.Resolve<ApplicationProxy>());
+        m_Root = new SelectionWindowRoot(container.Resolve<IResourceLoader>(), container.Resolve<IApplicationProxy>());
         m_Root.onSelectionCompleted += OnSelectionCompleted;
         rootVisualElement.Add(m_Root);
 

@@ -88,7 +88,6 @@ namespace UnityEditor
             public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
             public static readonly GUIContent enableHelperBar = EditorGUIUtility.TrTextContent("Enable Helper Bar", "Enables Helper Bar in the status bar at the bottom of the main Unity Editor window.");
             public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
-            public static readonly GUIContent contextMenuAutoExpandDelay = EditorGUIUtility.TrTextContent("Context Menu Auto Expand Delay");
         }
 
         class ExternalProperties
@@ -585,7 +584,6 @@ namespace UnityEditor
 
             DrawEnableHelperBar();
             DrawEnableTooltipsInPlayMode();
-            DrawContextMenuAutoExpandDelay();
             EditorGUILayout.Space();
 
             GUILayout.Label(GeneralProperties.hierarchyHeader, EditorStyles.boldLabel);
@@ -731,19 +729,6 @@ namespace UnityEditor
 
                 // Transfer native
                 EditorApplication.UpdateTooltipsInPlayModeSettings();
-            }
-        }
-
-        void DrawContextMenuAutoExpandDelay()
-        {
-            var delay = EditorPrefs.GetFloat(EditorMenuExtensions.k_AutoExpandDelayKeyName,
-                EditorMenuExtensions.k_SubmenuExpandDelay);
-
-            EditorGUI.BeginChangeCheck();
-            delay = EditorGUILayout.Slider(GeneralProperties.contextMenuAutoExpandDelay, delay, 0f, 1.0f);
-            if (EditorGUI.EndChangeCheck())
-            {
-                EditorPrefs.SetFloat(EditorMenuExtensions.k_AutoExpandDelayKeyName, delay);
             }
         }
 

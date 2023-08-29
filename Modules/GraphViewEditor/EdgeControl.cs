@@ -841,8 +841,8 @@ namespace UnityEditor.Experimental.GraphView
             Color inColor = this.inputColor;
             Color outColor = this.outputColor;
 
-            inColor *= UIElementsUtility.editorPlayModeTintColor;
-            outColor *= UIElementsUtility.editorPlayModeTintColor;
+            inColor *= playModeTintColor;
+            outColor *= playModeTintColor;
 
             uint cpt = (uint)m_RenderPoints.Count;
             var painter2D = mgc.painter2D;

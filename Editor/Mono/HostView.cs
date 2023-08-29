@@ -301,8 +301,10 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
-            // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
+
+            if (actualView)
+                GUI.color = actualView.rootVisualElement.playModeTintColor;
 
             using (new GUILayout.VerticalScope(Styles.background))
             {
@@ -506,6 +508,8 @@ namespace UnityEditor
             BeginOffsetArea(m_ActualView.rootVisualElement.worldBound, GUIContent.none, Styles.tabWindowBackground);
 
             EditorGUIUtility.ResetGUIState();
+            if (actualView)
+                GUI.color = actualView.rootVisualElement.playModeTintColor;
 
             bool isExitGUIException = false;
             try
@@ -541,6 +545,8 @@ namespace UnityEditor
                     }
 
                     EditorGUIUtility.ResetGUIState();
+                    if (actualView)
+                        GUI.color = actualView.rootVisualElement.playModeTintColor;
 
                     if (Event.current != null && Event.current.type == EventType.Repaint)
                         Styles.overlay.Draw(onGUIPosition, GUIContent.none, 0);

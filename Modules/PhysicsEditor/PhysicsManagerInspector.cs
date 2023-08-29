@@ -3,297 +3,525 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditorInternal;
+using UnityEngine.UIElements;
+using System;
+using System.Collections.Generic;
+using UnityEngine.Assertions;
+using UnityEditor.UIElements;
+using System.Runtime.CompilerServices;
+using IPhysicsProjectSettingsECSInspectorExtension = UnityEditorInternal.IPhysicsProjectSettingsECSInspectorExtension;
 
+[assembly: InternalsVisibleTo("Unity.Physics.Editor.ProjectSettingsBridge")]
 namespace UnityEditor
 {
-    internal class LayerMatrixGUI
+    class PhysicsManagerInspector
     {
-        static class Styles
+        public static IPhysicsProjectSettingsECSInspectorExtension EcsExtension = null;
+
+        static class AssetPath
         {
-            public static readonly GUIStyle rightLabel = new GUIStyle("RightLabel");
-            public static readonly GUIStyle hoverStyle = GetHoverStyle();
+            public const string dynamics = "ProjectSettings/DynamicsManager.asset";
+            public static readonly string dynamicsError = $"{nameof(PhysicsManagerInspector.CreatePhysicsSettingsItemProvider)} failed to load asset {dynamics} containing data for the PhysicsManager.";
+
+            public const string tags = "ProjectSettings/TagManager.asset";
+            public static readonly string tagsError = $"{nameof(PhysicsManagerInspector.CreatePhysicsSettingsItemProvider)} failed to load asset {tags} containing data for the TagManager.";
         }
 
-        private static Color transparentColor = new Color(1, 1, 1, 0);
-        private static Color highlightColor = EditorGUIUtility.isProSkin? new Color(1, 1, 1, 0.2f): new Color(0,0,0, 0.2f);
-        public static GUIStyle GetHoverStyle()
+        static class StyleSheetPath
         {
-            GUIStyle style = new GUIStyle(EditorStyles.label);
-
-            Texture2D texNormal = new Texture2D(1,1){alphaIsTransparency = true};
-            texNormal.SetPixel(1,1, transparentColor);
-            texNormal.Apply();
-
-            Texture2D texHover = new Texture2D(1,1){alphaIsTransparency = true};
-            texHover.SetPixel(1,1, highlightColor);
-            texHover.Apply();
-
-            style.normal.background = texNormal;
-            style.hover.background = texHover;
-
-            return style;
+            public const string projectSettingsSheet = "StyleSheets/ProjectSettings/ProjectSettingsCommon.uss";
+            public const string commonSheet = "StyleSheets/Extensions/base/common.uss";
+            public const string darkSheet = "StyleSheets/Extensions/base/dark.uss";
+            public const string lightSheet = "StyleSheets/Extensions/base/light.uss";
         }
 
-        public delegate bool GetValueFunc(int layerA, int layerB);
-        public delegate void SetValueFunc(int layerA, int layerB, bool val);
-        const int kMaxLayers = 32;
-
-        public static void DoGUI(GUIContent label, ref bool show, GetValueFunc getValue, SetValueFunc setValue)
+        static class UXMLPath
         {
-            const int checkboxSize = 16;
-            int labelSize = 110;
-            const int indent = 30;
-            int numLayers = 0;
-            for (int i = 0; i < kMaxLayers; i++)
-                if (LayerMask.LayerToName(i) != "")
-                    numLayers++;
+            public const string projectSettingsMain = "Physics/UXML/ProjectSettings.uxml";
+            public const string projectSettingsSub = "Physics/UXML/ProjectSettingsSub.uxml";
+            public const string physicsLayerGrid = "Physics/UXML/PhysicsLayerGrid.uxml";
+        }
 
-            // find the longest label
-            for (int i = 0; i < kMaxLayers; i++)
+        const string k_layerMatrixFoldoutPref = "project-settings-collision-matrix-unfold";
+        const int k_MaxLayers = 32;
+
+        static SerializedObject LoadGameManagerAssetAtPath(string path)
+        {
+            var found = AssetDatabase.LoadAllAssetsAtPath(path);
+            if (found == null)
+                return null;
+
+            return new SerializedObject(found[0]);
+        }
+
+        //create the main page, shows warnings/info
+        [SettingsProvider]
+        static SettingsProvider CreatePhysicsSettingsItemProvider()
+        {
+            var provider = new SettingsProvider("Project/Physics", SettingsScope.Project)
             {
-                var textDimensions = GUI.skin.label.CalcSize(new GUIContent(LayerMask.LayerToName(i)));
-                if (labelSize < textDimensions.x)
-                    labelSize = (int)textDimensions.x;
+                label = "Physics",
+                keywords = SettingsProvider.GetSearchKeywordsFromPath(AssetPath.dynamics),
+                activateHandler = (searchContext, rootElement) =>
+                {
+                    var serializedObject = LoadGameManagerAssetAtPath(AssetPath.dynamics);
+                    if (serializedObject == null)
+                    {
+                        Debug.LogError(AssetPath.dynamicsError);
+                        return;
+                    }
+
+                    var mainUXML = EditorGUIUtility.Load(UXMLPath.projectSettingsMain) as VisualTreeAsset;
+                    mainUXML.CloneTree(rootElement);
+
+                    var content = rootElement.Q<ScrollView>(className: "project-settings-section-content");
+                    content.styleSheets.Add(EditorGUIUtility.Load(StyleSheetPath.projectSettingsSheet) as StyleSheet);
+                    content.styleSheets.Add(EditorGUIUtility.Load(StyleSheetPath.commonSheet) as StyleSheet);
+                    content.styleSheets.Add(EditorGUIUtility.Load(EditorGUIUtility.isProSkin ? StyleSheetPath.darkSheet : StyleSheetPath.lightSheet) as StyleSheet);
+
+                    //direct memory access to the infos array, shouldn't be bound to any callback
+                    ReadOnlySpan<IntegrationInfo> infos = Physics.GetIntegrationInfos();
+
+                    var classicEngineDropdown = rootElement.Q<DropdownField>(name: "classic-dropdown");
+
+                    if(infos.Length == 0)
+                    {
+                        classicEngineDropdown.choices.Add("None");
+                    }
+                    else
+                    {
+                        for(int i = 0; i < infos.Length; ++i)
+                        {
+                            IntegrationInfo info = infos[i];
+                            classicEngineDropdown.choices.Add(info.Name);
+                        }
+                    }
+
+                    classicEngineDropdown.value = classicEngineDropdown.choices[0];
+                    classicEngineDropdown.SetEnabled(false);
+
+                    //disabled until backend swapping hooks are fully landed
+                    var classicEngineHelpboxWarning = rootElement.Q<HelpBox>(name: "classic-helpbox-warning");
+                    classicEngineHelpboxWarning.visible = false;
+
+                    var ecsEngineDropdown = rootElement.Q<DropdownField>(name: "ecs-dropdown");
+                    var ecsEngineHelpboxInfo = rootElement.Q<HelpBox>(name: "ecs-helpbox-info");
+                    var ecsEngineHelpboxWarning = rootElement.Q<HelpBox>(name: "ecs-helpbox-warning");
+
+                    if (EcsExtension != null)
+                    {
+                        EcsExtension.SetupMainPageItems(ecsEngineDropdown, ecsEngineHelpboxInfo, ecsEngineHelpboxWarning, serializedObject);
+                    }
+                    else
+                    {
+                        ecsEngineDropdown.choices.Add("None");
+                        ecsEngineDropdown.value = ecsEngineDropdown.choices[0];
+                        ecsEngineDropdown.visible = false;
+                        ecsEngineHelpboxInfo.visible = false;
+                        ecsEngineHelpboxWarning.visible = false;
+                    }
+
+                    //bind data object
+                    rootElement.Bind(serializedObject);
+                }
+            };
+
+            return provider;
+        }
+
+        struct LayerData
+        {
+            public int bit;
+            public string name;
+        }
+
+        class ToggleData
+        {
+            public int gridX;
+            public int gridY;
+            public int layerBit0;
+            public int layerBit1;
+            public VisualElement sideLabels;
+            public VisualElement topLabels;
+            public VisualElement overlay;
+        }
+
+        class LayerGridData
+        {
+            public List<LayerData> layers;
+            public SerializedObject physicsManager;
+            public SerializedObject tagManager;
+        }
+
+        static void AddGridOverlayLines(VisualElement toggle)
+        {
+            var userData = toggle.userData as ToggleData;
+
+            var horizontalLabel = userData.sideLabels[userData.gridX];
+            var verticalLabel = userData.topLabels[(userData.topLabels.childCount - 1) - userData.gridY];
+
+            //both side and top labels have the same number of active labels
+            //but only top labels has the exact number of children as it is being generated.
+            int totalLabelsPerside = userData.topLabels.childCount;
+
+            //horizontal bar
+            var horizontalBox = new Box();
+            horizontalBox.AddToClassList("project-settings___physics__highlight-box");
+            horizontalBox.style.height = horizontalLabel.resolvedStyle.height;
+            horizontalBox.style.width =
+                horizontalLabel.resolvedStyle.width + (totalLabelsPerside - userData.gridX) * (toggle.resolvedStyle.width + toggle.resolvedStyle.marginLeft + toggle.resolvedStyle.marginRight);
+
+            //absolute pos calculate for horizontal bar
+            horizontalBox.style.left = userData.sideLabels.resolvedStyle.width - horizontalLabel.resolvedStyle.width;
+            horizontalBox.style.top = userData.topLabels.resolvedStyle.width
+            + ((horizontalLabel.resolvedStyle.height) * userData.gridX) + horizontalLabel.resolvedStyle.paddingTop;
+
+
+            //vertical bar
+            var verticalBox = new Box();
+            verticalBox.AddToClassList("project-settings___physics__highlight-box");
+            verticalBox.style.width = verticalLabel.resolvedStyle.height;
+            verticalBox.style.height =
+                verticalLabel.resolvedStyle.width +
+                horizontalLabel.resolvedStyle.paddingRight +
+                (totalLabelsPerside - userData.gridY) * (toggle.resolvedStyle.height + toggle.resolvedStyle.marginTop + toggle.resolvedStyle.marginBottom);
+
+            //absolute pos calculate for vertical bar
+            verticalBox.style.left = userData.sideLabels.resolvedStyle.width + verticalLabel.resolvedStyle.height * userData.gridY;
+            verticalBox.style.top = userData.topLabels.resolvedStyle.width - verticalLabel.resolvedStyle.width;
+
+            userData.overlay.Add(horizontalBox);
+            userData.overlay.Add(verticalBox);
+        }
+
+        static void ClearGridOverlayLines(VisualElement toggle)
+        {
+            var userData = toggle.userData as ToggleData;
+
+            while (userData.overlay.childCount > 0)
+                userData.overlay.RemoveAt(0);
+        }
+
+        static void SetupLayerCollisionMatrix(VisualElement layerGridContainer)
+        {
+            var topLeftSpacer = layerGridContainer.Q<VisualElement>(name: "top-left-spacer");
+            var topLabels = layerGridContainer.Q<VisualElement>(name: "top-labels");
+            var sideLabels = layerGridContainer.Q<VisualElement>(name: "side-labels");
+            var toggles = layerGridContainer.Q<VisualElement>(name: "toggles");
+            var overlay = layerGridContainer.Q<VisualElement>(name: "layer-grid-overlay");
+
+            Assert.AreEqual(k_MaxLayers, sideLabels.childCount);
+            Assert.AreEqual(sideLabels.childCount, toggles.childCount);
+
+            var data = layerGridContainer.userData as LayerGridData;
+            data.layers.Clear();
+            data.layers.Capacity = k_MaxLayers;
+
+            for (int i = 0; i < k_MaxLayers; i++)
+            {
+                var layerName = LayerMask.LayerToName(i);
+                if (LayerMask.LayerToName(i) == string.Empty)
+                    continue;
+
+                data.layers.Add(new LayerData() { bit = i, name = layerName });
             }
 
-            GUILayout.BeginHorizontal();
-            GUILayout.Space(0);
-            show = EditorGUILayout.Foldout(show, label, true);
-            GUILayout.EndHorizontal();
-
-            if (show)
+            for (int i = 0; i < data.layers.Count; ++i)
             {
-                GUILayout.BeginScrollView(new Vector2(0, 0), GUILayout.Height(labelSize + 15));
-                Rect topLabelRect = GUILayoutUtility.GetRect(checkboxSize * numLayers + labelSize, labelSize);
-                Rect scrollArea = GUIClip.topmostRect;
-                Vector2 topLeft = GUIClip.Unclip(new Vector2(topLabelRect.x - 10, topLabelRect.y));
-                int y = 0;
-                for (int i = 0; i < kMaxLayers; i++)
+                var layer0 = data.layers[i];
+                var label = sideLabels[i] as Label;
+                label.text = layer0.name;
+
+                var tLabel = new Label();
+                tLabel.AddToClassList("project-settings___physics__toggle-col-label");
+                tLabel.text = layer0.name;
+                topLabels.Add(tLabel);
+
+                var line = toggles[i];
+
+                //generate visible toggles,
+                for (int j = 0; j < data.layers.Count - i; ++j)
                 {
-                    if (LayerMask.LayerToName(i) != "")
+                    var toggle = line[j] as Toggle;
+                    toggle.AddToClassList("project-settings___physics__toggle");
+                    var layer1 = data.layers[(data.layers.Count - 1) - j];
+
+                    toggle.value = !Physics.GetIgnoreLayerCollision(layer0.bit, layer1.bit);
+                    toggle.userData = new ToggleData() { gridX = i, gridY = j, layerBit0 = layer0.bit, layerBit1 = layer1.bit, sideLabels = sideLabels, topLabels = topLabels, overlay = overlay };
+
+                    toggle.RegisterValueChangedCallback((evt) =>
                     {
-                        bool hidelabel = false;
-                        bool hidelabelonscrollbar = false;
-                        int defautlabelrectwidth = 311;
-                        int defaultlablecount  = 10;
-                        float clipOffset = labelSize + (checkboxSize * numLayers) + checkboxSize;
+                        if (evt.newValue == evt.previousValue)
+                            return;
 
-                        // hide vertical labels when overlap with the rest of the UI
-                        if ((topLeft.x + (clipOffset - checkboxSize * y)) <= 0)
-                            hidelabel = true;
+                        var userData = ((evt.target as VisualElement).userData as ToggleData);
+                        Physics.IgnoreLayerCollision(userData.layerBit0, userData.layerBit1, !evt.newValue);
+                    });
 
-                        // hide label when it touch horizontal scroll area
-                        if (topLabelRect.height > scrollArea.height)
-                        {
-                            hidelabelonscrollbar = true;
-                        }
-                        else if (topLabelRect.width != scrollArea.width || topLabelRect.width != scrollArea.width - topLeft.x)
-                        {
-                            // hide label when it touch vertical scroll area
-                            if (topLabelRect.width > defautlabelrectwidth)
-                            {
-                                float tmp = topLabelRect.width - scrollArea.width;
-                                if (tmp > 1)
-                                {
-                                    if (topLeft.x < 0)
-                                        tmp += topLeft.x;
+                    toggle.RegisterCallback((MouseEnterEvent evt) =>
+                    {
+                        AddGridOverlayLines((evt.target as VisualElement));
 
-                                    if (tmp / checkboxSize > y)
-                                        hidelabelonscrollbar = true;
-                                }
-                            }
-                            else
-                            {
-                                float tmp = defautlabelrectwidth;
-                                if (numLayers < defaultlablecount)
-                                {
-                                    tmp -= checkboxSize * (defaultlablecount - numLayers);
-                                }
+                    }, TrickleDown.NoTrickleDown);
 
-                                if ((scrollArea.width + y * checkboxSize) + checkboxSize <= tmp)
-                                    hidelabelonscrollbar = true;
+                    toggle.RegisterCallback((MouseLeaveEvent evt) =>
+                    {
+                        ClearGridOverlayLines((evt.target as VisualElement));
 
-                                //Re-enable the label when we move the scroll bar
-                                if (topLeft.x < 0)
-                                {
-                                    if (topLabelRect.width == scrollArea.width - topLeft.x)
-                                        hidelabelonscrollbar = false;
+                    }, TrickleDown.NoTrickleDown);
+                }
 
-                                    if (numLayers <= defaultlablecount / 2)
-                                    {
-                                        if ((tmp - (scrollArea.width - ((topLeft.x - 10) * (y + 1)))) < 0)
-                                            hidelabelonscrollbar = false;
-                                    }
-                                    else
-                                    {
-                                        float hiddenlables = (int)(tmp - scrollArea.width) / checkboxSize;
-                                        int res = (int)((topLeft.x * -1) + 12) / checkboxSize;
-                                        if (hiddenlables - res < y)
-                                            hidelabelonscrollbar = false;
-                                    }
-                                }
-                            }
-                        }
+                //disable invisible toggles inside the active lines
+                for (int j = data.layers.Count - i; j < line.childCount; ++j)
+                {
+                    var toggle = line[j] as Toggle;
+                    toggle.style.display = DisplayStyle.None;
+                }
+            }
 
-                        Vector3 translate = new Vector3(labelSize + indent + checkboxSize * (numLayers - y) + topLeft.y + topLeft.x + 10, topLeft.y, 0);
-                        GUI.matrix = Matrix4x4.TRS(translate, Quaternion.identity, Vector3.one) * Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(0, 0, 90), Vector3.one);
+            //loop over the following labels + toggle lines and disable them
+            for (int i = data.layers.Count; i < sideLabels.childCount; ++i)
+            {
+                sideLabels[i].style.display = DisplayStyle.None;
+                toggles[i].style.display = DisplayStyle.None;
+            }
 
-                        var labelRect = new Rect(2 - topLeft.x, 0, labelSize, checkboxSize + 5);
-                        if (hidelabel || hidelabelonscrollbar)
-                            GUI.Label(labelRect, GUIContent.none, Styles.rightLabel);
-                        else
-                        {
-                            GUI.Label(labelRect, LayerMask.LayerToName(i), Styles.rightLabel);
-                            // Empty Transparent label used to indicate highlighted row
-                            var checkRect = new Rect(2 - topLeft.x, 1  /*This centers the highlight*/ , labelSize + 4 + (y + 1) * checkboxSize, checkboxSize);
-                            GUI.Label(checkRect, GUIContent.none, Styles.hoverStyle);
+            SerializedProperty layerCollisionMatrix = data.physicsManager.FindProperty("m_LayerCollisionMatrix");
+            toggles.TrackPropertyValue(layerCollisionMatrix);
+            toggles.TrackPropertyValue(layerCollisionMatrix, (prop) =>
+            {
+                for (int i = 0; i < k_MaxLayers; ++i)
+                {
+                    var line = toggles[i];
+                    if (line.style.display == DisplayStyle.None)
+                        continue;
 
-                            checkRect = new Rect(
-                                GUI.matrix.MultiplyPoint(new Vector3(checkRect.position.x, checkRect.position.y + 200, 0)),
-                                GUI.matrix.MultiplyPoint(new Vector3(checkRect.size.x, checkRect.size.y, 0)));
-                            GUIView.current.MarkHotRegion(labelRect);
-                            GUIView.current.MarkHotRegion(checkRect);
-                        }
+                    for (int j = 0; j < line.childCount; ++j)
+                    {
+                        var toggle = line[j] as Toggle;
+                        if (toggle.style.display == DisplayStyle.None)
+                            continue;
 
-                        y++;
+                        var userData = toggle.userData as ToggleData;
+                        toggle.value = !Physics.GetIgnoreLayerCollision(userData.layerBit0, userData.layerBit1);
                     }
                 }
-                GUILayout.EndScrollView();
+            });
 
-                GUI.matrix = Matrix4x4.identity;
-                y = 0;
-                for (int i = 0; i < kMaxLayers; i++)
+            var enableAll = layerGridContainer.Q<Button>("enable-all");
+            enableAll.clicked += () =>
+            {
+                for (int i = 0; i < k_MaxLayers; ++i)
                 {
-                    if (LayerMask.LayerToName(i) != "")
+                    var line = toggles[i];
+                    for (int j = i; j < k_MaxLayers; ++j)
                     {
-                        int x = 0;
-                        var r = GUILayoutUtility.GetRect(indent + checkboxSize * numLayers + labelSize, checkboxSize);
-                        var labelRect = new Rect(r.x + indent, r.y, labelSize, checkboxSize + 5);
-                        GUI.Label(labelRect, LayerMask.LayerToName(i), Styles.rightLabel);
-                        // Empty Transparent label used to indicate highlighted row
-                        var checkRect = new Rect(r.x + indent, r.y, labelSize + (numLayers - y) * checkboxSize, checkboxSize);
-                        GUI.Label(checkRect, GUIContent.none, Styles.hoverStyle);
-                        GUIView.current.MarkHotRegion(labelRect);
-                        GUIView.current.MarkHotRegion(checkRect);
+                        Physics.IgnoreLayerCollision(i, j, false);
 
-                        for (int j = kMaxLayers - 1; j >= 0; j--)
-                        {
-                            if (LayerMask.LayerToName(j) != "")
-                            {
-                                if (x < numLayers - y)
-                                {
-                                    var tooltip = new GUIContent("", LayerMask.LayerToName(i) + "/" + LayerMask.LayerToName(j));
-                                    bool val = getValue(i, j);
-                                    bool toggle = GUI.Toggle(new Rect(labelSize + indent + r.x + x * checkboxSize, r.y, checkboxSize, checkboxSize), val, tooltip);
-                                    if (toggle != val)
-                                        setValue(i, j, toggle);
-                                }
-                                x++;
-                            }
-                        }
-                        y++;
+                        if (line.style.display == DisplayStyle.None || j >= line.childCount)
+                            continue;
+
+                        var toggle = line[j] as Toggle;
+                        if (toggle.style.display == DisplayStyle.None)
+                            continue;
+
+                        toggle.SetValueWithoutNotify(true);
                     }
                 }
+            };
 
-                GUILayout.BeginHorizontal();
-
-                // Padding on the left
-                GUILayout.Label(GUIContent.none, GUILayout.Width(labelSize + 23));
-                // Made the buttons span the entire matrix of layers
-                if (GUILayout.Button("Disable All", GUILayout.MinWidth((checkboxSize * numLayers) / 2), GUILayout.ExpandWidth(false)))
-                    SetAllLayerCollisions(false, setValue);
-
-                if (GUILayout.Button("Enable All", GUILayout.MinWidth((checkboxSize * numLayers) / 2), GUILayout.ExpandWidth(false)))
-                    SetAllLayerCollisions(true, setValue);
-
-                GUILayout.EndHorizontal();
-            }
-        }
-
-        static void SetAllLayerCollisions(bool flag, SetValueFunc setValue)
-        {
-            for (int i = 0; i < kMaxLayers; ++i)
-                for (int j = i; j < kMaxLayers; ++j)
-                    setValue(i, j, flag);
-        }
-    }
-
-
-    [CustomEditor(typeof(PhysicsManager))]
-    internal class PhysicsManagerInspector : ProjectSettingsBaseEditor
-    {
-        bool show = true;
-
-        bool GetValue(int layerA, int layerB)
-        {
-            return !Physics.GetIgnoreLayerCollision(layerA, layerB);
-        }
-
-        void SetValue(int layerA, int layerB, bool val)
-        {
-            Physics.IgnoreLayerCollision(layerA, layerB, !val);
-        }
-
-        private static class Styles
-        {
-            public static readonly GUIContent interCollisionPropertiesLabel = EditorGUIUtility.TrTextContent("Cloth Inter-Collision");
-            public static readonly GUIContent interCollisionDistanceLabel = EditorGUIUtility.TrTextContent("Distance");
-            public static readonly GUIContent interCollisionStiffnessLabel = EditorGUIUtility.TrTextContent("Stiffness");
-            public static readonly GUIContent kLayerCollisionMatrixLabel = EditorGUIUtility.TrTextContent("Layer Collision Matrix", "Allows the configuration of the layer-based collision detection.");
-        }
-
-        public override void OnInspectorGUI()
-        {
-            serializedObject.Update();
-            DrawPropertiesExcluding(serializedObject, "m_ClothInterCollisionDistance", "m_ClothInterCollisionStiffness", "m_ClothInterCollisionSettingsToggle");
-            serializedObject.ApplyModifiedProperties();
-
-            LayerMatrixGUI.DoGUI(Styles.kLayerCollisionMatrixLabel, ref show, GetValue, SetValue);
-
-            EditorGUI.BeginChangeCheck();
-            bool collisionSettings = EditorGUILayout.Toggle(Styles.interCollisionPropertiesLabel, Physics.interCollisionSettingsToggle);
-            bool settingsChanged = EditorGUI.EndChangeCheck();
-            if (settingsChanged)
+            var disableAll = layerGridContainer.Q<Button>("disable-all");
+            disableAll.clicked += () =>
             {
-                Undo.RecordObject(target, "Change inter collision settings");
-                Physics.interCollisionSettingsToggle = collisionSettings;
-            }
+                for (int i = 0; i < k_MaxLayers; ++i)
+                {
+                    var line = toggles[i];
+                    for (int j = i; j < k_MaxLayers; ++j)
+                    {
+                        Physics.IgnoreLayerCollision(i, j, true);
 
-            if (Physics.interCollisionSettingsToggle)
+                        if (line.style.display == DisplayStyle.None || j >= line.childCount)
+                            continue;
+
+                        var toggle = line[j] as Toggle;
+                        if (toggle.style.display == DisplayStyle.None)
+                            continue;
+
+                        toggle.SetValueWithoutNotify(false);
+                    }
+                }
+            };
+
+            layerGridContainer.RegisterCallbackOnce<GeometryChangedEvent>((evt) =>
             {
-                EditorGUI.indentLevel++;
-                EditorGUI.BeginChangeCheck();
-                float distance = EditorGUILayout.FloatField(Styles.interCollisionDistanceLabel, Physics.interCollisionDistance);
-                bool distanceChanged = EditorGUI.EndChangeCheck();
-                if (distanceChanged)
-                {
-                    Undo.RecordObject(target, "Change inter collision distance");
-                    if (distance < 0.0f)
-                        distance = 0.0f;
-                    Physics.interCollisionDistance = distance;
-                }
+                //resize elements so they properly align
+                topLeftSpacer.style.width = sideLabels.resolvedStyle.width;
+                topLeftSpacer.style.height = sideLabels.resolvedStyle.width;
 
-                EditorGUI.BeginChangeCheck();
-                float stiffness = EditorGUILayout.FloatField(Styles.interCollisionStiffnessLabel, Physics.interCollisionStiffness);
-                bool stiffnessChanged = EditorGUI.EndChangeCheck();
-                if (stiffnessChanged)
+                float longestLineWidth = 0.0f;
+                for (int i = 0; i < toggles.childCount; ++i)
                 {
-                    Undo.RecordObject(target, "Change inter collision stiffness");
-                    if (stiffness < 0.0f)
-                        stiffness = 0.0f;
-                    Physics.interCollisionStiffness = stiffness;
+                    var lineWidth = toggles[i].resolvedStyle.width;
+                    if (longestLineWidth < lineWidth)
+                        longestLineWidth = lineWidth;
                 }
-                EditorGUI.indentLevel--;
+                toggles.style.width = longestLineWidth;
+
+                topLabels.style.width = sideLabels.resolvedStyle.width;
+                topLabels.style.height = sideLabels.resolvedStyle.height;
+                topLabels.style.left = sideLabels.resolvedStyle.width + longestLineWidth;
+            });
+        }
+
+        static void SetupSharedTab(VisualElement tab, SerializedObject serializedObject, SerializedObject tagManager)
+        {
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_Gravity")));
+
+            bool fold = false;
+            if (EditorPrefs.HasKey(k_layerMatrixFoldoutPref))
+                fold = EditorPrefs.GetBool(k_layerMatrixFoldoutPref);
+
+            var layerGridContainer = new VisualElement();
+            var layerGridUXML = EditorGUIUtility.Load(UXMLPath.physicsLayerGrid) as VisualTreeAsset;
+            layerGridUXML.CloneTree(layerGridContainer);
+
+            layerGridContainer.userData = new LayerGridData() { layers = new List<LayerData>(), physicsManager = serializedObject, tagManager = tagManager };
+            SetupLayerCollisionMatrix(layerGridContainer);
+
+            layerGridContainer.TrackPropertyValue(tagManager.FindProperty("layers"), (prop) =>
+            {
+                //scrap the whole tree
+                layerGridContainer.RemoveAt(0);
+                layerGridUXML.CloneTree(layerGridContainer);
+
+                SetupLayerCollisionMatrix(layerGridContainer);
+            });
+
+            var foldOut = new Foldout() { text = "Layer Collision Matrix", value = true };
+            foldOut.RegisterValueChangedCallback((evt) => { EditorPrefs.SetBool(k_layerMatrixFoldoutPref, evt.newValue); });
+
+            //patch in the correct initial value now that we've computed the layout with the unfolded values
+            //we do this step due to the deffered layout computation for the top labels of the collision layer matrix
+            foldOut.RegisterCallbackOnce<GeometryChangedEvent>((evt) => { foldOut.SetValueWithoutNotify(fold); });
+
+            foldOut.Add(layerGridContainer);
+            tab.Add(foldOut);
+        }
+
+        static void SetupClassicTab(VisualElement tab, SerializedObject serializedObject)
+        {
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_DefaultMaterial")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_BounceThreshold")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_DefaultMaxDepenetrationVelocity")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_SleepThreshold")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_DefaultContactOffset")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_DefaultSolverIterations")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_DefaultSolverVelocityIterations")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_QueriesHitBackfaces")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_QueriesHitTriggers")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_EnableAdaptiveForce")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_SimulationMode")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_AutoSyncTransforms")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_ReuseCollisionCallbacks")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_InvokeCollisionCallbacks")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_ContactPairsMode")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_BroadphaseType")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_FrictionType")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_EnableEnhancedDeterminism")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_EnableUnifiedHeightmaps")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_ImprovedPatchFriction")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_SolverType")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_DefaultMaxAngularSpeed")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_ScratchBufferChunkCount")));
+        }
+
+        static void SetupClothTab(VisualElement tab, SerializedObject serializedObject)
+        {
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_ClothGravity"), "Gravity Override"));
+
+            var interCollisionToggle = new PropertyField(serializedObject.FindProperty("m_ClothInterCollisionSettingsToggle"), "Enable Inter-Collision");
+            var interCollisionDistance = new PropertyField(serializedObject.FindProperty("m_ClothInterCollisionDistance"), "Inter-Collision Distance");
+            var interCollisionStiffness = new PropertyField(serializedObject.FindProperty("m_ClothInterCollisionStiffness"), "Inter-Collision Stiffness");
+
+            interCollisionToggle.RegisterValueChangeCallback(
+                (evt) =>
+                {
+                    bool res = evt.changedProperty.boolValue;
+
+                    interCollisionDistance.style.display = res ? DisplayStyle.Flex : DisplayStyle.None;
+                    interCollisionStiffness.style.display = res ? DisplayStyle.Flex : DisplayStyle.None;
+                });
+
+            tab.Add(interCollisionToggle);
+            tab.Add(interCollisionDistance);
+            tab.Add(interCollisionStiffness);
+        }
+
+        static void SetupECSTab(TabView tabs, SerializedObject serializedObject)
+        {
+            if (EcsExtension == null)
+                return;
+
+            var tab = new Tab() { label = "ECS", name = "tab__ecs" };
+            var tabContent = new VisualElement() { name = "tab-content__ecs" };
+            tabContent.AddToClassList("project-settings__physics__tab-content");
+
+            try
+            {
+                EcsExtension.SetupSettingsTab(tab, serializedObject);
+
+                tab.Add(tabContent);
+                tabs.Add(tab);
+            }
+            catch (Exception ex)
+            {
+                //consume the exception without breaking the settings pane
+                Debug.LogException(ex);
             }
         }
 
         [SettingsProvider]
-        static SettingsProvider CreateProjectSettingsProvider()
+        static SettingsProvider CreatePhysicsSettingsPageProvider()
         {
-            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
-                "Project/Physics", "ProjectSettings/DynamicsManager.asset",
-                SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/DynamicsManager.asset"));
+            var provider = new SettingsProvider("Project/Physics/Settings", SettingsScope.Project)
+            {
+                label = "Settings",
+                keywords = SettingsProvider.GetSearchKeywordsFromPath(AssetPath.dynamics)
+            };
+
+            provider.activateHandler = (searchContext, rootElement) =>
+            {
+                var serializedObject = LoadGameManagerAssetAtPath(AssetPath.dynamics);
+                if (serializedObject == null)
+                {
+                    Debug.LogError(AssetPath.dynamicsError);
+                    return;
+                }
+
+                var serializedTagManager = LoadGameManagerAssetAtPath(AssetPath.tags);
+                if (serializedObject == null)
+                {
+                    Debug.LogError(AssetPath.tagsError);
+                    return;
+                }
+
+                var subUXML = EditorGUIUtility.Load(UXMLPath.projectSettingsSub) as VisualTreeAsset;
+                subUXML.CloneTree(rootElement);
+
+                var content = rootElement.Q<ScrollView>(className: "project-settings-section-content");
+                content.styleSheets.Add(EditorGUIUtility.Load(StyleSheetPath.projectSettingsSheet) as StyleSheet);
+                content.styleSheets.Add(EditorGUIUtility.Load(StyleSheetPath.commonSheet) as StyleSheet);
+                content.styleSheets.Add(EditorGUIUtility.Load(EditorGUIUtility.isProSkin ? StyleSheetPath.darkSheet : StyleSheetPath.lightSheet) as StyleSheet);
+
+                SetupSharedTab(content.Q(name: "tab-content__shared"), serializedObject, serializedTagManager);
+                SetupClassicTab(content.Q(name: "tab-content__classic"), serializedObject);
+                SetupClothTab(content.Q(name: "tab-content__cloth"), serializedObject);
+                SetupECSTab(content.Q<TabView>(name: "setting-tabs"), serializedObject);
+
+                //bind data object
+                rootElement.Bind(serializedObject);
+            };
+
             return provider;
         }
     }

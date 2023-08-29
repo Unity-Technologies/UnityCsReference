@@ -9,9 +9,9 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class RemoveImportedAction : PackageAction
 {
-    private readonly PackageOperationDispatcher m_OperationDispatcher;
-    private readonly ApplicationProxy m_Application;
-    public RemoveImportedAction(PackageOperationDispatcher operationDispatcher, ApplicationProxy application)
+    private readonly IPackageOperationDispatcher m_OperationDispatcher;
+    private readonly IApplicationProxy m_Application;
+    public RemoveImportedAction(IPackageOperationDispatcher operationDispatcher, IApplicationProxy application)
     {
         m_OperationDispatcher = operationDispatcher;
         m_Application = application;

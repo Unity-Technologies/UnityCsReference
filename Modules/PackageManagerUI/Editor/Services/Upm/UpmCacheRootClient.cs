@@ -7,15 +7,29 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [Serializable]
-    internal class UpmCacheRootClient
+    internal interface IUpmCacheRootClient : IService
     {
-        public virtual event Action<CacheRootConfig> onGetCacheRootOperationResult = delegate {};
-        public virtual event Action<UIError> onGetCacheRootOperationError = delegate {};
-        public virtual event Action<CacheRootConfig> onSetCacheRootOperationResult = delegate {};
-        public virtual event Action<UIError, string> onSetCacheRootOperationError = delegate {};
-        public virtual event Action<CacheRootConfig> onClearCacheRootOperationResult = delegate {};
-        public virtual event Action<UIError> onClearCacheRootOperationError = delegate {};
+        event Action<CacheRootConfig> onGetCacheRootOperationResult;
+        event Action<UIError> onGetCacheRootOperationError;
+        event Action<CacheRootConfig> onSetCacheRootOperationResult;
+        event Action<UIError, string> onSetCacheRootOperationError;
+        event Action<CacheRootConfig> onClearCacheRootOperationResult;
+        event Action<UIError> onClearCacheRootOperationError;
+
+        void GetCacheRoot();
+        void SetCacheRoot(string path);
+        void ClearCacheRoot();
+    }
+
+    [Serializable]
+    internal class UpmCacheRootClient : BaseService<IUpmCacheRootClient>, IUpmCacheRootClient, ISerializationCallbackReceiver
+    {
+        public event Action<CacheRootConfig> onGetCacheRootOperationResult = delegate {};
+        public event Action<UIError> onGetCacheRootOperationError = delegate {};
+        public event Action<CacheRootConfig> onSetCacheRootOperationResult = delegate {};
+        public event Action<UIError, string> onSetCacheRootOperationError = delegate {};
+        public event Action<CacheRootConfig> onClearCacheRootOperationResult = delegate {};
+        public event Action<UIError> onClearCacheRootOperationError = delegate {};
 
         [SerializeField]
         private UpmGetCacheRootOperation m_GetCacheRootOperation;
@@ -29,22 +43,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UpmClearCacheRootOperation m_ClearCacheRootOperation;
         private UpmClearCacheRootOperation clearCacheRootOperation => CreateOperation(ref m_ClearCacheRootOperation);
 
-        [NonSerialized]
-        private ClientProxy m_ClientProxy;
-        [NonSerialized]
-        private ApplicationProxy m_ApplicationProxy;
-        public void ResolveDependencies(ClientProxy clientProxy,
-            ApplicationProxy applicationProxy)
+        private readonly IClientProxy m_ClientProxy;
+        private readonly IApplicationProxy m_Application;
+        public UpmCacheRootClient(IClientProxy clientProxy, IApplicationProxy applicationProxy)
         {
-            m_ClientProxy = clientProxy;
-            m_ApplicationProxy = applicationProxy;
-
-            m_GetCacheRootOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_SetCacheRootOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_ClearCacheRootOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_ClientProxy = RegisterDependency(clientProxy);
+            m_Application = RegisterDependency(applicationProxy);
         }
 
-        public virtual void GetCacheRoot()
+        public void GetCacheRoot()
         {
             if (m_GetCacheRootOperation?.isInProgress ?? false)
                 getCacheRootOperation.Cancel();
@@ -54,7 +61,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             getCacheRootOperation.onOperationError += (op, error) => onGetCacheRootOperationError?.Invoke(error);
         }
 
-        public virtual void SetCacheRoot(string path)
+        public void SetCacheRoot(string path)
         {
             if (m_SetCacheRootOperation?.isInProgress ?? true)
                 setCacheRootOperation.Cancel();
@@ -64,7 +71,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             setCacheRootOperation.onOperationError += (op, error) => onSetCacheRootOperationError?.Invoke(error, path);
         }
 
-        public virtual void ClearCacheRoot()
+        public void ClearCacheRoot()
         {
             if (m_ClearCacheRootOperation?.isInProgress ?? false)
                 clearCacheRootOperation.Cancel();
@@ -80,8 +87,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return operation;
 
             operation = new T();
-            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            operation.ResolveDependencies(m_ClientProxy, m_Application);
             return operation;
+        }
+
+        public void OnBeforeSerialize()
+        {
+        }
+
+        public void OnAfterDeserialize()
+        {
+            m_GetCacheRootOperation?.ResolveDependencies(m_ClientProxy, m_Application);
+            m_SetCacheRootOperation?.ResolveDependencies(m_ClientProxy, m_Application);
+            m_ClearCacheRootOperation?.ResolveDependencies(m_ClientProxy, m_Application);
         }
     }
 }

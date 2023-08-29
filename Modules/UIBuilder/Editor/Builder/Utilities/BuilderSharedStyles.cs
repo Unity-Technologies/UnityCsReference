@@ -236,7 +236,7 @@ namespace Unity.UI.Builder
         public static VisualElement FindSelectorElement(VisualElement documentRootElement, string selectorStr)
         {
             var selectorContainer = GetSelectorContainerElement(documentRootElement);
-            var allSelectorElements = selectorContainer.Query().Where((e) => true).ToList();
+            var allSelectorElements = selectorContainer.Query().Where((e) => true).Build();
 
             foreach (var selectorElement in allSelectorElements)
             {

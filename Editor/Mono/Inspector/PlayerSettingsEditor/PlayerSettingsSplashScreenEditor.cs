@@ -81,7 +81,7 @@ namespace UnityEditor
         class Texts
         {
             public GUIContent animate = EditorGUIUtility.TrTextContent("Animation");
-            public GUIContent backgroundColor = EditorGUIUtility.TrTextContent("Background Color", "Background color when no background image is used.");
+            public GUIContent backgroundColor = EditorGUIUtility.TrTextContent("Background Color", "Background color when no background image is used. On Android, use this property to set static splash image background color.");
             public GUIContent backgroundImage = EditorGUIUtility.TrTextContent("Background Image", "Image to be used in landscape and portrait (when portrait image is not set).");
             public GUIContent backgroundPortraitImage = EditorGUIUtility.TrTextContent("Alternate Portrait Image*", "Optional image to be used in portrait mode.");
             public GUIContent backgroundTitle = EditorGUIUtility.TrTextContent("Background*");
@@ -328,7 +328,11 @@ namespace UnityEditor
                         BuiltinCustomSplashScreenGUI(platform.namedBuildTarget.ToBuildTargetGroup(), settingsExtension);
 
                     if (settingsExtension != null)
+                    {
                         settingsExtension.SplashSectionGUI();
+                        if (!m_ShowUnitySplashScreen.boolValue && settingsExtension.SupportsStaticSplashScreenBackgroundColor())
+                            EditorGUILayout.PropertyField(m_SplashScreenBackgroundColor, k_Texts.backgroundColor);
+                    }
 
                     if (m_ShowUnitySplashScreen.boolValue)
                         m_Owner.ShowSharedNote();

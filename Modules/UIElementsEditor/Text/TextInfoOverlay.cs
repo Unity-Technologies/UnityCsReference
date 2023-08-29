@@ -563,12 +563,11 @@ namespace UnityEditor.UIElements.Text
             float start = rectangle.xMin;
             float end = start + size;
 
+            var playModeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
             while (end <= rectangle.xMax)
             {
                 Rect segmentRect = new Rect(start, rectangle.y, size, m_LineThickness);
-                var segment =
-                    MeshGenerator.RectangleParams.MakeSolid(segmentRect, color,
-                        mgc.visualElement.panel.contextType);
+                var segment = MeshGenerator.RectangleParams.MakeSolid(segmentRect, color, playModeTintColor);
                 mgc.meshGenerator.DrawRectangle(segment);
                 start = end + size;
                 end = start + size;
@@ -578,17 +577,14 @@ namespace UnityEditor.UIElements.Text
             if (start < rectangle.xMax)
             {
                 Rect segmentRect = new Rect(start, rectangle.y, rectangle.xMax - start, m_LineThickness);
-                var segment =
-                    MeshGenerator.RectangleParams.MakeSolid(segmentRect, color,
-                        mgc.visualElement.panel.contextType);
+                var segment = MeshGenerator.RectangleParams.MakeSolid(segmentRect, color, playModeTintColor);
                 mgc.meshGenerator.DrawRectangle(segment);
             }
             else
             {
                 Rect segmentRect = new Rect(start - size, rectangle.y, rectangle.xMax - start + size, m_LineThickness);
                 var segment =
-                    MeshGenerator.RectangleParams.MakeSolid(segmentRect, color,
-                        mgc.visualElement.panel.contextType);
+                    MeshGenerator.RectangleParams.MakeSolid(segmentRect, color, playModeTintColor);
                 mgc.meshGenerator.DrawRectangle(segment);
             }
         }
@@ -598,12 +594,12 @@ namespace UnityEditor.UIElements.Text
             float start = rectangle.yMin;
             float end = start + size;
 
+            var playModeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
             while (end <= rectangle.yMax)
             {
                 Rect segmentRect = new Rect(rectangle.x, start, m_LineThickness, size);
                 var segment =
-                    MeshGenerator.RectangleParams.MakeSolid(segmentRect, color,
-                        mgc.visualElement.panel.contextType);
+                    MeshGenerator.RectangleParams.MakeSolid(segmentRect, color, playModeTintColor);
                 mgc.meshGenerator.DrawRectangle(segment);
                 start = end + size;
                 end = start + size;
@@ -614,16 +610,14 @@ namespace UnityEditor.UIElements.Text
             {
                 Rect segmentRect = new Rect(rectangle.x, start, m_LineThickness, rectangle.yMax - start);
                 var segment =
-                    MeshGenerator.RectangleParams.MakeSolid(segmentRect, color,
-                        mgc.visualElement.panel.contextType);
+                    MeshGenerator.RectangleParams.MakeSolid(segmentRect, color, playModeTintColor);
                 mgc.meshGenerator.DrawRectangle(segment);
             }
             else
             {
                 Rect segmentRect = new Rect(rectangle.x, start - size, m_LineThickness, rectangle.yMax - start + size);
                 var segment =
-                    MeshGenerator.RectangleParams.MakeSolid(segmentRect, color,
-                        mgc.visualElement.panel.contextType);
+                    MeshGenerator.RectangleParams.MakeSolid(segmentRect, color, playModeTintColor);
                 mgc.meshGenerator.DrawRectangle(segment);
             }
         }
@@ -633,10 +627,9 @@ namespace UnityEditor.UIElements.Text
             Rect verticalRect = new Rect(x - m_LineThickness / 2, y - size / 4, m_LineThickness, size / 2);
             Rect horizontalRect = new Rect(x - size/4, y - m_LineThickness / 2, size / 2, m_LineThickness);
 
-            var verticalLine = MeshGenerator.RectangleParams.MakeSolid(verticalRect, color,
-                mgc.visualElement.panel.contextType);
-            var horizontalLine = MeshGenerator.RectangleParams.MakeSolid(horizontalRect, color,
-                mgc.visualElement.panel.contextType);
+            var playModeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
+            var verticalLine = MeshGenerator.RectangleParams.MakeSolid(verticalRect, color, playModeTintColor);
+            var horizontalLine = MeshGenerator.RectangleParams.MakeSolid(horizontalRect, color, playModeTintColor);
 
             mgc.meshGenerator.DrawRectangle(verticalLine);
             mgc.meshGenerator.DrawRectangle(horizontalLine);
@@ -647,7 +640,7 @@ namespace UnityEditor.UIElements.Text
             var border = new MeshGenerator.BorderParams()
             {
                 rect = rectangle,
-                playmodeTintColor = UIElementsUtility.editorPlayModeTintColor,
+                playmodeTintColor = playModeTintColor,
 
                 leftColor = color,
                 topColor = color,

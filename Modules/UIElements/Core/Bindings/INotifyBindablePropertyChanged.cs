@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
         /// Instantiates a new <see cref="BindablePropertyChangedEventArgs"/>.
         /// </summary>
         /// <param name="propertyName">The name of the property that has changed.</param>
-        public BindablePropertyChangedEventArgs(BindingId propertyName) => m_PropertyName = propertyName;
+        public BindablePropertyChangedEventArgs(in BindingId propertyName) => m_PropertyName = propertyName;
 
         /// <summary>
         /// Returns the name of the property that has changed.

@@ -18,11 +18,16 @@ namespace UnityEditor.DeploymentTargets
 
         public IDeploymentTargetsMainThreadContext Context { get { return m_Context; }}
 
-        public static DeploymentTargetManager CreateInstance(BuildTargetGroup targetGroup, BuildTarget buildTarget, bool setup = true)
+        public static DeploymentTargetManager CreateInstance(BuildTarget buildTarget, bool setup = true)
         {
-            var extension = GetExtension(targetGroup, buildTarget);
+            var extension = GetExtension(buildTarget);
             var context = extension.GetMainThreadContext(setup);
             return context != null ? new DeploymentTargetManager(extension, context) : null;
+        }
+
+        public static DeploymentTargetManager CreateInstance(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, bool setup = true)
+        {
+            return CreateInstance(buildTarget, setup);
         }
 
         DeploymentTargetManager(IDeploymentTargetsExtension extension, IDeploymentTargetsMainThreadContext context)
@@ -31,9 +36,9 @@ namespace UnityEditor.DeploymentTargets
             m_Context = context;
         }
 
-        static IDeploymentTargetsExtension GetExtension(BuildTargetGroup targetGroup, BuildTarget buildTarget)
+        static IDeploymentTargetsExtension GetExtension(BuildTarget buildTarget)
         {
-            var extension = ModuleManager.GetDeploymentTargetsExtension(targetGroup, buildTarget);
+            var extension = ModuleManager.GetDeploymentTargetsExtension(buildTarget);
             if (extension == null)
                 throw new NotSupportedException(k_ExtensionErrorMessage);
             return extension;

@@ -140,12 +140,13 @@ namespace UnityEditor
             public static readonly GUIContent logObjCUncaughtExceptions = EditorGUIUtility.TrTextContent("Log Obj-C Uncaught Exceptions*");
             public static readonly GUIContent enableCrashReportAPI = EditorGUIUtility.TrTextContent("Enable CrashReport API*");
             public static readonly GUIContent activeColorSpace = EditorGUIUtility.TrTextContent("Color Space*");
+            public static readonly GUIContent unsupportedMSAAFallback = EditorGUIUtility.TrTextContent("MSAA Fallback");
             public static readonly GUIContent colorGamut = EditorGUIUtility.TrTextContent("Color Gamut*");
             public static readonly GUIContent colorGamutForMac = EditorGUIUtility.TrTextContent("Color Gamut For Mac*");
             public static readonly GUIContent metalForceHardShadows = EditorGUIUtility.TrTextContent("Force hard shadows on Metal*");
             public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TrTextContent("Metal API Validation*", "When enabled, additional binding state validation is applied.");
-            public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Write-Only Backbuffer", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
-            public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth", "Memoryless mode of framebuffer depth");
+            public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Write-Only Backbuffer*", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
+            public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth*", "Memoryless mode of framebuffer depth");
             public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic") };
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("SRGB Write Mode*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
             public static readonly GUIContent vulkanNumSwapchainBuffers = EditorGUIUtility.TrTextContent("Number of swapchain buffers*");
@@ -238,12 +239,8 @@ namespace UnityEditor
             public static readonly GUIContent legacyClampBlendShapeWeights = EditorGUIUtility.TrTextContent("Clamp BlendShapes (Deprecated)*", "If set, the range of BlendShape weights in SkinnedMeshRenderers will be clamped.");
             public static readonly GUIContent virtualTexturingSupportEnabled = EditorGUIUtility.TrTextContent("Virtual Texturing (Experimental)*", "Enable Virtual Texturing. This feature is experimental and not ready for production use. Changing this value requires an Editor restart.");
             public static readonly GUIContent virtualTexturingUnsupportedPlatformWarning = EditorGUIUtility.TrTextContent("The current target platform does not support Virtual Texturing. To build for this platform, uncheck Enable Virtual Texturing.");
-            public static readonly GUIContent virtualTexturingUnsupportedAPI = EditorGUIUtility.TrTextContent("The target graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API', and remove OpenGL ES 2/3 and OpenGLCore.");
-            public static readonly GUIContent virtualTexturingUnsupportedAPIWin = EditorGUIUtility.TrTextContent("The target Windows graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Windows', and remove OpenGL ES 2/3 and OpenGLCore.");
-            public static readonly GUIContent virtualTexturingUnsupportedAPIMac = EditorGUIUtility.TrTextContent("The target Mac graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Mac', and remove OpenGLCore.");
-            public static readonly GUIContent virtualTexturingUnsupportedAPILinux = EditorGUIUtility.TrTextContent("The target Linux graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Linux', and remove OpenGLCore.");
-            public static readonly GUIContent shaderPrecisionModel = EditorGUIUtility.TrTextContent("Shader precision model*", "Mobile targets prefer lower precision by default to improve performance, but your rendering pipeline may prefer full precision by default and to optimize against lower precision cases explicitly.");
-            public static readonly GUIContent[] shaderPrecisionModelOptions = { EditorGUIUtility.TrTextContent("Use platform defaults for sampler precision"), EditorGUIUtility.TrTextContent("Use full sampler precision by default, lower precision explicitly declared") };
+            public static readonly GUIContent shaderPrecisionModel = EditorGUIUtility.TrTextContent("Shader Precision Model*", "Controls the default sampler precision and the definition of HLSL half.");
+            public static readonly GUIContent[] shaderPrecisionModelOptions = { EditorGUIUtility.TrTextContent("Platform Default"), EditorGUIUtility.TrTextContent("Unified") };
             public static readonly GUIContent stereo360CaptureCheckbox = EditorGUIUtility.TrTextContent("360 Stereo Capture*");
             public static readonly GUIContent forceSRGBBlit = EditorGUIUtility.TrTextContent("Force SRGB blit", "Force SRGB blit for Linear color space.");
             public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
@@ -308,8 +305,6 @@ namespace UnityEditor
             }
         }
 
-        private static GraphicsJobMode[] m_GfxJobModeValues = new GraphicsJobMode[] { GraphicsJobMode.Native, GraphicsJobMode.Legacy, GraphicsJobMode.Split };
-        private static GUIContent[] m_GfxJobModeNames = new GUIContent[] { EditorGUIUtility.TrTextContent("Native"), EditorGUIUtility.TrTextContent("Legacy"), EditorGUIUtility.TrTextContent("Split") };
         private static MeshDeformation[] m_MeshDeformations = { MeshDeformation.CPU, MeshDeformation.GPU, MeshDeformation.GPUBatched };
 
         // Section and tab selection state
@@ -399,6 +394,7 @@ namespace UnityEditor
         SerializedProperty m_DefaultScreenHeight;
 
         SerializedProperty m_ActiveColorSpace;
+        SerializedProperty m_UnsupportedMSAAFallback;
         SerializedProperty m_StripUnusedMeshComponents;
         SerializedProperty m_StrictShaderVariantMatching;
         SerializedProperty m_MipStripping;
@@ -559,6 +555,7 @@ namespace UnityEditor
             m_UIStatusBarHidden             = FindPropertyAssert("uIStatusBarHidden");
             m_UIStatusBarStyle              = FindPropertyAssert("uIStatusBarStyle");
             m_ActiveColorSpace              = FindPropertyAssert("m_ActiveColorSpace");
+            m_UnsupportedMSAAFallback       = FindPropertyAssert("unsupportedMSAAFallback");
             m_StripUnusedMeshComponents     = FindPropertyAssert("StripUnusedMeshComponents");
             m_StrictShaderVariantMatching   = FindPropertyAssert("strictShaderVariantMatching");
             m_MipStripping                  = FindPropertyAssert("mipStripping");
@@ -862,7 +859,7 @@ namespace UnityEditor
 
         private bool SupportsRunInBackground(NamedBuildTarget buildTarget)
         {
-            return buildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || buildTarget == NamedBuildTarget.Android;
+            return buildTarget == NamedBuildTarget.Standalone || buildTarget == NamedBuildTarget.Android;
         }
 
         private void OnPresetSelectorClosed()
@@ -1096,8 +1093,7 @@ namespace UnityEditor
                         EditorGUILayout.EndFadeGroup();
                     }
 
-                    var buildTargetGroup = namedBuildTarget.ToBuildTargetGroup();
-                    if (buildTargetGroup == BuildTargetGroup.Standalone && namedBuildTarget != NamedBuildTarget.Server)
+                    if (namedBuildTarget == NamedBuildTarget.Standalone)
                         EditorGUILayout.PropertyField(m_MacRetinaSupport, SettingsContent.macRetinaSupport);
 
                     if (settingsExtension != null && settingsExtension.SupportsOrientation())
@@ -1197,7 +1193,7 @@ namespace UnityEditor
         // Converts a GraphicsDeviceType to a string, along with visual modifiers for given target platform
         static private string GraphicsDeviceTypeToString(BuildTarget target, GraphicsDeviceType graphicsDeviceType)
         {
-        
+
             if (graphicsDeviceType == GraphicsDeviceType.WebGPU)
             {
                 return "WebGPU";
@@ -1206,12 +1202,12 @@ namespace UnityEditor
             {
                 return "WebGL 2";
             }
-                
-            switch (target) 
+
+            switch (target)
             {
                 case BuildTarget.StandaloneWindows:
                 case BuildTarget.StandaloneWindows64:
-                    if (graphicsDeviceType == GraphicsDeviceType.OpenGLCore) 
+                    if (graphicsDeviceType == GraphicsDeviceType.OpenGLCore)
                         return graphicsDeviceType.ToString() + " (Deprecated)";
                     break;
             }
@@ -1902,6 +1898,12 @@ namespace UnityEditor
                 }
             }
 
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
+            {
+                if (BuildTargetDiscovery.TryGetBuildTarget(platform.defaultTarget, out IBuildTarget iBuildTarget) && (iBuildTarget.GraphicsPlatformProperties?.HasUnsupportedMSAAFallback ?? false))
+                    EditorGUILayout.PropertyField(m_UnsupportedMSAAFallback, SettingsContent.unsupportedMSAAFallback);
+            }
+
             // Special cases for some platform with limitations regarding linear colorspace
             if ((PlayerSettings.colorSpace == ColorSpace.Linear) &&
                 (null != settingsExtension) && settingsExtension.SupportsForcedSrgbBlit())
@@ -1931,11 +1933,13 @@ namespace UnityEditor
             // Output color spaces
             ColorGamutGUI(platform.namedBuildTarget.ToBuildTargetGroup());
 
-            // Metal
+            // What we call "Metal Validation" is a random bunch of extra checks we do in editor in metal code
             if (Application.platform == RuntimePlatform.OSXEditor && BuildTargetDiscovery.BuildTargetSupportsRenderer(platform, GraphicsDeviceType.Metal))
-            {
                 m_MetalAPIValidation.boolValue = EditorGUILayout.Toggle(SettingsContent.metalAPIValidation, m_MetalAPIValidation.boolValue);
 
+            // Metal
+            if (BuildTargetDiscovery.BuildTargetSupportsRenderer(platform, GraphicsDeviceType.Metal))
+            {
                 EditorGUILayout.PropertyField(m_MetalFramebufferOnly, SettingsContent.metalFramebufferOnly);
                 if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
                     EditorGUILayout.PropertyField(m_MetalForceHardShadows, SettingsContent.metalForceHardShadows);
@@ -2102,7 +2106,6 @@ namespace UnityEditor
             bool graphicsJobsOptionEnabled = true;
             bool graphicsJobs = PlayerSettings.GetGraphicsJobsForPlatform(platform.defaultTarget);
             bool newGraphicsJobs = graphicsJobs;
-            bool graphicsJobsModeOptionEnabled = graphicsJobs;
 
             if (platform.namedBuildTarget == NamedBuildTarget.XboxOne)
             {
@@ -2126,7 +2129,7 @@ namespace UnityEditor
             }
             else if (platform.namedBuildTarget == NamedBuildTarget.PS5)
             {
-                // On PS5NGGC, we only have kGfxJobModeNative so we disable the options in that case
+                // On PS5NGGC, we always have graphics jobs enabled so we disable the option in that case
                 GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
                 if (gfxAPIs[0] == GraphicsDeviceType.PlayStation5NGGC)
                 {
@@ -2137,10 +2140,6 @@ namespace UnityEditor
                         graphicsJobs = true;
                         newGraphicsJobs = true;
                     }
-
-                    PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, GraphicsJobMode.Native);
-                    PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerNativeJobs);
-                    graphicsJobsModeOptionEnabled = false;
                 }
             }
 
@@ -2148,17 +2147,9 @@ namespace UnityEditor
             {
                 EditorGUI.BeginChangeCheck();
                 GUIContent graphicsJobsGUI = SettingsContent.graphicsJobsNonExperimental;
-                switch (platform.defaultTarget)
-                {
-                    case BuildTarget.StandaloneOSX:
-                    case BuildTarget.iOS:
-                    case BuildTarget.tvOS:
-                    case BuildTarget.Android:
-                        graphicsJobsGUI = SettingsContent.graphicsJobsExperimental;
-                        break;
-                    default:
-                        break;
-                }
+
+                if (BuildTargetDiscovery.TryGetBuildTarget(platform.defaultTarget, out IBuildTarget iBuildTarget) && (iBuildTarget.GraphicsPlatformProperties?.AreGraphicsJobsExperimental ?? false))
+                    graphicsJobsGUI = SettingsContent.graphicsJobsExperimental;
 
                 using (new EditorGUI.DisabledScope(!graphicsJobsOptionEnabled))
                 {
@@ -2179,23 +2170,36 @@ namespace UnityEditor
             }
             if (gfxJobModesSupported)
             {
-                EditorGUI.BeginChangeCheck();
-                using (new EditorGUI.DisabledScope(!graphicsJobsModeOptionEnabled))
-                {
-                    GraphicsJobMode currGfxJobMode = PlayerSettings.GetGraphicsJobModeForPlatform(platform.defaultTarget);
-                    GraphicsJobMode newGfxJobMode = BuildEnumPopup(SettingsContent.graphicsJobsMode, currGfxJobMode, m_GfxJobModeValues, m_GfxJobModeNames);
-                    if (EditorGUI.EndChangeCheck() && (newGfxJobMode != currGfxJobMode))
-                    {
-                        Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobModeString);
-                        PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, newGfxJobMode);
+                // For a platform extension to support a gfx job mode, it means it wouldn't modify it. So we check if it's the same after adjustments.
+                var checkGfxJobModeSupport = (Enum value) => { return settingsExtension != null ? settingsExtension.AdjustGfxJobMode((GraphicsJobMode)value) == (GraphicsJobMode)value : true; };
 
-                        if(newGfxJobMode == GraphicsJobMode.Native)
-                            PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerNativeJobs);
-                        else if (newGfxJobMode == GraphicsJobMode.Legacy)
-                            PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerJobs);
-                        else if (newGfxJobMode == GraphicsJobMode.Split)
-                            PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.SplitJobs);
-                    }
+                EditorGUI.BeginChangeCheck();
+                GraphicsJobMode currGfxJobMode = PlayerSettings.GetGraphicsJobModeForPlatform(platform.defaultTarget);
+                GraphicsJobMode newGfxJobMode = (GraphicsJobMode)EditorGUILayout.EnumPopup(SettingsContent.graphicsJobsMode, currGfxJobMode, checkGfxJobModeSupport, false);
+
+                if (EditorGUI.EndChangeCheck() && (newGfxJobMode != currGfxJobMode))
+                {
+                    Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobModeString);
+                }
+
+                GraphicsJobMode fallbackGfxJobMode = settingsExtension != null ? settingsExtension.AdjustGfxJobMode(currGfxJobMode) : currGfxJobMode;
+                // If we changed other settings and the selected gfx job mode is suddently not supported, we fallback to what the platform settings extension wants
+                if (fallbackGfxJobMode != currGfxJobMode)
+                {
+                    newGfxJobMode = fallbackGfxJobMode;
+                }
+
+                // Finally we apply the change of gfx job mode
+                if (newGfxJobMode != currGfxJobMode)
+                {
+                    PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, newGfxJobMode);
+
+                    if(newGfxJobMode == GraphicsJobMode.Native)
+                        PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerNativeJobs);
+                    else if (newGfxJobMode == GraphicsJobMode.Legacy)
+                        PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerJobs);
+                    else if (newGfxJobMode == GraphicsJobMode.Split)
+                        PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.SplitJobs);
                 }
             }
 
@@ -2404,28 +2408,24 @@ namespace UnityEditor
                     // Test for all three 'Automatic Graphics API for X' checkboxes and report API/Platform-specific error
                     if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
                     {
-                        if (VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneWindows, true) ||
-                            VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneWindows64, true))
+                        var duplicatedBuildTargetCheck = new List<String>();
+                        foreach (var buildTarget in BuildTargetDiscovery.StandaloneBuildTargets)
                         {
-                            EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPIWin.text, MessageType.Warning);
-                        }
+                            if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out IBuildTarget requiredBuildTarget))
+                            {
+                                if (duplicatedBuildTargetCheck.Contains(requiredBuildTarget.TargetName)) // Win64 and Win have the same target name and would duplicate the hint box
+                                    continue;
 
-                        if (VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneLinux64, true))
-                        {
-                            EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPILinux.text, MessageType.Warning);
-                        }
+                                duplicatedBuildTargetCheck.Add(requiredBuildTarget.TargetName);
 
-                        if (VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneOSX, true))
-                        {
-                            EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPIMac.text, MessageType.Warning);
+                                ShowWarningIfVirtualTexturingUnsupportedByAPI(requiredBuildTarget, true);
+                            }
                         }
                     }
                     else
                     {
-                        if (platformSupportsVT && VirtualTexturingInvalidGfxAPI(platform.defaultTarget, false))
-                        {
-                            EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPI.text, MessageType.Warning);
-                        }
+                        if (platformSupportsVT && BuildTargetDiscovery.TryGetBuildTarget(platform.defaultTarget, out IBuildTarget defaultBuildTarget))
+                            ShowWarningIfVirtualTexturingUnsupportedByAPI(defaultBuildTarget, false);
                     }
                 }
             }
@@ -2471,6 +2471,23 @@ namespace UnityEditor
             }
 
             return !supportedAPI;
+        }
+
+        private static readonly Dictionary<IBuildTarget, GUIContent> virtualTexturingUnsupportedAPIContents = new();
+
+        void ShowWarningIfVirtualTexturingUnsupportedByAPI(IBuildTarget buildTarget, bool checkEditor)
+        {
+            GUIContent warningText = null;
+            if(!VirtualTexturingInvalidGfxAPI((BuildTarget)buildTarget.GetLegacyId, checkEditor))
+                return;
+
+            if (virtualTexturingUnsupportedAPIContents.TryGetValue(buildTarget, out var guiContent))
+                warningText = guiContent;
+            else
+                warningText = virtualTexturingUnsupportedAPIContents[buildTarget] = EditorGUIUtility.TrTextContent($"The target {buildTarget.DisplayName} graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API', and remove OpenGL ES 2/3 and OpenGLCoreOpenGLCore.");
+
+            if (warningText != null)
+                EditorGUILayout.HelpBox(warningText.text, MessageType.Warning);
         }
 
         // WebGPU
@@ -2900,8 +2917,6 @@ namespace UnityEditor
                 }
 
                 bool gcIncrementalEnabled = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", platform.defaultTarget);
-                if (platform.namedBuildTarget == NamedBuildTarget.iOS)
-                    gcIncrementalEnabled = gcIncrementalEnabled && currentBackend == ScriptingImplementation.IL2CPP;
 
                 using (new EditorGUI.DisabledScope(!gcIncrementalEnabled))
                 {

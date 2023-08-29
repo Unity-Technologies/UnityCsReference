@@ -16,21 +16,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private enum StatusType { Normal, Loading, Error }
 
-        private ResourceLoader m_ResourceLoader;
-        private ApplicationProxy m_Application;
-        private BackgroundFetchHandler m_BackgroundFetchHandler;
-        private PageRefreshHandler m_PageRefreshHandler;
-        private PageManager m_PageManager;
-        private UnityConnectProxy m_UnityConnect;
+        private IResourceLoader m_ResourceLoader;
+        private IApplicationProxy m_Application;
+        private IBackgroundFetchHandler m_BackgroundFetchHandler;
+        private IPageRefreshHandler m_PageRefreshHandler;
+        private IPageManager m_PageManager;
+        private IUnityConnectProxy m_UnityConnect;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_Application = container.Resolve<ApplicationProxy>();
-            m_BackgroundFetchHandler = container.Resolve<BackgroundFetchHandler>();
-            m_PageRefreshHandler = container.Resolve<PageRefreshHandler>();
-            m_PageManager = container.Resolve<PageManager>();
-            m_UnityConnect = container.Resolve<UnityConnectProxy>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
+            m_Application = container.Resolve<IApplicationProxy>();
+            m_BackgroundFetchHandler = container.Resolve<IBackgroundFetchHandler>();
+            m_PageRefreshHandler = container.Resolve<IPageRefreshHandler>();
+            m_PageManager = container.Resolve<IPageManager>();
+            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
         }
 
         public PackageStatusBar()

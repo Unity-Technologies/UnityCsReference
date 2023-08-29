@@ -17,9 +17,8 @@ namespace UnityEditor.Actions
     public abstract class EditorAction
     {
         bool m_IsFinished;
-        internal event Action<EditorActionResult> actionFinished;
 
-        public virtual Texture2D icon => null;
+        internal event Action<EditorActionResult> actionFinished;
 
         public static T Start<T>() where T : EditorAction, new() => Start(new T());
 
@@ -27,21 +26,17 @@ namespace UnityEditor.Actions
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
+
             if (action.m_IsFinished)
                 return action;
-            var tool = (EditorActionTool)ScriptableObject.CreateInstance(typeof(EditorActionTool),
-                x =>
-                {
-                    if (x is not EditorActionTool t)
-                        return;
 
-                    t.action = action;
-                });
-            ToolManager.SetActiveTool(tool);
+            EditorToolManager.activeOverride = new EditorActionTool(action);
+
             return action;
         }
 
         public virtual void OnSceneGUI(SceneView sceneView) {}
+
         public void Finish(EditorActionResult result)
         {
             if (m_IsFinished)

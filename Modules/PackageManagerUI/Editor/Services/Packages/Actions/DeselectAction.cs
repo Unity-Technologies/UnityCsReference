@@ -11,8 +11,8 @@ internal class DeselectAction : PackageAction
 {
     private readonly string m_AnalyticsEventName;
 
-    private readonly PageManager m_PageManager;
-    public DeselectAction(PageManager pageManager, string analyticsEventName = null)
+    private readonly IPageManager m_PageManager;
+    public DeselectAction(IPageManager pageManager, string analyticsEventName = null)
     {
         m_PageManager = pageManager;
         m_AnalyticsEventName = analyticsEventName;

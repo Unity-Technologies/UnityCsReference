@@ -8,6 +8,7 @@ using UnityEditor.ShortcutManagement;
 using System.Collections.Generic;
 using System;
 using System.Text.RegularExpressions;
+using UnityEditor.Callbacks;
 using UnityEditorInternal;
 
 namespace UnityEditor.UIElements
@@ -32,8 +33,7 @@ namespace UnityEditor.UIElements
     public static class EditorMenuExtensions
     {
         const float k_MaxMenuWidth = 512.0f;
-        internal const string k_AutoExpandDelayKeyName = "ContextMenuAutoExpandDelay";
-        internal const float k_SubmenuExpandDelay = 0.4f;
+        internal const float k_SubmenuExpandDelay = 0.35f;
         internal const string k_SearchShortcutId = "Main Menu/Edit/Find";
 
         internal static readonly Rect k_InvalidRect = new(0, 0, -1, -1);
@@ -63,6 +63,8 @@ namespace UnityEditor.UIElements
             Rect m_ParentRect = k_InvalidRect;
 
             Rect GetAdjustedPosition() => GetAdjustedPosition(m_ParentRect, minSize);
+
+            public EditorWindow ParentWindow => m_ParentWindow;
 
             // This is static so it can be used in test code conveniently
             internal static Rect GetAdjustedPosition(Rect parentRect, Vector2 size, ScrollView scrollView = null)
@@ -103,7 +105,7 @@ namespace UnityEditor.UIElements
                 menu.outerContainer.style.maxHeight = maxMenuHeight;
                 menu.outerContainer.RegisterCallback<GeometryChangedEvent>(e =>
                 {
-                    minSize = maxSize = menu.outerContainer.worldBound.size;
+                    maxSize = minSize= menu.outerContainer.worldBound.size;
                     position = GetAdjustedPosition(m_ParentRect, minSize, menu.m_Parent?.scrollView);
                 });
 
@@ -123,13 +125,15 @@ namespace UnityEditor.UIElements
                 s_ActiveMenus.Add(menu);
 
                 var menuWindow = CreateInstance<ContextMenu>();
-              
-                menuWindow.wantsLessLayoutEvents = true;
-              
-                var parentMenu = EditorWindow.focusedWindow as ContextMenu;
-                var parentIsMenu = parentMenu != null;
-                menuWindow.m_ParentWindow = parentIsMenu ? parentMenu.m_ParentWindow : EditorWindow.focusedWindow;
 
+                menuWindow.wantsLessLayoutEvents = true;
+
+                var parentMenu = focusedWindow as ContextMenu;
+                var parentIsMenu = parentMenu != null;
+                var parentWindow = parentIsMenu ? parentMenu.m_ParentWindow : focusedWindow;
+                menuWindow.m_ParentWindow = parentWindow;
+
+                menuWindow.rootVisualElement.disablePlayModeTint = parentWindow is { rootVisualElement.disablePlayModeTint: true };
                 // Reset loaded layout so doesn't mess up positioning (Linux specific).
                 // Revise once Linux windowing is more robust and predictable.
                 menuWindow.position = new Rect(parent.position, Vector2.one * 50);
@@ -140,7 +144,7 @@ namespace UnityEditor.UIElements
                 var menuPanel = menuWindow.rootVisualElement.panel;
                 var imguiContainer = menuPanel.visualTree.Q<IMGUIContainer>();
                 imguiContainer?.parent?.Remove(imguiContainer);
-                
+
                 menuWindow.m_ParentRect = parent;
                 menuWindow.Host(menu);
                 menuWindow.Focus();
@@ -160,7 +164,6 @@ namespace UnityEditor.UIElements
                     s_Shortcuts.Remove(menu);
                     s_MaxShortcutLength.Remove(menu);
                 });
-                menu.onHide += menuWindow.Close;
                 menu.m_OnBeforePerformAction = (submenu, autoClose) =>
                 {
                     if (!submenu && autoClose)
@@ -174,7 +177,16 @@ namespace UnityEditor.UIElements
                         // without temporary disable of cleanup, aux windows would be
                         // closed as soon as they are created.
                         InternalEditorUtility.RetainAuxWindows();
+
+                        CloseAllContextMenus();
                     }
+                };
+                menu.m_OnBack = () =>
+                {
+                    if (s_ActiveMenuWindows != null && s_ActiveMenuWindows.Count > 1)
+                        AuxCleanup(s_ActiveMenuWindows[^2].m_Parent);
+                    else
+                        CloseAllContextMenus();
                 };
 
                 s_ActiveMenuWindows.Add(menuWindow);
@@ -187,10 +199,28 @@ namespace UnityEditor.UIElements
             }
         }
 
+        [DidReloadScripts]
+        static void FindAndCloseAllContextMenus()
+        {
+            EditorWindow lastFocusedWindow = null;
+
+            while (true)
+            {
+                EditorWindow.FocusWindowIfItsOpen<ContextMenu>();
+
+                if (lastFocusedWindow == EditorWindow.focusedWindow ||
+                    EditorWindow.focusedWindow is not ContextMenu)
+                    return;
+
+                lastFocusedWindow = EditorWindow.focusedWindow;
+                EditorWindow.focusedWindow.Close();
+            }
+        }
+
         internal static void CloseAllContextMenus()
         {
             for (int i = s_ActiveMenuWindows.Count - 1; i >= 0; i--)
-                s_ActiveMenuWindows[i].Close();
+                s_ActiveMenuWindows[i].m_Parent.window.Close();
         }
 
         static void AuxCleanup(GUIView view)
@@ -208,7 +238,7 @@ namespace UnityEditor.UIElements
                 return;
 
             for (int i = s_ActiveMenuWindows.Count - 1; i > index; i--)
-                s_ActiveMenuWindows[i].Close();
+                s_ActiveMenuWindows[i].m_Parent.window.Close();
         }
 
         // DropdownMenu
@@ -433,14 +463,17 @@ namespace UnityEditor.UIElements
                 }
 
                 var menu = search.userData as GenericDropdownMenu;
+                var newValue = Regex.Replace(e.newValue, "[^\\w ]+", "");
+                search.SetValueWithoutNotify(newValue);
+                
                 ResetHighlighting(menu.root);
 
                 if (string.IsNullOrWhiteSpace(menu.current.name))
                     menu.NavigateBack(false);
 
                 // Allow whitespace so we can search for spaces too
-                if (!string.IsNullOrEmpty(e.newValue))
-                    menu.NavigateTo(BuildSearchMenu(e.newValue, menu.current));
+                if (!string.IsNullOrEmpty(newValue))
+                    menu.NavigateTo(BuildSearchMenu(newValue, menu.current));
 
                 // Workaround for getting window content stretching artifacts
                 // when resizing to fit search results on Mac.
@@ -644,8 +677,7 @@ namespace UnityEditor.UIElements
                                 menu.m_OnBeforePerformAction?.Invoke(item.isSubmenu, menu.autoClose);
                                 item.PerformAction();
                             }
-                        }, EditorPrefs.GetFloat(EditorMenuExtensions.k_AutoExpandDelayKeyName,
-                            EditorMenuExtensions.k_SubmenuExpandDelay));
+                        }, k_SubmenuExpandDelay);
 
                         if (!item.isCustomContent)
                             s_CachedRect = GUIUtility.GUIToScreenRect(item.element.worldBound);

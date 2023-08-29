@@ -3,8 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
-using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
@@ -14,8 +14,10 @@ namespace UnityEngine.LightTransport
     {
         internal interface IProbePostProcessor
         {
+            // Initialize the post processor.
             bool Initialize(IDeviceContext context);
 
+            // Convolve spherical radiance to irradiance.
             bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount);
 
             // Unity expects the following of the irradiance SH coefficients:
@@ -28,14 +30,24 @@ namespace UnityEngine.LightTransport
             //    Because we use fC2, fC3 and fC4 directly, the division by π is not needed.
             bool ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount);
 
+            // Add two sets of SH coefficients together.
             bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice A, BufferSlice B, BufferSlice sum, int probeCount);
+
+            // Uniformly scale all SH coefficients.
+            bool ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale);
+
+            // Spherical Harmonics windowing can be used to reduce ringing artifacts.
+            bool WindowSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount);
+
+            // Spherical Harmonics de-ringing can be used to reduce ringing artifacts.
+            bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount);
         }
 
         struct SH
         {
             // Notation:
             //                       [L00:  DC]
-            //            [L1-1:  y] [L10:   z] [L11:   x]
+            //            [L1-1:  x] [L10:   y] [L11:   z]
             // [L2-2: xy] [L2-1: yz] [L20:  zz] [L21:  xz]  [L22:  xx - yy]
             // Underscores are meant as a minus sign in the variable names below.
             public const int L00 = 0;
@@ -47,6 +59,9 @@ namespace UnityEngine.LightTransport
             public const int L20 = 6;
             public const int L21 = 7;
             public const int L22 = 8;
+
+            // Number of coefficients in the SH L2 basis.
+            public const int L2_CoeffCount = 9;
         }
 
         struct SphericalRadianceToIrradiance
@@ -101,15 +116,15 @@ namespace UnityEngine.LightTransport
                     // L1
                     float shY1Normalization = Mathf.Sqrt(3.0f / Mathf.PI) / 2.0f;
 
-                    output[rgb, SH.L1_1] = irradiance[rgb, SH.L1_1]; // 3)
+                    output[rgb, SH.L1_1] = irradiance[rgb, SH.L10]; // 3)
                     output[rgb, SH.L1_1] *= shY1Normalization; // 1)
                     output[rgb, SH.L1_1] /= Mathf.PI; // 3 )
 
-                    output[rgb, SH.L10] = irradiance[rgb, SH.L10]; // 3)
+                    output[rgb, SH.L10] = irradiance[rgb, SH.L11]; // 3)
                     output[rgb, SH.L10] *= shY1Normalization; // 1)
                     output[rgb, SH.L10] /= Mathf.PI; // 2)
 
-                    output[rgb, SH.L11] = irradiance[rgb, SH.L11]; // 3)
+                    output[rgb, SH.L11] = irradiance[rgb, SH.L1_1]; // 3)
                     output[rgb, SH.L11] *= shY1Normalization; // 1)
                     output[rgb, SH.L11] /= Mathf.PI; // 2)
 
@@ -139,6 +154,64 @@ namespace UnityEngine.LightTransport
                 Sum[probeIdx] = A[probeIdx] + B[probeIdx];
             }
         }
+        //[BurstCompile] // TODO: Use burst once it is supported in the editor or we move to a package.
+        struct ScaleSHJob : IJobParallelFor
+        {
+            [ReadOnly] public NativeSlice<SphericalHarmonicsL2> Input;
+            [ReadOnly] public float Scale;
+            [WriteOnly] public NativeSlice<SphericalHarmonicsL2> Scaled;
+            public void Execute(int probeIdx)
+            {
+                Scaled[probeIdx] = Input[probeIdx] * Scale;
+            }
+        }
+        //[BurstCompile] // TODO: Use burst once it is supported in the editor or we move to a package.
+        struct WindowSHJob : IJobParallelFor
+        {
+            [ReadOnly] public NativeSlice<SphericalHarmonicsL2> Input;
+            [WriteOnly] public NativeSlice<SphericalHarmonicsL2> Windowed;
+            public void Execute(int probeIdx)
+            {
+                // Windowing constants from WindowDirectSH in SHDering.cpp
+                float[] extraWindow = new float[] { 1.0f, 0.922066f, 0.731864f };
+                
+                // Apply windowing: Essentially SHConv3 times the window constants
+                SphericalHarmonicsL2 sh = Input[probeIdx];
+                for (int coefficientIndex = 0; coefficientIndex < SH.L2_CoeffCount; ++coefficientIndex)
+                {
+                    float window;
+                    if (coefficientIndex == 0)
+                        window = extraWindow[0];
+                    else if (coefficientIndex < 4)
+                        window = extraWindow[1];
+                    else
+                        window = extraWindow[2];
+                    sh[0, coefficientIndex] *= window;
+                    sh[1, coefficientIndex] *= window;
+                    sh[2, coefficientIndex] *= window;
+                }
+                Windowed[probeIdx] = sh;
+            }
+        }
+        //[BurstCompile] // TODO: Use burst once it is supported in the editor or we move to a package.
+        struct DeringSHJob : IJobParallelFor
+        {
+            [ReadOnly] public NativeSlice<SphericalHarmonicsL2> Input;
+            [WriteOnly] public NativeSlice<SphericalHarmonicsL2> Output;
+            public void Execute(int probeIdx)
+            {
+                SphericalHarmonicsL2 sh = Input[probeIdx];
+                SphericalHarmonicsL2 output = new SphericalHarmonicsL2();
+                unsafe
+                {
+                    var shInputPtr = (SphericalHarmonicsL2*)UnsafeUtility.AddressOf(ref sh);
+                    var shOutputPtr = (SphericalHarmonicsL2*)UnsafeUtility.AddressOf(ref output);
+                    bool result = WintermuteContext.DeringSphericalHarmonicsL2Internal(shInputPtr, shOutputPtr, 1);
+                    Debug.Assert(result);
+                }
+                Output[probeIdx] = output;
+            }
+        }
         internal class ReferenceProbePostProcessor : IProbePostProcessor
         {
             public bool Initialize(IDeviceContext context)
@@ -149,14 +222,13 @@ namespace UnityEngine.LightTransport
             public bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount)
             {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
-                if (context is not ReferenceContext)
+                if (context is not ReferenceContext refContext)
                     return false;
 
-                var refContext = context as ReferenceContext;
-                var radianceNativeArray = refContext.GetNativeArray(radianceIn.Id);
-                var irradianceNativeArray = refContext.GetNativeArray(irradianceOut.Id);
-                var Radiances = radianceNativeArray.Reinterpret<SphericalHarmonicsL2>(1);
-                var Irradiances = irradianceNativeArray.Reinterpret<SphericalHarmonicsL2>(1);
+                NativeArray<byte> radianceNativeArray = refContext.GetNativeArray(radianceIn.Id);
+                NativeArray<byte> irradianceNativeArray = refContext.GetNativeArray(irradianceOut.Id);
+                NativeArray<SphericalHarmonicsL2> Radiances = radianceNativeArray.Reinterpret<SphericalHarmonicsL2>(1);
+                NativeArray<SphericalHarmonicsL2> Irradiances = irradianceNativeArray.Reinterpret<SphericalHarmonicsL2>(1);
                 for (int probeIdx = 0; probeIdx < probeCount; ++probeIdx)
                 {
                     SphericalHarmonicsL2 radiance = Radiances[probeIdx];
@@ -181,14 +253,13 @@ namespace UnityEngine.LightTransport
             public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount)
             {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
-                var refContext = context as ReferenceContext;
-                if (context is not ReferenceContext)
+                if (context is not ReferenceContext refContext)
                     return false;
 
-                var irradianceInNativeArray = refContext.GetNativeArray(irradianceIn.Id);
-                var irradianceOutNativeArray = refContext.GetNativeArray(irradianceOut.Id);
-                var IrradianceIn = irradianceInNativeArray.Reinterpret<SphericalHarmonicsL2>(1);
-                var IrradianceOut = irradianceOutNativeArray.Reinterpret<SphericalHarmonicsL2>(1);
+                NativeArray<byte> irradianceInNativeArray = refContext.GetNativeArray(irradianceIn.Id);
+                NativeArray<byte> irradianceOutNativeArray = refContext.GetNativeArray(irradianceOut.Id);
+                NativeArray<SphericalHarmonicsL2> IrradianceIn = irradianceInNativeArray.Reinterpret<SphericalHarmonicsL2>(1);
+                NativeArray<SphericalHarmonicsL2> IrradianceOut = irradianceOutNativeArray.Reinterpret<SphericalHarmonicsL2>(1);
                 for (int probeIdx = 0; probeIdx < probeCount; ++probeIdx)
                 {
                     SphericalHarmonicsL2 irradiance = IrradianceIn[probeIdx];
@@ -204,15 +275,15 @@ namespace UnityEngine.LightTransport
                         // L1
                         float shY1Normalization = Mathf.Sqrt(3.0f / Mathf.PI) / 2.0f;
 
-                        output[rgb, SH.L1_1] = irradiance[rgb, SH.L1_1]; // 3)
+                        output[rgb, SH.L1_1] = irradiance[rgb, SH.L10]; // 3)
                         output[rgb, SH.L1_1] *= shY1Normalization; // 1)
                         output[rgb, SH.L1_1] /= Mathf.PI; // 3 )
 
-                        output[rgb, SH.L10] = irradiance[rgb, SH.L10]; // 3)
+                        output[rgb, SH.L10] = irradiance[rgb, SH.L11]; // 3)
                         output[rgb, SH.L10] *= shY1Normalization; // 1)
                         output[rgb, SH.L10] /= Mathf.PI; // 2)
 
-                        output[rgb, SH.L11] = irradiance[rgb, SH.L11]; // 3)
+                        output[rgb, SH.L11] = irradiance[rgb, SH.L1_1]; // 3)
                         output[rgb, SH.L11] *= shY1Normalization; // 1)
                         output[rgb, SH.L11] /= Mathf.PI; // 2)
 
@@ -235,19 +306,98 @@ namespace UnityEngine.LightTransport
             public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice a, BufferSlice b, BufferSlice sum, int probeCount)
             {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
-                if (context is not ReferenceContext)
+                if (context is not ReferenceContext refContext)
                     return false;
 
-                var refContext = context as ReferenceContext;
-                var A = refContext.GetNativeArray(a.Id);
-                var B = refContext.GetNativeArray(b.Id);
-                var Sum = refContext.GetNativeArray(sum.Id);
-                var shA = A.Reinterpret<SphericalHarmonicsL2>(1);
-                var shB = B.Reinterpret<SphericalHarmonicsL2>(1);
-                var shSum = Sum.Reinterpret<SphericalHarmonicsL2>(1);
+                NativeArray<byte> A = refContext.GetNativeArray(a.Id);
+                NativeArray<byte> B = refContext.GetNativeArray(b.Id);
+                NativeArray<byte> Sum = refContext.GetNativeArray(sum.Id);
+                NativeArray<SphericalHarmonicsL2> shA = A.Reinterpret<SphericalHarmonicsL2>(1);
+                NativeArray<SphericalHarmonicsL2> shB = B.Reinterpret<SphericalHarmonicsL2>(1);
+                NativeArray<SphericalHarmonicsL2> shSum = Sum.Reinterpret<SphericalHarmonicsL2>(1);
                 for (int probeIdx = 0; probeIdx < probeCount; ++probeIdx)
                 {
                     shSum[probeIdx] = shA[probeIdx] + shB[probeIdx];
+                }
+                return true;
+            }
+
+            bool IProbePostProcessor.ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale)
+            {
+                Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
+                if (context is not ReferenceContext refContext)
+                    return false;
+
+                NativeArray<byte> sh = refContext.GetNativeArray(shIn.Id);
+                NativeArray<byte> output = refContext.GetNativeArray(shOut.Id);
+                NativeArray<SphericalHarmonicsL2> shInput = sh.Reinterpret<SphericalHarmonicsL2>(1);
+                NativeArray<SphericalHarmonicsL2> shOutput = output.Reinterpret<SphericalHarmonicsL2>(1);
+                for (int probeIdx = 0; probeIdx < probeCount; ++probeIdx)
+                {
+                    shOutput[probeIdx] = shInput[probeIdx] * scale;
+                }
+                return true;
+            }
+
+            public bool WindowSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount)
+            {
+                Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
+                if (context is not ReferenceContext refContext)
+                    return false;
+
+                NativeArray<byte> A = refContext.GetNativeArray(shIn.Id);
+                NativeArray<byte> B = refContext.GetNativeArray(shOut.Id);
+                NativeArray<SphericalHarmonicsL2> shA = A.Reinterpret<SphericalHarmonicsL2>(1);
+                NativeArray<SphericalHarmonicsL2> shB = B.Reinterpret<SphericalHarmonicsL2>(1);
+
+                // Windowing constants from WindowDirectSH in SHDering.cpp
+                float[] extraWindow = new float[] { 1.0f, 0.922066f, 0.731864f };
+
+                // Apply windowing function to SH coefficients.
+                for (int probeIdx = 0; probeIdx < probeCount; ++probeIdx)
+                {
+                    // Apply windowing: Essentially SHConv3 times the window constants
+                    SphericalHarmonicsL2 sh = shA[probeIdx];
+                    for (int coefficientIndex = 0; coefficientIndex < SH.L2_CoeffCount; ++coefficientIndex)
+                    {
+                        float window;
+                        if (coefficientIndex == 0)
+                            window = extraWindow[0];
+                        else if (coefficientIndex < 4)
+                            window = extraWindow[1];
+                        else
+                            window = extraWindow[2];
+                        sh[0, coefficientIndex] *= window;
+                        sh[1, coefficientIndex] *= window;
+                        sh[2, coefficientIndex] *= window;
+                    }
+                    shB[probeIdx] = sh;
+                }
+                return true;
+            }
+
+            public bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount)
+            {
+                Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
+                if (context is not ReferenceContext refContext)
+                    return false;
+
+                NativeArray<byte> inputSh = refContext.GetNativeArray(shIn.Id);
+                NativeArray<byte> outputSh = refContext.GetNativeArray(shOut.Id);
+                NativeArray<SphericalHarmonicsL2> shInput = inputSh.Reinterpret<SphericalHarmonicsL2>(1);
+                NativeArray<SphericalHarmonicsL2> shOutput = outputSh.Reinterpret<SphericalHarmonicsL2>(1);
+                unsafe
+                {
+                    for (int probeIdx = 0; probeIdx < probeCount; ++probeIdx)
+                    {
+                        SphericalHarmonicsL2 sh = shInput[probeIdx];
+                        SphericalHarmonicsL2 output = new SphericalHarmonicsL2();
+                        var shInputPtr = (SphericalHarmonicsL2*)UnsafeUtility.AddressOf(ref sh);
+                        var shOutputPtr = (SphericalHarmonicsL2*)UnsafeUtility.AddressOf(ref output);
+                        bool result = WintermuteContext.DeringSphericalHarmonicsL2Internal(shInputPtr, shOutputPtr, 1);
+                        Debug.Assert(result);
+                        shOutput[probeIdx] = output;
+                    }
                 }
                 return true;
             }
@@ -262,12 +412,11 @@ namespace UnityEngine.LightTransport
             public bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount)
             {
                 Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
-                var wmContext = context as WintermuteContext;
-                if (context is not WintermuteContext)
+                if (context is not WintermuteContext wmContext)
                     return false;
 
-                var radianceInNativeArray = wmContext.GetNativeArray(radianceIn.Id);
-                var irradianceOutNativeArray = wmContext.GetNativeArray(irradianceOut.Id);
+                NativeArray<byte> radianceInNativeArray = wmContext.GetNativeArray(radianceIn.Id);
+                NativeArray<byte> irradianceOutNativeArray = wmContext.GetNativeArray(irradianceOut.Id);
                 var job = new ConvolveJob
                 {
                     Radiances = radianceInNativeArray.Reinterpret<SphericalHarmonicsL2>(1),
@@ -281,12 +430,11 @@ namespace UnityEngine.LightTransport
             public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount)
             {
                 Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
-                if (context is not WintermuteContext)
+                if (context is not WintermuteContext wmContext)
                     return false;
 
-                var wmContext = context as WintermuteContext;
-                var irradianceInNativeArray = wmContext.GetNativeArray(irradianceIn.Id);
-                var irradianceOutNativeArray = wmContext.GetNativeArray(irradianceOut.Id);
+                NativeArray<byte> irradianceInNativeArray = wmContext.GetNativeArray(irradianceIn.Id);
+                NativeArray<byte> irradianceOutNativeArray = wmContext.GetNativeArray(irradianceOut.Id);
                 var job = new UnityfyJob
                 {
                     IrradianceIn = irradianceInNativeArray.Reinterpret<SphericalHarmonicsL2>(1),
@@ -300,18 +448,72 @@ namespace UnityEngine.LightTransport
             public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice a, BufferSlice b, BufferSlice sum, int probeCount)
             {
                 Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
-                if (context is not WintermuteContext)
+                if (context is not WintermuteContext wmContext)
                     return false;
 
-                var wmContext = context as WintermuteContext;
-                var A = wmContext.GetNativeArray(a.Id);
-                var B = wmContext.GetNativeArray(b.Id);
-                var Sum = wmContext.GetNativeArray(sum.Id);
+                NativeArray<byte> A = wmContext.GetNativeArray(a.Id);
+                NativeArray<byte> B = wmContext.GetNativeArray(b.Id);
+                NativeArray<byte> Sum = wmContext.GetNativeArray(sum.Id);
                 var job = new AddSHJob
                 {
                     A = A.Reinterpret<SphericalHarmonicsL2>(1),
                     B = B.Reinterpret<SphericalHarmonicsL2>(1),
                     Sum = Sum.Reinterpret<SphericalHarmonicsL2>(1)
+                };
+                JobHandle jobHandle = job.Schedule(probeCount, 64);
+                jobHandle.Complete();
+                return true;
+            }
+
+            bool IProbePostProcessor.ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale)
+            {
+                Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
+                if (context is not WintermuteContext wmContext)
+                    return false;
+
+                NativeArray<byte> input = wmContext.GetNativeArray(shIn.Id);
+                NativeArray<byte> output = wmContext.GetNativeArray(shOut.Id);
+                var job = new ScaleSHJob
+                {
+                    Input = input.Reinterpret<SphericalHarmonicsL2>(1),
+                    Scale = scale,
+                    Scaled = output.Reinterpret<SphericalHarmonicsL2>(1)
+                };
+                JobHandle jobHandle = job.Schedule(probeCount, 64);
+                jobHandle.Complete();
+                return true;
+            }
+
+            public bool WindowSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount)
+            {
+                Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
+                if (context is not WintermuteContext wmContext)
+                    return false;
+
+                NativeArray<byte> A = wmContext.GetNativeArray(shIn.Id);
+                NativeArray<byte> B = wmContext.GetNativeArray(shOut.Id);
+                var job = new WindowSHJob
+                {
+                    Input = A.Reinterpret<SphericalHarmonicsL2>(1),
+                    Windowed = B.Reinterpret<SphericalHarmonicsL2>(1)
+                };
+                JobHandle jobHandle = job.Schedule(probeCount, 64);
+                jobHandle.Complete();
+                return true;
+            }
+
+            public bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount)
+            {
+                Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
+                if (context is not WintermuteContext wmContext)
+                    return false;
+
+                NativeArray<byte> A = wmContext.GetNativeArray(shIn.Id);
+                NativeArray<byte> B = wmContext.GetNativeArray(shOut.Id);
+                var job = new DeringSHJob
+                {
+                    Input = A.Reinterpret<SphericalHarmonicsL2>(1),
+                    Output = B.Reinterpret<SphericalHarmonicsL2>(1)
                 };
                 JobHandle jobHandle = job.Schedule(probeCount, 64);
                 jobHandle.Complete();
@@ -332,32 +534,78 @@ namespace UnityEngine.LightTransport
             public bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount)
             {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
-                if (context is not RadeonRaysContext)
+                if (context is not RadeonRaysContext rrContext)
                     return false;
 
-                var rrContext = context as RadeonRaysContext;
                 return RadeonRaysContext.ConvolveRadianceToIrradianceInternal(rrContext, radianceIn.Id, irradianceOut.Id, probeCount);
             }
 
             public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount)
             {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
-                if (context is not RadeonRaysContext)
+                if (context is not RadeonRaysContext rrContext)
                     return false;
 
-                var rrContext = context as RadeonRaysContext;
                 return RadeonRaysContext.ConvertToUnityFormatInternal(rrContext, irradianceIn.Id, irradianceOut.Id, probeCount);
             }
 
             public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice a, BufferSlice b, BufferSlice sum, int probeCount)
             {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
-                if (context is not RadeonRaysContext)
+                if (context is not RadeonRaysContext rrContext)
                     return false;
 
-                var rrContext = context as RadeonRaysContext;
                 return RadeonRaysContext.AddSphericalHarmonicsL2Internal(rrContext, a.Id, b.Id, sum.Id, probeCount);
+            }
+
+            bool IProbePostProcessor.ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale)
+            {
+                Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
+                if (context is not RadeonRaysContext rrContext)
+                    return false;
+
+                return RadeonRaysContext.ScaleSphericalHarmonicsL2Internal(rrContext, shIn.Id, shOut.Id, probeCount, scale);
+            }
+
+            public bool WindowSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount)
+            {
+                Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
+                if (context is not RadeonRaysContext rrContext)
+                    return false;
+
+                return RadeonRaysContext.WindowSphericalHarmonicsL2Internal(rrContext, shIn.Id, shOut.Id, probeCount);
+            }
+
+            public bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount)
+            {
+                Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
+                if (context is not RadeonRaysContext rrContext)
+                    return false;
+
+                // Read back from GPU memory into CPU memory.
+                var shInputBuffer = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.TempJob);
+                var shOutputBuffer = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.TempJob);
+                EventID eventId = rrContext.ReadBuffer(shIn.Id, shInputBuffer.Reinterpret<byte>(sizeofSphericalHarmonicsL2));
+                bool waitResult = rrContext.WaitForAsyncOperation(eventId);
+                Debug.Assert(waitResult, "Failed to read SH from context.");
+
+                // Currently windowing is done on CPU since the algorithm is not GPU friendly.
+                // Since we aren't attempting to port this to GPU, we are using the jobified CPU version.
+                var job = new DeringSHJob
+                {
+                    Input = shInputBuffer,
+                    Output = shOutputBuffer
+                };
+                JobHandle jobHandle = job.Schedule(probeCount, 64);
+                jobHandle.Complete();
+
+                // Write back to GPU.
+                eventId = rrContext.WriteBuffer(shOut.Id, shOutputBuffer.Reinterpret<byte>(sizeofSphericalHarmonicsL2));
+                waitResult = rrContext.WaitForAsyncOperation(eventId);
+                Debug.Assert(waitResult, "Failed to write SH to context.");
+                return true;
             }
         }
     }
 }
+

@@ -13,30 +13,30 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> {}
 
-        private ResourceLoader m_ResourceLoader;
-        internal ApplicationProxy m_Application;
-        private UnityConnectProxy m_UnityConnect;
-        private PackageDatabase m_PackageDatabase;
-        private PackageOperationDispatcher m_OperationDispatcher;
-        private PageManager m_PageManager;
-        private UpmClient m_UpmClient;
-        private AssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private IOProxy m_IOProxy;
+        private IResourceLoader m_ResourceLoader;
+        internal IApplicationProxy m_Application;
+        private IUnityConnectProxy m_UnityConnect;
+        private IPackageDatabase m_PackageDatabase;
+        private IPackageOperationDispatcher m_OperationDispatcher;
+        private IPageManager m_PageManager;
+        private IUpmClient m_UpmClient;
+        private IAssetStoreDownloadManager m_AssetStoreDownloadManager;
+        private IProjectSettingsProxy m_SettingsProxy;
+        private IIOProxy m_IOProxy;
 
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_Application = container.Resolve<ApplicationProxy>();
-            m_UnityConnect = container.Resolve<UnityConnectProxy>();
-            m_PackageDatabase = container.Resolve<PackageDatabase>();
-            m_OperationDispatcher = container.Resolve<PackageOperationDispatcher>();
-            m_PageManager = container.Resolve<PageManager>();
-            m_UpmClient = container.Resolve<UpmClient>();
-            m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
-            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
-            m_IOProxy = container.Resolve<IOProxy>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
+            m_Application = container.Resolve<IApplicationProxy>();
+            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
+            m_PackageDatabase = container.Resolve<IPackageDatabase>();
+            m_OperationDispatcher = container.Resolve<IPackageOperationDispatcher>();
+            m_PageManager = container.Resolve<IPageManager>();
+            m_UpmClient = container.Resolve<IUpmClient>();
+            m_AssetStoreDownloadManager = container.Resolve<IAssetStoreDownloadManager>();
+            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
+            m_IOProxy = container.Resolve<IIOProxy>();
         }
 
         public PackageManagerToolbar()

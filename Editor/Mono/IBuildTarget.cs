@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-    internal interface IBuildTarget : IEquatable<IBuildTarget>, IComparable<IBuildTarget>
+    internal interface IBuildTarget
     {
         // The BuildPlayerWindow.ActiveBuildTargetsGUI method uses this property to determine whether or not to display certain
         // build options based on whether or not the desired build target is compatible with the OS on which the editor is running.
@@ -25,5 +25,21 @@ namespace UnityEditor
         // This property contains the canonical name of the build target.  Many methods throughout the editor code base make
         // use of this property.
         string TargetName { get; }
+
+        // This function allows to retrieve BuildPlatformProperties derived from IPlatformProperties as quick access
+        IBuildPlatformProperties BuildPlatformProperties { get; }
+
+        // This function allows to retrieve GraphicsPlatformProperties derived from IPlatformProperties as quick access
+        IGraphicsPlatformProperties GraphicsPlatformProperties { get; }
+
+        // This function allows to retrieve PlayerConnectionPlatformProperties derived from IPlatformProperties as quick access
+        IPlayerConnectionPlatformProperties PlayerConnectionPlatformProperties { get; }
+    
+        // This function allows to retrieve properties of a give type, derived from IPlatformProperties
+        // if they are available.
+        bool TryGetProperties<T>(out T properties) where T: IPlatformProperties;
+
+        // This functions allows to access the old BuildTarget enum value for a build target when instantiated.
+        int GetLegacyId { get; }
     }
 }

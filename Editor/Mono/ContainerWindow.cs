@@ -10,6 +10,7 @@ using System;
 using System.Text;
 using UnityEngine.Pool;
 using UnityEngine.Scripting;
+using UnityEditorInternal;
 
 namespace UnityEditor
 {
@@ -376,6 +377,8 @@ namespace UnityEditor
                 return;
 
             Save();
+            if (InternalEditorUtility.isHumanControllingUs)
+                EditorWindow.UpdateWindowMenuListing();
 
             if (s_MainWindow == this)
                 s_MainWindow = null;

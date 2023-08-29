@@ -9,16 +9,16 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class RemoveAction : PackageAction
 {
-    private readonly PackageOperationDispatcher m_OperationDispatcher;
-    private readonly ApplicationProxy m_Application;
-    private readonly PackageManagerPrefs m_PackageManagerPrefs;
-    private readonly PackageDatabase m_PackageDatabase;
-    private readonly PageManager m_PageManager;
-    public RemoveAction(PackageOperationDispatcher operationDispatcher,
-        ApplicationProxy applicationProxy,
-        PackageManagerPrefs packageManagerPrefs,
-        PackageDatabase packageDatabase,
-        PageManager pageManager)
+    private readonly IPackageOperationDispatcher m_OperationDispatcher;
+    private readonly IApplicationProxy m_Application;
+    private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+    private readonly IPackageDatabase m_PackageDatabase;
+    private readonly IPageManager m_PageManager;
+    public RemoveAction(IPackageOperationDispatcher operationDispatcher,
+        IApplicationProxy applicationProxy,
+        IPackageManagerPrefs packageManagerPrefs,
+        IPackageDatabase packageDatabase,
+        IPageManager pageManager)
     {
         m_OperationDispatcher = operationDispatcher;
         m_Application = applicationProxy;

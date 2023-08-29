@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
@@ -62,17 +62,26 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         internal class GlobalSettingsContainer
         {
             public readonly string name;
+            public readonly string path;
             public readonly Type renderPipelineAssetType;
             public readonly SerializedProperty property;
             public readonly SerializedObject serializedObject;
 
-            public GlobalSettingsContainer(string name, Type renderPipelineAssetType, SerializedProperty property, SerializedObject serializedObject)
+            public GlobalSettingsContainer(string name, string path, Type renderPipelineAssetType, SerializedProperty property, SerializedObject serializedObject)
             {
                 this.name = name;
+                this.path = path;
                 this.renderPipelineAssetType = renderPipelineAssetType;
                 this.property = property;
                 this.serializedObject = serializedObject;
             }
+        }
+
+        internal static bool GatherGlobalSettingsFromSerializedObject(SerializedObject serializedObject, out List<GlobalSettingsContainer> globalSettings)
+        {
+            var renderPipelineGlobalSettingsMap = serializedObject.FindProperty("m_RenderPipelineGlobalSettingsMap");
+            globalSettings = CollectRenderPipelineAssetsByGlobalSettings(renderPipelineGlobalSettingsMap);
+            return globalSettings.Count > 0;
         }
 
         internal static List<GlobalSettingsContainer> CollectRenderPipelineAssetsByGlobalSettings(SerializedProperty renderPipelineGlobalSettingsMap)
@@ -81,9 +90,8 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             for (int i = 0; i < renderPipelineGlobalSettingsMap.arraySize; ++i)
             {
                 var globalSettings = GetRenderPipelineGlobalSettingsByIndex(renderPipelineGlobalSettingsMap, i);
-                if (!TryCreateNewGlobalSettingsContainer(globalSettings, out var globalSettingsContainer))
-                    continue;
-                existedGlobalSettings.Add(globalSettingsContainer);
+                if (TryCreateNewGlobalSettingsContainer(globalSettings, out var globalSettingsContainer))
+                    existedGlobalSettings.Add(globalSettingsContainer);
             }
             return existedGlobalSettings;
         }
@@ -91,28 +99,61 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         internal static bool TryCreateNewGlobalSettingsContainer(RenderPipelineGlobalSettings globalSettings, out GlobalSettingsContainer globalSettingsContainer)
         {
             globalSettingsContainer = null;
+
             if (globalSettings == null)
                 return false;
 
-            var settingsListInContainer = GetSettingsListFromRenderPipelineGlobalSettings(globalSettings, out var globalSettingsSO, out var settingsContainer);
-            if (settingsListInContainer.arraySize == 0)
+            var result = TryGetSettingsListFromRenderPipelineGlobalSettings(globalSettings,
+                out var globalSettingsSO,
+                out var settingsContainer,
+                out var settingsListInContainer);
+            if (!result || settingsListInContainer.arraySize == 0)
+                return false;
+
+            if (!IsAnyRenderPipelineGraphicsSettingsValid(settingsListInContainer))
                 return false;
 
             var globalSettingsType = globalSettings.GetType();
-            if (!ExtractSupportedOnRenderPipelineAttribute(globalSettingsType, out var supportedOnRenderPipelineAttribute))
+            if (!ExtractSupportedOnRenderPipelineAttribute(globalSettingsType, out var supportedOnRenderPipelineAttribute, out var message))
+            {
+                Debug.LogWarning(message);
                 return false;
+            }
 
             var tabName = CreateNewTabName(globalSettingsType, supportedOnRenderPipelineAttribute);
-            globalSettingsContainer = new GlobalSettingsContainer(tabName, supportedOnRenderPipelineAttribute.renderPipelineTypes[0], settingsContainer, globalSettingsSO);
+            var path = AssetDatabase.GetAssetPath(globalSettings);
+            globalSettingsContainer = new GlobalSettingsContainer(tabName, path, supportedOnRenderPipelineAttribute.renderPipelineTypes[0], settingsContainer, globalSettingsSO);
             return true;
         }
 
-        internal static SerializedProperty GetSettingsListFromRenderPipelineGlobalSettings(RenderPipelineGlobalSettings globalSettings, out SerializedObject globalSettingsSO, out SerializedProperty settingsContainer)
+        static bool TryGetSettingsListFromRenderPipelineGlobalSettings(RenderPipelineGlobalSettings globalSettings, out SerializedObject globalSettingsSO, out SerializedProperty settingsContainer, out SerializedProperty settingsListInContainer)
         {
             globalSettingsSO = new SerializedObject(globalSettings);
             settingsContainer = globalSettingsSO.FindProperty("m_Settings");
-            var settingsListInContainer = settingsContainer.FindPropertyRelative("m_SettingsList");
-            return settingsListInContainer;
+            if (settingsContainer == null)
+            {
+                settingsListInContainer = null;
+                return false;
+            }
+            settingsListInContainer = settingsContainer.FindPropertyRelative("m_SettingsList");
+            return settingsListInContainer != null;
+        }
+
+        static bool IsAnyRenderPipelineGraphicsSettingsValid(SerializedProperty settingsListInContainer)
+        {
+            for (int i = 0; i < settingsListInContainer.arraySize; i++)
+            {
+                var serializedSettings = settingsListInContainer.GetArrayElementAtIndex(i);
+                if (serializedSettings.managedReferenceValue is not IRenderPipelineGraphicsSettings settings)
+                    continue;
+
+                if (Unsupported.IsDeveloperMode())
+                    return true; // TODO: Remove when all HDRP and URP settings have been fully migrated
+
+                if (settings.GetType().GetCustomAttribute<HideInInspector>() == null)
+                    return true;
+            }
+            return false;
         }
 
         internal static RenderPipelineGlobalSettings GetRenderPipelineGlobalSettingsByIndex(SerializedProperty srpDefaultSettings, int i)
@@ -141,27 +182,30 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             return tabName;
         }
 
-        internal static bool ExtractSupportedOnRenderPipelineAttribute(Type globalSettingsType, out SupportedOnRenderPipelineAttribute supportedOnRenderPipelineAttribute)
+        internal static bool ExtractSupportedOnRenderPipelineAttribute(Type globalSettingsType, out SupportedOnRenderPipelineAttribute supportedOnRenderPipelineAttribute, out string message)
         {
             supportedOnRenderPipelineAttribute = globalSettingsType.GetCustomAttribute<SupportedOnRenderPipelineAttribute>();
             if (supportedOnRenderPipelineAttribute == null)
             {
-                Debug.LogWarning($"Cannot associate {globalSettingsType.FullName} settings with appropriate {nameof(RenderPipelineAsset)} without {nameof(SupportedOnRenderPipelineAttribute)}. Settings will be skipped and not displayed.");
+                message =
+                    $"Cannot associate {globalSettingsType.FullName} settings with appropriate {nameof(RenderPipelineAsset)} without {nameof(SupportedOnRenderPipelineAttribute)}. Settings will be skipped and not displayed.";
                 return false;
             }
 
             if (supportedOnRenderPipelineAttribute.renderPipelineTypes.Length != 1)
             {
-                Debug.LogWarning($"{nameof(SupportedOnRenderPipelineAttribute)} for {globalSettingsType.FullName} settings must have exactly one parameter. Settings will be skipped and not displayed.");
+                message = $"{nameof(SupportedOnRenderPipelineAttribute)} for {globalSettingsType.FullName} settings must have exactly one parameter. {nameof(RenderPipelineGlobalSettings)} can only be for 1 {nameof(RenderPipeline)}. Settings will be skipped and not displayed.";
                 return false;
             }
 
             if (supportedOnRenderPipelineAttribute.renderPipelineTypes.Length == 1 && supportedOnRenderPipelineAttribute.renderPipelineTypes[0] == typeof(RenderPipelineAsset) )
             {
-                Debug.LogWarning($"{nameof(SupportedOnRenderPipelineAttribute)} for {globalSettingsType.FullName} settings must have specific non-absract {nameof(RenderPipelineAsset)} type");
+                message =
+                    $"{nameof(SupportedOnRenderPipelineAttribute)} for {globalSettingsType.FullName} settings must have specific non-absract {nameof(RenderPipelineAsset)} type";
                 return false;
             }
 
+            message = string.Empty;
             return true;
         }
 
@@ -199,7 +243,7 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
 
         internal static VisualElement CreateRPHelpBox(VisibilityControllerBasedOnRenderPipeline visibilityController, Type currentAssetType)
         {
-            var helpBoxTemplate = EditorGUIUtility.Load(GraphicsSettingsInspector.ResourcesPaths.helpBoxesTemplateForSRP) as VisualTreeAsset;
+            var helpBoxTemplate = EditorGUIUtility.Load(GraphicsSettingsInspector.GraphicsSettingsData.helpBoxesTemplateForSRP) as VisualTreeAsset;
             var helpBoxContainer = helpBoxTemplate.Instantiate();
             LocalizeVisualTree(helpBoxContainer);
 
@@ -220,116 +264,24 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             var warningHelpBox = helpBoxContainer.MandatoryQ<HelpBox>("CurrentPipelineWarningHelpBox");
             visibilityController.RegisterVisualElement(infoHelpBox, currentAssetType);
             visibilityController.RegisterVisualElement(warningHelpBox, allAssetsExceptCurrent);
+
+            if (Unsupported.IsDeveloperMode())
+            {
+                helpBoxContainer.Add(new HelpBox($"Developer Mode is enabled. HideInInspector attribute, for {nameof(IRenderPipelineGraphicsSettings)}, will be ignored.", HelpBoxMessageType.Info));
+            }
+
             return helpBoxContainer;
         }
 
-        internal static IEnumerable<string> GetSearchKeywordsFromUXMLInEditorResources(string path)
+        public static void ReloadGraphicsSettingsEditor()
         {
-            var uxmlTree = EditorGUIUtility.Load(path) as VisualTreeAsset;
-            if (uxmlTree == null)
-                return Array.Empty<string>();
-
-            var elements = uxmlTree.Instantiate();
-            var labelTexts = new List<string>();
-            elements
-                .Query<Label>()
-                .Where(l => !string.IsNullOrWhiteSpace(l.text))
-                .ForEach(l => labelTexts.Add(l.text));
-            return labelTexts;
-        }
-
-        #endregion
-
-        #region Temporary methods
-
-        // Stolen from BindingStyleHelpers.cs that cannot be accessed from here.
-        static void RightClickFieldMenuEvent(PointerUpEvent evt)
-        {
-            if (evt.button != (int)MouseButton.RightMouse)
-                return;
-
-            var element = evt.elementTarget;
-
-            var property = element?.userData as SerializedProperty;
-            if (property == null)
-                return;
-
-            var wasEnabled = GUI.enabled;
-            if (!element.enabledInHierarchy)
-                GUI.enabled = false;
-
-            var menu = EditorGUI.FillPropertyContextMenu(property);
-            GUI.enabled = wasEnabled;
-
-            if (menu == null)
-                return;
-
-            var menuRect = new Rect(evt.position, Vector2.zero);
-            menu.DropDown(menuRect);
-
-            evt.StopPropagation();
-        }
-
-        // Stop ContextClickEvent because the context menu in the UITk inspector is shown on PointerUpEvent and not on ContextualMenuPopulateEvent (UUM-11643).
-        static void StopContextClickEvent(ContextClickEvent e)
-        {
-            e.StopImmediatePropagation();
-        }
-
-        internal static Action BindSerializedProperty(DropdownField dropdown, SerializedProperty property, Func<SerializedProperty, int> getter, Action<int, SerializedProperty> setter)
-        {
-            dropdown.userData = property?.Copy();
-            dropdown.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
-            dropdown.RegisterCallback<PointerUpEvent>(RightClickFieldMenuEvent, InvokePolicy.IncludeDisabled);
-            dropdown.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
-            dropdown.RegisterValueChangedCallback(e => setter.Invoke(dropdown.index, property));
-
-            var updateCallback = () =>
+            if (EditorWindow.HasOpenInstances<ProjectSettingsWindow>())
             {
-                dropdown.index = getter.Invoke(property);
-                dropdown.showMixedValue = property.hasMultipleDifferentValues;
-            };
-            updateCallback?.Invoke();
-            return updateCallback;
-        }
-
-        internal static Action BindSerializedProperty<T>(EnumField enumField, SerializedProperty property, Action<T> onValueChange = null)
-            where T : struct, Enum, IConvertible
-        {
-            var boolProperty = property.type == "bool";
-
-            enumField.userData = property?.Copy();
-            enumField.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
-            enumField.RegisterCallback<PointerUpEvent>(RightClickFieldMenuEvent, InvokePolicy.IncludeDisabled);
-            enumField.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
-            enumField.RegisterValueChangedCallback(e =>
-            {
-                if (boolProperty)
-                    property.boolValue = Convert.ToInt32(e.newValue) == 1;
-                else
-                    property.intValue = Convert.ToInt32(e.newValue);
-
-                property.serializedObject.ApplyModifiedProperties();
-                onValueChange?.Invoke((T)e.newValue);
-            });
-
-            var updateCallback = () =>
-            {
-                foreach (T value in Enum.GetValues(typeof(T)))
-                {
-                    var propertyValue = boolProperty ? (property.boolValue ? 1 : 0) : property.intValue;
-
-                    if (value.ToInt32(null) != propertyValue)
-                        continue;
-
-                    enumField.value = value;
-                    break;
-                }
-
-                enumField.showMixedValue = property.hasMultipleDifferentValues;
-            };
-            updateCallback?.Invoke();
-            return updateCallback;
+                var window = EditorWindow.GetWindow<ProjectSettingsWindow>(null, false);
+                var objectFieldForDefaultRenderPipeline = window.rootVisualElement.Q<VisualElement>("DefaultRenderPipeline");
+                if(objectFieldForDefaultRenderPipeline != null)
+                    window.m_Parent.Reload(window);
+            }
         }
 
         #endregion

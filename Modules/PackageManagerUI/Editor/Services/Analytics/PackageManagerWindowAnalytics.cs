@@ -10,81 +10,65 @@ using UnityEngine.Analytics;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [Serializable]
-    internal struct PackageManagerWindowAnalytics
+    [AnalyticInfo(eventName: k_EventName, vendorKey: k_VendorKey)]
+    internal class PackageManagerWindowAnalytics : IAnalytic
     {
         private const string k_EventName = "packageManagerWindowUserAction";
         private const string k_VendorKey = "unity.package-manager-ui";
 
-        [AnalyticInfo(eventName: k_EventName, vendorKey: k_VendorKey)]
-        internal class PackageManagerWindowAnalytic : IAnalytic
+        [Serializable]
+        internal class Data : IAnalytic.IData
         {
-            [Serializable]
-            internal class PackageManagerWindowAnalyticsData : IAnalytic.IData
+            public string action;
+            public string package_id;
+            public string[] package_ids;
+            public string search_text;
+            public string filter_name;
+            public string details_tab;
+            public bool window_docked;
+            public bool dependencies_visible;
+            public bool preview_visible;
+            public string package_tag;
+            public string[] package_tags;
+        }
+
+        private Data m_Data;
+        private PackageManagerWindowAnalytics(string action, string packageId, IEnumerable<string> packageIds, string packageTag, IEnumerable<string> packageTags)
+        {
+            var servicesContainer = ServicesContainer.instance;
+
+            // remove sensitive part of the id: file path or url is not tracked
+            if (!string.IsNullOrEmpty(packageId))
+                packageId = Regex.Replace(packageId, "(?<package>[^@]+)@(?<protocol>[^:]+):.+", "${package}@${protocol}");
+
+            var packageManagerPrefs = servicesContainer.Resolve<IPackageManagerPrefs>();
+            var pageManager = servicesContainer.Resolve<IPageManager>();
+            var activePage = pageManager.activePage;
+            var settingsProxy = servicesContainer.Resolve<IProjectSettingsProxy>();
+
+            m_Data = new Data
             {
-                public string action;
-                public string package_id;
-                public string[] package_ids;
-                public string search_text;
-                public string filter_name;
-                public string details_tab;
-                public bool window_docked;
-                public bool dependencies_visible;
-                public bool preview_visible;
-                public string package_tag;
-                public string[] package_tags;
-            }
+                action = action,
+                package_id = packageId ?? string.Empty,
+                package_tag = packageTag ?? string.Empty,
+                package_ids = packageIds?.ToArray() ?? new string[0],
+                package_tags = packageTags?.ToArray() ?? new string[0],
+                search_text = activePage.searchText,
+                filter_name = activePage.id,
+                details_tab = packageManagerPrefs.selectedPackageDetailsTabIdentifier ?? string.Empty,
+                window_docked = PackageManagerWindow.instance?.docked ?? false,
+                // packages installed as dependency are always visible
+                // we keep the dependencies_visible to not break the analytics
+                dependencies_visible = true,
+                preview_visible = settingsProxy.enablePreReleasePackages
+            };
+        }
 
-            public PackageManagerWindowAnalytic(string action, string packageId, IEnumerable<string> packageIds, string packageTag, IEnumerable<string> packageTags)
-            {
-                this.action = action;
-                this.packageId = packageId;
-                this.packageIds = packageIds;
-                this.packageTag = packageTag;
-                this.packageTags = packageTags;
-            }
-
-            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
-            {
-                error = null;
-
-                var servicesContainer = ServicesContainer.instance;
-
-                // remove sensitive part of the id: file path or url is not tracked
-                if (!string.IsNullOrEmpty(packageId))
-                    packageId = Regex.Replace(packageId, "(?<package>[^@]+)@(?<protocol>[^:]+):.+", "${package}@${protocol}");
-
-                var packageManagerPrefs = servicesContainer.Resolve<PackageManagerPrefs>();
-                var pageManager = servicesContainer.Resolve<PageManager>();
-                var activePage = pageManager.activePage;                
-                var settingsProxy = servicesContainer.Resolve<PackageManagerProjectSettingsProxy>();
-
-                var parameters = new PackageManagerWindowAnalyticsData
-                {
-                     action = action,
-                    package_id = packageId ?? string.Empty,
-                    package_tag = packageTag ?? string.Empty,
-                    package_ids = packageIds?.ToArray() ?? new string[0],
-                    package_tags = packageTags?.ToArray() ?? new string[0],
-                    search_text = activePage.searchText,
-                    filter_name = activePage.id,
-                    details_tab = packageManagerPrefs.selectedPackageDetailsTabIdentifier ?? string.Empty,
-                    window_docked = EditorWindow.GetWindowDontShow<PackageManagerWindow>()?.docked ?? false,
-                    // packages installed as dependency are always visible
-                    // we keep the dependencies_visible to not break the analytics
-                    dependencies_visible = true,
-                    preview_visible = settingsProxy.enablePreReleasePackages
-                };
-
-                data = parameters;
-                return data != null;
-            }
-
-            private string action;
-            private string packageId = null;
-            private IEnumerable<string> packageIds = null;
-            string packageTag;
-            private IEnumerable<string> packageTags = null;
+        public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+        {
+            error = null;
+            data = m_Data;
+            return data != null;
         }
 
         // Our current analytics backend expects package_id to match product id for legacy asset store packages.
@@ -103,11 +87,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             SendEvent(action, packageIds: versions?.Select(GetAnalyticsPackageId), packageTags: versions?.Select(v => v.GetAnalyticsTags()));
         }
+
         public static void SendEvent(string action, string packageId = null, IEnumerable<string> packageIds = null, string packageTag = null, IEnumerable<string> packageTags = null)
         {
-            var editorAnalyticsProxy = ServicesContainer.instance.Resolve<EditorAnalyticsProxy>();
-            PackageManagerWindowAnalytic analytic = new PackageManagerWindowAnalytic(action, packageId, packageIds, packageTag, packageTags);
-            editorAnalyticsProxy.SendAnalytic(analytic);
+            var editorAnalyticsProxy = ServicesContainer.instance.Resolve<IEditorAnalyticsProxy>();
+            editorAnalyticsProxy.SendAnalytic(new PackageManagerWindowAnalytics(action, packageId, packageIds, packageTag, packageTags));
         }
     }
 }

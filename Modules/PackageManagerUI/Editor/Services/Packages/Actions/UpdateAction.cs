@@ -16,14 +16,14 @@ internal class UpdateAction : PackageAction
 
     private readonly bool m_ShowVersion;
 
-    private readonly PackageOperationDispatcher m_OperationDispatcher;
-    private readonly ApplicationProxy m_Application;
-    private readonly PackageDatabase m_PackageDatabase;
-    private readonly PageManager m_PageManager;
-    public UpdateAction(PackageOperationDispatcher operationDispatcher,
-        ApplicationProxy application,
-        PackageDatabase packageDatabase,
-        PageManager pageManager,
+    private readonly IPackageOperationDispatcher m_OperationDispatcher;
+    private readonly IApplicationProxy m_Application;
+    private readonly IPackageDatabase m_PackageDatabase;
+    private readonly IPageManager m_PageManager;
+    public UpdateAction(IPackageOperationDispatcher operationDispatcher,
+        IApplicationProxy application,
+        IPackageDatabase packageDatabase,
+        IPageManager pageManager,
         bool showVersion = true)
     {
         m_OperationDispatcher = operationDispatcher;

@@ -14,15 +14,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string k_Message = L10n.Tr("Sign in to manage Asset Store packages");
         private static readonly string k_ButtonText = L10n.Tr("Sign in");
 
-        private UnityConnectProxy m_UnityConnect;
-        private PageManager m_PageManager;
-        private PackageDatabase m_PackageDatabase;
+        private IUnityConnectProxy m_UnityConnect;
+        private IPageManager m_PageManager;
+        private IPackageDatabase m_PackageDatabase;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_UnityConnect = container.Resolve<UnityConnectProxy>();
-            m_PageManager = container.Resolve<PageManager>();
-            m_PackageDatabase = container.Resolve<PackageDatabase>();
+            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
+            m_PageManager = container.Resolve<IPageManager>();
+            m_PackageDatabase = container.Resolve<IPackageDatabase>();
         }
 
         public SignInBar()

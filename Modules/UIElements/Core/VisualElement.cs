@@ -10,8 +10,6 @@ using UnityEngine.Internal;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.UIR;
-using PropertyBagValue = System.Collections.Generic.KeyValuePair<UnityEngine.PropertyName, object>;
-using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -67,7 +65,7 @@ namespace UnityEngine.UIElements
         DisableRendering = 1 << 14,
 
         // Element initial flags
-        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | HierarchyDisplayed
+        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty
     }
 
     /// <summary>
@@ -350,17 +348,17 @@ namespace UnityEngine.UIElements
 
         string m_Name;
         List<string> m_ClassList;
-        private List<PropertyBagValue> m_PropertyBag;
+        private Dictionary<PropertyName, object> m_PropertyBag;
         internal VisualElementFlags m_Flags;
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
         private string m_ViewDataKey;
         /// <summary>
-        /// Used for view data persistence (ie. tree expanded states, scroll position, zoom level).
+        /// Used for view data persistence, such as tree expanded states, scroll position, or zoom level.
         /// </summary>
         /// <remarks>
-        /// This is the key used to save/load the view data from the view data store. Not setting this key will disable persistence for this <see cref="VisualElement"/>.
-        /// For further information on view data persistence, see the [[wiki:UIE-ViewData|Unity Manual]].
+        /// This key is used to save and load the view data from the view data store. If you don't set this key, the persistence is disabled for the associated <see cref="VisualElement"/>.
+        /// For more information, refer to [[wiki:UIE-ViewData|View data persistence in the Unity Manual]].
         /// </remarks>
         [CreateProperty]
         public string viewDataKey
@@ -401,8 +399,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                TryGetPropertyInternal(userDataPropertyKey, out object value);
-                return value;
+                if (m_PropertyBag != null)
+                {
+                    m_PropertyBag.TryGetValue(userDataPropertyKey, out var value);
+                    return value;
+                }
+                return null;
             }
             set
             {
@@ -438,6 +440,35 @@ namespace UnityEngine.UIElements
         {
             get { return panel?.focusController; }
         }
+
+        private bool m_DisablePlayModeTint = false;
+        [CreateProperty]
+        internal bool disablePlayModeTint
+        {
+            get
+            {
+                if (panel?.contextType == ContextType.Player || m_DisablePlayModeTint)
+                    return true;
+                for (var p = parent; p != null; p = p.parent)
+                {
+                    if (p.m_DisablePlayModeTint)
+                        return true;
+                }
+
+                return false;
+            }
+            set
+            {
+                if (m_DisablePlayModeTint == value)
+                    return;
+
+                m_DisablePlayModeTint = value;
+                MarkDirtyRepaint();
+                NotifyPropertyChanged(disablePlayModeTintProperty);
+            }
+        }
+
+        internal Color playModeTintColor => disablePlayModeTint ? Color.white : UIElementsUtility.editorPlayModeTintColor;
 
         /// <summary>
         /// A combination of hint values that specify high-level intended usage patterns for the <see cref="VisualElement"/>.
@@ -1496,12 +1527,18 @@ namespace UnityEngine.UIElements
             if (elementPanel != null)
             {
                 layoutNode.Config = elementPanel.layoutConfig;
+                layoutNode.SoftReset();
+
                 RegisterRunningAnimations();
                 ProcessBindingRequests();
                 TrackSource(null, dataSource);
 
-                //We need to reset any visual pseudo state
+                // We need to reset any visual pseudo state
                 pseudoStates &= ~(PseudoStates.Focus | PseudoStates.Active | PseudoStates.Hover);
+
+                // UUM-42891: We must presume that we're not displayed because when it's the case (i.e. when we are not
+                // displayed), the layout updater will not process the children unless there is a display *change* in the ancestors.
+                m_Flags &= ~VisualElementFlags.HierarchyDisplayed;
 
                 // Only send this event if the element hasn't received it yet
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == VisualElementFlags.NeedsAttachToPanelEvent)
@@ -2271,8 +2308,12 @@ namespace UnityEngine.UIElements
         internal object GetProperty(PropertyName key)
         {
             CheckUserKeyArgument(key);
-            TryGetPropertyInternal(key, out object value);
-            return value;
+            if (m_PropertyBag != null)
+            {
+                m_PropertyBag.TryGetValue(key, out object value);
+                return value;
+            }
+            return null;
         }
 
         internal void SetProperty(PropertyName key, object value)
@@ -2284,24 +2325,7 @@ namespace UnityEngine.UIElements
         internal bool HasProperty(PropertyName key)
         {
             CheckUserKeyArgument(key);
-            return TryGetPropertyInternal(key, out var tmp);
-        }
-
-        bool TryGetPropertyInternal(PropertyName key, out object value)
-        {
-            value = null;
-            if (m_PropertyBag != null)
-            {
-                for (int i = 0; i < m_PropertyBag.Count; ++i)
-                {
-                    if (m_PropertyBag[i].Key == key)
-                    {
-                        value = m_PropertyBag[i].Value;
-                        return true;
-                    }
-                }
-            }
-            return false;
+            return m_PropertyBag?.ContainsKey(key) == true;
         }
 
         static void CheckUserKeyArgument(PropertyName key)
@@ -2315,31 +2339,8 @@ namespace UnityEngine.UIElements
 
         void SetPropertyInternal(PropertyName key, object value)
         {
-            var kv = new PropertyBagValue(key, value);
-
-            if (m_PropertyBag == null)
-            {
-                m_PropertyBag = new List<PropertyBagValue>(1);
-                m_PropertyBag.Add(kv);
-            }
-            else
-            {
-                for (int i = 0; i < m_PropertyBag.Count; ++i)
-                {
-                    if (m_PropertyBag[i].Key == key)
-                    {
-                        m_PropertyBag[i] = kv;
-                        return;
-                    }
-                }
-
-                if (m_PropertyBag.Capacity == m_PropertyBag.Count)
-                {
-                    m_PropertyBag.Capacity += 1;
-                }
-
-                m_PropertyBag.Add(kv);
-            }
+            m_PropertyBag ??= new Dictionary<PropertyName, object>();
+            m_PropertyBag[key] = value;
         }
 
         internal void UpdateCursorStyle(long eventType)

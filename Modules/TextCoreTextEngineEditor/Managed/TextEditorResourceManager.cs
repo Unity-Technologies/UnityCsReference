@@ -21,6 +21,7 @@ namespace UnityEditor.TextCore.Text
             FontAsset.SetAtlasTextureIsReadable += FontEngineEditorUtilities.SetAtlasTextureIsReadable;
             FontAsset.GetSourceFontRef += TextEditorResourceManager.GetSourceFontRef;
             FontAsset.SetSourceFontGUID += TextEditorResourceManager.SetSourceFontGUID;
+            FontAsset.EditorApplicationIsUpdating += () => EditorApplication.isUpdating;
 
             // Callback to handle clearing dynamic font asset data when closing the Editor
             EditorApplication.quitting += () =>
@@ -80,7 +81,7 @@ namespace UnityEditor.TextCore.Text
             if (RenderPipelineManager.currentPipeline == null)
                 Camera.onPostRender += OnCameraPostRender;
             else
-                RenderPipelineManager.endFrameRendering += OnEndOfFrame;
+                RenderPipelineManager.endContextRendering += OnEndOfFrame;
 
             Canvas.willRenderCanvases += OnPreRenderCanvases;
         }
@@ -99,7 +100,7 @@ namespace UnityEditor.TextCore.Text
             DoPreRenderUpdates();
         }
 
-        void OnEndOfFrame(ScriptableRenderContext renderContext, Camera[] cameras)
+        void OnEndOfFrame(ScriptableRenderContext renderContext, List<Camera> cameras)
         {
             DoPostRenderUpdates();
         }

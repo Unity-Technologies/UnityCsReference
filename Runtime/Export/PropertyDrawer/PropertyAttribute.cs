@@ -12,11 +12,23 @@ namespace UnityEngine
     public abstract class PropertyAttribute : Attribute
     {
         public int order { get; set; }
+        public bool applyToCollection { get; }
+
+        protected PropertyAttribute() : this(false) { }
+
+        protected PropertyAttribute(bool applyToCollection)
+        {
+            this.applyToCollection = applyToCollection;
+        }
     }
 
+    [Obsolete($"Derive collection attributes from '{nameof(PropertyAttribute)}' and set its '{nameof(applyToCollection)}' property to 'true'.", false)]
     // Base class to derive custom property collection attributes from. Use this to create custom attributes for script collections.
     [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
-    public abstract class PropertyCollectionAttribute : PropertyAttribute { }
+    public abstract class PropertyCollectionAttribute : PropertyAttribute
+    {
+        protected PropertyCollectionAttribute() : base(true) { }
+    }
 
     [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = true)]
     public class ContextMenuItemAttribute : PropertyAttribute

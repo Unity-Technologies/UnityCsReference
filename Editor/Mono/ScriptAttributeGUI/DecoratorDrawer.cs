@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -34,6 +35,7 @@ namespace UnityEditor
             return EditorGUI.kSingleLineHeight;
         }
 
+        [Obsolete("CanCacheInspectorGUI has been deprecated and is no longer used.", false)]
         public virtual bool CanCacheInspectorGUI()
         {
             return true;

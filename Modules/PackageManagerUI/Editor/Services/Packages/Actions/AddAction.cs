@@ -15,10 +15,10 @@ internal class AddAction : PackageAction
     private static readonly string k_EnableButtonText = L10n.Tr("Enable");
     private static readonly string k_EnablingButtonText = L10n.Tr("Enabling");
 
-    private readonly PackageOperationDispatcher m_OperationDispatcher;
-    private readonly ApplicationProxy m_Application;
-    private readonly PackageDatabase m_PackageDatabase;
-    public AddAction(PackageOperationDispatcher operationDispatcher, ApplicationProxy applicationProxy, PackageDatabase packageDatabase)
+    private readonly IPackageOperationDispatcher m_OperationDispatcher;
+    private readonly IApplicationProxy m_Application;
+    private readonly IPackageDatabase m_PackageDatabase;
+    public AddAction(IPackageOperationDispatcher operationDispatcher, IApplicationProxy applicationProxy, IPackageDatabase packageDatabase)
     {
         m_OperationDispatcher = operationDispatcher;
         m_Application = applicationProxy;

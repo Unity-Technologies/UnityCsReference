@@ -11,11 +11,11 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<PackagePlatformList> {}
 
-        private UpmCache m_UpmCache;
+        private IUpmCache m_UpmCache;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_UpmCache = container.Resolve<UpmCache>();
+            m_UpmCache = container.Resolve<IUpmCache>();
         }
 
         public PackagePlatformList()

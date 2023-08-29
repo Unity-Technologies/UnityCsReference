@@ -66,13 +66,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract RefreshOptions refreshOptions { get; }
 
         [NonSerialized]
-        protected ClientProxy m_ClientProxy;
+        protected IClientProxy m_ClientProxy;
         [NonSerialized]
-        protected ApplicationProxy m_ApplicationProxy;
-        public void ResolveDependencies(ClientProxy clientProxy, ApplicationProxy applicationProxy)
+        protected IApplicationProxy m_Application;
+        public void ResolveDependencies(IClientProxy clientProxy, IApplicationProxy applicationProxy)
         {
             m_ClientProxy = clientProxy;
-            m_ApplicationProxy = applicationProxy;
+            m_Application = applicationProxy;
         }
     }
 
@@ -110,7 +110,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             else if (m_Timestamp == 0)
                 m_Timestamp = DateTime.Now.Ticks - (long)(EditorApplication.timeSinceStartup * TimeSpan.TicksPerSecond);
 
-            if (!m_ApplicationProxy.isUpmRunning)
+            if (!m_Application.isUpmRunning)
             {
                 EditorApplication.delayCall += () =>
                 {

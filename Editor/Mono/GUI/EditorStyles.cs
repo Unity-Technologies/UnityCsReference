@@ -269,7 +269,21 @@ namespace UnityEditor
         public static GUIStyle helpBox { get { return s_Current.m_HelpBox; } }
         private GUIStyle m_HelpBox;
 
-        internal static GUIStyle helpBoxLabel { get { return s_Current.m_HelpBoxLabel; } }
+        internal static GUIStyle helpBoxLabel {
+            get {
+                s_Current.m_HelpBoxLabel.Assign(s_Current.m_HelpBox);
+                s_Current.m_HelpBoxLabel.name = "HelpBoxLabel";
+                s_Current.m_HelpBoxLabel.normal.background = null;
+                s_Current.m_HelpBoxLabel.hover.background = null;
+                s_Current.m_HelpBoxLabel.active.background = null;
+                s_Current.m_HelpBoxLabel.focused.background = null;
+                s_Current.m_HelpBoxLabel.onNormal.background = null;
+                s_Current.m_HelpBoxLabel.onHover.background = null;
+                s_Current.m_HelpBoxLabel.onActive.background = null;
+                s_Current.m_HelpBoxLabel.onFocused.background = null;
+                return s_Current.m_HelpBoxLabel;
+            }
+        }
         private GUIStyle m_HelpBoxLabel;
 
         public static GUIStyle toolbarSearchField { get { return s_Current.m_ToolbarSearchField; } }
@@ -574,16 +588,7 @@ namespace UnityEditor
 
             m_HelpBoxLabel = new GUIStyle(m_HelpBox)
             {
-                name = "HelpBoxLabel",
-                normal = { background = null },
-                hover = { background = null },
-                active = { background = null },
-                focused = { background = null },
-
-                onNormal = { background = null },
-                onHover = { background = null },
-                onActive = { background = null },
-                onFocused = { background = null }
+                name = "HelpBoxLabel"
             };
         }
 

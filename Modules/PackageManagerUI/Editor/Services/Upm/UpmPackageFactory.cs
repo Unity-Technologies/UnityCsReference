@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,34 +9,28 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class UpmPackageFactory : Package.Factory
     {
-        [NonSerialized]
-        private UniqueIdMapper m_UniqueIdMapper;
-        [NonSerialized]
-        private UpmCache m_UpmCache;
-        [NonSerialized]
-        private UpmClient m_UpmClient;
-        [NonSerialized]
-        private BackgroundFetchHandler m_BackgroundFetchHandler;
-        [NonSerialized]
-        private PackageDatabase m_PackageDatabase;
-        [NonSerialized]
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        public void ResolveDependencies(UniqueIdMapper uniqueIdMapper,
-            UpmCache upmCache,
-            UpmClient upmClient,
-            BackgroundFetchHandler backgroundFetchHandler,
-            PackageDatabase packageDatabase,
-            PackageManagerProjectSettingsProxy settingsProxy)
+        private readonly IUniqueIdMapper m_UniqueIdMapper;
+        private readonly IUpmCache m_UpmCache;
+        private readonly IUpmClient m_UpmClient;
+        private readonly IBackgroundFetchHandler m_BackgroundFetchHandler;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IProjectSettingsProxy m_SettingsProxy;
+        public UpmPackageFactory(IUniqueIdMapper uniqueIdMapper,
+            IUpmCache upmCache,
+            IUpmClient upmClient,
+            IBackgroundFetchHandler backgroundFetchHandler,
+            IPackageDatabase packageDatabase,
+            IProjectSettingsProxy settingsProxy)
         {
-            m_UniqueIdMapper = uniqueIdMapper;
-            m_UpmCache = upmCache;
-            m_UpmClient = upmClient;
-            m_BackgroundFetchHandler = backgroundFetchHandler;
-            m_PackageDatabase = packageDatabase;
-            m_SettingsProxy = settingsProxy;
+            m_UniqueIdMapper = RegisterDependency(uniqueIdMapper);
+            m_UpmCache = RegisterDependency(upmCache);
+            m_UpmClient = RegisterDependency(upmClient);
+            m_BackgroundFetchHandler = RegisterDependency(backgroundFetchHandler);
+            m_PackageDatabase = RegisterDependency(packageDatabase);
+            m_SettingsProxy = RegisterDependency(settingsProxy);
         }
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             m_SettingsProxy.onEnablePreReleasePackagesChanged += OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
             m_SettingsProxy.onSeeAllVersionsChanged += OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
@@ -50,7 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.onPackageOperationError += OnPackageOperationError;
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
             m_SettingsProxy.onEnablePreReleasePackagesChanged -= OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
             m_SettingsProxy.onSeeAllVersionsChanged -= OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
@@ -195,42 +188,34 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal class UpmOnAssetStorePackageFactory : Package.Factory
     {
-        [NonSerialized]
-        private UniqueIdMapper m_UniqueIdMapper;
-        [NonSerialized]
-        private UnityConnectProxy m_UnityConnect;
-        [NonSerialized]
-        private AssetStoreCache m_AssetStoreCache;
-        [NonSerialized]
-        private BackgroundFetchHandler m_BackgroundFetchHandler;
-        [NonSerialized]
-        private PackageDatabase m_PackageDatabase;
-        [NonSerialized]
-        private FetchStatusTracker m_FetchStatusTracker;
-        [NonSerialized]
-        private UpmCache m_UpmCache;
-        [NonSerialized]
-        private UpmClient m_UpmClient;
-        public void ResolveDependencies(UniqueIdMapper uniqueIdMapper,
-            UnityConnectProxy unityConnect,
-            AssetStoreCache assetStoreCache,
-            BackgroundFetchHandler backgroundFetchHandler,
-            PackageDatabase packageDatabase,
-            FetchStatusTracker fetchStatusTracker,
-            UpmCache upmCache,
-            UpmClient upmClient)
+        private readonly IUniqueIdMapper m_UniqueIdMapper;
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IAssetStoreCache m_AssetStoreCache;
+        private readonly IBackgroundFetchHandler m_BackgroundFetchHandler;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IFetchStatusTracker m_FetchStatusTracker;
+        private readonly IUpmCache m_UpmCache;
+        private readonly IUpmClient m_UpmClient;
+        public UpmOnAssetStorePackageFactory(IUniqueIdMapper uniqueIdMapper,
+            IUnityConnectProxy unityConnect,
+            IAssetStoreCache assetStoreCache,
+            IBackgroundFetchHandler backgroundFetchHandler,
+            IPackageDatabase packageDatabase,
+            IFetchStatusTracker fetchStatusTracker,
+            IUpmCache upmCache,
+            IUpmClient upmClient)
         {
-            m_UniqueIdMapper = uniqueIdMapper;
-            m_UnityConnect = unityConnect;
-            m_AssetStoreCache = assetStoreCache;
-            m_BackgroundFetchHandler = backgroundFetchHandler;
-            m_PackageDatabase = packageDatabase;
-            m_FetchStatusTracker = fetchStatusTracker;
-            m_UpmCache = upmCache;
-            m_UpmClient = upmClient;
+            m_UniqueIdMapper = RegisterDependency(uniqueIdMapper);
+            m_UnityConnect = RegisterDependency(unityConnect);
+            m_AssetStoreCache = RegisterDependency(assetStoreCache);
+            m_BackgroundFetchHandler = RegisterDependency(backgroundFetchHandler);
+            m_PackageDatabase = RegisterDependency(packageDatabase);
+            m_FetchStatusTracker = RegisterDependency(fetchStatusTracker);
+            m_UpmCache = RegisterDependency(upmCache);
+            m_UpmClient = RegisterDependency(upmClient);
         }
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
 
@@ -244,7 +229,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_FetchStatusTracker.onFetchStatusChanged += OnFetchStatusChanged;
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
 

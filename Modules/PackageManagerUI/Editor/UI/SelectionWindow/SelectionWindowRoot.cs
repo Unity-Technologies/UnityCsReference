@@ -22,9 +22,9 @@ internal class SelectionWindowRoot : VisualElement
     private readonly SelectionWindowTreeView m_TreeView;
     private readonly SelectionWindowFooter m_Footer;
 
-    private readonly ApplicationProxy m_ApplicationProxy;
+    private readonly IApplicationProxy m_ApplicationProxy;
 
-    public SelectionWindowRoot(ResourceLoader resourceLoader, ApplicationProxy applicationProxy)
+    public SelectionWindowRoot(IResourceLoader resourceLoader, IApplicationProxy applicationProxy)
     {
         m_ApplicationProxy = applicationProxy;
 
@@ -82,17 +82,20 @@ internal class SelectionWindowRoot : VisualElement
     {
         m_WindowData.SelectAll();
         RefreshItems();
+        AssetSelectionWindowAnalytics.SendEvent(m_WindowData, "selectAll");
     }
 
     private void OnClickNone()
     {
         m_WindowData.ClearSelection();
         RefreshItems();
+        AssetSelectionWindowAnalytics.SendEvent(m_WindowData, "selectNone");
     }
 
     private void OnCancel()
     {
         onSelectionCompleted?.Invoke(Array.Empty<Asset>()); // We consider an empty list as a cancellation.
+        AssetSelectionWindowAnalytics.SendEvent(m_WindowData, "cancel");
     }
 
     private void OnAction()
@@ -102,6 +105,7 @@ internal class SelectionWindowRoot : VisualElement
                 L10n.Tr("Remove"), L10n.Tr("Cancel")))
             return;
         onSelectionCompleted?.Invoke(m_WindowData.selectedAssets);
+        AssetSelectionWindowAnalytics.SendEvent(m_WindowData, "remove");
     }
 
     private void ToggleChanged(ChangeEvent<bool> evt)

@@ -656,6 +656,10 @@ namespace UnityEditor
                 [NativeMethod("SetAndroidApplicationEntry")]
                 set;
             }
+
+            // Add enableOnBackInvokedCallback flag to AndroidManifest
+            [NativeProperty("AndroidPredictiveBackSupport", TargetType.Function)]
+            public static extern bool predictiveBackSupport { get; set; }
         }
     }
 }

@@ -14,8 +14,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement m_ContentContainer;
         public override VisualElement contentContainer => m_ContentContainer;
 
-        private PackageManagerPrefs m_PackageManagerPrefs;
-
         public bool expanded { get => m_HeaderToggle.value; set => SetExpanded(value); }
         public string title { get => m_HeaderToggle.text; set => m_HeaderToggle.text = value; }
 
@@ -37,7 +35,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public event Action onPriorityChanged;
 
-        public DetailsExtension(PackageManagerPrefs packageManagerPrefs)
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        public DetailsExtension(IPackageManagerPrefs packageManagerPrefs)
         {
             m_PackageManagerPrefs = packageManagerPrefs;
 

@@ -691,7 +691,6 @@ namespace UnityEngine.UIElements
             ValidateLayout();
             UpdateAnimations();
             UpdateBindings();
-            UpdateDataBinding();
         }
     }
 

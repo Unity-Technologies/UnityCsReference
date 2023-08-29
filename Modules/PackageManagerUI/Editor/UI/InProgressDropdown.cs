@@ -40,16 +40,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private InProgressContainer m_EnablingContainer;
         private InProgressContainer enablingContainer => m_EnablingContainer ??= new InProgressContainer(ViewEnabling);
 
-        private ResourceLoader m_ResourceLoader;
-        private UpmClient m_UpmClient;
-        private AssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private PackageDatabase m_PackageDatabase;
-        private PageManager m_PageManager;
-        private void ResolveDependencies(ResourceLoader resourceLoader,
-                                         UpmClient upmClient,
-                                         AssetStoreDownloadManager assetStoreDownloadManager,
-                                         PackageDatabase packageDatabase,
-                                         PageManager packageManager)
+        private IResourceLoader m_ResourceLoader;
+        private IUpmClient m_UpmClient;
+        private IAssetStoreDownloadManager m_AssetStoreDownloadManager;
+        private IPackageDatabase m_PackageDatabase;
+        private IPageManager m_PageManager;
+        private void ResolveDependencies(IResourceLoader resourceLoader,
+                                         IUpmClient upmClient,
+                                         IAssetStoreDownloadManager assetStoreDownloadManager,
+                                         IPackageDatabase packageDatabase,
+                                         IPageManager packageManager)
         {
             m_ResourceLoader = resourceLoader;
             m_UpmClient = upmClient;
@@ -58,11 +58,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager = packageManager;
         }
 
-        public InProgressDropdown(ResourceLoader resourceLoader,
-                                  UpmClient upmClient,
-                                  AssetStoreDownloadManager assetStoreDownloadManager,
-                                  PackageDatabase packageDatabase,
-                                  PageManager packageManager)
+        public InProgressDropdown(IResourceLoader resourceLoader,
+                                  IUpmClient upmClient,
+                                  IAssetStoreDownloadManager assetStoreDownloadManager,
+                                  IPackageDatabase packageDatabase,
+                                  IPageManager packageManager)
         {
             ResolveDependencies(resourceLoader, upmClient, assetStoreDownloadManager, packageDatabase, packageManager);
             styleSheets.Add(m_ResourceLoader.inProgressDropdownStyleSheet);

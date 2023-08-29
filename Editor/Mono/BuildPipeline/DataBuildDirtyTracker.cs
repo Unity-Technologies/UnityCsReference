@@ -157,7 +157,7 @@ namespace UnityEditor.Mono.BuildPipeline
                 if (assetInfo.sourceAssetPath.ToNPath().FileExists() && !assetInfo.sourceAssetPath.StartsWith("."))
                     inputFiles.Add(new BuildDataInputFile(assetInfo.sourceAssetPath, developmentBuild));
             }
-            foreach (var projectSetting in new NPath("ProjectSettings").Files("*.asset"))
+            foreach (var projectSetting in new NPath("ProjectSettings").Files("*.asset", true))
                 inputFiles.Add(new BuildDataInputFile(projectSetting, developmentBuild));
 
             var buildData = new BuildData()

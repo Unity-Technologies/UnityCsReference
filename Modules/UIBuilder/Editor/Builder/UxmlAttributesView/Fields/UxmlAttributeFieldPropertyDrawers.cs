@@ -58,32 +58,27 @@ namespace UnityEditor.UIElements
 
             field.AddToClassList(Toggle.alignedFieldUssClassName);
             field.bindingPath = property.propertyPath;
-            field.RegisterCallback<ChangeEvent<bool>>(OnMultilineToggleValueChange);
+            field.RegisterCallback<ChangeEvent<bool>>(evt => SetMultilineOfValueField(evt.newValue, evt.target as VisualElement));
 
             return field;
         }
 
-        void OnMultilineToggleValueChange(ChangeEvent<bool> evt)
+        void SetMultilineOfValueField(bool multiline, VisualElement visualElement)
         {
-            var ve = evt.target as VisualElement;
-            var inspector = ve.GetFirstAncestorOfType<BuilderInspector>();
+            var inspector = visualElement.GetFirstAncestorOfType<BuilderInspector>();
             var valueFieldInInspector = inspector.Query<TextField>().Where(x => x.label is "Value").First();
             if (valueFieldInInspector == null)
+            {
+                var propertyField = inspector.Query<PropertyField>().Where(x => x.label is "Value").First();
+                propertyField?.RegisterCallback<SerializedPropertyBindEvent>(_ =>
+                {
+                    EditorApplication.delayCall += () => SetMultilineOfValueField(multiline, visualElement);
+                });
                 return;
+            }
 
-            valueFieldInInspector.multiline = evt.newValue;
-            valueFieldInInspector.EnableInClassList(BuilderConstants.InspectorMultiLineTextFieldClassName, evt.newValue);
-            if (!evt.newValue)
-                return;
-
-            // when multiline set, inspector field does not have \n, but its value attribute does
-            // set inspector field value to the value attribute
-            var rootPath = BuilderUxmlAttributesView.GetSerializedDataRoot(m_Property.propertyPath);
-            var rootProperty = m_Property.serializedObject.FindProperty(rootPath);
-            var valueProperty = rootProperty.FindPropertyRelative("value");
-
-            var valueAttributeString = valueProperty.stringValue;
-            valueFieldInInspector.SetValueWithoutNotify(valueAttributeString);
+            valueFieldInInspector.multiline = multiline;
+            valueFieldInInspector.EnableInClassList(BuilderConstants.InspectorMultiLineTextFieldClassName, multiline);
         }
     }
 
@@ -96,7 +91,8 @@ namespace UnityEditor.UIElements
             {
                 label = property.localizedDisplayName,
                 multiline = true,
-                bindingPath = property.propertyPath
+                bindingPath = property.propertyPath,
+                classList = { TextField.alignedFieldUssClassName }
             };
         }
     }

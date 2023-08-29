@@ -19,47 +19,62 @@ namespace UnityEditor
     [CustomEditor(typeof(GraphicsSettings))]
     internal class GraphicsSettingsInspector : ProjectSettingsBaseEditor
     {
-        internal class ResourcesPaths
+        internal static class GraphicsSettingsData
         {
-            internal const string graphicsSettings = "StyleSheets/ProjectSettings/GraphicsSettings.uss";
             internal const string bodyTemplateBuiltInOnly = "UXML/ProjectSettings/GraphicsSettingsEditor-Builtin.uxml";
             internal const string bodyTemplateSRP = "UXML/ProjectSettings/GraphicsSettingsEditor-SRP.uxml";
             internal const string helpBoxesTemplateForSRP = "UXML/ProjectSettings/GraphicsSettingsEditor-HelpBoxes.uxml";
             internal const string builtInTabContent = "UXML/ProjectSettings/GraphicsSettingsEditor-BuiltInTab.uxml";
+
+            internal const string persistentViewKey = $"{nameof(GraphicsSettingsInspector)}_ScrollPosition";
+
+            internal static GUIContent builtInWarningText =
+                EditorGUIUtility.TrTextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.");
         }
 
-        internal class LocalizedTexts
-        {
-            internal static GUIContent builtInWarningText = EditorGUIUtility.TrTextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.");
-        }
+        internal static GraphicsSettingsInspector s_Instance;
+        internal IEnumerable<GraphicsSettingsUtils.GlobalSettingsContainer> globalSettings => m_GlobalSettings;
 
         readonly VisibilityControllerBasedOnRenderPipeline m_VisibilityController = new();
         TabbedView m_TabbedView;
-
         VisualElement m_CurrentRoot;
-        VisualElement m_CurrentSettings;
-
         List<GraphicsSettingsUtils.GlobalSettingsContainer> m_GlobalSettings;
 
         void OnEnable()
         {
+            s_Instance = this;
             m_VisibilityController.Initialize();
         }
 
         public void OnDisable()
         {
+            s_Instance = null;
             m_VisibilityController.Clear();
             m_VisibilityController.Dispose();
+
+            if (m_CurrentRoot != null && Unsupported.IsDeveloperMode())
+            {
+                var mainScrollView = m_CurrentRoot.Q<ScrollView>("MainScrollView");
+                var tabbedView = m_CurrentRoot.Q<TabbedView>("PipelineSpecificSettings");
+                if(mainScrollView == null || tabbedView == null)
+                    return;
+                var persistentViewValues = new PersistentViewValues
+                {
+                    vertical = mainScrollView.verticalScroller.value,
+                    horizontal = mainScrollView.horizontalScroller.value,
+                    tabIndex = tabbedView?.ActiveTabIndex ?? -1
+                };
+                EditorUserSettings.SetConfigValue(GraphicsSettingsData.persistentViewKey, JsonUtility.ToJson(persistentViewValues));
+            }
         }
 
-        internal void CreateInspectorUI(VisualElement root, List<GraphicsSettingsUtils.GlobalSettingsContainer> globalSettings)
+        internal void CreateInspectorUI(VisualElement root, bool globalSettingsExist, List<GraphicsSettingsUtils.GlobalSettingsContainer> globalSettings)
         {
             m_CurrentRoot = root;
             m_GlobalSettings = globalSettings;
 
             m_CurrentRoot.Add(ObjectUpdater());
-            m_CurrentSettings = CreateSettingsUI(globalSettings);
-            m_CurrentRoot.Add(m_CurrentSettings);
+            Setup(globalSettingsExist);
         }
 
         // As we use multiple IMGUI container while porting everything to UITK we will call serializedObject.Update in first separate IMGUI container.
@@ -69,68 +84,69 @@ namespace UnityEditor
             return new IMGUIContainer(() => serializedObject.Update());
         }
 
-        VisualElement CreateSettingsUI(List<GraphicsSettingsUtils.GlobalSettingsContainer> globalSettings)
+        void Setup(bool globalSettingsExist)
         {
             m_VisibilityController.Clear();
 
-            var globalSettingsExists = globalSettings.Count > 0;
-            var visualTreeAsset = EditorGUIUtility.Load(globalSettingsExists ? ResourcesPaths.bodyTemplateSRP : ResourcesPaths.bodyTemplateBuiltInOnly) as VisualTreeAsset;
-            var content = visualTreeAsset.Instantiate();
-            content
+            m_CurrentRoot
                 .Query<ProjectSettingsElementWithSO>()
                 .ForEach(d => d.Initialize(serializedObject));
 
-            BindStrippingModesEnumWithFadeGroup(content,
+            BindEnumFieldWithFadeGroup(m_CurrentRoot,
                 "LightmapModes",
                 "LightmapModesGroup",
                 "m_LightmapStripping",
                 "ImportLightmapFromCurrentScene",
                 ShaderUtil.CalculateLightmapStrippingFromCurrentScene);
-            BindStrippingModesEnumWithFadeGroup(content,
+            BindEnumFieldWithFadeGroup(m_CurrentRoot,
                 "FogModes",
                 "FogModesGroup",
                 "m_FogStripping",
                 "ImportFogFromCurrentScene",
                 ShaderUtil.CalculateFogStrippingFromCurrentScene);
 
-            if (globalSettingsExists)
+            PersistentViewValues persistantViewValues = null;
+            if (Unsupported.IsDeveloperMode())
+                persistantViewValues = LoadPersistantViewValues();
+
+            if (globalSettingsExist)
             {
-                m_TabbedView = content.MandatoryQ<TabbedView>("PipelineSpecificSettings");
-                m_TabbedView.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+                m_TabbedView = m_CurrentRoot.MandatoryQ<TabbedView>("PipelineSpecificSettings");
+                GenerateTabs(persistantViewValues);
             }
             else
             {
-                content.Query<GraphicsSettingsElement>()
+                m_CurrentRoot.Query<GraphicsSettingsElement>()
                     .ForEach(e =>
                     {
                         if (e.BuiltinOnly)
                             m_VisibilityController.RegisterVisualElement(e, null);
                     });
-                content.Query<BuiltInShaderElement>().ForEach(e => { m_VisibilityController.RegisterVisualElement(e, null); });
+                m_CurrentRoot.Query<BuiltInShaderElement>().ForEach(e => m_VisibilityController.RegisterVisualElement(e, null));
+                SetupTransparencySortMode(m_CurrentRoot);
             }
 
-            GraphicsSettingsUtils.LocalizeVisualTree(content);
-            content.Bind(serializedObject);
+            ApplyPersistentView(m_CurrentRoot, persistantViewValues);
 
-            return content;
+            GraphicsSettingsUtils.LocalizeVisualTree(m_CurrentRoot);
+            m_CurrentRoot.Bind(serializedObject);
         }
 
-        void OnAttachToPanel(AttachToPanelEvent evt)
+        static PersistentViewValues LoadPersistantViewValues()
         {
-            GenerateTabs();
-            m_TabbedView.UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            var serializedScrollValues = EditorUserSettings.GetConfigValue(GraphicsSettingsData.persistentViewKey);
+            return string.IsNullOrEmpty(serializedScrollValues) ? null : JsonUtility.FromJson<PersistentViewValues>(serializedScrollValues);
         }
 
-        void GenerateTabs()
+        void GenerateTabs(PersistentViewValues persistantViewValues)
         {
             //Add BuiltInTab
-            var builtInAsset = EditorGUIUtility.Load(ResourcesPaths.builtInTabContent) as VisualTreeAsset;
+            var builtInAsset = EditorGUIUtility.Load(GraphicsSettingsData.builtInTabContent) as VisualTreeAsset;
             var builtInTemplate = builtInAsset.Instantiate();
             builtInTemplate
                 .Query<ProjectSettingsElementWithSO>()
                 .ForEach(d => d.Initialize(serializedObject));
 
-            //By some reason I have to manually bind properties
             builtInTemplate.Query<PropertyField>().Where(p => !string.IsNullOrWhiteSpace(p.bindingPath)).ForEach(p =>
             {
                 var serializedProperty = serializedObject.FindProperty(p.bindingPath);
@@ -138,18 +154,22 @@ namespace UnityEditor
                     p.BindProperty(serializedProperty);
             });
 
+            SetupTransparencySortMode(builtInTemplate);
+
             var builtInSettingsContainer = builtInTemplate.MandatoryQ<VisualElement>("Built-InSettingsContainer");
             var builtInHelpBoxes = GraphicsSettingsUtils.CreateRPHelpBox(m_VisibilityController, null);
             builtInSettingsContainer.Insert(0, builtInHelpBoxes);
-            builtInHelpBoxes.MandatoryQ<HelpBox>("CurrentPipelineWarningHelpBox").text = LocalizedTexts.builtInWarningText.text;
-            GraphicsSettingsUtils.CreateNewTab(m_TabbedView, "Built-In", builtInSettingsContainer, true);
+            builtInHelpBoxes.MandatoryQ<HelpBox>("CurrentPipelineWarningHelpBox").text = GraphicsSettingsData.builtInWarningText.text;
+
+            var builtinActive = persistantViewValues == null || persistantViewValues.tabIndex <= 0;
+            GraphicsSettingsUtils.CreateNewTab(m_TabbedView, "Built-In", builtInSettingsContainer, builtinActive);
 
             //Add SRP tabs
             for (var i = 0; i < m_GlobalSettings.Count; i++)
             {
                 var globalSettingsContainer = m_GlobalSettings[i];
                 var globalSettingsElement = new VisualElement();
-                var rpHelpBoxes = GraphicsSettingsUtils.CreateRPHelpBox(m_VisibilityController,globalSettingsContainer.renderPipelineAssetType);
+                var rpHelpBoxes = GraphicsSettingsUtils.CreateRPHelpBox(m_VisibilityController, globalSettingsContainer.renderPipelineAssetType);
                 globalSettingsElement.Add(rpHelpBoxes);
 
                 globalSettingsElement.Bind(globalSettingsContainer.serializedObject);
@@ -157,21 +177,50 @@ namespace UnityEditor
                 propertyEditor.AddToClassList(InspectorElement.uIEInspectorVariantUssClassName);
                 globalSettingsElement.Add(propertyEditor);
 
-                GraphicsSettingsUtils.CreateNewTab(m_TabbedView, globalSettingsContainer.name, globalSettingsElement,
-                    GraphicsSettings.currentRenderPipelineAssetType == globalSettingsContainer.renderPipelineAssetType);
+                var rpActive = persistantViewValues != null && persistantViewValues.tabIndex != -1
+                    ? persistantViewValues.tabIndex == i + 1
+                    : GraphicsSettings.currentRenderPipelineAssetType == globalSettingsContainer.renderPipelineAssetType;
+
+                GraphicsSettingsUtils.CreateNewTab(m_TabbedView, globalSettingsContainer.name, globalSettingsElement, rpActive);
             }
         }
 
-        void BindStrippingModesEnumWithFadeGroup(VisualElement content, string enumFieldName, string fadeGroupName, string propertyName, string buttonName, Action buttonCallback)
+        static void ApplyPersistentView(VisualElement content, PersistentViewValues persistantViewValues)
+        {
+            if (persistantViewValues == null)
+                return;
+
+            var mainScrollView = content.Q<ScrollView>("MainScrollView");
+            mainScrollView.verticalScroller.value = persistantViewValues.vertical;
+            mainScrollView.horizontalScroller.value = persistantViewValues.horizontal;
+            mainScrollView.UpdateContentViewTransform();
+        }
+
+        void BindEnumFieldWithFadeGroup(VisualElement content, string enumFieldName, string fadeGroupName, string propertyName, string buttonName, Action buttonCallback)
         {
             var enumMode = content.MandatoryQ<EnumField>(enumFieldName);
-            var enumModeGroup = content.MandatoryQ<FadeGroup>(fadeGroupName);
+            var enumModeGroup = content.MandatoryQ<VisualElement>(fadeGroupName);
             var enumModeProperty = serializedObject.FindProperty(propertyName);
-            var lightmapModesUpdate = GraphicsSettingsUtils.BindSerializedProperty<StrippingModes>(enumMode, enumModeProperty,
-                mode => enumModeGroup.value = mode == StrippingModes.Custom);
+            var lightmapModesUpdate = UIElementsEditorUtility.BindSerializedProperty<StrippingModes>(enumMode, enumModeProperty,
+                mode => UIElementsEditorUtility.SetVisibility(enumModeGroup, mode == StrippingModes.Custom));
             lightmapModesUpdate?.Invoke();
-            enumModeGroup.value = enumModeProperty.intValue == (int)StrippingModes.Custom;
             content.MandatoryQ<Button>(buttonName).clicked += buttonCallback;
+        }
+
+        void SetupTransparencySortMode(VisualElement root)
+        {
+            var transparencySortMode = root.MandatoryQ<PropertyField>("TransparencySortMode");
+            var transparencySortAxis = root.MandatoryQ<PropertyField>("TransparencySortAxis");
+            transparencySortMode.RegisterValueChangeCallback(evt =>
+                UIElementsEditorUtility.SetVisibility(transparencySortAxis, (TransparencySortMode)evt.changedProperty.enumValueIndex == TransparencySortMode.CustomAxis));
+        }
+
+        [Serializable]
+        class PersistentViewValues
+        {
+            public float vertical;
+            public float horizontal;
+            public int tabIndex;
         }
     }
 
@@ -296,9 +345,6 @@ namespace UnityEditor
         {
             var graphicsSettingsProvider = new GraphicsSettingsProvider("Project/Graphics", SettingsScope.Project)
             {
-                keywords = GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorTierSettings.Styles>()
-                    .Concat(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorShaderPreload.Styles>())
-                    .Concat(GetSearchKeywordsFromPath("ProjectSettings/GraphicsSettings.asset")),
                 icon = EditorGUIUtility.FindTexture("UnityEngine/UI/GraphicRaycaster Icon")
             };
             return graphicsSettingsProvider;
@@ -306,30 +352,45 @@ namespace UnityEditor
 
         internal GraphicsSettingsProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null) : base(path, scopes, keywords)
         {
-            activateHandler = (text, element) =>
+            activateHandler = (text, root) =>
             {
                 var settingsObj = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/GraphicsSettings.asset");
                 if (settingsObj == null)
                     return;
 
                 m_Inspector = Editor.CreateEditor(settingsObj) as GraphicsSettingsInspector;
-                element.styleSheets.Add(EditorGUIUtility.Load(GraphicsSettingsInspector.ResourcesPaths.graphicsSettings) as StyleSheet);
 
-                var renderPipelineGlobalSettingsMap = m_Inspector.serializedObject.FindProperty("m_RenderPipelineGlobalSettingsMap");
-                var globalSettings = GraphicsSettingsUtils.CollectRenderPipelineAssetsByGlobalSettings(renderPipelineGlobalSettingsMap);
-                m_Inspector.CreateInspectorUI(element, globalSettings);
-
-                var uxmlKeywords = globalSettings.Count > 0
-                    ? GraphicsSettingsUtils.GetSearchKeywordsFromUXMLInEditorResources(GraphicsSettingsInspector.ResourcesPaths.bodyTemplateSRP)
-                        .Concat(GraphicsSettingsUtils.GetSearchKeywordsFromUXMLInEditorResources(GraphicsSettingsInspector.ResourcesPaths.builtInTabContent))
-                    : GraphicsSettingsUtils.GetSearchKeywordsFromUXMLInEditorResources(GraphicsSettingsInspector.ResourcesPaths.bodyTemplateBuiltInOnly);
-                this.keywords = this.keywords != null ? this.keywords.Concat(uxmlKeywords) : uxmlKeywords;
+                var globalSettingsExist = GraphicsSettingsUtils.GatherGlobalSettingsFromSerializedObject(m_Inspector.serializedObject, out var globalSettings);
+                var content = CreateGraphicsSettingsUI(globalSettingsExist, m_Inspector, root, globalSettings);
+                this.keywords = CreateKeywordsList(content);
             };
             deactivateHandler = (() =>
             {
                 if (m_Inspector != null)
                     m_Inspector.OnDisable();
             });
+        }
+
+
+        internal static TemplateContainer CreateGraphicsSettingsUI(bool globalSettingsExist, GraphicsSettingsInspector inspector,  VisualElement root, List<GraphicsSettingsUtils.GlobalSettingsContainer> globalSettings)
+        {
+            var visualTreeAsset =
+                EditorGUIUtility.Load(globalSettingsExist ? GraphicsSettingsInspector.GraphicsSettingsData.bodyTemplateSRP : GraphicsSettingsInspector.GraphicsSettingsData.bodyTemplateBuiltInOnly) as
+                    VisualTreeAsset;
+            var content = visualTreeAsset.Instantiate();
+            root.Add(content);
+            inspector.CreateInspectorUI(root, globalSettingsExist, globalSettings);
+            return content;
+        }
+
+        List<string> CreateKeywordsList(TemplateContainer content)
+        {
+            var keywordsList = new List<string>();
+            keywordsList.AddRange(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorTierSettings.Styles>());
+            keywordsList.AddRange(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorShaderPreload.Styles>());
+            keywordsList.AddRange(GetSearchKeywordsFromPath("ProjectSettings/GraphicsSettings.asset"));
+            keywordsList.AddRange(GetSearchKeywordsFromVisualElementTree(content));
+            return keywordsList;
         }
     }
 }

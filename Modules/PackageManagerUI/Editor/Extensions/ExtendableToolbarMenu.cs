@@ -19,10 +19,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private List<MenuDropdownItem> m_DropdownItems;
         public DropdownMenu menu { get; private set; }
 
-        private ResourceLoader m_ResourceLoader;
+        private IResourceLoader m_ResourceLoader;
         private void ResolveDependencies()
         {
-            m_ResourceLoader = ServicesContainer.instance.Resolve<ResourceLoader>();
+            m_ResourceLoader = ServicesContainer.instance.Resolve<IResourceLoader>();
         }
 
         public ExtendableToolbarMenu()

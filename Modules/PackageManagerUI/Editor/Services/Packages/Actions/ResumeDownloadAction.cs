@@ -8,10 +8,10 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class ResumeDownloadAction : PackageAction
 {
-    private readonly PackageOperationDispatcher m_OperationDispatcher;
-    private readonly AssetStoreDownloadManager m_AssetStoreDownloadManager;
-    private readonly ApplicationProxy m_Application;
-    public ResumeDownloadAction(PackageOperationDispatcher operationDispatcher, AssetStoreDownloadManager assetStoreDownloadManager, ApplicationProxy application)
+    private readonly IPackageOperationDispatcher m_OperationDispatcher;
+    private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
+    private readonly IApplicationProxy m_Application;
+    public ResumeDownloadAction(IPackageOperationDispatcher operationDispatcher, IAssetStoreDownloadManager assetStoreDownloadManager, IApplicationProxy application)
     {
         m_OperationDispatcher = operationDispatcher;
         m_AssetStoreDownloadManager = assetStoreDownloadManager;

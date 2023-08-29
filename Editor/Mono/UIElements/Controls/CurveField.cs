@@ -557,8 +557,9 @@ namespace UnityEditor.UIElements
                 SetupStandardRepaint();
                 if (m_Texture != null)
                 {
+                    var rectPlayModeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
                     var rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeTextured(
-                        new Rect(0, 0, m_Texture.width, m_Texture.height), new Rect(0, 0, 1, 1), m_Texture, ScaleMode.StretchToFill, panel.contextType);
+                        new Rect(0, 0, m_Texture.width, m_Texture.height), new Rect(0, 0, 1, 1), m_Texture, ScaleMode.StretchToFill, rectPlayModeTintColor);
                     mgc.meshGenerator.DrawRectangle(rectParams);
                 }
             }
@@ -637,7 +638,7 @@ namespace UnityEditor.UIElements
                 }
 
                 Color finalColor = (QualitySettings.activeColorSpace == ColorSpace.Linear) ? curveColor.gamma : curveColor;
-                finalColor *= UIElementsUtility.editorPlayModeTintColor;
+                finalColor *= playModeTintColor;
 
                 // Send the view zoom factor so that the antialias width do not grow when zooming in.
                 m_Mat.SetFloat("_ZoomFactor", scale * realWidth / CurveField.k_EdgeWidth * EditorGUIUtility.pixelsPerPoint);

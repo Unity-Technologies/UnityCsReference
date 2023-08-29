@@ -42,10 +42,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private readonly PageManager m_PageManager;
-        private readonly PackageDatabase m_PackageDatabase;
+        private readonly IPageManager m_PageManager;
+        private readonly IPackageDatabase m_PackageDatabase;
 
-        public PackageItem(PageManager pageManager, PackageDatabase packageDatabase)
+        public PackageItem(IPageManager pageManager, IPackageDatabase packageDatabase)
         {
             m_PageManager = pageManager;
             m_PackageDatabase = packageDatabase;

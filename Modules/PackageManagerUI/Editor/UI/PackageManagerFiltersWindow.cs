@@ -40,11 +40,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private long m_ChangeTimestamp;
         private bool m_DelayedUpdate;
 
-        private ResourceLoader m_ResourceLoader;
+        private IResourceLoader m_ResourceLoader;
         protected virtual void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
         }
 
         protected virtual void OnEnable()

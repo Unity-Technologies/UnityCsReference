@@ -13,17 +13,17 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<PackageListView> {}
 
-        private PackageDatabase m_PackageDatabase;
-        private PageManager m_PageManager;
-        private AssetStoreCache m_AssetStoreCache;
-        private BackgroundFetchHandler m_BackgroundFetchHandler;
+        private IPackageDatabase m_PackageDatabase;
+        private IPageManager m_PageManager;
+        private IAssetStoreCache m_AssetStoreCache;
+        private IBackgroundFetchHandler m_BackgroundFetchHandler;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_PackageDatabase = container.Resolve<PackageDatabase>();
-            m_PageManager = container.Resolve<PageManager>();
-            m_AssetStoreCache = container.Resolve<AssetStoreCache>();
-            m_BackgroundFetchHandler = container.Resolve<BackgroundFetchHandler>();
+            m_PackageDatabase = container.Resolve<IPackageDatabase>();
+            m_PageManager = container.Resolve<IPageManager>();
+            m_AssetStoreCache = container.Resolve<IAssetStoreCache>();
+            m_BackgroundFetchHandler = container.Resolve<IBackgroundFetchHandler>();
         }
 
         private Dictionary<string, PackageItem> m_PackageItemsLookup;

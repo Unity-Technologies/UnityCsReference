@@ -10,17 +10,27 @@ using ConfigStatus = UnityEditorInternal.AssetStoreCachePathManager.ConfigStatus
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [Serializable]
-    internal class AssetStoreCachePathProxy
+    internal interface IAssetStoreCachePathProxy : IService
     {
-        public virtual event Action<CachePathConfig> onConfigChanged = delegate {};
+        event Action<CachePathConfig> onConfigChanged;
+
+        CachePathConfig GetDefaultConfig();
+        CachePathConfig GetConfig();
+        ConfigStatus SetConfig(string path);
+        ConfigStatus ResetConfig();
+    }
+
+    [Serializable]
+    internal class AssetStoreCachePathProxy : BaseService<IAssetStoreCachePathProxy>, IAssetStoreCachePathProxy
+    {
+        public event Action<CachePathConfig> onConfigChanged = delegate {};
 
         [SerializeField]
         private CachePathConfig m_CurrentConfig;
 
-        public virtual CachePathConfig GetDefaultConfig() => AssetStoreCachePathManager.GetDefaultConfig();
+        public CachePathConfig GetDefaultConfig() => AssetStoreCachePathManager.GetDefaultConfig();
 
-        public virtual CachePathConfig GetConfig()
+        public CachePathConfig GetConfig()
         {
             var config = AssetStoreCachePathManager.GetConfig();
             if (m_CurrentConfig == null ||
@@ -35,7 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_CurrentConfig;
         }
 
-        public virtual ConfigStatus SetConfig(string path)
+        public ConfigStatus SetConfig(string path)
         {
             var status = AssetStoreCachePathManager.SetConfig(path);
             if (status == ConfigStatus.Success)
@@ -43,7 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return status;
         }
 
-        public virtual ConfigStatus ResetConfig()
+        public ConfigStatus ResetConfig()
         {
             var status = AssetStoreCachePathManager.ResetConfig();
             if (status == ConfigStatus.Success)

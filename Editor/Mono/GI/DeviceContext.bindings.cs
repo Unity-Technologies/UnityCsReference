@@ -45,11 +45,11 @@ namespace UnityEngine.LightTransport
         bool Initialize();
         BufferID CreateBuffer(UInt64 size);
         void DestroyBuffer(BufferID id);
-        void WriteBuffer(BufferID id, NativeArray<byte> data);
-        EventID EnqueueBufferWrite(BufferID id, NativeArray<byte> data);
-        void ReadBuffer(BufferID id, NativeArray<byte> result);
-        EventID EnqueueBufferRead(BufferID id, NativeArray<byte> result);
+        EventID WriteBuffer(BufferID id, NativeArray<byte> data);
+        EventID ReadBuffer(BufferID id, NativeArray<byte> result);
         bool IsAsyncOperationComplete(EventID id);
+        bool WaitForAsyncOperation(EventID id);
+        bool Flush();
     }
     [StructLayout(LayoutKind.Sequential)]
     internal class ReferenceContext : IDeviceContext
@@ -84,23 +84,14 @@ namespace UnityEngine.LightTransport
             buffers[id].Dispose();
             buffers.Remove(id);
         }
-        public void WriteBuffer(BufferID id, NativeArray<byte> data)
+        public EventID WriteBuffer(BufferID id, NativeArray<byte> data)
         {
             Debug.Assert(buffers.ContainsKey(id), "Invalid buffer ID given.");
             var buffer = buffers[id];
             buffer.CopyFrom(data);
-        }
-        public EventID EnqueueBufferWrite(BufferID id, NativeArray<byte> data)
-        {
-            WriteBuffer(id, data);
             return new EventID();
         }
-        public void ReadBuffer(BufferID buffer, NativeArray<byte> result)
-        {
-            Debug.Assert(buffers.ContainsKey(buffer), "Invalid buffer ID given.");
-            buffers[buffer].CopyTo(result);
-        }
-        public EventID EnqueueBufferRead(BufferID buffer, NativeArray<byte> result)
+        public EventID ReadBuffer(BufferID buffer, NativeArray<byte> result)
         {
             Debug.Assert(buffers.ContainsKey(buffer), "Invalid buffer ID given.");
             buffers[buffer].CopyTo(result);
@@ -110,9 +101,18 @@ namespace UnityEngine.LightTransport
         {
             return true;
         }
+        public bool WaitForAsyncOperation(EventID id)
+        {
+            return true;
+        }
         public NativeArray<byte> GetNativeArray(BufferID id)
         {
             return buffers[id];
+        }
+
+        public bool Flush()
+        {
+            return true;
         }
     }
 }

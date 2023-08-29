@@ -6,10 +6,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class CheckUpdateFoldout : MultiSelectFoldout
     {
-        private AssetStoreCache m_AssetStoreCache;
-        private BackgroundFetchHandler m_BackgroundFetchHandler;
+        private readonly IAssetStoreCache m_AssetStoreCache;
+        private readonly IBackgroundFetchHandler m_BackgroundFetchHandler;
 
-        public CheckUpdateFoldout(PageManager pageManager, AssetStoreCache assetStoreCache, BackgroundFetchHandler backgroundFetchHandler)
+        public CheckUpdateFoldout(IPageManager pageManager, IAssetStoreCache assetStoreCache, IBackgroundFetchHandler backgroundFetchHandler)
             : base(new DeselectAction(pageManager, "deselectCheckUpdate"))
         {
             m_AssetStoreCache = assetStoreCache;

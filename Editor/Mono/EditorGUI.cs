@@ -3062,7 +3062,9 @@ namespace UnityEditor
                                 info.properties = properties;
                                 info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
                                 GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
-                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || !PrefabUtility.CanPropertyBeAppliedToTarget(property, rootObject))
+                                if (EditorUtility.IsPersistent(targetObject)
+                                    || !PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject)
+                                    || !PrefabUtility.CanPropertyBeAppliedToTarget(property, rootObject))
                                     pm.AddDisabledItem(menuItemContent);
                                 else
                                     pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabPropertyOverride, info);
@@ -7462,9 +7464,10 @@ namespace UnityEditor
             return ScriptAttributeUtility.GetHandler(property).GetHeight(property, label, includeChildren);
         }
 
+        [Obsolete("CanCacheInspectorGUI has been deprecated and is no longer used.", false)]
         public static bool CanCacheInspectorGUI(SerializedProperty property)
         {
-            return ScriptAttributeUtility.GetHandler(property).CanCacheInspectorGUI(property);
+            return false;
         }
 
         internal static bool HasVisibleChildFields(SerializedProperty property, bool isUIElements = false)

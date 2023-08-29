@@ -91,7 +91,7 @@ namespace UnityEngine.UIElements
         /// ]]>
         /// </code>
         /// </example>
-        public Span<int> GetActiveOptions(in Span<int> activeOptionsIndices)
+        public Span<int> GetActiveOptions(Span<int> activeOptionsIndices)
         {
             if (activeOptionsIndices.Length < m_Length)
                 throw new ArgumentException($"indices' length ({activeOptionsIndices.Length}) should be equal to or greater than the ToggleButtonGroupState's length ({m_Length}).");
@@ -128,7 +128,7 @@ namespace UnityEngine.UIElements
         /// ]]>
         /// </code>
         /// </example>
-        public Span<int> GetInactiveOptions(in Span<int> inactiveOptionsIndices)
+        public Span<int> GetInactiveOptions(Span<int> inactiveOptionsIndices)
         {
             if (inactiveOptionsIndices.Length < m_Length)
                 throw new ArgumentException($"indices' length ({inactiveOptionsIndices.Length}) should be equal to or greater than the ToggleButtonGroupState's length ({m_Length}).");

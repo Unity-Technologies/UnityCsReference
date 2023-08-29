@@ -7,9 +7,21 @@ using System.Text.RegularExpressions;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal partial class JsonParser
+    internal interface IJsonParser : IService
     {
-        public virtual List<string> ParseLabels(IDictionary<string, object> result)
+        List<string> ParseLabels(IDictionary<string, object> result);
+        string CleanUpHtml(string source, bool removeEndOfLine = true);
+
+        AssetStorePurchaseInfo ParsePurchaseInfo(IDictionary<string, object> rawInfo);
+        AssetStorePurchases ParsePurchases(IDictionary<string, object> rawList);
+        List<AssetStoreUpdateInfo> ParseUpdateInfos(IDictionary<string, object> rawList);
+        AssetStoreProductInfo ParseProductInfo(string assetStoreUrl, long productId, IDictionary<string, object> productDetail);
+        AssetStoreDownloadInfo ParseDownloadInfo(IDictionary<string, object> rawInfo);
+    }
+
+    internal partial class JsonParser : BaseService<IJsonParser>, IJsonParser
+    {
+        public List<string> ParseLabels(IDictionary<string, object> result)
         {
             var resultsList = result.GetList<string>("results");
             if (resultsList == null)
@@ -20,7 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return labels;
         }
 
-        public virtual string CleanUpHtml(string source, bool removeEndOfLine = true)
+        public string CleanUpHtml(string source, bool removeEndOfLine = true)
         {
             if (string.IsNullOrEmpty(source))
                 return source;

@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override PageCapability capability => PageCapability.SupportLocalReordering;
 
-        public SimplePage(PackageDatabase packageDatabase) : base(packageDatabase) {}
+        public SimplePage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
 
         public override bool UpdateFilters(PageFilters newFilters)
         {

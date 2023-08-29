@@ -21,13 +21,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private TextFieldPlaceholder m_InputPlaceholder;
         private EditorWindow m_AnchorWindow;
 
-        private ResourceLoader m_ResourceLoader;
-        private void ResolveDependencies(ResourceLoader resourceLoader)
+        private IResourceLoader m_ResourceLoader;
+        private void ResolveDependencies(IResourceLoader resourceLoader)
         {
             m_ResourceLoader = resourceLoader;
         }
 
-        public GenericInputDropdown(ResourceLoader resourceLoader, EditorWindow anchorWindow, InputDropdownArgs args)
+        public GenericInputDropdown(IResourceLoader resourceLoader, EditorWindow anchorWindow, InputDropdownArgs args)
         {
             ResolveDependencies(resourceLoader);
 

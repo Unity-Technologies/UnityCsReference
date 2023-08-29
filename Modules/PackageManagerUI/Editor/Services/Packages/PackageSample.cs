@@ -81,10 +81,10 @@ namespace UnityEditor.PackageManager.UI
         }
 
         [NonSerialized]
-        private IOProxy m_IOProxy;
+        private IIOProxy m_IOProxy;
         [NonSerialized]
-        private AssetDatabaseProxy m_AssetDatabase;
-        internal Sample(IOProxy ioProxy, AssetDatabaseProxy assetDatabase, string displayName, string description, string resolvedPath, string importPath, bool interactiveImport)
+        private IAssetDatabaseProxy m_AssetDatabase;
+        internal Sample(IIOProxy ioProxy, IAssetDatabaseProxy assetDatabase, string displayName, string description, string resolvedPath, string importPath, bool interactiveImport)
         {
             m_PreviousImports = null;
             m_Size = null;
@@ -97,7 +97,7 @@ namespace UnityEditor.PackageManager.UI
             this.interactiveImport = interactiveImport;
         }
 
-        internal static IEnumerable<Sample> FindByPackage(PackageInfo package, UpmCache upmCache, IOProxy ioProxy, AssetDatabaseProxy assetDatabaseProxy)
+        internal static IEnumerable<Sample> FindByPackage(PackageInfo package, IUpmCache upmCache, IIOProxy ioProxy, IAssetDatabaseProxy assetDatabaseProxy)
         {
             if (string.IsNullOrEmpty(package?.upmReserved) && string.IsNullOrEmpty(package.resolvedPath))
                 return Enumerable.Empty<Sample>();
@@ -161,15 +161,15 @@ namespace UnityEditor.PackageManager.UI
         /// <returns>A list of samples in the given package</returns>
         public static IEnumerable<Sample> FindByPackage(string packageName, string packageVersion)
         {
-            var upmCache = ServicesContainer.instance.Resolve<UpmCache>();
+            var upmCache = ServicesContainer.instance.Resolve<IUpmCache>();
             if (upmCache.installedPackageInfos.Count() == 0)
                 upmCache.SetInstalledPackageInfos(PackageInfo.GetAllRegisteredPackages());
 
             var package = upmCache.GetInstalledPackageInfo(packageName);
             if (package?.version == packageVersion || string.IsNullOrEmpty(packageVersion))
             {
-                var ioProxy = ServicesContainer.instance.Resolve<IOProxy>();
-                var assetDatabaseProxy = ServicesContainer.instance.Resolve<AssetDatabaseProxy>();
+                var ioProxy = ServicesContainer.instance.Resolve<IIOProxy>();
+                var assetDatabaseProxy = ServicesContainer.instance.Resolve<IAssetDatabaseProxy>();
                 return FindByPackage(package, upmCache, ioProxy, assetDatabaseProxy);
             }
             return Enumerable.Empty<Sample>();

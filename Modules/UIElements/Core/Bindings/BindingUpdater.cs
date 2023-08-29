@@ -143,7 +143,6 @@ namespace UnityEngine.UIElements
         {
             var target = context.targetElement;
             var resolvedDataSource = context.dataSource;
-            var resolvedSourcePath = context.dataSourcePath;
 
             // We can't extra a value from a null data source, so we can do an early exit here.
             if (null == resolvedDataSource)
@@ -154,36 +153,36 @@ namespace UnityEngine.UIElements
             }
 
             // Try to bind against the data source directly.
-            if (resolvedSourcePath.IsEmpty)
+            if (context.dataSourcePath.IsEmpty)
             {
                 // For primitive, strings and enums, we cannot use visitation, since those are not proper containers, so we need to use reflection
                 if (!TypeTraits.IsContainer(resolvedDataSource.GetType()))
                 {
-                    return TryUpdateUIWithNonContainer(context, dataBinding, resolvedDataSource);
+                    return TryUpdateUIWithNonContainer(in context, dataBinding, resolvedDataSource);
                 }
 
                 var visitRoot = VisitRoot(dataBinding, ref resolvedDataSource, in context);
 
                 if (!visitRoot.succeeded)
                 {
-                    var message = GetVisitationErrorString(visitRoot.visitationReturnCode, context);
+                    var message = GetVisitationErrorString(visitRoot.visitationReturnCode, in context);
                     return new BindingResult(BindingStatus.Failure, message);
                 }
 
                 return s_VisitDataSourceAsRootVisitor.result;
             }
 
-            var visitAtPath = VisitAtPath(dataBinding, BindingUpdateStage.UpdateUI, ref resolvedDataSource, resolvedSourcePath, in context);
+            var visitAtPath = VisitAtPath(dataBinding, BindingUpdateStage.UpdateUI, ref resolvedDataSource, context.dataSourcePath, in context);
 
             if (!visitAtPath.succeeded)
             {
-                var message = GetVisitationErrorString(visitAtPath.visitationReturnCode, context);
+                var message = GetVisitationErrorString(visitAtPath.visitationReturnCode, in context);
                 return new BindingResult(BindingStatus.Failure, message);
             }
 
             if (visitAtPath.atPathReturnCode != VisitReturnCode.Ok)
             {
-                var message = GetExtractValueErrorString(visitAtPath.atPathReturnCode, context.dataSource, resolvedSourcePath);
+                var message = GetExtractValueErrorString(visitAtPath.atPathReturnCode, context.dataSource, context.dataSourcePath);
                 return new BindingResult(BindingStatus.Failure, message);
             }
 
@@ -336,7 +335,7 @@ namespace UnityEngine.UIElements
             DataBinding dataBinding,
             BindingUpdateStage direction,
             ref TContainer container,
-            in BindingId path,
+            in PropertyPath path,
             in BindingContext context)
         {
             // Run a visitor to extract the value at the given path and continue to update the UI with a resolved value.
@@ -373,7 +372,7 @@ namespace UnityEngine.UIElements
         }
 
         // Internal for tests
-        internal static string GetExtractValueErrorString(VisitReturnCode returnCode, object target, PropertyPath path)
+        internal static string GetExtractValueErrorString(VisitReturnCode returnCode, object target, in PropertyPath path)
         {
             var prefix = $"[UI Toolkit] Could not retrieve the value at path '<b>{path}</b>' for source of type '<b>{target?.GetType().Name}</b>':";
             switch (returnCode)
@@ -395,7 +394,7 @@ namespace UnityEngine.UIElements
         }
 
         // Internal for tests
-        internal static string GetSetValueErrorString(VisitReturnCode returnCode, object source, PropertyPath sourcePath, object target, PropertyPath targetPath, object extractedValueFromSource)
+        internal static string GetSetValueErrorString(VisitReturnCode returnCode, object source, in PropertyPath sourcePath, object target, in PropertyPath targetPath, object extractedValueFromSource)
         {
             var prefix = $"[UI Toolkit] Could not set value for target of type '<b>{target.GetType().Name}</b>' at path '<b>{targetPath}</b>':";
             switch (returnCode)

@@ -13,9 +13,9 @@ internal class Sidebar : ScrollView
 {
     protected new class UxmlFactory : UxmlFactory<Sidebar, UxmlTraits> {}
 
-    private UpmRegistryClient m_UpmRegistryClient;
-    private PackageManagerProjectSettingsProxy m_SettingsProxy;
-    private PageManager m_PageManager;
+    private IUpmRegistryClient m_UpmRegistryClient;
+    private IProjectSettingsProxy m_SettingsProxy;
+    private IPageManager m_PageManager;
 
     private Dictionary<string, SidebarRow> m_ScopedRegistryRows = new();
     private SidebarRow m_CurrentlySelectedRow;
@@ -23,9 +23,9 @@ internal class Sidebar : ScrollView
     private void ResolveDependencies()
     {
         var container = ServicesContainer.instance;
-        m_UpmRegistryClient = container.Resolve<UpmRegistryClient>();
-        m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
-        m_PageManager = container.Resolve<PageManager>();
+        m_UpmRegistryClient = container.Resolve<IUpmRegistryClient>();
+        m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
+        m_PageManager = container.Resolve<IPageManager>();
     }
 
     public Sidebar()

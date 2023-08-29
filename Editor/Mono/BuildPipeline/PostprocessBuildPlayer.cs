@@ -84,7 +84,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static public string PrepareForBuild(BuildPlayerOptions buildOptions)
         {
-            var postprocessor = ModuleManager.GetBuildPostProcessor(buildOptions.targetGroup, buildOptions.target);
+            var postprocessor = ModuleManager.GetBuildPostProcessor(buildOptions.target);
             if (postprocessor == null)
                 return null;
             return postprocessor.PrepareForBuild(buildOptions);
@@ -92,7 +92,7 @@ namespace UnityEditor
 
         static public string GetExtensionForBuildTarget(BuildTargetGroup targetGroup, BuildTarget target, int subtarget, BuildOptions options)
         {
-            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(target);
             if (postprocessor == null)
                 return string.Empty;
             return postprocessor.GetExtension(target, subtarget, options);
@@ -101,9 +101,15 @@ namespace UnityEditor
         static public string GetExtensionForBuildTarget(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options) =>
             GetExtensionForBuildTarget(targetGroup, target, EditorUserBuildSettings.GetActiveSubtargetFor(target), options);
 
-        static public bool SupportsInstallInBuildFolder(BuildTargetGroup targetGroup, BuildTarget target)
+         static public string GetExtensionForBuildTarget(BuildTarget target, int subtarget, BuildOptions options) =>
+            GetExtensionForBuildTarget(BuildTargetGroup.Unknown, target, subtarget, options);
+
+         static public string GetExtensionForBuildTarget(BuildTarget target, BuildOptions options) =>
+            GetExtensionForBuildTarget(BuildTargetGroup.Unknown, target, EditorUserBuildSettings.GetActiveSubtargetFor(target), options);
+
+        static public bool SupportsInstallInBuildFolder(BuildTarget target)
         {
-            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(target);
             if (postprocessor != null)
             {
                 return postprocessor.SupportsInstallInBuildFolder();
@@ -112,17 +118,22 @@ namespace UnityEditor
             return false;
         }
 
-        static public bool SupportsLz4Compression(BuildTargetGroup targetGroup, BuildTarget target)
+        static public bool SupportsLz4Compression(BuildTarget target)
         {
-            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(target);
             if (postprocessor != null)
                 return postprocessor.SupportsLz4Compression();
             return false;
         }
 
-        static public Compression GetDefaultCompression(BuildTargetGroup targetGroup, BuildTarget target)
+        static public bool SupportsLz4Compression(BuildTargetGroup targetGroup, BuildTarget target)
         {
-            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
+            return SupportsLz4Compression(target);
+        }
+
+        static public Compression GetDefaultCompression(BuildTarget target)
+        {
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(target);
             if (postprocessor != null)
                 return postprocessor.GetDefaultCompression();
             return Compression.None;
@@ -137,7 +148,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static public void Launch(BuildTargetGroup targetGroup, BuildTarget buildTarget, string path, string productName, BuildOptions options, BuildReport buildReport)
         {
-            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, buildTarget);
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(buildTarget);
             if (postprocessor != null)
             {
                 BuildLaunchPlayerArgs args;
@@ -153,11 +164,11 @@ namespace UnityEditor
             else
             {
                 throw new UnityException(
-                    $"Launching for target group {targetGroup}, build target {buildTarget} is not supported: There is no build post-processor available.");
+                    $"Launching for build target {buildTarget} is not supported: There is no build post-processor available.");
             }
         }
 
-        static public void LaunchOnTargets(BuildTargetGroup targetGroup, BuildTarget buildTarget, Build.Reporting.BuildReport buildReport, List<DeploymentTargetId> launchTargets)
+        static public void LaunchOnTargets(BuildTarget buildTarget, BuildReport buildReport, List<DeploymentTargetId> launchTargets)
         {
             try
             {
@@ -183,7 +194,7 @@ namespace UnityEditor
                     {
                         try
                         {
-                            var manager = DeploymentTargetManager.CreateInstance(targetGroup, buildReport.summary.platform);
+                            var manager = DeploymentTargetManager.CreateInstance(buildReport.summary.platform);
                             var buildProperties = BuildProperties.GetFromBuildReport(buildReport);
                             manager.LaunchBuildOnTarget(buildProperties, target, taskManager.SpawnProgressHandlerFromCurrentTask());
                             successfulLaunches++;
@@ -224,7 +235,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static public void UpdateBootConfig(BuildTargetGroup targetGroup, BuildTarget target, BootConfigData config, BuildOptions options)
         {
-            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(target);
             if (postprocessor != null)
                 postprocessor.UpdateBootConfig(target, config, options);
 
@@ -248,11 +259,11 @@ namespace UnityEditor
             string playerPackage = BuildPipeline.GetPlaybackEngineDirectory(target, options);
 
             // Disallow providing an empty string as the installPath
-            bool willInstallInBuildFolder = (options & BuildOptions.InstallInBuildFolder) != 0 && SupportsInstallInBuildFolder(targetGroup, target);
+            bool willInstallInBuildFolder = (options & BuildOptions.InstallInBuildFolder) != 0 && SupportsInstallInBuildFolder(target);
             if (installPath == String.Empty && !willInstallInBuildFolder)
                 throw new Exception(installPath + " must not be an empty string");
 
-            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(target);
             if (postprocessor == null)
                 // If postprocessor is not provided, build target is not supported
                 throw new UnityException($"Build target '{target}' not supported");
@@ -302,7 +313,7 @@ namespace UnityEditor
 
         public static void PostProcessCompletedBuild(BuildPostProcessArgs args)
         {
-            var postprocessor = ModuleManager.GetBuildPostProcessor(BuildPipeline.GetBuildTargetGroup(args.target), args.target);
+            var postprocessor = ModuleManager.GetBuildPostProcessor(args.target);
             postprocessor.PostProcessCompletedBuild(args);
         }
     }

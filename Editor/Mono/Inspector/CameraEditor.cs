@@ -530,13 +530,9 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(Styles.dynamicResolutionTimingWarning.text, MessageType.Warning, true);
             }
 
+            [Obsolete("This API is deprecated and will be removed. Please use XRManagement package instead.", false)]
             public void DrawVR()
             {
-                if (!vrEnabled)
-                    return;
-
-                EditorGUILayout.PropertyField(stereoSeparation);
-                EditorGUILayout.PropertyField(stereoConvergence);
             }
 
             public void DrawMultiDisplay()
@@ -588,8 +584,6 @@ namespace UnityEditor
                 return m_PreviewCamera;
             }
         }
-        
-        static bool vrEnabled => VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget));
 
         static bool showMultiDisplayOptions
         {
@@ -633,7 +627,7 @@ namespace UnityEditor
 
         internal bool showDynamicResolutionTimingWarning => (settings.allowDynamicResolution.boolValue || settings.allowDynamicResolution.hasMultipleDifferentValues) && !PlayerSettings.enableFrameTimingStats;
 
-        bool showTargetEyeOption => settings.targetEye.intValue != (int)StereoTargetEyeMask.Both || vrEnabled || k_DisplayDescriptors.Count > 0;
+        bool showTargetEyeOption => settings.targetEye.intValue != (int)StereoTargetEyeMask.Both || k_DisplayDescriptors.Count > 0;
 
         // Camera's depth texture mode is not serialized data, so can't get to it through
         // serialized property (hence no multi-edit).
@@ -848,7 +842,6 @@ namespace UnityEditor
                 }
             }
 
-            settings.DrawVR();
             EditorGUILayout.Space();
             settings.DrawMultiDisplay();
 
@@ -1037,9 +1030,6 @@ namespace UnityEditor
                 return visible;
             });
 
-            var vrGroup = editor.MandatoryQ<VisualElement>(Styles.k_VrGroupElementName);
-            var vrGroupCheck = UIElementsEditorUtility.CreateDynamicVisibilityCallback(vrGroup, () => vrEnabled);
-
             Action targetDisplayCheck;
             Action targetDisplayUpdate;
             var targetDisplay = ExtendedQuery<DropdownField>(editor, Styles.k_TargetDisplayElementName, Styles.targetDisplay);
@@ -1154,7 +1144,6 @@ namespace UnityEditor
                 depthTextureModeCheck?.Invoke();
                 cameraWarningsUpdate?.Invoke();
 
-                vrGroupCheck?.Invoke();
                 targetDisplayCheck?.Invoke();
                 targetEyeCheck?.Invoke();
                 commandBuffersUpdate?.Invoke();

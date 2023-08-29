@@ -13,18 +13,39 @@ namespace UnityEditor.PackageManager.UI.Internal
     using CachePathConfig = AssetStoreCachePathManager.CachePathConfig;
     using ConfigStatus = AssetStoreCachePathManager.ConfigStatus;
 
+    internal interface IAssetStoreDownloadManager : IService
+    {
+        event Action<AssetStoreDownloadOperation, UIError> onDownloadError;
+        event Action<AssetStoreDownloadOperation> onDownloadFinalized;
+        event Action<AssetStoreDownloadOperation> onDownloadProgress;
+        event Action<AssetStoreDownloadOperation> onDownloadStateChanged;
+        event Action<long> onBeforeDownloadStart;
+
+        bool IsAnyDownloadInProgress();
+        bool IsAnyDownloadInProgressOrPause();
+        int DownloadInProgressCount();
+        bool Download(IEnumerable<long> productIds);
+        void ClearCache();
+        AssetStoreDownloadOperation GetDownloadOperation(long? productId);
+        void OnDownloadProgress(string downloadId, string message, ulong bytes, ulong total, int errorCode);
+        void AbortAllDownloads();
+        void AbortDownload(long? productId);
+        void PauseDownload(long? productId);
+        void ResumeDownload(long? productId);
+    }
+
     [Serializable]
-    internal class AssetStoreDownloadManager : ISerializationCallbackReceiver
+    internal class AssetStoreDownloadManager : BaseService<IAssetStoreDownloadManager>, IAssetStoreDownloadManager, ISerializationCallbackReceiver
     {
         private const string k_TermsOfServicesURL = "https://assetstore.unity.com/account/term";
 
-        public virtual event Action<AssetStoreDownloadOperation, UIError> onDownloadError = delegate {};
-        public virtual event Action<AssetStoreDownloadOperation> onDownloadFinalized = delegate {};
-        public virtual event Action<AssetStoreDownloadOperation> onDownloadProgress = delegate {};
-        public virtual event Action<AssetStoreDownloadOperation> onDownloadStateChanged = delegate {};
-        public virtual event Action<long> onBeforeDownloadStart = delegate {};
+        public event Action<AssetStoreDownloadOperation, UIError> onDownloadError = delegate {};
+        public event Action<AssetStoreDownloadOperation> onDownloadFinalized = delegate {};
+        public event Action<AssetStoreDownloadOperation> onDownloadProgress = delegate {};
+        public event Action<AssetStoreDownloadOperation> onDownloadStateChanged = delegate {};
+        public event Action<long> onBeforeDownloadStart = delegate {};
 
-        private Dictionary<long, AssetStoreDownloadOperation> m_DownloadOperations = new Dictionary<long, AssetStoreDownloadOperation>();
+        private readonly Dictionary<long, AssetStoreDownloadOperation> m_DownloadOperations = new();
 
         [SerializeField]
         private bool m_TermsOfServiceAccepted = false;
@@ -32,52 +53,39 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private AssetStoreDownloadOperation[] m_SerializedDownloadOperations = new AssetStoreDownloadOperation[0];
 
-        [NonSerialized]
-        private ApplicationProxy m_Application;
-        [NonSerialized]
-        private UnityConnectProxy m_UnityConnect;
-        [NonSerialized]
-        private IOProxy m_IOProxy;
-        [NonSerialized]
-        private AssetStoreCache m_AssetStoreCache;
-        [NonSerialized]
-        private AssetStoreUtils m_AssetStoreUtils;
-        [NonSerialized]
-        private AssetStoreRestAPI m_AssetStoreRestAPI;
-        [NonSerialized]
-        private AssetStoreCachePathProxy m_AssetStoreCachePathProxy;
-        [NonSerialized]
-        private LocalInfoHandler m_LocalInfoHandler;
-        public void ResolveDependencies(ApplicationProxy application,
-            UnityConnectProxy unityConnect,
-            IOProxy ioProxy,
-            AssetStoreCache assetStoreCache,
-            AssetStoreUtils assetStoreUtils,
-            AssetStoreRestAPI assetStoreRestAPI,
-            AssetStoreCachePathProxy assetStoreCachePathProxy,
-            LocalInfoHandler localInfoHandler)
+        private readonly IApplicationProxy m_Application;
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IIOProxy m_IOProxy;
+        private readonly IAssetStoreCache m_AssetStoreCache;
+        private readonly IAssetStoreUtils m_AssetStoreUtils;
+        private readonly IAssetStoreRestAPI m_AssetStoreRestAPI;
+        private readonly IAssetStoreCachePathProxy m_AssetStoreCachePathProxy;
+        private readonly ILocalInfoHandler m_LocalInfoHandler;
+        public AssetStoreDownloadManager(IApplicationProxy application,
+            IUnityConnectProxy unityConnect,
+            IIOProxy ioProxy,
+            IAssetStoreCache assetStoreCache,
+            IAssetStoreUtils assetStoreUtils,
+            IAssetStoreRestAPI assetStoreRestAPI,
+            IAssetStoreCachePathProxy assetStoreCachePathProxy,
+            ILocalInfoHandler localInfoHandler)
         {
-            m_Application = application;
-            m_UnityConnect = unityConnect;
-            m_IOProxy = ioProxy;
-            m_AssetStoreCache = assetStoreCache;
-            m_AssetStoreUtils = assetStoreUtils;
-            m_AssetStoreRestAPI = assetStoreRestAPI;
-            m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
-            m_LocalInfoHandler = localInfoHandler;
-
-            foreach (var operation in m_DownloadOperations.Values)
-                operation.ResolveDependencies(m_IOProxy, m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCache, m_AssetStoreCachePathProxy, m_LocalInfoHandler);
+            m_Application = RegisterDependency(application);
+            m_UnityConnect = RegisterDependency(unityConnect);
+            m_IOProxy = RegisterDependency(ioProxy);
+            m_AssetStoreCache = RegisterDependency(assetStoreCache);
+            m_AssetStoreUtils = RegisterDependency(assetStoreUtils);
+            m_AssetStoreRestAPI = RegisterDependency(assetStoreRestAPI);
+            m_AssetStoreCachePathProxy = RegisterDependency(assetStoreCachePathProxy);
+            m_LocalInfoHandler = RegisterDependency(localInfoHandler);
         }
 
         // The AssetStoreDownloadManager implementation requires the help of a ScriptableObject to dispatch download progress event.
         private class DownloadDelegateHandler : ScriptableObject
         {
-            public AssetStoreDownloadManager downloadManager { get; set; }
-
             public void OnDownloadProgress(string downloadId, string message, ulong bytes, ulong total, int errorCode)
             {
-                downloadManager?.OnDownloadProgress(downloadId, message, bytes, total, errorCode);
+                ServicesContainer.instance.Resolve<AssetStoreDownloadManager>().OnDownloadProgress(downloadId, message, bytes, total, errorCode);
             }
         }
 
@@ -103,7 +111,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_DownloadDelegateHandler = ScriptableObject.CreateInstance<DownloadDelegateHandler>();
                     m_DownloadDelegateHandler.hideFlags = HideFlags.DontSave;
                 }
-                m_DownloadDelegateHandler.downloadManager = this;
                 m_DownloadDelegateHandlerInstanceId = m_DownloadDelegateHandler.GetInstanceID();
                 return m_DownloadDelegateHandler;
             }
@@ -125,17 +132,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DelegateRegistered = false;
         }
 
-        public virtual bool IsAnyDownloadInProgress()
+        public bool IsAnyDownloadInProgress()
         {
             return m_DownloadOperations.Values.Any(d => d.isInProgress);
         }
 
-        public virtual bool IsAnyDownloadInProgressOrPause()
+        public bool IsAnyDownloadInProgressOrPause()
         {
             return m_DownloadOperations.Values.Any(d => d.isInProgress || d.isInPause);
         }
 
-        public virtual int DownloadInProgressCount()
+        public int DownloadInProgressCount()
         {
             return m_DownloadOperations.Values.Count(d => d.isInProgress);
         }
@@ -157,7 +164,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             operation.Download(false);
         }
 
-        public virtual bool Download(IEnumerable<long> productIds)
+        public bool Download(IEnumerable<long> productIds)
         {
             return CheckTermsOfServiceAgreement(
                 () =>
@@ -173,12 +180,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 });
         }
 
-        public virtual void ClearCache()
+        public void ClearCache()
         {
             AbortAllDownloads();
         }
 
-        public virtual AssetStoreDownloadOperation GetDownloadOperation(long? productId)
+        public AssetStoreDownloadOperation GetDownloadOperation(long? productId)
         {
             return productId > 0 ? m_DownloadOperations.Get(productId.Value) : null;
         }
@@ -205,7 +212,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         // This function will be called by AssetStoreUtils after the download delegate registration
         // assetStoreUtils.RegisterDownloadDelegate
-        public virtual void OnDownloadProgress(string downloadId, string message, ulong bytes, ulong total, int errorCode)
+        public void OnDownloadProgress(string downloadId, string message, ulong bytes, ulong total, int errorCode)
         {
             // The download unique id we receive from the A$ download callback could be in the format of
             // `123456` or `content__123456` (depending on where the download starts).
@@ -228,7 +235,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 RemoveDownloadOperation(productId);
         }
 
-        public virtual void AbortAllDownloads()
+        public void AbortAllDownloads()
         {
             var operations = m_DownloadOperations.Values.ToList();
             m_DownloadOperations.Clear();
@@ -236,17 +243,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                 operation.Cancel();
         }
 
-        public virtual void AbortDownload(long? productId)
+        public void AbortDownload(long? productId)
         {
             GetDownloadOperation(productId)?.Abort();
         }
 
-        public virtual void PauseDownload(long? productId)
+        public void PauseDownload(long? productId)
         {
             GetDownloadOperation(productId)?.Pause();
         }
 
-        public virtual void ResumeDownload(long? productId)
+        public void ResumeDownload(long? productId)
         {
             var operation = GetDownloadOperation(productId);
             if (!operation?.isInPause ?? true)
@@ -261,7 +268,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 RegisterDownloadDelegate();
         }
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             m_Application.onPlayModeStateChanged += OnPlayModeStateChanged;
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
@@ -270,7 +277,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 RegisterDownloadDelegate();
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
             m_Application.onPlayModeStateChanged -= OnPlayModeStateChanged;
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
@@ -341,7 +348,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnAfterDeserialize()
         {
             foreach (var operation in m_SerializedDownloadOperations)
+            {
+                operation.ResolveDependencies(m_IOProxy, m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCache, m_AssetStoreCachePathProxy, m_LocalInfoHandler);
                 SetupDownloadOperation(operation);
+            }
         }
     }
 }

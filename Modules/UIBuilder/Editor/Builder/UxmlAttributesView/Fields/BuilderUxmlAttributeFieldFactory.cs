@@ -154,13 +154,6 @@ namespace Unity.UI.Builder
 
             valueFieldInInspector.multiline = boolEvt.newValue;
             valueFieldInInspector.EnableInClassList(BuilderConstants.InspectorMultiLineTextFieldClassName, boolEvt.newValue);
-            if (!boolEvt.newValue)
-                return;
-
-            // when multiline set, inspector field does not have \n, but its value attribute does
-            // set inspector field value to the value attribute
-            var valueAttributeString = attributeUxmlOwner.GetAttributeValue("value");
-            valueFieldInInspector.SetValueWithoutNotify(valueAttributeString);
         }
     }
 

@@ -89,7 +89,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal static Dictionary<string, object> GetEditorGameServiceField(PackageInfo packageInfo)
         {
-            var upmCache = ServicesContainer.instance.Resolve<UpmCache>();
+            var upmCache = ServicesContainer.instance.Resolve<IUpmCache>();
             var upmReserved = upmCache.ParseUpmReserved(packageInfo);
             if (upmReserved == null)
                 return null;
@@ -102,7 +102,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (version == null)
                 return null;
-            var upmCache = ServicesContainer.instance.Resolve<UpmCache>();
+            var upmCache = ServicesContainer.instance.Resolve<IUpmCache>();
             var packageInfo = upmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
             return GetEditorGameServiceField(packageInfo);
         }
@@ -121,7 +121,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var configPath = Path.Combine(EditorApplication.applicationContentsPath, k_ServicesConfigPath);
             LoadServicesConfig(configPath);
 
-            var pageManager = ServicesContainer.instance.Resolve<PageManager>();
+            var pageManager = ServicesContainer.instance.Resolve<IPageManager>();
             pageManager.AddExtensionPage(new ExtensionPageArgs
             {
                 name = k_ServicesExtensionPageName,
@@ -195,7 +195,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private static void OnConfigureClicked(PackageSelectionArgs args)
         {
-            var database = ServicesContainer.instance.Resolve<PackageDatabase>();
+            var database = ServicesContainer.instance.Resolve<IPackageDatabase>();
             var package = database.GetPackage(args.package.uniqueId);
             var installedVersion = package?.versions?.installed;
             if (installedVersion == null)

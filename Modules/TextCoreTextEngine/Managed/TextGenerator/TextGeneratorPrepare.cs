@@ -324,8 +324,13 @@ namespace UnityEngine.TextCore.Text
                     uint nextCharacter = i + 1 < textProcessingArray.Length ? (uint)textProcessingArray[i + 1].unicode : 0;
                     if (nextCharacter >= 0xFE00 && nextCharacter <= 0xFE0F)
                     {
+                        uint variantGlyphIndex;
                         // Get potential variant glyph index
-                        uint variantGlyphIndex = m_CurrentFontAsset.GetGlyphVariantIndex((uint)unicode, nextCharacter);
+                        if (!m_CurrentFontAsset.TryGetGlyphVariantIndexInternal(unicode, nextCharacter, out variantGlyphIndex))
+                        {
+                            variantGlyphIndex = m_CurrentFontAsset.GetGlyphVariantIndex(unicode, nextCharacter);
+                            m_CurrentFontAsset.TryAddGlyphVariantIndexInternal(unicode, nextCharacter, variantGlyphIndex);
+                        }
 
                         if (variantGlyphIndex != 0)
                         {
@@ -549,6 +554,9 @@ namespace UnityEngine.TextCore.Text
 
             if (character != null)
                 return character;
+
+            if (!isMainThread && character == null && fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
+                return null;
 
             // Search potential list of fallback font assets assigned to the font asset.
             if (fontAsset.m_FallbackFontAssetTable != null && fontAsset.m_FallbackFontAssetTable.Count > 0)
@@ -1210,14 +1218,19 @@ namespace UnityEngine.TextCore.Text
                     uint nextCharacter = i + 1 < textProcessingArray.Length ? (uint)textProcessingArray[i + 1].unicode : 0;
                     if (nextCharacter >= 0xFE00 && nextCharacter <= 0xFE0F)
                     {
-                        // Get potential variant glyph index
-                        uint variantGlyphIndex = m_CurrentFontAsset.GetGlyphVariantIndex((uint)unicode, nextCharacter);
 
-                        if (variantGlyphIndex != 0)
+                        uint variantGlyphIndex;
+                        // Get potential variant glyph index
+                        if (!m_CurrentFontAsset.TryGetGlyphVariantIndexInternal(unicode, nextCharacter, out variantGlyphIndex))
                         {
                             if (!isMainThread)
                                 return false;
+                            variantGlyphIndex = m_CurrentFontAsset.GetGlyphVariantIndex(unicode, nextCharacter);
+                            m_CurrentFontAsset.TryAddGlyphVariantIndexInternal(unicode, nextCharacter, variantGlyphIndex);
+                        }
 
+                        if (variantGlyphIndex != 0)
+                        {
                             m_CurrentFontAsset.TryAddGlyphInternal(variantGlyphIndex, out Glyph glyph);
                         }
 

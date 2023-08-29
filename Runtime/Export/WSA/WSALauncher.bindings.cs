@@ -26,8 +26,8 @@ namespace UnityEngine.WSA
     }
 
     [NativeConditional("PLATFORM_METRO")]
+    [NativeHeader("PlatformDependent/MetroPlayer/Bindings/WSALauncher.bindings.h")]
     [NativeHeader("PlatformDependent/MetroPlayer/MetroLauncher.h")]
-    [NativeHeader("Runtime/Export/WSA/WSALauncher.bindings.h")]
     [StaticAccessor("metro::Launcher", StaticAccessorType.DoubleColon)]
     public sealed class Launcher
     {

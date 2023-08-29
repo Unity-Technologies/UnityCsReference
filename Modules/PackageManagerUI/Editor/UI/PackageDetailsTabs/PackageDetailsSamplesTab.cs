@@ -18,19 +18,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IEnumerable<Sample> m_Samples;
         private IPackageVersion m_Version;
 
-        private readonly ResourceLoader m_ResourceLoader;
-        private readonly PackageDatabase m_PackageDatabase;
-        private readonly SelectionProxy m_Selection;
-        private readonly AssetDatabaseProxy m_AssetDatabase;
-        private readonly ApplicationProxy m_Application;
-        private readonly IOProxy m_IOProxy;
-        public PackageDetailsSamplesTab(UnityConnectProxy unityConnect,
-            ResourceLoader resourceLoader,
-            PackageDatabase packageDatabase,
-            SelectionProxy selection,
-            AssetDatabaseProxy assetDatabase,
-            ApplicationProxy application,
-            IOProxy iOProxy) : base(unityConnect)
+        private readonly IResourceLoader m_ResourceLoader;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly ISelectionProxy m_Selection;
+        private readonly IAssetDatabaseProxy m_AssetDatabase;
+        private readonly IApplicationProxy m_Application;
+        private readonly IIOProxy m_IOProxy;
+        public PackageDetailsSamplesTab(IUnityConnectProxy unityConnect,
+            IResourceLoader resourceLoader,
+            IPackageDatabase packageDatabase,
+            ISelectionProxy selection,
+            IAssetDatabaseProxy assetDatabase,
+            IApplicationProxy application,
+            IIOProxy iOProxy) : base(unityConnect)
         {
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Samples");

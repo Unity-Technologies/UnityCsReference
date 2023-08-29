@@ -9,10 +9,31 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [Serializable]
-    internal class BackgroundFetchHandler : ISerializationCallbackReceiver
+    internal interface IBackgroundFetchHandler : IService
     {
-        public virtual event Action onCheckUpdateProgress = delegate {};
+        event Action onCheckUpdateProgress;
+
+        bool isCheckUpdateInProgress { get; }
+        int checkUpdatePercentage { get; }
+
+        void AddToFetchProductInfoQueue(long productId);
+        void RemoveFromFetchProductInfoQueue(long productId);
+        void ClearFetchProductInfo();
+        void AddToExtraFetchPackageInfoQueue(string packageNameOrId, long productId = 0);
+        void ClearExtraFetchPackageInfo();
+        void AddToFetchPurchaseInfoQueue(long productId);
+        void ClearFetchPurchaseInfo();
+        void PushToCheckUpdateStack(long productId, bool forceCheckUpdate = false);
+        void PushToCheckUpdateStack(IEnumerable<long> productIds, bool forceCheckUpdate = false);
+        void ForceCheckUpdateAllCachedAndImportedPackages();
+        void CancelCheckUpdates();
+        void CheckUpdateForUncheckedLocalInfos();
+    }
+
+    [Serializable]
+    internal class BackgroundFetchHandler : BaseService<IBackgroundFetchHandler>, IBackgroundFetchHandler, ISerializationCallbackReceiver
+    {
+        public event Action onCheckUpdateProgress = delegate {};
 
         internal const int k_MaxFetchUpdateInfoCount = 30;
         internal const int k_MaxFetchPurchaseInfoCount = 30;
@@ -21,9 +42,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal const int k_ExtraFetchPackageInfoCountPerUpdate = 5;
         internal const int k_MaxExtraFetchPackageInfoCount = 20;
 
-        public virtual bool isCheckUpdateInProgress => m_UnityConnect.isUserLoggedIn && (m_CheckUpdateInProgress.Any() || m_CheckUpdateStack.Any());
+        public bool isCheckUpdateInProgress => m_UnityConnect.isUserLoggedIn && (m_CheckUpdateInProgress.Any() || m_CheckUpdateStack.Any());
 
-        public virtual int checkUpdatePercentage
+        public int checkUpdatePercentage
         {
             get
             {
@@ -33,43 +54,34 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        [NonSerialized]
-        private ApplicationProxy m_Application;
-        [NonSerialized]
-        private UnityConnectProxy m_UnityConnect;
-        [NonSerialized]
-        private UpmCache m_UpmCache;
-        [NonSerialized]
-        private UpmClient m_UpmClient;
-        [NonSerialized]
-        private AssetStoreClientV2 m_AssetStoreClient;
-        [NonSerialized]
-        private AssetStoreCache m_AssetStoreCache;
-        [NonSerialized]
-        private FetchStatusTracker m_FetchStatusTracker;
-        [NonSerialized]
-        private PageManager m_PageManager;
-        [NonSerialized]
-        private PageRefreshHandler m_PageRefreshHandler;
-        public void ResolveDependencies(ApplicationProxy application,
-            UnityConnectProxy unityConnect,
-            UpmCache upmCache,
-            UpmClient upmClient,
-            AssetStoreClientV2 assetStoreClient,
-            AssetStoreCache assetStoreCache,
-            FetchStatusTracker fetchStatusTracker,
-            PageManager pageManager,
-            PageRefreshHandler pageRefreshHandler)
+        private readonly IApplicationProxy m_Application;
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IUpmCache m_UpmCache;
+        private readonly IUpmClient m_UpmClient;
+        private readonly IAssetStoreClient m_AssetStoreClient;
+        private readonly IAssetStoreCache m_AssetStoreCache;
+        private readonly IFetchStatusTracker m_FetchStatusTracker;
+        private readonly IPageManager m_PageManager;
+        private readonly IPageRefreshHandler m_PageRefreshHandler;
+        public BackgroundFetchHandler(IApplicationProxy application,
+            IUnityConnectProxy unityConnect,
+            IUpmCache upmCache,
+            IUpmClient upmClient,
+            IAssetStoreClient assetStoreClient,
+            IAssetStoreCache assetStoreCache,
+            IFetchStatusTracker fetchStatusTracker,
+            IPageManager pageManager,
+            IPageRefreshHandler pageRefreshHandler)
         {
-            m_Application = application;
-            m_UnityConnect = unityConnect;
-            m_UpmCache = upmCache;
-            m_UpmClient = upmClient;
-            m_AssetStoreClient = assetStoreClient;
-            m_AssetStoreCache = assetStoreCache;
-            m_FetchStatusTracker = fetchStatusTracker;
-            m_PageManager = pageManager;
-            m_PageRefreshHandler = pageRefreshHandler;
+            m_Application = RegisterDependency(application);
+            m_UnityConnect = RegisterDependency(unityConnect);
+            m_UpmCache = RegisterDependency(upmCache);
+            m_UpmClient = RegisterDependency(upmClient);
+            m_AssetStoreClient = RegisterDependency(assetStoreClient);
+            m_AssetStoreCache = RegisterDependency(assetStoreCache);
+            m_FetchStatusTracker = RegisterDependency(fetchStatusTracker);
+            m_PageManager = RegisterDependency(pageManager);
+            m_PageRefreshHandler = RegisterDependency(pageRefreshHandler);
         }
 
         // We keep a queue in addition to the hash-set so that we can fetch product info in order and skip the ones that's not in the hash-set.
@@ -115,7 +127,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private long[] m_SerializedPackageNameToProductIdMapValues = Array.Empty<long>();
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
 
@@ -124,7 +136,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
 
@@ -199,18 +211,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                     AddToFetchProductInfoQueue(fetchStatus.productId);
         }
 
-        public virtual void AddToFetchProductInfoQueue(long productId)
+        public void AddToFetchProductInfoQueue(long productId)
         {
             m_FetchProductInfoQueue.Enqueue(productId);
             m_ProductInfosToFetch.Add(productId);
         }
 
-        public virtual void RemoveFromFetchProductInfoQueue(long productId)
+        public void RemoveFromFetchProductInfoQueue(long productId)
         {
             m_ProductInfosToFetch.Remove(productId);
         }
 
-        public virtual void ClearFetchProductInfo()
+        public void ClearFetchProductInfo()
         {
             m_FetchProductInfoQueue.Clear();
             m_FetchProductInfoInProgress.Clear();
@@ -236,14 +248,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual void AddToExtraFetchPackageInfoQueue(string packageNameOrId, long productId = 0)
+        public void AddToExtraFetchPackageInfoQueue(string packageNameOrId, long productId = 0)
         {
             m_ExtraFetchPackageInfoQueue.Enqueue(packageNameOrId);
             if (productId > 0)
                 m_PackageNameToProductIdMap[packageNameOrId] = productId;
         }
 
-        public virtual void ClearExtraFetchPackageInfo()
+        public void ClearExtraFetchPackageInfo()
         {
             m_ExtraFetchPackageInfoQueue.Clear();
             m_PackageNameToProductIdMap.Clear();
@@ -269,12 +281,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual void AddToFetchPurchaseInfoQueue(long productId)
+        public void AddToFetchPurchaseInfoQueue(long productId)
         {
             m_FetchPurchaseInfoQueue.Enqueue(productId);
         }
 
-        public virtual void ClearFetchPurchaseInfo()
+        public void ClearFetchPurchaseInfo()
         {
             m_FetchPurchaseInfoQueue.Clear();
             m_FetchPurchaseInfoInProgress.Clear();
@@ -331,7 +343,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             onCheckUpdateProgress?.Invoke();
         }
 
-        public virtual void PushToCheckUpdateStack(long productId, bool forceCheckUpdate = false)
+        public void PushToCheckUpdateStack(long productId, bool forceCheckUpdate = false)
         {
             if (productId <= 0)
                 return;
@@ -340,26 +352,26 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_CheckUpdateStack.Push(productId);
         }
 
-        public virtual void PushToCheckUpdateStack(IEnumerable<long> productIds, bool forceCheckUpdate = false)
+        public void PushToCheckUpdateStack(IEnumerable<long> productIds, bool forceCheckUpdate = false)
         {
             foreach (var productId in productIds?.Reverse() ?? Enumerable.Empty<long>())
                 PushToCheckUpdateStack(productId, forceCheckUpdate);
         }
 
-        public virtual void ForceCheckUpdateAllCachedAndImportedPackages()
+        public void ForceCheckUpdateAllCachedAndImportedPackages()
         {
             var productIdsToCheck = m_AssetStoreCache.localInfos.Select(i => i.productId)
                 .Concat(m_AssetStoreCache.importedPackages.Select(i => i.productId)).ToHashSet();
             PushToCheckUpdateStack(productIdsToCheck, true);
         }
 
-        public virtual void CancelCheckUpdates()
+        public void CancelCheckUpdates()
         {
             m_CheckUpdateStack.Clear();
             m_ProductIdsToForceCheckUpdate.Clear();
         }
 
-        public virtual void CheckUpdateForUncheckedLocalInfos()
+        public void CheckUpdateForUncheckedLocalInfos()
         {
             var idsWithNoUpdateInfo = m_AssetStoreCache.localInfos
                 .Where(info => m_AssetStoreCache.GetUpdateInfo(info?.productId) == null)

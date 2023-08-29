@@ -371,13 +371,13 @@ namespace UnityEditor.Search
             return EnumerateAll().Where(db => string.Equals(db.path, path, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         }
 
-        public static SearchDatabase ImportAsset(string settingsPath)
+        public static SearchDatabase ImportAsset(string settingsPath, bool forceUpdate = false)
         {
             var currentDb = Find(settingsPath);
             if (currentDb)
                 currentDb.DeleteBackupIndex();
 
-            AssetDatabase.ImportAsset(settingsPath);
+            AssetDatabase.ImportAsset(settingsPath, forceUpdate ? ImportAssetOptions.ForceUpdate : ImportAssetOptions.Default);
             if (currentDb)
                 currentDb.Reload(settingsPath);
             else

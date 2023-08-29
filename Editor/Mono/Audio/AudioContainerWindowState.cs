@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor;
@@ -14,6 +16,8 @@ sealed class AudioContainerWindowState
     AudioRandomContainer m_AudioContainer;
     AudioSource m_PreviewAudioSource;
     SerializedObject m_SerializedObject;
+    VisualElement m_ResourceTrackerElement;
+    AudioSource m_TrackedSource;
 
     // Need this flag to track transport state changes immediately, as there could be a
     // one-frame delay to get the correct value from AudioSource.isContainerPlaying.
@@ -34,7 +38,7 @@ sealed class AudioContainerWindowState
     {
         get
         {
-            if (m_AudioContainer == null)
+            if (m_AudioContainer == null && m_TrackedSource == null)
                 UpdateTarget();
 
             return m_AudioContainer;
@@ -63,6 +67,13 @@ sealed class AudioContainerWindowState
         TargetPath = null;
     }
 
+    internal VisualElement GetResourceTrackerElement()
+    {
+        m_ResourceTrackerElement = new VisualElement();
+        return m_ResourceTrackerElement;
+    }
+
+
     internal void OnDestroy()
     {
         Stop();
@@ -81,38 +92,80 @@ sealed class AudioContainerWindowState
     internal void UpdateTarget()
     {
         AudioRandomContainer newTarget = null;
+        AudioSource audioSource = null;
         var selectedObject = Selection.activeObject;
-        var audioClipSelected = false;
+
+        // The logic below deals with selecting our new ARC target, whatever we set m_AudioContainer to below will be
+        // used by AudioContinerWindow to display the ARC if the target is valid or a day0 state if the target is null.
+        // If the selection is a GameObject, we always want to swap the target, a user selecting GameObjects in the
+        // scene heirarchy should always see what ARC is on a particular object, this includes the scenario of not
+        // having an AudioSource and the value of the Resource property on an audiosource being null/not an ARC.
+        // If the selected object is not a GameObject, we only swap targets if it is an ARC - meaning if you are
+        // selecting objects in the project browser it holds on to the last ARC selected.
 
         if (selectedObject != null)
         {
             if (selectedObject is GameObject go)
             {
-                var audioSource = go.GetComponent<AudioSource>();
+                audioSource = go.GetComponent<AudioSource>();
 
                 if (audioSource != null)
+                {
                     newTarget = audioSource.resource as AudioRandomContainer;
+                }
             }
             else
             {
-                audioClipSelected = selectedObject is AudioClip;
-                newTarget = selectedObject as AudioRandomContainer;
+                if (selectedObject is AudioRandomContainer)
+                {
+                    newTarget = selectedObject as AudioRandomContainer;
+                }
+                else
+                {
+                    newTarget = m_AudioContainer;
+                }
             }
         }
-
-        if (!audioClipSelected && newTarget != null && newTarget != m_AudioContainer)
+        else
         {
-            if (m_AudioContainer != null)
-                Stop();
+            newTarget = m_AudioContainer;
+        }
+
+        if (m_TrackedSource != audioSource || m_AudioContainer != newTarget)
+        {
 
             Reset();
+
+            m_TrackedSource = audioSource;
             m_AudioContainer = newTarget;
 
             if (m_AudioContainer != null)
                 TargetPath = AssetDatabase.GetAssetPath(m_AudioContainer);
 
             TargetChanged?.Invoke(this, EventArgs.Empty);
+
+            if (m_TrackedSource != null)
+            {
+                var sourceSO = new SerializedObject(m_TrackedSource);
+                var property = sourceSO.FindProperty("m_Resource");
+                m_ResourceTrackerElement.TrackPropertyValue(property, OnResourceChanged);
+            }
         }
+    }
+    void OnResourceChanged(SerializedProperty property)
+    {
+        var container = property.objectReferenceValue as AudioRandomContainer;
+        if (m_AudioContainer == container)
+            return;
+
+        Reset();
+        m_AudioContainer = container;
+        if (m_AudioContainer != null)
+            TargetPath = AssetDatabase.GetAssetPath(m_AudioContainer);
+        TargetChanged?.Invoke(this, EventArgs.Empty);
+        var sourceSO = new SerializedObject(m_TrackedSource);
+        var serializedProperty = sourceSO.FindProperty("m_Resource");
+        m_ResourceTrackerElement.TrackPropertyValue(serializedProperty, OnResourceChanged);
     }
 
     internal void Play()

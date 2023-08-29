@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.Accessibility
 {
@@ -159,9 +160,23 @@ namespace UnityEngine.Accessibility
                 if (hierarchyService != null)
                 {
                     hierarchyService.hierarchy = value;
+                    s_ActiveHierarchyChanged?.Invoke(value);
                 }
             }
             get => GetService<AccessibilityHierarchyService>()?.hierarchy;
+        }
+
+        private static event Action<AccessibilityHierarchy> s_ActiveHierarchyChanged;
+
+        /// <summary>
+        /// Event sent when the active hierarchy is changed.
+        /// </summary>
+        internal static event Action<AccessibilityHierarchy> activeHierarchyChanged
+        {
+            [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
+            add { s_ActiveHierarchyChanged += value; }
+            [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
+            remove { s_ActiveHierarchyChanged -= value; }
         }
 
         internal static void OnHierarchyNodeFramesRefreshed(AccessibilityHierarchy hierarchy)

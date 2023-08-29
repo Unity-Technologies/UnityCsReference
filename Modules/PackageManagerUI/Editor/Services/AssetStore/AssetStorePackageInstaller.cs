@@ -2,49 +2,50 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class AssetStorePackageInstaller
+    internal interface IAssetStorePackageInstaller : IService
     {
-        [NonSerialized]
-        private IOProxy m_IOProxy;
-        [NonSerialized]
-        private AssetStoreCache m_AssetStoreCache;
-        [NonSerialized]
-        private AssetDatabaseProxy m_AssetDatabase;
-        [NonSerialized]
-        private AssetSelectionHandler m_AssetSelectionHandler;
-        [NonSerialized]
-        private ApplicationProxy m_ApplicationProxy;
-        public void ResolveDependencies(IOProxy ioProxy,
-            AssetStoreCache assetStoreCache,
-            AssetDatabaseProxy assetDatabaseProxy,
-            AssetSelectionHandler assetSelectionHandler,
-            ApplicationProxy applicationProxy)
+        void Install(long productId, bool interactiveInstall = false);
+        void Uninstall(long productId, bool interactiveUninstall = false);
+        void Uninstall(IEnumerable<long> productIds);
+    }
+
+    internal class AssetStorePackageInstaller : BaseService<IAssetStorePackageInstaller>, IAssetStorePackageInstaller
+    {
+        private readonly IIOProxy m_IOProxy;
+        private readonly IAssetStoreCache m_AssetStoreCache;
+        private readonly IAssetDatabaseProxy m_AssetDatabase;
+        private readonly IAssetSelectionHandler m_AssetSelectionHandler;
+        private readonly IApplicationProxy m_Application;
+        public AssetStorePackageInstaller(IIOProxy ioProxy,
+            IAssetStoreCache assetStoreCache,
+            IAssetDatabaseProxy assetDatabaseProxy,
+            IAssetSelectionHandler assetSelectionHandler,
+            IApplicationProxy applicationProxy)
         {
-            m_IOProxy = ioProxy;
-            m_AssetStoreCache = assetStoreCache;
-            m_AssetDatabase = assetDatabaseProxy;
-            m_AssetSelectionHandler = assetSelectionHandler;
-            m_ApplicationProxy = applicationProxy;
+            m_IOProxy = RegisterDependency(ioProxy);
+            m_AssetStoreCache = RegisterDependency(assetStoreCache);
+            m_AssetDatabase = RegisterDependency(assetDatabaseProxy);
+            m_AssetSelectionHandler = RegisterDependency(assetSelectionHandler);
+            m_Application = RegisterDependency(applicationProxy);
         }
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             m_AssetSelectionHandler.onRemoveSelectionDone += OnRemoveSelectionDone;
         }
 
-        public void OnDisable()
+        public override void OnDisable()
         {
             m_AssetSelectionHandler.onRemoveSelectionDone -= OnRemoveSelectionDone;
         }
 
-        public virtual void Install(long productId, bool interactiveInstall = false)
+        public void Install(long productId, bool interactiveInstall = false)
         {
             var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
             try
@@ -112,14 +113,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     errorMessage += "\n" + path;
                 Debug.LogError(errorMessage);
 
-                m_ApplicationProxy.DisplayDialog("cannotRemoveAsset",
+                m_Application.DisplayDialog("cannotRemoveAsset",
                     L10n.Tr("Cannot Remove"),
                     L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example."),
                     L10n.Tr("Ok"));
             }
         }
 
-        public virtual void Uninstall(long productId, bool interactiveUninstall = false)
+        public void Uninstall(long productId, bool interactiveUninstall = false)
         {
             if (interactiveUninstall)
             {
@@ -134,7 +135,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual void Uninstall(IEnumerable<long> productIds)
+        public void Uninstall(IEnumerable<long> productIds)
         {
             var assetsToRemove = new List<Asset>();
             foreach (var productId in productIds ?? Enumerable.Empty<long>())

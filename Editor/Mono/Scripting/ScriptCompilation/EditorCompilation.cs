@@ -1377,7 +1377,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 path = Path.Combine(projectDirectory, scriptPath);
             }
 
-            var matchedAssembly = GetAssemblyGraphBuilder().Match(new []{path});
+            var matchedAssembly = GetAssemblyGraphBuilder().Match(new []{path}, false);
 
             TargetAssembly targetAssembly;
             var scriptAssembly = matchedAssembly.Single().Key;
@@ -1473,8 +1473,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var editorApiCompatibility = PlayerSettings.EditorAssemblyCompatibilityToApiCompatibility(PlayerSettings.GetEditorAssembliesCompatibilityLevel());
 
-            var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, editorApiCompatibility, settings.ExtraGeneralDefines);
-            var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel, settings.ExtraGeneralDefines);
+            var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTarget, settings.Subtarget, editorApiCompatibility, settings.ExtraGeneralDefines);
+            var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTarget, settings.Subtarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel, settings.ExtraGeneralDefines);
 
             return GetTargetAssemblyDefines(targetAssembly, versionMetaDatas, editorOnlyCompatibleDefines, playerAssembliesDefines, settings);
         }
@@ -1489,9 +1489,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var editorApiCompatibility = PlayerSettings.EditorAssemblyCompatibilityToApiCompatibility(PlayerSettings.GetEditorAssembliesCompatibilityLevel());
 
-            string[] editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, editorApiCompatibility, settings.ExtraGeneralDefines);
+            string[] editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTarget, settings.Subtarget, editorApiCompatibility, settings.ExtraGeneralDefines);
 
-            var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel, settings.ExtraGeneralDefines);
+            var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTarget, settings.Subtarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel, settings.ExtraGeneralDefines);
 
             foreach (var targetAssembly in allTargetAssemblies)
             {
@@ -1840,7 +1840,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] GetAssemblyBuilderDefaultDefines(AssemblyBuilder assemblyBuilder)
         {
             var options = ToEditorScriptCompilationOptions(assemblyBuilder.flags);
-            var defines = InternalEditorUtility.GetCompilationDefines(options, assemblyBuilder.buildTargetGroup, assemblyBuilder.buildTarget, assemblyBuilder.subtarget);
+            var defines = InternalEditorUtility.GetCompilationDefines(options, assemblyBuilder.buildTarget, assemblyBuilder.subtarget);
             return defines;
         }
 

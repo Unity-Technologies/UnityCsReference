@@ -198,12 +198,10 @@ namespace Unity.UI.Builder
         void NotifySelection(bool refreshOnly = true)
         {
             var styleChangeType = refreshOnly ? BuilderStylingChangeType.RefreshOnly : BuilderStylingChangeType.Default;
-            var hierarchyChangeType = refreshOnly ?
-                BuilderHierarchyChangeType.InlineStyle :
-                BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh;
 
             m_Selection.NotifyOfStylingChange(this, m_ScratchChangeList, styleChangeType);
-            m_Selection.NotifyOfHierarchyChange(this, m_Target, hierarchyChangeType);
+            if (!refreshOnly)
+                m_Selection.NotifyOfHierarchyChange(this, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
         }
 
         void OnDragTop(Vector2 diff)

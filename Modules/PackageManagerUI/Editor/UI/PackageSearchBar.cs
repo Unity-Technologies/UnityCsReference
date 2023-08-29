@@ -38,17 +38,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const long k_SearchFieldDelayTicks = TimeSpan.TicksPerSecond / 3;
         public static readonly string k_SearchPlaceholderText = L10n.Tr("Search {0}");
 
-        private UpmRegistryClient m_UpmRegistryClient;
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private UnityConnectProxy m_UnityConnect;
-        private PageManager m_PageManager;
+        private IUpmRegistryClient m_UpmRegistryClient;
+        private IProjectSettingsProxy m_SettingsProxy;
+        private IUnityConnectProxy m_UnityConnect;
+        private IPageManager m_PageManager;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_UpmRegistryClient = container.Resolve<UpmRegistryClient>();
-            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
-            m_UnityConnect = container.Resolve<UnityConnectProxy>();
-            m_PageManager = container.Resolve<PageManager>();
+            m_UpmRegistryClient = container.Resolve<IUpmRegistryClient>();
+            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
+            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
+            m_PageManager = container.Resolve<IPageManager>();
         }
 
         public PackageSearchBar()

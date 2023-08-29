@@ -311,7 +311,7 @@ namespace UnityEditor
             }
 
             m_TargetRect = r;
-            float scaleFac = GetScaleFactor(r.width, r.height);
+            float scaleFac = EditorGUIUtility.pixelsPerPoint;
 
             int rtWidth = (int)(r.width * scaleFac);
             int rtHeight = (int)(r.height * scaleFac);

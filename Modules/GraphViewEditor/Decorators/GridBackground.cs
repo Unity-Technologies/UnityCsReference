@@ -29,13 +29,13 @@ namespace UnityEditor.Experimental.GraphView
         private int thickLines => m_ThickLines;
 
         Color m_LineColor = s_DefaultLineColor;
-        private Color lineColor => m_LineColor * UIElementsUtility.editorPlayModeTintColor;
+        private Color lineColor => m_LineColor * playModeTintColor;
 
         Color m_ThickLineColor = s_DefaultThickLineColor;
-        private Color thickLineColor => m_ThickLineColor * UIElementsUtility.editorPlayModeTintColor;
+        private Color thickLineColor => m_ThickLineColor * playModeTintColor;
 
         Color m_GridBackgroundColor = s_DefaultGridBackgroundColor;
-        private Color gridBackgroundColor => m_GridBackgroundColor * UIElementsUtility.editorPlayModeTintColor;
+        private Color gridBackgroundColor => m_GridBackgroundColor * playModeTintColor;
 
         private VisualElement m_Container;
 

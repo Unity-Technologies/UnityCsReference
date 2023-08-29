@@ -32,19 +32,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal RegistryInfoDraft draft => m_SettingsProxy.registryInfoDraft;
 
-        private ResourceLoader m_ResourceLoader;
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private ApplicationProxy m_ApplicationProxy;
-        private UpmCache m_UpmCache;
-        private UpmRegistryClient m_UpmRegistryClient;
+        private IResourceLoader m_ResourceLoader;
+        private IProjectSettingsProxy m_SettingsProxy;
+        private IApplicationProxy m_ApplicationProxy;
+        private IUpmCache m_UpmCache;
+        private IUpmRegistryClient m_UpmRegistryClient;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
-            m_ApplicationProxy = container.Resolve<ApplicationProxy>();
-            m_UpmCache = container.Resolve<UpmCache>();
-            m_UpmRegistryClient = container.Resolve<UpmRegistryClient>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
+            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
+            m_ApplicationProxy = container.Resolve<IApplicationProxy>();
+            m_UpmCache = container.Resolve<IUpmCache>();
+            m_UpmRegistryClient = container.Resolve<IUpmRegistryClient>();
         }
 
         public ScopedRegistriesSettings()

@@ -63,14 +63,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private IPackageVersion m_FeatureVersion;
 
-        private readonly PackageDatabase m_PackageDatabase;
-        private readonly PackageManagerPrefs m_PackageManagerPrefs;
-        private readonly ApplicationProxy m_Application;
-        public FeatureDependenciesTab(UnityConnectProxy unityConnect,
-                                      ResourceLoader resourceLoader,
-                                      PackageDatabase packageDatabase,
-                                      PackageManagerPrefs packageManagerPrefs,
-                                      ApplicationProxy applicationProxy)  : base(unityConnect)
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        private readonly IApplicationProxy m_Application;
+        public FeatureDependenciesTab(IUnityConnectProxy unityConnect,
+                                      IResourceLoader resourceLoader,
+                                      IPackageDatabase packageDatabase,
+                                      IPackageManagerPrefs packageManagerPrefs,
+                                      IApplicationProxy applicationProxy)  : base(unityConnect)
         {
             m_PackageDatabase = packageDatabase;
             m_PackageManagerPrefs = packageManagerPrefs;

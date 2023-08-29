@@ -9,14 +9,14 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class ResetAction : PackageAction
 {
-    private readonly PackageOperationDispatcher m_OperationDispatcher;
-    private readonly ApplicationProxy m_Application;
-    private readonly PackageDatabase m_PackageDatabase;
-    private readonly PageManager m_PageManager;
-    public ResetAction(PackageOperationDispatcher operationDispatcher,
-        ApplicationProxy applicationProxy,
-        PackageDatabase packageDatabase,
-        PageManager pageManager)
+    private readonly IPackageOperationDispatcher m_OperationDispatcher;
+    private readonly IApplicationProxy m_Application;
+    private readonly IPackageDatabase m_PackageDatabase;
+    private readonly IPageManager m_PageManager;
+    public ResetAction(IPackageOperationDispatcher operationDispatcher,
+        IApplicationProxy applicationProxy,
+        IPackageDatabase packageDatabase,
+        IPageManager pageManager)
     {
         m_OperationDispatcher = operationDispatcher;
         m_Application = applicationProxy;
@@ -78,7 +78,7 @@ internal class ResetAction : PackageAction
 
     internal class DisableIfCannotReset : DisableCondition
     {
-        public DisableIfCannotReset(PackageDatabase packageDatabase, IPackageVersion version)
+        public DisableIfCannotReset(IPackageDatabase packageDatabase, IPackageVersion version)
         {
             var customizedDependencies = packageDatabase.GetCustomizedDependencies(version);
             var oneDependencyIsInDevelopment = customizedDependencies.Any(p => p.versions.installed?.HasTag(PackageTag.Custom) ?? false);

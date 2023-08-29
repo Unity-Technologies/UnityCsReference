@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Bindings;
-using UnityEngine.LightBaking;
 
 namespace UnityEditor.LightBaking
 {
@@ -11,22 +10,22 @@ namespace UnityEditor.LightBaking
     internal static partial class LightBaker
     {
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern Result PopulateWorldWintermute(BakeInput bakeInput, BakeProgressState progress,
-            UnityEngine.LightTransport.WintermuteContext context, UnityEngine.LightBaking.IntegrationContext world);
+        internal static extern Result PopulateWorldWintermute(BakeInput bakeInput, UnityEngine.LightTransport.BakeProgressState progress,
+            UnityEngine.LightTransport.WintermuteContext context, UnityEngine.LightTransport.IntegrationContext world);
 
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern unsafe Result IntegrateProbeDirectRadianceWintermute(UnityEngine.Vector3* positions, IntegrationContext integrationContext,
+        internal static extern unsafe Result IntegrateProbeDirectRadianceWintermute(UnityEngine.Vector3* positions, UnityEngine.LightTransport.IntegrationContext integrationContext,
             int positionOffset, int positionCount, float pushoff, int bounceCount, int directSampleCount, int giSampleCount, int envSampleCount,
-            UnityEngine.LightTransport.WintermuteContext context, BakeProgressState progress, void* radianceBufferOut);
+            UnityEngine.LightTransport.WintermuteContext context, UnityEngine.LightTransport.BakeProgressState progress, void* radianceBufferOut);
 
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern unsafe Result IntegrateProbeIndirectRadianceWintermute(UnityEngine.Vector3* positions, IntegrationContext integrationContext,
+        internal static extern unsafe Result IntegrateProbeIndirectRadianceWintermute(UnityEngine.Vector3* positions, UnityEngine.LightTransport.IntegrationContext integrationContext,
             int positionOffset, int positionCount, float pushoff, int bounceCount, int directSampleCount, int giSampleCount, int envSampleCount,
-            UnityEngine.LightTransport.WintermuteContext context, BakeProgressState progress, void* radianceBufferOut);
+            UnityEngine.LightTransport.WintermuteContext context, UnityEngine.LightTransport.BakeProgressState progress, void* radianceBufferOut);
 
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern unsafe Result IntegrateProbeValidityWintermute(void* positions, IntegrationContext integrationContext,
+        internal static extern unsafe Result IntegrateProbeValidityWintermute(void* positions, UnityEngine.LightTransport.IntegrationContext integrationContext,
             int positionOffset, int positionCount, float pushoff, int bounceCount, int directSampleCount, int giSampleCount, int envSampleCount,
-            UnityEngine.LightTransport.WintermuteContext context, BakeProgressState progress, void* validityBufferOut);
+            UnityEngine.LightTransport.WintermuteContext context, UnityEngine.LightTransport.BakeProgressState progress, void* validityBufferOut);
     }
 }

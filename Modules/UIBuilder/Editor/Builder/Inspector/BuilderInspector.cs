@@ -14,6 +14,7 @@ using UnityEngine;
 using UnityEngine.Pool;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine.UIElements.StyleSheets;
+using System.Collections;
 
 namespace Unity.UI.Builder
 {
@@ -584,8 +585,6 @@ namespace Unity.UI.Builder
                         SetFieldsEnabled(field, !isResolvedVariable);
                     }
                 }
-
-                m_LocalStylesSection.UpdateStyleCategoryFoldoutOverrides();
             }
         }
 
@@ -777,8 +776,25 @@ namespace Unity.UI.Builder
 
         internal static Label GetDraggerLabel(VisualElement field)
         {
-            var labelDraggers = field.Query<Label>(classes: BaseField<float>.labelDraggerVariantUssClassName).ToList();
-            return labelDraggers.Count != 1 ? null : labelDraggers.First();
+            var labelDraggers = field.Query<Label>(classes: BaseField<float>.labelDraggerVariantUssClassName).Build();
+            return GetFirstItemIfCountIs1(labelDraggers);
+        }
+
+        static Label GetFirstItemIfCountIs1(UQueryState<Label> query)
+        {
+            using (var enumerator = query.GetEnumerator())
+            {
+                if (enumerator.MoveNext())
+                {
+                    var firstItem = enumerator.Current;
+                    if (!enumerator.MoveNext())
+                    {
+                        return firstItem;
+                    }
+                }
+
+                return null;
+            }
         }
 
         static string GetFieldStatusIndicatorTooltip(FieldValueInfo info, VisualElement field, VisualElement currentElement, string description = null)

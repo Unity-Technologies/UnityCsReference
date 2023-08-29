@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool requiresUserSignIn => true;
 
-        public PackageDetailsOverviewTab(UnityConnectProxy unityConnect, ResourceLoader resourceLoader) : base(unityConnect)
+        public PackageDetailsOverviewTab(IUnityConnectProxy unityConnect, IResourceLoader resourceLoader) : base(unityConnect)
         {
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Overview");

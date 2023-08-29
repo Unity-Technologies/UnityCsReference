@@ -31,25 +31,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private ResourceLoader m_ResourceLoader;
-        private UnityConnectProxy m_UnityConnect;
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        private PageManager m_PageManager;
-        private UpmCache m_UpmCache;
-        private BackgroundFetchHandler m_BackgroundFetchHandler;
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private PageRefreshHandler m_PageRefreshHandler;
+        private IResourceLoader m_ResourceLoader;
+        private IUnityConnectProxy m_UnityConnect;
+        private IPackageManagerPrefs m_PackageManagerPrefs;
+        private IPageManager m_PageManager;
+        private IUpmCache m_UpmCache;
+        private IBackgroundFetchHandler m_BackgroundFetchHandler;
+        private IProjectSettingsProxy m_SettingsProxy;
+        private IPageRefreshHandler m_PageRefreshHandler;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_UnityConnect = container.Resolve<UnityConnectProxy>();
-            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
-            m_PageManager = container.Resolve<PageManager>();
-            m_UpmCache = container.Resolve<UpmCache>();
-            m_BackgroundFetchHandler = container.Resolve<BackgroundFetchHandler>();
-            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
-            m_PageRefreshHandler = container.Resolve<PageRefreshHandler>();
+            m_ResourceLoader = container.Resolve<IResourceLoader>();
+            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
+            m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
+            m_PageManager = container.Resolve<IPageManager>();
+            m_UpmCache = container.Resolve<IUpmCache>();
+            m_BackgroundFetchHandler = container.Resolve<IBackgroundFetchHandler>();
+            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
+            m_PageRefreshHandler = container.Resolve<IPageRefreshHandler>();
         }
 
         private Action m_ButtonAction;

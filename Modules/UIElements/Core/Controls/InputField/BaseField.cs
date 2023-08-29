@@ -12,6 +12,7 @@ namespace UnityEngine.UIElements
     internal interface IPrefixLabel
     {
         string label { get; }
+        Label labelElement { get; }
     }
 
     internal interface IDelayedField
@@ -235,7 +236,7 @@ namespace UnityEngine.UIElements
                     {
                         if (!Contains(labelElement))
                         {
-                            Insert(0, labelElement);
+                            hierarchy.Insert(0, labelElement);
                             RemoveFromClassList(noLabelVariantUssClassName);
                         }
                     }

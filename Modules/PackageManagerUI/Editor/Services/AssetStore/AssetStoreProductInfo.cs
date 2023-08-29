@@ -138,7 +138,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return result;
         }
 
-        public virtual AssetStoreProductInfo ParseProductInfo(string assetStoreUrl, long productId, IDictionary<string, object> productDetail)
+        public AssetStoreProductInfo ParseProductInfo(string assetStoreUrl, long productId, IDictionary<string, object> productDetail)
         {
             if (productId <= 0 || productDetail == null || !productDetail.Any())
                 return null;

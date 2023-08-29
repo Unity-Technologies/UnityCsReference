@@ -27,6 +27,7 @@ namespace UnityEditor.Experimental.GraphView
             if (gView == null)
                 return;
 
+            var contentPlayModeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
             VisualElement container = gView.contentViewContainer;
             foreach (Line2 line in lines)
             {
@@ -36,11 +37,10 @@ namespace UnityEditor.Experimental.GraphView
                 float y = Math.Min(start.y, end.y);
                 float width = Math.Max(1, Math.Abs(start.x - end.x));
                 float height = Math.Max(1, Math.Abs(start.y - end.y));
-
-                var rect = new Rect(x, y, width, height);
+                var lineRect = new Rect(x, y, width, height);
 
                 // The following is a UIToolkit internal API and should NOT be used here. Consider replacing it with Painter2D.
-                mgc.meshGenerator.DrawRectangle(UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(rect, s_SnappingLineColor, ContextType.Editor));
+                mgc.meshGenerator.DrawRectangle(UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(lineRect, s_SnappingLineColor, contentPlayModeTintColor));
             }
         }
     }

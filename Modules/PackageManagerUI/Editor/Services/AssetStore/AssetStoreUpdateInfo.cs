@@ -33,7 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal partial class JsonParser
     {
-        public virtual List<AssetStoreUpdateInfo> ParseUpdateInfos(IDictionary<string, object> rawList)
+        public List<AssetStoreUpdateInfo> ParseUpdateInfos(IDictionary<string, object> rawList)
         {
             var result = new List<AssetStoreUpdateInfo>();
             foreach(var entry in rawList)

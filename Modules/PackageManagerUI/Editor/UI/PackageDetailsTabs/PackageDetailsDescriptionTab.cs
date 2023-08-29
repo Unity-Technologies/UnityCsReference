@@ -22,10 +22,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version?.HasTag(PackageTag.UpmFormat) == true;
         }
 
-        private readonly ResourceLoader m_ResourceLoader;
-        private readonly PackageManagerPrefs m_PackageManagerPrefs;
-        public PackageDetailsDescriptionTab(UnityConnectProxy unityConnect, ResourceLoader resourceLoader,
-            PackageManagerPrefs packageManagerPrefs) : base(unityConnect)
+        private readonly IResourceLoader m_ResourceLoader;
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        public PackageDetailsDescriptionTab(IUnityConnectProxy unityConnect, IResourceLoader resourceLoader,
+            IPackageManagerPrefs packageManagerPrefs) : base(unityConnect)
         {
             m_ResourceLoader = resourceLoader;
             m_PackageManagerPrefs = packageManagerPrefs;

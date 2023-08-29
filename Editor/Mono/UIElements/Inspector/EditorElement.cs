@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
 {
     internal class EditorElement : VisualElement, IEditorElement
     {
-        // Local method use only -- created here to reduce garbage collection. Collection must be cleared before use 
+        // Local method use only -- created here to reduce garbage collection. Collection must be cleared before use
         static readonly List<VisualElement> s_Decorators = new List<VisualElement>();
         static readonly EditorElementDecoratorCollection s_EditorDecoratorCollection = new EditorElementDecoratorCollection();
 
@@ -350,7 +350,7 @@ namespace UnityEditor.UIElements
                     if (m_Footer != null)
                         m_Footer.style.marginTop = -kFooterDefaultHeight;
                 }
-                    
+
 
                 if (m_InspectorElement != null)
                     m_InspectorElement.style.paddingBottom = 0;
@@ -427,7 +427,7 @@ namespace UnityEditor.UIElements
                 if (m_DecoratorsElement != null)
                 {
                     SetElementVisible(m_DecoratorsElement, false);
-                }    
+                }
                 return;
             }
 
@@ -447,6 +447,7 @@ namespace UnityEditor.UIElements
 
             GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
             EditorGUIUtility.ResetGUIState();
+            GUI.color = playModeTintColor;
 
             if (editor.target is AssetImporter)
                 inspectorWindow.editorsWithImportedObjectLabel.Add(m_EditorIndex + 1);

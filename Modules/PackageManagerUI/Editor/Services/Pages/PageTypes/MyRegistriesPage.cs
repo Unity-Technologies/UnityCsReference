@@ -18,7 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.UpmSearch;
 
-        public MyRegistriesPage(PackageDatabase packageDatabase) : base(packageDatabase) {}
+        public MyRegistriesPage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
 
         public override bool ShouldInclude(IPackage package)
         {

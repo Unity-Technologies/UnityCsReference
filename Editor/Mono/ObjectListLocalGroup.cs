@@ -7,11 +7,8 @@ using UnityEngine;
 using UnityEditor.VersionControl;
 using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Math = System.Math;
-using IndexOutOfRangeException = System.IndexOutOfRangeException;
 using AssetReference = UnityEditorInternal.InternalEditorUtility.AssetReference;
 
 namespace UnityEditor
@@ -844,6 +841,8 @@ namespace UnityEditor
                     }
                     else // Icon grid
                     {
+                        Texture previewImage = null;
+
                         // Get icon
                         bool drawDropShadow = false;
                         if (string.IsNullOrEmpty(assetReference.guid) && m_Owner.GetCreateAssetUtility().instanceID == assetReference.instanceID && m_Owner.GetCreateAssetUtility().icon != null)
@@ -858,17 +857,16 @@ namespace UnityEditor
                         else
                         {
                             // Check for asset preview
-                            Texture image = null;
                             bool shouldGetAssetPreview = ShouldGetAssetPreview(assetReference);
                             if (shouldGetAssetPreview)
                             {
                                 if (assetReference.instanceID != 0)
-                                    image = AssetPreview.GetAssetPreview(assetReference.instanceID, m_Owner.GetAssetPreviewManagerID());
+                                    previewImage = AssetPreview.GetAssetPreview(assetReference.instanceID, m_Owner.GetAssetPreviewManagerID());
                                 else if (!string.IsNullOrEmpty(assetReference.guid))
-                                    image = AssetPreview.GetAssetPreviewFromGUID(assetReference.guid, m_Owner.GetAssetPreviewManagerID());
+                                    previewImage = AssetPreview.GetAssetPreviewFromGUID(assetReference.guid, m_Owner.GetAssetPreviewManagerID());
                             }
 
-                            m_Content.image = image;
+                            m_Content.image = previewImage;
                             if (m_Content.image != null)
                                 drawDropShadow = true;
 
@@ -957,9 +955,31 @@ namespace UnityEditor
                                 if (isDropTarget)
                                     Styles.resultsLabel.Draw(new Rect(labelRect.x - 10, labelRect.y, labelRect.width + 20, labelRect.height), GUIContent.none, true, true, false, false);
 
+
+                                Texture2D typeIcon = null;
+                                if (filterItem != null && previewImage != null)
+                                {
+                                    Type type = InternalEditorUtility.GetTypeWithoutLoadingObject(filterItem.instanceID);
+                                    
+                                    if (type != typeof(Texture2D))
+                                    {
+                                        typeIcon = filterItem.icon;
+                                    }
+                                }
+
+                                if (builtinResource != null)
+                                {
+                                    Type type = InternalEditorUtility.GetTypeWithoutLoadingObject(builtinResource.m_InstanceID);
+
+                                    if (type != typeof(Texture2D))
+                                    {
+                                        typeIcon = AssetPreview.GetMiniTypeThumbnail(type);
+                                    }
+                                }
+
                                 var orgClipping = Styles.resultsGridLabel.clipping;
                                 var orgAlignment = Styles.resultsLabel.alignment;
-                                var size  = Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext), orgPosition.size);
+                                var size  = Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext, typeIcon), orgPosition.size);
                                 size.x += Styles.resultsGridLabel.padding.horizontal;
                                 labelRect.x = orgPosition.x + (orgPosition.width - size.x) / 2.0f;
                                 labelRect.width = size.x;
@@ -968,9 +988,33 @@ namespace UnityEditor
 
                                 Styles.resultsGridLabel.clipping = TextClipping.Ellipsis;
                                 Styles.resultsGridLabel.alignment = TextAnchor.MiddleCenter;
-                                Styles.resultsGridLabel.Draw(labelRect, labeltext, false, false, selected, m_Owner.HasFocus());
+                                Styles.resultsGridLabel.Draw(labelRect, GUIContent.Temp(labeltext, typeIcon), false, false, selected, m_Owner.HasFocus());
                                 Styles.resultsGridLabel.clipping = orgClipping;
                                 Styles.resultsLabel.alignment = orgAlignment;
+
+                                // We only need to set the tooltip once, and not for every item.
+                                if (labelRect.Contains(Event.current.mousePosition))
+                                {
+                                    string tooltip = null;
+
+                                    if (filterItem != null)
+                                    {
+                                        //We use GetAssetPath to have the file extension as well
+                                        string path = AssetDatabase.GetAssetPath(filterItem.instanceID);
+                                        tooltip = path.Substring(path.LastIndexOf('/') + 1);
+                                    }
+                                    else if (builtinResource != null)
+                                    {
+                                        //We have a "None" item in the ObjectSelector that has a 0 instanceID
+                                        if (builtinResource.m_InstanceID != 0)     
+                                            tooltip = builtinResource.m_Name + "\n" + "(Built-in Resource)";
+                                    }
+
+                                    if (tooltip != null)
+                                    {
+                                        GUI.Label(labelRect, GUIContent.Temp("", tooltip));
+                                    }
+                                }
                             }
                         }
 

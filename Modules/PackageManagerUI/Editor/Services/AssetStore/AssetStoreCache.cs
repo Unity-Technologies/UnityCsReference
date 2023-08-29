@@ -9,22 +9,52 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [Serializable]
-    internal class AssetStoreCache : ISerializationCallbackReceiver
+    internal interface IAssetStoreCache : IService
     {
-        private Dictionary<string, long> m_Categories = new Dictionary<string, long>();
+        event Action<IEnumerable<AssetStoreLocalInfo> /*addedOrUpdated*/, IEnumerable<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
+        event Action<AssetStoreProductInfo> onProductInfoChanged;
+        event Action<IEnumerable<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
+        event Action<IEnumerable<AssetStoreUpdateInfo>> onUpdateInfosChanged;
+        event Action<IEnumerable<AssetStoreImportedPackage> /*addedOrUpdated*/, IEnumerable<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
 
-        private Dictionary<long, AssetStorePurchaseInfo> m_PurchaseInfos = new Dictionary<long, AssetStorePurchaseInfo>();
+        IEnumerable<AssetStoreLocalInfo> localInfos { get; }
+        IEnumerable<AssetStoreImportedPackage> importedPackages { get; }
+        IEnumerable<Asset> importedAssets { get; }
 
-        private Dictionary<long, AssetStoreProductInfo> m_ProductInfos = new Dictionary<long, AssetStoreProductInfo>();
+        void SetCategory(string category, long count);
+        Texture2D LoadImage(long productId, string url);
+        void SaveImage(long productId, string url, Texture2D texture);
+        void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null);
+        void ClearOnlineCache();
+        AssetStorePurchaseInfo GetPurchaseInfo(long? productId);
+        AssetStoreProductInfo GetProductInfo(long? productId);
+        AssetStoreLocalInfo GetLocalInfo(long? productId);
+        AssetStoreUpdateInfo GetUpdateInfo(long? productId);
+        AssetStoreImportedPackage GetImportedPackage(long? productId);
+        void SetPurchaseInfos(IEnumerable<AssetStorePurchaseInfo> purchaseInfos);
+        void SetProductInfo(AssetStoreProductInfo productInfo);
+        void SetLocalInfos(IEnumerable<AssetStoreLocalInfo> localInfos);
+        void SetLocalInfo(AssetStoreLocalInfo localInfo);
+        void SetUpdateInfos(IEnumerable<AssetStoreUpdateInfo> updateInfos);
+        void UpdateImportedAssets(IEnumerable<Asset> addedOrUpdatedAssets, IEnumerable<string> removedAssetPaths);
+    }
 
-        private Dictionary<long, AssetStoreLocalInfo> m_LocalInfos = new Dictionary<long, AssetStoreLocalInfo>();
+    [Serializable]
+    internal class AssetStoreCache : BaseService<IAssetStoreCache>, IAssetStoreCache, ISerializationCallbackReceiver
+    {
+        private Dictionary<string, long> m_Categories = new();
 
-        private Dictionary<long, AssetStoreUpdateInfo> m_UpdateInfos = new Dictionary<long, AssetStoreUpdateInfo>();
+        private Dictionary<long, AssetStorePurchaseInfo> m_PurchaseInfos = new();
+
+        private Dictionary<long, AssetStoreProductInfo> m_ProductInfos = new();
+
+        private Dictionary<long, AssetStoreLocalInfo> m_LocalInfos = new();
+
+        private Dictionary<long, AssetStoreUpdateInfo> m_UpdateInfos = new();
 
         // We use the path string as the key for each imported asset
-        private Dictionary<string, Asset> m_ImportedAssets = new Dictionary<string, Asset>();
-        private Dictionary<long, AssetStoreImportedPackage> m_ImportedPackages = new Dictionary<long, AssetStoreImportedPackage>();
+        private Dictionary<string, Asset> m_ImportedAssets = new();
+        private Dictionary<long, AssetStoreImportedPackage> m_ImportedPackages = new();
 
         [SerializeField]
         private string[] m_SerializedCategories = new string[0];
@@ -47,34 +77,30 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private Asset[] m_SerializedImportedAssets = new Asset[0];
 
-        public virtual event Action<IEnumerable<AssetStoreLocalInfo> /*addedOrUpdated*/, IEnumerable<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
-        public virtual event Action<AssetStoreProductInfo> onProductInfoChanged;
-        public virtual event Action<IEnumerable<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
-        public virtual event Action<IEnumerable<AssetStoreUpdateInfo>> onUpdateInfosChanged;
-        public virtual event Action<IEnumerable<AssetStoreImportedPackage> /*addedOrUpdated*/, IEnumerable<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
+        public event Action<IEnumerable<AssetStoreLocalInfo> /*addedOrUpdated*/, IEnumerable<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
+        public event Action<AssetStoreProductInfo> onProductInfoChanged;
+        public event Action<IEnumerable<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
+        public event Action<IEnumerable<AssetStoreUpdateInfo>> onUpdateInfosChanged;
+        public event Action<IEnumerable<AssetStoreImportedPackage> /*addedOrUpdated*/, IEnumerable<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
 
-        public virtual IEnumerable<AssetStoreLocalInfo> localInfos => m_LocalInfos.Values;
+        public IEnumerable<AssetStoreLocalInfo> localInfos => m_LocalInfos.Values;
 
-        public virtual IEnumerable<AssetStoreImportedPackage> importedPackages => m_ImportedPackages.Values;
-        public virtual IEnumerable<Asset> importedAssets => m_ImportedAssets.Values;
+        public IEnumerable<AssetStoreImportedPackage> importedPackages => m_ImportedPackages.Values;
+        public IEnumerable<Asset> importedAssets => m_ImportedAssets.Values;
 
-        [NonSerialized]
-        private ApplicationProxy m_Application;
-        [NonSerialized]
-        private HttpClientFactory m_HttpClientFactory;
-        [NonSerialized]
-        private IOProxy m_IOProxy;
-        [NonSerialized]
-        private UniqueIdMapper m_UniqueIdMapper;
-        public void ResolveDependencies(ApplicationProxy application,
-            HttpClientFactory httpClientFactory,
-            IOProxy iOProxy,
-            UniqueIdMapper uniqueIdMapper)
+        private readonly IApplicationProxy m_Application;
+        private readonly IHttpClientFactory m_HttpClientFactory;
+        private readonly IIOProxy m_IOProxy;
+        private readonly IUniqueIdMapper m_UniqueIdMapper;
+        public AssetStoreCache(IApplicationProxy application,
+            IHttpClientFactory httpClientFactory,
+            IIOProxy iOProxy,
+            IUniqueIdMapper uniqueIdMapper)
         {
-            m_Application = application;
-            m_HttpClientFactory = httpClientFactory;
-            m_IOProxy = iOProxy;
-            m_UniqueIdMapper = uniqueIdMapper;
+            m_Application = RegisterDependency(application);
+            m_HttpClientFactory = RegisterDependency(httpClientFactory);
+            m_IOProxy = RegisterDependency(iOProxy);
+            m_UniqueIdMapper = RegisterDependency(uniqueIdMapper);
         }
 
         public void OnBeforeSerialize()
@@ -115,12 +141,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual void SetCategory(string category, long count)
+        public void SetCategory(string category, long count)
         {
             m_Categories[category] = count;
         }
 
-        public virtual Texture2D LoadImage(long productId, string url)
+        public Texture2D LoadImage(long productId, string url)
         {
             if (string.IsNullOrEmpty(url))
                 return null;
@@ -144,7 +170,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return null;
         }
 
-        public virtual void SaveImage(long productId, string url, Texture2D texture)
+        public void SaveImage(long productId, string url, Texture2D texture)
         {
             if (string.IsNullOrEmpty(url) || texture == null)
                 return;
@@ -165,7 +191,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null)
+        public void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null)
         {
             var texture = LoadImage(productID, url);
             if (texture != null)
@@ -189,7 +215,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             httpRequest.Begin();
         }
 
-        public virtual void ClearOnlineCache()
+        public void ClearOnlineCache()
         {
             m_Categories.Clear();
             m_PurchaseInfos.Clear();
@@ -197,32 +223,32 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpdateInfos.Clear();
         }
 
-        public virtual AssetStorePurchaseInfo GetPurchaseInfo(long? productId)
+        public AssetStorePurchaseInfo GetPurchaseInfo(long? productId)
         {
             return productId > 0 ? m_PurchaseInfos.Get(productId.Value) : null;
         }
 
-        public virtual AssetStoreProductInfo GetProductInfo(long? productId)
+        public AssetStoreProductInfo GetProductInfo(long? productId)
         {
             return productId > 0 ? m_ProductInfos.Get(productId.Value) : null;
         }
 
-        public virtual AssetStoreLocalInfo GetLocalInfo(long? productId)
+        public AssetStoreLocalInfo GetLocalInfo(long? productId)
         {
             return productId > 0 ? m_LocalInfos.Get(productId.Value) : null;
         }
 
-        public virtual AssetStoreUpdateInfo GetUpdateInfo(long? productId)
+        public AssetStoreUpdateInfo GetUpdateInfo(long? productId)
         {
             return productId > 0 ? m_UpdateInfos.Get(productId.Value) : null;
         }
 
-        public virtual AssetStoreImportedPackage GetImportedPackage(long? productId)
+        public AssetStoreImportedPackage GetImportedPackage(long? productId)
         {
             return productId > 0 ? m_ImportedPackages.Get(productId.Value) : null;
         }
 
-        public virtual void SetPurchaseInfos(IEnumerable<AssetStorePurchaseInfo> purchaseInfos)
+        public void SetPurchaseInfos(IEnumerable<AssetStorePurchaseInfo> purchaseInfos)
         {
             var updatedPurchaseInfos = new List<AssetStorePurchaseInfo>();
             foreach (var purchaseInfo in purchaseInfos)
@@ -236,7 +262,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 onPurchaseInfosChanged?.Invoke(updatedPurchaseInfos);
         }
 
-        public virtual void SetProductInfo(AssetStoreProductInfo productInfo)
+        public void SetProductInfo(AssetStoreProductInfo productInfo)
         {
             var oldProductInfo = GetProductInfo(productInfo.productId);
             m_ProductInfos[productInfo.productId] = productInfo;
@@ -245,7 +271,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 onProductInfoChanged?.Invoke(productInfo);
         }
 
-        public virtual void SetLocalInfos(IEnumerable<AssetStoreLocalInfo> localInfos)
+        public void SetLocalInfos(IEnumerable<AssetStoreLocalInfo> localInfos)
         {
             var oldLocalInfos = m_LocalInfos;
             m_LocalInfos = new Dictionary<long, AssetStoreLocalInfo>();
@@ -290,7 +316,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 onLocalInfosChanged?.Invoke(addedOrUpdatedLocalInfos, oldLocalInfos.Values);
         }
 
-        public virtual void SetLocalInfo(AssetStoreLocalInfo localInfo)
+        public void SetLocalInfo(AssetStoreLocalInfo localInfo)
         {
             var productId = localInfo?.productId ?? 0;
             if (productId <= 0)
@@ -310,7 +336,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                    || oldInfo.packagePath != newInfo.packagePath;
         }
 
-        public virtual void SetUpdateInfos(IEnumerable<AssetStoreUpdateInfo> updateInfos)
+        public void SetUpdateInfos(IEnumerable<AssetStoreUpdateInfo> updateInfos)
         {
             var updateInfosChanged = new List<AssetStoreUpdateInfo>();
             foreach (var info in updateInfos)
@@ -325,7 +351,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 onUpdateInfosChanged?.Invoke(updateInfosChanged);
         }
 
-        public virtual void UpdateImportedAssets(IEnumerable<Asset> addedOrUpdatedAssets, IEnumerable<string> removedAssetPaths)
+        public void UpdateImportedAssets(IEnumerable<Asset> addedOrUpdatedAssets, IEnumerable<string> removedAssetPaths)
         {
             var modifiedProductIds = new HashSet<long>();
             foreach (var path in removedAssetPaths ?? Enumerable.Empty<string>())

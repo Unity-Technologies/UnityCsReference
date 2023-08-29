@@ -60,6 +60,9 @@ namespace UnityEditor
         [FreeFunction("MenuController::SetMenuItemHotkey")]
         internal static extern void SetHotkey(string menuPath, string hotkey);
 
+        [FreeFunction("MenuController::GetMenuItemHotkey")]
+        internal static extern string GetHotkey(string menuPath);
+
         [FreeFunction("MenuController::ExtractSubmenus")]
         internal static extern string[] ExtractSubmenus(string menuPath);
 

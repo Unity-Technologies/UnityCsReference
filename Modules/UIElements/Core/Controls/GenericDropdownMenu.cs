@@ -145,9 +145,9 @@ namespace UnityEngine.UIElements
 
         internal Action<MenuItem, GenericDropdownMenu> m_SubmenuOverride;
         internal Action<bool, bool> m_OnBeforePerformAction;
+        internal Action m_OnBack;
 
         internal event Action onRebuild;
-        internal event Action onHide;
         internal event Action<char, KeyCode, EventModifiers> onKey;
         internal event Action<KeyboardNavigationOperation> onKeyboardNavigationOperation;
 
@@ -208,10 +208,11 @@ namespace UnityEngine.UIElements
         }, k_OptimizedMenus);
         static readonly ObjectPool<VisualElement> s_ItemPool = new(() =>
         {
+            // Since item element callback lists are cleared we cannot declare
+            // any callbacks in the constructor code as it will get deleted
+            // upon release and won't work upon reuse.
             var item = new VisualElement();
             item.AddToClassList(itemUssClassName);
-            item.RegisterCallback<PointerDownEvent>(e => item.parent.parent.parent.EnableInClassList(clickUssClassName, true));
-            item.RegisterCallback<PointerUpEvent>(e => item.parent.parent.parent.EnableInClassList(clickUssClassName, false));
 
             var leftAppendix = new VisualElement();
             leftAppendix.pickingMode = PickingMode.Ignore;
@@ -374,6 +375,8 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            root.element.m_CallbackRegistry.m_BubbleUpCallbacks.GetCallbackListForWriting().Clear();
+            root.element.m_CallbackRegistry.m_TrickleDownCallbacks.GetCallbackListForWriting().Clear();
             s_ItemPool.Release(root.element);
         }
 
@@ -392,7 +395,6 @@ namespace UnityEngine.UIElements
                     m_TargetElement.Focus();
             }
 
-            onHide?.Invoke();
             m_TargetElement = null;
         }
 
@@ -471,6 +473,7 @@ namespace UnityEngine.UIElements
                         Hide(true, false);
                     }
 
+                    m_OnBack?.Invoke();
                     result = true;
                     break;
 
@@ -487,6 +490,7 @@ namespace UnityEngine.UIElements
                         Hide(true, false);
                     }
 
+                    m_OnBack?.Invoke();
                     result = true;
                     break;
 
@@ -917,6 +921,8 @@ namespace UnityEngine.UIElements
         VisualElement BuildItem(string name, bool isChecked, bool isEnabled, bool isSubmenu, object data, Texture2D icon, string tooltip)
         {
             var item = s_ItemPool.Get();
+            item.RegisterCallback<PointerDownEvent>(e => item.parent.parent.parent.EnableInClassList(clickUssClassName, true));
+            item.RegisterCallback<PointerUpEvent>(e => item.parent.parent.parent.EnableInClassList(clickUssClassName, false));
             item.SetEnabled(isEnabled);
             item.userData = data;
             item.tooltip = tooltip;

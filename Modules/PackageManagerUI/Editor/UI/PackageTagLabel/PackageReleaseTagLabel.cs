@@ -9,8 +9,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageReleaseTagLabel : PackageBaseTagLabel
     {
-        private PackageDatabase m_PackageDatabase;
-        public PackageReleaseTagLabel(PackageDatabase packageDatabase)
+        private IPackageDatabase m_PackageDatabase;
+        public PackageReleaseTagLabel(IPackageDatabase packageDatabase)
         {
             m_PackageDatabase = packageDatabase;
             name = "tagRelease";
