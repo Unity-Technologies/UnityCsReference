@@ -232,6 +232,15 @@ namespace UnityEditor
                 set;
             }
 
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static int switchMaxWorkerMultiple
+            {
+                [NativeMethod("GetSwitchKMaxWorkerMultiple")]
+                get;
+                [NativeMethod("SetSwitchKMaxWorkerMultiple")]
+                set;
+            }
+
             // Controls the behavior of Switch's auto-changing screen resolution
             [NativeProperty("switchScreenResolutionBehavior", TargetType.Field)]
             extern public static ScreenResolutionBehavior screenResolutionBehavior { get; set; }

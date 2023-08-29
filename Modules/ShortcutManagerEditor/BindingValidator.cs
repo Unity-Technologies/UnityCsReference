@@ -31,13 +31,32 @@ namespace UnityEditor.ShortcutManagement
             KeyCode.LeftCommand,
         };
 
+        // The following method is internal because it's also used in tests.
+        internal string GetInvalidKeyCodes(KeyCode key)
+        {
+            var allKeyCodeNames = Enum.GetNames(typeof(KeyCode));
+            var invalidKeyCodeNames = new List<string>();
+            foreach (var name in allKeyCodeNames)
+            {
+                // This is needed because LeftMeta, LeftCommand and LeftApple have the same enum values.
+                // The same goes for RightMeta, RightCommand and RightApple.
+                // There is no way of differentiating them. For this reason, we print all of them in the
+                // error message if one of them is pressed.
+                var currentKeyCode = (KeyCode)Enum.Parse(typeof(KeyCode), name);
+                if (currentKeyCode.Equals(key))
+                    invalidKeyCodeNames.Add(name);
+            }
+
+            return string.Join("/", invalidKeyCodeNames);
+        }
+
         public bool IsBindingValid(IEnumerable<KeyCombination> keyCombinations, out string invalidBindingMessage)
         {
             foreach (var keyCombination in keyCombinations)
             {
                 if (s_InvalidKeyCodes.Contains(keyCombination.keyCode) || (int)keyCombination.keyCode >= Directory.MaxIndexedEntries)
                 {
-                    invalidBindingMessage = $"Binding uses invalid key code {keyCombination.keyCode}";
+                    invalidBindingMessage = $"Binding uses invalid key code {GetInvalidKeyCodes(keyCombination.keyCode)}";
                     return false;
                 }
 

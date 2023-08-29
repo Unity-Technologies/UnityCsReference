@@ -1087,12 +1087,12 @@ namespace UnityEditorInternal
                 {
                     foreach (AnimationWindowCurve curve in state.activeCurves)
                     {
-                        int keyCount = curve.m_Keyframes.Count;
+                        int keyCount = curve.keyframes.Count;
 
                         if (keyCount > 1)
                         {
-                            Vector2 pt1 = new Vector2(curve.m_Keyframes[0].time, 0.0f);
-                            Vector2 pt2 = new Vector2(curve.m_Keyframes[keyCount - 1].time, 0.0f);
+                            Vector2 pt1 = new Vector2(curve.keyframes[0].time, 0.0f);
+                            Vector2 pt2 = new Vector2(curve.keyframes[keyCount - 1].time, 0.0f);
 
                             if (firstKey)
                             {

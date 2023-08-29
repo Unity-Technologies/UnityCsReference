@@ -53,20 +53,23 @@ namespace UnityEngine.UIElements
     public abstract class BaseVerticalCollectionView : BindableElement, ISerializationCallbackReceiver
     {
         /// <summary>
+        /// Obsolete. Use <see cref="BaseVerticalCollectionView.onItemsChosen"/> instead.
+        /// </summary>
+        /// <summary>
         /// Callback triggered when a user double-clicks an item to activate it. This is different from selecting the item.
         /// </summary>
         [Obsolete("onItemChosen is deprecated, use onItemsChosen instead", true)]
 #pragma warning disable 67
         public event Action<object> onItemChosen;
 #pragma warning restore 67
-        /// <summary>
-        /// Obsolete. Use <see cref="BaseVerticalCollectionView.itemsChosen"/> instead.
-        /// </summary>
         /// <remarks>
         /// This callback receives an enumerable that contains the item or items chosen.
         /// </remarks>
         public event Action<IEnumerable<object>> onItemsChosen;
 
+        /// <summary>
+        /// Obsolete. Use <see cref="BaseVerticalCollectionView.onSelectionChange"/> instead.
+        /// </summary>
         /// <summary>
         /// Callback triggered when the selection changes.
         /// </summary>
@@ -74,17 +77,11 @@ namespace UnityEngine.UIElements
 #pragma warning disable 67
         public event Action<List<object>> onSelectionChanged;
 #pragma warning restore 67
-        /// <summary>
-        /// Obsolete. Use <see cref="BaseVerticalCollectionView.selectionChanged"/> instead.
-        /// </summary>
         /// <remarks>
         /// This callback receives an enumerable that contains the item or items selected.
         /// </remarks>
         public event Action<IEnumerable<object>> onSelectionChange;
 
-        /// <summary>
-        /// Obsolete. Use <see cref="BaseVerticalCollectionView.selectedIndicesChanged"/> instead.
-        /// </summary>
         /// <remarks>
         /// This callback receives an enumerable that contains the item index or item indices selected.
         /// </remarks>
@@ -129,9 +126,6 @@ namespace UnityEngine.UIElements
 
         Func<VisualElement> m_MakeItem;
 
-        /// <summary>
-        /// Obsolete. Use <see cref="ListView.makeItem"/> or <see cref="TreeView.makeItem"/> instead.
-        /// </summary>
         /// <remarks>
         /// This callback needs to call a function that constructs a blank <see cref="VisualElement"/> that is
         /// bound to an element from the list.
@@ -154,9 +148,6 @@ namespace UnityEngine.UIElements
 
         private Action<VisualElement, int> m_BindItem;
 
-        /// <summary>
-        /// Obsolete. Use <see cref="ListView.bindItem"/> or <see cref="TreeView.bindItem"/> instead.
-        /// </summary>
         /// <remarks>
         /// The method called by this callback receives the VisualElement to bind, and the index of the
         /// element to bind it to.
@@ -186,18 +177,12 @@ namespace UnityEngine.UIElements
 
         }
 
-        /// <summary>
-        /// Obsolete. Use <see cref="ListView.unbindItem"/> or <see cref="TreeView.unbindItem"/> instead.
-        /// </summary>
         /// <remarks>
         /// The method called by this callback receives the VisualElement to unbind, and the index of the
         /// element to unbind it from.
         /// </remarks>
         public Action<VisualElement, int> unbindItem { get; set; }
 
-        /// <summary>
-        /// Obsolete. Use <see cref="ListView.destroyItem"/> or <see cref="TreeView.destroyItem"/> instead.
-        /// </summary>
         /// <remarks>
         /// The method called by this callback receives the VisualElement that will be destroyed from the pool.
         /// </remarks>
@@ -405,7 +390,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Obsolete.  Use <see cref="BaseVerticalCollectionView.fixedItemHeight"/> instead.
+        /// Obsolete. Use <see cref="BaseVerticalCollectionView.fixedItemHeight"/> instead.
         /// </summary>
         /// <remarks>
         /// This property must be set when using the <see cref="virtualizationMethod"/> is set to <c>FixedHeight</c>, for the collection view to function.
@@ -862,7 +847,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Obsolete. Use <see cref="BaseVerticalCollectionView.ScrollToItemById"/> instead.
+        /// Scrolls to a specific item id and makes it visible.
         /// </summary>
         /// <param name="id">Item id to scroll to.</param>
         public void ScrollToId(int id)

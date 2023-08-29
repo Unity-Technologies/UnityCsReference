@@ -74,7 +74,7 @@ namespace UnityEditor.Search
 
         public void IndexTypes(Type objType, int documentIndex, bool isPrefabDocument, string name = "t", bool exact = false)
         {
-            while (objType != null && objType != typeof(Object))
+            while (objType != null && objType != typeof(Object) && objType != typeof(MonoBehaviour) && objType != typeof(Behaviour))
             {
                 if (isPrefabDocument && objType == typeof(GameObject))
                     IndexProperty(documentIndex, name, "prefab", saveKeyword: true, exact: true);
@@ -191,7 +191,7 @@ namespace UnityEditor.Search
                                 var c = gocs[componentIndex];
                                 if (!c || (c.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
                                     continue;
-                                IndexType(c.GetType(), documentIndex);
+                                IndexTypes(c.GetType(), documentIndex, false);
                             }
                         }
                     }
