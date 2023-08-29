@@ -63,15 +63,9 @@ namespace UnityEditor.UIElements
         RenderTexture m_RenderTexture;
         bool CheckForRenderTexturesTrashed()
         {
-            if (m_RenderTexture == null)
+            if (m_RenderTexture == null || !m_RenderTexture.IsCreated())
             {
                 m_RenderTexture = new RenderTexture(1, 1, 0, RenderTextureFormat.ARGB32) { name = "EditorAtlasMonitorRT" };
-                m_RenderTexture.Create();
-                return true;
-            }
-
-            if (!m_RenderTexture.IsCreated())
-            {
                 m_RenderTexture.Create();
                 return true;
             }

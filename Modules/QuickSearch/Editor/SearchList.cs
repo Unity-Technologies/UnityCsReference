@@ -438,6 +438,11 @@ namespace UnityEditor.Search
                 var itemHash = item.GetHashCode();
                 if (m_IdHashes.Contains(itemHash))
                 {
+                    // TODO: We should revisit this. There is an inconsistency in how we deal with ordering and score.
+                    // If an item has the same id, a higher score (high score=sorted last) but sorted first based on the sorting method, it will not be replaced by the new item.
+                    // Which is ok if we consider that we want to keep the first result based on the sorting method. However,
+                    // if the existing item is sorted last, but has a lower score (lower score=sorted first), it will not be replaced and the new item will not be added, so the behavior
+                    // is not the same as the other case.
                     var startIndex = m_Items.BinarySearch(item, m_Comparer);
                     if (startIndex < 0)
                         startIndex = ~startIndex;
