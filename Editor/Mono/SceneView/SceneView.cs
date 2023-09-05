@@ -1569,7 +1569,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        if (!source.isPlaying)
+                        if (!source.isPlaying && source.isActiveAndEnabled)
                             source.Play();
                     }
                 }
