@@ -48,7 +48,6 @@ namespace UnityEditor.ShortcutManagement
 
         List<ShortcutEntry> m_ShortcutsBoundToSelectedKey = new List<ShortcutEntry>();
 
-
         public ShortcutManagerWindowViewController(SerializedShortcutManagerWindowState state, IDirectory directory, IBindingValidator bindingValidator, IShortcutProfileManager profileManager, IContextManager contextManager, IAvailableShortcutsChangedNotifier availableShortcutsChangedNotifier)
         {
             m_SerializedState = state;

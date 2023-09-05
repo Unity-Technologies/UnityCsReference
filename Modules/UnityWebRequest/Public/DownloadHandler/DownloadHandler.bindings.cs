@@ -125,7 +125,7 @@ namespace UnityEngine.Networking
         private extern string GetContentType();
 
         // Return true if you processed the data successfully, false otherwise.
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         protected virtual bool ReceiveData(byte[] data, int dataLength) { return true; }
 
         [RequiredByNativeCode]
@@ -139,10 +139,10 @@ namespace UnityEngine.Networking
         [Obsolete("Use ReceiveContentLengthHeader")]
         protected virtual void ReceiveContentLength(int contentLength) {}
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         protected virtual void CompleteContent() {}
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         protected virtual float GetProgress() { return 0.0f; }
 
         protected static T GetCheckedDownloader<T>(UnityWebRequest www) where T : DownloadHandler
