@@ -253,7 +253,8 @@ namespace UnityEditor
             public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
             public static readonly GUIContent loadStoreDebugModeCheckbox = EditorGUIUtility.TrTextContent("Load/Store Action Debug Mode", "Initializes Framebuffer such that errors in the load/store actions will be visually apparent. (Removed in Release Builds)");
             public static readonly GUIContent loadStoreDebugModeEditorOnlyCheckbox = EditorGUIUtility.TrTextContent("Editor Only", "Load/Store Action Debug Mode will only affect the Editor");
-            public static readonly GUIContent allowHDRDisplay = EditorGUIUtility.TrTextContent("Allow HDR Display Output*", "Checks if the display supports HDR and if it does, switches to HDR output at the start of the application.");
+            public static readonly GUIContent allowHDRDisplay = EditorGUIUtility.TrTextContent("Allow HDR Display Output*", "Enable the use of HDR displays and include all the resources required for them to function correctly.");
+            public static readonly GUIContent useHDRDisplay = EditorGUIUtility.TrTextContent("Use HDR Display Output*", "Checks if the main display supports HDR and if it does, switches to HDR output at the start of the application.");
             public static readonly GUIContent hdrOutputRequireHDRRenderingWarning = EditorGUIUtility.TrTextContent("The active Render Pipeline does not have HDR enabled. Enable HDR in the Render Pipeline Asset to see the changes.");
 
             public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings");
@@ -2246,37 +2247,48 @@ namespace UnityEditor
 
                 if (hdrDisplaySupported)
                 {
-                    bool oldUseHDRDisplay = PlayerSettings.useHDRDisplay;
-                    PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(SettingsContent.allowHDRDisplay, oldUseHDRDisplay);
                     bool requestRepaint = false;
-
-                    if (oldUseHDRDisplay != PlayerSettings.useHDRDisplay)
+                    bool oldAllowHDRDisplaySupport = PlayerSettings.allowHDRDisplaySupport;
+                    PlayerSettings.allowHDRDisplaySupport = EditorGUILayout.Toggle(SettingsContent.allowHDRDisplay, oldAllowHDRDisplaySupport);
+                    if (oldAllowHDRDisplaySupport != PlayerSettings.allowHDRDisplaySupport)
                         requestRepaint = true;
 
-                    if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps)
+                    using (new EditorGUI.DisabledScope(!PlayerSettings.allowHDRDisplaySupport))
                     {
-                        using (new EditorGUI.DisabledScope(!PlayerSettings.useHDRDisplay))
+                        using (new EditorGUI.IndentLevelScope())
                         {
-                            using (new EditorGUI.IndentLevelScope())
-                            {
-                                EditorGUI.BeginChangeCheck();
-                                HDRDisplayBitDepth oldBitDepth = PlayerSettings.hdrBitDepth;
-                                HDRDisplayBitDepth[] bitDepthValues = { HDRDisplayBitDepth.BitDepth10, HDRDisplayBitDepth.BitDepth16 };
-                                GUIContent hdrBitDepthLabel = EditorGUIUtility.TrTextContent("Swap Chain Bit Depth", "Affects the bit depth of the final swap chain format and color space.");
-                                GUIContent[] hdrBitDepthNames = { EditorGUIUtility.TrTextContent("Bit Depth 10"), EditorGUIUtility.TrTextContent("Bit Depth 16") };
+                            bool oldUseHDRDisplay = PlayerSettings.useHDRDisplay;
+                            PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(SettingsContent.useHDRDisplay, oldUseHDRDisplay);
 
-                                HDRDisplayBitDepth bitDepth = BuildEnumPopup(hdrBitDepthLabel, oldBitDepth, bitDepthValues, hdrBitDepthNames);
-                                if (EditorGUI.EndChangeCheck())
+                            if (oldUseHDRDisplay != PlayerSettings.useHDRDisplay)
+                                requestRepaint = true;
+
+                            if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps)
+                            {
+                                using (new EditorGUI.DisabledScope(!PlayerSettings.useHDRDisplay))
                                 {
-                                    PlayerSettings.hdrBitDepth = bitDepth;
-                                    if (oldBitDepth != bitDepth)
-                                        requestRepaint = true;
+                                    using (new EditorGUI.IndentLevelScope())
+                                    {
+                                        EditorGUI.BeginChangeCheck();
+                                        HDRDisplayBitDepth oldBitDepth = PlayerSettings.hdrBitDepth;
+                                        HDRDisplayBitDepth[] bitDepthValues = { HDRDisplayBitDepth.BitDepth10, HDRDisplayBitDepth.BitDepth16 };
+                                        GUIContent hdrBitDepthLabel = EditorGUIUtility.TrTextContent("Swap Chain Bit Depth", "Affects the bit depth of the final swap chain format and color space.");
+                                        GUIContent[] hdrBitDepthNames = { EditorGUIUtility.TrTextContent("Bit Depth 10"), EditorGUIUtility.TrTextContent("Bit Depth 16") };
+
+                                        HDRDisplayBitDepth bitDepth = BuildEnumPopup(hdrBitDepthLabel, oldBitDepth, bitDepthValues, hdrBitDepthNames);
+                                        if (EditorGUI.EndChangeCheck())
+                                        {
+                                            PlayerSettings.hdrBitDepth = bitDepth;
+                                            if (oldBitDepth != bitDepth)
+                                                requestRepaint = true;
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
 
-                    if (PlayerSettings.useHDRDisplay && GraphicsSettings.currentRenderPipeline != null && !SupportedRenderingFeatures.active.supportsHDR)
+                    if (PlayerSettings.allowHDRDisplaySupport && GraphicsSettings.currentRenderPipeline != null && !SupportedRenderingFeatures.active.supportsHDR)
                     {
                         EditorGUILayout.HelpBox(SettingsContent.hdrOutputRequireHDRRenderingWarning.text, MessageType.Info);
                     }
