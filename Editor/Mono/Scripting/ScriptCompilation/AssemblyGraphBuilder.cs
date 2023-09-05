@@ -12,7 +12,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     internal interface IAssemblyGraphBuilder
     {
         Dictionary<CustomScriptAssembly, List<string>> Match(
-            IReadOnlyCollection<string> sources);
+            IReadOnlyCollection<string> sources, bool logWarningOnMiss = true);
     }
 
     internal class AssemblyGraphBuilder : IAssemblyGraphBuilder
@@ -131,7 +131,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         public Dictionary<CustomScriptAssembly, List<string>> Match(
-            IReadOnlyCollection<string> sources)
+            IReadOnlyCollection<string> sources, bool logWarningOnMiss = true)
         {
             var assemblyNameSources = new Dictionary<CustomScriptAssembly, List<string>>();
 
@@ -142,7 +142,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 currentMatchingAssemblyDefinition =
                     CheckAndUpdateEditorSpecialFolder(currentMatchingAssemblyDefinition, sourceSpan, matchedBy);
 
-                if (currentMatchingAssemblyDefinition == null)
+                if (logWarningOnMiss && currentMatchingAssemblyDefinition == null)
                 {
                     Console.WriteLine(
                         $"Script '{source}' will not be compiled because it exists outside the Assets folder and does not to belong to any assembly definition file.");

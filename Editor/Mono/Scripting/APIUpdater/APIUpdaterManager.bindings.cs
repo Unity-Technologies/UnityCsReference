@@ -300,7 +300,7 @@ namespace UnityEditorInternal.APIUpdating
                 APIUpdaterLogger.WriteToFile("Assemblies not requiring updates:");
                 foreach (var noUpdateRequired in noUpdatesRequiredAssemblies)
                 {
-                    APIUpdaterLogger.WriteToFile($"{noUpdateRequired.Candidate.Path} (stdout below):{Environment.NewLine}{noUpdateRequired.StdOut}{Environment.NewLine}");
+                    APIUpdaterLogger.WriteToFile($"{noUpdateRequired.Candidate.Path}{FormattedStoutFrom(noUpdateRequired)}");
                 }
             }
 
@@ -365,6 +365,14 @@ namespace UnityEditorInternal.APIUpdating
                     if (packageInfo == null || packageInfo.source == PackageSource.Local || packageInfo.source == PackageSource.Embedded)
                         yield return path;
                 }
+            }
+
+            static string FormattedStoutFrom(AssemblyUpdaterUpdateTask task)
+            {
+                if (task.StdOut.Length == 0)
+                    return string.Empty;
+
+                return $" (stdout below):{Environment.NewLine}{task.StdOut}{Environment.NewLine}";
             }
         }
 
