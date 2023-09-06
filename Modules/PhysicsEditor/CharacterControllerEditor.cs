@@ -28,8 +28,12 @@ namespace UnityEditor
 
         private int m_HandleControlID;
 
+        private CharacterController m_CharacterController;
+
         public void OnEnable()
         {
+            m_CharacterController = (CharacterController)target;
+
             m_Height = serializedObject.FindProperty("m_Height");
             m_Radius = serializedObject.FindProperty("m_Radius");
             m_SlopeLimit = serializedObject.FindProperty("m_SlopeLimit");
@@ -58,33 +62,41 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            serializedObject.Update();
+            if(!m_CharacterController.isSupported)
+                EditorGUILayout.HelpBox("Character Controller not supported with the current physics engine", MessageType.Error);
 
-            EditorGUILayout.PropertyField(m_SlopeLimit);
-            EditorGUILayout.PropertyField(m_StepOffset);
-            EditorGUILayout.PropertyField(m_SkinWidth);
-            EditorGUILayout.PropertyField(m_MinMoveDistance);
+            using (new EditorGUI.DisabledScope(!m_CharacterController.isSupported))
+            {
+                serializedObject.Update();
 
-            EditorGUILayout.PropertyField(m_Center);
-            EditorGUILayout.PropertyField(m_Radius);
-            EditorGUILayout.PropertyField(m_Height);
+                EditorGUILayout.PropertyField(m_SlopeLimit);
+                EditorGUILayout.PropertyField(m_StepOffset);
+                EditorGUILayout.PropertyField(m_SkinWidth);
+                EditorGUILayout.PropertyField(m_MinMoveDistance);
 
-            ShowLayerOverridesProperties();
+                EditorGUILayout.PropertyField(m_Center);
+                EditorGUILayout.PropertyField(m_Radius);
+                EditorGUILayout.PropertyField(m_Height);
 
-            serializedObject.ApplyModifiedProperties();
+                ShowLayerOverridesProperties();
+
+                serializedObject.ApplyModifiedProperties();
+            }
         }
 
         public void OnSceneGUI()
         {
             if (!target)
                 return;
-            bool dragging = GUIUtility.hotControl == m_HandleControlID;
 
-            CharacterController cc = (CharacterController)target;
+           if (!m_CharacterController.isSupported)
+               return;
+
+            bool dragging = GUIUtility.hotControl == m_HandleControlID;
 
             // Use our own color for handles
             Color tempColor = Handles.color;
-            if (cc.enabled)
+            if (m_CharacterController.enabled)
                 Handles.color = Handles.s_ColliderHandleColor;
             else
                 Handles.color = Handles.s_ColliderHandleColorDisabled;
@@ -96,11 +108,11 @@ namespace UnityEditor
                 Handles.color = new Color(1, 0, 0, .001f);
             }
 
-            float height = cc.height * cc.transform.lossyScale.y;
-            float radius = cc.radius * Mathf.Max(cc.transform.lossyScale.x, cc.transform.lossyScale.z);
+            float height = m_CharacterController.height * m_CharacterController.transform.lossyScale.y;
+            float radius = m_CharacterController.radius * Mathf.Max(m_CharacterController.transform.lossyScale.x, m_CharacterController.transform.lossyScale.z);
             height = Mathf.Max(height, radius * 2);
 
-            Matrix4x4 matrix = Matrix4x4.TRS(cc.transform.TransformPoint(cc.center), Quaternion.identity, Vector3.one);
+            Matrix4x4 matrix = Matrix4x4.TRS(m_CharacterController.transform.TransformPoint(m_CharacterController.center), Quaternion.identity, Vector3.one);
 
             int prevHotControl = GUIUtility.hotControl;
 
@@ -111,9 +123,9 @@ namespace UnityEditor
                 adjusted = SizeHandle(-halfHeight, Vector3.down, matrix, true);
             if (GUI.changed)
             {
-                Undo.RecordObject(cc, "Character Controller Resize");
-                float heightScale = height / cc.height;
-                cc.height += adjusted / heightScale;
+                Undo.RecordObject(m_CharacterController, "Character Controller Resize");
+                float heightScale = height / m_CharacterController.height;
+                m_CharacterController.height += adjusted / heightScale;
             }
 
             // Radius  (four handles)
@@ -126,9 +138,9 @@ namespace UnityEditor
                 adjusted = SizeHandle(-Vector3.forward * radius, -Vector3.forward, matrix, true);
             if (GUI.changed)
             {
-                Undo.RecordObject(cc, "Character Controller Resize");
-                float radiusScale = radius / cc.radius;
-                cc.radius += adjusted / radiusScale;
+                Undo.RecordObject(m_CharacterController, "Character Controller Resize");
+                float radiusScale = radius / m_CharacterController.radius;
+                m_CharacterController.radius += adjusted / radiusScale;
             }
 
             // Detect if any of our handles got hotcontrol
@@ -138,8 +150,8 @@ namespace UnityEditor
             if (GUI.changed)
             {
                 const float minValue = 0.00001f;
-                cc.radius = Mathf.Max(cc.radius, minValue);
-                cc.height = Mathf.Max(cc.height, minValue);
+                m_CharacterController.radius = Mathf.Max(m_CharacterController.radius, minValue);
+                m_CharacterController.height = Mathf.Max(m_CharacterController.height, minValue);
             }
 
             // Reset original color

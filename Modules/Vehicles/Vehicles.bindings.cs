@@ -59,6 +59,8 @@ namespace UnityEngine
 
         public extern void GetWorldPose(out Vector3 pos, out Quaternion quat);
         public extern bool GetGroundHit(out WheelHit hit);
+
+        extern internal bool isSupported { get; }
     }
 }
 

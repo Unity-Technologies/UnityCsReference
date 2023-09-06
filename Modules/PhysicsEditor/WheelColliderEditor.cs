@@ -30,6 +30,8 @@ namespace UnityEditor
         private readonly AnimBool m_ShowLayerOverrides = new AnimBool();
         private SavedBool m_ShowLayerOverridesFoldout;
 
+        private WheelCollider m_WheelCollider;
+
         private static class Styles
         {
             public static readonly GUIContent forceAppPointDistanceContent = EditorGUIUtility.TrTextContent("Force App Point Distance", "The point where the wheel forces are applied");
@@ -45,6 +47,8 @@ namespace UnityEditor
 
         public void OnEnable()
         {
+            m_WheelCollider = (WheelCollider)target;
+
             // Wheel Collider does not serialize Collider properties, so we don't use base OnEnable like other collider types
             m_Center = serializedObject.FindProperty("m_Center");
             m_Radius = serializedObject.FindProperty("m_Radius");
@@ -67,23 +71,29 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            serializedObject.Update();
+            if (!m_WheelCollider.isSupported)
+                EditorGUILayout.HelpBox("Wheel Collider not supported with the current physics engine", MessageType.Error);
 
-            EditorGUILayout.PropertyField(m_Mass);
-            EditorGUILayout.PropertyField(m_Radius);
-            EditorGUILayout.PropertyField(m_WheelDampingRate);
-            EditorGUILayout.PropertyField(m_SuspensionDistance, Styles.suspensionDistanceContent);
-            EditorGUILayout.PropertyField(m_ForceAppPointDistance, Styles.forceAppPointDistanceContent);
-            EditorGUILayout.Space();
-            EditorGUILayout.PropertyField(m_Center, Styles.centerContent);
-            EditorGUILayout.Space();
-            EditorGUILayout.PropertyField(m_SuspensionSpring, Styles.suspensionSpringContent);
-            EditorGUILayout.PropertyField(m_ForwardFriction, Styles.forwardFrictionContent);
-            EditorGUILayout.PropertyField(m_SidewaysFriction, Styles.sidewaysFrictionContent);
+            using (new EditorGUI.DisabledScope(!m_WheelCollider.isSupported))
+            {
+                serializedObject.Update();
 
-            ShowLayerOverridesProperties();
+                EditorGUILayout.PropertyField(m_Mass);
+                EditorGUILayout.PropertyField(m_Radius);
+                EditorGUILayout.PropertyField(m_WheelDampingRate);
+                EditorGUILayout.PropertyField(m_SuspensionDistance, Styles.suspensionDistanceContent);
+                EditorGUILayout.PropertyField(m_ForceAppPointDistance, Styles.forceAppPointDistanceContent);
+                EditorGUILayout.Space();
+                EditorGUILayout.PropertyField(m_Center, Styles.centerContent);
+                EditorGUILayout.Space();
+                EditorGUILayout.PropertyField(m_SuspensionSpring, Styles.suspensionSpringContent);
+                EditorGUILayout.PropertyField(m_ForwardFriction, Styles.forwardFrictionContent);
+                EditorGUILayout.PropertyField(m_SidewaysFriction, Styles.sidewaysFrictionContent);
 
-            serializedObject.ApplyModifiedProperties();
+                ShowLayerOverridesProperties();
+
+                serializedObject.ApplyModifiedProperties();
+            }
         }
 
          protected void ShowLayerOverridesProperties()

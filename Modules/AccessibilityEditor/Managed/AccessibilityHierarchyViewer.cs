@@ -23,7 +23,6 @@ namespace UnityEditor.Accessibility
 
         // Inspector
         private readonly VisualElement m_InspectorContainer;
-        private readonly MultiColumnListView m_InspectorField_ExtraData;
 
         private AccessibilityHierarchyViewModel m_HierarchyModel;
 
@@ -81,19 +80,6 @@ namespace UnityEditor.Accessibility
             // Make all input fields of the frame field readonly
             this.Q<RectField>("frameField").Query<FloatField>().ForEach(frameSubField => frameSubField.isReadOnly = true);
 
-            m_InspectorField_ExtraData = this.Q<MultiColumnListView>("extraDataView");
-            m_InspectorField_ExtraData.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
-            m_InspectorField_ExtraData.columns[0].bindCell = (element, i) =>
-            {
-                var extraData = (AccessibilityExtraData) m_InspectorField_ExtraData.itemsSource[i];
-                (element as Label).text = extraData.label;
-            };
-            m_InspectorField_ExtraData.columns[1].bindCell = (element, i) =>
-            {
-                var extraData = (AccessibilityExtraData) m_InspectorField_ExtraData.itemsSource[i];
-                (element as Label).text = extraData.description;
-            };
-
             m_HierarchyView.treeView.selectionChanged += (_) => OnSelectionChanged();
             OnSelectionChanged();
         }
@@ -132,7 +118,6 @@ namespace UnityEditor.Accessibility
         private void RefreshInspector(AccessibilityViewModelNode node)
         {
             m_InspectorContainer.dataSource = node;
-            schedule.Execute(() => m_InspectorField_ExtraData.RefreshItems()).ExecuteLater(250);
         }
 
         void OnSelectionChanged()

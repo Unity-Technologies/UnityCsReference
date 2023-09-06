@@ -97,6 +97,7 @@ namespace UnityEditor
         [SerializeField] protected string m_GlobalObjectId = "";
         [SerializeField] protected InspectorMode m_InspectorMode = InspectorMode.Normal;
 
+        private static readonly List<PropertyEditor> m_AllPropertyEditors = new List<PropertyEditor>();
         private Object m_InspectedObject;
         private static PropertyEditor s_LastPropertyEditor;
         protected int m_LastInitialEditorInstanceID;
@@ -356,6 +357,8 @@ namespace UnityEditor
 
             if (shouldUpdateSupportedDataModes)
                 EditorApplication.CallDelayed(UpdateSupportedDataModesList);
+
+            if (!m_AllPropertyEditors.Contains(this)) m_AllPropertyEditors.Add(this);
         }
 
         [UsedImplicitly]
@@ -382,6 +385,8 @@ namespace UnityEditor
 
             dataModeController.dataModeChanged -= OnDataModeChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+
+            m_AllPropertyEditors.Remove(this);
         }
 
         private void OnMouseEnter(MouseEnterEvent e) => HoveredPropertyEditor = this;
@@ -463,6 +468,12 @@ namespace UnityEditor
             if (m_InspectedObject && !string.Equals(m_InspectedObject.name, titleContent.text))
                 UpdateWindowObjectNameTitle();
         }
+
+        internal static IEnumerable<PropertyEditor> GetPropertyEditors()
+        {
+            return m_AllPropertyEditors.AsEnumerable();
+        }
+
 
         protected void SetMode(InspectorMode mode)
         {

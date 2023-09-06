@@ -403,6 +403,8 @@ namespace UnityEngine
         extern public float minMoveDistance { get; set; }
         extern public bool detectCollisions { get; set; }
         extern public bool enableOverlapRecovery { get; set; }
+
+        extern internal bool isSupported { get; }
     }
 
     [RequiredByNativeCode]

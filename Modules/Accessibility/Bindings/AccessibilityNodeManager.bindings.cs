@@ -57,10 +57,9 @@ namespace UnityEngine.Accessibility
         internal static extern void SetValue(int id, string value);
 
         /// <summary>
-        /// Sets optional extra data for the native accessibility node with the
-        /// given ID.
+        /// Sets the hint of the native accessibility node with the given ID.
         /// </summary>
-        internal static extern void SetExtraData(int id, AccessibilityExtraData[] extraData);
+        internal static extern void SetHint(int id, string hint);
 
         /// <summary>
         /// Sets the role of the native accessibility node with the given ID.
@@ -97,7 +96,7 @@ namespace UnityEngine.Accessibility
         internal static extern void SetChildren(int id, int[] childIds);
 
         /// <summary>
-        /// Indicates whether an assistive technology is focused on the native
+        /// Gets whether an assistive technology is focused on the native
         /// accessibility node with the given ID.
         /// </summary>
         internal static extern bool GetIsFocused(int id);
@@ -109,8 +108,8 @@ namespace UnityEngine.Accessibility
         internal static extern void SetActions(int id, AccessibilityAction[] actions);
 
         /// <summary>
-        /// Indicates the language to use when voicing the native accessibility
-        /// node's label, value, and extra data (can differ from the system or
+        /// Sets the language to use when voicing the native accessibility
+        /// node's label, value, and hint (can differ from the system or
         /// application language).
         /// </summary>
         internal static extern void SetLanguage(int id, SystemLanguage language);
@@ -131,7 +130,7 @@ namespace UnityEngine.Accessibility
 
             if (service.TryGetNode(id, out var node))
             {
-                return node.selected();
+                return node.Selected();
             }
 
             return false;

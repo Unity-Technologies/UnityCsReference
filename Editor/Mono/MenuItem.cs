@@ -32,6 +32,8 @@ namespace UnityEditor
 
         public MenuItem(string itemName, bool isValidateFunction, int priority, string disabledTooltip) : this(itemName, isValidateFunction, priority, false, disabledTooltip) { }
 
+        public MenuItem(string itemName, bool isValidateFunction, int priority, string disabledTooltip, string iconResource) : this(itemName, isValidateFunction, priority, false, disabledTooltip, iconResource) { }
+
         // Creates a menu item and invokes the static function following it, when the menu item is selected.
         internal MenuItem(string itemName, bool isValidateFunction, int priority, bool internalMenu, string disabledTooltip = "", string iconResource = null)
             : this(itemName, isValidateFunction, priority, internalMenu, new string[] { "default" }, disabledTooltip, iconResource) {}
@@ -144,10 +146,10 @@ namespace UnityEditor
                     return;
                 }
                 priority = menuItemAttribute.priority;
-
                 secondaryPriority = menuItemAttribute.secondaryPriority;
-
                 execute = methodInfo;
+                disabledTooltip = menuItemAttribute.disabledTooltip;
+                iconResource = menuItemAttribute.iconResource;
             }
             else
             {

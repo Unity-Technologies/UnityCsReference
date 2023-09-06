@@ -10,20 +10,6 @@ using UnityEngine.Scripting;
 namespace UnityEngine.Accessibility
 {
     /// <summary>
-    /// Optional extra data about an accessibility node.
-    /// </summary>
-    [RequiredByNativeCode]
-    [StructLayout(LayoutKind.Sequential)]
-    [NativeType(CodegenOptions.Custom, "MonoAccessibilityExtraData")]
-    [NativeHeader("Modules/Accessibility/Bindings/AccessibilityNodeData.bindings.h")]
-    [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
-    public struct AccessibilityExtraData
-    {
-        public string label { get; set; }
-        public string description { get; set; }
-    }
-
-    /// <summary>
     /// Role of an accessibility node.
     /// </summary>
     [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
@@ -106,9 +92,10 @@ namespace UnityEngine.Accessibility
         public string value { get; set; }
 
         /// <summary>
-        /// Optional extra data about the accessibility node.
+        /// Additional information about the accessibility node.
+        /// For example, the result of performing an action on the node.
         /// </summary>
-        public AccessibilityExtraData[] extraData { get; set; }
+        public string hint { get; set; }
 
         /// <summary>
         /// The role of the accessibility node.
@@ -151,7 +138,7 @@ namespace UnityEngine.Accessibility
 
         /// <summary>
         /// The language to use when voicing the accessibility node's label,
-        /// value, and extra data (can differ from the system or application
+        /// value, and hint (can differ from the system or application
         /// language).
         /// </summary>
         internal SystemLanguage language { get; set; }

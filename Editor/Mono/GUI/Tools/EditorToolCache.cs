@@ -303,15 +303,22 @@ namespace UnityEditor.EditorTools
             // represented. Addresses case where a single locked inspector is open.
             var shared = ActiveEditorTracker.sharedTracker;
             var activeTracker = shared.isLocked ? sharedTracker : shared;
-            var inspectors = InspectorWindow.GetInspectors();
+            var propertyEditors = PropertyEditor.GetPropertyEditors();
 
-            // Collect editor tools for the shared tracker first, then any locked inspectors
+            // Collect editor tools for the shared tracker first, then any locked inspectors or open properties editors
             CollectEditorsForTracker(ctx, activeTracker, editors);
 
-            foreach (var inspector in inspectors)
+            foreach (var propertyEditor in propertyEditors)
             {
-                if (inspector.isLocked)
-                    CollectEditorsForTracker(ctx, inspector.tracker, editors);
+                if (propertyEditor is InspectorWindow)
+                {
+                    if ((propertyEditor as InspectorWindow).isLocked)
+                        CollectEditorsForTracker(ctx, propertyEditor.tracker, editors);
+                }
+                else
+                {
+                    CollectEditorsForTracker(ctx, propertyEditor.tracker, editors);
+                }
             }
 
             foreach (var editor in editors)

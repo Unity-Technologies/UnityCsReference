@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor.Overlays;
-using UnityEditor.Search;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.Toolbars;
 using UnityEditor.UIElements;
@@ -20,197 +19,6 @@ namespace UnityEditor
         public int Compare(IViewpoint x, IViewpoint y)
         {
             return x.TargetObject.name.CompareTo(y.TargetObject.name);
-        }
-    }
-
-    class CameraSelectionPopup : OverlayPopupWindow
-    {
-        const string k_USSPath = "StyleSheets/SceneView/CamerasOverlay/CamerasOverlaySelector.uss";
-        const string k_ViewpointSearchFieldUSSClass = "unity-viewpoint-collection-search-field";
-        static StyleSheet s_StyleSheet;
-
-        CameraList m_ListPopup;
-        ToolbarSearchField m_SearchField;
-
-        static IReadOnlyCollection<IViewpoint> s_Names = new List<IViewpoint>();
-        static List<IViewpoint> s_FilteredNames = new List<IViewpoint>();
-
-        readonly int s_SearchDelayMS = 250;
-
-        event Action<IViewpoint> m_CallbackOnSelection;
-
-        internal class CameraList : ListView
-        {
-            const string k_UxmlPathItem = "UXML/SceneView/CamerasOverlay/cameras-overlay-list-item.uxml";
-            const string k_VisualToggleUSSClass = "unity-viewpoint-collection__toggle--checked";
-
-            const string k_ViewpointItemIconElementUSSClass = "unity-viewpoint-item-icon";
-            const string k_ViewpointItemLabelElementUSSClass = "unity-viewpoint-item-label";
-            const string k_ViewpointItemToggleElementUSSClass = "unity-viewpoint-toggle-label";
-
-            static VisualTreeAsset s_ItemTreeAsset;
-            static Texture2D s_Checkmark;
-
-            IViewpoint m_Selected;
-
-            internal CameraList()
-                : base()
-            {
-                s_ItemTreeAsset = EditorGUIUtility.Load(k_UxmlPathItem) as VisualTreeAsset;
-
-                s_Checkmark = EditorGUIUtility.LoadIcon("checkmark");
-
-                makeItem = MakeItem;
-                bindItem = BindItem;
-                unbindItem = UnbindItem;
-            }
-
-            internal void SetCurrentSelection(IViewpoint vp)
-            {
-                m_Selected = vp;
-            }
-
-            VisualElement MakeItem()
-            {
-                VisualElement ve = s_ItemTreeAsset.Instantiate();
-                ve.Q<VisualElement>(k_ViewpointItemToggleElementUSSClass).style.backgroundImage = s_Checkmark;
-
-                return ve;
-            }
-
-            void BindItem(VisualElement ve, int index)
-            {
-                IViewpoint vp = this.itemsSource[index] as IViewpoint;
-
-                ve.Q<VisualElement>(k_ViewpointItemIconElementUSSClass).style.backgroundImage = ViewpointProxyTypeCache.GetIcon(vp);
-                ve.Q<Label>(k_ViewpointItemLabelElementUSSClass).text = vp.TargetObject.name;
-
-                if (m_Selected != null && m_Selected.TargetObject == vp.TargetObject)
-                    ve.Q<VisualElement>(k_ViewpointItemToggleElementUSSClass).AddToClassList(k_VisualToggleUSSClass);
-
-                ve.userData = index;
-            }
-
-            void UnbindItem(VisualElement ve, int index)
-            {
-                ve.Q<VisualElement>(k_ViewpointItemToggleElementUSSClass).RemoveFromClassList(k_VisualToggleUSSClass);
-
-                ve.userData = null;
-            }
-        }
-
-        protected override void OnEnable()
-        {
-            base.OnEnable();
-
-            s_FilteredNames.Clear();
-            m_ListPopup = new CameraList();
-            m_SearchField = new ToolbarSearchField();
-
-            m_SearchField.AddToClassList(k_ViewpointSearchFieldUSSClass);
-
-            if (s_StyleSheet == null)
-                s_StyleSheet = EditorGUIUtility.Load(k_USSPath) as StyleSheet;
-
-            rootVisualElement.styleSheets.Add(s_StyleSheet);
-
-            rootVisualElement.Add(m_SearchField);
-            rootVisualElement.Add(m_ListPopup);
-
-            RegisterCallbacks();
-        }
-
-        protected void OnDisable()
-        {
-            if (m_DelayedSearchJob != null && m_DelayedSearchJob.isActive)
-                m_DelayedSearchJob.Pause();
-
-            UnregisterCallbacks();
-        }
-
-        private void OnGUI()
-        {
-            // Escape closes the window
-            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
-            {
-                Close();
-                GUIUtility.ExitGUI();
-            }
-        }
-
-        void RegisterCallbacks()
-        {
-            m_SearchField.RegisterValueChangedCallback(SearchFieldUpdated);
-            m_ListPopup.selectionChanged += SelectionChanged;
-        }
-
-        void UnregisterCallbacks()
-        {
-            m_SearchField.UnregisterValueChangedCallback(SearchFieldUpdated);
-            m_ListPopup.selectionChanged -= SelectionChanged;
-        }
-
-        IVisualElementScheduledItem m_DelayedSearchJob;
-
-        void SearchFieldUpdated(ChangeEvent<string> value)
-        {
-            if (m_DelayedSearchJob != null && m_DelayedSearchJob.isActive)
-                m_DelayedSearchJob.Pause();
-
-            m_DelayedSearchJob = m_SearchField.schedule.Execute(DelayedFilteredSearch);
-            m_DelayedSearchJob.ExecuteLater(s_SearchDelayMS);
-        }
-
-        void DelayedFilteredSearch(TimerState timer)
-        {
-            string userInput = m_SearchField.value.Trim();
-
-            if (string.IsNullOrEmpty(userInput))
-                m_ListPopup.itemsSource = ViewpointToList();
-            else
-            {
-                s_FilteredNames.Clear();
-                GetAllMatches(userInput, ref s_FilteredNames);
-                m_ListPopup.itemsSource = s_FilteredNames;
-            }
-
-            m_ListPopup.RefreshItems();
-        }
-
-        void GetAllMatches(string searchString, ref List<IViewpoint> results)
-        {
-            foreach (var viewpoint in s_Names)
-            {
-                if (FuzzySearch.FuzzyMatch(searchString, viewpoint.TargetObject.name))
-                    results.Add(viewpoint);
-            }
-        }
-
-        void SelectionChanged(IEnumerable<object> selection)
-        {
-            foreach (IViewpoint vp in selection)
-            {
-                m_CallbackOnSelection(vp);
-                Close();
-            }
-        }
-
-        internal void InitData(IViewpoint selected, IReadOnlyCollection<IViewpoint> source, Action<IViewpoint> callbackOnSelection)
-        {
-            m_CallbackOnSelection = callbackOnSelection;
-            m_ListPopup.SetCurrentSelection(selected);
-
-            var list = rootVisualElement.Q<CameraList>();
-
-            s_Names = source;
-            list.itemsSource = ViewpointToList();
-        }
-
-        List<IViewpoint> ViewpointToList()
-        {
-            List<IViewpoint> list = new List<IViewpoint>(s_Names.Count);
-            list.AddRange(s_Names);
-            return list;
         }
     }
 
@@ -266,15 +74,22 @@ namespace UnityEditor
 
         void ShowSelectionDropdown(ClickEvent evt)
         {
-            var popup = OverlayPopupWindow.GetWindowDontShow<CameraSelectionPopup>();
-            popup.InitData(m_Overlay.viewpoint, m_Overlay.availableViewpoints, (IViewpoint vp) => { m_Overlay.viewpoint = vp; });
-            popup.ShowAsDropDown(GUIUtility.GUIToScreenRect(worldBound), new Vector2(m_Overlay.root.resolvedStyle.width-6, 350));
+            var menu = new DropdownMenu();
+            menu.SetDescriptor(new DropdownMenuDescriptor()
+            {
+                allowSubmenus = false,
+                search = DropdownMenuSearch.Always
+            });
+
+            foreach (var vp in m_Overlay.availableViewpoints)
+            {
+                var status = vp.TargetObject.Equals(m_Overlay.viewpoint.TargetObject) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
+                menu.AppendAction(vp.TargetObject.name, (_) => { m_Overlay.viewpoint = vp; }, status, ViewpointProxyTypeCache.GetIcon(vp));
+            }
+            menu.DoDisplayEditorMenu(worldBound);
         }
 
-        void OnViewpointSelected(IViewpoint vp)
-        {
-            SetCameraName();
-        }
+        void OnViewpointSelected(IViewpoint vp) => SetCameraName();
     }
 
     sealed class CameraInspectProperties : EditorToolbarButton
@@ -511,7 +326,6 @@ namespace UnityEditor
         public CameraPreview(CamerasOverlay overlay)
         {
             m_Overlay = overlay;
-
             onGUIHandler += OnGUI;
         }
 
@@ -537,7 +351,6 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint)
             {
                 Vector2 previewSize = PlayModeView.GetMainPlayModeViewTargetSize();
-
                 if (previewSize.x < 0f)
                 {
                     // Fallback to Scene View if not a valid game view size
@@ -624,7 +437,7 @@ namespace UnityEditor
         const string k_ReducedCamerasOverlayUSSClass = "unity-cameras-overlay--reduced";
         const string k_DisplayName = "Cameras";
 
-        static readonly Vector2 k_DefaultOverlaySize = new (246, 177);
+        static readonly Vector2 k_DefaultOverlaySize = new (250, 180);
         static readonly Vector2 k_DefaultMaxSize = new (4000, 4000);
 
         internal const string overlayId = "SceneView/CamerasOverlay";

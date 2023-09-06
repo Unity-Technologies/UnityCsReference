@@ -130,7 +130,6 @@ namespace UnityEngine.Accessibility
             m_Hierarchy = hierarchy;
             m_Children = new ObservableList<AccessibilityNode>();
             m_Actions = new ObservableList<AccessibilityAction>();
-            m_ExtraData = new ObservableList<AccessibilityExtraData>();
         }
 
         internal void AllocateNative()
@@ -142,6 +141,7 @@ namespace UnityEngine.Accessibility
                     id = id,
                     label = label,
                     value = value,
+                    hint = hint,
                     isActive = isActive,
                     role = role,
                     allowsDirectInteraction = allowsDirectInteraction,
@@ -158,9 +158,6 @@ namespace UnityEngine.Accessibility
 
             ActionsChanged();
             m_Actions.listChanged += ActionsChanged;
-
-            ExtraDataChanged();
-            m_ExtraData.listChanged += ExtraDataChanged;
 
             foreach (var child in m_Children)
             {
@@ -183,7 +180,6 @@ namespace UnityEngine.Accessibility
 
             m_Children.listChanged -= ChildrenChanged;
             m_Actions.listChanged -= ActionsChanged;
-            m_ExtraData.listChanged -= ExtraDataChanged;
 
             if (IsInActiveHierarchy())
             {
@@ -238,6 +234,29 @@ namespace UnityEngine.Accessibility
                 if (IsInActiveHierarchy())
                 {
                     AccessibilityNodeManager.SetValue(id, value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Provides additional information about the accessibility node.
+        /// For example, the result of performing an action on the node.
+        /// </summary>
+        public string hint
+        {
+            get => m_Hint;
+            set
+            {
+                if (string.Equals(m_Hint, value))
+                {
+                    return;
+                }
+
+                m_Hint = value;
+
+                if (IsInActiveHierarchy())
+                {
+                    AccessibilityNodeManager.SetHint(id, value);
                 }
             }
         }
@@ -451,26 +470,6 @@ namespace UnityEngine.Accessibility
             SetFrame(frameGetter?.Invoke() ?? Rect.zero);
         }
 
-        /// <summary>
-        /// The list of extra data for the node.
-        /// </summary>
-        public IList<AccessibilityExtraData> extraData
-        {
-            get => m_ExtraData;
-            set
-            {
-                if (m_ExtraData != null)
-                {
-                    m_ExtraData.listChanged -= ExtraDataChanged;
-                }
-
-                m_ExtraData = new ObservableList<AccessibilityExtraData>(value);
-
-                ExtraDataChanged();
-                m_ExtraData.listChanged += ExtraDataChanged;
-            }
-        }
-
         // TODO: A11Y-346 Change to string type
         internal SystemLanguage language
         {
@@ -499,10 +498,11 @@ namespace UnityEngine.Accessibility
         /// <summary>
         /// Calls the methods in its invocation list when this node is selected by the screen reader.
         /// </summary>
-        public Func<bool> selected { get; set; }
+        public event Func<bool> selected;
 
         string m_Label;
         string m_Value;
+        string m_Hint;
         bool m_IsActive = true;
         AccessibilityRole m_Role;
         bool m_AllowsDirectInteraction;
@@ -511,7 +511,6 @@ namespace UnityEngine.Accessibility
         ObservableList<AccessibilityNode> m_Children;
         ObservableList<AccessibilityAction> m_Actions;
         Rect m_Frame;
-        ObservableList<AccessibilityExtraData> m_ExtraData;
         SystemLanguage m_Language = SystemLanguage.Unknown;
         AccessibilityHierarchy m_Hierarchy;
 
@@ -521,14 +520,7 @@ namespace UnityEngine.Accessibility
             nodeData.isActive = isActive;
             nodeData.label = label;
             nodeData.value = value;
-
-            var nodeExtraData = new AccessibilityExtraData[m_ExtraData.Count];
-            for (var i = 0; i < m_ExtraData.Count; ++i)
-            {
-                nodeExtraData[i] = m_ExtraData[i];
-            }
-
-            nodeData.extraData = nodeExtraData;
+            nodeData.hint = hint;
             nodeData.role = role;
             nodeData.allowsDirectInteraction = allowsDirectInteraction;
             nodeData.state = state;
@@ -627,22 +619,6 @@ namespace UnityEngine.Accessibility
             AccessibilityNodeManager.SetActions(id, nodeActions);
         }
 
-        void ExtraDataChanged()
-        {
-            if (!IsInActiveHierarchy())
-            {
-                return;
-            }
-
-            var nodeExtraData = new AccessibilityExtraData[m_ExtraData.Count];
-            for (var i = 0; i < m_ExtraData.Count; ++i)
-            {
-                nodeExtraData[i] = m_ExtraData[i];
-            }
-
-            AccessibilityNodeManager.SetExtraData(id, nodeExtraData);
-        }
-
         bool IsInActiveHierarchy()
         {
             return m_Hierarchy != null && AssistiveSupport.activeHierarchy == m_Hierarchy;
@@ -665,6 +641,11 @@ namespace UnityEngine.Accessibility
         internal void NotifyFocusChanged(bool isNodeFocused)
         {
             focusChanged?.Invoke(this, isNodeFocused);
+        }
+
+        internal bool Selected()
+        {
+            return selected?.Invoke() ?? false;
         }
     }
 }

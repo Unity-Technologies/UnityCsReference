@@ -166,6 +166,12 @@ namespace UnityEditor.Accessibility
         public string value => m_Node?.value;
 
         /// <summary>
+        /// The hint of the node.
+        /// </summary>
+        [CreateProperty]
+        public string hint => m_Node?.hint;
+
+        /// <summary>
         /// Indicates whether the node is active.
         /// </summary>
         [CreateProperty]
@@ -192,12 +198,6 @@ namespace UnityEditor.Accessibility
         /// </summary>
         [CreateProperty]
         public AccessibilityState state => m_Node?.state ?? default;
-
-        /// <summary>
-        /// The extra data of the node.
-        /// </summary>
-        [CreateProperty]
-        public IList extraData => m_Node?.extraData as IList;
 
         /// <summary>
         /// The number of child model nodes.

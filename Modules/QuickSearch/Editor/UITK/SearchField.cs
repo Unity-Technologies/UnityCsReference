@@ -499,7 +499,7 @@ namespace UnityEditor.Search
             if (m_UpdateQueryErrorScheduledItem != null && m_UpdateQueryErrorScheduledItem.isActive)
                 m_UpdateQueryErrorScheduledItem.Pause();
 
-            if (!context.options.HasAny(SearchFlags.ShowErrorsWithResults) && m_ViewModel.results.Count > 0)
+            if (m_ViewModel.results == null || (!context.options.HasAny(SearchFlags.ShowErrorsWithResults) && m_ViewModel.results.Count > 0))
                 return;
 
             List<SearchQueryError> errors;
