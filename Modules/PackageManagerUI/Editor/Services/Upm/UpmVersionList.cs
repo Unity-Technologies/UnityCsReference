@@ -132,8 +132,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                return m_Versions.LastOrDefault(v => v.HasTag(PackageTag.PreRelease) &&
-                    (v.version?.IsHigherPreReleaseIterationOf(m_LifecycleNextVersion) == true || v.version == m_LifecycleNextVersion));
+                return m_Versions.LastOrDefault(v => v.version?.IsEqualOrPatchOf(m_LifecycleNextVersion) == true);
             }
         }
 

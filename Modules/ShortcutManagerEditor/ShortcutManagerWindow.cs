@@ -165,14 +165,13 @@ namespace UnityEditor.ShortcutManagement
     class ShortcutManagerWindow : EditorWindow
     {
         SerializedShortcutManagerWindowState m_State = new SerializedShortcutManagerWindowState();
+        ShortcutManagerWindowView m_View;
         ShortcutManagerWindowViewController m_ViewController;
 
+        static readonly Vector2 k_MinSizeToShowKeyboard = new Vector2(850, 400);
+
         [RequiredByNativeCode]
-        static void Open()
-        {
-            var win = GetWindowDontShow<ShortcutManagerWindow>();
-            win.ShowUtility();
-        }
+        static void Open() => GetWindow<ShortcutManagerWindow>();
 
         void OnEnable()
         {
@@ -181,7 +180,7 @@ namespace UnityEditor.ShortcutManagement
             rootElement.StretchToParentSize();
 
             titleContent = new GUIContent("Shortcuts");
-            minSize = new Vector2(850, 570);
+            minSize = k_MinSizeToShowKeyboard;
             maxSize = new Vector2(10000, 10000);
 
             var directory = ShortcutIntegration.instance.directory;
@@ -189,10 +188,10 @@ namespace UnityEditor.ShortcutManagement
             var profileManager = ShortcutIntegration.instance.profileManager;
             var bindingValidator = ShortcutIntegration.instance.bindingValidator;
             m_ViewController = new ShortcutManagerWindowViewController(m_State, directory, bindingValidator, profileManager, contextManager, ShortcutIntegration.instance);
-            var view = new ShortcutManagerWindowView(m_ViewController, m_ViewController);
-            m_ViewController.SetView(view);
+            m_View = new ShortcutManagerWindowView(m_ViewController, m_ViewController);
+            m_ViewController.SetView(m_View);
 
-            var root = view.GetVisualElementHierarchyRoot();
+            var root = m_View.GetVisualElementHierarchyRoot();
             rootElement.Add(root);
 
             m_ViewController.OnEnable();
@@ -210,6 +209,19 @@ namespace UnityEditor.ShortcutManagement
         {
             EditorApplication.modifierKeysChanged -= OnModifiersMightHaveChanged;
             m_ViewController.OnDisable();
+        }
+
+        internal override void OnResized()
+        {
+            if (m_View.deviceContainer is null)
+                return;
+
+            var displayKeyboard = position.width > k_MinSizeToShowKeyboard.x &&
+                                  position.height > k_MinSizeToShowKeyboard.y
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+
+            m_View.SetKeyboardDisplay(displayKeyboard);
         }
 
         public static void ShowConflicts()

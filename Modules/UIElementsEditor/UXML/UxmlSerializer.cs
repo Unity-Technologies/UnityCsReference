@@ -15,6 +15,16 @@ namespace UnityEditor.UIElements
 {
     internal class UxmlSerializedAttributeDescription : UxmlAttributeDescription
     {
+        static readonly Dictionary<Type, string> k_BaseTypes = new()
+        {
+            { typeof(short), "short" },
+            { typeof(int), "int" },
+            { typeof(long), "long" },
+            { typeof(float), "float" },
+            { typeof(double), "double" },
+            { typeof(bool), "boolean" }
+        };
+
         // Lazy loaded fields that are mostly used in the UI BUilder.
         IList<Type> m_UxmlObjectAcceptedTypes;
         object m_ObjectField;
@@ -305,6 +315,43 @@ namespace UnityEditor.UIElements
                 Debug.LogException(e);
                 return defaultValue;
             }
+        }
+
+        public void UpdateSchemaRestriction()
+        {
+            if (type is { IsEnum: true })
+            {
+                var enumRestriction = new UxmlEnumeration();
+
+                var values = new List<string>();
+                foreach (var item in Enum.GetValues(type))
+                {
+                    values.Add(item.ToString());
+                }
+
+                enumRestriction.values = values;
+                restriction = enumRestriction;
+            }
+            else if (serializedField.GetCustomAttribute<RangeAttribute>() != null)
+            {
+                var attribute = serializedField.GetCustomAttribute<RangeAttribute>();
+                var uxmlValueBoundsRestriction = new UxmlValueBounds
+                {
+                    max = attribute.max.ToString(),
+                    min = attribute.min.ToString()
+                };
+
+                restriction = uxmlValueBoundsRestriction;
+            }
+        }
+
+        public void UpdateBaseType()
+        {
+            if (!k_BaseTypes.TryGetValue(type, out var baseType))
+                baseType = "string";
+
+            typeNamespace = xmlSchemaNamespace;
+            ((UxmlAttributeDescription)this).type = baseType;
         }
 
         public override string ToString() => $"{serializedField.DeclaringType.ReflectedType.Name}.{serializedField.Name} ({serializedField.FieldType})";

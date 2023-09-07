@@ -402,8 +402,8 @@ namespace UnityEditor
 
             if (GraphicsSettings.currentRenderPipeline == null)
             {
-                // Built-in Render Pipeline.
-                s_PreviewTexture.antiAliasing = QualitySettings.antiAliasing;
+                // Built-in Render Pipeline, insure that antiAliasing is set to 1 or more
+                s_PreviewTexture.antiAliasing = Math.Max(1, QualitySettings.antiAliasing);
             }
             else
             {

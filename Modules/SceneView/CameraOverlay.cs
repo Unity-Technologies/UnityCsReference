@@ -268,7 +268,7 @@ namespace UnityEditor
         {
             var popup = OverlayPopupWindow.GetWindowDontShow<CameraSelectionPopup>();
             popup.InitData(m_Overlay.viewpoint, m_Overlay.availableViewpoints, (IViewpoint vp) => { m_Overlay.viewpoint = vp; });
-            popup.ShowAsDropDown(GUIUtility.GUIToScreenRect(worldBound), new Vector2(m_Overlay.contentRoot.resolvedStyle.width-6, 350));
+            popup.ShowAsDropDown(GUIUtility.GUIToScreenRect(worldBound), new Vector2(m_Overlay.root.resolvedStyle.width-6, 350));
         }
 
         void OnViewpointSelected(IViewpoint vp)
@@ -656,6 +656,9 @@ namespace UnityEditor
         List<IViewpoint> m_AvailableViewpoints = new List<IViewpoint>();
         IViewpoint m_SelectedViewpoint;
 
+        VisualElement m_Root;
+        internal VisualElement root => m_Root;
+
         internal IViewpoint viewpoint
         {
             get => m_SelectedViewpoint;
@@ -691,22 +694,21 @@ namespace UnityEditor
         public override VisualElement CreatePanelContent()
         {
             var styleSheet = EditorGUIUtility.Load(k_USSFilePath) as StyleSheet;
-            contentRoot.styleSheets.Add(styleSheet);
 
-            var root = new VisualElement();
-            root.Add(new CameraControlsToolbar(this));
+            m_Root = new VisualElement();
+            m_Root.name = "Cameras Preview Overlay";
+            m_Root.styleSheets.Add(styleSheet);
+            m_Root.AddToClassList(k_CamerasOverlayUSSClass);
+            m_Root.Add(new CameraControlsToolbar(this));
 
             m_CameraPreview = new CameraPreview(this);
-            root.Add(m_CameraPreview);
+            m_Root.Add(m_CameraPreview);
 
             m_UserData = new ViewpointUserData(this);
             m_UserData.RegisterCallback<GeometryChangedEvent>(UpdateSizeBasedOnUserData);
+            m_Root.Add(m_UserData);
 
-            root.Add(m_UserData);
-
-            root.name = "Cameras Preview Overlay";
-            root.AddToClassList(k_CamerasOverlayUSSClass);
-            return root;
+            return m_Root;
         }
 
         public override void OnCreated()

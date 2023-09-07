@@ -102,7 +102,7 @@ namespace UnityEditor.UIElements
                 menu.outerContainer.style.maxHeight = maxMenuHeight;
                 menu.outerContainer.RegisterCallback<GeometryChangedEvent>(e =>
                 {
-                    minSize = maxSize = menu.outerContainer.worldBound.size;
+                    maxSize = minSize= menu.outerContainer.worldBound.size;
                     position = GetAdjustedPosition(m_ParentRect, minSize, menu.m_Parent?.scrollView);
                 });
 

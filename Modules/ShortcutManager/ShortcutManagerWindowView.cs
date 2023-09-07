@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor.Experimental;
@@ -36,8 +35,12 @@ namespace UnityEditor.ShortcutManagement
         ListView m_CategoryTreeView;
         ShortcutPopupSearchField m_KeyBindingSearchField;
         ShortcutEntry m_EditingBindings;
+        VisualElement m_DeviceContainer;
+        VisualElement m_HeaderAndDeviceContainer;
         VisualElement m_SearchFiltersContainer;
         VisualElement m_ShortcutsTableSearchFilterContainer;
+
+        public VisualElement deviceContainer => m_DeviceContainer;
 
         public ShortcutManagerWindowView(IShortcutManagerWindowViewController viewController, IKeyBindingStateProvider bindingStateProvider)
         {
@@ -527,8 +530,8 @@ namespace UnityEditor.ShortcutManagement
             var headerTemplate = EditorResources.Load("UXML/ShortcutManager/ShortcutManagerView.uxml", typeof(UnityEngine.Object)) as VisualTreeAsset;
             headerTemplate.CloneTree(m_Root);
             var header = m_Root.Q("header");
-            var headerAndDeviceContainer = m_Root.Q("headerAndDeviceContainer");
-            var deviceContainer = m_Root.Q("deviceContainer");
+            m_HeaderAndDeviceContainer = m_Root.Q("headerAndDeviceContainer");
+            m_DeviceContainer = m_Root.Q("deviceContainer");
             var searchRowContainer = m_Root.Q("searchRowContainer");
             var categoryContainer = m_Root.Q("categoryContainer");
             var shortcutsTableContainer = m_Root.Q("shortcutsTableContainer");
@@ -566,24 +569,30 @@ namespace UnityEditor.ShortcutManagement
             if (EditorGUIUtility.isProSkin)
                 m_Root.AddToClassList("isProSkin");
 
-            BuildProfileManagementRow(header);
+            BuildProfileManagementRow(searchRowContainer);
             BuildLegendRow(header);
 
             BuildSearchField(searchRowContainer);
 
             shortcutsTableContainer.Add(m_ShortcutsTable);
 
-            deviceContainer.RegisterCallback<KeyDownEvent>(HandleKeyboardEvent);
-            deviceContainer.RegisterCallback<KeyUpEvent>(HandleKeyboardEvent);
-            deviceContainer.RegisterCallback<ExecuteCommandEvent>(HandleModifierKeysCommand);
-            deviceContainer.RegisterCallback<ValidateCommandEvent>(HandleModifierKeysCommand);
+            m_DeviceContainer.RegisterCallback<KeyDownEvent>(HandleKeyboardEvent);
+            m_DeviceContainer.RegisterCallback<KeyUpEvent>(HandleKeyboardEvent);
+            m_DeviceContainer.RegisterCallback<ExecuteCommandEvent>(HandleModifierKeysCommand);
+            m_DeviceContainer.RegisterCallback<ValidateCommandEvent>(HandleModifierKeysCommand);
 
             categoryContainer.Add(m_CategoryTreeView);
-            deviceContainer.Add(m_KeyboardElement);
-            deviceContainer.Add(m_MouseElement);
-            headerAndDeviceContainer.Add(deviceContainer);
+            m_DeviceContainer.Add(m_KeyboardElement);
+            m_DeviceContainer.Add(m_MouseElement);
+            m_HeaderAndDeviceContainer.Add(m_DeviceContainer);
 
             SetLocalizedText();
+        }
+
+        public void SetKeyboardDisplay(DisplayStyle style)
+        {
+            m_DeviceContainer.style.display = style;
+            m_HeaderAndDeviceContainer.style.display = style;
         }
 
         void HandleKeyboardEvent<T>(KeyboardEventBase<T> e) where T : KeyboardEventBase<T>, new()
