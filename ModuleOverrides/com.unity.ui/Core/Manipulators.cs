@@ -18,7 +18,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Base class for all Manipulator implementations.
+    /// Base class for all Manipulator implementations. For more information, refer to [[wiki:UIE-manipulators|Manipulators in User Manual]].
     /// </summary>
     public abstract class Manipulator : IManipulator
     {

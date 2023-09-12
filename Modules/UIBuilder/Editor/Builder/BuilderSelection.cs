@@ -85,14 +85,13 @@ namespace Unity.UI.Builder
                     return BuilderSelectionType.StyleSheet;
                 if (selectedElement.GetVisualElementAsset() == null)
                 {
-                    if (selectedElement.HasProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName))
+                    if (selectedElement.HasProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName)
+                        && BuilderAssetUtilities.GetVisualElementRootTemplate(selectedElement) != null)
                     {
                         return BuilderSelectionType.ElementInTemplateInstance;
                     }
-                    else
-                    {
-                        return BuilderSelectionType.ElementInControlInstance;
-                    }
+
+                    return BuilderSelectionType.ElementInControlInstance;
                 }
                 if (selectedElement.IsPartOfActiveVisualTreeAsset(m_PaneWindow.document))
                     return BuilderSelectionType.Element;
