@@ -533,9 +533,13 @@ namespace Unity.UI.Builder
 
             while (parent != null)
             {
-                if (parent is TemplateContainer && parent.GetVisualElementAsset() != null)
+                if (parent is TemplateContainer templateContainer)
                 {
-                    templateContainerParent = parent as TemplateContainer;
+                    if (templateContainer.GetVisualElementAsset() != null)
+                    {
+                        templateContainerParent = templateContainer;
+                    }
+
                     break;
                 }
 

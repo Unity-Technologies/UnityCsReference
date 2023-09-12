@@ -301,7 +301,10 @@ namespace UnityEngine
         NoiseImpulseX,
         NoiseImpulseXY,
         NoiseImpulseXYZ,
-        MeshIndex
+        MeshIndex,
+        ParticleIndex,
+        ColorPackedAsTwoFloats,
+        MeshAxisOfRotation
     }
 
     // The available vertex streams

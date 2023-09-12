@@ -1224,7 +1224,7 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         public bool HasCharacter(char character, bool searchFallbacks = false, bool tryAddCharacter = false)
         {
-            return HasCharacter(character, searchFallbacks, tryAddCharacter);
+            return HasCharacter((uint)character, searchFallbacks, tryAddCharacter);
         }
 
         /// <summary>
