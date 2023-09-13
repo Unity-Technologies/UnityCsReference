@@ -141,6 +141,10 @@ namespace UnityEditor
             [NativeProperty("switchUseCPUProfiler", TargetType.Field)]
             extern public static bool useSwitchCPUProfiler { get; set; }
 
+            // Whether to enable file system trace on Nintendo Switch CPU Profiler.
+            [NativeProperty("switchEnableFileSystemTrace", TargetType.Field)]
+            extern public static bool enableFileSystemTrace { get; set; }
+
             // What LTO setting to use on Switch.
             [NativeProperty("switchLTOSetting", TargetType.Field)]
             extern public static int switchLTOSetting { get; set; }

@@ -1198,6 +1198,36 @@ namespace UnityEditor.Search
             return OpenWithContextualProvider(null, providerIds, SearchFlags.OpenContextual);
         }
 
+        internal static string CreateFindObjectReferenceQuery(UnityEngine.Object obj)
+        {
+            var objPath = GetObjectPath(obj);
+            if (string.IsNullOrEmpty(objPath))
+                return null;
+            var query = $"ref=\"{objPath}\"";
+            return query;
+        }
+
+        [CommandHandler("OpenToFindReferenceOnObject")]
+        internal static void OpenToFindReferenceOnObject(CommandExecuteContext c)
+        {
+            var obj = c.GetArgument<UnityEngine.Object>(0);
+            if(obj == null)
+                return;
+            OpenToFindReferenceOnObject(obj);
+        }
+
+        internal static ISearchView OpenToFindReferenceOnObject(UnityEngine.Object obj)
+        {
+            var query = CreateFindObjectReferenceQuery(obj);
+            if (string.IsNullOrEmpty(query))
+                return SearchWindow.OpenDefaultQuickSearch();
+
+            return OpenWithContextualProvider(query,
+                new [] { Providers.AssetProvider.type, Providers.BuiltInSceneObjectsProvider.type },
+                SearchFlags.Default,
+                "Find References");
+        }
+
         internal static ISearchView OpenWithContextualProvider(string searchQuery, string[] providerIds, SearchFlags flags, string topic = null, bool useExplicitProvidersAsNormalProviders = false)
         {
             var providers = SearchService.GetProviders(providerIds).ToArray();

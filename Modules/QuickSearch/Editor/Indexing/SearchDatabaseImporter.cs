@@ -21,7 +21,7 @@ namespace UnityEditor.Search
         ""types"": true,
         ""properties"": true,
         ""extended"": false,
-        ""dependencies"": false
+        ""dependencies"": true
     },
     ""baseScore"": 999
 }";
@@ -35,7 +35,7 @@ namespace UnityEditor.Search
         ""types"": true,
         ""properties"": true,
         ""extended"": false,
-        ""dependencies"": false
+        ""dependencies"": true
     },
     ""baseScore"": 100
 }";
@@ -49,7 +49,7 @@ namespace UnityEditor.Search
         ""types"": true,
         ""properties"": false,
         ""extended"": false,
-        ""dependencies"": false
+        ""dependencies"": true
     },
     ""baseScore"": 9999
 }";

@@ -149,8 +149,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     {
                         m_DownloadedBytes = 0;
                         state = DownloadState.Aborted;
-                        m_ErrorMessage = L10n.Tr("Download aborted.");
-                        onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, UIError.Attribute.Clearable | UIError.Attribute.Warning));
                         onOperationFinalized?.Invoke(this);
                     }
                     else

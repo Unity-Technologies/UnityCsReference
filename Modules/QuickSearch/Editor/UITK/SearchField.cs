@@ -179,7 +179,7 @@ namespace UnityEditor.Search
                 searchField.RegisterCallback<ChangeEvent<string>>(OnQueryChanged);
                 searchField.RegisterCallback<GeometryChangedEvent>(evt => UpdatePlaceholders());
 
-                m_SearchTextInput = searchField;
+                m_SearchTextInput = textField;
             }
 
             searchField.RegisterCallback<AttachToPanelEvent>(OnSearchFieldAttachToPanel);
@@ -264,6 +264,9 @@ namespace UnityEditor.Search
 
         private void OnQueryChanged(ChangeEvent<string> evt)
         {
+            if (m_SearchTextInput != evt.target)
+                return;
+
             m_ViewModel.SetSearchText(evt.newValue, TextCursorPlacement.None);
             m_ViewModel.SetSelection();
             UpdatePlaceholders();

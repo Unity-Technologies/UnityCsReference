@@ -41,6 +41,8 @@ namespace UnityEditor
             [FreeFunction(k_ScriptingPrefix + "SetPosition", HasExplicitThis = true)] set;
         }
 
+        [FreeFunction(k_ScriptingPrefix + "SetFreeze", HasExplicitThis = true)]
+        public extern void SetFreeze(bool freeze);
         public extern bool maximized {[FreeFunction(k_ScriptingPrefix + "IsWindowMaximized", HasExplicitThis = true)] get; }
 
         [FreeFunction(k_ScriptingPrefix + "SetAlpha", HasExplicitThis = true)]
