@@ -2537,7 +2537,7 @@ namespace UnityEditor
                     }
                 }
 
-                PlayerSettingsEditor.ShowBuildNumberUI(m_BuildNumber, BuildTargetGroup.Standalone, "Build", "'CFBundleVersion'");
+                PlayerSettingsEditor.ShowBuildNumberUI(m_BuildNumber, NamedBuildTarget.Standalone, "Build", "'CFBundleVersion'");
 
                 EditorGUILayout.PropertyField(m_MacAppStoreCategory, SettingsContent.macAppStoreCategory);
                 EditorGUILayout.PropertyField(m_UseMacAppStoreValidation, SettingsContent.useMacAppStoreValidation);
@@ -2647,13 +2647,11 @@ namespace UnityEditor
             }
         }
 
-        internal static void ShowBuildNumberUI(SerializedProperty prop, BuildTargetGroup targetGroup, string label, string tooltip)
+        internal static void ShowBuildNumberUI(SerializedProperty prop, NamedBuildTarget buildTarget, string label, string tooltip)
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroupName(targetGroup);
-
             if (!prop.serializedObject.isEditingMultipleObjects)
             {
-                prop.TryGetMapEntry(buildTargetGroup, out var entry);
+                prop.TryGetMapEntry(buildTarget.TargetName, out var entry);
 
                 if (entry != null)
                 {

@@ -45,21 +45,7 @@ namespace Unity.UI.Builder
         public DataBinding binding
         {
             get => m_Binding;
-            set
-            {
-                m_Binding = value;
-
-                if (m_Binding != null && m_ShowOnlyCompatibleResultsToggle == null)
-                {
-                    footer = m_ShowOnlyCompatibleResultsToggle = new ShowOnlyCompatibleResultsToggle();
-
-                    m_ShowOnlyCompatibleResultsToggle.toggle.RegisterValueChangedCallback((_) =>
-                    {
-                        UpdateResults();
-                        Refresh();
-                    });
-                }
-            }
+            set => m_Binding = value;
         }
 
         /// <summary>
@@ -97,10 +83,6 @@ namespace Unity.UI.Builder
             matcherCallback = Matcher;
 
             // Set up the detail view that shows information about the selected or hovered property
-            m_DetailsView = new BuilderPropertyPathInfoView();
-            m_DetailsView.style.display = DisplayStyle.None;
-            detailsContent = m_DetailsView;
-
             hoveredItemChanged += propertyInfo =>
             {
                 // If no item is hovered over then fallback to the selected item
@@ -119,6 +101,28 @@ namespace Unity.UI.Builder
         {
             enabled = element != null && (bindingDataSource != null || bindingDataSourceType != null);
             UpdatePropertyList();
+        }
+
+        protected override VisualElement MakeDetailsContent()
+        {
+            m_DetailsView = new BuilderPropertyPathInfoView();
+            m_DetailsView.style.display = DisplayStyle.None;
+            return m_DetailsView;
+        }
+
+        protected override VisualElement MakeFooterContent()
+        {
+            if (m_Binding == null)
+                return null;
+            
+            m_ShowOnlyCompatibleResultsToggle = new ShowOnlyCompatibleResultsToggle();
+            m_ShowOnlyCompatibleResultsToggle.toggle.RegisterValueChangedCallback((_) =>
+            {
+                UpdateResults();
+                Refresh();
+            });
+
+            return m_ShowOnlyCompatibleResultsToggle;
         }
 
         void ShowPropertyDetails(PropertyPathInfo propertyInfo)

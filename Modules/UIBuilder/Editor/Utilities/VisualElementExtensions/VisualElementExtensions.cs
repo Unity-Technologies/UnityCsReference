@@ -39,6 +39,13 @@ namespace Unity.UI.Builder
             ve.SetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName, attribute);
         }
 
+        public static void SetInspectorStylePropertyName(this VisualElement ve, string styleName)
+        {
+            ve.SetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName, styleName);
+            var cSharpStyleName = BuilderNameUtilities.ConvertStyleUssNameToCSharpName(styleName);
+            ve.SetProperty(BuilderConstants.InspectorStyleBindingPropertyNameVEPropertyName, $"style.{cSharpStyleName}");
+        }
+
         public static BuilderStyleRow GetContainingRow(this VisualElement ve)
         {
             return ve.GetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName) as BuilderStyleRow;

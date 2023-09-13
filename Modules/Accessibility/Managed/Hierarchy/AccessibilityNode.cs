@@ -130,31 +130,49 @@ namespace UnityEngine.Accessibility
             m_Hierarchy = hierarchy;
             m_Children = new ObservableList<AccessibilityNode>();
             m_Actions = new ObservableList<AccessibilityAction>();
+
+            if (!IsInActiveHierarchy())
+            {
+                return;
+            }
+
+            var nodeData = new AccessibilityNodeData
+            {
+                id = id,
+                isActive = isActive
+            };
+            // TODO: A11Y-364 Properly handle unsuccessful native node creation
+            AccessibilityNodeManager.CreateNativeNodeWithData(nodeData);
+
+            m_Actions.listChanged += ActionsChanged;
+            m_Children.listChanged += ChildrenChanged;
         }
 
         internal void AllocateNative()
         {
-            if (IsInActiveHierarchy())
+            if (!IsInActiveHierarchy())
             {
-                var nodeData = new AccessibilityNodeData
-                {
-                    id = id,
-                    label = label,
-                    value = value,
-                    hint = hint,
-                    isActive = isActive,
-                    role = role,
-                    allowsDirectInteraction = allowsDirectInteraction,
-                    state = state,
-                    parentId = parent?.id ?? AccessibilityNodeManager.k_InvalidNodeId,
-                    frame = frame,
-                    language = language,
-                    implementsSelected = selected != null,
-                };
-
-                // TODO: A11Y-364 Properly handle unsuccessful native node creation
-                AccessibilityNodeManager.CreateNativeNodeWithData(nodeData);
+                return;
             }
+
+            var nodeData = new AccessibilityNodeData
+            {
+                id = id,
+                label = label,
+                value = value,
+                hint = hint,
+                isActive = isActive,
+                role = role,
+                allowsDirectInteraction = allowsDirectInteraction,
+                state = state,
+                parentId = parent?.id ?? AccessibilityNodeManager.k_InvalidNodeId,
+                frame = frame,
+                language = language,
+                implementsSelected = selected != null,
+            };
+
+            // TODO: A11Y-364 Properly handle unsuccessful native node creation
+            AccessibilityNodeManager.CreateNativeNodeWithData(nodeData);
 
             ActionsChanged();
             m_Actions.listChanged += ActionsChanged;
@@ -456,6 +474,8 @@ namespace UnityEngine.Accessibility
             }
         }
 
+        private Func<Rect> m_FrameGetter;
+
         /// <summary>
         /// Optional delegate that can be set to calculate the <see cref="frame"/> for the node instead of setting a flat value.
         /// If the frame of the node may change over time, this delegate should be set instead of giving a one time value for
@@ -463,7 +483,24 @@ namespace UnityEngine.Accessibility
         /// </summary>
         /// <remarks>If <see cref="AccessibilityHierarchy.RefreshNodeFrames"/> is called, the value of the
         /// <see cref="frame"/> is set to <see cref="Rect.zero"/> if <see cref="frameGetter"/> is not set.</remarks>
-        public Func<Rect> frameGetter { get; set; }
+        public Func<Rect> frameGetter
+        {
+            get => m_FrameGetter;
+            set
+            {
+                if (m_FrameGetter == value)
+                {
+                    return;
+                }
+
+                m_FrameGetter = value;
+
+                if (IsInActiveHierarchy())
+                {
+                    AccessibilityNodeManager.SetFrame(id, frame);
+                }
+            }
+        }
 
         internal void CalculateFrame()
         {

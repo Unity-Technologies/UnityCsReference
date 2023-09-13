@@ -184,6 +184,11 @@ namespace Unity.UI.Builder
             }
         }
 
+        public bool isAnonymousDocument
+        {
+            get { return string.IsNullOrEmpty(uxmlPath); }
+        }
+
         public float viewportZoomScale
         {
             get
@@ -828,7 +833,11 @@ namespace Unity.UI.Builder
             {
                 m_VisualTreeAssetBackup.DeepOverwrite(m_VisualTreeAsset);
                 EditorUtility.SetDirty(m_VisualTreeAsset);
-                BuilderAssetUtilities.LiveReload(BuilderAssetUtilities.LiveReloadChanges.Hierarchy | BuilderAssetUtilities.LiveReloadChanges.Styles);
+                if (hasUnsavedChanges && !isAnonymousDocument)
+                {
+                    BuilderAssetUtilities.LiveReload(BuilderAssetUtilities.LiveReloadChanges.Hierarchy |
+                                                     BuilderAssetUtilities.LiveReloadChanges.Styles);
+                }
             }
 
             hasUnsavedChanges = false;

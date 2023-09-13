@@ -232,28 +232,6 @@ namespace Unity.UI.Builder
 
         public FieldSearchCompleterPopup popup => m_Popup;
 
-        public VisualElement detailsContent
-        {
-            get => m_DetailsContent;
-            set
-            {
-                m_DetailsContent?.RemoveFromClassList(FieldSearchCompleterPopup.s_DetailsViewUssClassName);
-                m_DetailsContent = value;
-                m_DetailsContent?.AddToClassList(FieldSearchCompleterPopup.s_DetailsViewUssClassName);
-            }
-        }
-
-        public VisualElement footer
-        {
-            get => m_Footer;
-            set
-            {
-                m_Footer?.RemoveFromClassList(FieldSearchCompleterPopup.s_FooterUssClassName);
-                m_Footer = value;
-                m_Footer?.AddToClassList(FieldSearchCompleterPopup.s_FooterUssClassName);
-            }
-        }
-
         public TextField textField
         {
             get => m_TextField;
@@ -297,12 +275,24 @@ namespace Unity.UI.Builder
                     m_Popup = CreatePopup();
                     m_Popup.usesNativeWindow = usesNativePopupWindow;
 
-                    if (footer != null)
-                        m_Popup.Add(footer);
-
-                    if (detailsContent != null)
+                    if (m_Footer == null)
                     {
-                        m_Popup.Add(detailsContent);
+                        CreateFooterContent();
+                    }
+
+                    if (m_Footer != null)
+                    {
+                        m_Popup.Add(m_Footer);
+                    }
+
+                    if (m_DetailsContent == null)
+                    {
+                        CreateDetailsContent();
+                    }
+
+                    if (m_DetailsContent != null)
+                    {
+                        m_Popup.Add(m_DetailsContent);
                     }
 
                     if (!usesNativePopupWindow)
@@ -335,6 +325,27 @@ namespace Unity.UI.Builder
                     UpdatePopup();
                 }
             }
+        }
+
+        protected virtual VisualElement MakeDetailsContent() => null;
+
+        void CreateDetailsContent()
+        {
+            m_DetailsContent?.RemoveFromClassList(FieldSearchCompleterPopup.s_DetailsViewUssClassName);
+            m_DetailsContent = MakeDetailsContent();
+            m_DetailsContent?.AddToClassList(FieldSearchCompleterPopup.s_DetailsViewUssClassName);
+        }
+
+        protected virtual VisualElement MakeFooterContent()
+        {
+            return null;
+        }
+
+        void CreateFooterContent()
+        {
+            m_Footer?.RemoveFromClassList(FieldSearchCompleterPopup.s_DetailsViewUssClassName);
+            m_Footer = MakeFooterContent();
+            m_Footer?.AddToClassList(FieldSearchCompleterPopup.s_DetailsViewUssClassName);
         }
 
         void ConnectToField()

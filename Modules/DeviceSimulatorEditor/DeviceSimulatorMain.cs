@@ -44,6 +44,7 @@ namespace UnityEditor.DeviceSimulation
             get => m_DeviceIndex;
             set
             {
+                PlayModeAnalytics.SimulatorSelectDeviceEvent(m_Devices[value].deviceInfo.friendlyName);
                 m_DeviceIndex = value;
                 InitSimulation();
             }

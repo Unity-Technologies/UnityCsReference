@@ -64,7 +64,8 @@ namespace Unity.UI.Builder
             VisualElement documentElementRoot,
             bool includeDocumentElementRoot,
             HighlightOverlayPainter highlightOverlayPainter,
-            string toolbarUxmlPath)
+            string toolbarUxmlPath,
+            string profilerMarkerName)
         {
             m_PaneWindow = paneWindow;
             m_Viewport = viewport;
@@ -92,7 +93,7 @@ namespace Unity.UI.Builder
                 m_PaneWindow,
                 m_DocumentElement,
                 selection, classDragger, explorerDragger,
-                contextMenuManipulator, ElementSelectionChanged, highlightOverlayPainter);
+                contextMenuManipulator, ElementSelectionChanged, highlightOverlayPainter, profilerMarkerName);
             m_ElementHierarchyView.style.flexGrow = 1;
             Add(m_ElementHierarchyView);
             // Make sure the Hierarchy View gets focus when the pane gets focused.
@@ -154,14 +155,14 @@ namespace Unity.UI.Builder
             }
         }
 
-        protected void UpdateHierarchy(bool hasUnsavedChanges)
+        void UpdateHierarchy(bool hasUnsavedChanges)
         {
             m_ElementHierarchyView.hierarchyHasChanged = true;
             m_ElementHierarchyView.hasUnsavedChanges = hasUnsavedChanges;
             m_ElementHierarchyView.RebuildTree(m_DocumentElementRoot, m_IncludeDocumentElementRoot);
         }
 
-        public void UpdateHierarchyAndSelection(bool hasUnsavedChanges)
+        protected void UpdateHierarchyAndSelection(bool hasUnsavedChanges)
         {
             m_SelectionMadeExternally = true;
 
@@ -184,9 +185,7 @@ namespace Unity.UI.Builder
         {
             if (element == null ||
                 (changeType & (BuilderHierarchyChangeType.ChildrenAdded |
-                               BuilderHierarchyChangeType.ChildrenRemoved |
-                               BuilderHierarchyChangeType.Attributes |
-                               BuilderHierarchyChangeType.ClassList)) != 0)
+                               BuilderHierarchyChangeType.ChildrenRemoved)) != 0)
             {
                 UpdateHierarchyAndSelection(m_Selection.hasUnsavedChanges);
                 m_ShouldRebuildHierarchyOnStyleChange = !m_Selection.hasUnsavedChanges;

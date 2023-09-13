@@ -589,8 +589,6 @@ namespace UnityEngine
         extern public bool swapBodies { get; set; }
     }
 
-    [UsedByNativeCode]
-    [NativeHeader("Modules/Physics/MessageParameters.h")]
     public struct ContactPoint
     {
         internal Vector3  m_Point;

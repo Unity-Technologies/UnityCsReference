@@ -7,9 +7,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Unity.Profiling;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEditor.UIElements.Bindings;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -26,10 +28,19 @@ namespace Unity.UI.Builder
         static readonly string s_AttributeFieldRowUssClassName = "unity-builder-attribute-field-row";
         static readonly string s_AttributeFieldUssClassName = "unity-builder-attribute-field";
         static readonly string s_UxmlButtonUssClassName = "unity-builder-uxml-object-button";
-        public static readonly string builderBoundPropertyFieldName = "unity-builder-bound-property-field";
         public static readonly string builderSerializedPropertyFieldName = "unity-builder-serialized-property-field";
-
         static readonly string s_TempSerializedRootPath = nameof(TempSerializedData.serializedData) + ".";
+
+        // Used in tests.
+        // ReSharper disable MemberCanBePrivate.Global
+        internal const string attributeOverrideMarkerName = "BuilderUxmlAttributesView.UpdateAttributeOverrideStyle";
+        internal const string updateFieldStatusMarkerName = "BuilderUxmlAttributesView.UpdateFieldStatus";
+        internal const string postAttributeValueChangedMarkerName = "BuilderUxmlAttributesView.PostAttributeValueChange";
+        // ReSharper restore MemberCanBePrivate.Global
+
+        static readonly ProfilerMarker k_UpdateAttributeOverrideStyleMarker = new (attributeOverrideMarkerName);
+        static readonly ProfilerMarker k_UpdateFieldStatusMarker = new (updateFieldStatusMarkerName);
+        static readonly ProfilerMarker k_PostAttributeValueChangedMarker = new (postAttributeValueChangedMarkerName);
 
         VisualTreeAsset m_UxmlDocument;
         VisualElement m_CurrentElement;
@@ -43,8 +54,6 @@ namespace Unity.UI.Builder
         // UxmlSerializedData
         internal UxmlSerializedDataDescription m_SerializedDataDescription;
         internal SerializedObject m_CurrentElementSerializedObject;
-        SerializedObject m_BoundValuesSerializedObject;
-        VisualTreeAsset m_SerializedDataTreeAssetBindingsCopy;
         TempSerializedData m_TempSerializedData;
 
         public string serializedRootPath { get; set; }
@@ -68,7 +77,7 @@ namespace Unity.UI.Builder
             public UxmlSerializedData serializedData;
         }
 
-        protected enum AttributeFieldSource
+        internal enum AttributeFieldSource
         {
             /// <summary>
             /// Uses BindableElements
@@ -130,7 +139,7 @@ namespace Unity.UI.Builder
             m_SerializedDataDescription.serializedAttributes :
             m_UxmlTraitAttributes;
 
-        protected AttributeFieldSource currentFieldSource
+        internal AttributeFieldSource currentFieldSource
         {
             get
             {
@@ -189,13 +198,12 @@ namespace Unity.UI.Builder
         /// <summary>
         /// Sets the specified sub object in the specified VisualElement as the owner of attributes to be edited.
         /// </summary>
-        /// <param name="uxmlDocument">The uxml document being edited</param>
+        /// <param name="uxmlDocumentAsset">The uxml document being edited</param>
         /// <param name="visualElement">The VisualElement that owns the selected sub object</param>
-        /// <param name="objectElement">The sub object that provides attributes to be edited</param>
-        public void SetAttributesOwner(VisualTreeAsset uxmlDocument, VisualElement visualElement)
+        public void SetAttributesOwner(VisualTreeAsset uxmlDocumentAsset, VisualElement visualElement)
         {
             var uxmlAsset = visualElement.GetVisualElementAsset();
-            m_UxmlDocument = uxmlDocument;
+            m_UxmlDocument = uxmlDocumentAsset;
             m_CurrentUxmlElement = uxmlAsset;
             m_CurrentElement = visualElement;
             m_SerializedDataDescription = null;
@@ -223,7 +231,6 @@ namespace Unity.UI.Builder
                         m_SerializedDataDescription.SyncSerializedData(m_CurrentElement, m_TempSerializedData.serializedData);
                         serializedRootPath = s_TempSerializedRootPath;
                         m_CurrentElementSerializedObject = new SerializedObject(m_TempSerializedData);
-                        m_BoundValuesSerializedObject = new SerializedObject(m_TempSerializedData);
                     }
                     else
                     {
@@ -271,9 +278,6 @@ namespace Unity.UI.Builder
                             : nameof(VisualTreeAsset.m_VisualElementAssets);
                         serializedRootPath = $"{arrayPath}.Array.data[{index}].{nameof(VisualElementAsset.m_SerializedData)}.";
                         m_CurrentElementSerializedObject = new SerializedObject(m_UxmlDocument);
-
-                        m_SerializedDataTreeAssetBindingsCopy = m_UxmlDocument.DeepCopy(false);
-                        m_BoundValuesSerializedObject = new SerializedObject(m_SerializedDataTreeAssetBindingsCopy);
                     }
                 }
                 m_UxmlTraitAttributes = m_CurrentElement.GetAttributeDescriptions(true);
@@ -282,28 +286,91 @@ namespace Unity.UI.Builder
             callInitOnValueChange = currentFieldSource == AttributeFieldSource.UxmlTraits;
         }
 
-        public void SetBoundValue(VisualElement fieldElement, object value)
+        public void SetInlineValue(VisualElement fieldElement, string property)
         {
-            var dataField = fieldElement as UxmlSerializedDataAttributeField ?? fieldElement.GetFirstAncestorOfType<UxmlSerializedDataAttributeField>();
-            var serializedAttribute =
-                dataField.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
-            var property = m_BoundValuesSerializedObject.FindProperty(serializedRootPath + serializedAttribute.serializedField.Name);
+            if (serializedRootPath == null)
+                return;
 
-            property.boxedValue = value;
-            m_BoundValuesSerializedObject.ApplyModifiedPropertiesWithoutUndo();
+            var path = serializedRootPath + property;
+            SynchronizePath(path, false, out var uxmlAsset, out _, out var attributeOwner);
+            var dataDescription = UxmlSerializedDataRegistry.GetDescription(attributeOwner.GetType().FullName);
+            var attribute = dataDescription.FindAttributeWithPropertyName(property);
+            if (attribute == null)
+                return;
+            
+            var bindableElement = fieldElement?.Q<BindableElement>();
+            var binding = bindableElement?.GetBinding(BindingExtensions.s_SerializedBindingId);
+            if (binding is not SerializedObjectBindingBase bindingBase)
+                return;
+
+            object value;
+            var serializedProperty = m_CurrentElementSerializedObject.FindProperty(path);
+            var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
+
+            if (((UxmlAsset)uxmlAsset).TryGetAttributeValue(attribute.name, out var uxmlValueString) &&
+                UxmlAttributeConverter.TryConvertFromString(attribute.type, uxmlValueString, new CreationContext(m_UxmlDocument), out var uxmlValue))
+            {
+                value = uxmlValue;
+            }
+            else
+            {
+                value = attribute.defaultValueClone;
+            }
+
+            if (handler.hasPropertyDrawer)
+            {
+                serializedProperty.boxedValue = value;
+                serializedProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                bindingBase.OnPropertyValueChanged(serializedProperty);
+            }
+            else
+            {
+                bindingBase.SyncValueWithoutNotify(value);
+            }
         }
 
-        internal void RemoveBindingFromSerializedData(string property)
+        public void SetBoundValue(VisualElement fieldElement, object value)
+        {
+            var bindableElement = fieldElement?.Q<BindableElement>();
+            var binding = bindableElement?.GetBinding(BindingExtensions.s_SerializedBindingId);
+            if (binding is not SerializedObjectBindingBase bindingBase)
+                return;
+
+            var dataField = fieldElement as UxmlSerializedDataAttributeField ?? fieldElement.GetFirstAncestorOfType<UxmlSerializedDataAttributeField>();
+            var serializedAttribute = dataField.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
+
+            var property = m_CurrentElementSerializedObject.FindProperty(serializedRootPath + serializedAttribute.serializedField.Name);
+            var handler = ScriptAttributeUtility.GetHandler(property);
+
+            if (handler.hasPropertyDrawer)
+            {
+                // We need to set the serialized property so that custom property drawers get the update.
+                var previous = property.boxedValue;
+                if (previous != value)
+                {
+                    property.boxedValue = value;
+                    property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                    bindingBase.OnPropertyValueChanged(property);
+                }
+            }
+            else
+            {
+                bindingBase.SyncValueWithoutNotify(value);
+            }
+        }
+
+        internal void RemoveBindingFromSerializedData(VisualElement fieldElement, string property)
         {
             var serializedPath = serializedRootPath + "bindings";
-            var serializedProperty = m_CurrentElementSerializedObject.FindProperty(serializedPath);
+            var bindingsSerializedProperty = m_CurrentElementSerializedObject.FindProperty(serializedPath);
 
-            for (var i = 0; i < serializedProperty.arraySize; i++)
+            for (var i = 0; i < bindingsSerializedProperty.arraySize; i++)
             {
-                var p = serializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative("property").stringValue;
+                var p = bindingsSerializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative("property").stringValue;
                 if (p == property)
                 {
-                    RemoveUxmlObjectInstance(serializedProperty, i);
+                    SetInlineValue(fieldElement, property);
+                    RemoveUxmlObjectInstance(bindingsSerializedProperty, i);
                     break;
                 }
             }
@@ -568,8 +635,8 @@ namespace Unity.UI.Builder
                 return serializedAttribute.serializedField.Name;
             }
 
-            var desc = visualElement.GetLinkedAttributeDescription();
-            return GetRemapAttributeNameToCSProperty(desc.name);
+            var name = visualElement.GetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName) as string;
+            return name;
         }
 
         internal static BuilderStyleRow GetLinkedStyleRow(VisualElement visualElement)
@@ -809,6 +876,7 @@ namespace Unity.UI.Builder
                 if (uxmlAsset != null)
                     m_UxmlDocument.RemoveUxmlObject(((UxmlObjectAsset)uxmlAsset).id);
             }
+
             CallDeserializeOnElement();
             Undo.CollapseUndoOperations(undoGroup);
 
@@ -855,29 +923,16 @@ namespace Unity.UI.Builder
                     label = BuilderNameUtilities.ConvertDashToHuman(attribute.name)
                 };
 
-                var boundValuePropertyField = new PropertyField
-                {
-                    name = builderBoundPropertyFieldName,
-                    bindingPath = propertyPath,
-                    label = BuilderNameUtilities.ConvertDashToHuman(attribute.name)
-                };
-
                 void TooltipCallback(TooltipEvent e) => OnTooltipEvent(e, propertyField, attribute);
                 propertyField.RegisterCallback<TooltipEvent>(TooltipCallback, TrickleDown.TrickleDown);
-                boundValuePropertyField.RegisterCallback<TooltipEvent>(TooltipCallback, TrickleDown.TrickleDown);
-
-                boundValuePropertyField.style.display = DisplayStyle.None;
 
                 // We only care about changes when not in readOnly mode.
                 if (!readOnly)
                 {
                     propertyField.RegisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindEvent);
-                    boundValuePropertyField.RegisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindEvent);
-                    boundValuePropertyField.Bind(m_BoundValuesSerializedObject);
                 }
 
                 fieldElement.Add(propertyField);
-                fieldElement.Add(boundValuePropertyField);
 
                 propertyField.Bind(m_CurrentElementSerializedObject);
             }
@@ -904,6 +959,11 @@ namespace Unity.UI.Builder
 
             // Link the PropertyField to the UxmlSerializedAttributeDescription.
             fieldElement.SetLinkedAttributeDescription(attribute);
+
+            // Save the property name.
+            var propertyName = attribute.name;
+            var bindingProperty = GetRemapAttributeNameToCSProperty(propertyName);
+            fieldElement.SetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName, bindingProperty);
 
             // Set initial value.
             UpdateAttributeField(fieldElement);
@@ -1172,6 +1232,14 @@ namespace Unity.UI.Builder
             var fieldElement = GetRootFieldElement(evt.target as VisualElement);
             var description = fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
 
+            // If the attribute is bound and we're not editing its inline value, we can skip that change.
+            var inlinePropName = BuilderConstants.InspectorFieldBindingInlineEditingEnabledPropertyName;
+            var isEditingInlineStyle = fieldElement.HasProperty(inlinePropName) && (bool)fieldElement.GetProperty(inlinePropName);
+            if (!isEditingInlineStyle && DataBindingUtility.TryGetBinding(m_CurrentElement, description.name, out _))
+            {
+                return;
+            }
+
             object currentAttributeOwner = m_CurrentElement;
             var currentAttributeUxmlOwner = attributesUxmlOwner;
             var currentUxmlSerializedData = uxmlSerializedData;
@@ -1276,6 +1344,8 @@ namespace Unity.UI.Builder
 
         internal virtual void UpdateAttributeOverrideStyle(VisualElement fieldElement)
         {
+            using var marker = k_UpdateAttributeOverrideStyleMarker.Auto();
+
             var attribute = fieldElement.GetLinkedAttributeDescription();
             var row = fieldElement.GetContainingRow();
 
@@ -1377,6 +1447,8 @@ namespace Unity.UI.Builder
         /// <param name="fieldElement">The field to update.</param>
         protected virtual void UpdateFieldStatus(VisualElement fieldElement)
         {
+            using var marker = k_UpdateFieldStatusMarker.Auto();
+
             fieldElement = GetRootFieldElement(fieldElement);
             var valueInfo = GetValueInfo(fieldElement);
 
@@ -1392,7 +1464,7 @@ namespace Unity.UI.Builder
         /// <summary>
         /// Notifies that the list of attributes has changed.
         /// </summary>
-        protected virtual void NotifyAttributesChanged()
+        protected virtual void NotifyAttributesChanged(string attributeName = null)
         {
         }
 
@@ -1865,7 +1937,7 @@ namespace Unity.UI.Builder
                     if (removeBinding)
                     {
                         var bindingProperty = GetBindingPropertyName(fieldElement);
-                        RemoveBindingFromSerializedData(bindingProperty);
+                        RemoveBindingFromSerializedData(fieldElement, bindingProperty);
                     }
 
                     currentAttributesUxmlOwner.RemoveAttribute(attributeName);
@@ -1876,7 +1948,7 @@ namespace Unity.UI.Builder
 
                 UnsetEnumValue(attributeName, removeBinding);
 
-                NotifyAttributesChanged();
+                NotifyAttributesChanged(attributeName);
                 Refresh();
             }
         }
@@ -1984,6 +2056,7 @@ namespace Unity.UI.Builder
             if (field == null)
                 return;
 
+            using var marker = k_PostAttributeValueChangedMarker.Auto();
             var attributeName = GetAttributeName(field);
 
             UndoRecordDocument(BuilderConstants.ChangeAttributeValueUndoMessage);
@@ -2028,7 +2101,7 @@ namespace Unity.UI.Builder
             UpdateAttributeOverrideStyle(field);
 
             // Notify of changes.
-            NotifyAttributesChanged();
+            NotifyAttributesChanged(attributeName);
 
             var styleRow = GetLinkedStyleRow(field);
             if (styleRow != null)

@@ -88,7 +88,7 @@ namespace Unity.UI.Builder
         /// Constructor
         /// </summary>
         /// <param name="type">The type of value binding</param>
-        public FieldValueBindingInfo(FieldValueBindingInfoType type)
+        public FieldValueBindingInfo(in FieldValueBindingInfoType type)
         {
             this.type = type;
             m_Data = default;
@@ -99,7 +99,7 @@ namespace Unity.UI.Builder
         /// </summary>
         /// <param name="type">The type of value binding</param>
         /// <param name="variable">The details about the variable to which the field is bound</param>
-        public FieldValueBindingInfo(FieldValueBindingInfoType type, VariableInfo variable)
+        public FieldValueBindingInfo(in FieldValueBindingInfoType type, in VariableInfo variable)
         {
             this.type = type;
             this.m_Data = variable;
@@ -226,7 +226,7 @@ namespace Unity.UI.Builder
         /// </summary>
         /// <param name="type">The type of value source.</param>
         /// <param name="rule">The data that provides about the value source.</param>
-        public FieldValueSourceInfo(FieldValueSourceInfoType type, MatchedRule rule)
+        public FieldValueSourceInfo(FieldValueSourceInfoType type, in MatchedRule rule)
         {
             this.type = type;
             m_Data = rule;
@@ -458,7 +458,7 @@ namespace Unity.UI.Builder
                 }
             }
 
-            var bindingProperty = BuilderInspectorUtilities.GetBindingProperty(inspector, field);
+            var bindingProperty = BuilderInspectorUtilities.GetBindingProperty(field);
 
             if (inspector.bindingsCache != null
                 && inspector.bindingsCache.TryGetCachedData(inspector.currentVisualElement, bindingProperty, out var cacheData))

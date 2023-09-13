@@ -192,6 +192,20 @@ namespace UnityEngine.UIElements
             [SerializeReference, HideInInspector, UxmlObjectReference("Bindings")] List<Binding.UxmlSerializedData> bindings;
             #pragma warning restore 649
 
+            internal bool HasBindingInternal(string property)
+            {
+                if (bindings == null)
+                    return false;
+
+                foreach (var binding in bindings)
+                {
+                    if (binding.property == property)
+                        return true;
+                }
+
+                return false;
+            }
+
             [ExcludeFromDocs]
             public override object CreateInstance() => new VisualElement();
 

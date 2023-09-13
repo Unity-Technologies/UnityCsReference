@@ -148,6 +148,12 @@ namespace UnityEngine.UIElements
                 }
 
                 m_SortColumnDescriptions = value;
+
+                if (viewController != null)
+                {
+                    viewController.columnController.header.sortDescriptions = value;
+                    RaiseColumnSortingChanged();
+                }
             }
         }
 

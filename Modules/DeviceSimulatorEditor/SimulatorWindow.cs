@@ -22,7 +22,7 @@ namespace UnityEditor.DeviceSimulation
         [SerializeField] private SimulatorState m_SimulatorState;
         private SimulationState m_State = SimulationState.Enabled;
         private DeviceSimulatorMain m_Main;
-
+        private bool m_PlaymodeTransition = false;
 
         private Vector2 simulatorViewPadding
         {
@@ -68,6 +68,8 @@ namespace UnityEditor.DeviceSimulation
 
         void OnEnable()
         {
+            EditorApplication.playModeStateChanged += PlayModeStateChanged;
+
             titleContent = GetLocalizedTitleContent();
             minSize = new Vector2(200, 200);
             autoRepaintOnSceneChange = true;
@@ -82,6 +84,11 @@ namespace UnityEditor.DeviceSimulation
             InitPlayModeViewSwapMenu();
 
             DevicePackage.OnPackageStatus += OnDevicePackageStatus;
+
+            if (!m_PlaymodeTransition)
+            {
+                PlayModeAnalytics.SimulatorEnableEvent(null);
+            }
         }
 
         private void InitPlayModeViewSwapMenu()
@@ -97,14 +104,32 @@ namespace UnityEditor.DeviceSimulation
             }
         }
 
+        void PlayModeStateChanged(PlayModeStateChange state)
+        {
+            switch(state)
+            {
+                case PlayModeStateChange.ExitingEditMode:
+                case PlayModeStateChange.ExitingPlayMode:
+                    m_PlaymodeTransition = true;
+                    break;
+                default:
+                    m_PlaymodeTransition = false;
+                    break;
+            }
+        }
+
         private void OnDisable()
         {
             s_SimulatorInstances.Remove(this);
             m_Main.Dispose();
 
-            DevicePackage.OnPackageStatus -= OnDevicePackageStatus;
+            if (!m_PlaymodeTransition)
+            {
+                PlayModeAnalytics.SimulatorDisableEvent();
+            }
 
-            PlayModeAnalytics.SimulatorDisableEvent();
+            DevicePackage.OnPackageStatus -= OnDevicePackageStatus;
+            EditorApplication.playModeStateChanged -= PlayModeStateChanged;
         }
 
         void Update()

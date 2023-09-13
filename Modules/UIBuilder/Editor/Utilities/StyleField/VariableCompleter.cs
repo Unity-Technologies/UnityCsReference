@@ -56,25 +56,33 @@ namespace Unity.UI.Builder
                 e.Q<Label>(s_ItemEditorOnlyLabelName).EnableInClassList(BuilderConstants.HiddenStyleClassName, !res.isEditorVar);
             };
 
-            m_DetailsView = new VariableInfoView();
-            m_DetailsView.AddToClassList(BuilderConstants.HiddenStyleClassName);
-            detailsContent = m_DetailsView;
-            selectionChanged += data =>
-            {
-                m_DetailsView.SetInfo(data);
-                if (data.IsValid())
-                {
-                    m_DetailsView.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
-                }
-                else
-                {
-                    m_DetailsView.AddToClassList(BuilderConstants.HiddenStyleClassName);
-                }
-            };
+            selectionChanged += OnSelectionChanged;
 
             matcherCallback = Matcher;
             getTextFromDataCallback = GetVarName;
             SetupCompleterField(handler.variableField?.textField, false);
+        }
+
+        void OnSelectionChanged(VariableInfo data)
+        {
+            if (m_DetailsView == null) return;
+
+            m_DetailsView.SetInfo(data);
+            if (data.IsValid())
+            {
+                m_DetailsView.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
+            }
+            else
+            {
+                m_DetailsView.AddToClassList(BuilderConstants.HiddenStyleClassName);
+            }
+        }
+
+        protected override VisualElement MakeDetailsContent()
+        {
+            m_DetailsView = new VariableInfoView();
+            m_DetailsView.AddToClassList(BuilderConstants.HiddenStyleClassName);
+            return m_DetailsView;
         }
 
         static string GetVarName(VariableInfo data)

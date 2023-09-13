@@ -47,6 +47,9 @@ namespace UnityEditor.UIElements
             TextEventManager.FONT_PROPERTY_EVENT.Add(m_TextAssetChange);
             TextEventManager.SPRITE_ASSET_PROPERTY_EVENT.Add(m_TextAssetChange);
             TextEventManager.COLOR_GRADIENT_PROPERTY_EVENT.Add(m_ColorGradientChange);
+
+            m_PreviousInMemoryAssetsHierarchyVersion = UIElementsUtility.m_InMemoryAssetsHierarchyVersion;
+            m_PreviousInMemoryAssetsStyleVersion = UIElementsUtility.m_InMemoryAssetsStyleVersion;
         }
 
         protected override void Dispose(bool disposing)

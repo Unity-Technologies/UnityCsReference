@@ -20,16 +20,16 @@ namespace Unity.UI.Builder
             foldoutField.header.SetProperty(BuilderConstants.FoldoutFieldPropertyName, foldoutField);
 
             foldoutField.propertyField.SetProperty(BuilderConstants.FoldoutFieldPropertyName, foldoutField);
-            foldoutField.propertyField.SetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName, StylePropertyId.TransitionProperty.UssName());
+            foldoutField.propertyField.SetInspectorStylePropertyName(StylePropertyId.TransitionProperty.UssName());
 
             foldoutField.durationField.SetProperty(BuilderConstants.FoldoutFieldPropertyName, foldoutField);
-            foldoutField.durationField.SetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName, StylePropertyId.TransitionDuration.UssName());
+            foldoutField.durationField.SetInspectorStylePropertyName(StylePropertyId.TransitionDuration.UssName());
 
             foldoutField.timingFunctionField.SetProperty(BuilderConstants.FoldoutFieldPropertyName, foldoutField);
-            foldoutField.timingFunctionField.SetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName, StylePropertyId.TransitionTimingFunction.UssName());
+            foldoutField.timingFunctionField.SetInspectorStylePropertyName(StylePropertyId.TransitionTimingFunction.UssName());
 
             foldoutField.delayField.SetProperty(BuilderConstants.FoldoutFieldPropertyName, foldoutField);
-            foldoutField.delayField.SetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName, StylePropertyId.TransitionDelay.UssName());
+            foldoutField.delayField.SetInspectorStylePropertyName(StylePropertyId.TransitionDelay.UssName());
             return foldoutField;
         }
 

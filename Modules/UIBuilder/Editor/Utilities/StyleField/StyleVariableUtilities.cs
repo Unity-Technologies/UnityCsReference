@@ -116,7 +116,7 @@ namespace Unity.UI.Builder
             return handler;
         }
 
-        static public VariableEditingHandler GetVarHandler(BindableElement field)
+        public static VariableEditingHandler GetVarHandler(BindableElement field)
         {
             if (field == null)
                 return null;

@@ -39,7 +39,10 @@ namespace Unity.UI.Builder
 
         public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
-            if (changeType.HasFlag(BuilderHierarchyChangeType.FullRefresh))
+            if ((changeType & (BuilderHierarchyChangeType.FullRefresh |
+                    BuilderHierarchyChangeType.Attributes |
+                    BuilderHierarchyChangeType.ElementName |
+                    BuilderHierarchyChangeType.ClassList)) != 0)
             {
                 RefreshPreviewIfVisible();
             }

@@ -27,13 +27,31 @@ namespace Unity.UI.Builder
                   viewport.documentRootElement,
                   true,
                   highlightOverlayPainter,
-                  null)
+                  null,
+                  "Hierarchy")
         {
             viewDataKey = "builder-hierarchy";
 
             m_ElementHierarchyView.RegisterCallback<FocusEvent>(e => ShortcutIntegration.instance.contextManager.RegisterToolContext(m_Viewport), useTrickleDown: TrickleDown.TrickleDown);
             m_ElementHierarchyView.RegisterCallback<BlurEvent>(e => ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_Viewport), useTrickleDown: TrickleDown.TrickleDown);
             m_ElementHierarchyView.RegisterCallback<DetachFromPanelEvent>(e => ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_Viewport));
+        }
+
+        public override void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
+        {
+            base.HierarchyChanged(element, changeType);
+
+            if ((changeType & (BuilderHierarchyChangeType.ElementName | BuilderHierarchyChangeType.ClassList)) != 0)
+            {
+                var selectedId = m_ElementHierarchyView.GetSelectedItemId();
+                var index = m_ElementHierarchyView.treeView.viewController.GetIndexForId(selectedId);
+                if (index == -1)
+                {
+                    return;
+                }
+
+                m_ElementHierarchyView.treeView.RefreshItem(index);
+            }
         }
 
         protected override bool IsSelectedItemValid(VisualElement element)

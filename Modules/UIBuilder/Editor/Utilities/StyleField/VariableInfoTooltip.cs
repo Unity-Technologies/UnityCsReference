@@ -20,7 +20,7 @@ namespace Unity.UI.Builder
 
         public VariableEditingHandler currentHandler => m_CurrentHandler;
 
-        public void SetInfo(VariableInfo info)
+        public void SetInfo(in VariableInfo info)
         {
             m_View.SetInfo(info);
         }
@@ -48,7 +48,7 @@ namespace Unity.UI.Builder
             focusable = true;
         }
 
-        public void Show(VariableEditingHandler handler, VariableInfo info)
+        public void Show(VariableEditingHandler handler, in VariableInfo info)
         {
             m_CurrentHandler = handler;
             m_View.SetInfo(info);

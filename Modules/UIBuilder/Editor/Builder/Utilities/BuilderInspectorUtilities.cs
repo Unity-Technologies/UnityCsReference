@@ -4,7 +4,6 @@
 
 using UnityEditor;
 using UnityEngine;
-using Unity.Properties;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -53,21 +52,17 @@ namespace Unity.UI.Builder
             return dataField;
         }
 
-        internal static string GetBindingProperty(BuilderInspector inspector, VisualElement fieldElement)
+        internal static string GetBindingProperty(VisualElement fieldElement)
         {
             string bindingProperty = null;
 
             if (fieldElement.HasProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName))
             {
-                var propertyName = fieldElement.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
-                var cSharpStyleName = BuilderNameUtilities.ConvertStyleUssNameToCSharpName(propertyName);
-                bindingProperty = $"style.{cSharpStyleName}";
+                bindingProperty = fieldElement.GetProperty(BuilderConstants.InspectorStyleBindingPropertyNameVEPropertyName) as string;
             }
             else if (fieldElement.HasLinkedAttributeDescription())
             {
-                var uxmlAttr = fieldElement.GetLinkedAttributeDescription();
-                var propertyName = uxmlAttr.name;
-                bindingProperty =  inspector.attributeSection.GetRemapAttributeNameToCSProperty(propertyName);
+                bindingProperty = fieldElement.GetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName) as string;
             }
 
             return bindingProperty;
@@ -75,6 +70,11 @@ namespace Unity.UI.Builder
 
         public static bool HasBinding(BuilderInspector inspector, VisualElement fieldElement)
         {
+            if (inspector.attributeSection.currentFieldSource == BuilderUxmlAttributesView.AttributeFieldSource.UxmlTraits)
+            {
+                return false;
+            }
+
             var selectionIsSelector = BuilderSharedStyles.IsSelectorElement(inspector.currentVisualElement);
 
             if (selectionIsSelector)
@@ -82,10 +82,10 @@ namespace Unity.UI.Builder
                 return false;
             }
 
-            var bindingProperty = GetBindingProperty(inspector, fieldElement);
+            var bindingProperty = GetBindingProperty(fieldElement);
 
-            return DataBindingUtility.TryGetBinding(inspector.currentVisualElement, new PropertyPath(bindingProperty),
-                out _);
+            return inspector.attributeSection.uxmlSerializedData is VisualElement.UxmlSerializedData serializedData &&
+                serializedData.HasBindingInternal(bindingProperty);
         }
 
         // Useful for loading the Builder inspector's icons

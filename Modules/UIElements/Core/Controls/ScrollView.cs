@@ -97,7 +97,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Displays its contents inside a scrollable frame. For more information, see [[wiki:UIE-uxml-element-ScrollView|ScrollView]]. 
+    /// Displays its contents inside a scrollable frame. For more information, see [[wiki:UIE-uxml-element-ScrollView|ScrollView]].
     /// </summary>
     public class ScrollView : VisualElement
     {
@@ -112,6 +112,7 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId touchScrollBehaviorProperty = nameof(touchScrollBehavior);
         internal static readonly BindingId nestedInteractionKindProperty = nameof(nestedInteractionKind);
         internal static readonly BindingId modeProperty = nameof(mode);
+        internal static readonly BindingId elasticAnimationIntervalMsProperty = nameof(elasticAnimationIntervalMs);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
@@ -132,6 +133,7 @@ namespace UnityEngine.UIElements
             [SerializeField] private TouchScrollBehavior touchScrollBehavior;
             [SerializeField] private float scrollDecelerationRate;
             [SerializeField] private float elasticity;
+            [SerializeField] private long elasticAnimationIntervalMs;
             #pragma warning restore 649
 
             public override object CreateInstance() => new ScrollView();
@@ -163,6 +165,7 @@ namespace UnityEngine.UIElements
                 e.scrollDecelerationRate = scrollDecelerationRate;
                 e.touchScrollBehavior = touchScrollBehavior;
                 e.elasticity = elasticity;
+                e.elasticAnimationIntervalMs = elasticAnimationIntervalMs;
             }
         }
 
@@ -294,6 +297,27 @@ namespace UnityEngine.UIElements
                 UpdateScrollers(needsHorizontal, needsVertical);
                 if (previous != m_VerticalScrollerVisibility)
                     NotifyPropertyChanged(verticalScrollerVisibilityProperty);
+            }
+        }
+
+        long m_ElasticAnimationIntervalMs = 16;
+
+        /// <summary>
+        /// Specifies the minimum amount of time in milliseconds between each elastic spring animation execution.
+        /// </summary>
+        [CreateProperty]
+        public long elasticAnimationIntervalMs
+        {
+            get { return m_ElasticAnimationIntervalMs; }
+            set
+            {
+                var previous = m_ElasticAnimationIntervalMs;
+                m_ElasticAnimationIntervalMs = value;
+                if (previous != m_ElasticAnimationIntervalMs)
+                {
+                    NotifyPropertyChanged(elasticAnimationIntervalMsProperty);
+                    m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(m_ElasticAnimationIntervalMs);
+                }
             }
         }
 
@@ -1158,7 +1182,9 @@ namespace UnityEngine.UIElements
         VisualElement m_CapturedTarget;
         EventCallback<PointerMoveEvent> m_CapturedTargetPointerMoveCallback;
         EventCallback<PointerUpEvent> m_CapturedTargetPointerUpCallback;
-        private IVisualElementScheduledItem m_PostPointerUpAnimation;
+
+        // Internal for tests
+        internal IVisualElementScheduledItem m_PostPointerUpAnimation;
 
         // Compute the new scroll view offset from a pointer delta, taking elasticity into account.
         // Low and high limits are the values beyond which the scrollview starts to show resistance to scrolling (elasticity).
@@ -1587,7 +1613,7 @@ namespace UnityEngine.UIElements
 
             if (m_PostPointerUpAnimation == null)
             {
-                m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(30);
+                m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(m_ElasticAnimationIntervalMs);
             }
             else
             {

@@ -302,6 +302,17 @@ namespace UnityEditor.UIElements
                     value = stringValue;
             }
 
+            if (isUnityObject && value is Object obj && obj.GetType() != serializedField.FieldType)
+            {
+                // Missing asset reference fields will throw an exception because we're trying to write an Object,
+                // so we have to leave the old value as is.
+                var instanceID = obj.GetInstanceID();
+                if (!obj && instanceID != 0)
+                {
+                    return;
+                }
+            }
+
             serializedField.SetValue(uxmlSerializedData, value);
         }
 

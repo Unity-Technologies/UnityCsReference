@@ -98,7 +98,7 @@ namespace Unity.UI.Builder
             m_Thumbnail.vectorImage = null;
         }
 
-        public void SetInfo(VariableInfo info)
+        public void SetInfo(in VariableInfo info)
         {
             ClearUI();
 

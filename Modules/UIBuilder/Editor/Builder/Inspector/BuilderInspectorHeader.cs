@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Profiling;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -33,11 +34,15 @@ namespace Unity.UI.Builder
         public VisualElement header => m_Header;
 
         // Store callbacks to reduce delegate allocations
-       EventCallback<ChangeEvent<string>> m_ElementNameChangeCallback;
-       EventCallback<ChangeEvent<string>> m_SelectorNameChangeCallback;
-       EventCallback<KeyDownEvent> m_SelectorEnterKeyDownCallback;
+        EventCallback<ChangeEvent<string>> m_ElementNameChangeCallback;
+        EventCallback<ChangeEvent<string>> m_SelectorNameChangeCallback;
+        EventCallback<KeyDownEvent> m_SelectorEnterKeyDownCallback;
 
-       IManipulator m_RightClickManipulator;
+        IManipulator m_RightClickManipulator;
+
+        // ReSharper disable once MemberCanBePrivate.Global
+        internal const string refreshMarkerName = "BuilderInspectorHeader.Refresh";
+        static readonly ProfilerMarker k_RefreshMarker = new (refreshMarkerName);
 
         public BuilderInspectorHeader(BuilderInspector inspector)
         {
@@ -89,6 +94,8 @@ namespace Unity.UI.Builder
 
         public void Refresh()
         {
+            using var marker = k_RefreshMarker.Auto();
+
             if (currentVisualElement == null)
             {
                 return;

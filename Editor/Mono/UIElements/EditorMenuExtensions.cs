@@ -20,6 +20,13 @@ namespace UnityEditor.UIElements
         Always
     }
 
+    public enum DropdownMenuLayout
+    {
+        Short,
+        Medium,
+        Long
+    }
+
     public class DropdownMenuDescriptor
     {
         public bool allowSubmenus { get; set; } = true;
@@ -27,6 +34,7 @@ namespace UnityEditor.UIElements
         public bool expansion { get; set; } = true;
         public bool parseShortcuts { get; set; } = true;
         public DropdownMenuSearch search { get; set; } = DropdownMenuSearch.Auto;
+        public DropdownMenuLayout layout { get; set; } = DropdownMenuLayout.Long;
         public string title { get; set; } = null;
     }
 
@@ -49,7 +57,7 @@ namespace UnityEditor.UIElements
         internal static readonly string searchCategoryUssClassName = GenericDropdownMenu.ussClassName + "__search-category";
         internal static readonly string shortcutUssClassName = GenericDropdownMenu.ussClassName + "__shortcut";
 
-        static float maxMenuHeight => Screen.currentResolution.height / (Screen.dpi / 96.0f) * 0.75f;
+        static float maxMenuHeight => Screen.currentResolution.height / (Screen.dpi / 96.0f);
 
         internal static bool isEditorContextMenuActive => s_ActiveMenus.Count > 0;
 
@@ -102,7 +110,6 @@ namespace UnityEditor.UIElements
                 menu.customFocusHandling = true;
 
                 menu.innerContainer.style.maxWidth = k_MaxMenuWidth;
-                menu.outerContainer.style.maxHeight = maxMenuHeight;
                 menu.outerContainer.RegisterCallback<GeometryChangedEvent>(e =>
                 {
                     maxSize = minSize= menu.outerContainer.worldBound.size;
@@ -465,7 +472,7 @@ namespace UnityEditor.UIElements
                 var menu = search.userData as GenericDropdownMenu;
                 var newValue = Regex.Replace(e.newValue, "[^\\w ]+", "");
                 search.SetValueWithoutNotify(newValue);
-                
+
                 ResetHighlighting(menu.root);
 
                 if (string.IsNullOrWhiteSpace(menu.current.name))
@@ -809,6 +816,23 @@ namespace UnityEditor.UIElements
 
             if (desc.expansion)
                 menu.MakeExpandable();
+
+
+            var factor = 0f;
+            switch (desc.layout)
+            {
+                case DropdownMenuLayout.Short:
+                    factor = 0.25f;
+                    break;
+                case DropdownMenuLayout.Medium:
+                    factor = 0.5f;
+                    break;
+                case DropdownMenuLayout.Long:
+                default:
+                    factor = 0.75f;
+                    break;
+            }
+            menu.outerContainer.style.maxHeight = maxMenuHeight * factor;
 
             menu.root.name = desc.title;
             menu.allowBackButton = !desc.expansion;

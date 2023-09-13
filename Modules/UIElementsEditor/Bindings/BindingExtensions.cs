@@ -774,7 +774,7 @@ namespace UnityEditor.UIElements.Bindings
 
             visited.Clear();
             {
-                bool visitChild = true;
+                var visitChild = true;
                 while (iterator.Next(visitChild))
                 {
                     visitChild = true;
@@ -1421,6 +1421,10 @@ namespace UnityEditor.UIElements.Bindings
         {
         }
 
+        public virtual void SyncValueWithoutNotify(object value)
+        {
+        }
+
         public bool ResolveProperty()
         {
 
@@ -1640,6 +1644,14 @@ namespace UnityEditor.UIElements.Bindings
             Unbind();
         }
 
+        public override void SyncValueWithoutNotify(object value)
+        {
+            if (value is TValue castValue)
+            {
+                SyncFieldValueToPropertyWithoutNotify(castValue);
+            }
+        }
+
         public override BindingResult OnUpdate(in BindingContext context)
         {
             if (isReleased)
@@ -1690,6 +1702,11 @@ namespace UnityEditor.UIElements.Bindings
 
         protected abstract bool SyncFieldValueToProperty();
         protected abstract void SyncPropertyToField(TField c, SerializedProperty p);
+
+        protected void SyncFieldValueToPropertyWithoutNotify(TValue value)
+        {
+            field.SetValueWithoutNotify(value);
+        }
     }
 
     abstract class SerializedObjectBindingPropertyToBaseField<TProperty, TValue> : SerializedObjectBindingToBaseField<TValue, INotifyValueChanged<TValue>>

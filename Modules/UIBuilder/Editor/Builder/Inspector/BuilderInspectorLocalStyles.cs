@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -23,6 +24,12 @@ namespace Unity.UI.Builder
         readonly Dictionary<PersistedFoldout, List<VisualElement>> m_StyleCategories = new Dictionary<PersistedFoldout, List<VisualElement>>();
 
         public VisualElement root => m_LocalStylesSection;
+
+        // ReSharper disable MemberCanBePrivate.Global
+        internal const string refreshMarkerName = "BuilderInspectorLocalStyles.Refresh";
+        // ReSharper restore MemberCanBePrivate.Global
+
+        static readonly ProfilerMarker k_RefreshMarker = new (refreshMarkerName);
 
         public BuilderInspectorLocalStyles(BuilderInspector inspector, BuilderInspectorStyleFields styleFields)
         {
@@ -153,6 +160,8 @@ namespace Unity.UI.Builder
 
         public void Refresh()
         {
+            using var marker = k_RefreshMarker.Auto();
+
             if (m_Inspector.currentVisualElement == null)
                 return;
 

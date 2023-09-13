@@ -42,8 +42,11 @@ namespace Unity.UI.Builder
                         return;
 
                     m_ShowsOnlyCompatible = value;
-                    m_ShowOnlyCompatibleResultsToggle.toggle.value = value;
-                    UpdateResults();
+                    if (m_ShowOnlyCompatibleResultsToggle != null)
+                    {
+                        m_ShowOnlyCompatibleResultsToggle.toggle.value = value;
+                        UpdateResults();
+                    }
                 }
             }
 
@@ -68,19 +71,7 @@ namespace Unity.UI.Builder
                 matcherCallback = Matcher;
                 getTextFromDataCallback = field.GetCompletionTextFromConverterGroup;
 
-                footer = m_ShowOnlyCompatibleResultsToggle = new ShowOnlyCompatibleResultsToggle();
-                m_ShowOnlyCompatibleResultsToggle.toggle.value = showsOnlyCompatibleResults;
-                m_ShowOnlyCompatibleResultsToggle.toggle.RegisterValueChangedCallback((evt) =>
-                {
-                    showsOnlyCompatibleResults = evt.newValue;
-                    Refresh();
-                });
-
                 // Set up the detail view that shows information about the selected or hovered property
-                m_DetailsView = new BindingConverterGroupDetailsView();
-                m_DetailsView.style.display = DisplayStyle.None;
-                detailsContent = m_DetailsView;
-
                 hoveredItemChanged += group =>
                 {
                     // If no item is hovered over then fallback to the selected item
@@ -90,6 +81,28 @@ namespace Unity.UI.Builder
                 };
 
                 selectionChanged += ShowGroupDetails;
+            }
+
+            protected override VisualElement MakeDetailsContent()
+            {
+                m_DetailsView = new BindingConverterGroupDetailsView();
+                m_DetailsView.style.display = DisplayStyle.None;
+                return m_DetailsView;
+            }
+
+            protected override VisualElement MakeFooterContent()
+            {
+                m_ShowOnlyCompatibleResultsToggle = new ShowOnlyCompatibleResultsToggle();
+                m_ShowOnlyCompatibleResultsToggle.toggle.value = showsOnlyCompatibleResults;
+                m_ShowOnlyCompatibleResultsToggle.toggle.RegisterValueChangedCallback((evt) =>
+                {
+                    showsOnlyCompatibleResults = evt.newValue;
+                    Refresh();
+                });
+
+                UpdateResults();
+
+                return m_ShowOnlyCompatibleResultsToggle;
             }
 
             protected override string GetResultCountText(int count)
@@ -137,6 +150,9 @@ namespace Unity.UI.Builder
             /// </summary>
             public void UpdateResults()
             {
+                if (m_ShowOnlyCompatibleResultsToggle == null)
+                    return;
+
                 m_MatchingConverterGroups.Clear();
 
                 var groups = showsOnlyCompatibleResults ? m_Field.m_CompatibleGroups : m_Field.m_AllGroups;

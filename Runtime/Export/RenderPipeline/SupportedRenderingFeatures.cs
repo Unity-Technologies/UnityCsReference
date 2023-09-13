@@ -75,12 +75,12 @@ namespace UnityEngine.Rendering
         [Obsolete("autoDefaultReflectionProbeBaking is obsolete. To enable or disable baking of the default reflection probe, use defaultReflectionProbeBaking instead. (UnityUpgradable) -> defaultReflectionProbeBaking", false)]
         public bool autoDefaultReflectionProbeBaking { get { return defaultReflectionProbeBaking; } set { defaultReflectionProbeBaking = value; } }
         public bool ambientProbeBaking { get; set; } = true;
-        public bool defaultReflectionProbeBaking { get; set; } = true; 
+        public bool defaultReflectionProbeBaking { get; set; } = true;
         public bool overridesShadowmask { get; set; } = false;
         public bool overridesLightProbeSystem { get; set; } = false;
         public bool supportsHDR { get; set; } = false;
         public bool supportsClouds { get; set; } = false;
-        public string overridesLightProbeSystemWarningMessage { get; set; } = "The rendering pipeline used has an alternative method to handle light probes. Please consult the documentation for the used SRP to setup the alternative.";
+        public string overridesLightProbeSystemWarningMessage { get; set; } = "Light Probe Groups are unavailable as Probe Volumes have been enabled by the current Render Pipeline.";
 
         internal static unsafe MixedLightingMode FallbackMixedLightingMode()
         {

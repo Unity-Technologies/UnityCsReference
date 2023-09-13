@@ -151,15 +151,16 @@ namespace Unity.UI.Builder
         /// <summary>
         /// Deletes the binding instance that binds the specified property of the selected VisualElement.
         /// </summary>
+        /// <param name="fieldElement">The element to unbind.</param>
         /// <param name="property">The property to unbind.</param>
-        public static void DeleteBinding(string property)
+        public static void DeleteBinding(VisualElement fieldElement, string property)
         {
             if (!TryGetBinding(property, out _, out _))
                 return;
 
             // Remove binding from SerializedData.
             var builder = Builder.ActiveWindow;
-            builder.inspector.attributeSection.RemoveBindingFromSerializedData(property);
+            builder.inspector.attributeSection.RemoveBindingFromSerializedData(fieldElement, property);
 
             builder.OnEnableAfterAllSerialization();
 

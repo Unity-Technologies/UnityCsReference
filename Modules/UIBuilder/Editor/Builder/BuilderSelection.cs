@@ -31,9 +31,10 @@ namespace Unity.UI.Builder
         ChildrenAdded = 1 << 0,
         ChildrenRemoved = 1 << 1,
         Attributes = 1 << 2,
-        ClassList = 1 << 3,
-        InlineStyle = 1 << 4,
-        FullRefresh = 1 << 5, // Skip this flag if you want to avoid expensive refresh during changes (ex. on drag operations)
+        ElementName = 1 << 3,
+        ClassList = 1 << 4,
+        InlineStyle = 1 << 5,
+        FullRefresh = 1 << 6, // Skip this flag if you want to avoid expensive refresh during changes (ex. on drag operations)
 
         All = ~0
     }
@@ -258,17 +259,20 @@ namespace Unity.UI.Builder
             // the latest (unsaved to disk) changes.
             EditorUtility.SetDirty(m_PaneWindow.document.visualTreeAsset);
 
-            var liveReloadChanges = ((changeType & BuilderHierarchyChangeType.InlineStyle) != 0
-                                        ? BuilderAssetUtilities.LiveReloadChanges.Styles
-                                        : 0) |
-                                    ((changeType & ~BuilderHierarchyChangeType.InlineStyle) != 0
-                                        ? BuilderAssetUtilities.LiveReloadChanges.Hierarchy
-                                        : 0);
-            BuilderAssetUtilities.LiveReload(liveReloadChanges);
-
             foreach (var notifier in m_Notifiers)
                 if (notifier != source)
                     notifier.HierarchyChanged(element, changeType);
+
+            if (hasUnsavedChanges && !isAnonymousDocument)
+            {
+                var liveReloadChanges = ((changeType & BuilderHierarchyChangeType.InlineStyle) != 0
+                                            ? BuilderAssetUtilities.LiveReloadChanges.Styles
+                                            : 0) |
+                                        ((changeType & ~BuilderHierarchyChangeType.InlineStyle) != 0
+                                            ? BuilderAssetUtilities.LiveReloadChanges.Hierarchy
+                                            : 0);
+                BuilderAssetUtilities.LiveReload(liveReloadChanges);
+            }
         }
 
         public void NotifyOfStylingChange(IBuilderSelectionNotifier source = null, List<string> styles = null, BuilderStylingChangeType changeType = BuilderStylingChangeType.Default)
@@ -304,11 +308,15 @@ namespace Unity.UI.Builder
             // the latest (unsaved to disk) changes.
             //RetainedMode.FlagStyleSheetChange(); // Works but TOO SLOW.
             m_PaneWindow.document.MarkStyleSheetsDirty();
-            BuilderAssetUtilities.LiveReload(BuilderAssetUtilities.LiveReloadChanges.Styles);
 
             foreach (var notifier in m_Notifiers)
                 if (notifier != m_CurrentNotifier)
                     notifier.StylingChanged(m_CurrentStyleList, m_CurrentChangeType);
+
+            if (hasUnsavedChanges && !isAnonymousDocument)
+            {
+                BuilderAssetUtilities.LiveReload(BuilderAssetUtilities.LiveReloadChanges.Styles);
+            }
 
             m_CurrentNotifier = null;
             m_CurrentStyleList = null;
@@ -374,6 +382,11 @@ namespace Unity.UI.Builder
         public void ResetUnsavedChanges()
         {
             hasUnsavedChanges = false;
+        }
+
+        private bool isAnonymousDocument
+        {
+            get { return m_PaneWindow.document.activeOpenUXMLFile.isAnonymousDocument; }
         }
     }
 }

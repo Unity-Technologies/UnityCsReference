@@ -78,6 +78,7 @@ namespace UnityEditor
             menu.SetDescriptor(new DropdownMenuDescriptor()
             {
                 allowSubmenus = false,
+                layout = DropdownMenuLayout.Short,
                 search = DropdownMenuSearch.Always
             });
 

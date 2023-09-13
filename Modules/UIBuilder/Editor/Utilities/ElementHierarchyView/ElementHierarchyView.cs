@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Unity.Profiling;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -81,6 +82,8 @@ namespace Unity.UI.Builder
 
         internal TreeView treeView => m_TreeView;
 
+        internal string rebuildMarkerName;
+
         public ElementHierarchyView(
             BuilderPaneWindow paneWindow,
             VisualElement documentRootElement,
@@ -89,9 +92,12 @@ namespace Unity.UI.Builder
             BuilderExplorerDragger explorerDragger,
             BuilderElementContextMenu contextMenuManipulator,
             Action<List<VisualElement>> selectElementCallback,
-            HighlightOverlayPainter highlightOverlayPainter)
+            HighlightOverlayPainter highlightOverlayPainter,
+            string profilerMarkerName)
         {
             m_PaneWindow = paneWindow;
+            rebuildMarkerName = $"ElementHierarchyView.Rebuild.{profilerMarkerName}";
+            m_RebuildMarker = new ProfilerMarker($"ElementHierarchyView.Rebuild.{profilerMarkerName}");
             m_DocumentRootElement = documentRootElement;
             m_Selection = selection;
             m_ClassDragger = classDragger;
@@ -657,8 +663,12 @@ namespace Unity.UI.Builder
             panel?.visualTree.MarkDirtyRepaint();
         }
 
+        ProfilerMarker m_RebuildMarker;
+
         public void RebuildTree(VisualElement rootVisualElement, bool includeParent = true)
         {
+            using var marker = m_RebuildMarker.Auto();
+
             if (!hierarchyHasChanged)
                 return;
 
@@ -681,7 +691,7 @@ namespace Unity.UI.Builder
                 m_TreeView.ClearSelection();
                 m_TreeView.SetRootItems(m_TreeRootItems);
                 ApplyRegisteredExpandedIndices();
-                m_TreeView.Rebuild();
+                m_TreeView.RefreshItems();
 
                 // Restore focus state.
                 if (wasTreeFocused)

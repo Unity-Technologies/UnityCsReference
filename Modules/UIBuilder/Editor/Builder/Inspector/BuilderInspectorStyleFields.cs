@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Unity.Profiling;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.Debugger;
@@ -35,6 +36,15 @@ namespace Unity.UI.Builder
         internal Dictionary<string, List<VisualElement>> m_StyleFields;
 
         List<string> s_StyleChangeList = new List<string>();
+
+        // Used in tests.
+        // ReSharper disable MemberCanBePrivate.Global
+        internal const string refreshStyleFieldMarkerName = "BuilderInspectorStyleFields.RefreshStyleField";
+        internal const string refreshStyleFieldValueMarkerName = "BuilderInspectorStyleFields.RefreshStyleFieldValue";
+        // ReSharper restore MemberCanBePrivate.Global
+        
+        static readonly ProfilerMarker k_RefreshStyleFieldMarker = new (refreshStyleFieldMarkerName);
+        static readonly ProfilerMarker k_RefreshStyleFieldValueMarker = new (refreshStyleFieldValueMarkerName);
 
         VisualElement currentVisualElement => m_Inspector.currentVisualElement;
         StyleSheet styleSheet => m_Inspector.styleSheet;
@@ -508,7 +518,8 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            fieldElement.SetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName, styleName);
+            fieldElement.SetInspectorStylePropertyName(styleName);
+            
             SetUpContextualMenuOnStyleField(fieldElement);
 
             // Add to styleName to field map.
@@ -730,6 +741,8 @@ namespace Unity.UI.Builder
 
         public void RefreshStyleField(string styleName, VisualElement fieldElement)
         {
+            using var marker = k_RefreshStyleFieldMarker.Auto();
+
             var fieldRefreshed = RefreshStyleFieldValue(styleName, fieldElement);
 
             if (fieldRefreshed)
@@ -742,6 +755,8 @@ namespace Unity.UI.Builder
 
         public bool RefreshStyleFieldValue(string styleName, VisualElement fieldElement, bool forceInlineValue = false)
         {
+            using var marker = k_RefreshStyleFieldValueMarker.Auto();
+
             var styleType = StyleDebug.GetComputedStyleType(styleName);
             if (styleType == null)
             {
@@ -1454,7 +1469,7 @@ namespace Unity.UI.Builder
                             menu.AppendAction(BuilderConstants.ContextMenuRemoveBindingMessage,
                                 (a) =>
                                 {
-                                    BuilderBindingUtility.DeleteBinding(csPropertyName);
+                                    BuilderBindingUtility.DeleteBinding(fieldElement, csPropertyName);
                                 },
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
@@ -1902,7 +1917,7 @@ namespace Unity.UI.Builder
                     var elementHasBinding = BuilderInspectorUtilities.HasBinding(m_Inspector, fieldElement);
                     if (elementHasBinding && removeBinding)
                     {
-                        m_Inspector.attributeSection.RemoveBindingFromSerializedData(bindingProperty);
+                        m_Inspector.attributeSection.RemoveBindingFromSerializedData(fieldElement, bindingProperty);
                     }
                 }
 

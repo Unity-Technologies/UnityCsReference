@@ -31,6 +31,7 @@ namespace Unity.UI.Builder
         BuilderUxmlPreview m_UxmlPreview;
         BuilderUssPreview m_UssPreview;
         BuilderHierarchy m_Hierarchy;
+        BuilderStyleSheets m_StyleSheets;
         BuilderBindingsCache m_BindingsCache;
 
         TwoPaneSplitView m_MiddleSplitView;
@@ -44,6 +45,7 @@ namespace Unity.UI.Builder
         public BuilderCanvas canvas => m_Viewport.canvas;
         public BuilderInspector inspector => m_Inspector;
         public BuilderHierarchy hierarchy => m_Hierarchy;
+        public BuilderStyleSheets styleSheets => m_StyleSheets;
 
         internal override bool liveReloadPreferenceDefault => true;
         internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
@@ -147,12 +149,12 @@ namespace Unity.UI.Builder
             // Create the rest of the panes.
             var classDragger = new BuilderClassDragger(this, root, selection, m_Viewport, m_Viewport.parentTracker);
             var styleSheetsDragger = new BuilderStyleSheetsDragger(this, root, selection);
-            var styleSheetsPane = new BuilderStyleSheets(this, m_Viewport, selection, classDragger, styleSheetsDragger, m_HighlightOverlayPainter, styleSheetsPaneTooltipPreview);
-            var hierarchyDragger = new BuilderHierarchyDragger(this, root, selection, m_Viewport, m_Viewport.parentTracker) { builderStylesheetRoot = styleSheetsPane.container };
+            m_StyleSheets = new BuilderStyleSheets(this, m_Viewport, selection, classDragger, styleSheetsDragger, m_HighlightOverlayPainter, styleSheetsPaneTooltipPreview);
+            var hierarchyDragger = new BuilderHierarchyDragger(this, root, selection, m_Viewport, m_Viewport.parentTracker) { builderStylesheetRoot = m_StyleSheets.container };
 
             m_Hierarchy = new BuilderHierarchy(this, m_Viewport, selection, classDragger, hierarchyDragger, contextMenuManipulator, m_HighlightOverlayPainter);
 
-            var libraryDragger = new BuilderLibraryDragger(this, root, selection, m_Viewport, m_Viewport.parentTracker, hierarchy.container, libraryTooltipPreview) { builderStylesheetRoot = styleSheetsPane.container };
+            var libraryDragger = new BuilderLibraryDragger(this, root, selection, m_Viewport, m_Viewport.parentTracker, hierarchy.container, libraryTooltipPreview) { builderStylesheetRoot = m_StyleSheets.container };
             m_Viewport.viewportDragger.builderHierarchyRoot = hierarchy.container;
             m_Library = new BuilderLibrary(this, m_Viewport, selection, libraryDragger, libraryTooltipPreview);
             m_Inspector = new BuilderInspector(this, selection, m_HighlightOverlayPainter, m_BindingsCache, m_Viewport.notifications);
@@ -163,7 +165,7 @@ namespace Unity.UI.Builder
             root.Q("viewport").Add(m_Viewport);
             m_Viewport.toolbar.Add(m_Toolbar);
             root.Q("library").Add(m_Library);
-            root.Q("style-sheets").Add(styleSheetsPane);
+            root.Q("style-sheets").Add(m_StyleSheets);
             root.Q("hierarchy").Add(hierarchy);
             root.Q("uxml-preview").Add(m_UxmlPreview);
             root.Q("uss-preview").Add(m_UssPreview);
@@ -174,7 +176,7 @@ namespace Unity.UI.Builder
             {
                 document,
                 m_Viewport,
-                styleSheetsPane,
+                m_StyleSheets,
                 hierarchy,
                 m_Inspector,
                 m_Library,
@@ -189,7 +191,7 @@ namespace Unity.UI.Builder
             });
 
             // Command Handler
-            commandHandler.RegisterPane(styleSheetsPane);
+            commandHandler.RegisterPane(m_StyleSheets);
             commandHandler.RegisterPane(hierarchy);
             commandHandler.RegisterPane(m_Viewport);
             commandHandler.RegisterToolbar(m_Toolbar);
@@ -198,6 +200,13 @@ namespace Unity.UI.Builder
             m_MiddleSplitView.RegisterCallback<GeometryChangedEvent>(OnFirstDisplay);
 
             OnEnableAfterAllSerialization();
+        }
+
+        // Message received when we dock/undock the window. 
+        // ReSharper disable once UnusedMember.Local
+        void OnAddedAsTab()
+        {
+            m_BindingsCache?.Clear();
         }
 
         private void UpdateBindingsCache()

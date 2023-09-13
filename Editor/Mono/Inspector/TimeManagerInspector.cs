@@ -61,11 +61,14 @@ namespace UnityEditor
             var fixedTime = (float)new RationalTime(prop.longValue, m_FixedTimeTicksPerSecond).ToDouble(); // Convert a tick count to a float
             using (var c = new EditorGUI.ChangeCheckScope())
             {
-                fixedTime = EditorGUILayout.FloatField(Content.fixedTimestepLabel, fixedTime);
+                var maxFixedTime = MathF.Max(fixedTime, MinFixedTimeStep);
+                var roundedTime = Math.Round(maxFixedTime, 4, MidpointRounding.AwayFromZero);
+                fixedTime = EditorGUILayout.FloatField(Content.fixedTimestepLabel, (float)roundedTime);
+
                 if (c.changed)
                 {
                     var newCount = RationalTime
-                        .FromDouble(MathF.Max(fixedTime, MinFixedTimeStep), m_FixedTimeTicksPerSecond)
+                        .FromDouble(fixedTime, m_FixedTimeTicksPerSecond)
                         .Count; // convert it back to a count to store in the property
                     prop.longValue = newCount;
                 }

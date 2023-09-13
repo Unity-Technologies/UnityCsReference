@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Profiling;
 using UnityEngine.UIElements;
 using Unity.Properties;
 using UnityEditor.UIElements;
@@ -14,6 +15,12 @@ namespace Unity.UI.Builder
         BuilderSelection m_Selection;
 
         public VisualElement root => fieldsContainer;
+
+        // ReSharper disable MemberCanBePrivate.Global
+        internal const string inspectorAttributeRefreshMarkerName = "BuilderInspectorAttributes.Refresh";
+        // ReSharper restore MemberCanBePrivate.Global
+
+        static readonly ProfilerMarker k_RefreshMarker = new (inspectorAttributeRefreshMarkerName);
 
         public BuilderInspectorAttributes(BuilderInspector inspector)
         {
@@ -30,6 +37,8 @@ namespace Unity.UI.Builder
 
         public override void Refresh()
         {
+            using var marker = k_RefreshMarker.Auto();
+
             var currentVisualElement = m_Inspector.currentVisualElement;
 
             base.Refresh();
@@ -81,9 +90,10 @@ namespace Unity.UI.Builder
             fieldsContainer.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutOverrideClassName, hasOverriddenField);
         }
 
-        protected override void NotifyAttributesChanged()
+        protected override void NotifyAttributesChanged(string attributeName = null)
         {
-            m_Selection.NotifyOfHierarchyChange(m_Inspector);
+            var changeType = attributeName == BuilderConstants.UxmlNameAttr ? BuilderHierarchyChangeType.ElementName : BuilderHierarchyChangeType.Attributes;
+            m_Selection.NotifyOfHierarchyChange(m_Inspector, m_Inspector.currentVisualElement, changeType);
         }
 
         protected override void BuildAttributeFieldContextualMenu(DropdownMenu menu, BuilderStyleRow styleRow)
@@ -93,8 +103,7 @@ namespace Unity.UI.Builder
                 if (m_Selection.selectionType != BuilderSelectionType.ElementInTemplateInstance)
                 {
                     var fieldElement = styleRow.GetLinkedFieldElements()[0]; // Assume default case of only 1 field per row.
-                    var attribute = fieldElement.GetLinkedAttributeDescription();
-                    var csPropertyName = GetRemapAttributeNameToCSProperty(attribute.name);
+                    var csPropertyName = fieldElement.GetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName) as string;
                     var container = currentElement;
                     var isBindableElement = UxmlSerializedDataRegistry.GetDescription(attributesUxmlOwner.fullTypeName) != null;
                     var isBindableProperty = PropertyContainer.IsPathValid(ref container, csPropertyName);
@@ -118,7 +127,7 @@ namespace Unity.UI.Builder
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
                             menu.AppendAction(BuilderConstants.ContextMenuRemoveBindingMessage,
-                                (a) => { BuilderBindingUtility.DeleteBinding(csPropertyName); },
+                                (a) => { BuilderBindingUtility.DeleteBinding(fieldElement, csPropertyName); },
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
 

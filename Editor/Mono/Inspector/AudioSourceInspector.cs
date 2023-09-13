@@ -5,6 +5,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Audio;
 
 namespace UnityEditor
 {
@@ -392,7 +393,17 @@ namespace UnityEditor
             EditorGUILayout.Space();
             EditorGUILayout.Slider(m_Volume, 0f, 1.0f, Styles.volumeLabel);
             EditorGUILayout.Space();
-            EditorGUILayout.Slider(m_Pitch, -3.0f, 3.0f, Styles.pitchLabel);
+
+            var resource = m_AudioResource.objectReferenceValue as AudioResource;
+            if (resource is AudioRandomContainer)
+                {
+                    EditorGUILayout.Slider(m_Pitch, EPSILON, 3.0f, Styles.pitchLabel);
+
+                }
+                else
+                {
+                    EditorGUILayout.Slider(m_Pitch, -3.0f, 3.0f, Styles.pitchLabel);
+                }
 
             EditorGUILayout.Space();
 

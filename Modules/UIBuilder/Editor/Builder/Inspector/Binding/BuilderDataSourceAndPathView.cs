@@ -371,7 +371,7 @@ namespace Unity.UI.Builder
         }
 
         /// <inheritdoc/>
-        protected override void NotifyAttributesChanged()
+        protected override void NotifyAttributesChanged(string attributeName = null)
         {
             ScheduleUpdateControls();
             onNotifyAttributesChanged?.Invoke();

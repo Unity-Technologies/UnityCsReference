@@ -856,7 +856,7 @@ namespace UnityEditorInternal
 
         [StaticAccessor("UnityExtensions::Get()", StaticAccessorType.Dot)]
         [NativeMethod("IsCompatibleWithEditor")]
-        extern internal static bool IsUnityExtensionCompatibleWithEditor(BuildTargetGroup targetGroup, BuildTarget target, string path);
+        extern internal static bool IsUnityExtensionCompatibleWithEditor(BuildTarget target, string path);
 
         [FreeFunction(IsThreadSafe = true)]
         extern public static bool CurrentThreadIsMainThread();

@@ -58,7 +58,8 @@ namespace Unity.UI.Builder
                 viewport.styleSelectorElementContainer,
                 false,
                 highlightOverlayPainter,
-                kToolbarPath)
+                kToolbarPath,
+                "StyleSheets")
         {
             m_TooltipPreview = tooltipPreview;
             if (m_TooltipPreview != null)

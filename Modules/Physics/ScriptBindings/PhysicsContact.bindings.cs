@@ -119,6 +119,7 @@ namespace UnityEngine
     }
 
     // See MessageParameters.h
+    [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     public readonly partial struct ContactPairHeader
     {
@@ -187,8 +188,71 @@ namespace UnityEngine
                                          || (m_Flags & CollisionPairFlags.RemovedOtherShape) != 0;
 
         // Capacity must be extended beforehand!
-        extern internal int ExtractContacts(List<ContactPoint> managedContainer, bool flipped);
-        extern internal int ExtractContactsArray(ContactPoint[] managedContainer, bool flipped);
+        internal int ExtractContacts(List<ContactPoint> managedContainer, bool flipped)
+        {
+            int size = (int)Math.Min(managedContainer.Capacity, m_NbPoints);
+            managedContainer.Clear();
+
+            for (int i = 0; i < size; ++i)
+            {
+                ref readonly ContactPairPoint nativePoint = ref GetContactPoint(i);
+                var contactPoint = new ContactPoint()
+                {
+                    m_Point = nativePoint.position,
+                    m_Impulse = nativePoint.impulse,
+                    m_Separation = nativePoint.separation,
+                };
+
+                if (flipped)
+                {
+                    contactPoint.m_Normal = -nativePoint.normal;
+                    contactPoint.m_ThisColliderInstanceID = m_OtherColliderID;
+                    contactPoint.m_OtherColliderInstanceID = m_ColliderID;
+                }
+                else
+                {
+                    contactPoint.m_Normal = nativePoint.normal;
+                    contactPoint.m_ThisColliderInstanceID = m_ColliderID;
+                    contactPoint.m_OtherColliderInstanceID = m_OtherColliderID;
+                }
+
+                managedContainer.Add(contactPoint);
+            }
+
+            return size;
+        }
+
+        internal int ExtractContactsArray(ContactPoint[] managedContainer, bool flipped)
+        {
+            int size = (int)Math.Min(managedContainer.Length, m_NbPoints);
+
+            for (int i = 0; i < size; ++i)
+            {
+                ref readonly ContactPairPoint nativePoint = ref GetContactPoint(i);
+                var contactPoint = new ContactPoint()
+                {
+                    m_Point = nativePoint.position,
+                    m_Impulse = nativePoint.impulse,
+                    m_Separation = nativePoint.separation,
+                };
+
+                if (flipped)
+                {
+                    contactPoint.m_Normal = -nativePoint.normal;
+                    contactPoint.m_ThisColliderInstanceID = m_OtherColliderID;
+                    contactPoint.m_OtherColliderInstanceID = m_ColliderID;
+                }
+                else
+                {
+                    contactPoint.m_Normal = nativePoint.normal;
+                    contactPoint.m_ThisColliderInstanceID = m_ColliderID;
+                    contactPoint.m_OtherColliderInstanceID = m_OtherColliderID;
+                }
+
+                managedContainer[i] = contactPoint;
+            }
+            return size;
+        }
 
         public void CopyToNativeArray(NativeArray<ContactPairPoint> buffer)
         {
@@ -228,6 +292,7 @@ namespace UnityEngine
     }
 
     // See https://github.com/NVIDIAGameWorks/PhysX/blob/4.1/physx/include/PxSimulationEventCallback.h#L463
+    [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     public readonly partial struct ContactPairPoint
     {

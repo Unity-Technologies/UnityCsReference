@@ -270,21 +270,26 @@ namespace UnityEditor
 
         internal void SetToValueOfTarget(UnityObject target)
         {
-            SerializedProperty targetProperty = new SerializedObject(target).FindProperty(propertyPath);
-            if (targetProperty == null)
+            using (SerializedObject targetObject = new SerializedObject(target))
             {
-                Debug.LogError(target.name + " does not have the property " + propertyPath);
-                return;
-            }
+                using (SerializedProperty targetProperty = targetObject.FindProperty(propertyPath))
+                {
+                    if (targetProperty == null)
+                    {
+                        Debug.LogError(target.name + " does not have the property " + propertyPath);
+                        return;
+                    }
 
-            try
-            {
-                boxedValue = targetProperty.boxedValue;
-            }
-            catch (NotSupportedException ex)
-            {
-                // Previous implementation silently did nothing for unsupported types, now moving towards more strict error handling with this warning
-                Debug.LogWarning(ex.Message);
+                    try
+                    {
+                        boxedValue = targetProperty.boxedValue;
+                    }
+                    catch (NotSupportedException ex)
+                    {
+                        // Previous implementation silently did nothing for unsupported types, now moving towards more strict error handling with this warning
+                        Debug.LogWarning(ex.Message);
+                    }
+                }
             }
         }
 

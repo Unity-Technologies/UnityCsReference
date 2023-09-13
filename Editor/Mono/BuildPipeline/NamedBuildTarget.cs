@@ -27,6 +27,7 @@ namespace UnityEditor.Build
             "CloudRendering",
             "LinuxHeadlessSimulation",
             "Lumin",
+            // This should have been "GameCoreXboxSeries"
             "GameCoreScarlett",
             "GameCoreXboxOne",
             "PS5",
@@ -41,6 +42,7 @@ namespace UnityEditor.Build
         public static readonly NamedBuildTarget Android = new NamedBuildTarget("Android");
         public static readonly NamedBuildTarget WebGL = new NamedBuildTarget("WebGL");
         public static readonly NamedBuildTarget WindowsStoreApps = new NamedBuildTarget("Windows Store Apps");
+        // NDA platforms should not have been added here into the public API
         public static readonly NamedBuildTarget PS4 = new NamedBuildTarget("PS4");
         public static readonly NamedBuildTarget PS5 = new NamedBuildTarget("PS5");
         public static readonly NamedBuildTarget XboxOne = new NamedBuildTarget("XboxOne");
