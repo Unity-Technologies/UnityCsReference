@@ -97,7 +97,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Displays its contents inside a scrollable frame. For more information, see [[wiki:UIE-uxml-element-ScrollView|ScrollView]]. 
+    /// Displays its contents inside a scrollable frame. For more information, see [[wiki:UIE-uxml-element-ScrollView|ScrollView]].
     /// </summary>
     public class ScrollView : VisualElement
     {
@@ -112,6 +112,7 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty touchScrollBehaviorProperty = nameof(touchScrollBehavior);
         internal static readonly DataBindingProperty nestedInteractionKindProperty = nameof(nestedInteractionKind);
         internal static readonly DataBindingProperty modeProperty = nameof(mode);
+        internal static readonly DataBindingProperty elasticAnimationIntervalMsProperty = nameof(elasticAnimationIntervalMs);
 
         /// <summary>
         /// Instantiates a <see cref="ScrollView"/> using the data read from a UXML file.
@@ -161,6 +162,8 @@ namespace UnityEngine.UIElements
             UxmlFloatAttributeDescription m_Elasticity = new UxmlFloatAttributeDescription
             { name = "elasticity", defaultValue = k_DefaultElasticity };
 
+            UxmlLongAttributeDescription m_ElasticAnimationIntervalMs = new UxmlLongAttributeDescription
+                { name = "elastic-animation-interval-ms", defaultValue = k_DefaultElasticAnimationInterval };
 
             /// <summary>
             /// Initialize <see cref="ScrollView"/> properties using values from the attribute bag.
@@ -197,6 +200,7 @@ namespace UnityEngine.UIElements
                 scrollView.scrollDecelerationRate = m_ScrollDecelerationRate.GetValueFromBag(bag, cc);
                 scrollView.touchScrollBehavior = m_TouchScrollBehavior.GetValueFromBag(bag, cc);
                 scrollView.elasticity = m_Elasticity.GetValueFromBag(bag, cc);
+                scrollView.elasticAnimationIntervalMs = m_ElasticAnimationIntervalMs.GetValueFromBag(bag, cc);
             }
         }
 
@@ -529,6 +533,28 @@ namespace UnityEngine.UIElements
                 m_NestedInteractionKind = value;
                 if (previous != m_NestedInteractionKind)
                     NotifyPropertyChanged(nestedInteractionKindProperty);
+            }
+        }
+
+        static readonly long k_DefaultElasticAnimationInterval = 16;
+        long m_ElasticAnimationIntervalMs = k_DefaultElasticAnimationInterval;
+
+        /// <summary>
+        /// Specifies the minimum amount of time in milliseconds between each elastic spring animation execution.
+        /// </summary>
+        [CreateProperty]
+        public long elasticAnimationIntervalMs
+        {
+            get { return m_ElasticAnimationIntervalMs; }
+            set
+            {
+                var previous = m_ElasticAnimationIntervalMs;
+                m_ElasticAnimationIntervalMs = value;
+                if (previous != m_ElasticAnimationIntervalMs)
+                {
+                    NotifyPropertyChanged(elasticAnimationIntervalMsProperty);
+                    m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(m_ElasticAnimationIntervalMs);
+                }
             }
         }
 
@@ -1088,7 +1114,9 @@ namespace UnityEngine.UIElements
         VisualElement m_CapturedTarget;
         EventCallback<PointerMoveEvent> m_CapturedTargetPointerMoveCallback;
         EventCallback<PointerUpEvent> m_CapturedTargetPointerUpCallback;
-        private IVisualElementScheduledItem m_PostPointerUpAnimation;
+
+        // Internal for tests
+        internal IVisualElementScheduledItem m_PostPointerUpAnimation;
 
         // Compute the new scroll view offset from a pointer delta, taking elasticity into account.
         // Low and high limits are the values beyond which the scrollview starts to show resistance to scrolling (elasticity).
@@ -1517,7 +1545,7 @@ namespace UnityEngine.UIElements
 
             if (m_PostPointerUpAnimation == null)
             {
-                m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(30);
+                m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(m_ElasticAnimationIntervalMs);
             }
             else
             {

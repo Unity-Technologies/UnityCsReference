@@ -404,9 +404,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (showRegistry)
             {
-                var isByUnity = packageInfo.versions.all.Length > 0 && registry.isDefault;
+                var isByUnity = packageInfo.versions.all.Length > 0 && registry.isDefault && !m_Version.HasTag(PackageTag.InstalledFromPath);
 
-                var detailRegistryName = isByUnity && !m_Version.HasTag(PackageTag.Custom) ? "Unity Registry" : registry.name;
+                var detailRegistryName = isByUnity ? "Unity Registry" : registry.name;
                 var detailRegistryAuthor = isByUnity ? "Unity Technologies Inc." : m_Version?.author;
                 detailRegistry.tooltip = isByUnity ? registry.url : string.Empty;
                 detailRegistry.enableRichText = true;

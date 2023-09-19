@@ -621,7 +621,7 @@ namespace UnityEditor
             bool srpHasAlternativeToLegacyProbes = UnityEngine.Rendering.SupportedRenderingFeatures.active.overridesLightProbeSystem;
             if (srpHasAlternativeToLegacyProbes)
             {
-                EditorGUILayout.HelpBox(UnityEngine.Rendering.SupportedRenderingFeatures.active.overridesLightProbeSystemWarningMessage, MessageType.Warning, wide: true);
+                EditorGUILayout.HelpBox(SupportedRenderingFeatures.active.overridesLightProbeSystemWarningMessage, MessageType.Warning, true);
             }
 
             using (new EditorGUI.DisabledScope(srpHasAlternativeToLegacyProbes))

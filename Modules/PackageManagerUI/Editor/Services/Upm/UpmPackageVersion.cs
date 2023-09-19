@@ -80,8 +80,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_IsInstalled;
         public override bool isInstalled => m_IsInstalled;
 
-        public bool installedFromPath => HasTag(PackageTag.Local | PackageTag.Custom | PackageTag.Git);
-
         public override bool isAvailableOnDisk => m_IsFullyFetched && !string.IsNullOrEmpty(m_ResolvedPath);
 
         [SerializeField]
@@ -96,8 +94,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string versionString => isInvalidSemVerInManifest ? versionInManifest : m_VersionString;
 
         // When packages are installed from path (git, local, custom) versionInManifest behaves differently so we don't consider them to have invalid SemVer
-        public bool isInvalidSemVerInManifest => !string.IsNullOrEmpty(versionInManifest) && !installedFromPath &&
-                                                          (!SemVersionParser.TryParse(versionInManifest, out var semVersion) || semVersion?.ToString() != versionInManifest);
+        public bool isInvalidSemVerInManifest => !string.IsNullOrEmpty(versionInManifest) && !HasTag(PackageTag.InstalledFromPath) &&
+                                                 (!SemVersionParser.TryParse(versionInManifest, out var semVersion) || semVersion?.ToString() != versionInManifest);
 
         public override long versionId => 0;
 
@@ -149,7 +147,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 m_DisplayName = GetDisplayName(packageInfo);
                 m_PackageId = packageInfo.packageId;
-                if (installedFromPath)
+                if (HasTag(PackageTag.InstalledFromPath))
                     m_PackageId = m_PackageId.Replace("\\", "/");
 
                 ProcessErrors(packageInfo);
@@ -234,7 +232,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // We use the logic below instead packageInfo.isDeprecated, since we don't do an extra fetch when we want to tag deprecated version in version history
             // We want to know if a version is deprecated before we do the extra fetch
-            if (packageInfo.versions.deprecated.Contains(m_VersionString))
+            if (!HasTag(PackageTag.InstalledFromPath) && packageInfo.versions.deprecated.Contains(m_VersionString))
                 m_Tag |= PackageTag.Deprecated;
 
             if (!HasTag(PackageTag.Unity) || HasTag(PackageTag.Deprecated) || isInvalidSemVerInManifest)
@@ -262,7 +260,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string GetDescriptor(bool isFirstLetterCapitalized = false)
         {
             if (HasTag(PackageTag.Feature))
-                return isFirstLetterCapitalized? L10n.Tr("Feature") : L10n.Tr("feature");
+                return isFirstLetterCapitalized ? L10n.Tr("Feature") : L10n.Tr("feature");
             if (HasTag(PackageTag.BuiltIn))
                 return isFirstLetterCapitalized ? L10n.Tr("Built-in package") : L10n.Tr("built-in package");
             return isFirstLetterCapitalized ? L10n.Tr("Package") : L10n.Tr("package");
