@@ -147,6 +147,8 @@ namespace UnityEngine.UIElements
             UxmlFloatAttributeDescription m_Elasticity = new UxmlFloatAttributeDescription
             { name = "elasticity", defaultValue = k_DefaultElasticity };
 
+            UxmlLongAttributeDescription m_ElasticAnimationIntervalMs = new UxmlLongAttributeDescription
+                { name = "elastic-animation-interval-ms", defaultValue = k_DefaultElasticAnimationInterval };
 
             /// <summary>
             /// Initialize <see cref="ScrollView"/> properties using values from the attribute bag.
@@ -183,6 +185,7 @@ namespace UnityEngine.UIElements
                 scrollView.scrollDecelerationRate = m_ScrollDecelerationRate.GetValueFromBag(bag, cc);
                 scrollView.touchScrollBehavior = m_TouchScrollBehavior.GetValueFromBag(bag, cc);
                 scrollView.elasticity = m_Elasticity.GetValueFromBag(bag, cc);
+                scrollView.elasticAnimationIntervalMs = m_ElasticAnimationIntervalMs.GetValueFromBag(bag, cc);
             }
         }
 
@@ -472,6 +475,26 @@ namespace UnityEngine.UIElements
         {
             get => m_NestedInteractionKind;
             set => m_NestedInteractionKind = value;
+        }
+
+        static readonly long k_DefaultElasticAnimationInterval = 16;
+        long m_ElasticAnimationIntervalMs = k_DefaultElasticAnimationInterval;
+
+        /// <summary>
+        /// Specifies the minimum amount of time in milliseconds between each elastic spring animation execution.
+        /// </summary>
+        public long elasticAnimationIntervalMs
+        {
+            get { return m_ElasticAnimationIntervalMs; }
+            set
+            {
+                var previous = m_ElasticAnimationIntervalMs;
+                m_ElasticAnimationIntervalMs = value;
+                if (previous != m_ElasticAnimationIntervalMs)
+                {
+                    m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(m_ElasticAnimationIntervalMs);
+                }
+            }
         }
 
         void OnHorizontalScrollDragElementChanged(GeometryChangedEvent evt)
@@ -1027,7 +1050,9 @@ namespace UnityEngine.UIElements
         VisualElement m_CapturedTarget;
         EventCallback<PointerMoveEvent> m_CapturedTargetPointerMoveCallback;
         EventCallback<PointerUpEvent> m_CapturedTargetPointerUpCallback;
-        private IVisualElementScheduledItem m_PostPointerUpAnimation;
+
+        // Internal for tests
+        internal IVisualElementScheduledItem m_PostPointerUpAnimation;
 
         // Compute the new scroll view offset from a pointer delta, taking elasticity into account.
         // Low and high limits are the values beyond which the scrollview starts to show resistance to scrolling (elasticity).
@@ -1260,22 +1285,22 @@ namespace UnityEngine.UIElements
                 ReleaseScrolling(m_ScrollingPointerId, evt.target);
             }
 
-                m_PostPointerUpAnimation?.Pause();
+            m_PostPointerUpAnimation?.Pause();
 
-                var touchStopsVelocityOnly = Mathf.Abs(m_Velocity.x) > 10 || Mathf.Abs(m_Velocity.y) > 10;
+            var touchStopsVelocityOnly = Mathf.Abs(m_Velocity.x) > 10 || Mathf.Abs(m_Velocity.y) > 10;
 
-                m_ScrollingPointerId = evt.pointerId;
-                m_StartedMoving = false;
-                InitTouchScrolling(evt.position);
+            m_ScrollingPointerId = evt.pointerId;
+            m_StartedMoving = false;
+            InitTouchScrolling(evt.position);
 
-                if (touchStopsVelocityOnly)
-                {
-                    contentContainer.CapturePointer(evt.pointerId);
-                    contentContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
-                    evt.StopPropagation();
-                    m_TouchStoppedVelocity = true;
-                }
+            if (touchStopsVelocityOnly)
+            {
+                contentContainer.CapturePointer(evt.pointerId);
+                contentContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
+                evt.StopPropagation();
+                m_TouchStoppedVelocity = true;
             }
+        }
 
         void OnPointerMove(PointerMoveEvent evt)
         {
@@ -1456,7 +1481,7 @@ namespace UnityEngine.UIElements
 
             if (m_PostPointerUpAnimation == null)
             {
-                m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(30);
+                m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(m_ElasticAnimationIntervalMs);
             }
             else
             {

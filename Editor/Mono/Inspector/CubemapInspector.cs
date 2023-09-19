@@ -4,7 +4,8 @@
 
 using System.Globalization;
 using UnityEngine;
-
+using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -15,13 +16,9 @@ namespace UnityEditor
         static private readonly int[] kSizesValues = { 16, 32, 64, 128, 256, 512, 1024, 2048 };
         const int kTextureSize = 64;
 
-        private Texture2D[] m_Images;
+        private static readonly string kNativeTextureNotice = L10n.Tr("External texture: Unity cannot make changes to this Cubemap.");
 
-        protected override void OnEnable()
-        {
-            base.OnEnable();
-            InitTexturesFromCubemap();
-        }
+        private Texture2D[] m_Images;
 
         protected override void OnDisable()
         {
@@ -41,18 +38,34 @@ namespace UnityEditor
         private void InitTexturesFromCubemap()
         {
             var c = target as Cubemap;
-            if (c != null)
+            if (c is null || c.isNativeTexture)
             {
-                if (m_Images == null)
-                    m_Images = new Texture2D[6];
-                for (int i = 0; i < m_Images.Length; ++i)
-                {
-                    if (m_Images[i] && !EditorUtility.IsPersistent(m_Images[i]))
-                        DestroyImmediate(m_Images[i]);
+                return;
+            }
 
-                    if (TextureUtil.GetSourceTexture(c, (CubemapFace)i))
+            if (m_Images == null)
+                m_Images = new Texture2D[6];
+            for (int i = 0; i < m_Images.Length; ++i)
+            {
+                if (m_Images[i] && !EditorUtility.IsPersistent(m_Images[i]))
+                    DestroyImmediate(m_Images[i]);
+
+                if (TextureUtil.GetSourceTexture(c, (CubemapFace)i))
+                {
+                    m_Images[i] = TextureUtil.GetSourceTexture(c, (CubemapFace)i);
+                }
+                else
+                {
+                    // When the Cubemap is compressed, avoid "CopyCubemapFaceIntoTexture" due to potentially very high decompression cost. (example: Cubemap with no mipmaps)
+                    // Note: the CopyTexture approach may produce results that look slightly different if "CopyCubemapFaceIntoTexture" would have downscaled to kTextureSize.
+                    if (GraphicsFormatUtility.IsCompressedFormat(c.format) && SystemInfo.copyTextureSupport.HasFlag(CopyTextureSupport.DifferentTypes))
                     {
-                        m_Images[i] = TextureUtil.GetSourceTexture(c, (CubemapFace)i);
+                        int previewSize = System.Math.Clamp(kTextureSize, c.width >> (c.mipmapCount - 1), c.width);
+                        m_Images[i] = new Texture2D(previewSize, previewSize, c.format, false);
+                        m_Images[i].hideFlags = HideFlags.HideAndDontSave;
+
+                        int mipToCopy = (int)(System.Math.Log(c.width, 2) - System.Math.Log(previewSize, 2));
+                        Graphics.CopyTexture(c, i, mipToCopy, m_Images[i], 0, 0);
                     }
                     else
                     {
@@ -66,13 +79,20 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            var c = target as Cubemap;
+            if (c == null)
+                return;
+
+            if (c.isNativeTexture)
+            {
+                EditorGUILayout.HelpBox(kNativeTextureNotice, MessageType.Info);
+                return;
+            }
+
             if (m_Images == null)
                 InitTexturesFromCubemap();
 
             EditorGUIUtility.labelWidth = 50;
-            var c = target as Cubemap;
-            if (c == null)
-                return;
 
             GUILayout.BeginVertical();
 

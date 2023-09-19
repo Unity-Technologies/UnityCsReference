@@ -13,6 +13,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         // package type
         InDevelopment       = Custom, // Used by UPM develop package
+        InstalledFromPath   = Local | Git | Custom,
+
         Custom              = 1 << 0,
         Local               = 1 << 1,
         Git                 = 1 << 2,

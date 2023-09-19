@@ -631,7 +631,10 @@ namespace UnityEditor
                     using (new EditorGUI.DisabledScope(!RenderDoc.IsSupported()))
                     {
                         if (GUILayout.Button(Styles.renderdocContent, EditorStyles.toolbarButton))
+                        {
                             RenderDoc.CaptureRenderDoc();
+                            GUIUtility.ExitGUI();
+                        }
                     }
                 }
 

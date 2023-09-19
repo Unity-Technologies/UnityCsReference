@@ -196,6 +196,12 @@ namespace UnityEditor
                 }
 
                 SceneHierarchyWindow.lastInteractedHierarchyWindow.SetExpanded(go.GetInstanceID(), true);
+
+                // Ensure empty parent after reparenting jumps into rename mode if needed UUM-15042
+                if (SceneHierarchyWindow.s_EnterRenameModeForNewGO)
+                {
+                    SceneHierarchyWindow.FrameAndRenameNewGameObject();
+                }
             }
 
             // Set back default parent object if we have one
