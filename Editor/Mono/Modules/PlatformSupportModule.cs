@@ -261,6 +261,8 @@ namespace UnityEditor.Modules
         bool SupportsFrameTimingStatistics();
 
         void SerializedObjectUpdated();
+
+        bool SupportsStaticSplashScreenBackgroundColor();
     }
 
 

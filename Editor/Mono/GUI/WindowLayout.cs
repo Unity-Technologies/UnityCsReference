@@ -1283,6 +1283,8 @@ namespace UnityEditor
                         if (mainWindowPosition.width != 0.0)
                         {
                             mainWindowToSetSize = cur;
+                            // This is the same reference as the mainwindow, so need to freeze it too on for Linux during reload.
+                            mainWindowToSetSize.SetFreeze(true);
                             mainWindowToSetSize.position = mainWindowPosition;
                         }
 
@@ -1304,16 +1306,23 @@ namespace UnityEditor
                 }
 
                 if (mainWindowToSetSize)
+                {
+                    mainWindowToSetSize.SetFreeze(true);
                     mainWindowToSetSize.position = mainWindowPosition;
+                }
 
                 // Always show main window before other windows. So that other windows can
                 // get their parent/owner.
                 if (!mainWindow)
                     throw new LayoutException("Error while reading window layout: no main window found");
 
+                // Don't adjust height to prevent main window shrink during layout on Linux.
+                mainWindow.SetFreeze(true);
                 mainWindow.Show(mainWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
                 if (mainWindowToSetSize && mainWindow.maximized != mainWindowMaximized)
                     mainWindow.ToggleMaximize();
+                // Unfreeze to make sure resize work properly.
+                mainWindow.SetFreeze(false);
 
                 // Make sure to restore the save to layout flag when loading a layout from a file.
                 if (keepMainWindow)

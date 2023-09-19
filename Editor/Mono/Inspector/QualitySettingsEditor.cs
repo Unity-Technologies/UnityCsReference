@@ -31,13 +31,13 @@ namespace UnityEditor
             };
             public static readonly GUIContent[] kTextureMipmapLimitGroupsOffsetModeItems =
             {
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -3", "Upload 3 mips less compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -2", "Upload 2 mips less compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -1", "Upload 1 mip less compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -3", "Upload 3 mips extra compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -2", "Upload 2 mips extra compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -1", "Upload 1 mip extra compared to the Global Mipmap Limit."),
                 EditorGUIUtility.TrTextContent("Use Global Mipmap Limit", "No offset or override occurs, simply use the Global Mipmap Limit. (Default)"),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +1", "Upload 1 mip extra compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +2", "Upload 2 mips extra compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +3", "Upload 3 mips extra compared to the Global Mipmap Limit.")
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +1", "Upload 1 mip less compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +2", "Upload 2 mips less compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +3", "Upload 3 mips less compared to the Global Mipmap Limit.")
             };
             public static readonly GUIContent kTextureMipmapLimitGroupsOptions = EditorGUIUtility.TrIconContent("_Menu", "Show additional options");
             public static readonly GUIContent kTextureMipmapLimitGroupsOptionsIdentify = EditorGUIUtility.TrTextContent("Identify textures");
