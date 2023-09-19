@@ -3467,6 +3467,9 @@
     <Compile Include="..\..\Runtime\Export\RenderPipeline\LODParameters.cs">
       <Link>Runtime\Export\RenderPipeline\LODParameters.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\RenderPipeline\ObjectIdRequest.cs">
+      <Link>Runtime\Export\RenderPipeline\ObjectIdRequest.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\PerObjectData.cs">
       <Link>Runtime\Export\RenderPipeline\PerObjectData.cs</Link>
     </Compile>

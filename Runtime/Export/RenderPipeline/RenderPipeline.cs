@@ -11,7 +11,7 @@ namespace UnityEngine.Rendering
     {
         protected abstract void Render(ScriptableRenderContext context, Camera[] cameras);
         protected virtual void ProcessRenderRequests<RequestData>(ScriptableRenderContext context, Camera camera, RequestData renderRequest) { }
-        protected virtual bool IsRenderRequestSupported<RequestData>(Camera camera, RequestData data) { return false; }
+        protected internal virtual bool IsRenderRequestSupported<RequestData>(Camera camera, RequestData data) { return false; }
 
         protected static void BeginFrameRendering(ScriptableRenderContext context, Camera[] cameras)
         {
@@ -66,16 +66,23 @@ namespace UnityEngine.Rendering
 
         public static bool SupportsRenderRequest<RequestData>(Camera camera, RequestData data)
         {
+            var pipelineExistsAndSupportsRequest = false;
             if (GraphicsSettings.currentRenderPipeline != null)
             {
                 if(RenderPipelineManager.currentPipeline == null)
                 {
                     RenderPipelineManager.PrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
                 }
-                return RenderPipelineManager.currentPipeline.IsRenderRequestSupported(camera, data);
+                pipelineExistsAndSupportsRequest =
+                    RenderPipelineManager.currentPipeline.IsRenderRequestSupported(camera, data);
             }
-
-            return false;
+            if (data is ObjectIdRequest)
+            {
+                // There is a built-in fallback option available for ObjectIdRequest in editor;
+                // see Camera.SubmitRenderRequest
+                return true;
+            }
+            return pipelineExistsAndSupportsRequest;
         }
 
         public static void SubmitRenderRequest<RequestData>(Camera camera, RequestData data)

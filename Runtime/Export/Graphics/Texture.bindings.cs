@@ -47,6 +47,8 @@ namespace UnityEngine
         virtual public int height { get { return GetDataHeight(); } set { throw new NotImplementedException(); } }
         virtual public TextureDimension dimension { get { return GetDimension(); } set { throw new NotImplementedException(); } }
 
+        extern internal bool isNativeTexture { [NativeName("IsNativeTexture")] get; }
+
         extern virtual public bool isReadable { get; }
 
         // Note: getter for "wrapMode" returns the U mode on purpose
