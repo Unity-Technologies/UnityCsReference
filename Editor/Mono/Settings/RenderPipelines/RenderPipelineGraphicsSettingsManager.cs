@@ -13,7 +13,7 @@ namespace UnityEditor.Rendering.Settings
 {
     internal static class RenderPipelineGraphicsSettingsManager
     {
-        struct RenderPipelineGraphicsSettingsInfo
+        public struct RenderPipelineGraphicsSettingsInfo
         {
             public Type type;
             public bool isDeprecated;
@@ -27,18 +27,24 @@ namespace UnityEditor.Rendering.Settings
             if (!GraphicsSettingsUtils.ExtractSupportedOnRenderPipelineAttribute(settings.GetType(), out var globalSettingsSupportedOn, out var message))
                 throw new InvalidOperationException(message);
 
-            foreach (var info in FetchRenderPipelineGraphicsSettingInfos())
+            var globalSettingsRenderPipelineAssetType = globalSettingsSupportedOn.renderPipelineTypes[0];
+
+            foreach (var info in FetchRenderPipelineGraphicsSettingInfos(globalSettingsRenderPipelineAssetType))
             {
-                UpdateRenderPipelineGlobalSettings(info, settings, globalSettingsSupportedOn);
+                UpdateRenderPipelineGlobalSettings(info, settings);
             }
         }
 
-        static IEnumerable<RenderPipelineGraphicsSettingsInfo> FetchRenderPipelineGraphicsSettingInfos()
+        public static IEnumerable<RenderPipelineGraphicsSettingsInfo> FetchRenderPipelineGraphicsSettingInfos(Type globalSettingsRenderPipelineAssetType)
         {
             var graphicsSettingsTypes = TypeCache.GetTypesDerivedFrom(typeof(IRenderPipelineGraphicsSettings));
+
             foreach (var renderPipelineGraphicsSettingsType in graphicsSettingsTypes)
             {
                 if (renderPipelineGraphicsSettingsType.IsAbstract || renderPipelineGraphicsSettingsType.IsGenericType || renderPipelineGraphicsSettingsType.IsInterface)
+                    continue;
+
+                if (!SupportedOnRenderPipelineAttribute.IsTypeSupportedOnRenderPipeline(renderPipelineGraphicsSettingsType, globalSettingsRenderPipelineAssetType))
                     continue;
 
                 if (renderPipelineGraphicsSettingsType.GetCustomAttribute<SerializableAttribute>() == null)
@@ -61,35 +67,25 @@ namespace UnityEditor.Rendering.Settings
             }
         }
 
-        static void UpdateRenderPipelineGlobalSettings(RenderPipelineGraphicsSettingsInfo renderPipelineGraphicsSettingsType, RenderPipelineGlobalSettings asset,
-            SupportedOnRenderPipelineAttribute globalSettingsSupportedOn)
+        static void UpdateRenderPipelineGlobalSettings(RenderPipelineGraphicsSettingsInfo renderPipelineGraphicsSettingsType, RenderPipelineGlobalSettings asset)
         {
-            bool isSettingsValid = IsSettingsValid(renderPipelineGraphicsSettingsType, globalSettingsSupportedOn);
-            bool isSettingsExist = asset.TryGet(renderPipelineGraphicsSettingsType.type, out var srpGraphicSetting);
-            if (!isSettingsValid)
+            IRenderPipelineGraphicsSettings renderPipelineGraphicsSettings;
+
+            if (renderPipelineGraphicsSettingsType.isDeprecated)
             {
-                if (isSettingsExist)
-                    asset.Remove(srpGraphicSetting);
+                if (asset.TryGet(renderPipelineGraphicsSettingsType.type, out renderPipelineGraphicsSettings))
+                {
+                    asset.Remove(renderPipelineGraphicsSettings);
+                }
+
                 return;
             }
 
-            if (!isSettingsExist && TryCreateInstance(renderPipelineGraphicsSettingsType.type, true, out srpGraphicSetting))
-                asset.Add(srpGraphicSetting);
-                
-            if (srpGraphicSetting is IRenderPipelineResources resource)
+            if (TryCreateInstance(renderPipelineGraphicsSettingsType.type, true, out renderPipelineGraphicsSettings))
+                asset.Add(renderPipelineGraphicsSettings);
+
+            if (renderPipelineGraphicsSettings is IRenderPipelineResources resource)
                 RenderPipelineResourcesEditorUtils.TryReloadContainedNullFields(resource);
-        }
-
-        // The Setting has been completely deprecated or not supported on render pipeline anymore, that means that it will be removed from the settings as any usage on code will be an error
-        static bool IsSettingsValid(RenderPipelineGraphicsSettingsInfo renderPipelineGraphicsSettingsType, SupportedOnRenderPipelineAttribute globalSettingsSupportedOn)
-        {
-            return !renderPipelineGraphicsSettingsType.isDeprecated && !renderPipelineGraphicsSettingsType.type.IsGenericType &&
-                   IsTypeSupportedOnRenderPipeline(renderPipelineGraphicsSettingsType.type, globalSettingsSupportedOn);
-        }
-
-        static bool IsTypeSupportedOnRenderPipeline(Type settingsType, SupportedOnRenderPipelineAttribute globalSettingsSupportedOn)
-        {
-            return globalSettingsSupportedOn == null || SupportedOnRenderPipelineAttribute.IsTypeSupportedOnRenderPipeline(settingsType, globalSettingsSupportedOn.renderPipelineTypes[0]);
         }
 
         static bool TryCreateInstance<T>(Type type, bool nonPublic, out T instance)

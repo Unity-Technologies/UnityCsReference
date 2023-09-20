@@ -44,9 +44,11 @@ namespace UnityEditor.Rendering
 
         extern public static BatchRendererGroupStrippingMode batchRendererGroupShaderStrippingMode { get; }
 
-        [NativeName("RegisterRenderPipelineSettings")] static extern void Internal_RegisterRenderPipeline(string renderpipelineName, Object settings);
-        [NativeName("UnregisterRenderPipelineSettings")] static extern void Internal_UnregisterRenderPipeline(string renderpipelineName);
+        [NativeName("RegisterRenderPipelineSettings")] static extern bool Internal_TryRegisterRenderPipeline(string renderpipelineName, Object settings);
+        [NativeName("UnregisterRenderPipelineSettings")] static extern bool Internal_TryUnregisterRenderPipeline(string renderpipelineName);
         [NativeName("GetSettingsForRenderPipeline")] static extern Object Internal_GetSettingsForRenderPipeline(string renderpipelineName);
+
+        [NativeName("GetSettingsInstanceIDForRenderPipeline")] internal static extern int Internal_GetSettingsInstanceIDForRenderPipeline(string renderpipelineName);
 
         private static void CheckRenderPipelineType(Type renderPipelineType)
         {
@@ -61,15 +63,27 @@ namespace UnityEditor.Rendering
         {
             CheckRenderPipelineType(renderPipelineType);
 
+            bool globalSettingsAssetChanged;
             if (newSettings != null)
             {
                 RenderPipelineGraphicsSettingsManager.PopulateRenderPipelineGraphicsSettings(newSettings);
-                Internal_RegisterRenderPipeline(renderPipelineType.FullName, newSettings);
+                globalSettingsAssetChanged = Internal_TryRegisterRenderPipeline(renderPipelineType.FullName, newSettings);
             }
             else
-                Internal_UnregisterRenderPipeline(renderPipelineType.FullName);
+                globalSettingsAssetChanged = Internal_TryUnregisterRenderPipeline(renderPipelineType.FullName);
 
-            GraphicsSettingsUtils.ReloadGraphicsSettingsEditor();
+            if (globalSettingsAssetChanged)
+            {
+                var rpAsset = RenderPipelineManager.s_CurrentPipelineAsset;
+                if (rpAsset != null && rpAsset.pipelineType == renderPipelineType)
+                    RenderPipelineManager.RecreateCurrentPipeline(rpAsset);
+
+                if (EditorWindow.HasOpenInstances<ProjectSettingsWindow>())
+                {
+                    var window = EditorWindow.GetWindow<ProjectSettingsWindow>(null, false);
+                    window.m_Parent.Reload(window);
+                }
+            }
         }
 
         public static void SetRenderPipelineGlobalSettingsAsset<T>(RenderPipelineGlobalSettings newSettings)
@@ -110,6 +124,16 @@ namespace UnityEditor.Rendering
                 settings = baseSettings as TSettings;
 
             return settings != null;
+        }
+
+        public static IEnumerable<Type> GetSupportedRenderPipelineGraphicsSettingsTypesForPipeline<T>()
+            where T : RenderPipelineAsset
+        {
+            foreach(var info in RenderPipelineGraphicsSettingsManager.FetchRenderPipelineGraphicsSettingInfos(typeof(T)))
+            {
+                if (!info.isDeprecated)
+                    yield return info.type;
+            }
         }
 
         [NativeName("GraphicsSettingsCount")] static extern int Internal_GraphicsSettingsCount();

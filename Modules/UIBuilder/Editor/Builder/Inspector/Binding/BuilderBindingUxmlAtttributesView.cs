@@ -87,9 +87,11 @@ namespace Unity.UI.Builder
         /// Constructor.
         /// </summary>
         /// <param name="parentView">The parent view</param>
-        public BuilderBindingUxmlAttributesView(BuilderBindingView parentView)
+        public BuilderBindingUxmlAttributesView(BuilderInspector inspector, BuilderBindingView parentView): base(inspector)
         {
             this.parentView = parentView;
+            this.inspector = inspector;
+            this.parentView.closing += Dispose;
         }
 
         public void SetAttributesOwnerFromCopy(VisualTreeAsset asset, VisualElement visualElement)
@@ -340,6 +342,13 @@ namespace Unity.UI.Builder
             var undoGroup = Undo.GetCurrentGroup();
 
             var property = targetView.m_CurrentElementSerializedObject.FindProperty(path);
+
+            var undoMessage = $"Modified {property.name}";
+            if (property.m_SerializedObject.targetObject.name != string.Empty)
+                undoMessage += $" in {property.m_SerializedObject.targetObject.name}";
+
+            Undo.RegisterCompleteObjectUndo(property.m_SerializedObject.targetObject, undoMessage);
+
             property.InsertArrayElementAtIndex(property.arraySize);
             property = property.GetArrayElementAtIndex(property.arraySize - 1);
             path = property.propertyPath;
@@ -352,7 +361,9 @@ namespace Unity.UI.Builder
 
             // Apply the serialized data back to the original view
             property.managedReferenceValue = result.serializedData;
-            property.serializedObject.ApplyModifiedProperties();
+            property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+            Undo.RegisterCompleteObjectUndo(property.m_SerializedObject.targetObject, undoMessage);
             Undo.IncrementCurrentGroup();
 
             // Get the UxmlAsset for our new serialized data.
@@ -447,6 +458,7 @@ namespace Unity.UI.Builder
 
         public void Dispose()
         {
+            Undo.ClearUndo(m_VisualTreeAssetCopy);
             UnityEngine.Object.DestroyImmediate(m_VisualTreeAssetCopy);
         }
     }

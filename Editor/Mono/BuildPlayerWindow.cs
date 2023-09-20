@@ -185,14 +185,11 @@ namespace UnityEditor
             var lastBuildLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
             bool buildLocationIsValid = BuildLocationIsValid(lastBuildLocation);
 
-            if (buildLocationIsValid && BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out var aBuildTarget))
+            if (buildLocationIsValid && BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out var iBuildTarget))
             {
-                if (aBuildTarget.TryGetProperties(out IBuildPlatformProperties buildProperties))
-                {
-                    string buildLocation = buildProperties.ValidateBuildLocation();
-                    if (buildLocation != null)
-                        EditorUserBuildSettings.SetBuildLocation(buildTarget, buildLocation);
-                }
+                string buildLocation = iBuildTarget.BuildPlatformProperties?.ValidateBuildLocation();
+                if (buildLocation != null)
+                    EditorUserBuildSettings.SetBuildLocation(buildTarget, buildLocation);
             }
 
             BuildPlayerAndRunInternal(!buildLocationIsValid);
@@ -271,19 +268,6 @@ namespace UnityEditor
             m_TreeView.Reload();
             Repaint();
             GUIUtility.ExitGUI();
-        }
-
-        // TODO: Move this into platform extension dll
-        bool IsBuildTargetCompatibleWithOS(BuildTarget target)
-        {
-            // UWP and all consoles require windows
-            if (target == BuildTarget.WSAPlayer || BuildTargetDiscovery.PlatformHasFlag(target, TargetAttributes.IsConsole))
-            {
-                if (SystemInfo.operatingSystemFamily != OperatingSystemFamily.Windows)
-                    return false;
-            }
-
-            return true;
         }
 
         static int s_CurrOverrideMaxTextureSize = -1;
@@ -377,7 +361,7 @@ namespace UnityEditor
                         continue;
 
                     // Some build targets are only compatible with specific OS
-                    if (!IsBuildTargetCompatibleWithOS(gt.defaultTarget))
+                    if (BuildTargetDiscovery.TryGetBuildTarget(gt.defaultTarget, out IBuildTarget iBuildTarget) && !(iBuildTarget.BuildPlatformProperties?.CanBuildOnCurrentHostPlatform ?? true))
                         continue;
 
                     GUI.contentColor = gt.installed ? Color.white : new Color(1, 1, 1, 0.5f);

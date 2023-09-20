@@ -179,6 +179,9 @@ namespace Unity.UI.Builder
         public static readonly string BuilderInspectorSelector = "Selector";
         public static readonly string BuilderInspectorTemplateInstance = "Template Instance";
         public static readonly string BuilderAttributesHeader = "Attributes";
+        public static readonly string BuilderInheritedLabelSuffix = "(inherited)";
+        public static readonly string BuilderLabelWithInheritedLabelSuffix = "{0} " + BuilderInheritedLabelSuffix;
+        public static readonly string BuilderBindingObjectFieldEmptyMessage = "... ({0})";
 
         // Inspector Messages
         public static readonly string AddStyleClassValidationSpaces = "Class names cannot contain spaces.";
@@ -221,6 +224,8 @@ namespace Unity.UI.Builder
         public static readonly string FieldStatusIndicatorDefaultTooltip = "Default Value";
         public static readonly string FieldStatusIndicatorInlineTooltip = "Inline Value\n\nValue is set directly from the property field.";
         public static readonly string FieldStatusIndicatorInheritedTooltip = "Inherited Value\n\nParent: {0} {1}";
+        public static readonly string FieldStatusIndicatorInheritedDataSourceTooltip = "{0}\n<indent=5%>Inherited Data Source: {1}</indent>\n<indent=5%>Full Path: {2}</indent>";
+        public static readonly string FieldStatusIndicatorInheritedDataSourceTypeTooltip = "{0}\n<indent=5%>Inherited Data Source Type: {1}</indent>\n<indent=5%>Full Path: {2}</indent>";
         public static readonly string FieldStatusIndicatorLocalTooltip = "Local Value\n\nValue is set directly from the property field.";
         public static readonly string FieldStatusIndicatorFromSelectorTooltip = "Selector Value\n\nSelector: {0}\nSheet: {1}";
         public static readonly string FieldStatusIndicatorVariableTooltip = "Variable Value\n\nVariable: {0}\nSheet: {1}";
@@ -594,7 +599,9 @@ namespace Unity.UI.Builder
         public static readonly string AddNewSelectorUndoMessage = "Create USS Selector";
         public static readonly string RenameSelectorUndoMessage = "Rename USS Selector";
         public static readonly string DeleteSelectorUndoMessage = "Delete USS Selector";
+        public static readonly string AddUxmlObject = "Add UXML Object";
         public static readonly string ModifyUxmlObject = "Modify UXML Object";
+        public static readonly string RemoveUxmlObject = "Remove UXML Object";
         public static readonly string MoveUSSSelectorUndoMessage = "Move USS Selector";
         public static readonly string AddBindingUndoMessage = "Add Binding";
         public static readonly string DeleteBindingUndoMessage = "Delete Binding";

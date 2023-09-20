@@ -74,6 +74,8 @@ namespace UnityEditor.UIElements
 
             public EditorWindow ParentWindow => m_ParentWindow;
 
+            float m_MaxOuterContainerWidth;
+
             // This is static so it can be used in test code conveniently
             internal static Rect GetAdjustedPosition(Rect parentRect, Vector2 size, ScrollView scrollView = null)
             {
@@ -112,7 +114,15 @@ namespace UnityEditor.UIElements
                 menu.innerContainer.style.maxWidth = k_MaxMenuWidth;
                 menu.outerContainer.RegisterCallback<GeometryChangedEvent>(e =>
                 {
-                    maxSize = minSize= menu.outerContainer.worldBound.size;
+                    // Set the outer container and the menu container to the size of the
+                    // longest item in the list.
+                    if (minSize.x < menu.outerContainer.worldBound.size.x)
+                    {
+                        m_MaxOuterContainerWidth = menu.outerContainer.worldBound.size.x;
+                        menu.menuContainer.style.minWidth = m_MaxOuterContainerWidth;
+                    }
+
+                    maxSize = minSize = new Vector2(m_MaxOuterContainerWidth, menu.outerContainer.worldBound.size.y);
                     position = GetAdjustedPosition(m_ParentRect, minSize, menu.m_Parent?.scrollView);
                 });
 
@@ -816,7 +826,6 @@ namespace UnityEditor.UIElements
 
             if (desc.expansion)
                 menu.MakeExpandable();
-
 
             var factor = 0f;
             switch (desc.layout)

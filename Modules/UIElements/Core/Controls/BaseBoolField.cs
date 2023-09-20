@@ -190,5 +190,11 @@ namespace UnityEngine.UIElements
                     text = m_OriginalText;
             }
         }
+
+        internal override void RegisterEditingCallbacks()
+        {
+            RegisterCallback<PointerUpEvent>(_ => editingStarted?.Invoke());
+            RegisterCallback<FocusOutEvent>(_ => editingEnded?.Invoke());
+        }
     }
 }

@@ -72,8 +72,6 @@ namespace UnityEngine.Rendering
             if (settingsList == null)
                 return false;
 
-            Debug.Assert(settingsList.Count == settingsMap.Count);
-
             if (!settingsMap.TryGetValue(type, out var index))
                 return false;
 

@@ -45,6 +45,7 @@ namespace Unity.UI.Builder
         VisualTreeAsset m_UxmlDocument;
         VisualElement m_CurrentElement;
         VisualElementAsset m_CurrentUxmlElement;
+        protected internal BuilderInspector inspector;
 
         // UxmlTraits
         List<UxmlAttributeDescription> m_UxmlTraitAttributes;
@@ -165,10 +166,11 @@ namespace Unity.UI.Builder
         /// </summary>
         internal static bool alwaysUseUxmlTraits { get; set; }
 
-        public BuilderUxmlAttributesView()
+        public BuilderUxmlAttributesView(BuilderInspector inspector = null)
         {
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
             BindingsStyleHelpers.HandleRightClickMenu = HandleRightClickMenu;
+            this.inspector = inspector;
         }
 
         ~BuilderUxmlAttributesView()
@@ -337,7 +339,7 @@ namespace Unity.UI.Builder
             var attribute = dataDescription.FindAttributeWithPropertyName(property);
             if (attribute == null)
                 return;
-            
+
             var bindableElement = fieldElement?.Q<BindableElement>();
             var binding = bindableElement?.GetBinding(BindingExtensions.s_SerializedBindingId);
             if (binding is not SerializedObjectBindingBase bindingBase)
@@ -404,6 +406,8 @@ namespace Unity.UI.Builder
             var serializedPath = serializedRootPath + "bindings";
             var bindingsSerializedProperty = m_CurrentElementSerializedObject.FindProperty(serializedPath);
 
+            Undo.RegisterCompleteObjectUndo(bindingsSerializedProperty.m_SerializedObject.targetObject, GetUndoMessage(bindingsSerializedProperty));
+
             for (var i = 0; i < bindingsSerializedProperty.arraySize; i++)
             {
                 var item = bindingsSerializedProperty.GetArrayElementAtIndex(i);
@@ -412,7 +416,7 @@ namespace Unity.UI.Builder
                     if (fieldElement != null)
                         SetInlineValue(fieldElement, property);
                     bindingsSerializedProperty.DeleteArrayElementAtIndex(i);
-                    bindingsSerializedProperty.serializedObject.ApplyModifiedProperties();
+                    bindingsSerializedProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
                     SyncUxmlObjectChanges(serializedPath);
                     break;
                 }
@@ -780,9 +784,11 @@ namespace Unity.UI.Builder
                     {
                         if (property.arraySize > 0)
                         {
+                            Undo.RegisterCompleteObjectUndo(property.m_SerializedObject.targetObject, GetUndoMessage(property));
+
                             int index = l.selectedIndex >= 0 ? l.selectedIndex : property.arraySize - 1;
                             property.DeleteArrayElementAtIndex(index);
-                            property.serializedObject.ApplyModifiedProperties();
+                            property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
                             SyncUxmlObjectChanges(property.propertyPath);
                         }
                     },
@@ -941,13 +947,15 @@ namespace Unity.UI.Builder
 
         internal void AddUxmlObjectToSerializedData(SerializedProperty property, Type type)
         {
+            Undo.RegisterCompleteObjectUndo(property.m_SerializedObject.targetObject, GetUndoMessage(property));
+
             if (property.isArray)
             {
                 property.InsertArrayElementAtIndex(property.arraySize);
                 property = property.GetArrayElementAtIndex(property.arraySize - 1);
             }
-            property.managedReferenceValue = type != null ? UnityEditor.UIElements.UxmlSerializedDataCreator.CreateUxmlSerializedData(type.DeclaringType) : null;
-            property.serializedObject.ApplyModifiedProperties();
+            property.managedReferenceValue = type != null ? UxmlSerializedDataCreator.CreateUxmlSerializedData(type.DeclaringType) : null;
+            property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
             SyncUxmlObjectChanges(property.propertyPath);
         }
 
@@ -1479,8 +1487,7 @@ namespace Unity.UI.Builder
             }
 
             // Apply changes to the whole element
-            Undo.IncrementCurrentGroup();
-            m_CurrentElementSerializedObject.ApplyModifiedProperties();
+            m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
 
             CallDeserializeOnElement();
 
@@ -1490,10 +1497,11 @@ namespace Unity.UI.Builder
             if (newValue == null || !UxmlAttributeConverter.TryConvertToString(newValue, m_UxmlDocument, out var stringValue))
                 stringValue = newValue?.ToString();
 
-            Undo.IncrementCurrentGroup();
             PostAttributeValueChange(fieldElement, stringValue, currentAttributeUxmlOwner);
 
-            Undo.CollapseUndoOperations(m_CurrentUndoGroup.Value);
+            // Use the undo group of the field if it has one, otherwise use the current undo group
+            var fieldUndoGroup = (int?)fieldElement.Q<BindableElement>()?.GetProperty(SerializedObjectBindingBase.UndoGroupPropertyKey);
+            Undo.CollapseUndoOperations(fieldUndoGroup ?? m_CurrentUndoGroup.Value);
 
             // Update the serialized object to reflect the changes made by PostAttributeValueChange.
             m_CurrentElementSerializedObject.UpdateIfRequiredOrScript();
@@ -1682,7 +1690,7 @@ namespace Unity.UI.Builder
             var valueInfo = GetValueInfo(fieldElement);
 
             fieldElement.SetProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName, valueInfo);
-            BuilderInspector.UpdateFieldStatusIconAndStyling(currentElement, fieldElement, valueInfo);
+            BuilderInspector.UpdateFieldStatusIconAndStyling(inspector?.currentVisualElement, fieldElement, valueInfo, false);
 
             if (currentFieldSource == AttributeFieldSource.UxmlTraits)
                 BuilderInspector.UpdateFieldTooltip(fieldElement, valueInfo, m_CurrentElement);
@@ -2095,7 +2103,7 @@ namespace Unity.UI.Builder
                 // Notify of changes.
                 NotifyAttributesChanged();
                 Refresh();
-                builder.inspector.headerSection.Refresh();
+                inspector.headerSection.Refresh();
             }
 
             Undo.CollapseUndoOperations(undoGroup);
@@ -2371,13 +2379,16 @@ namespace Unity.UI.Builder
             if (currentFieldSource == AttributeFieldSource.UxmlSerializedData)
             {
                 var prop = m_CurrentElementSerializedObject.FindProperty(serializedRootPath + field.bindingPath);
+
+                Undo.RegisterCompleteObjectUndo(prop.m_SerializedObject.targetObject, GetUndoMessage(prop));
+
                 prop.stringValue = evt.newValue;
-                m_CurrentElementSerializedObject.ApplyModifiedProperties();
+                m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                 OnTrackedPropertyValueChange(field, prop);
             }
             else
-            { 
+            {
                 OnAttributeValueChange(evt);
             }
         }
@@ -2491,6 +2502,15 @@ namespace Unity.UI.Builder
                 // Call Init();
                 CallInitOnElement();
             }
+        }
+
+        static string GetUndoMessage(SerializedProperty prop)
+        {
+            var undoMessage = $"Modified {prop.name}";
+            if (prop.m_SerializedObject.targetObject.name != string.Empty)
+                undoMessage += $" in {prop.m_SerializedObject.targetObject.name}";
+
+            return undoMessage;
         }
     }
 }

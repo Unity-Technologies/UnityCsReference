@@ -326,6 +326,9 @@ namespace UnityEngine.UIElements
 
         private void OnAttachToPanel(AttachToPanelEvent e)
         {
+            // indicates the start and end of the field value being edited
+            RegisterEditingCallbacks();
+
             if (e.destinationPanel == null)
             {
                 return;
@@ -380,7 +383,16 @@ namespace UnityEngine.UIElements
 
         private void OnDetachFromPanel(DetachFromPanelEvent e)
         {
+            UnregisterCallback<FocusInEvent>(_ => editingStarted?.Invoke());
+            UnregisterCallback<FocusOutEvent>(_ => editingEnded?.Invoke());
+
             onValidateValue = null;
+        }
+
+        internal virtual void RegisterEditingCallbacks()
+        {
+            RegisterCallback<FocusInEvent>(_ => editingStarted?.Invoke());
+            RegisterCallback<FocusOutEvent>(_ => editingEnded?.Invoke());
         }
 
         private void OnCustomStyleResolved(CustomStyleResolvedEvent evt)

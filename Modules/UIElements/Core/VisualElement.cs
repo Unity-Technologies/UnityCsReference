@@ -74,11 +74,14 @@ namespace UnityEngine.UIElements
     public enum PickingMode
     {
         /// <summary>
-        /// Picking enabled. Default Value.
+        /// Picking enabled. Default Value. Performs picking based on the position rectangle. In the VisualElement tree hierarchy,
+        /// the picking process works using a similar logic as the rendering but in reverse order: it starts with the front-most
+        /// elements and proceeds step by step towards background elements. Thus, the child elements are picked before parents,
+        /// and the sibling elements further down the list are picked before their predecessors.
         /// </summary>
         Position, // todo better name
         /// <summary>
-        /// Disables picking.
+        /// Prevents picking as the result of a mouse event.
         /// </summary>
         Ignore
     }
@@ -181,14 +184,19 @@ namespace UnityEngine.UIElements
             [UxmlAttribute("tabindex")]
             [SerializeField] private int tabIndex;
             [SerializeField] private bool focusable;
+
+            [Tooltip(DataBinding.k_DataSourceTooltip)]
             [SerializeField, HideInInspector, DataSourceDrawer] private Object dataSource;
 
             // We use a string here because the PropertyPath struct is not serializable
             [UxmlAttribute("data-source-path")]
+            [Tooltip(DataBinding.k_DataSourcePathTooltip)]
             [SerializeField, HideInInspector] private string dataSourcePathString;
 
             [UxmlAttribute("data-source-type")]
+            [Tooltip(DataBinding.k_DataSourceTooltip)]
             [SerializeField, HideInInspector, DataSourceTypeDrawer(typeof(object))] private string dataSourceTypeString;
+
             [SerializeReference, HideInInspector, UxmlObjectReference("Bindings")] List<Binding.UxmlSerializedData> bindings;
             #pragma warning restore 649
 
@@ -364,6 +372,9 @@ namespace UnityEngine.UIElements
         List<string> m_ClassList;
         private Dictionary<PropertyName, object> m_PropertyBag;
         internal VisualElementFlags m_Flags;
+
+        internal Action editingStarted { get; set; }
+        internal Action editingEnded { get; set; }
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
         private string m_ViewDataKey;

@@ -85,7 +85,7 @@ namespace Unity.UI.Builder
             m_DataSourceViewContainer = new VisualElement();
 
             m_Header.Add(m_DataSourceViewContainer);
-            m_DataSourceAndPathView = new BuilderDataSourceAndPathView
+            m_DataSourceAndPathView = new BuilderDataSourceAndPathView(m_Inspector)
             {
                 fieldsContainer = m_DataSourceViewContainer,
                 onNotifyAttributesChanged = () => m_Inspector.selection.NotifyOfHierarchyChange(m_Inspector)

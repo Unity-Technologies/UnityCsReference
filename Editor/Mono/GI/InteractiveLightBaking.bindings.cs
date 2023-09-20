@@ -47,5 +47,8 @@ namespace UnityEditor
         [FreeFunction]
         [NativeName("GetInteractiveLightingSettings")]
         public static extern LightingSettings GetLightingSettings();
+
+        [StaticAccessor("InteractiveLightBakingDataManager::Get()", StaticAccessorType.Dot)]
+        public static extern float lightmapResolutionScale { get; set; }
     }
 }

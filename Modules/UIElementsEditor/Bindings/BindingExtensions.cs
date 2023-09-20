@@ -705,21 +705,13 @@ namespace UnityEditor.UIElements.Bindings
 
         public SerializedObjectBindingContextUpdater AddBindingUpdater(VisualElement element)
         {
-            var b = element.GetBinding(BindingExtensions.s_SerializedBindingContextUpdaterId) as SerializedObjectBindingContextUpdater;
+            var contextUpdater = element.GetBinding(BindingExtensions.s_SerializedBindingContextUpdaterId) as SerializedObjectBindingContextUpdater;
+            if (contextUpdater == null)
+                return SerializedObjectBindingContextUpdater.Create(element, this);
 
-            var contextUpdater = b;
-
-            if (b == null)
-            {
-                contextUpdater = SerializedObjectBindingContextUpdater.Create(element, this);
-            }
-            else
-            {
-                if (contextUpdater == null || contextUpdater.bindingContext != this)
-                {
-                    throw new NotSupportedException("An element can track properties on only one serializedObject at a time");
-                }
-            }
+            var bindingContext = contextUpdater.bindingContext;
+            if (bindingContext == null || bindingContext.serializedObject != serializedObject)
+                throw new NotSupportedException("An element can track properties on only one serializedObject at a time");
 
             return contextUpdater;
         }
@@ -1315,6 +1307,8 @@ namespace UnityEditor.UIElements.Bindings
             bindingContext?.ResetUpdate();
         }
 
+        internal static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
+
         protected IBindable m_Field;
         private SerializedObjectBindingContext m_BindingContext;
 
@@ -1354,6 +1348,10 @@ namespace UnityEditor.UIElements.Bindings
                     {
                         ve.RegisterCallback(m_OnFieldAttachedToPanel);
                         ve.RegisterCallback(m_OnFieldDetachedFromPanel);
+
+                        // used to group undo operations (UUM-32599)
+                        ve.editingStarted += SetUndoGroup;
+                        ve.editingEnded += UnsetUndoGroup;
 
                         if (string.IsNullOrEmpty(ve.tooltip))
                         {
@@ -1401,6 +1399,22 @@ namespace UnityEditor.UIElements.Bindings
         private void OnFieldDetached(DetachFromPanelEvent evt)
         {
             isFieldAttached = false;
+        }
+
+        void SetUndoGroup()
+        {
+            Undo.IncrementCurrentGroup();
+
+            var field = m_Field as VisualElement;
+            field?.SetProperty(UndoGroupPropertyKey, Undo.GetCurrentGroup());
+        }
+
+        void UnsetUndoGroup()
+        {
+            Undo.IncrementCurrentGroup();
+
+            var field = m_Field as VisualElement;
+            field?.SetProperty(UndoGroupPropertyKey, null);
         }
 
         protected void UpdateFieldIsAttached()
@@ -1590,6 +1604,8 @@ namespace UnityEditor.UIElements.Bindings
 
             try
             {
+                var undoGroup = Undo.GetCurrentGroup();
+
                 var bindable = evt.target as IBindable;
                 var element = (VisualElement) bindable;
 
@@ -1611,6 +1627,10 @@ namespace UnityEditor.UIElements.Bindings
                     }
 
                     BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
+
+                    var fieldUndoGroup = (int?)(field as VisualElement)?.GetProperty(UndoGroupPropertyKey);
+                    Undo.CollapseUndoOperations(fieldUndoGroup ?? undoGroup);
+
                     return;
                 }
             }
@@ -1715,6 +1735,14 @@ namespace UnityEditor.UIElements.Bindings
             return new BindingResult(BindingStatus.Pending);
         }
 
+        protected internal static string GetUndoMessage(SerializedProperty serializedProperty)
+        {
+            var undoMessage = $"Modified {serializedProperty.name}";
+            if (serializedProperty.m_SerializedObject.targetObject.name != string.Empty)
+                undoMessage += $" in {serializedProperty.m_SerializedObject.targetObject.name}";
+            return undoMessage;
+        }
+
         // Read the value from the ui field and save it.
         protected abstract void UpdateLastFieldValue();
 
@@ -1751,9 +1779,9 @@ namespace UnityEditor.UIElements.Bindings
         {
             if (!propCompareValues(lastFieldValue, boundProperty, propGetValue))
             {
+                Undo.RegisterCompleteObjectUndo(boundProperty.m_SerializedObject.targetObject, GetUndoMessage(boundProperty));
                 propSetValue(boundProperty, lastFieldValue);
-                boundProperty.m_SerializedObject.ApplyModifiedProperties();
-
+                boundProperty.m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
                 // Force the field to update its display as its label is dependent on having an up to date SerializedProperty. (UUM-27629)
                 if (field is ObjectField objectField)
                 {
@@ -2136,6 +2164,8 @@ namespace UnityEditor.UIElements.Bindings
             if (lastEnumValue == boundProperty.intValue)
                 return false;
 
+            Undo.RegisterCompleteObjectUndo(boundProperty.m_SerializedObject.targetObject, GetUndoMessage(boundProperty));
+
             // When the value is a negative we need to convert it or it will be clamped.
             var underlyingType = managedType.GetEnumUnderlyingType();
             if (lastEnumValue < 0 && (underlyingType == typeof(uint) || underlyingType == typeof(ushort) || underlyingType == typeof(byte)))
@@ -2146,7 +2176,7 @@ namespace UnityEditor.UIElements.Bindings
             {
                 boundProperty.intValue = lastEnumValue;
             }
-            boundProperty.m_SerializedObject.ApplyModifiedProperties();
+            boundProperty.m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
             return true;
         }
 
@@ -2347,8 +2377,9 @@ namespace UnityEditor.UIElements.Bindings
             if (lastFieldValueIndex >= 0 && lastFieldValueIndex < displayIndexToEnumIndex.Count
                 && boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])
             {
+                Undo.RegisterCompleteObjectUndo(boundProperty.m_SerializedObject.targetObject, GetUndoMessage(boundProperty));
                 boundProperty.enumValueIndex = displayIndexToEnumIndex[lastFieldValueIndex];
-                boundProperty.m_SerializedObject.ApplyModifiedProperties();
+                boundProperty.m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
                 return true;
             }
             return false;

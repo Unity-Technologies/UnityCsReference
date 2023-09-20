@@ -18,10 +18,17 @@ namespace UnityEditor.Toolbars
             value = GridSettings.size.x;
             showMixedValue = !GridSettings.linked;
 
-            GridSettings.sizeChanged += value =>
+            GridSettings.sizeChanged += newValue =>
             {
-                SetValueWithoutNotify(value.x);
+                // [UUM-46865] Setting forceUpdateDisplay to true will refresh the field even if the value is the same.
+                // Ths is needed in case of showMixedValue is rest to false and the x-value is the same, otherwise the field will not be updated.
+                forceUpdateDisplay = true;
+                SetValueWithoutNotify(newValue.x);
+
                 showMixedValue = !GridSettings.linked;
+                // [UUM-46865] Forcing the MixedValueContent to update, this is needed in case of the newValue.x has changed and
+                // showMixedValue hasn't, without this call the field will displayed newValue.x instead of the MixedValueContent.
+                UpdateMixedValueContent();
             };
 
             this.RegisterValueChangedCallback(evt =>

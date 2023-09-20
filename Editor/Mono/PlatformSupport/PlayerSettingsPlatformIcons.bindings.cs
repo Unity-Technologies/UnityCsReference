@@ -466,24 +466,17 @@ namespace UnityEditor
 
         public static Texture2D[] GetIcons(NamedBuildTarget buildTarget, IconKind kind)
         {
-            if (buildTarget == NamedBuildTarget.iOS ||
-                buildTarget == NamedBuildTarget.tvOS ||
-                buildTarget == NamedBuildTarget.Android)
+            if (BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(buildTarget.TargetName), out var iBuildTarget))
             {
-                IPlatformIconProvider iconProvider = GetPlatformIconProvider(buildTarget);
+                IPlatformIconProvider platformIconProvider = iBuildTarget.IconPlatformProperties?.GetPlatformIconProvider();
+                if(platformIconProvider == null)
+                    return PlayerSettings.GetIconsForPlatform(iBuildTarget.TargetName, kind);
+                
+                PlatformIconKind platformIconKind = platformIconProvider.GetPlatformIconKindFromEnumValue(kind);
 
-                if (iconProvider == null)
-                    return new Texture2D[] {};
-
-                PlatformIconKind platformIconKind = iconProvider.GetPlatformIconKindFromEnumValue(kind);
-
-                return GetPlatformIcons(buildTarget, platformIconKind).Select(t => t.GetTexture(0)).ToArray();
+                return PlayerSettings.GetPlatformIcons(buildTarget, platformIconKind).Select(t => t.GetTexture(0)).ToArray();                
             }
-            else
-            {
-                Texture2D[] icons = GetIconsForPlatform(buildTarget.TargetName, kind);
-                return icons;
-            }
+            return PlayerSettings.GetIconsForPlatform(buildTarget.TargetName, kind);
         }
 
         internal static void ImportLegacyIcons(string platform, PlatformIconKind kind, PlatformIcon[] platformIcons)
@@ -529,21 +522,17 @@ namespace UnityEditor
 
         public static int[] GetIconSizes(NamedBuildTarget buildTarget, IconKind kind)
         {
-            if (buildTarget == NamedBuildTarget.iOS ||
-                buildTarget == NamedBuildTarget.tvOS ||
-                buildTarget == NamedBuildTarget.Android)
+            if (BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(buildTarget.TargetName), out var iBuildTarget))
             {
-                IPlatformIconProvider iconProvider = GetPlatformIconProvider(buildTarget);
+                IPlatformIconProvider platformIconProvider = iBuildTarget.IconPlatformProperties?.GetPlatformIconProvider();
+                if(platformIconProvider == null)
+                    return GetIconWidthsForPlatform(iBuildTarget.TargetName, kind);
+                
+                PlatformIconKind platformIconKind = platformIconProvider.GetPlatformIconKindFromEnumValue(kind);
 
-                if (iconProvider == null)
-                    return new int[] {};
-
-                PlatformIconKind platformIconKind = iconProvider.GetPlatformIconKindFromEnumValue(kind);
-
-                return GetPlatformIcons(buildTarget, platformIconKind).Select(s => s.width).ToArray();
+                return GetPlatformIcons(buildTarget, platformIconKind).Select(s => s.width).ToArray(); 
             }
-            else
-                return GetIconWidthsForPlatform(buildTarget.TargetName, kind);
+            return GetIconWidthsForPlatform(buildTarget.TargetName, kind);
         }
 
         // Returns a list of icon sizes for the specified platform.

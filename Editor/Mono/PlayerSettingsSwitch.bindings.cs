@@ -73,10 +73,6 @@ namespace UnityEditor
             [NativeProperty("switchLTOSetting", TargetType.Field)]
             extern public static int switchLTOSetting { get; set; }
 
-            // Whether to enable use of the old Nintendo GOLD linker.
-            [NativeProperty("switchUseGOLDLinker", TargetType.Field)]
-            extern public static bool useSwitchGOLDLinker { get; set; }
-
             [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
             extern public static int queueCommandMemory
             {

@@ -134,16 +134,19 @@ namespace UnityEditor
         void OnUseInteractiveLightBakingDataChanged(bool useInteractiveLightBakingDataChanged)
         {
             m_InteractiveBakingContent?.Q<EnumField>()?.SetValueWithoutNotify(useInteractiveLightBakingDataChanged ? LightingDataSource.Preview : LightingDataSource.Baked);
+            m_InteractiveBakingContent?.Q<FloatField>()?.EnableInClassList(Styles.k_UnityHiddenClass, !useInteractiveLightBakingDataChanged);
         }
 
         void OnBakeStarted()
         {
             m_InteractiveBakingContent?.Q<EnumField>()?.SetEnabled(false);
+            m_InteractiveBakingContent?.Q<FloatField>()?.SetEnabled(false);
         }
 
         void OnBakeCompleted()
         {
             m_InteractiveBakingContent?.Q<EnumField>()?.SetEnabled(true);
+            m_InteractiveBakingContent?.Q<FloatField>()?.SetEnabled(true);
         }
 
         enum LightingDataSource
@@ -173,7 +176,28 @@ namespace UnityEditor
 
             dropdown.SetValueWithoutNotify(useInteractiveLightBakingDataChanged ? LightingDataSource.Preview : LightingDataSource.Baked);
 
+            const float minLightmapResolutionScale = 0.001f;
+            var lightmapScaleField = new FloatField("     Lightmap Scale");
+            lightmapScaleField.labelElement.AddToClassList(Styles.k_ToggleLabelClass);
+            lightmapScaleField.visualInput.AddToClassList(Styles.k_SliderFloatFieldClass);
+            lightmapScaleField.tooltip = "Controls lightmap resolution by multiplying the value with the resolution chosen in the lighting window";
+            lightmapScaleField.isDelayed = true;
+            lightmapScaleField.RegisterValueChangedCallback((evt) =>
+            {
+                float scale = evt.newValue;
+                if (scale < minLightmapResolutionScale)
+                {
+                    scale = minLightmapResolutionScale;
+                    lightmapScaleField.SetValueWithoutNotify(scale);
+                }
+                InteractiveLightBaking.lightmapResolutionScale = scale;
+            });
+            // Set default to the lightmap resolution from the lighting window
+            lightmapScaleField.SetValueWithoutNotify(InteractiveLightBaking.lightmapResolutionScale);
+            lightmapScaleField.EnableInClassList(Styles.k_UnityHiddenClass, !useInteractiveLightBakingDataChanged);
+
             root.Add(dropdown);
+            root.Add(lightmapScaleField);
             return root;
         }
 

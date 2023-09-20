@@ -20,20 +20,7 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : TextInputBaseField<Hash128>.UxmlSerializedData
         {
-            #pragma warning disable 649
-            [UxmlAttribute("value")]
-            [Delayed, SerializeField] private string valueAsString;
-            #pragma warning restore 649
-
             public override object CreateInstance() => new Hash128Field();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (Hash128Field)obj;
-                e.valueAsString = valueAsString;
-            }
         }
 
         /// <summary>
@@ -98,12 +85,6 @@ namespace UnityEngine.UIElements
                 if (m_UpdateTextFromValue)
                     text = rawValue.ToString();
             }
-        }
-
-        internal string valueAsString
-        {
-            get => value.ToString();
-            set => this.value = Hash128.Parse(value);
         }
 
         internal override void UpdateValueFromText()
