@@ -45,16 +45,24 @@ namespace Unity.UI.Builder
         VisualTreeAsset m_UxmlDocument;
         VisualElement m_CurrentElement;
         VisualElementAsset m_CurrentUxmlElement;
+        protected internal BuilderInspector inspector;
 
         // UxmlTraits
         List<UxmlAttributeDescription> m_UxmlTraitAttributes;
         static readonly List<UxmlAttributeDescription> s_EmptyAttributeList = new();
+
+        // Sync path
         static readonly List<UxmlObjectAsset> s_UxmlAssets = new();
+        static readonly object[] s_SingleUxmlSerializedData = new object[1];
+        static readonly Dictionary<string, string[]> m_PathPartsCache = new();
 
         // UxmlSerializedData
         internal UxmlSerializedDataDescription m_SerializedDataDescription;
         internal SerializedObject m_CurrentElementSerializedObject;
         TempSerializedData m_TempSerializedData;
+        int? m_CurrentUndoGroup;
+        bool m_DocumentUndoRecorded;
+        static bool s_IsInsideUndoRedoUpdate;
 
         public string serializedRootPath { get; set; }
 
@@ -67,6 +75,10 @@ namespace Unity.UI.Builder
 
         // Makes it easier to identify the root when dealing with nested classes
         internal class UxmlSerializedDataAttributeField : VisualElement
+        {
+        }
+
+        class CustomPropertyDrawerField : VisualElement
         {
         }
 
@@ -154,14 +166,44 @@ namespace Unity.UI.Builder
         /// </summary>
         internal static bool alwaysUseUxmlTraits { get; set; }
 
-        public BuilderUxmlAttributesView()
+        public BuilderUxmlAttributesView(BuilderInspector inspector = null)
         {
-            Undo.undoRedoPerformed += CallDeserializeOnElement;
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            BindingsStyleHelpers.HandleRightClickMenu = HandleRightClickMenu;
+            this.inspector = inspector;
         }
 
         ~BuilderUxmlAttributesView()
         {
-            Undo.undoRedoPerformed -= CallDeserializeOnElement;
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            BindingsStyleHelpers.HandleRightClickMenu = null;
+        }
+
+        void OnUndoRedoPerformed()
+        {
+            CallDeserializeOnElement();
+
+            try
+            {
+                // We need to discard any change events that happen during the undo/redo update in order to avoid reapplying those changes.
+                s_IsInsideUndoRedoUpdate = true;
+                UIEventRegistration.UpdateSchedulers();
+            }
+            finally
+            {
+                s_IsInsideUndoRedoUpdate = false;
+            }
+        }
+
+        bool HandleRightClickMenu(VisualElement ve)
+        {
+            while (ve != null)
+            {
+                if (ve is UxmlAssetSerializedDataRoot)
+                    return true;
+                ve = ve.parent;
+            }
+            return false;
         }
 
         /// <summary>
@@ -292,12 +334,12 @@ namespace Unity.UI.Builder
                 return;
 
             var path = serializedRootPath + property;
-            SynchronizePath(path, false, out var uxmlAsset, out _, out var attributeOwner);
-            var dataDescription = UxmlSerializedDataRegistry.GetDescription(attributeOwner.GetType().FullName);
+            var result = SynchronizePath(path, false);
+            var dataDescription = UxmlSerializedDataRegistry.GetDescription(result.attributeOwner.GetType().FullName);
             var attribute = dataDescription.FindAttributeWithPropertyName(property);
             if (attribute == null)
                 return;
-            
+
             var bindableElement = fieldElement?.Q<BindableElement>();
             var binding = bindableElement?.GetBinding(BindingExtensions.s_SerializedBindingId);
             if (binding is not SerializedObjectBindingBase bindingBase)
@@ -307,7 +349,7 @@ namespace Unity.UI.Builder
             var serializedProperty = m_CurrentElementSerializedObject.FindProperty(path);
             var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
 
-            if (((UxmlAsset)uxmlAsset).TryGetAttributeValue(attribute.name, out var uxmlValueString) &&
+            if (result.uxmlAsset.TryGetAttributeValue(attribute.name, out var uxmlValueString) &&
                 UxmlAttributeConverter.TryConvertFromString(attribute.type, uxmlValueString, new CreationContext(m_UxmlDocument), out var uxmlValue))
             {
                 value = uxmlValue;
@@ -364,13 +406,18 @@ namespace Unity.UI.Builder
             var serializedPath = serializedRootPath + "bindings";
             var bindingsSerializedProperty = m_CurrentElementSerializedObject.FindProperty(serializedPath);
 
+            Undo.RegisterCompleteObjectUndo(bindingsSerializedProperty.m_SerializedObject.targetObject, GetUndoMessage(bindingsSerializedProperty));
+
             for (var i = 0; i < bindingsSerializedProperty.arraySize; i++)
             {
-                var p = bindingsSerializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative("property").stringValue;
-                if (p == property)
+                var item = bindingsSerializedProperty.GetArrayElementAtIndex(i);
+                if (item.FindPropertyRelative("property").stringValue == property)
                 {
-                    SetInlineValue(fieldElement, property);
-                    RemoveUxmlObjectInstance(bindingsSerializedProperty, i);
+                    if (fieldElement != null)
+                        SetInlineValue(fieldElement, property);
+                    bindingsSerializedProperty.DeleteArrayElementAtIndex(i);
+                    bindingsSerializedProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                    SyncUxmlObjectChanges(serializedPath);
                     break;
                 }
             }
@@ -648,6 +695,7 @@ namespace Unity.UI.Builder
         {
             if (undoEnabled)
             {
+                Undo.IncrementCurrentGroup();
                 Undo.RegisterCompleteObjectUndo(m_UxmlDocument, reason);
             }
         }
@@ -688,12 +736,12 @@ namespace Unity.UI.Builder
             return styleRow;
         }
 
-        VisualElement CreateUxmlObjectAttributeRow(UxmlSerializedAttributeDescription attribute, string propertyPath)
+        protected VisualElement CreateUxmlObjectAttributeRow(UxmlSerializedAttributeDescription attribute, string propertyPath)
         {
             var property = m_CurrentElementSerializedObject.FindProperty(propertyPath);
             var labelText = BuilderNameUtilities.ConvertDashToHuman(attribute.name);
 
-            if (typeof(IList).IsAssignableFrom(attribute.type))
+            if (attribute.isList)
             {
                 var listView = new ListView
                 {
@@ -705,6 +753,8 @@ namespace Unity.UI.Builder
                     showBorder = true,
                     showAlternatingRowBackgrounds = AlternatingRowBackground.ContentOnly,
                     showBoundCollectionSize = false,
+                    reorderable = true,
+                    reorderMode = ListViewReorderMode.Animated,
                     bindItem = (ve, i) =>
                     {
                         property.serializedObject.UpdateIfRequiredOrScript();
@@ -718,7 +768,7 @@ namespace Unity.UI.Builder
                             var root = new UxmlAssetSerializedDataRoot { dataDescription = desc, rootPath = item.propertyPath + "." };
                             ve.Add(root);
 
-                            GenerateSerializedAttributeFields(desc, root);
+                            CreateUxmlObjectField(item, desc, root);
                             ve.Bind(m_CurrentElementSerializedObject);
                         }
                     },
@@ -727,13 +777,27 @@ namespace Unity.UI.Builder
                     {
                         ShowAddUxmlObjectMenu(btn, attribute, t =>
                         {
-                            AddUxmlObjectInstance(property, t);
+                            AddUxmlObjectToSerializedData(property, t);
                         });
-                    }
+                    },
+                    onRemove = l =>
+                    {
+                        if (property.arraySize > 0)
+                        {
+                            Undo.RegisterCompleteObjectUndo(property.m_SerializedObject.targetObject, GetUndoMessage(property));
+
+                            int index = l.selectedIndex >= 0 ? l.selectedIndex : property.arraySize - 1;
+                            property.DeleteArrayElementAtIndex(index);
+                            property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                            SyncUxmlObjectChanges(property.propertyPath);
+                        }
+                    },
                 };
-                listView.onRemove += l => RemoveUxmlObjectInstance(property, l.selectedIndex);
                 listView.bindingPath = propertyPath;
-                listView.itemIndexChanged += (a, b) => MoveUxmlObjectInstances(property, attribute as UxmlSerializedUxmlObjectAttributeDescription, a, b);
+                listView.itemIndexChanged += (_, _) =>
+                {
+                    SyncUxmlObjectChanges(property.propertyPath);
+                };
                 return listView;
             }
 
@@ -741,6 +805,33 @@ namespace Unity.UI.Builder
             foldout.TrackPropertyValue(property, p => UpdateUxmlObjectReferenceFieldAddRemoveButtons(p, attribute, foldout, true));
             UpdateUxmlObjectReferenceFieldAddRemoveButtons(property, attribute, foldout, false);
             return foldout;
+        }
+
+        protected void CreateUxmlObjectField(SerializedProperty serializedProperty, UxmlSerializedDataDescription dataDescription, UxmlAssetSerializedDataRoot root)
+        {
+            var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
+            if (handler.hasPropertyDrawer)
+            {
+                CreateCustomPropertyDrawerField(serializedProperty, root);
+            }
+            else
+            {
+                GenerateSerializedAttributeFields(dataDescription, root);
+            }
+        }
+
+        protected void CreateCustomPropertyDrawerField(SerializedProperty serializedProperty, VisualElement root)
+        {
+            var drawerRoot = new CustomPropertyDrawerField();
+            drawerRoot.AddManipulator(new ContextualMenuManipulator(BuildCustomPropertyDrawerMenu));
+            root.Add(drawerRoot);
+
+            var propertyField = new PropertyField { bindingPath = serializedProperty.propertyPath };
+            drawerRoot.Add(propertyField);
+            TrackCustomPropertyDrawerFields(drawerRoot, serializedProperty);
+
+            // The hiearachy is not complete yet so we need to defer the update
+            root.schedule.Execute(() => UpdateCustomPropertyDrawerAttributeOverrideStyle(drawerRoot));
         }
 
         void UpdateUxmlObjectReferenceFieldAddRemoveButtons(SerializedProperty property, UxmlSerializedAttributeDescription attribute, Foldout field, bool bind = false)
@@ -766,16 +857,17 @@ namespace Unity.UI.Builder
                 var removeButton = new Button { name = buttonName, classList = { s_UxmlButtonUssClassName }, text = "Delete" };
                 removeButton.clicked += () =>
                 {
-                    RemoveUxmlObjectInstance(property, 0);
+                    AddUxmlObjectToSerializedData(property, null);
                 };
                 field.Q<Toggle>().Add(removeButton);
 
                 var desc = UxmlSerializedDataRegistry.GetDescription(serializedInstanced.GetType().DeclaringType.FullName);
-                var root = new UxmlAssetSerializedDataRoot { dataDescription = desc, rootPath = property.propertyPath + "."};
+                var root = new UxmlAssetSerializedDataRoot { dataDescription = desc, rootPath = property.propertyPath + "." };
                 field.Add(root);
-                GenerateSerializedAttributeFields(desc, root);
+
+                CreateUxmlObjectField(property, desc, root);
                 if (bind)
-                    root.Bind(m_CurrentElementSerializedObject);
+                    field.Bind(m_CurrentElementSerializedObject);
             }
             else
             {
@@ -784,11 +876,106 @@ namespace Unity.UI.Builder
                 {
                     ShowAddUxmlObjectMenu(addButton, attribute, t =>
                     {
-                        AddUxmlObjectInstance(property, t);
+                        AddUxmlObjectToSerializedData(property, t);
                     });
                 };
                 field.Q<Toggle>().Add(addButton);
             }
+        }
+
+        void TrackCustomPropertyDrawerListElements(VisualElement listField, SerializedProperty property)
+        {
+            for (int i = 0; i < property.arraySize; i++)
+            {
+                var item = property.GetArrayElementAtIndex(i);
+                TrackCustomPropertyDrawerFields(listField, item);
+            }
+        }
+
+        void TrackCustomPropertyDrawerFields(VisualElement uxmlObjectField, SerializedProperty property)
+        {
+            var instance = property.boxedValue;
+            if (instance == null)
+                return;
+
+            var dataDescription = UxmlSerializedDataRegistry.GetDescription(instance.GetType().DeclaringType.FullName);
+            var itemRoot = new UxmlAssetSerializedDataRoot
+            {
+                dataDescription = dataDescription,
+                rootPath = property.propertyPath + ".",
+                name = property.propertyPath
+            };
+            uxmlObjectField.Add(itemRoot);
+
+            foreach (var desc in dataDescription.serializedAttributes)
+            {
+                var fieldElement = new UxmlSerializedDataAttributeField { name = desc.serializedField.Name };
+                fieldElement.SetLinkedAttributeDescription(desc);
+
+                itemRoot.Add(fieldElement);
+                var p = property.FindPropertyRelative(desc.serializedField.Name);
+
+                if (desc.isUxmlObject)
+                {
+                    // Track a UxmlObject field/list that we do not have control of.
+                    fieldElement.TrackPropertyValue(p, OnTrackedUxmlObjectReferenceChanged);
+
+                    if (p.isArray)
+                        TrackCustomPropertyDrawerListElements(fieldElement, p);
+                    else
+                        TrackCustomPropertyDrawerFields(fieldElement, p);
+                }
+                else
+                {
+                    TrackElementPropertyValue(fieldElement, p);
+                }
+            }
+        }
+
+        void OnTrackedUxmlObjectReferenceChanged(object element, SerializedProperty property)
+        {
+            var fieldElement = element as VisualElement;
+            fieldElement.Clear();
+
+            if (property.isArray)
+                TrackCustomPropertyDrawerListElements(fieldElement, property);
+            else
+                TrackCustomPropertyDrawerFields(fieldElement, property);
+
+            SyncUxmlObjectChanges(property.propertyPath);
+        }
+
+        internal void AddUxmlObjectToSerializedData(SerializedProperty property, Type type)
+        {
+            Undo.RegisterCompleteObjectUndo(property.m_SerializedObject.targetObject, GetUndoMessage(property));
+
+            if (property.isArray)
+            {
+                property.InsertArrayElementAtIndex(property.arraySize);
+                property = property.GetArrayElementAtIndex(property.arraySize - 1);
+            }
+            property.managedReferenceValue = type != null ? UxmlSerializedDataCreator.CreateUxmlSerializedData(type.DeclaringType) : null;
+            property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            SyncUxmlObjectChanges(property.propertyPath);
+        }
+
+        internal void SyncUxmlObjectChanges(string propertyPath)
+        {
+            if (s_IsInsideUndoRedoUpdate)
+                return;
+
+            // We track the undo group so we can fold multiple change events into 1.
+            if (m_CurrentUndoGroup == null)
+            {
+                m_CurrentUndoGroup = Undo.GetCurrentGroup();
+                EditorApplication.delayCall += () => m_CurrentUndoGroup = null;
+            }
+
+            Undo.IncrementCurrentGroup();
+            CallDeserializeOnElement();
+            SynchronizePath(propertyPath, true);
+            NotifyAttributesChanged();
+            Undo.CollapseUndoOperations(m_CurrentUndoGroup.Value);
         }
 
         void ShowAddUxmlObjectMenu(VisualElement element, UxmlSerializedAttributeDescription attribute, Action<Type> action)
@@ -811,93 +998,6 @@ namespace Unity.UI.Builder
                 }
                 menu.DropDown(element.parent.worldBound, element, true);
             }
-        }
-
-        internal void AddUxmlObjectInstance(SerializedProperty property, Type serializedDataType)
-        {
-            var undoGroup = Undo.GetCurrentGroup();
-            var desc = UxmlSerializedDataRegistry.GetDescription(serializedDataType.DeclaringType.FullName);
-            var instance = desc.CreateDefaultSerializedData();
-
-            if (property.isArray)
-            {
-                property.InsertArrayElementAtIndex(property.arraySize);
-                var item = property.GetArrayElementAtIndex(property.arraySize - 1);
-                item.managedReferenceValue = instance;
-            }
-            else
-            {
-                property.managedReferenceValue = instance;
-            }
-
-            property.serializedObject.ApplyModifiedProperties();
-            Undo.IncrementCurrentGroup();
-            CallDeserializeOnElement();
-
-            SynchronizePath(property.propertyPath, true, out var _, out var _, out var _);
-            Undo.CollapseUndoOperations(undoGroup);
-            NotifyAttributesChanged();
-        }
-
-        internal void RemoveUxmlObjectInstance(SerializedProperty property, int index)
-        {
-            var undoGroup = Undo.GetCurrentGroup();
-
-            SynchronizePath(property.propertyPath, true, out var uxmlAsset, out var _, out var _);
-            Undo.IncrementCurrentGroup();
-
-            if (property.isArray)
-            {
-                if (property.arraySize == 0)
-                    return;
-
-                index = index == -1 ? property.arraySize - 1 : index;
-                property.DeleteArrayElementAtIndex(index);
-            }
-            else
-            {
-                if (property.managedReferenceValue == null)
-                    return;
-
-                property.managedReferenceValue = null;
-            }
-
-            property.serializedObject.ApplyModifiedProperties();
-            Undo.IncrementCurrentGroup();
-            UndoRecordDocument(BuilderConstants.ModifyUxmlObject);
-
-            if (property.isArray)
-            {
-                if (s_UxmlAssets.Count > index)
-                    m_UxmlDocument.RemoveUxmlObject(s_UxmlAssets[index].id);
-            }
-            else
-            {
-                if (uxmlAsset != null)
-                    m_UxmlDocument.RemoveUxmlObject(((UxmlObjectAsset)uxmlAsset).id);
-            }
-
-            CallDeserializeOnElement();
-            Undo.CollapseUndoOperations(undoGroup);
-
-            // We need to force an update because we made changes to the asset
-            property.serializedObject.UpdateIfRequiredOrScript();
-
-            NotifyAttributesChanged();
-        }
-
-        internal void MoveUxmlObjectInstances(SerializedProperty property, UxmlSerializedUxmlObjectAttributeDescription attributeDescription, int src, int dst)
-        {
-            var undoGroup = Undo.GetCurrentGroup();
-            SynchronizePath(property.propertyPath, true, out var uxmlAsset, out var _, out var _);
-            Undo.IncrementCurrentGroup();
-            UndoRecordDocument(BuilderConstants.ModifyUxmlObject);
-
-            m_UxmlDocument.MoveUxmlObject(uxmlAsset as UxmlAsset, attributeDescription.rootName, src, dst);
-            CallDeserializeOnElement();
-            Undo.CollapseUndoOperations(undoGroup);
-
-            NotifyAttributesChanged();
         }
 
         /// <summary>
@@ -929,7 +1029,7 @@ namespace Unity.UI.Builder
                 // We only care about changes when not in readOnly mode.
                 if (!readOnly)
                 {
-                    propertyField.RegisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindEvent);
+                    TrackElementPropertyValue(propertyField, propertyPath);
                 }
 
                 fieldElement.Add(propertyField);
@@ -969,7 +1069,7 @@ namespace Unity.UI.Builder
             UpdateAttributeField(fieldElement);
 
             // Context menu.
-            styleRow.AddManipulator(new ContextualMenuManipulator((evt) => BuildAttributeFieldContextualMenu(evt.menu, styleRow)));
+            styleRow.AddManipulator(new ContextualMenuManipulator(BuildAttributeFieldContextualMenu));
 
             if (fieldElement.GetFieldStatusIndicator() != null)
             {
@@ -995,27 +1095,6 @@ namespace Unity.UI.Builder
 
             e.rect = propertyField.GetTooltipRect();
             e.StopPropagation();
-        }
-
-        protected void OnSerializedPropertyBindEvent(SerializedPropertyBindEvent evt)
-        {
-            var target = (VisualElement)evt.target;
-
-            // Unregister in the event of a rebind
-            target.UnregisterCallback<SerializedPropertyChangeEvent>(OnPropertyFieldValueChange);
-
-            // When a propertyfield is first bound it sends a change event, we dont want this event so
-            // we need to wait until binding is completed before we register for change events.
-            EditorApplication.delayCall += () =>
-            {
-                if (target.name.Equals(builderSerializedPropertyFieldName))
-                    target.RegisterCallback<SerializedPropertyChangeEvent>(OnPropertyFieldValueChange);
-
-                // Remove the binding info so that the RightClickFieldMenuEvent does not use the SerializedObject menu instead.
-                var baseField = target.Q<BindableElement>();
-                if (baseField != null)
-                    baseField.userData = null;
-            };
         }
 
         /// <summary>
@@ -1056,32 +1135,48 @@ namespace Unity.UI.Builder
             }
         }
 
-        internal bool SynchronizePath(string propertyPath, bool changeUxmlAssets, out object uxmlAsset, out object serializedData, out object attributeOwner)
+        internal struct SynchronizePathResult
         {
-            var pathParts = propertyPath.Substring(serializedRootPath.Length).Split('.');
+            public bool success;
+            public UxmlAsset uxmlAsset;
+            public object serializedData;
+            public UxmlSerializedDataDescription dataDescription;
+            public UxmlSerializedAttributeDescription attributeDescription;
+            public object attributeOwner;
+        }
 
-            var undoCreated = false;
-            UxmlSerializedDataDescription currentDataDescription;
+        /// <summary>
+        /// Synchronizes the UXML serialized data to the current UXML asset and sub-UXML objects that are part of the path.
+        /// __Note__: To synchronize the attribute owner when extracting, call <see cref="CallDeserializeOnElement"/>.
+        /// </summary>
+        /// <param name="propertyPath">The full serialized property path.</param>
+        /// <param name="changeUxmlAssets">Whether to add missing UXML assets in the path.
+        /// <returns></returns>
+        internal SynchronizePathResult SynchronizePath(string propertyPath, bool changeUxmlAssets)
+        {
+            SynchronizePathResult result = default;
+
+            if (string.IsNullOrEmpty(propertyPath))
+                return result;
+
+            // Cache the split so we don't have to do it every time.
+            if (!m_PathPartsCache.TryGetValue(propertyPath, out var pathParts))
+            {
+                pathParts = propertyPath.Substring(serializedRootPath.Length).Split('.');
+                m_PathPartsCache[propertyPath] = pathParts;
+            }
+
+            m_DocumentUndoRecorded = false;
             object currentUxmlSerializedData = uxmlSerializedData;
-            object currentAttributesOwner = m_CurrentElement;
             var currentAttributesUxmlOwner = attributesUxmlOwner;
+            result.attributeOwner = m_CurrentElement;
 
             for (int i = 0; i < pathParts.Length; ++i)
             {
-                if (currentAttributesOwner == null)
-                {
-                    uxmlAsset = currentAttributesUxmlOwner;
-                    serializedData = currentUxmlSerializedData;
-                    attributeOwner = currentAttributesOwner;
-                    return false;
-                }
-
-                var attributeOwnerList = currentAttributesOwner as IList;
-                var uxmlSerializedDataList = currentUxmlSerializedData as IList;
-
                 // Is the current value a list?
-                if (attributeOwnerList != null && uxmlSerializedDataList != null)
+                if (currentUxmlSerializedData is IList serializedDataList)
                 {
+                    // Find the item index from the path and extract it.
                     var dataPath = pathParts[i + 1];
                     var arrayItemIndexStart = dataPath.IndexOf('[') + 1;
                     var arrayItemIndexEnd = dataPath.IndexOf(']');
@@ -1089,195 +1184,327 @@ namespace Unity.UI.Builder
                     var listIndex = int.Parse(indexString);
 
                     currentAttributesUxmlOwner = s_UxmlAssets[listIndex];
-                    currentAttributesOwner = attributeOwnerList[listIndex];
-                    currentUxmlSerializedData = uxmlSerializedDataList[listIndex];
+                    currentUxmlSerializedData = serializedDataList[listIndex];
+
+                    if (result.attributeOwner is IList attributeOwnerList && listIndex < attributeOwnerList.Count)
+                    {
+                        result.attributeOwner = attributeOwnerList[listIndex];
+                    }
+                    else
+                    {
+                        result.attributeOwner = null; // We could not extract the value
+                    }
 
                     i += 1;
                     continue;
                 }
-                else
-                {
-                    currentDataDescription = UxmlSerializedDataRegistry.GetDescription(currentAttributesOwner.GetType().FullName);
-                }
+
+                result.dataDescription = UxmlSerializedDataRegistry.GetDescription(currentUxmlSerializedData.GetType().DeclaringType.FullName);
 
                 var name = pathParts[i];
-                var attribute = currentDataDescription.FindAttributeWithPropertyName(name) as UxmlSerializedUxmlObjectAttributeDescription;
-                if (attribute == null)
+                result.attributeDescription = result.dataDescription.FindAttributeWithPropertyName(name);
+                var attributeObjectDescription = result.attributeDescription as UxmlSerializedUxmlObjectAttributeDescription;
+                if (attributeObjectDescription == null)
                     break;
 
-                attribute.TryGetValueFromObject(currentAttributesOwner, out currentAttributesOwner);
-                currentUxmlSerializedData = attribute.GetSerializedValue(currentUxmlSerializedData);
+                result.attributeDescription.TryGetValueFromObject(result.attributeOwner, out result.attributeOwner);
 
-                attributeOwnerList = currentAttributesOwner as IList;
-                uxmlSerializedDataList = currentUxmlSerializedData as IList;
-                var expectedListCount = currentUxmlSerializedData == null ? 0 : 1;
+                currentUxmlSerializedData = result.attributeDescription.GetSerializedValue(currentUxmlSerializedData);
+                var uxmlSerializedDataList = currentUxmlSerializedData as IList;
 
-                // Sync lists
-                if (attributeOwnerList != null && uxmlSerializedDataList != null)
+                // If we are not syncing a list then its a single field but we still treat it as a list.
+                if (uxmlSerializedDataList == null)
                 {
-                    expectedListCount = uxmlSerializedDataList.Count;
-
-                    // Add Attribute owner instances
-                    if (attributeOwnerList.Count < expectedListCount)
-                    {
-                        for (int j = attributeOwnerList.Count; j < expectedListCount; ++j)
-                        {
-                            var itemSerializedData = uxmlSerializedDataList[j] as UxmlSerializedData;
-                            var instance = itemSerializedData.CreateInstance();
-                            itemSerializedData.Deserialize(instance);
-                            attributeOwnerList.Add(instance);
-                        }
-                    }
-                    // Remove Attribute owner instances
-                    else if (attributeOwnerList.Count > expectedListCount)
-                    {
-                        var valuesToRemove = attributeOwnerList.Count - expectedListCount;
-                        for (int j = 0; j < valuesToRemove; ++j)
-                        {
-                            attributeOwnerList.RemoveAt(attributeOwnerList.Count - 1);
-                        }
-                    }
+                    s_SingleUxmlSerializedData[0] = currentUxmlSerializedData;
+                    uxmlSerializedDataList = s_SingleUxmlSerializedData;
                 }
 
-                s_UxmlAssets.Clear();
-                m_UxmlDocument.CollectUxmlObjectAssets(currentAttributesUxmlOwner, attribute.rootName, s_UxmlAssets);
-
-                if (s_UxmlAssets.Count != expectedListCount)
+                if (!SyncUxmlAssetsFromSerializedData(uxmlSerializedDataList, currentAttributesUxmlOwner, attributeObjectDescription, changeUxmlAssets))
                 {
                     if (!changeUxmlAssets)
                     {
-                        uxmlAsset = currentAttributesUxmlOwner;
-                        serializedData = currentUxmlSerializedData;
-                        attributeOwner = currentAttributesOwner;
-                        return false;
-                    }
-
-                    // Sync UxmlAsset list
-                    if (!undoCreated)
-                    {
-                        undoCreated = true;
-                        UndoRecordDocument(BuilderConstants.ModifyUxmlObject);
-                    }
-
-                    // Add UxmlObjectAssets
-                    if (s_UxmlAssets.Count < expectedListCount)
-                    {
-                        for (int j = s_UxmlAssets.Count; j < expectedListCount; ++j)
-                        {
-                            var fullTypeName = attributeOwnerList != null ? attributeOwnerList[j].GetType().FullName : currentAttributesOwner.GetType().FullName;
-                            var asset = m_UxmlDocument.AddUxmlObject(currentAttributesUxmlOwner, attribute.rootName, fullTypeName);
-
-                            // Assign the new asset id to the serialized data
-                            var sd = uxmlSerializedDataList != null ? (UxmlSerializedData)uxmlSerializedDataList[j] : (UxmlSerializedData)currentUxmlSerializedData;
-                            sd.uxmlAssetId = asset.id;
-
-                            s_UxmlAssets.Add(asset);
-                        }
-                    }
-                    // Remove UxmlObjectAssets
-                    else if (s_UxmlAssets.Count > expectedListCount)
-                    {
-                        var valuesToRemove = s_UxmlAssets.Count - expectedListCount;
-
-                        int j = 0;
-                        while (valuesToRemove > 0 && j < s_UxmlAssets.Count)
-                        {
-                            var asset = s_UxmlAssets[j];
-                            var assetFound = false;
-
-                            // Check if this asset still exists in the serialized data.
-                            for (int k = 0; k < uxmlSerializedDataList.Count; ++k)
-                            {
-                                var sd = uxmlSerializedDataList != null ? (UxmlSerializedData)uxmlSerializedDataList[k] : (UxmlSerializedData)currentUxmlSerializedData;
-                                if (sd.uxmlAssetId == asset.id)
-                                {
-                                    // This asset is still used, skip it.
-                                    assetFound = true;
-                                    break;
-                                }
-                            }
-
-                            if (!assetFound)
-                            {
-                                // Rewove it
-                                m_UxmlDocument.RemoveUxmlObject(asset.id);
-                                s_UxmlAssets.RemoveAt(j);
-                                valuesToRemove--;
-                            }
-
-                            j++;
-                        }
+                        result.uxmlAsset = currentAttributesUxmlOwner;
+                        result.serializedData = currentUxmlSerializedData;
+                        result.success = false;
+                        return result;
                     }
                 }
 
-                if (!attribute.isList)
+                if (!attributeObjectDescription.isList)
                     currentAttributesUxmlOwner = currentUxmlSerializedData == null ? null : s_UxmlAssets[0];
             }
 
-            uxmlAsset = currentAttributesUxmlOwner;
-            serializedData = currentUxmlSerializedData;
-            attributeOwner = currentAttributesOwner;
+            // We need to update the serialized object if we made changes.
+            if (changeUxmlAssets)
+                m_CurrentElementSerializedObject.UpdateIfRequiredOrScript();
+
+            result.uxmlAsset = currentAttributesUxmlOwner;
+            result.serializedData = currentUxmlSerializedData;
+            result.success = true;
+            return result;
+        }
+
+        bool SyncUxmlAssetsFromSerializedData(IList uxmlSerializedData, UxmlAsset parentAsset,
+            UxmlSerializedUxmlObjectAttributeDescription attributeDescription, bool canMakeChanges)
+        {
+            bool contentsChanged = false;
+
+            s_UxmlAssets.Clear();
+            using var listPool = ListPool<UxmlObjectAsset>.Get(out var collectedUxmlAssets);
+            m_UxmlDocument.CollectUxmlObjectAssets(parentAsset, attributeDescription.rootName, collectedUxmlAssets);
+
+            // Sync the list by checking each item is at the expected index and moving/adding items as needed.
+            using var hashSetPool = HashSetPool<int>.Get(out var duplicateIds);
+            for (int j = 0; j < uxmlSerializedData.Count; ++j)
+            {
+                var currentSerializedData = uxmlSerializedData[j] as UxmlSerializedData;
+
+                if (currentSerializedData != null && currentSerializedData.uxmlAssetId != 0)
+                {
+                    // When a list element is copied it may also copy the id of the original element.
+                    // If the id has already been used we clear it so a new one can be assigned.
+                    if (duplicateIds.Contains(currentSerializedData.uxmlAssetId))
+                        currentSerializedData.uxmlAssetId = 0;
+                }
+
+                // Find matching UxmlObjectAsset
+                if (!ExtractOrCreateUxmlSerializedDataUxmlAsset(currentSerializedData, parentAsset, attributeDescription,
+                    canMakeChanges, collectedUxmlAssets, out var foundUxmlAsset, j))
+                {
+                    if (!canMakeChanges)
+                        return false;
+                    contentsChanged = true;
+                }
+
+                duplicateIds.Add(foundUxmlAsset.id);
+                s_UxmlAssets.Add(foundUxmlAsset);
+            }
+
+            // If we uxml assets remnaining then the serialized data must have been removed and we should do the same.
+            for (int j = 0; j < collectedUxmlAssets.Count; ++j)
+            {
+                if (collectedUxmlAssets[j] == null)
+                    continue;
+
+                contentsChanged = true;
+                RecordDocumentUndoOnce();
+
+                // We need to do this to ensure that any dependencies are also removed.
+                m_UxmlDocument.RemoveUxmlObject(collectedUxmlAssets[j].id);
+            }
+
+            if (contentsChanged)
+                m_UxmlDocument.SetUxmlObjectAssets(parentAsset, attributeDescription.rootName, s_UxmlAssets);
+
             return true;
         }
 
-        void OnPropertyFieldValueChange(SerializedPropertyChangeEvent evt)
+        bool ExtractOrCreateUxmlSerializedDataUxmlAsset(UxmlSerializedData uxmlSerializedData, UxmlAsset parentAsset,
+            UxmlSerializedUxmlObjectAttributeDescription attributeDescription, bool canMakeChanges,
+            List<UxmlObjectAsset> uxmlObjectAssets, out UxmlObjectAsset uxmlAsset, int expectedIndex)
         {
-            if (m_CurrentElement == null)
+            // If the asset id is 0 then we do not currently have a UxmlAsset for this serialized data
+            if (uxmlSerializedData?.uxmlAssetId != 0)
             {
-                return;
+                // Check if the data is at the expected index.
+                if (expectedIndex < uxmlObjectAssets.Count)
+                {
+                    if (uxmlObjectAssets[expectedIndex] != null &&
+                        ((uxmlSerializedData == null && uxmlObjectAssets[expectedIndex]?.isNull == true) ||
+                        uxmlSerializedData?.uxmlAssetId == uxmlObjectAssets[expectedIndex]?.id))
+                    {
+                        uxmlAsset = uxmlObjectAssets[expectedIndex];
+
+                        // We dont remove the asset from the list as it will break the expected index but we do set it to null
+                        uxmlObjectAssets[expectedIndex] = null;
+                        return true;
+                    }
+                }
+
+                if (!canMakeChanges)
+                {
+                    uxmlAsset = null;
+                    return false;
+                }
+
+                RecordDocumentUndoOnce();
+
+                // See if we can find it at another index
+                for (int i = 0; i < uxmlObjectAssets.Count; ++i)
+                {
+                    if (uxmlObjectAssets[i] == null)
+                        continue;
+
+                    if ((uxmlSerializedData == null && uxmlObjectAssets[i].isNull) ||
+                        uxmlSerializedData?.uxmlAssetId == uxmlObjectAssets[i].id)
+                    {
+                        uxmlAsset = uxmlObjectAssets[i];
+                        uxmlObjectAssets[i] = null;
+                        return false;
+                    }
+                }
             }
 
-            var undoGroup = Undo.GetCurrentGroup();
-
-            var fieldElement = GetRootFieldElement(evt.target as VisualElement);
-            var description = fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
-
-            // If the attribute is bound and we're not editing its inline value, we can skip that change.
-            var inlinePropName = BuilderConstants.InspectorFieldBindingInlineEditingEnabledPropertyName;
-            var isEditingInlineStyle = fieldElement.HasProperty(inlinePropName) && (bool)fieldElement.GetProperty(inlinePropName);
-            if (!isEditingInlineStyle && DataBindingUtility.TryGetBinding(m_CurrentElement, description.name, out _))
+            if (!canMakeChanges)
             {
-                return;
+                uxmlAsset = null;
+                return false;
             }
 
-            object currentAttributeOwner = m_CurrentElement;
+            RecordDocumentUndoOnce();
+
+            // We could not find the asset so we need to create a new one.
+            uxmlAsset = CreateUxmlObjectAsset(attributeDescription, uxmlSerializedData, parentAsset);
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if any serialized data fields are not set to their default values. If any are not, apply those changes to the UXML asset.
+        /// </summary>
+        /// <param name="uxmlSerializedData">The serialized data to check for non-default values.</param>
+        /// <param name="uxmlAsset">The asset to apply the uxml attributes to.</param>
+        void SyncSerializedDataToNewUxmlAsset(UxmlSerializedData uxmlSerializedData, UxmlAsset uxmlAsset)
+        {
+            if (uxmlSerializedData == null)
+                return;
+
+            var description = UxmlSerializedDataRegistry.GetDescription(uxmlSerializedData.GetType().DeclaringType.FullName);
+            foreach (var attribute in description.serializedAttributes)
+            {
+                if (attribute.isUxmlObject)
+                {
+                    var attributeUxmlObjectDescription = attribute as UxmlSerializedUxmlObjectAttributeDescription;
+                    if (attribute.isList)
+                    {
+                        // Extract the serialized data list
+                        var serializedDataList = (IList)attribute.GetSerializedValue(uxmlSerializedData);
+                        foreach (UxmlSerializedData serializedDataItem in serializedDataList)
+                        {
+                            CreateUxmlObjectAsset(attributeUxmlObjectDescription, serializedDataItem, uxmlAsset);
+                        }
+                    }
+                    else
+                    {
+                        var serializedData = attribute.GetSerializedValue(uxmlSerializedData) as UxmlSerializedData;
+                        CreateUxmlObjectAsset(attributeUxmlObjectDescription, serializedData, uxmlAsset);
+                    }
+                }
+                else
+                {
+                    var attributeValue = attribute.GetSerializedValue(uxmlSerializedData);
+                    if (!UxmlAttributeComparison.ObjectEquals(attributeValue, attribute.defaultValue))
+                    {
+                        if (attributeValue == null || !UxmlAttributeConverter.TryConvertToString(attributeValue, m_UxmlDocument, out var stringValue))
+                            stringValue = attributeValue?.ToString();
+
+                        PostAttributeValueChange(attribute.name, stringValue, uxmlAsset);
+                    }
+                }
+            }
+        }
+
+        UxmlObjectAsset CreateUxmlObjectAsset(UxmlSerializedUxmlObjectAttributeDescription attribute, UxmlSerializedData serializedData, UxmlAsset parentAsset)
+        {
+            var fullTypeName = serializedData == null ? UxmlAsset.NullNodeType : serializedData.GetType().DeclaringType.FullName;
+            var uxmlAsset = m_UxmlDocument.AddUxmlObject(parentAsset, attribute.rootName, fullTypeName);
+
+            // Assign the new asset id to the serialized data
+            if (serializedData != null)
+            {
+                SyncSerializedDataToNewUxmlAsset(serializedData, uxmlAsset);
+                serializedData.uxmlAssetId = uxmlAsset.id;
+            }
+
+            return uxmlAsset;
+        }
+
+        void RecordDocumentUndoOnce()
+        {
+            if (!m_DocumentUndoRecorded)
+            {
+                UndoRecordDocument(BuilderConstants.ModifyUxmlObject);
+                m_DocumentUndoRecorded = true;
+            }
+        }
+
+        protected void TrackElementPropertyValue(VisualElement target, SerializedProperty property)
+        {
+            // We use TrackPropertyValue because it does not send a change event when it is bound and its safer
+            // than relying on change events which may not always be sent, such as when using a custom drawer.
+            target.TrackPropertyValue(property, OnTrackedPropertyValueChange);
+        }
+
+        protected void TrackElementPropertyValue(VisualElement target, string path)
+        {
+            var property = m_CurrentElementSerializedObject.FindProperty(path);
+            TrackElementPropertyValue(target, property);
+        }
+
+        void OnTrackedPropertyValueChange(object obj, SerializedProperty property)
+        {
+            if (s_IsInsideUndoRedoUpdate || m_CurrentElement == null || obj is not VisualElement target || target.panel == null)
+                return;
+
+            // We track the undo group so we can fold multiple change events into 1.
+            if (m_CurrentUndoGroup == null)
+            {
+                m_CurrentUndoGroup = Undo.GetCurrentGroup();
+                EditorApplication.delayCall += () => m_CurrentUndoGroup = null;
+            }
+
+            var fieldElement = GetRootFieldElement(target);
+
             var currentAttributeUxmlOwner = attributesUxmlOwner;
             var currentUxmlSerializedData = uxmlSerializedData;
 
-            if (fieldElement.GetFirstAncestorOfType<UxmlAssetSerializedDataRoot>()?.dataDescription.isUxmlObject == true)
-            {
-                SynchronizePath(evt.changedProperty.propertyPath, true, out var uxmlAsset, out var serializedData, out currentAttributeOwner);
-                currentAttributeUxmlOwner = uxmlAsset as UxmlAsset;
-                currentUxmlSerializedData = serializedData as UxmlSerializedData;
-            }
+            Undo.IncrementCurrentGroup();
+            var revertGroup = Undo.GetCurrentGroup();
+            var result = SynchronizePath(property.propertyPath, true);
 
-            // We choose to disregard callbacks when the value remains unchanged,
-            // which can occur during the initial binding of a field or during an Unset operation.
-            description.TryGetValueFromObject(currentAttributeOwner, out var previousValue);
+            var description = result.attributeDescription ?? fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
+            currentAttributeUxmlOwner = result.uxmlAsset;
+            currentUxmlSerializedData = result.serializedData as UxmlSerializedData;
             var newValue = description.GetSerializedValue(currentUxmlSerializedData);
 
-            // Unity serializes null values as default objects, so we need to do the same to compare.
-            if (!description.isUxmlObject && previousValue == null && !typeof(Object).IsAssignableFrom(description.type) && description.type.GetConstructor(Type.EmptyTypes) != null)
-                previousValue = Activator.CreateInstance(description.type);
+            // We choose to disregard callbacks when the value remains unchanged,
+            // which can occur during an Undo/Redo when the bound fields are updated.
+            // To do this we compare the value on the attribute owner to its serialized value,
+            // if they match then we consider them to have not changed.
+            if (result.attributeOwner != null)
+            {
+                description.TryGetValueFromObject(result.attributeOwner, out var previousValue);
 
-            if (UxmlAttributeComparison.ObjectEquals(previousValue, newValue))
-                return;
+                // Unity serializes null values as default objects, so we need to do the same to compare.
+                if (!description.isUxmlObject && previousValue == null && !typeof(Object).IsAssignableFrom(description.type) && description.type.GetConstructor(Type.EmptyTypes) != null)
+                    previousValue = Activator.CreateInstance(description.type);
+
+                if (UxmlAttributeComparison.ObjectEquals(previousValue, newValue))
+                {
+                    Undo.RevertAllDownToGroup(revertGroup);
+                    return;
+                }
+            }
 
             // Apply changes to the whole element
-            m_CurrentElementSerializedObject.ApplyModifiedProperties();
+            m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
 
             CallDeserializeOnElement();
 
             // Now resync as its possible that the setters made changes during Deserialize, e.g clamping values.
             m_SerializedDataDescription.SyncSerializedData(m_CurrentElement, uxmlSerializedData);
-            Undo.IncrementCurrentGroup();
 
             if (newValue == null || !UxmlAttributeConverter.TryConvertToString(newValue, m_UxmlDocument, out var stringValue))
                 stringValue = newValue?.ToString();
 
             PostAttributeValueChange(fieldElement, stringValue, currentAttributeUxmlOwner);
 
-            Undo.CollapseUndoOperations(undoGroup);
+            // Use the undo group of the field if it has one, otherwise use the current undo group
+            var fieldUndoGroup = (int?)fieldElement.Q<BindableElement>()?.GetProperty(SerializedObjectBindingBase.UndoGroupPropertyKey);
+            Undo.CollapseUndoOperations(fieldUndoGroup ?? m_CurrentUndoGroup.Value);
+
+            // Update the serialized object to reflect the changes made by PostAttributeValueChange.
+            m_CurrentElementSerializedObject.UpdateIfRequiredOrScript();
         }
 
         /// <summary>
@@ -1340,6 +1567,16 @@ namespace Unity.UI.Builder
 
             UpdateAttributeOverrideStyle(fieldElement);
             UpdateFieldStatus(fieldElement);
+        }
+
+        void UpdateCustomPropertyDrawerAttributeOverrideStyle(CustomPropertyDrawerField fieldElement)
+        {
+            // When an assembly reload occurs this may be called before the view is fully initialized.
+            if (m_CurrentElementSerializedObject == null)
+                return;
+            var overridde = IsAttributeOverriden(fieldElement.Q<PropertyField>().bindingPath);
+            var style = fieldElement.GetFirstAncestorOfType<BuilderStyleRow>();
+            style?.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, overridde);
         }
 
         internal virtual void UpdateAttributeOverrideStyle(VisualElement fieldElement)
@@ -1453,7 +1690,7 @@ namespace Unity.UI.Builder
             var valueInfo = GetValueInfo(fieldElement);
 
             fieldElement.SetProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName, valueInfo);
-            BuilderInspector.UpdateFieldStatusIconAndStyling(currentElement, fieldElement, valueInfo);
+            BuilderInspector.UpdateFieldStatusIconAndStyling(inspector?.currentVisualElement, fieldElement, valueInfo, false);
 
             if (currentFieldSource == AttributeFieldSource.UxmlTraits)
                 BuilderInspector.UpdateFieldTooltip(fieldElement, valueInfo, m_CurrentElement);
@@ -1484,9 +1721,10 @@ namespace Unity.UI.Builder
                     return false;
                 }
 
-                if (SynchronizePath(rootElement.rootPath, false, out var uxmlAsset, out var _, out var attributeOwner))
+                var result = SynchronizePath(rootElement.rootPath, false);
+                if (result.success)
                 {
-                    return IsAttributeOverriden(attributeOwner, uxmlAsset as UxmlAsset, attribute);
+                    return IsAttributeOverriden(result.uxmlAsset == m_CurrentUxmlElement ? m_CurrentElement : null, result.uxmlAsset, attribute);
                 }
 
                 return false;
@@ -1507,12 +1745,12 @@ namespace Unity.UI.Builder
         }
 
         /// <summary>
-         /// Indicates whether the specified attribute is defined in the specified uxml element.
-         /// </summary>
+        /// Indicates whether the specified attribute is defined in the specified UMXL element.
+        /// </summary>
         /// <param name="attributeOwner">An instance created from the uxml element that owns the related xml attribute.</param>
         /// <param name="attributeUxmlOwner">The uxml element that owns the uxml attribute to evaluate.</param>
         /// <param name="attribute">The uxml attribute.</param>
-         /// <returns></returns>
+        /// <returns></returns>
         public static bool IsAttributeOverriden(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
         {
             if (attribute is UxmlSerializedAttributeDescription { isUxmlObject: true })
@@ -1556,6 +1794,17 @@ namespace Unity.UI.Builder
                 return true;
             }
 
+            return false;
+        }
+
+        public bool IsAttributeOverriden(string propertyPath)
+        {
+            var result = SynchronizePath(propertyPath, false);
+            if (result.success)
+            {
+                return result.uxmlAsset.HasAttribute(result.attributeDescription.name) ||
+                    (result.attributeDescription.isUxmlObject && result.uxmlAsset != null);
+            }
             return false;
         }
 
@@ -1626,6 +1875,61 @@ namespace Unity.UI.Builder
             }
         }
 
+        protected VisualElement FindField(string propertyPath)
+        {
+            foreach (var e in fieldsContainer.Query().Build())
+            {
+                if (e is PropertyField propertyField)
+                {
+                    if (propertyField.bindingPath == propertyPath)
+                        return e;
+                }
+                else if (e is BindableElement bindableElement)
+                {
+                    if (bindableElement.bindingPath == propertyPath)
+                        return e;
+                }
+
+                if (e.userData is SerializedProperty property && property.propertyPath == propertyPath)
+                    return e;
+            }
+            return null;
+        }
+
+        void BuildAttributeFieldContextualMenu(ContextualMenuPopulateEvent evt) => BuildAttributeFieldContextualMenu(evt.menu, evt.currentTarget as BuilderStyleRow);
+
+        void BuildCustomPropertyDrawerMenu(ContextualMenuPopulateEvent evt)
+        {
+            var target = evt.triggerEvent.target as VisualElement;
+            var property = target.userData as SerializedProperty ?? target.parent.userData as SerializedProperty;
+            if (property == null)
+                return;
+
+            evt.menu.AppendAction(
+                BuilderConstants.ContextMenuUnsetMessage,
+                (a) => UnsetAttributeProperty(a.userData as SerializedProperty, true),
+                action =>
+                {
+                    if (action.userData is not SerializedProperty property)
+                        return DropdownMenuAction.Status.Disabled;
+
+                    if (IsAttributeOverriden(property.propertyPath))
+                        return DropdownMenuAction.Status.Normal;
+                    return DropdownMenuAction.Status.Disabled;
+                },
+                property);
+
+            evt.menu.AppendAction(
+                BuilderConstants.ContextMenuUnsetAllMessage,
+                (action) => UnsetAllAttributes(),
+                action =>
+                {
+                    if (IsAnyAttributeSet())
+                        return DropdownMenuAction.Status.Normal;
+                    return DropdownMenuAction.Status.Disabled;
+                });
+        }
+
         protected virtual void BuildAttributeFieldContextualMenu(DropdownMenu menu, BuilderStyleRow styleRow)
         {
             var fields = styleRow.GetLinkedFieldElements();
@@ -1655,9 +1959,11 @@ namespace Unity.UI.Builder
                     if (currentFieldSource == AttributeFieldSource.UxmlSerializedData)
                     {
                         var root = field.GetFirstAncestorOfType<UxmlAssetSerializedDataRoot>();
-                        if (SynchronizePath(root.rootPath, false, out var uxmlAsset, out var _, out var attributeOwner))
+
+                        var result = SynchronizePath(root.rootPath, false);
+                        if (result.success)
                         {
-                            hasAttributeOverride = IsAttributeOverriden(attributeOwner, uxmlAsset as UxmlAsset, field.GetLinkedAttributeDescription());
+                            hasAttributeOverride = IsAttributeOverriden(result.uxmlAsset == m_CurrentUxmlElement ? m_CurrentElement : null, result.uxmlAsset, field.GetLinkedAttributeDescription());
                         }
                     }
                     else
@@ -1675,14 +1981,10 @@ namespace Unity.UI.Builder
                 (action) => UnsetAllAttributes(),
                 action =>
                 {
-                    if (action.userData is not VisualElement)
-                        return DropdownMenuAction.Status.Disabled;
-
                     if (IsAnyAttributeSet())
                         return DropdownMenuAction.Status.Normal;
                     return DropdownMenuAction.Status.Disabled;
-                },
-                fieldElement);
+                });
         }
 
         internal bool IsAnyAttributeSet()
@@ -1801,7 +2103,7 @@ namespace Unity.UI.Builder
                 // Notify of changes.
                 NotifyAttributesChanged();
                 Refresh();
-                builder.inspector.headerSection.Refresh();
+                inspector.headerSection.Refresh();
             }
 
             Undo.CollapseUndoOperations(undoGroup);
@@ -1838,7 +2140,7 @@ namespace Unity.UI.Builder
             return factories[0].GetTraits() as UxmlTraits;
         }
 
-        internal void CallDeserializeOnElement()
+        protected virtual void CallDeserializeOnElement()
         {
             if (currentFieldSource == AttributeFieldSource.UxmlTraits || uxmlSerializedData == null)
                 return;
@@ -1883,11 +2185,13 @@ namespace Unity.UI.Builder
             traits.Init(visualElement, vea, context);
         }
 
-        public void UnsetAttributeProperty(VisualElement fieldElement, bool removeBinding)
+        public void UnsetAttributeProperty(string propertyPath, bool removeBinding)
         {
-            var attributeName = GetAttributeName(fieldElement);
-
             UndoRecordDocument(BuilderConstants.ChangeAttributeValueUndoMessage);
+
+            var result = SynchronizePath(propertyPath, false);
+            if (!result.success)
+                return;
 
             // Unset value in asset.
             if (m_IsInTemplateInstance)
@@ -1901,14 +2205,72 @@ namespace Unity.UI.Builder
                     var hierarchyView = builder.hierarchy.elementHierarchyView;
                     var selectionId = hierarchyView.GetSelectedItemId();
 
-                    templateAsset.RemoveAttributeOverride(m_CurrentElement.name, attributeName);
+                    templateAsset.RemoveAttributeOverride(m_CurrentElement.name, result.attributeDescription.name);
 
                     builder.OnEnableAfterAllSerialization();
 
                     hierarchyView.SelectItemById(selectionId);
                 }
 
-                UnsetEnumValue(attributeName, removeBinding);
+                UnsetEnumValue(result.attributeDescription.name, removeBinding);
+            }
+            else
+            {
+                if (removeBinding)
+                {
+                    var bindingProperty = result.attributeDescription.serializedField.Name;
+                    RemoveBindingFromSerializedData(null, bindingProperty);
+                }
+
+                result.uxmlAsset.RemoveAttribute(result.attributeDescription.name);
+                result.attributeDescription.SetSerializedValue(result.serializedData, result.attributeDescription.defaultValue);
+                CallDeserializeOnElement();
+
+                UnsetEnumValue(result.attributeDescription.name, removeBinding);
+
+                NotifyAttributesChanged();
+
+                m_CurrentElementSerializedObject.UpdateIfRequiredOrScript();
+                Refresh();
+            }
+        }
+
+        public void UnsetAttributeProperty(SerializedProperty property, bool removeBinding)
+        {
+            var result = SynchronizePath(property.propertyPath, false);
+            if (!result.success)
+                return;
+
+            UndoRecordDocument(BuilderConstants.ChangeAttributeValueUndoMessage);
+
+            // Unset value in asset.
+            if (m_IsInTemplateInstance)
+            {
+                UnsetTemplateAttribute(result.attributeDescription.name, removeBinding);
+            }
+            else
+            {
+                result.uxmlAsset.RemoveAttribute(result.attributeDescription.name);
+                result.attributeDescription.SetSerializedValue(result.serializedData, result.attributeDescription.defaultValue);
+                CallDeserializeOnElement();
+
+                UnsetEnumValue(result.attributeDescription.name, removeBinding);
+
+                NotifyAttributesChanged(result.attributeDescription.name);
+                Refresh();
+            }
+        }
+
+        public void UnsetAttributeProperty(VisualElement fieldElement, bool removeBinding)
+        {
+            var attributeName = GetAttributeName(fieldElement);
+
+            UndoRecordDocument(BuilderConstants.ChangeAttributeValueUndoMessage);
+
+            // Unset value in asset.
+            if (m_IsInTemplateInstance)
+            {
+                UnsetTemplateAttribute(attributeName, removeBinding);
             }
             else
             {
@@ -1917,9 +2279,9 @@ namespace Unity.UI.Builder
 
                 if (fieldElement.GetFirstAncestorOfType<UxmlAssetSerializedDataRoot>() is { } dataRoot && dataRoot.dataDescription.isUxmlObject)
                 {
-                    SynchronizePath(dataRoot.rootPath, false, out var uxmlOwner, out var serializedData, out var _);
-                    currentAttributesUxmlOwner = uxmlOwner as UxmlAsset;
-                    currentSerializedData = serializedData as UxmlSerializedData;
+                    var result = SynchronizePath(dataRoot.rootPath, false);
+                    currentAttributesUxmlOwner = result.uxmlAsset;
+                    currentSerializedData = result.serializedData as UxmlSerializedData;
                 }
 
                 if (currentFieldSource == AttributeFieldSource.UxmlTraits)
@@ -1951,6 +2313,27 @@ namespace Unity.UI.Builder
                 NotifyAttributesChanged(attributeName);
                 Refresh();
             }
+        }
+
+        void UnsetTemplateAttribute(string attributeName, bool removeBinding)
+        {
+            var templateContainer = BuilderAssetUtilities.GetVisualElementRootTemplate(m_CurrentElement);
+            var templateAsset = templateContainer.GetVisualElementAsset() as TemplateAsset;
+
+            if (templateAsset != null)
+            {
+                var builder = Builder.ActiveWindow;
+                var hierarchyView = builder.hierarchy.elementHierarchyView;
+                var selectionId = hierarchyView.GetSelectedItemId();
+
+                templateAsset.RemoveAttributeOverride(m_CurrentElement.name, attributeName);
+
+                builder.OnEnableAfterAllSerialization();
+
+                hierarchyView.SelectItemById(selectionId);
+            }
+
+            UnsetEnumValue(attributeName, removeBinding);
         }
 
         protected void UnsetEnumValue(string attributeName, bool removeBinding)
@@ -1996,12 +2379,18 @@ namespace Unity.UI.Builder
             if (currentFieldSource == AttributeFieldSource.UxmlSerializedData)
             {
                 var prop = m_CurrentElementSerializedObject.FindProperty(serializedRootPath + field.bindingPath);
-                prop.stringValue = evt.newValue;
-                m_CurrentElementSerializedObject.ApplyModifiedProperties();
-                CallDeserializeOnElement();
-            }
 
-            OnAttributeValueChange(evt);
+                Undo.RegisterCompleteObjectUndo(prop.m_SerializedObject.targetObject, GetUndoMessage(prop));
+
+                prop.stringValue = evt.newValue;
+                m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+                OnTrackedPropertyValueChange(field, prop);
+            }
+            else
+            {
+                OnAttributeValueChange(evt);
+            }
         }
 
         void OnAttributeValueChanged(VisualElement field, UxmlAttributeDescription attribute, object value, string uxmlValue)
@@ -2058,7 +2447,24 @@ namespace Unity.UI.Builder
 
             using var marker = k_PostAttributeValueChangedMarker.Auto();
             var attributeName = GetAttributeName(field);
+            PostAttributeValueChange(attributeName, value, uxmlAsset);
 
+            // Mark field as overridden.
+            if (field.GetFirstAncestorOfType<CustomPropertyDrawerField>() is { } customPropertyDrawer)
+                UpdateCustomPropertyDrawerAttributeOverrideStyle(customPropertyDrawer);
+            else
+                UpdateAttributeOverrideStyle(field);
+
+            // Notify of changes.
+            NotifyAttributesChanged(attributeName);
+
+            var styleRow = GetLinkedStyleRow(field);
+            if (styleRow != null)
+                UpdateFieldStatus(field);
+        }
+
+        void PostAttributeValueChange(string attributeName, string value, UxmlAsset uxmlAsset = null)
+        {
             UndoRecordDocument(BuilderConstants.ChangeAttributeValueUndoMessage);
 
             // Set value in asset.
@@ -2096,16 +2502,15 @@ namespace Unity.UI.Builder
                 // Call Init();
                 CallInitOnElement();
             }
+        }
 
-            // Mark field as overridden.
-            UpdateAttributeOverrideStyle(field);
+        static string GetUndoMessage(SerializedProperty prop)
+        {
+            var undoMessage = $"Modified {prop.name}";
+            if (prop.m_SerializedObject.targetObject.name != string.Empty)
+                undoMessage += $" in {prop.m_SerializedObject.targetObject.name}";
 
-            // Notify of changes.
-            NotifyAttributesChanged(attributeName);
-
-            var styleRow = GetLinkedStyleRow(field);
-            if (styleRow != null)
-                UpdateFieldStatus(field);
+            return undoMessage;
         }
     }
 }

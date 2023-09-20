@@ -69,18 +69,20 @@ namespace UnityEngine.Rendering
             var pipelineExistsAndSupportsRequest = false;
             if (GraphicsSettings.currentRenderPipeline != null)
             {
-                if(RenderPipelineManager.currentPipeline == null)
+                if (RenderPipelineManager.currentPipeline == null)
                 {
-                    RenderPipelineManager.PrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
+                    bool renderPipelineConstructed = RenderPipelineManager.TryPrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
+                    Debug.Assert(renderPipelineConstructed);
                 }
-                pipelineExistsAndSupportsRequest =
-                    RenderPipelineManager.currentPipeline.IsRenderRequestSupported(camera, data);
+
+                if (RenderPipelineManager.currentPipeline != null)
+                    pipelineExistsAndSupportsRequest = RenderPipelineManager.currentPipeline.IsRenderRequestSupported(camera, data);
             }
             if (data is ObjectIdRequest)
             {
                 // There is a built-in fallback option available for ObjectIdRequest in editor;
                 // see Camera.SubmitRenderRequest
-                return true;
+                pipelineExistsAndSupportsRequest = true;
             }
             return pipelineExistsAndSupportsRequest;
         }

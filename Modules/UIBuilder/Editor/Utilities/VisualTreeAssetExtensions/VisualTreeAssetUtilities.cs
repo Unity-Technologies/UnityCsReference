@@ -22,8 +22,6 @@ namespace Unity.UI.Builder
         public static VisualTreeAsset CreateInstance()
         {
             var vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
-            vta.visualElementAssets = new List<VisualElementAsset>();
-            vta.templateAssets = new List<TemplateAsset>();
 
             vta.hideFlags = HideFlags.DontUnloadUnusedAsset;
 

@@ -23,6 +23,12 @@ namespace UnityEditor.UIElements
         public override object source => DragAndDrop.GetGenericData(dragSourceKey);
         public override IEnumerable<Object> unityObjectReferences => DragAndDrop.objectReferences;
 
+        public override string[] paths
+        {
+            get => DragAndDrop.paths;
+            set => DragAndDrop.paths = value;
+        }
+
         public override DragVisualMode visualMode
         {
             get
@@ -55,6 +61,7 @@ namespace UnityEditor.UIElements
             if (args.unityObjectReferences != null)
                 DragAndDrop.objectReferences = args.unityObjectReferences.ToArray();
 
+            paths = args.assetPaths;
             SetVisualMode(args.visualMode);
             foreach (DictionaryEntry entry in args.genericData)
                 DragAndDrop.SetGenericData((string)entry.Key, entry.Value);

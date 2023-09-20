@@ -14,8 +14,14 @@ namespace UnityEditor.Build.Rendering
     {
         public int callbackOrder => (int) ExecutionOrder.StripRenderPipelineGlobalSettingsAsset;
 
+        static bool s_IsCurrentRenderPipelineGlobalsSettingsDirty;
+        static bool s_IsGraphicsSettingsDirty;
+
         public void OnPreprocessBuild(BuildReport report)
         {
+            s_IsCurrentRenderPipelineGlobalsSettingsDirty = false;
+            s_IsGraphicsSettingsDirty = false;
+
             var renderPipelineAssets = ListPool<RenderPipelineAsset>.Get();
 
             var buildTargetGroupName = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget).ToString();
@@ -24,8 +30,24 @@ namespace UnityEditor.Build.Rendering
             if (renderPipelineAssets.Count > 0 && renderPipelineAssets[0] != null)
             {
                 // Top level stripping, even if there are multiple pipelines registered into the project, as we are building we are making sure the only one that is being transferred into the player is the current one.
-                if(renderPipelineAssets[0].pipelineType != null)
-                    GraphicsSettings.currentRenderPipelineGlobalSettings = EditorGraphicsSettings.GetRenderPipelineGlobalSettingsAsset(renderPipelineAssets[0].pipelineType);
+                if (renderPipelineAssets[0].pipelineType != null)
+                {
+                    var renderPipelineGlobalSettingsAsset = EditorGraphicsSettings.GetRenderPipelineGlobalSettingsAsset(renderPipelineAssets[0].pipelineType);
+
+                    if (renderPipelineGlobalSettingsAsset != null)
+                    {
+                        s_IsGraphicsSettingsDirty = EditorUtility.IsDirty(GraphicsSettings.GetGraphicsSettings());
+                        s_IsCurrentRenderPipelineGlobalsSettingsDirty = EditorUtility.IsDirty(renderPipelineGlobalSettingsAsset);
+
+                        // The asset needs to be dirty, in order to tell the BuildPlayer to always transfer the latest state of the asset.
+                        // The main reason is due to IRenderPipelineGraphicsSettings stripping from the user side.
+
+                        if (!s_IsCurrentRenderPipelineGlobalsSettingsDirty)
+                            EditorUtility.SetDirty(renderPipelineGlobalSettingsAsset);
+
+                        GraphicsSettings.currentRenderPipelineGlobalSettings = renderPipelineGlobalSettingsAsset;
+                    }
+                }
                 else
                     Debug.LogWarning($"{renderPipelineAssets[0].GetType().Name} must inherit from {nameof(RenderPipelineAsset)}<T> instead of {nameof(RenderPipelineAsset)} to benefit from {nameof(RenderPipelineGlobalSettingsStripper)}.");
             }
@@ -35,7 +57,17 @@ namespace UnityEditor.Build.Rendering
 
         public void OnPostprocessBuild(BuildReport report)
         {
-            GraphicsSettings.currentRenderPipelineGlobalSettings = null;
+            if (GraphicsSettings.currentRenderPipelineGlobalSettings != null)
+            {
+                // Clean the previous dirty flag.
+                if (!s_IsCurrentRenderPipelineGlobalsSettingsDirty)
+                    EditorUtility.ClearDirty(GraphicsSettings.currentRenderPipelineGlobalSettings);
+
+                // Set to null the asset, and clean the dirty flag
+                GraphicsSettings.currentRenderPipelineGlobalSettings = null;
+                if (!s_IsGraphicsSettingsDirty)
+                    EditorUtility.ClearDirty(GraphicsSettings.GetGraphicsSettings());
+            }
         }
     }
 }

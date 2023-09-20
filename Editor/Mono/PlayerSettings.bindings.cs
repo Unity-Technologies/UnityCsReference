@@ -726,28 +726,9 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern Texture2D[] GetIconsForPlatformByKind(int layerCount, string platform, int kind, string subKind, int width, int height);
 
-        internal static Texture2D[] GetAllIconsForPlatform(string platform)
-        {
-            return GetIconsForPlatform(platform, IconKind.Any);
-        }
-
         internal static void SetIconsForPlatform(string platform, Texture2D[] icons)
         {
             SetIconsForPlatform(platform, icons, IconKind.Any);
-        }
-
-        internal static void SetIconsForPlatform(string platform, Texture2D[] icons, IconKind[] kinds)
-        {
-            foreach (IconKind kind in GetIconKindsForPlatform(platform).Distinct())
-            {
-                List<Texture2D> iconsForKind = new List<Texture2D>();
-                for (int i = 0; i < icons.Length; i++)
-                {
-                    if (kinds[i] == kind)
-                        iconsForKind.Add(icons[i]);
-                }
-                SetIconsForPlatform(platform, iconsForKind.ToArray(), kind);
-            }
         }
 
         [NativeThrows]
@@ -759,16 +740,6 @@ namespace UnityEditor
 
         [NativeMethod("GetPlatformIconHeights")]
         internal static extern int[] GetIconHeightsForPlatform(string platform, IconKind kind);
-
-        internal static int[] GetIconWidthsOfAllKindsForPlatform(string platform)
-        {
-            return GetIconWidthsForPlatform(platform, IconKind.Any);
-        }
-
-        internal static int[] GetIconHeightsOfAllKindsForPlatform(string platform)
-        {
-            return GetIconHeightsForPlatform(platform, IconKind.Any);
-        }
 
         [NativeMethod("GetPlatformIconKinds")]
         internal static extern IconKind[] GetIconKindsForPlatform(string platform);

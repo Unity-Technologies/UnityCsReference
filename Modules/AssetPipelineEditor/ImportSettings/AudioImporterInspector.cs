@@ -376,7 +376,7 @@ namespace UnityEditor
                     }
                 }
 
-                if (platform.namedBuildTarget != NamedBuildTarget.WebGL)
+                if (BuildTargetDiscovery.TryGetBuildTarget(platform.defaultTarget, out IBuildTarget iBuildTarget) && (iBuildTarget.AudioPlatformProperties?.HasSampleRateSettings ?? true))
                 {
                     //Sample rate settings
                     var sampleRateSettingProperty = audioImporterSampleSettings.FindPropertyRelative("sampleRateSetting");

@@ -163,7 +163,8 @@ namespace UnityEditor.Search
 
         private void OnSelectionChanged(ISearchEvent evt)
         {
-            UpdateSelection();
+            if (evt.sourceElement != this)
+                UpdateSelection();
         }
 
         private void HandleItemsSelected(IEnumerable<int> selection)
@@ -357,8 +358,10 @@ namespace UnityEditor.Search
         {
             if (m_ViewModel == null || m_ViewModel.selection == null)
                 return;
-
+            
             var selectedIndexes = m_ViewModel.selection.indexes;
+            if (m_GridView.selectedIndices.SequenceEqual(selectedIndexes))
+                return;
             var firstSelection = selectedIndexes.Count > 0 ? selectedIndexes[0] : -1;
             m_GridView.SetSelectionWithoutNotify(selectedIndexes);
             if (firstSelection != -1)

@@ -21,10 +21,12 @@ namespace UnityEditor.ShortcutManagement
         {
             var deleteProfilePromptWindow = GetWindow<DeleteShortcutProfileWindow>(true, "Delete Profile", true);
 
-            deleteProfilePromptWindow.minSize = new Vector2(320, 120);
+            deleteProfilePromptWindow.minSize = new Vector2(400, 130);
+            deleteProfilePromptWindow.maxSize = new Vector2(400, 130);
 
             deleteProfilePromptWindow.m_HeaderTextElement.text = "Delete a shortcut profile";
-            deleteProfilePromptWindow.m_MessageTextElement.text = string.Format("Are you sure you want to delete the shortcut profile '{0}'?", profileName);
+            deleteProfilePromptWindow.m_MessageTextElement.text =
+                $"Are you sure you want to delete the shortcut profile '{profileName}'?";
             deleteProfilePromptWindow.m_Action = action;
 
             deleteProfilePromptWindow.ShowModal();

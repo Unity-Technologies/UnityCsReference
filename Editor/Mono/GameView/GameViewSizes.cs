@@ -475,29 +475,18 @@ namespace UnityEditor
 
         static void RefreshGameViewSizeGroupType(BuildTarget oldTarget, BuildTarget newTarget)
         {
-            BuildTargetGroup buildTargetGroup = BuildPipeline.GetBuildTargetGroup(newTarget);
-            s_GameViewSizeGroupType = BuildTargetGroupToGameViewSizeGroup(buildTargetGroup);
+            s_GameViewSizeGroupType = BuildTargetGroupToGameViewSizeGroup(newTarget);
         }
 
-        public static GameViewSizeGroupType BuildTargetGroupToGameViewSizeGroup(BuildTargetGroup buildTargetGroup)
+        public static GameViewSizeGroupType BuildTargetGroupToGameViewSizeGroup(BuildTarget buildTarget)
         {
             if (UnityEngine.XR.XRSettings.enabled && UnityEngine.XR.XRSettings.showDeviceView)
                 return GameViewSizeGroupType.HMD;
 
-            switch (buildTargetGroup)
-            {
-                case BuildTargetGroup.Standalone:
-                    return GameViewSizeGroupType.Standalone;
+            if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out IBuildTarget iBuildTarget))
+                return iBuildTarget.UIPlatformProperties?.GameViewSizeGroupType ?? GameViewSizeGroupType.Standalone;
 
-                case BuildTargetGroup.iOS:
-                    return GameViewSizeGroupType.iOS;
-
-                case BuildTargetGroup.Android:
-                    return GameViewSizeGroupType.Android;
-
-                default:
-                    return GameViewSizeGroupType.Standalone;
-            }
+            return GameViewSizeGroupType.Standalone;
         }
     }
 }

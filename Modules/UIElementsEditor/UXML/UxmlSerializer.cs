@@ -205,17 +205,29 @@ namespace UnityEditor.UIElements
                     {
                         // We try to use the old data so that we can preserve the uxml asset id.
                         var previousList = previousValue as IList;
-                        var serializedList = Activator.CreateInstance(serializedField.FieldType) as IList;
 
+                        var serializedList = serializedField.FieldType.IsArray ? Array.CreateInstance(serializedField.FieldType.GetElementType(), list.Count) : Activator.CreateInstance(serializedField.FieldType) as IList; 
                         for (int i = 0; i < list.Count; i++)
                         {
                             var item = list[i];
-                            var previousData = previousList != null && i < previousList.Count ? previousList[i] as UxmlSerializedData : null;
+                            if (item != null)
+                            {
+                                var previousData = previousList != null && i < previousList.Count ? previousList[i] as UxmlSerializedData : null;
 
-                            var desc = UxmlSerializedDataRegistry.GetDescription(item.GetType().FullName);
-                            var data = previousData ?? desc.CreateSerializedData();
-                            desc.SyncSerializedData(item, data);
-                            serializedList.Add(data);
+                                var desc = UxmlSerializedDataRegistry.GetDescription(item.GetType().FullName);
+                                var data = previousData ?? desc.CreateSerializedData();
+                                desc.SyncSerializedData(item, data);
+
+                                if (serializedField.FieldType.IsArray)
+                                    serializedList[i] = data;
+                                else
+                                    serializedList.Add(data);
+                            }
+                            else
+                            {
+                                if (!serializedField.FieldType.IsArray)
+                                    serializedList.Add(null);
+                            }
                         }
 
                         value = serializedList;
@@ -424,10 +436,17 @@ namespace UnityEditor.UIElements
 
                         foreach (var asset in entry.uxmlObjectAssets)
                         {
-                            var assetDescription = UxmlSerializedDataRegistry.GetDescription(asset.fullTypeName);
-                            if (assetDescription != null && objectType.IsAssignableFrom(assetDescription.serializedDataType))
+                            if (asset.isNull)
                             {
-                                foundObjects.Add((asset, assetDescription));
+                                foundObjects.Add(default);
+                            }
+                            else
+                            {
+                                var assetDescription = UxmlSerializedDataRegistry.GetDescription(asset.fullTypeName);
+                                if (assetDescription != null && objectType.IsAssignableFrom(assetDescription.serializedDataType))
+                                {
+                                    foundObjects.Add((asset, assetDescription));
+                                }
                             }
                         }
 
@@ -457,20 +476,17 @@ namespace UnityEditor.UIElements
                             for (int i = 0; i < foundObjects.Count; ++i)
                             {
                                 (var asset, var assetDescription) = foundObjects[i];
-                                var nestedData = UxmlSerializer.Serialize(assetDescription, asset, cc);
-                                if (nestedData != null)
+                                var nestedData = asset != null ? UxmlSerializer.Serialize(assetDescription, asset, cc) : null;
+                                if (isList)
                                 {
-                                    if (isList)
-                                    {
-                                        if (type.IsArray)
-                                            list[i] = nestedData;
-                                        else
-                                            list.Add(nestedData);
-                                    }
+                                    if (type.IsArray)
+                                        list[i] = nestedData;
                                     else
-                                    {
-                                        return nestedData;
-                                    }
+                                        list.Add(nestedData);
+                                }
+                                else
+                                {
+                                    return nestedData;
                                 }
                             }
                         }

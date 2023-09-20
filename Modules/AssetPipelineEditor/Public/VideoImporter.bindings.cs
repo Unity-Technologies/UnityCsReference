@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEditor.Build;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -151,49 +152,33 @@ namespace UnityEditor
 
         public VideoImporterTargetSettings GetTargetSettings(string platform)
         {
-            BuildTargetGroup platformGroup = GetBuildTargetGroup("GetTargetSetting", platform);
-            return Internal_GetTargetSettings(platformGroup);
+            return Internal_GetTargetSettings(new NamedBuildTarget(platform));
         }
 
-        internal VideoImporterTargetSettings Internal_GetTargetSettings(BuildTargetGroup group)
+        internal VideoImporterTargetSettings Internal_GetTargetSettings(NamedBuildTarget target)
         {
-            return Private_GetTargetSettings(group) as VideoImporterTargetSettings;
+            return Private_GetTargetSettings(target.TargetName) as VideoImporterTargetSettings;
         }
 
         [FreeFunction(Name = "VideoImporterBindings::GetTargetSettings", HasExplicitThis = true)]
-        private extern object Private_GetTargetSettings(BuildTargetGroup group);
+        private extern object Private_GetTargetSettings(string target);
 
         public void SetTargetSettings(string platform, VideoImporterTargetSettings settings)
         {
-            var platformGroup = GetBuildTargetGroup("SetTargetSettings", platform);
-            Internal_SetTargetSettings(platformGroup, settings);
+            Internal_SetTargetSettings(new NamedBuildTarget(platform), settings);
+        }
+
+        internal void Internal_SetTargetSettings(NamedBuildTarget target, VideoImporterTargetSettings settings)
+        {
+            Private_SetTargetSettings(target.TargetName, settings);
         }
 
         [NativeName("SetTargetSettings")]
-        internal extern void Internal_SetTargetSettings(BuildTargetGroup group, VideoImporterTargetSettings settings);
+        internal extern void Private_SetTargetSettings(string targetName, VideoImporterTargetSettings settings);
 
         public void ClearTargetSettings(string platform)
         {
-            var platformGroup = GetBuildTargetGroup("ClearTargetSettings", platform, false);
-            Internal_ClearTargetSettings(platformGroup);
-        }
-
-        private BuildTargetGroup GetBuildTargetGroup(string methodName, string platform, bool acceptDefault = true)
-        {
-            var defaultName = VideoClipImporter.defaultTargetName;
-            if (!acceptDefault &&
-                platform.Equals(defaultName, StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException("Cannot call VideoClipImporter." + methodName + " for the default VideoImporterTargetSettings.");
-
-            BuildTargetGroup platformGroup = BuildPipeline.GetBuildTargetGroupByName(platform);
-            if (!platform.Equals(defaultName, StringComparison.OrdinalIgnoreCase) && platformGroup == BuildTargetGroup.Unknown)
-            {
-                throw new ArgumentException(
-                    "Unknown platform passed to VideoClipImporter." + methodName + " (" + platform +
-                    "), please use '" + defaultName + "' or one of the supported platform names.");
-            }
-
-            return platformGroup;
+            Internal_ClearTargetSettings(new NamedBuildTarget(platform));
         }
 
         internal static event Action<string> analyticsSent;
@@ -211,8 +196,13 @@ namespace UnityEditor
             return analyticsSent != null;
         }
 
+        internal void Internal_ClearTargetSettings(NamedBuildTarget target)
+        {
+            Private_ClearTargetSettings(target.TargetName);
+        }
+
         [NativeName("ClearTargetSettings")]
-        internal extern void Internal_ClearTargetSettings(BuildTargetGroup group);
+        internal extern void Private_ClearTargetSettings(string target);
 
         // Preview
         [NativeName("StartPreview")]

@@ -10,6 +10,8 @@ namespace UnityEngine.UIElements
     [Serializable]
     internal class UxmlAsset : IUxmlAttributes
     {
+        public const string NullNodeType = "null";
+
         public UxmlAsset(string fullTypeName)
         {
             m_FullTypeName = fullTypeName;
@@ -32,6 +34,8 @@ namespace UnityEngine.UIElements
             get => m_Id;
             set => m_Id = value;
         }
+
+        public bool isNull => fullTypeName == NullNodeType;
 
         [SerializeField]
         private int m_OrderInDocument;

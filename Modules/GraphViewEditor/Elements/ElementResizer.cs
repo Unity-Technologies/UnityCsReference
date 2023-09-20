@@ -122,14 +122,10 @@ namespace UnityEditor.Experimental.GraphView
                 else if ((direction & ResizerDirection.Left) != 0)
                 {
                     float delta = mousePos.x - m_StartMouse.x;
+                    float previousLeft = layout.xMin;
 
-                    if (m_StartSize.x - delta < m_MinSize.x)
-                        delta = -m_MinSize.x + m_StartSize.x;
-                    else if (m_StartSize.x - delta > m_MaxSize.x)
-                        delta = -m_MaxSize.x + m_StartSize.x;
-
-                    layout.xMin = delta + m_StartPosition.x;
-                    layout.width = -delta + m_StartSize.x;
+                    layout.xMin = Mathf.Clamp(delta + m_StartPosition.x, 0, m_StartSize.x - 1);
+                    layout.width = resizedTarget.resolvedStyle.width + previousLeft - layout.xMin;
                 }
                 if ((direction & ResizerDirection.Bottom) != 0)
                 {
@@ -138,13 +134,10 @@ namespace UnityEditor.Experimental.GraphView
                 else if ((direction & ResizerDirection.Top) != 0)
                 {
                     float delta = mousePos.y - m_StartMouse.y;
+                    float previousTop = layout.yMin;
 
-                    if (m_StartSize.y - delta < m_MinSize.y)
-                        delta = -m_MinSize.y + m_StartSize.y;
-                    else if (m_StartSize.y - delta > m_MaxSize.y)
-                        delta = -m_MaxSize.y + m_StartSize.y;
-                    layout.yMin = delta + m_StartPosition.y;
-                    layout.height = -delta + m_StartSize.y;
+                    layout.yMin = Mathf.Clamp(delta + m_StartPosition.y, 0, m_StartSize.y - 1);
+                    layout.height = resizedTarget.resolvedStyle.height + previousTop - layout.yMin;
                 }
 
                 if (direction != 0)
@@ -161,14 +154,10 @@ namespace UnityEditor.Experimental.GraphView
                 else if ((direction & ResizerDirection.Left) != 0)
                 {
                     float delta = mousePos.x - m_StartMouse.x;
+                    float previousLeft = resizedTarget.style.left.value.value;
 
-                    if (m_StartSize.x - delta < m_MinSize.x)
-                        delta = -m_MinSize.x + m_StartSize.x;
-                    else if (m_StartSize.x - delta > m_MaxSize.x)
-                        delta = -m_MaxSize.x + m_StartSize.x;
-
-                    resizedTarget.style.left = delta + m_StartPosition.x;
-                    resizedTarget.style.width = -delta + m_StartSize.x;
+                    resizedTarget.style.left = Mathf.Clamp(delta + m_StartPosition.x, 0, m_StartSize.x - 1);
+                    resizedTarget.style.width = resizedTarget.resolvedStyle.width + previousLeft - resizedTarget.style.left.value.value;
                 }
                 if ((direction & ResizerDirection.Bottom) != 0)
                 {
@@ -177,13 +166,10 @@ namespace UnityEditor.Experimental.GraphView
                 else if ((direction & ResizerDirection.Top) != 0)
                 {
                     float delta = mousePos.y - m_StartMouse.y;
+                    float previousTop = resizedTarget.style.top.value.value;
 
-                    if (m_StartSize.y - delta < m_MinSize.y)
-                        delta = -m_MinSize.y + m_StartSize.y;
-                    else if (m_StartSize.y - delta > m_MaxSize.y)
-                        delta = -m_MaxSize.y + m_StartSize.y;
-                    resizedTarget.style.top = delta + m_StartPosition.y;
-                    resizedTarget.style.height = -delta + m_StartSize.y;
+                    resizedTarget.style.top = Mathf.Clamp(delta + m_StartPosition.y, 0, m_StartSize.y - 1);
+                    resizedTarget.style.height = resizedTarget.resolvedStyle.height + previousTop - resizedTarget.style.top.value.value;
                 }
             }
             e.StopPropagation();

@@ -210,7 +210,7 @@ namespace UnityEngine.iOS
         [NativeMethod(Name = "IOSScripting::ResetNoBackupFlag", IsFreeFunction = true, IsThreadSafe = true)]
         extern public static void ResetNoBackupFlag(string path);
 
-        [NativeConditional("PLATFORM_IOS")]
+        [NativeConditional("PLATFORM_IOS || PLATFORM_BRATWURST")]
         [NativeMethod(Name = "IOSScripting::RequestStoreReview", IsFreeFunction = true, IsThreadSafe = true)]
         extern public static bool RequestStoreReview();
     }

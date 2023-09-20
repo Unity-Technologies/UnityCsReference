@@ -68,6 +68,8 @@ namespace Unity.UI.Builder
         static readonly Dictionary<Type, BuilderLibraryTreeItem> s_ControlsTypeCache = new Dictionary<Type, BuilderLibraryTreeItem>();
         static readonly BuilderLibraryProjectScanner s_ProjectAssetsScanner = new BuilderLibraryProjectScanner();
         static int s_ProjectUxmlPathsHash;
+        // Used to keep track of when the library content is being needlessly regenerated on Domain Reload.
+        internal static int libraryRegenerationTestCounter = 0;
 
         public static event Action OnLibraryContentUpdated;
         public static List<TreeViewItem> standardControlsTree { get; private set; }
@@ -83,7 +85,6 @@ namespace Unity.UI.Builder
 
         static BuilderLibraryContent()
         {
-            RegenerateLibraryContent();
             BuilderAssetModificationProcessor.Register(new AssetModificationProcessor(() =>
             {
                 if (s_ProjectUxmlPathsHash != s_ProjectAssetsScanner.GetAllProjectUxmlFilePathsHash())
@@ -108,24 +109,30 @@ namespace Unity.UI.Builder
 
         public static void RegenerateLibraryContent()
         {
-            standardControlsTree = GenerateControlsItemsTree();
-            standardControlsTreeNoEditor = new List<TreeViewItem>();
-
-            foreach (var item in standardControlsTree)
+            // Standard control tree rarely changes and should not be regenerated every time.
+            if (standardControlsTree == null)
             {
-                var builderLibraryTreeItem = item.data;
-                if (!builderLibraryTreeItem.isEditorOnly)
+                standardControlsTree = GenerateControlsItemsTree();
+
+                standardControlsTreeNoEditor = new List<TreeViewItem>();
+
+                foreach (var item in standardControlsTree)
                 {
-                    standardControlsTreeNoEditor.Add(item);
+                    var builderLibraryTreeItem = item.data;
+                    if (!builderLibraryTreeItem.isEditorOnly)
+                    {
+                        standardControlsTreeNoEditor.Add(item);
+                    }
                 }
+                UpdateControlsTypeCache(standardControlsTree);
             }
 
             GenerateProjectContentTrees();
             UpdateControlsTypeCache(projectContentTree);
-            UpdateControlsTypeCache(standardControlsTree);
             s_ProjectUxmlPathsHash = s_ProjectAssetsScanner.GetAllProjectUxmlFilePathsHash();
 
             OnLibraryContentUpdated?.Invoke();
+            libraryRegenerationTestCounter++;
         }
 
         internal static void ResetProjectUxmlPathsHash()

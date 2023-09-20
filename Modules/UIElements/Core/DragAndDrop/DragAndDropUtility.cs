@@ -60,6 +60,7 @@ namespace UnityEngine.UIElements
             if (args.unityObjectReferences != null)
                 m_UnityObjectReferences = args.unityObjectReferences.ToArray();
 
+            paths = args.assetPaths;
             m_VisualMode = args.visualMode;
             foreach (DictionaryEntry entry in args.genericData)
             {
@@ -106,6 +107,7 @@ namespace UnityEngine.UIElements
 
         public void DragCleanup()
         {
+            paths = null;
             m_UnityObjectReferences = null;
             m_GenericData?.Clear();
             SetVisualMode(DragVisualMode.None);

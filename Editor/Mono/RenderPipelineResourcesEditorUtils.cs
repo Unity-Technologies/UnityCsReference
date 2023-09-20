@@ -70,8 +70,8 @@ namespace UnityEditor.Rendering
 
             static string GetRootPathForType(Type type)
             {
-                var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(type.Assembly);
-                return $"{packageInfo?.name ?? "Assets"}/";
+                var packageInfo = PackageManager.PackageInfo.FindForAssembly(type.Assembly);
+                return packageInfo == null ? "Assets/" : $"Packages/{packageInfo.name}/";
             }
 
             (string[] paths, SearchType location, bool isField) GetResourcesPaths(FieldInfo fieldInfo)

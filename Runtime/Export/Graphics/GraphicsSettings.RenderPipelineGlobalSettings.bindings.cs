@@ -28,9 +28,11 @@ namespace UnityEngine.Rendering
         [NativeName("UnregisterRenderPipelineSettings")] static extern void Internal_UnregisterRenderPipeline(string renderpipelineName);
         [NativeName("GetSettingsForRenderPipeline")] static extern Object Internal_GetSettingsForRenderPipeline(string renderpipelineName);
 
-        [NativeName("CurrentRenderPipelineGlobalSettings")] private static extern Object INTERNAL_currentRenderPipelineGlobalSettings { set; }
+        [NativeName("CurrentRenderPipelineGlobalSettings")] private static extern Object INTERNAL_currentRenderPipelineGlobalSettings { get; set; }
+
         internal static RenderPipelineGlobalSettings currentRenderPipelineGlobalSettings
         {
+            get => INTERNAL_currentRenderPipelineGlobalSettings as RenderPipelineGlobalSettings;
             set => INTERNAL_currentRenderPipelineGlobalSettings = value;
         }
 

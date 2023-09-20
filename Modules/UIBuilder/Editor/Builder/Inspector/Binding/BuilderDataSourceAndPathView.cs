@@ -21,6 +21,8 @@ namespace Unity.UI.Builder
         internal const string k_BindingAttr_DataSource = "data-source";
         internal const string k_BindingAttr_DataSourceType = "data-source-type";
         internal const string k_BindingAttr_DataSourcePath = "data-source-path";
+        internal const string k_DataSourceObjectTooltip = "Add an object to use as the data source for this binding.";
+        internal const string k_DataSourceTypeTooltip = "If a source is not yet available, a data source type can be defined. It may provide assistance while authoring by populating the data source path field with options.";
 
         internal struct TestAccess
         {
@@ -238,8 +240,8 @@ namespace Unity.UI.Builder
                 m_BindingsFoldout = new PersistedFoldout() { text = "Bindings", classList = { PersistedFoldout.unindentedUssClassName } };
 
                 m_ButtonStrip = new ToggleButtonGroup("Data Source");
-                m_ButtonStrip.Add(new Button { text = "Asset", style = { flexGrow = 1 } });
-                m_ButtonStrip.Add(new Button { text = "Type", style = { flexGrow = 1 } });
+                m_ButtonStrip.Add(new Button { text = "Object", style = { flexGrow = 1 }, tooltip = k_DataSourceObjectTooltip });
+                m_ButtonStrip.Add(new Button { text = "Type", style = { flexGrow = 1 }, tooltip = k_DataSourceTypeTooltip});
                 m_ButtonStrip.isMultipleSelection = false;
                 m_ButtonStrip.AddToClassList(ToggleButtonGroup.alignedFieldUssClassName);
                 m_ButtonStrip.RegisterValueChangedCallback(evt => SetSourceVisibility(evt.newValue[0]));
@@ -333,7 +335,7 @@ namespace Unity.UI.Builder
 
             if (!readOnly)
             {
-                propertyField.RegisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindEvent);
+                TrackElementPropertyValue(propertyField, path);
             }
 
             propertyField.RegisterCallback<SerializedPropertyBindEvent, string>(OnPropertyFieldBound, attribute);
@@ -412,8 +414,10 @@ namespace Unity.UI.Builder
                     var startingElement = isBinding ? Builder.ActiveWindow.inspector.attributesSection.currentElement : currentElement;
                     if (DataBindingUtility.TryGetDataSourceOrDataSourceTypeFromHierarchy(startingElement, out var dataSource, out var dataSourceType, out _))
                     {
-                        // If the data source set or if the binding path is specified and the data source type is not then show the inherited status
-                        dataSourceIsInherited = dataSource != null || dataSourceType == null;
+                        // If the current element is not the one providing the data source,
+                        // If the data source set or if the binding path is specified,
+                        // and If the data source type is null, then show the inherited status
+                        dataSourceIsInherited = dataSource != null && startingElement.dataSource != dataSource && dataSourceType == null;
                         dataSourceTypeIsInherited = dataSource == null && dataSourceType != null;
                     }
                 }
@@ -434,9 +438,10 @@ namespace Unity.UI.Builder
 
             var currentUxmlAttributeOwner = attributesUxmlOwner;
 
-            if (isBinding && SynchronizePath(bindingSerializedPropertyPathRoot, false, out var uxmlAsset, out _, out _))
+            var result = SynchronizePath(bindingSerializedPropertyPathRoot, false);
+            if (isBinding && result.success)
             {
-                currentUxmlAttributeOwner = uxmlAsset as UxmlAsset;
+                currentUxmlAttributeOwner = result.uxmlAsset;
             }
 
             if (desc.name is k_BindingAttr_DataSource or k_BindingAttr_DataSourceType)
@@ -516,8 +521,9 @@ namespace Unity.UI.Builder
 
             if (bindingSerializedPropertyPathRoot != null)
             {
-                SynchronizePath(bindingSerializedPropertyPathRoot, true, out _, out _, out var binding);
-                m_DataSourcePathCompleter.binding = binding as DataBinding;
+                CallDeserializeOnElement();
+                var result = SynchronizePath(bindingSerializedPropertyPathRoot, true);
+                m_DataSourcePathCompleter.binding = result.attributeOwner as DataBinding;
             }
 
             m_DataSourcePathCompleter.UpdateResults();
@@ -573,6 +579,10 @@ namespace Unity.UI.Builder
             {
                 m_PathWarningBox.style.display = DisplayStyle.None;
             }
+        }
+
+        public BuilderDataSourceAndPathView(BuilderInspector inspector) : base(inspector)
+        {
         }
     }
 }

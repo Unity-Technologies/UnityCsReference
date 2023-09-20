@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
@@ -179,7 +180,7 @@ namespace UnityEngine.UIElements
         }
 
 #pragma warning disable 0649
-        [SerializeField] private List<UsingEntry> m_Usings;
+        [SerializeField] private List<UsingEntry> m_Usings = new List<UsingEntry>();
 #pragma warning restore 0649
 
         /// <summary>
@@ -189,7 +190,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                if (m_Usings == null || m_Usings.Count == 0)
+                if (m_Usings.Count == 0)
                     yield break;
 
                 HashSet<VisualTreeAsset> sent = new HashSet<VisualTreeAsset>();
@@ -217,7 +218,7 @@ namespace UnityEngine.UIElements
 
         [SerializeField] internal StyleSheet inlineSheet;
 
-        [SerializeField] internal List<VisualElementAsset> m_VisualElementAssets;
+        [SerializeField] internal List<VisualElementAsset> m_VisualElementAssets = new List<VisualElementAsset>();
 
         /// <summary>
         /// The stylesheets used by this VisualTreeAsset.
@@ -260,32 +261,24 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal List<VisualElementAsset> visualElementAssets
-        {
-            get { return m_VisualElementAssets; }
-            set { m_VisualElementAssets = value; }
-        }
+        [SerializeField] internal List<TemplateAsset> m_TemplateAssets = new List<TemplateAsset>();
+        [SerializeField] private List<UxmlObjectEntry> m_UxmlObjectEntries = new List<UxmlObjectEntry>();
+        [SerializeField] private List<int> m_UxmlObjectIds = new List<int>();
 
-        [SerializeField] internal List<TemplateAsset> m_TemplateAssets;
-
-        internal List<TemplateAsset> templateAssets
-        {
-            get { return m_TemplateAssets; }
-            set { m_TemplateAssets = value; }
-        }
-
-        [SerializeField] private List<UxmlObjectEntry> m_UxmlObjectEntries;
-        [SerializeField] private List<int> m_UxmlObjectIds;
-
+        internal List<VisualElementAsset> visualElementAssets => m_VisualElementAssets;
+        internal List<TemplateAsset> templateAssets => m_TemplateAssets;
         internal List<UxmlObjectEntry> uxmlObjectEntries => m_UxmlObjectEntries;
         internal List<int> uxmlObjectIds => m_UxmlObjectIds;
+
+        internal void RemoveElementAndDependencies(VisualElementAsset asset)
+        {
+            m_VisualElementAssets.Remove(asset);
+            RemoveUxmlObjectEntryDependencies(asset.id);
+        }
 
         // Called when parsing Uxml
         internal void RegisterUxmlObject(UxmlObjectAsset uxmlObjectAsset)
         {
-            m_UxmlObjectEntries ??= new List<UxmlObjectEntry>();
-            m_UxmlObjectIds ??= new List<int>();
-
             var entry = GetUxmlObjectEntry(uxmlObjectAsset.parentId);
 
             if (entry.uxmlObjectAssets != null)
@@ -301,9 +294,6 @@ namespace UnityEngine.UIElements
 
         internal UxmlObjectAsset AddUxmlObject(UxmlAsset parent, string fieldUxmlName, string fullTypeName)
         {
-            m_UxmlObjectEntries ??= new List<UxmlObjectEntry>();
-            m_UxmlObjectIds ??= new List<int>();
-
             var entry = GetUxmlObjectEntry(parent.id);
             if (entry.uxmlObjectAssets == null)
             {
@@ -340,9 +330,6 @@ namespace UnityEngine.UIElements
 
         internal void RemoveUxmlObject(int id, bool onlyIfIsField = false)
         {
-            if (m_UxmlObjectEntries == null)
-                return;
-
             for (var i = 0; i < m_UxmlObjectEntries.Count; ++i)
             {
                 var entry = m_UxmlObjectEntries[i];
@@ -356,6 +343,9 @@ namespace UnityEngine.UIElements
 
                         entry.uxmlObjectAssets.RemoveAt(j);
 
+                        RemoveUxmlObjectEntryDependencies(asset.id);
+
+                        // Remove parent field if empty
                         if (entry.uxmlObjectAssets.Count == 0)
                         {
                             var index = m_UxmlObjectEntries.IndexOf(entry);
@@ -370,37 +360,42 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void MoveUxmlObject(UxmlAsset parent, string fieldName, int src, int dst)
+        /// <summary>
+        /// Removes UxmlObjectEntry instances with the same parent indicated by the specified parentId.
+        /// </summary>
+        /// <param name="parentId">The ID of the parent asset.</param>
+        void RemoveUxmlObjectEntryDependencies(int parentId)
         {
-            if (m_UxmlObjectEntries == null)
+            if (m_UxmlObjectEntries.Count == 0)
                 return;
 
-            foreach (var e in m_UxmlObjectEntries)
+            // Find direct children
+            var uxmlObjectRoots = ListPool<UxmlObjectEntry>.Get();
+            foreach (var child in m_UxmlObjectEntries)
             {
-                if (e.parentId == parent.id)
+                if (parentId == child.parentId)
                 {
-                    if (!string.IsNullOrEmpty(fieldName))
-                    {
-                        var fieldAsset = e.GetField(fieldName);
-                        if (fieldAsset != null)
-                        {
-                            MoveUxmlObject(fieldAsset, null, src, dst);
-                        }
-                    }
-                    else
-                    {
-                        UxmlUtility.MoveListItem(e.uxmlObjectAssets, src, dst);
-                    }
-                    return;
+                    uxmlObjectRoots.Add(child);
                 }
             }
+
+            foreach (var entry in uxmlObjectRoots)
+            {
+                var index = m_UxmlObjectEntries.IndexOf(entry);
+                m_UxmlObjectEntries.RemoveAt(index);
+                m_UxmlObjectIds.RemoveAt(index);
+
+                foreach (var asset in entry.uxmlObjectAssets)
+                {
+                    RemoveUxmlObjectEntryDependencies(asset.id);
+                }
+            }
+
+            ListPool<UxmlObjectEntry>.Release(uxmlObjectRoots);
         }
 
         internal void CollectUxmlObjectAssets(UxmlAsset parent, string fieldName, List<UxmlObjectAsset> foundEntries)
         {
-            if (m_UxmlObjectEntries == null)
-                return;
-
             foreach (var e in m_UxmlObjectEntries)
             {
                 if (e.parentId == parent.id)
@@ -426,12 +421,41 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal void SetUxmlObjectAssets(UxmlAsset parent, string fieldName, List<UxmlObjectAsset> entries)
+        {
+            foreach (var e in m_UxmlObjectEntries)
+            {
+                if (e.parentId == parent.id)
+                {
+                    if (!string.IsNullOrEmpty(fieldName))
+                    {
+                        var fieldAsset = e.GetField(fieldName);
+                        if (fieldAsset != null)
+                        {
+                            SetUxmlObjectAssets(fieldAsset, null, entries);
+                        }
+                    }
+                    else
+                    {
+                        // Remove all non-field assets
+                        for (int i = e.uxmlObjectAssets.Count - 1; i >= 0; --i)
+                        {
+                            if (!e.uxmlObjectAssets[i].isField)
+                            {
+                                e.uxmlObjectAssets.RemoveAt(i);
+                            }
+                        }
+
+                        e.uxmlObjectAssets.AddRange(entries);
+                    }
+                    return;
+                }
+            }
+        }
+
         // Obsolete - Used by UxmlTraits system
         internal List<T> GetUxmlObjects<T>(IUxmlAttributes asset, CreationContext cc) where T : new()
         {
-            if (m_UxmlObjectEntries == null)
-                return null;
-
             if (asset is UxmlAsset ua)
             {
                 var entry = GetUxmlObjectEntry(ua.id);
@@ -463,13 +487,10 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
-        List<AssetEntry> m_AssetEntries;
+        List<AssetEntry> m_AssetEntries = new List<AssetEntry>();
 
         internal bool AssetEntryExists(string path, Type type)
         {
-            if (m_AssetEntries == null)
-                return false;
-
             foreach (var entry in m_AssetEntries)
             {
                 if (entry.path == path && entry.type == type)
@@ -481,7 +502,6 @@ namespace UnityEngine.UIElements
 
         internal void RegisterAssetEntry(string path, Type type, Object asset)
         {
-            m_AssetEntries ??= new List<AssetEntry>();
             m_AssetEntries.Add(new AssetEntry(path, type, asset));
         }
 
@@ -495,9 +515,6 @@ namespace UnityEngine.UIElements
 
         internal Object GetAsset(string path, Type type)
         {
-            if (m_AssetEntries == null)
-                return null;
-
             foreach (var entry in m_AssetEntries)
             {
                 if (entry.path == path && type.IsAssignableFrom(entry.type))
@@ -509,9 +526,6 @@ namespace UnityEngine.UIElements
 
         internal Type GetAssetType(string path)
         {
-            if (m_AssetEntries == null)
-                return null;
-
             foreach (var entry in m_AssetEntries)
             {
                 if (entry.path == path)
@@ -565,13 +579,9 @@ namespace UnityEngine.UIElements
             return factory;
         }
 
-        [SerializeField] private List<SlotDefinition> m_Slots;
+        [SerializeField] private List<SlotDefinition> m_Slots = new List<SlotDefinition>();
 
-        internal List<SlotDefinition> slots
-        {
-            get { return m_Slots; }
-            set { m_Slots = value; }
-        }
+        internal List<SlotDefinition> slots => m_Slots;
 
         [SerializeField] private int m_ContentContainerId;
         [SerializeField] private int m_ContentHash;
@@ -838,7 +848,7 @@ namespace UnityEngine.UIElements
 
         internal bool SlotDefinitionExists(string slotName)
         {
-            if (m_Slots == null)
+            if (m_Slots.Count == 0)
                 return false;
 
             return m_Slots.Exists(s => s.name == slotName);
@@ -848,9 +858,6 @@ namespace UnityEngine.UIElements
         {
             if (SlotDefinitionExists(slotName))
                 return false;
-
-            if (m_Slots == null)
-                m_Slots = new List<SlotDefinition>(1);
 
             m_Slots.Add(new SlotDefinition {insertionPointId = resId, name = slotName});
             return true;
@@ -897,12 +904,6 @@ namespace UnityEngine.UIElements
 
         internal bool TryGetSlotInsertionPoint(int insertionPointId, out string slotName)
         {
-            if (m_Slots == null)
-            {
-                slotName = null;
-                return false;
-            }
-
             for (var index = 0; index < m_Slots.Count; index++)
             {
                 var slotDefinition = m_Slots[index];
@@ -921,7 +922,7 @@ namespace UnityEngine.UIElements
         {
             entry = default;
 
-            if (m_Usings == null || m_Usings.Count == 0)
+            if (m_Usings.Count == 0)
                 return false;
             int index = m_Usings.BinarySearch(new UsingEntry(templateName, string.Empty), UsingEntry.comparer);
             if (index < 0)
@@ -945,7 +946,7 @@ namespace UnityEngine.UIElements
 
         internal bool TemplateExists(string templateName)
         {
-            if (m_Usings == null || m_Usings.Count == 0)
+            if (m_Usings.Count == 0)
                 return false;
             var index = m_Usings.BinarySearch(new UsingEntry(templateName, string.Empty), UsingEntry.comparer);
             return index >= 0;
@@ -963,9 +964,6 @@ namespace UnityEngine.UIElements
 
         private void InsertUsingEntry(UsingEntry entry)
         {
-            if (m_Usings == null)
-                m_Usings = new List<UsingEntry>();
-
             // find insertion index so usings are sorted by alias
             int i = 0;
             while (i < m_Usings.Count && String.CompareOrdinal(entry.alias, m_Usings[i].alias) > 0)

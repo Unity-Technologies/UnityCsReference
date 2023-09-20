@@ -2411,21 +2411,21 @@ namespace UnityEditor
                         var duplicatedBuildTargetCheck = new List<String>();
                         foreach (var buildTarget in BuildTargetDiscovery.StandaloneBuildTargets)
                         {
-                            if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out IBuildTarget requiredBuildTarget))
+                            if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out IBuildTarget iBuildTarget))
                             {
-                                if (duplicatedBuildTargetCheck.Contains(requiredBuildTarget.TargetName)) // Win64 and Win have the same target name and would duplicate the hint box
+                                if (duplicatedBuildTargetCheck.Contains(iBuildTarget.TargetName)) // Win64 and Win have the same target name and would duplicate the hint box
                                     continue;
 
-                                duplicatedBuildTargetCheck.Add(requiredBuildTarget.TargetName);
+                                duplicatedBuildTargetCheck.Add(iBuildTarget.TargetName);
 
-                                ShowWarningIfVirtualTexturingUnsupportedByAPI(requiredBuildTarget, true);
+                                ShowWarningIfVirtualTexturingUnsupportedByAPI(iBuildTarget, true);
                             }
                         }
                     }
                     else
                     {
-                        if (platformSupportsVT && BuildTargetDiscovery.TryGetBuildTarget(platform.defaultTarget, out IBuildTarget defaultBuildTarget))
-                            ShowWarningIfVirtualTexturingUnsupportedByAPI(defaultBuildTarget, false);
+                        if (platformSupportsVT && BuildTargetDiscovery.TryGetBuildTarget(platform.defaultTarget, out IBuildTarget iBuildTarget))
+                            ShowWarningIfVirtualTexturingUnsupportedByAPI(iBuildTarget, false);
                     }
                 }
             }

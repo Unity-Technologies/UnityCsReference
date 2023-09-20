@@ -3,15 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.Profiling;
-using UnityEngine.UIElements;
 using Unity.Properties;
 using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
     internal class BuilderInspectorAttributes : BuilderUxmlAttributesView, IBuilderInspectorSection
     {
-        BuilderInspector m_Inspector;
         BuilderSelection m_Selection;
 
         public VisualElement root => fieldsContainer;
@@ -22,11 +21,11 @@ namespace Unity.UI.Builder
 
         static readonly ProfilerMarker k_RefreshMarker = new (inspectorAttributeRefreshMarkerName);
 
-        public BuilderInspectorAttributes(BuilderInspector inspector)
+        public BuilderInspectorAttributes(BuilderInspector inspector) : base(inspector)
         {
-            m_Inspector = inspector;
+            this.inspector = inspector;
             m_Selection = inspector.selection;
-            fieldsContainer = m_Inspector.Q<PersistedFoldout>("inspector-attributes-foldout");
+            fieldsContainer = inspector.Q<PersistedFoldout>("inspector-attributes-foldout");
         }
 
         /// <inheritdoc/>
@@ -39,7 +38,7 @@ namespace Unity.UI.Builder
         {
             using var marker = k_RefreshMarker.Auto();
 
-            var currentVisualElement = m_Inspector.currentVisualElement;
+            var currentVisualElement = inspector.currentVisualElement;
 
             base.Refresh();
 
@@ -56,7 +55,7 @@ namespace Unity.UI.Builder
             fieldsContainer
                 .Query()
                 .Where(e => e.focusable)
-                .ForEach((e) => m_Inspector.AddFocusable(e));
+                .ForEach((e) => inspector.AddFocusable(e));
         }
 
         internal override void UpdateAttributeOverrideStyle(VisualElement fieldElement)
@@ -84,7 +83,7 @@ namespace Unity.UI.Builder
 
         protected override void UpdateFieldStatus(VisualElement fieldElement)
         {
-            m_Inspector.UpdateFieldStatus(fieldElement, null);
+            inspector.UpdateFieldStatus(fieldElement, null);
 
             var hasOverriddenField = BuilderInspectorUtilities.HasOverriddenField(fieldsContainer);
             fieldsContainer.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutOverrideClassName, hasOverriddenField);
@@ -93,7 +92,7 @@ namespace Unity.UI.Builder
         protected override void NotifyAttributesChanged(string attributeName = null)
         {
             var changeType = attributeName == BuilderConstants.UxmlNameAttr ? BuilderHierarchyChangeType.ElementName : BuilderHierarchyChangeType.Attributes;
-            m_Selection.NotifyOfHierarchyChange(m_Inspector, m_Inspector.currentVisualElement, changeType);
+            m_Selection.NotifyOfHierarchyChange(inspector, inspector.currentVisualElement, changeType);
         }
 
         protected override void BuildAttributeFieldContextualMenu(DropdownMenu menu, BuilderStyleRow styleRow)
@@ -113,7 +112,7 @@ namespace Unity.UI.Builder
                     if (isBindableElement && isBindableProperty)
                     {
                         var hasDataBinding = false;
-                        var vea = m_Inspector.currentVisualElement.GetVisualElementAsset();
+                        var vea = inspector.currentVisualElement.GetVisualElementAsset();
 
                         if (vea != null)
                         {
@@ -123,7 +122,7 @@ namespace Unity.UI.Builder
                         if (hasDataBinding)
                         {
                             menu.AppendAction(BuilderConstants.ContextMenuEditBindingMessage,
-                                (a) => BuilderBindingUtility.OpenBindingWindowToEdit(csPropertyName, m_Inspector),
+                                (a) => BuilderBindingUtility.OpenBindingWindowToEdit(csPropertyName, inspector),
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
                             menu.AppendAction(BuilderConstants.ContextMenuRemoveBindingMessage,
@@ -131,13 +130,13 @@ namespace Unity.UI.Builder
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
 
-                            DataBindingUtility.TryGetLastUIBindingResult(new BindingId(csPropertyName), m_Inspector.currentVisualElement,
+                            DataBindingUtility.TryGetLastUIBindingResult(new BindingId(csPropertyName), inspector.currentVisualElement,
                                 out var bindingResult);
 
                             if (bindingResult.status == BindingStatus.Success)
                             {
                                 menu.AppendAction(BuilderConstants.ContextMenuEditInlineValueMessage,
-                                    (a) => { m_Inspector.EnableInlineValueEditing(fieldElement); },
+                                    (a) => { inspector.EnableInlineValueEditing(fieldElement); },
                                     (a) => DropdownMenuAction.Status.Normal,
                                     fieldElement);
                             }
@@ -146,7 +145,7 @@ namespace Unity.UI.Builder
                                 BuilderConstants.ContextMenuUnsetInlineValueMessage,
                                 (a) =>
                                 {
-                                    m_Inspector.UnsetBoundFieldInlineValue(a);
+                                    inspector.UnsetBoundFieldInlineValue(a);
                                 },
                                 action =>
                                 {
@@ -162,7 +161,7 @@ namespace Unity.UI.Builder
                         else
                         {
                             menu.AppendAction(BuilderConstants.ContextMenuAddBindingMessage,
-                                (a) => BuilderBindingUtility.OpenBindingWindowToCreate(csPropertyName, m_Inspector),
+                                (a) => BuilderBindingUtility.OpenBindingWindowToCreate(csPropertyName, inspector),
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
                         }
@@ -190,7 +189,7 @@ namespace Unity.UI.Builder
             var targetVE = e.target as VisualElement;
             var attributeField = targetVE.GetFirstAncestorOfType<UxmlSerializedDataAttributeField>();
 
-            m_Inspector.RegisterFieldToInlineEditingEvents(attributeField);
+            inspector.RegisterFieldToInlineEditingEvents(attributeField);
             targetVE.UnregisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindCallback);
         }
     }

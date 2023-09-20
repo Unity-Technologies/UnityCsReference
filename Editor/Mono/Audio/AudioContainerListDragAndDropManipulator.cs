@@ -28,11 +28,11 @@ class AudioContainerListDragAndDropManipulator : PointerManipulator
 
     protected override void UnregisterCallbacksFromTarget()
     {
-        target.UnregisterCallback<DragUpdatedEvent>(OnDragUpdate);
-        target.UnregisterCallback<DragPerformEvent>(OnDragPerform);
+        target?.UnregisterCallback<DragUpdatedEvent>(OnDragUpdate);
+        target?.UnregisterCallback<DragPerformEvent>(OnDragPerform);
     }
 
-    void OnDragUpdate(DragUpdatedEvent _)
+    static void OnDragUpdate(DragUpdatedEvent _)
     {
         DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
     }
@@ -44,13 +44,15 @@ class AudioContainerListDragAndDropManipulator : PointerManipulator
         foreach (var path in DragAndDrop.paths)
         {
             var audioClip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
-            if (audioClip != null) audioClips.Add(audioClip);
+
+            if (audioClip != null)
+                audioClips.Add(audioClip);
         }
 
         if (audioClips.Count > 0)
         {
             DragAndDrop.AcceptDrag();
-            addAudioClipsDelegate(audioClips);
+            addAudioClipsDelegate?.Invoke(audioClips);
         }
     }
 }

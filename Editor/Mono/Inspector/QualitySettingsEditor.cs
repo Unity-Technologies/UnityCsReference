@@ -717,13 +717,10 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(vSyncCountProperty, Content.kVSyncCountLabel);
 
-            if (BuildTargetDiscovery.TryGetBuildTarget(EditorUserBuildSettings.activeBuildTarget, out var activeBuildTarget))
+            if (BuildTargetDiscovery.TryGetBuildTarget(EditorUserBuildSettings.activeBuildTarget, out var iBuildTarget))
             {
-                if (activeBuildTarget.TryGetProperties(out IGraphicsPlatformProperties graphicsProperties))
-                {
-                    if (vSyncCountProperty.intValue > 0 && graphicsProperties.IgnoresVSyncCount)
-                        EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent($"VSync Count '{vSyncCountProperty.enumLocalizedDisplayNames[vSyncCountProperty.enumValueIndex]}' is ignored on {activeBuildTarget.DisplayName}.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)));
-                }
+                if (vSyncCountProperty.intValue > 0 && (iBuildTarget.GraphicsPlatformProperties?.IgnoresVSyncCount ?? false))
+                    EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent($"VSync Count '{vSyncCountProperty.enumLocalizedDisplayNames[vSyncCountProperty.enumValueIndex]}' is ignored on {iBuildTarget.DisplayName}.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)));
             }
 
             if (usingSRP)

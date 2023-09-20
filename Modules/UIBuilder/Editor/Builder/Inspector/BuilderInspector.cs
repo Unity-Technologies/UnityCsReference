@@ -752,7 +752,7 @@ namespace Unity.UI.Builder
                 baseField.SetEnabled(!parentContainerShouldBeFocusable);
         }
 
-        internal static void UpdateFieldStatusIconAndStyling(VisualElement currentElement, VisualElement field, in FieldValueInfo valueInfo)
+        internal static void UpdateFieldStatusIconAndStyling(VisualElement currentElement, VisualElement field, FieldValueInfo valueInfo, bool inInspector = true)
         {
             var statusIndicator = field.GetFieldStatusIndicator();
 
@@ -798,6 +798,46 @@ namespace Unity.UI.Builder
                     field.AddToClassList(BuilderConstants.InspectorLocalStyleSelectorElementClassName);
                 }
             }
+
+            // If the element's data source / data source type is inherited: data source toggle group label, field status indicator and data source object field display need to be updated
+            if (!valueInfo.name.Equals(BuilderDataSourceAndPathView.k_BindingAttr_DataSource) && !valueInfo.name.Equals(BuilderDataSourceAndPathView.k_BindingAttr_DataSourceType))
+                return;
+
+            UpdateFieldTooltip(field, valueInfo, currentElement);
+
+            var styleRow = field.GetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName) as BuilderStyleRow;
+            var bindingAttributeTypeButtonGroup = styleRow?.Q<ToggleButtonGroup>();
+            if (bindingAttributeTypeButtonGroup == null)
+                return;
+
+            if (valueInfo.valueBinding.type == FieldValueBindingInfoType.Constant && valueInfo.valueSource.type == FieldValueSourceInfoType.Inherited)
+            {
+                var parent = currentElement.parent;
+                if (parent == null)
+                    return;
+
+                // update the label to show that source is inherited
+                bindingAttributeTypeButtonGroup.label = string.Format(BuilderConstants.BuilderLabelWithInheritedLabelSuffix, BuilderNameUtilities.ConvertDashToHuman(BuilderDataSourceAndPathView.k_BindingAttr_DataSource));
+
+                if (!valueInfo.name.Equals(BuilderDataSourceAndPathView.k_BindingAttr_DataSource))
+                    return;
+
+                // Object field display label must be truncated to fit in the display.
+                var objectFieldDisplay = field.Q<ObjectField.ObjectFieldDisplay>();
+                DataBindingUtility.TryGetRelativeDataSourceFromHierarchy(inInspector ? parent : currentElement, out var dataSource);
+                var dataSourceName = BuilderNameUtilities.GetNameByReflection(dataSource);
+                var objectFieldDisplayLabel = objectFieldDisplay?.Q<Label>();
+                if (objectFieldDisplayLabel != null && objectFieldDisplayLabel.text.Contains(BuilderConstants.UnnamedValue))
+                {
+                    objectFieldDisplayLabel.text = dataSourceName.Contains(BuilderConstants.UnnamedValue) ?
+                        string.Format(BuilderConstants.BuilderBindingObjectFieldEmptyMessage, dataSource)
+                        : dataSourceName;
+                }
+            }
+            else
+            {
+                bindingAttributeTypeButtonGroup.label = BuilderNameUtilities.ConvertDashToHuman(BuilderDataSourceAndPathView.k_BindingAttr_DataSource);
+            }
         }
 
         internal static void UpdateFieldTooltip(VisualElement field, in FieldValueInfo valueInfo, VisualElement currentElement = null)
@@ -838,6 +878,12 @@ namespace Unity.UI.Builder
 
         static string GetFieldStatusIndicatorTooltip(in FieldValueInfo info, VisualElement field, VisualElement currentElement, string description = null)
         {
+            // Data source type attribute's tooltip should not override the data source attribute's tooltip if data source is set
+            if (info.name.Equals(BuilderDataSourceAndPathView.k_BindingAttr_DataSourceType) && currentElement.dataSource != null)
+            {
+                return BuilderConstants.FieldStatusIndicatorInlineTooltip;
+            }
+
             if (info.valueSource.type == FieldValueSourceInfoType.Default)
                 return BuilderConstants.FieldStatusIndicatorDefaultTooltip;
             if (info.valueBinding.type == FieldValueBindingInfoType.USSVariable)
@@ -883,6 +929,24 @@ namespace Unity.UI.Builder
                         BuilderConstants.FieldStatusIndicatorUnresolvedBindingTooltip,
                         dataSourceString, dataSourcePathStr, bindingMode, converters),
                 };
+            }
+
+            // inherited data source or data source type
+            if (info.valueBinding.type == FieldValueBindingInfoType.Constant && info.valueSource.type == FieldValueSourceInfoType.Inherited)
+            {
+                var parent = currentElement.parent;
+                if (parent == null)
+                    return "";
+
+                var parentString = string.Format(BuilderConstants.FieldStatusIndicatorInheritedTooltip, parent.typeName,
+                    parent.name);
+
+                DataBindingUtility.TryGetDataSourceOrDataSourceTypeFromHierarchy(parent, out var dataSourceObject, out var dataSourceType, out var fullPath);
+                if (dataSourceObject != null)
+                    return string.Format(BuilderConstants.FieldStatusIndicatorInheritedDataSourceTooltip, parentString, dataSourceObject, fullPath);
+                if (dataSourceType != null)
+                    return string.Format(BuilderConstants.FieldStatusIndicatorInheritedDataSourceTypeTooltip, parentString, dataSourceType, fullPath);
+                return "";
             }
 
             return info.valueSource.type switch
@@ -1400,7 +1464,11 @@ namespace Unity.UI.Builder
                 return attribute?.name == propName;
             }
 
-            VisualElement field = attributeSection.root.Query().Where(IsFieldElement);
+            VisualElement field;
+            if (propName is "data-source" or "data-source-type" or "data-source-path")
+                field = m_HeaderSection.m_DataSourceAndPathView.fieldsContainer.Query().Where(IsFieldElement);
+            else
+                field = attributeSection.root.Query().Where(IsFieldElement);
 
             return field;
         }

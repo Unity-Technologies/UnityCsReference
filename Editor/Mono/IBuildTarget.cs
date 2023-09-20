@@ -2,17 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 
 namespace UnityEditor
 {
     internal interface IBuildTarget
     {
-        // The BuildPlayerWindow.ActiveBuildTargetsGUI method uses this property to determine whether or not to display certain
-        // build options based on whether or not the desired build target is compatible with the OS on which the editor is running.
-        bool CanBuildOnCurrentHostPlatform { get; }
-
         // The DesktopPluginImporterExtension.OnPlatformSettingsGUI method and the PlayerSettingsEditor.GraphicsAPIsGUI method
         // use this property to determine what name to display for a build target.  This is often the same as the TargetName
         // property but is different for several targets, such as "Embedded Linux" instead of "EmbeddedLinux".
@@ -34,7 +29,16 @@ namespace UnityEditor
 
         // This function allows to retrieve PlayerConnectionPlatformProperties derived from IPlatformProperties as quick access
         IPlayerConnectionPlatformProperties PlayerConnectionPlatformProperties { get; }
-    
+
+        // This function allows to retrieve IconPlatformProperties derived from IPlatformProperties as quick access
+        IIconPlatformProperties IconPlatformProperties { get; }
+
+        // This function allows to retrieve UIPlatformProperties derived from IPlatformProperties as quick access
+        IUIPlatformProperties UIPlatformProperties { get; }
+
+        // This function allows to retrieve AudioPlatformProperties derived from IPlatformProperties as quick access
+        IAudioPlatformProperties AudioPlatformProperties { get; }
+
         // This function allows to retrieve properties of a give type, derived from IPlatformProperties
         // if they are available.
         bool TryGetProperties<T>(out T properties) where T: IPlatformProperties;

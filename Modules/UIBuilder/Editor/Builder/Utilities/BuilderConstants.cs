@@ -179,6 +179,9 @@ namespace Unity.UI.Builder
         public static readonly string BuilderInspectorSelector = "Selector";
         public static readonly string BuilderInspectorTemplateInstance = "Template Instance";
         public static readonly string BuilderAttributesHeader = "Attributes";
+        public static readonly string BuilderInheritedLabelSuffix = "(inherited)";
+        public static readonly string BuilderLabelWithInheritedLabelSuffix = "{0} " + BuilderInheritedLabelSuffix;
+        public static readonly string BuilderBindingObjectFieldEmptyMessage = "... ({0})";
 
         // Inspector Messages
         public static readonly string AddStyleClassValidationSpaces = "Class names cannot contain spaces.";
@@ -221,6 +224,8 @@ namespace Unity.UI.Builder
         public static readonly string FieldStatusIndicatorDefaultTooltip = "Default Value";
         public static readonly string FieldStatusIndicatorInlineTooltip = "Inline Value\n\nValue is set directly from the property field.";
         public static readonly string FieldStatusIndicatorInheritedTooltip = "Inherited Value\n\nParent: {0} {1}";
+        public static readonly string FieldStatusIndicatorInheritedDataSourceTooltip = "{0}\n<indent=5%>Inherited Data Source: {1}</indent>\n<indent=5%>Full Path: {2}</indent>";
+        public static readonly string FieldStatusIndicatorInheritedDataSourceTypeTooltip = "{0}\n<indent=5%>Inherited Data Source Type: {1}</indent>\n<indent=5%>Full Path: {2}</indent>";
         public static readonly string FieldStatusIndicatorLocalTooltip = "Local Value\n\nValue is set directly from the property field.";
         public static readonly string FieldStatusIndicatorFromSelectorTooltip = "Selector Value\n\nSelector: {0}\nSheet: {1}";
         public static readonly string FieldStatusIndicatorVariableTooltip = "Variable Value\n\nVariable: {0}\nSheet: {1}";
@@ -594,7 +599,9 @@ namespace Unity.UI.Builder
         public static readonly string AddNewSelectorUndoMessage = "Create USS Selector";
         public static readonly string RenameSelectorUndoMessage = "Rename USS Selector";
         public static readonly string DeleteSelectorUndoMessage = "Delete USS Selector";
+        public static readonly string AddUxmlObject = "Add UXML Object";
         public static readonly string ModifyUxmlObject = "Modify UXML Object";
+        public static readonly string RemoveUxmlObject = "Remove UXML Object";
         public static readonly string MoveUSSSelectorUndoMessage = "Move USS Selector";
         public static readonly string AddBindingUndoMessage = "Add Binding";
         public static readonly string DeleteBindingUndoMessage = "Delete Binding";
@@ -613,14 +620,15 @@ namespace Unity.UI.Builder
         public static readonly string BindingWindowMissingPathErrorMessage = "Path is missing";
         public static readonly string BindingWindowCannotCreateBindingErrorMessage = "Cannot create binding on {0}";
         public static readonly string BindingWindowCannotEditBindingErrorMessage = "Cannot edit binding on {0}";
-        public static readonly string BindingWindowLocalConverterPlaceholderText = "Enter a converter group";
+        public static readonly string BindingWindowLocalConverterPlaceholderText = "Enter a converter ID";
         public static readonly string BindingWindowLocalConverterNotApplicableMessage = "It is not applicable for the specified binding mode";
         public static readonly string BindingWindowConverterCompleter_IncompatibleMessage = "Not currently compatible with type";
         public static readonly string BindingWindowConverterCompleter_CompatibleMessage = "Compatible with type";
         public static readonly string BindingWindowConverterCompleter_UnknownCompatibilityMessage = "Unknown";
-        public static readonly string BindingWindowConverterCompleter_SelectEditedText = "Select to use a custom group ID";
-        public static readonly string BindingWindowConverterCompleter_UseCurrentEntryMessage = "Use \"{0}\" as group ID";
+        public static readonly string BindingWindowConverterCompleter_SelectEditedText = "Select to use a custom converter ID";
+        public static readonly string BindingWindowConverterCompleter_UseCurrentEntryMessage = "Use \"{0}\" as converter ID";
         public static readonly string BindingWindowShowOnlyCompatibleMessage = "Show only compatible";
+        public static readonly string BindingWindowCompatibleWarningBoxText = "Using a converter group with unknown compatibility cannot show a resolved value in the UI Builder but may work at runtime.";
 
         //
         // Dialogs

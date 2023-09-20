@@ -239,7 +239,7 @@ namespace UnityEditor
                     var buildTargetGroup = validPlatform.targetGroup;
                     var setting = new InspectorTargetSettings();
                     setting.target = buildTargetGroup;
-                    setting.settings = currentTarget.Internal_GetTargetSettings(buildTargetGroup);
+                    setting.settings = currentTarget.Internal_GetTargetSettings(validPlatform.namedBuildTarget);
                     setting.overridePlatform = setting.settings != null;
                     if (!setting.overridePlatform)
                     {
@@ -265,10 +265,11 @@ namespace UnityEditor
                     for (var j = 1; j < dataTarget.allSettings.Count; j++)
                     {
                         var setting = dataTarget.allSettings[j];
+                        var namedTarget = NamedBuildTarget.FromBuildTargetGroup(setting.target);
                         if (setting.overridePlatform)
-                            importer.Internal_SetTargetSettings(setting.target, setting.settings);
+                            importer.Internal_SetTargetSettings(namedTarget, setting.settings);
                         else
-                            importer.Internal_ClearTargetSettings(setting.target);
+                            importer.Internal_ClearTargetSettings(namedTarget);
                     }
                 }
             }
@@ -665,7 +666,7 @@ namespace UnityEditor
             float previewWidth = m_Texture.width;
             float previewHeight = m_Texture.height;
             var activeSettings =
-                importer.Internal_GetTargetSettings(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget));
+                importer.Internal_GetTargetSettings(NamedBuildTarget.FromActiveSettings(EditorUserBuildSettings.activeBuildTarget));
             if (activeSettings == null)
                 activeSettings = importer.defaultTargetSettings;
             if (activeSettings.enableTranscoding)

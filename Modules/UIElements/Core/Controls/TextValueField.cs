@@ -72,6 +72,11 @@ namespace UnityEngine.UIElements
         internal bool m_UpdateTextFromValue;
         private bool m_ForceUpdateDisplay;
 
+        internal bool forceUpdateDisplay
+        {
+            set => m_ForceUpdateDisplay = value;
+        }
+
         /// <summary>
         /// The format string for the value.
         /// </summary>
@@ -238,6 +243,12 @@ namespace UnityEngine.UIElements
             m_ForceUpdateDisplay = true;
 
             base.OnViewDataReady();
+        }
+
+        internal override void RegisterEditingCallbacks()
+        {
+            base.RegisterEditingCallbacks();
+            labelElement.RegisterCallback<PointerUpEvent>(_ => editingStarted?.Invoke());
         }
 
         // Implements a control with a value of type T backed by a text.

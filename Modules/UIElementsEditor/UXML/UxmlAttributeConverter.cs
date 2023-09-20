@@ -32,7 +32,7 @@ namespace UnityEditor.UIElements
             foreach (var converterType in types)
             {
                 var attributes = converterType.Attributes;
-                if ((attributes & TypeAttributes.Abstract) != 0 || converterType.IsGenericType)
+                if ((attributes & TypeAttributes.Abstract) != 0)
                     continue;
 
                 Type conversionType = null;
@@ -41,7 +41,12 @@ namespace UnityEditor.UIElements
                 {
                     t = t.BaseType;
                     if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(UxmlAttributeConverter<>))
+                    {
                         conversionType = t.GetGenericArguments()[0];
+
+                        if (conversionType.IsGenericType)
+                            conversionType = conversionType.GetGenericTypeDefinition();
+                    }
                 }
                 Debug.Assert(conversionType != null);
                 s_RegisteredConverterTypes[conversionType] = converterType;
@@ -141,12 +146,24 @@ namespace UnityEditor.UIElements
                     return true;
                 }
 
-                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+                if (type.IsGenericType)
                 {
-                    var genericType = type.GetGenericArguments()[0];
-                    if (s_RegisteredConverterTypes.ContainsKey(genericType) || genericType.IsEnum)
+                    var genericTypeDefinition = type.GetGenericTypeDefinition();
+                    if (genericTypeDefinition == typeof(List<>))
                     {
-                        var converterType = typeof(ListAttributeConverter<>).MakeGenericType(genericType);
+                        var genericTypeArgument0 = type.GetGenericArguments()[0];
+                        if (s_RegisteredConverterTypes.ContainsKey(genericTypeArgument0) || genericTypeArgument0.IsEnum)
+                        {
+                            var converterType = typeof(ListAttributeConverter<>).MakeGenericType(genericTypeArgument0);
+                            s_RegisteredConverterTypes[type] = converterType;
+                            converter = GetOrCreateConverter(type);
+                            return true;
+                        }
+                    }
+                    else if (s_RegisteredConverterTypes.TryGetValue(genericTypeDefinition, out var genericConverterType))
+                    {
+                        // Check for a generic converter type
+                        var converterType = genericConverterType.MakeGenericType(type.GetGenericArguments());
                         s_RegisteredConverterTypes[type] = converterType;
                         converter = GetOrCreateConverter(type);
                         return true;
@@ -231,6 +248,19 @@ namespace UnityEditor.UIElements
     /// <example>
     /// Example UXML:
     /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_MyClassWithDataConverter.uxml"/>
+    /// </example>
+    /// <example>
+    /// You can also use generic attribute converters. However, you must declare the attribute with the generic type. To use a type derived from a generic type, declare a new converter specifically for it.
+    /// The following example uses a generic attribute converter and a custom property drawer to create a generic serialized dictionary:
+    /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_SerializableDictionary.cs"/>
+    /// </example>
+    /// <example>
+    /// Generic attribute converter:
+    /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_SerializableDictionaryConverter.cs"/>
+    /// </example>
+    /// <example>
+    /// Custom property drawer:
+    /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_SerializableDictionaryPropertyDrawer.cs"/>
     /// </example>
     /// <typeparam name="T"></typeparam>
     public abstract class UxmlAttributeConverter<T> : IUxmlAttributeConverter

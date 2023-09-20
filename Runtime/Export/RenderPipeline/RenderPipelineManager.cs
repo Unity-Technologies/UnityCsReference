@@ -12,6 +12,7 @@ namespace UnityEngine.Rendering
 {
     public static partial class RenderPipelineManager
     {
+        private static bool s_CleanUpPipeline = false;
         internal static RenderPipelineAsset s_CurrentPipelineAsset;
         static List<Camera> s_Cameras = new List<Camera>();
 
@@ -84,7 +85,7 @@ namespace UnityEngine.Rendering
         internal static void HandleRenderPipelineChange(RenderPipelineAsset pipelineAsset)
         {
             bool hasRPAssetChanged = !ReferenceEquals(s_CurrentPipelineAsset, pipelineAsset);
-            if (hasRPAssetChanged)
+            if (s_CleanUpPipeline || hasRPAssetChanged)
             {
                 // Required because when switching to a RenderPipeline asset for the first time
                 // it will call OnValidate on the new asset before cleaning up the old one. Thus we
@@ -94,17 +95,27 @@ namespace UnityEngine.Rendering
             }
         }
 
+        internal static void RecreateCurrentPipeline(RenderPipelineAsset pipelineAsset)
+        {
+            if (s_CurrentPipelineAsset == pipelineAsset)
+            {
+                s_CleanUpPipeline = true;
+            }
+        }
+
         [RequiredByNativeCode]
         internal static void CleanupRenderPipeline()
         {
-            if (currentPipeline != null && !currentPipeline.disposed)
-            {
-                activeRenderPipelineDisposed?.Invoke();
-                currentPipeline.Dispose();
-                s_CurrentPipelineAsset = null;
-                currentPipeline = null;
-                SupportedRenderingFeatures.active = new SupportedRenderingFeatures();
-            }
+            if (!isCurrentPipelineValid)
+                return;
+
+            activeRenderPipelineDisposed?.Invoke();
+            currentPipeline.Dispose();
+            currentPipeline = null;
+            s_CleanUpPipeline = false;
+
+            s_CurrentPipelineAsset = null;
+            SupportedRenderingFeatures.active = new SupportedRenderingFeatures();
         }
 
         [RequiredByNativeCode]
@@ -114,15 +125,22 @@ namespace UnityEngine.Rendering
         }
 
         [RequiredByNativeCode]
-        static void DoRenderLoop_Internal(RenderPipelineAsset pipe, IntPtr loopPtr, Object renderRequest, AtomicSafetyHandle safety)
+
+        static void DoRenderLoop_Internal
+        (
+            RenderPipelineAsset pipelineAsset,
+            IntPtr loopPtr,
+            Object renderRequest
+            , AtomicSafetyHandle safety
+        )
         {
-            PrepareRenderPipeline(pipe);
-
-            if (currentPipeline == null)
+            if (!TryPrepareRenderPipeline(pipelineAsset))
                 return;
+            
+            var loop = new ScriptableRenderContext(loopPtr
+                , safety
+                );
 
-            var loop =
-                new ScriptableRenderContext(loopPtr, safety);
             s_Cameras.Clear();
 
             loop.GetCameras(s_Cameras);
@@ -134,7 +152,7 @@ namespace UnityEngine.Rendering
             s_Cameras.Clear();
         }
 
-        internal static void PrepareRenderPipeline(RenderPipelineAsset pipelineAsset)
+        internal static bool TryPrepareRenderPipeline(RenderPipelineAsset pipelineAsset)
         {
             HandleRenderPipelineChange(pipelineAsset);
 
@@ -143,8 +161,11 @@ namespace UnityEngine.Rendering
                 currentPipeline = s_CurrentPipelineAsset.InternalCreatePipeline();
                 activeRenderPipelineCreated?.Invoke();
             }
+
+            return currentPipeline != null;
         }
 
+        private static bool isCurrentPipelineValid => currentPipeline != null && !currentPipeline.disposed;
         static bool IsPipelineRequireCreation() => s_CurrentPipelineAsset != null && (currentPipeline == null || currentPipeline.disposed);
     }
 }

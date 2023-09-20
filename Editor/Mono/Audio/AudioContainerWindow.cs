@@ -9,9 +9,11 @@ using UnityEditor.Audio;
 using UnityEditor.Audio.UIElements;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Audio;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor;
 
@@ -23,6 +25,11 @@ sealed class AudioContainerWindow : EditorWindow
     internal static AudioContainerWindow Instance { get; private set; }
 
     internal readonly AudioContainerWindowState State = new();
+
+    /// <summary>
+    /// Holds the added list elements in the list interaction callbacks
+    /// </summary>
+    readonly List<AudioContainerElement> m_AddedElements = new();
 
     VisualElement m_ContainerRootVisualElement;
     VisualElement m_Day0RootVisualElement;
@@ -85,7 +92,12 @@ sealed class AudioContainerWindow : EditorWindow
     Texture2D m_DiceIconOn;
 
     bool m_IsInitializing;
+    bool m_Day0ElementsInitialized;
+    bool m_ContainerElementsInitialized;
 
+    /// <summary>
+    /// Holds the previous state of the list elements for undo/delete housekeeping
+    /// </summary>
     List<AudioContainerElement> m_CachedElements = new();
 
     [RequiredByNativeCode]
@@ -93,14 +105,6 @@ sealed class AudioContainerWindow : EditorWindow
     {
         var window = GetWindow<AudioContainerWindow>();
         window.Show();
-    }
-
-    /// <summary>
-    /// Updates the state, which will implicitly refresh the window content if needed.
-    /// </summary>
-    internal void Refresh()
-    {
-        State.UpdateTarget();
     }
 
     static void OnCreateButtonClicked()
@@ -111,39 +115,42 @@ sealed class AudioContainerWindow : EditorWindow
     void OnEnable()
     {
         Instance = this;
+
+        Undo.undoRedoPerformed += OnUndoRedoPerformed;
+
         State.TargetChanged += OnTargetChanged;
         State.TransportStateChanged += OnTransportStateChanged;
         State.EditorPauseStateChanged += EditorPauseStateChanged;
+
         m_DiceIconOff = EditorGUIUtility.IconContent("AudioRandomContainer On Icon").image as Texture2D;
         m_DiceIconOn = EditorGUIUtility.IconContent("AudioRandomContainer Icon").image as Texture2D;
-        SetTitle(State.IsDirty());
+
+        SetTitle();
+
+        m_IsInitializing = false;
+        m_Day0ElementsInitialized = false;
+        m_ContainerElementsInitialized = false;
     }
 
     void OnDisable()
     {
         Instance = null;
 
-        if (m_PlayButton != null)
-            m_PlayButton.clicked -= OnPlayStopButtonClicked;
+        UnsubscribeFromPreviewCallbacksAndEvents();
+        UnsubscribeFromVolumeCallbacksAndEvents();
+        UnsubscribeFromPitchCallbacksAndEvents();
+        UnsubscribeFromClipListCallbacksAndEvents();
+        UnsubscribeFromAutomaticTriggerCallbacksAndEvents();
 
-        if (m_SkipButton != null)
-            m_SkipButton.clicked -= OnSkipButtonClicked;
-
-        m_VolumeRandomizationRangeSlider?.UnregisterValueChangedCallback(OnVolumeRandomizationRangeChanged);
-        m_VolumeRandomizationRangeField?.UnregisterValueChangedCallback(OnVolumeRandomizationRangeChanged);
-
-        m_PitchRandomizationRangeSlider?.UnregisterValueChangedCallback(OnPitchRandomizationRangeChanged);
-        m_PitchRandomizationRangeField?.UnregisterValueChangedCallback(OnPitchRandomizationRangeChanged);
-
-        m_TimeRandomizationRangeSlider?.UnregisterValueChangedCallback(OnTimeRandomizationRangeChanged);
-        m_TimeRandomizationRangeField?.UnregisterValueChangedCallback(OnTimeRandomizationRangeChanged);
+        Undo.undoRedoPerformed -= OnUndoRedoPerformed;
 
         State.TargetChanged -= OnTargetChanged;
         State.TransportStateChanged -= OnTransportStateChanged;
         State.EditorPauseStateChanged -= EditorPauseStateChanged;
-        State.OnDestroy();
 
+        State.OnDestroy();
         m_CachedElements.Clear();
+        m_AddedElements.Clear();
     }
 
     void Update()
@@ -165,11 +172,11 @@ sealed class AudioContainerWindow : EditorWindow
         ClearClipFieldProgressBars();
     }
 
-    void SetTitle(bool targetIsDirty)
+    void SetTitle()
     {
         var titleString = "Audio Random Container";
 
-        if (targetIsDirty)
+        if (State.IsDirty())
             titleString += "*";
 
         titleContent = new GUIContent(titleString)
@@ -186,29 +193,53 @@ sealed class AudioContainerWindow : EditorWindow
                 return;
 
             m_IsInitializing = true;
-            rootVisualElement.Clear();
 
-            var rootAsset = UIToolkitUtilities.LoadUxml("UXML/Audio/AudioRandomContainer.uxml");
-            rootAsset.CloneTree(rootVisualElement);
+            var root = rootVisualElement;
 
-            var styleSheet = UIToolkitUtilities.LoadStyleSheet("StyleSheets/Audio/AudioRandomContainer.uss");
-            rootVisualElement.styleSheets.Add(styleSheet);
-            rootVisualElement.Add(State.GetResourceTrackerElement());
+            if (root.childCount == 0)
+            {
+                var rootAsset = UIToolkitUtilities.LoadUxml("UXML/Audio/AudioRandomContainer.uxml");
+                Assert.IsNotNull(rootAsset);
+                rootAsset.CloneTree(root);
 
-            m_ContainerRootVisualElement = UIToolkitUtilities.GetChildByName<ScrollView>(rootVisualElement, "ARC_ScrollView");
-            m_Day0RootVisualElement = UIToolkitUtilities.GetChildByName<VisualElement>(rootVisualElement, "Day0");
+                var styleSheet = UIToolkitUtilities.LoadStyleSheet("StyleSheets/Audio/AudioRandomContainer.uss");
+                Assert.IsNotNull(styleSheet);
+                root.styleSheets.Add(styleSheet);
+                root.Add(State.GetResourceTrackerElement());
+
+                m_ContainerRootVisualElement = UIToolkitUtilities.GetChildByName<ScrollView>(root, "ARC_ScrollView");
+                Assert.IsNotNull(m_ContainerRootVisualElement);
+                m_Day0RootVisualElement = UIToolkitUtilities.GetChildByName<VisualElement>(root, "Day0");
+                Assert.IsNotNull(m_Day0RootVisualElement);
+            }
 
             if (State.AudioContainer == null)
             {
+                if (!m_Day0ElementsInitialized)
+                {
+                    InitializeDay0Elements();
+                    m_Day0ElementsInitialized = true;
+                }
+
+                m_Day0RootVisualElement.style.display = DisplayStyle.Flex;
                 m_ContainerRootVisualElement.style.display = DisplayStyle.None;
-                InitDay0GUI();
-                return;
             }
+            else
+            {
+                if (m_ContainerElementsInitialized)
+                    root.Unbind();
+                else
+                {
+                    InitializeElements();
+                    SubscribeToCallbacksAndEvents();
+                    m_ContainerElementsInitialized = true;
+                }
 
-            if (m_Day0RootVisualElement != null)
+                BindAndTrackObjectAndProperties();
+
                 m_Day0RootVisualElement.style.display = DisplayStyle.None;
-
-            InitAudioRandomContainerGUI();
+                m_ContainerRootVisualElement.style.display = DisplayStyle.Flex;
+            }
         }
         finally
         {
@@ -216,33 +247,49 @@ sealed class AudioContainerWindow : EditorWindow
         }
     }
 
-    void InitDay0GUI()
+    void InitializeDay0Elements()
     {
-        var day0Element = UIToolkitUtilities.GetChildByName<VisualElement>(rootVisualElement, "Day0");
-        var createButtonLabel = UIToolkitUtilities.GetChildByName<Label>(day0Element, "CreateButtonLabel");
-        var createButton = UIToolkitUtilities.GetChildByName<Button>(day0Element, "CreateButton");
+        var createButtonLabel = UIToolkitUtilities.GetChildByName<Label>(m_Day0RootVisualElement, "CreateButtonLabel");
+        var createButton = UIToolkitUtilities.GetChildByName<Button>(m_Day0RootVisualElement, "CreateButton");
         createButton.clicked += OnCreateButtonClicked;
         createButtonLabel.text = "Select an existing Audio Random Container asset in the project browser or create a new one using the button below.";
     }
 
-    void InitAudioRandomContainerGUI()
+    void InitializeElements()
+    {
+        InitializePreviewElements();
+        InitializeVolumeElements();
+        InitializePitchElements();
+        InitializeClipListElements();
+        InitializeTriggerAndPlayModeElements();
+        InitializeAutomaticTriggerElements();
+    }
+
+    void BindAndTrackObjectAndProperties()
     {
         m_ContainerRootVisualElement.TrackSerializedObjectValue(State.SerializedObject, OnSerializedObjectChanged);
 
-        InitPreviewGUI();
-        InitVolumeGUI();
-        InitPitchGUI();
-        InitClipListGUI();
-        InitTriggerAndPlayModeGUI();
-        InitAutomaticTriggerGUI();
-        OnTriggerChanged((AudioRandomContainerTriggerMode)m_TriggerRadioButtonGroup.value);
-        UpdateTransportButtonStates();
+        BindAndTrackPreviewProperties();
+        BindAndTrackVolumeProperties();
+        BindAndTrackPitchProperties();
+        BindAndTrackClipListProperties();
+        BindAndTrackTriggerAndPlayModeProperties();
+        BindAndTrackAutomaticTriggerProperties();
+    }
+
+    void SubscribeToCallbacksAndEvents()
+    {
+        SubscribeToPreviewCallbacksAndEvents();
+        SubscribeToVolumeCallbacksAndEvents();
+        SubscribeToPitchCallbacksAndEvents();
+        SubscribeToClipListCallbacksAndEvents();
+        SubscribeToAutomaticTriggerCallbacksAndEvents();
         EditorApplication.update += OneTimeEditorApplicationUpdate;
     }
 
     void OnTargetChanged(object sender, EventArgs e)
     {
-        SetTitle(State.IsDirty());
+        SetTitle();
         CreateGUI();
 
         if (State.AudioContainer != null)
@@ -251,7 +298,7 @@ sealed class AudioContainerWindow : EditorWindow
 
     void OnSerializedObjectChanged(SerializedObject obj)
     {
-        SetTitle(State.IsDirty());
+        SetTitle();
     }
 
     void OneTimeEditorApplicationUpdate()
@@ -265,20 +312,37 @@ sealed class AudioContainerWindow : EditorWindow
 
     #region Preview
 
-    void InitPreviewGUI()
+    void InitializePreviewElements()
     {
-        m_AssetNameLabel = UIToolkitUtilities.GetChildByName<Label>(rootVisualElement, "asset-name-label");
-        m_AssetNameLabel.text = State.AudioContainer.name;
+        m_AssetNameLabel = UIToolkitUtilities.GetChildByName<Label>(m_ContainerRootVisualElement, "asset-name-label");
+        m_PlayButton = UIToolkitUtilities.GetChildByName<Button>(m_ContainerRootVisualElement, "play-button");
+        m_PlayButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(m_ContainerRootVisualElement, "play-button-image");
+        m_SkipButton = UIToolkitUtilities.GetChildByName<Button>(m_ContainerRootVisualElement, "skip-button");
+        m_SkipButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(m_ContainerRootVisualElement, "skip-button-image");
 
-        m_PlayButton = UIToolkitUtilities.GetChildByName<Button>(rootVisualElement, "play-button");
-        m_PlayButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(rootVisualElement, "play-button-image");
-        m_PlayButton.clicked += OnPlayStopButtonClicked;
-
-        m_SkipButton = UIToolkitUtilities.GetChildByName<Button>(rootVisualElement, "skip-button");
-        m_SkipButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(rootVisualElement, "skip-button-image");
-        m_SkipButton.clicked += OnSkipButtonClicked;
         var skipIcon = UIToolkitUtilities.LoadIcon("icon_next");
         m_SkipButtonImage.style.backgroundImage = new StyleBackground(skipIcon);
+    }
+
+    void SubscribeToPreviewCallbacksAndEvents()
+    {
+        m_PlayButton.clicked += OnPlayStopButtonClicked;
+        m_SkipButton.clicked += OnSkipButtonClicked;
+    }
+
+    void UnsubscribeFromPreviewCallbacksAndEvents()
+    {
+        if (m_PlayButton != null)
+            m_PlayButton.clicked -= OnPlayStopButtonClicked;
+
+        if (m_PlayButton != null)
+            m_PlayButton.clicked -= OnSkipButtonClicked;
+    }
+
+    void BindAndTrackPreviewProperties()
+    {
+        UpdateTransportButtonStates();
+        m_AssetNameLabel.text = State.AudioContainer.name;
     }
 
     void OnPlayStopButtonClicked()
@@ -329,46 +393,59 @@ sealed class AudioContainerWindow : EditorWindow
 
     #region Volume
 
-    void InitVolumeGUI()
+    void InitializeVolumeElements()
     {
-        m_Meter = UIToolkitUtilities.GetChildByName<AudioLevelMeter>(rootVisualElement, "meter");
+        m_Meter = UIToolkitUtilities.GetChildByName<AudioLevelMeter>(m_ContainerRootVisualElement, "meter");
+        m_VolumeSlider = UIToolkitUtilities.GetChildByName<Slider>(m_ContainerRootVisualElement, "volume-slider");
+        m_VolumeRandomRangeTracker = AudioRandomRangeSliderTracker.Create(m_VolumeSlider, State.AudioContainer.volumeRandomizationRange);
+        m_VolumeField = UIToolkitUtilities.GetChildByName<FloatField>(m_ContainerRootVisualElement, "volume-field");
+        m_VolumeRandomizationButton = UIToolkitUtilities.GetChildByName<Button>(m_ContainerRootVisualElement, "volume-randomization-button");
+        m_VolumeRandomizationButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(m_ContainerRootVisualElement, "volume-randomization-button-image");
+        m_VolumeRandomizationRangeSlider = UIToolkitUtilities.GetChildByName<MinMaxSlider>(m_ContainerRootVisualElement, "volume-randomization-range-slider");
+        m_VolumeRandomizationRangeField = UIToolkitUtilities.GetChildByName<Vector2Field>(m_ContainerRootVisualElement, "volume-randomization-range-field");
+        var volumeRandomizationMinField = UIToolkitUtilities.GetChildByName<FloatField>(m_VolumeRandomizationRangeField, "unity-x-input");
+        var volumeRandomizationMaxField = UIToolkitUtilities.GetChildByName<FloatField>(m_VolumeRandomizationRangeField, "unity-y-input");
 
+        m_VolumeField.formatString = "0.# dB";
+        m_VolumeField.isDelayed = true;
+        volumeRandomizationMinField.isDelayed = true;
+        volumeRandomizationMinField.label = "";
+        volumeRandomizationMinField.formatString = "0.# dB";
+        volumeRandomizationMaxField.isDelayed = true;
+        volumeRandomizationMaxField.label = "";
+        volumeRandomizationMaxField.formatString = "0.# dB";
+    }
+
+    void SubscribeToVolumeCallbacksAndEvents()
+    {
+        m_VolumeRandomizationButton.clicked += OnVolumeRandomizationButtonClicked;
+        m_VolumeSlider.RegisterValueChangedCallback(OnVolumeChanged);
+        m_VolumeRandomizationRangeSlider.RegisterValueChangedCallback(OnVolumeRandomizationRangeChanged);
+        m_VolumeRandomizationRangeField.RegisterValueChangedCallback(OnVolumeRandomizationRangeChanged);
+    }
+
+    void UnsubscribeFromVolumeCallbacksAndEvents()
+    {
+        if (m_VolumeRandomizationButton != null)
+            m_VolumeRandomizationButton.clicked -= OnVolumeRandomizationButtonClicked;
+
+        m_VolumeSlider?.UnregisterValueChangedCallback(OnVolumeChanged);
+        m_VolumeRandomizationRangeSlider?.UnregisterValueChangedCallback(OnVolumeRandomizationRangeChanged);
+        m_VolumeRandomizationRangeField?.UnregisterValueChangedCallback(OnVolumeRandomizationRangeChanged);
+    }
+
+    void BindAndTrackVolumeProperties()
+    {
         var volumeProperty = State.SerializedObject.FindProperty("m_Volume");
         var volumeRandomizationEnabledProperty = State.SerializedObject.FindProperty("m_VolumeRandomizationEnabled");
         var volumeRandomizationRangeProperty = State.SerializedObject.FindProperty("m_VolumeRandomizationRange");
 
-        m_VolumeSlider = UIToolkitUtilities.GetChildByName<Slider>(rootVisualElement, "volume-slider");
         m_VolumeSlider.BindProperty(volumeProperty);
-        m_VolumeRandomRangeTracker = AudioRandomRangeSliderTracker.Create(m_VolumeSlider, State.AudioContainer.volumeRandomizationRange);
-        m_VolumeSlider.RegisterValueChangedCallback(OnVolumeChanged);
-
-        m_VolumeField = UIToolkitUtilities.GetChildByName<FloatField>(rootVisualElement, "volume-field");
         m_VolumeField.BindProperty(volumeProperty);
-        m_VolumeField.formatString = "0.# dB";
-        m_VolumeField.isDelayed = true;
-
-        m_VolumeRandomizationButton = UIToolkitUtilities.GetChildByName<Button>(rootVisualElement, "volume-randomization-button");
-        m_VolumeRandomizationButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(rootVisualElement, "volume-randomization-button-image");
-        m_VolumeRandomizationButton.clicked += OnVolumeRandomizationButtonClicked;
-        m_VolumeRandomizationButton.TrackPropertyValue(volumeRandomizationEnabledProperty, OnVolumeRandomizationEnabledChanged);
-
-        m_VolumeRandomizationRangeSlider = UIToolkitUtilities.GetChildByName<MinMaxSlider>(rootVisualElement, "volume-randomization-range-slider");
         m_VolumeRandomizationRangeSlider.BindProperty(volumeRandomizationRangeProperty);
-        m_VolumeRandomizationRangeSlider.RegisterValueChangedCallback(OnVolumeRandomizationRangeChanged);
-
-        m_VolumeRandomizationRangeField = UIToolkitUtilities.GetChildByName<Vector2Field>(rootVisualElement, "volume-randomization-range-field");
         m_VolumeRandomizationRangeField.BindProperty(volumeRandomizationRangeProperty);
-        m_VolumeRandomizationRangeField.RegisterValueChangedCallback(OnVolumeRandomizationRangeChanged);
 
-        var volumeRandomizationMinField = UIToolkitUtilities.GetChildByName<FloatField>(m_VolumeRandomizationRangeField, "unity-x-input");
-        volumeRandomizationMinField.isDelayed = true;
-        volumeRandomizationMinField.label = "";
-        volumeRandomizationMinField.formatString = "0.# dB";
-
-        var volumeRandomizationMaxField = UIToolkitUtilities.GetChildByName<FloatField>(m_VolumeRandomizationRangeField, "unity-y-input");
-        volumeRandomizationMaxField.isDelayed = true;
-        volumeRandomizationMaxField.label = "";
-        volumeRandomizationMaxField.formatString = "0.# dB";
+        m_VolumeRandomizationButton.TrackPropertyValue(volumeRandomizationEnabledProperty, OnVolumeRandomizationEnabledChanged);
 
         OnVolumeRandomizationEnabledChanged(volumeRandomizationEnabledProperty);
     }
@@ -419,44 +496,58 @@ sealed class AudioContainerWindow : EditorWindow
 
     #region Pitch
 
-    void InitPitchGUI()
+    void InitializePitchElements()
+    {
+        m_PitchSlider = UIToolkitUtilities.GetChildByName<Slider>(m_ContainerRootVisualElement, "pitch-slider");
+        m_PitchRandomRangeTracker = AudioRandomRangeSliderTracker.Create(m_PitchSlider, State.AudioContainer.pitchRandomizationRange);
+        m_PitchField = UIToolkitUtilities.GetChildByName<FloatField>(m_ContainerRootVisualElement, "pitch-field");
+        m_PitchRandomizationButton = UIToolkitUtilities.GetChildByName<Button>(m_ContainerRootVisualElement, "pitch-randomization-button");
+        m_PitchRandomizationButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(m_ContainerRootVisualElement, "pitch-randomization-button-image");
+        m_PitchRandomizationRangeSlider = UIToolkitUtilities.GetChildByName<MinMaxSlider>(m_ContainerRootVisualElement, "pitch-randomization-range-slider");
+        m_PitchRandomizationRangeField = UIToolkitUtilities.GetChildByName<Vector2Field>(m_ContainerRootVisualElement, "pitch-randomization-range-field");
+        var pitchRandomizationMinField = UIToolkitUtilities.GetChildByName<FloatField>(m_PitchRandomizationRangeField, "unity-x-input");
+        var pitchRandomizationMaxField = UIToolkitUtilities.GetChildByName<FloatField>(m_PitchRandomizationRangeField, "unity-y-input");
+
+        m_PitchField.formatString = "0 ct";
+        m_PitchField.isDelayed = true;
+        pitchRandomizationMinField.isDelayed = true;
+        pitchRandomizationMinField.label = "";
+        pitchRandomizationMinField.formatString = "0 ct";
+        pitchRandomizationMaxField.isDelayed = true;
+        pitchRandomizationMaxField.label = "";
+        pitchRandomizationMaxField.formatString = "0 ct";
+    }
+
+    void SubscribeToPitchCallbacksAndEvents()
+    {
+        m_PitchRandomizationButton.clicked += OnPitchRandomizationButtonClicked;
+        m_PitchSlider.RegisterValueChangedCallback(OnPitchChanged);
+        m_PitchRandomizationRangeSlider.RegisterValueChangedCallback(OnPitchRandomizationRangeChanged);
+        m_PitchRandomizationRangeField.RegisterValueChangedCallback(OnPitchRandomizationRangeChanged);
+    }
+
+    void UnsubscribeFromPitchCallbacksAndEvents()
+    {
+        if (m_PitchRandomizationButton != null)
+            m_PitchRandomizationButton.clicked -= OnPitchRandomizationButtonClicked;
+
+        m_PitchSlider?.UnregisterValueChangedCallback(OnPitchChanged);
+        m_PitchRandomizationRangeSlider?.UnregisterValueChangedCallback(OnPitchRandomizationRangeChanged);
+        m_PitchRandomizationRangeField?.UnregisterValueChangedCallback(OnPitchRandomizationRangeChanged);
+    }
+
+    void BindAndTrackPitchProperties()
     {
         var pitchProperty = State.SerializedObject.FindProperty("m_Pitch");
         var pitchRandomizationEnabledProperty = State.SerializedObject.FindProperty("m_PitchRandomizationEnabled");
         var pitchRandomizationRangeProperty = State.SerializedObject.FindProperty("m_PitchRandomizationRange");
 
-        m_PitchSlider = UIToolkitUtilities.GetChildByName<Slider>(rootVisualElement, "pitch-slider");
         m_PitchSlider.BindProperty(pitchProperty);
-        m_PitchRandomRangeTracker = AudioRandomRangeSliderTracker.Create(m_PitchSlider, State.AudioContainer.pitchRandomizationRange);
-        m_PitchSlider.RegisterValueChangedCallback(OnPitchChanged);
-
-        m_PitchField = UIToolkitUtilities.GetChildByName<FloatField>(rootVisualElement, "pitch-field");
         m_PitchField.BindProperty(pitchProperty);
-        m_PitchField.formatString = "0 ct";
-        m_PitchField.isDelayed = true;
-
-        m_PitchRandomizationButton = UIToolkitUtilities.GetChildByName<Button>(rootVisualElement, "pitch-randomization-button");
-        m_PitchRandomizationButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(rootVisualElement, "pitch-randomization-button-image");
-        m_PitchRandomizationButton.clicked += OnPitchRandomizationButtonClicked;
-        m_PitchRandomizationButton.TrackPropertyValue(pitchRandomizationEnabledProperty, OnPitchRandomizationEnabledChanged);
-
-        m_PitchRandomizationRangeSlider = UIToolkitUtilities.GetChildByName<MinMaxSlider>(rootVisualElement, "pitch-randomization-range-slider");
         m_PitchRandomizationRangeSlider.BindProperty(pitchRandomizationRangeProperty);
-        m_PitchRandomizationRangeSlider.RegisterValueChangedCallback(OnPitchRandomizationRangeChanged);
-
-        m_PitchRandomizationRangeField = UIToolkitUtilities.GetChildByName<Vector2Field>(rootVisualElement, "pitch-randomization-range-field");
         m_PitchRandomizationRangeField.BindProperty(pitchRandomizationRangeProperty);
-        m_PitchRandomizationRangeField.RegisterValueChangedCallback(OnPitchRandomizationRangeChanged);
 
-        var pitchRandomizationMinField = UIToolkitUtilities.GetChildByName<FloatField>(m_PitchRandomizationRangeField, "unity-x-input");
-        pitchRandomizationMinField.isDelayed = true;
-        pitchRandomizationMinField.label = "";
-        pitchRandomizationMinField.formatString = "0 ct";
-
-        var pitchRandomizationMaxField = UIToolkitUtilities.GetChildByName<FloatField>(m_PitchRandomizationRangeField, "unity-y-input");
-        pitchRandomizationMaxField.isDelayed = true;
-        pitchRandomizationMaxField.label = "";
-        pitchRandomizationMaxField.formatString = "0 ct";
+        m_PitchRandomizationButton.TrackPropertyValue(pitchRandomizationEnabledProperty, OnPitchRandomizationEnabledChanged);
 
         OnPitchRandomizationEnabledChanged(pitchRandomizationEnabledProperty);
     }
@@ -507,26 +598,57 @@ sealed class AudioContainerWindow : EditorWindow
 
     #region ClipList
 
-    void InitClipListGUI()
+    void InitializeClipListElements()
     {
-        var clipsProperty = State.SerializedObject.FindProperty("m_Elements");
-
-        m_ClipsListView = UIToolkitUtilities.GetChildByName<ListView>(rootVisualElement, "audio-clips-list-view");
-
-        m_ClipsListView.BindProperty(clipsProperty);
-        m_ClipsListView.TrackPropertyValue(clipsProperty, OnAudioClipListChanged);
+        m_ClipsListView = UIToolkitUtilities.GetChildByName<ListView>(m_ContainerRootVisualElement, "audio-clips-list-view");
+        m_ClipsListView.CreateDragAndDropController();
+        m_DragManipulator = new AudioContainerListDragAndDropManipulator(m_ContainerRootVisualElement);
         m_ClipsListView.fixedItemHeight = 24;
+    }
 
+    void SubscribeToClipListCallbacksAndEvents()
+    {
         m_ClipsListView.itemsAdded += OnListItemsAdded;
         m_ClipsListView.itemsRemoved += OnListItemsRemoved;
         m_ClipsListView.itemIndexChanged += OnItemListIndexChanged;
-
         m_ClipsListView.makeItem = OnMakeListItem;
         m_ClipsListView.bindItem = OnBindListItem;
-        m_ClipsListView.CreateDragAndDropController();
 
-        m_DragManipulator = new AudioContainerListDragAndDropManipulator(rootVisualElement);
+        // We need a no-op unbind callback to prevent the default implementation from being run.
+        // See the comments in UUM-46918.
+        m_ClipsListView.unbindItem = (elm, idx) => { };
         m_DragManipulator.addAudioClipsDelegate += OnAudioClipDrag;
+    }
+
+    void UnsubscribeFromClipListCallbacksAndEvents()
+    {
+        if (m_ClipsListView != null)
+        {
+            m_ClipsListView.itemsAdded -= OnListItemsAdded;
+            m_ClipsListView.itemsRemoved -= OnListItemsRemoved;
+            m_ClipsListView.itemIndexChanged -= OnItemListIndexChanged;
+            m_ClipsListView.makeItem = null;
+            m_ClipsListView.bindItem = null;
+            m_ClipsListView.unbindItem = null;
+        }
+
+        if (m_DragManipulator != null)
+            m_DragManipulator.addAudioClipsDelegate -= OnAudioClipDrag;
+    }
+
+    void BindAndTrackClipListProperties()
+    {
+        var clipsProperty = State.SerializedObject.FindProperty("m_Elements");
+
+        m_ClipsListView.BindProperty(clipsProperty);
+        m_ClipsListView.TrackPropertyValue(clipsProperty, OnAudioClipListChanged);
+    }
+
+    static void UpdateListElementName(Object element, Object clip = null)
+    {
+        AssetDatabase.TryGetGUIDAndLocalFileIdentifier(element, out var guid, out var localId);
+        var name = clip == null ? nameof(AudioContainerElement) : clip.name;
+        element.name = $"{name}_{{{localId}}}";
     }
 
     static VisualElement OnMakeListItem()
@@ -536,16 +658,9 @@ sealed class AudioContainerWindow : EditorWindow
 
     void OnBindListItem(VisualElement element, int index)
     {
-        var listElement = State.AudioContainer.elements[index];
-
-        if (listElement == null)
+        // There is currently a bug in UIToolkit where the reported index can be out of bounds after shrinking the list
+        if (index > State.AudioContainer.elements.Length - 1)
             return;
-
-        var serializedObject = new SerializedObject(listElement);
-
-        var enabledProperty = serializedObject.FindProperty("m_Enabled");
-        var audioClipProperty = serializedObject.FindProperty("m_AudioClip");
-        var volumeProperty = serializedObject.FindProperty("m_Volume");
 
         var enabledToggle = UIToolkitUtilities.GetChildByName<Toggle>(element, "enabled-toggle");
         var audioClipField = UIToolkitUtilities.GetChildByName<AudioContainerElementClipField>(element, "audio-clip-field");
@@ -553,9 +668,32 @@ sealed class AudioContainerWindow : EditorWindow
         volumeField.formatString = "0.# dB";
 
         audioClipField.objectType = typeof(AudioClip);
-        audioClipField.RegisterCallback<DragPerformEvent>(evt => { evt.StopPropagation(); });
 
+        var listElement = State.AudioContainer.elements[index];
+
+        if (listElement == null)
+        {
+            Debug.LogError($"AudioContainerElement at index {index} is null. Please report using `Help > Report a Bug...`.");
+            element.SetEnabled(false);
+            return;
+        }
+
+        element.SetEnabled(true);
+        audioClipField.RegisterCallback<DragPerformEvent>(OnListDragPerform);
         audioClipField.AssetElementInstanceID = listElement.GetInstanceID();
+
+        var serializedObject = new SerializedObject(listElement);
+
+        var enabledProperty = serializedObject.FindProperty("m_Enabled");
+        var audioClipProperty = serializedObject.FindProperty("m_AudioClip");
+        var volumeProperty = serializedObject.FindProperty("m_Volume");
+
+        // Shouldn't be necessary to unbind here, but currently required to work around an exception
+        // being thrown when calling TrackPropertyValue. See https://jira.unity3d.com/browse/UUM-46918
+        // Should be removed once this issue has been fixed.
+        enabledToggle.Unbind();
+        audioClipField.Unbind();
+        volumeField.Unbind();
 
         enabledToggle.BindProperty(enabledProperty);
         audioClipField.BindProperty(audioClipProperty);
@@ -566,8 +704,17 @@ sealed class AudioContainerWindow : EditorWindow
         volumeField.TrackPropertyValue(volumeProperty, OnElementPropertyChanged);
     }
 
+    static void OnListDragPerform(DragPerformEvent evt)
+    {
+        evt.StopPropagation();
+    }
+
     void OnElementAudioClipChanged(SerializedProperty property)
     {
+        var element = property.serializedObject.targetObject as AudioContainerElement;
+        Assert.IsNotNull(element);
+        var clip = property.objectReferenceValue as AudioClip;
+        UpdateListElementName(element, clip);
         OnElementPropertyChanged(property);
         UpdateTransportButtonStates();
         State.AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
@@ -584,50 +731,100 @@ sealed class AudioContainerWindow : EditorWindow
         State.AudioContainer.avoidRepeatingLast = -1;
         State.AudioContainer.avoidRepeatingLast = last;
 
-        if (State.IsPlayingOrPaused()) State.AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
+        if (State.IsPlayingOrPaused())
+            State.AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
     }
 
     void OnElementPropertyChanged(SerializedProperty property)
     {
         EditorUtility.SetDirty(State.AudioContainer);
-        SetTitle(true);
+        SetTitle();
     }
 
     void OnListItemsAdded(IEnumerable<int> indices)
     {
+        var indicesArray = indices as int[] ?? indices.ToArray();
         var elements = State.AudioContainer.elements.ToList();
 
-        foreach (var index in indices.Reverse())
+        foreach (var index in indicesArray)
         {
             var element = new AudioContainerElement
             {
                 hideFlags = HideFlags.HideInHierarchy
             };
-            elements[index] = element;
             AssetDatabase.AddObjectToAsset(element, State.AudioContainer);
-            AssetDatabase.TryGetGUIDAndLocalFileIdentifier(element, out var guid, out var localId);
-            element.name = $"AudioContainerElement_{{{localId}}}";
+            UpdateListElementName(element);
+            elements[index] = element;
+            m_AddedElements.Add(element);
         }
 
         State.AudioContainer.elements = elements.ToArray();
+
+        // Object creation undo recording needs to be done in a separate pass from the object property changes above
+        foreach (var element in m_AddedElements)
+            Undo.RegisterCreatedObjectUndo(element, "Create AudioContainerElement");
+
+        m_AddedElements.Clear();
+
+        var undoName = "Add AudioContainerElement";
+
+        if (indicesArray.Length > 1)
+        {
+            undoName = $"{undoName}s";
+        }
+
+        Undo.SetCurrentGroupName(undoName);
+        SetTitle();
+        m_AddedElements.Clear();
+        // Force a list rebuild when the list size has changed or it will not render correctly
+        EditorApplication.update += DoDelayedListRebuild;
     }
 
     void OnListItemsRemoved(IEnumerable<int> indices)
     {
-        foreach (var index in indices)
-            AssetDatabase.RemoveObjectFromAsset(m_CachedElements[index]);
+        var indicesArray = indices as int[] ?? indices.ToArray();
+
+        // Confusingly, this callback is sometimes invoked post-delete and sometimes pre-delete,
+        // i.e. the AudioRandomContainer.elements property may or may not be updated at this time,
+        // so we use the cached list to be sure we get the correct reference to the subasset to delete.
+        foreach (var index in indicesArray)
+        {
+            if (m_CachedElements[index] != null)
+            {
+                AssetDatabase.RemoveObjectFromAsset(m_CachedElements[index]);
+                Undo.DestroyObjectImmediate(m_CachedElements[index]);
+            }
+        }
 
         State.AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
+
+        var undoName = "Remove AudioContainerElement";
+
+        if (indicesArray.Length > 1)
+        {
+            undoName = $"{undoName}s";
+        }
+
+        Undo.SetCurrentGroupName(undoName);
+        SetTitle();
+        // Force a list rebuild when the list size has changed or it will not render correctly
+        EditorApplication.update += DoDelayedListRebuild;
     }
 
     void OnItemListIndexChanged(int oldIndex, int newIndex)
     {
-        m_ClipsListView.Rebuild();
         State.AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
     }
 
     void OnAudioClipDrag(List<AudioClip> audioClips)
     {
+        var undoName = "Add AudioContainerElement";
+
+        if (audioClips.Count > 1)
+            undoName = $"{undoName}s";
+
+        Undo.RegisterCompleteObjectUndo(State.AudioContainer, undoName);
+
         var elements = State.AudioContainer.elements.ToList();
 
         foreach (var audioClip in audioClips)
@@ -637,13 +834,24 @@ sealed class AudioContainerWindow : EditorWindow
                 audioClip = audioClip,
                 hideFlags = HideFlags.HideInHierarchy
             };
-            elements.Add(element);
             AssetDatabase.AddObjectToAsset(element, State.AudioContainer);
-            AssetDatabase.TryGetGUIDAndLocalFileIdentifier(element, out var guid, out var localId);
-            element.name = $"{audioClip.name}_{{{localId}}}";
+            UpdateListElementName(element, audioClip);
+            elements.Add(element);
+            m_AddedElements.Add(element);
         }
 
         State.AudioContainer.elements = elements.ToArray();
+
+        // Object creation undo recording needs to be done in a separate pass from the object property changes above
+        foreach (var element in m_AddedElements)
+            Undo.RegisterCreatedObjectUndo(element, "Create AudioContainerElement");
+
+        m_AddedElements.Clear();
+
+        SetTitle();
+        Undo.SetCurrentGroupName(undoName);
+        // Force a list rebuild when the list size has changed or it will not render correctly
+        EditorApplication.update += DoDelayedListRebuild;
     }
 
     void OnAudioClipListChanged(SerializedProperty property)
@@ -699,27 +907,36 @@ sealed class AudioContainerWindow : EditorWindow
             field.Progress = 0.0f;
     }
 
+    void DoDelayedListRebuild()
+    {
+        m_ClipsListView.Rebuild();
+        EditorApplication.update -= DoDelayedListRebuild;
+    }
+
     #endregion
 
     #region TriggerAndPlaybackMode
 
-    void InitTriggerAndPlayModeGUI()
+    void InitializeTriggerAndPlayModeElements()
+    {
+        m_TriggerRadioButtonGroup = UIToolkitUtilities.GetChildByName<RadioButtonGroup>(m_ContainerRootVisualElement, "trigger-radio-button-group");
+        m_PlaybackModeRadioButtonGroup = UIToolkitUtilities.GetChildByName<RadioButtonGroup>(m_ContainerRootVisualElement, "playback-radio-button-group");
+        m_AvoidRepeatingLastField = UIToolkitUtilities.GetChildByName<IntegerField>(m_ContainerRootVisualElement, "avoid-repeating-last-field");
+    }
+
+    void BindAndTrackTriggerAndPlayModeProperties()
     {
         var triggerProperty = State.SerializedObject.FindProperty("m_TriggerMode");
         var playbackModeProperty = State.SerializedObject.FindProperty("m_PlaybackMode");
         var avoidRepeatingLastProperty = State.SerializedObject.FindProperty("m_AvoidRepeatingLast");
 
-        m_TriggerRadioButtonGroup = UIToolkitUtilities.GetChildByName<RadioButtonGroup>(rootVisualElement, "trigger-radio-button-group");
         m_TriggerRadioButtonGroup.BindProperty(triggerProperty);
         m_TriggerRadioButtonGroup.TrackPropertyValue(triggerProperty, OnTriggerChanged);
-
-        m_PlaybackModeRadioButtonGroup = UIToolkitUtilities.GetChildByName<RadioButtonGroup>(rootVisualElement, "playback-radio-button-group");
         m_PlaybackModeRadioButtonGroup.BindProperty(playbackModeProperty);
         m_PlaybackModeRadioButtonGroup.TrackPropertyValue(playbackModeProperty, OnPlaybackModeChanged);
-
-        m_AvoidRepeatingLastField = UIToolkitUtilities.GetChildByName<IntegerField>(rootVisualElement, "avoid-repeating-last-field");
         m_AvoidRepeatingLastField.BindProperty(avoidRepeatingLastProperty);
 
+        OnTriggerChanged((AudioRandomContainerTriggerMode)m_TriggerRadioButtonGroup.value);
         OnPlaybackModeChanged(playbackModeProperty);
     }
 
@@ -756,7 +973,68 @@ sealed class AudioContainerWindow : EditorWindow
 
     #region AutomaticTrigger
 
-    void InitAutomaticTriggerGUI()
+    void InitializeAutomaticTriggerElements()
+    {
+        m_AutomaticTriggerModeRadioButtonGroup = UIToolkitUtilities.GetChildByName<RadioButtonGroup>(m_ContainerRootVisualElement, "trigger-mode-radio-button-group");
+        m_TimeSlider = UIToolkitUtilities.GetChildByName<Slider>(m_ContainerRootVisualElement, "time-slider");
+        m_TimeRandomRangeTracker = AudioRandomRangeSliderTracker.Create(m_TimeSlider, State.AudioContainer.automaticTriggerTimeRandomizationRange);
+        m_TimeField = UIToolkitUtilities.GetChildByName<FloatField>(m_ContainerRootVisualElement, "time-field");
+        m_TimeRandomizationButton = UIToolkitUtilities.GetChildByName<Button>(m_ContainerRootVisualElement, "time-randomization-button");
+        m_TimeRandomizationButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(m_ContainerRootVisualElement, "time-randomization-button-image");
+        m_TimeRandomizationRangeSlider = UIToolkitUtilities.GetChildByName<MinMaxSlider>(m_ContainerRootVisualElement, "time-randomization-range-slider");
+        m_TimeRandomizationRangeField = UIToolkitUtilities.GetChildByName<Vector2Field>(m_ContainerRootVisualElement, "time-randomization-range-field");
+        var timeRandomizationMinField = UIToolkitUtilities.GetChildByName<FloatField>(m_TimeRandomizationRangeField, "unity-x-input");
+        var timeRandomizationMaxField = UIToolkitUtilities.GetChildByName<FloatField>(m_TimeRandomizationRangeField, "unity-y-input");
+        m_LoopRadioButtonGroup = UIToolkitUtilities.GetChildByName<RadioButtonGroup>(m_ContainerRootVisualElement, "loop-radio-button-group");
+        m_CountField = UIToolkitUtilities.GetChildByName<IntegerField>(m_ContainerRootVisualElement, "count-field");
+        m_CountRandomizationButton = UIToolkitUtilities.GetChildByName<Button>(m_ContainerRootVisualElement, "count-randomization-button");
+        m_CountRandomizationButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(m_ContainerRootVisualElement, "count-randomization-button-image");
+        m_CountRandomizationRangeSlider = UIToolkitUtilities.GetChildByName<MinMaxSlider>(m_ContainerRootVisualElement, "count-randomization-range-slider");
+        m_CountRandomizationRangeField = UIToolkitUtilities.GetChildByName<Vector2Field>(m_ContainerRootVisualElement, "count-randomization-range-field");
+        var countRandomizationMinField = UIToolkitUtilities.GetChildByName<FloatField>(m_CountRandomizationRangeField, "unity-x-input");
+        var countRandomizationMaxField = UIToolkitUtilities.GetChildByName<FloatField>(m_CountRandomizationRangeField, "unity-y-input");
+        m_AutomaticTriggerModeLabel = UIToolkitUtilities.GetChildByName<Label>(m_ContainerRootVisualElement, "automatic-trigger-mode-label");
+        m_LoopLabel = UIToolkitUtilities.GetChildByName<Label>(m_ContainerRootVisualElement, "loop-label");
+
+        m_TimeField.formatString = "0.00 s";
+        m_TimeField.isDelayed = true;
+        timeRandomizationMinField.isDelayed = true;
+        timeRandomizationMinField.label = "";
+        timeRandomizationMinField.formatString = "0.#";
+        timeRandomizationMaxField.isDelayed = true;
+        timeRandomizationMaxField.label = "";
+        timeRandomizationMaxField.formatString = "0.#";
+        m_CountField.formatString = "0.#";
+        m_CountField.isDelayed = true;
+        countRandomizationMinField.isDelayed = true;
+        countRandomizationMinField.label = "";
+        countRandomizationMaxField.isDelayed = true;
+        countRandomizationMaxField.label = "";
+    }
+
+    void SubscribeToAutomaticTriggerCallbacksAndEvents()
+    {
+        m_TimeRandomizationButton.clicked += OnTimeRandomizationButtonClicked;
+        m_CountRandomizationButton.clicked += OnCountRandomizationButtonClicked;
+        m_TimeSlider.RegisterValueChangedCallback(OnTimeChanged);
+        m_TimeRandomizationRangeField.RegisterValueChangedCallback(OnTimeRandomizationRangeChanged);
+        m_TimeRandomizationRangeSlider.RegisterValueChangedCallback(OnTimeRandomizationRangeChanged);
+    }
+
+    void UnsubscribeFromAutomaticTriggerCallbacksAndEvents()
+    {
+        if (m_TimeRandomizationButton != null)
+            m_TimeRandomizationButton.clicked -= OnTimeRandomizationButtonClicked;
+
+        if (m_CountRandomizationButton != null)
+            m_CountRandomizationButton.clicked -= OnCountRandomizationButtonClicked;
+
+        m_TimeSlider?.UnregisterValueChangedCallback(OnTimeChanged);
+        m_TimeRandomizationRangeField?.UnregisterValueChangedCallback(OnTimeRandomizationRangeChanged);
+        m_TimeRandomizationRangeSlider?.UnregisterValueChangedCallback(OnTimeRandomizationRangeChanged);
+    }
+
+    void BindAndTrackAutomaticTriggerProperties()
     {
         var automaticTriggerModeProperty = State.SerializedObject.FindProperty("m_AutomaticTriggerMode");
         var triggerTimeProperty = State.SerializedObject.FindProperty("m_AutomaticTriggerTime");
@@ -767,72 +1045,19 @@ sealed class AudioContainerWindow : EditorWindow
         var loopCountRandomizationEnabledProperty = State.SerializedObject.FindProperty("m_LoopCountRandomizationEnabled");
         var loopCountRandomizationRangeProperty = State.SerializedObject.FindProperty("m_LoopCountRandomizationRange");
 
-        m_AutomaticTriggerModeRadioButtonGroup = UIToolkitUtilities.GetChildByName<RadioButtonGroup>(rootVisualElement, "trigger-mode-radio-button-group");
         m_AutomaticTriggerModeRadioButtonGroup.BindProperty(automaticTriggerModeProperty);
-
-        m_TimeSlider = UIToolkitUtilities.GetChildByName<Slider>(rootVisualElement, "time-slider");
         m_TimeSlider.BindProperty(triggerTimeProperty);
-        m_TimeRandomRangeTracker = AudioRandomRangeSliderTracker.Create(m_TimeSlider, State.AudioContainer.automaticTriggerTimeRandomizationRange);
-        m_TimeSlider.RegisterValueChangedCallback(OnTimeChanged);
-
-        m_TimeField = UIToolkitUtilities.GetChildByName<FloatField>(rootVisualElement, "time-field");
         m_TimeField.BindProperty(triggerTimeProperty);
-        m_TimeField.formatString = "0.00 s";
-        m_TimeField.isDelayed = true;
-
-        m_TimeRandomizationButton = UIToolkitUtilities.GetChildByName<Button>(rootVisualElement, "time-randomization-button");
-        m_TimeRandomizationButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(rootVisualElement, "time-randomization-button-image");
-        m_TimeRandomizationButton.clicked += OnTimeRandomizationButtonClicked;
-        m_TimeRandomizationButton.TrackPropertyValue(triggerTimeRandomizationEnabledProperty, OnTimeRandomizationEnabledChanged);
-
-        m_TimeRandomizationRangeSlider = UIToolkitUtilities.GetChildByName<MinMaxSlider>(rootVisualElement, "time-randomization-range-slider");
         m_TimeRandomizationRangeSlider.BindProperty(triggerTimeRandomizationRangeProperty);
-        m_TimeRandomizationRangeSlider.RegisterValueChangedCallback(OnTimeRandomizationRangeChanged);
-
-        m_TimeRandomizationRangeField = UIToolkitUtilities.GetChildByName<Vector2Field>(rootVisualElement, "time-randomization-range-field");
         m_TimeRandomizationRangeField.BindProperty(triggerTimeRandomizationRangeProperty);
-        m_TimeRandomizationRangeField.RegisterValueChangedCallback(OnTimeRandomizationRangeChanged);
-
-        var timeRandomizationMinField = UIToolkitUtilities.GetChildByName<FloatField>(m_TimeRandomizationRangeField, "unity-x-input");
-        timeRandomizationMinField.isDelayed = true;
-        timeRandomizationMinField.label = "";
-        timeRandomizationMinField.formatString = "0.#";
-
-        var timeRandomizationMaxField = UIToolkitUtilities.GetChildByName<FloatField>(m_TimeRandomizationRangeField, "unity-y-input");
-        timeRandomizationMaxField.isDelayed = true;
-        timeRandomizationMaxField.label = "";
-        timeRandomizationMaxField.formatString = "0.#";
-
-        m_LoopRadioButtonGroup = UIToolkitUtilities.GetChildByName<RadioButtonGroup>(rootVisualElement, "loop-radio-button-group");
         m_LoopRadioButtonGroup.BindProperty(loopModeProperty);
-        m_LoopRadioButtonGroup.TrackPropertyValue(loopModeProperty, OnLoopChanged);
-
-        m_CountField = UIToolkitUtilities.GetChildByName<IntegerField>(rootVisualElement, "count-field");
         m_CountField.BindProperty(loopCountProperty);
-        m_CountField.formatString = "0.#";
-        m_CountField.isDelayed = true;
-
-        m_CountRandomizationButton = UIToolkitUtilities.GetChildByName<Button>(rootVisualElement, "count-randomization-button");
-        m_CountRandomizationButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(rootVisualElement, "count-randomization-button-image");
-        m_CountRandomizationButton.clicked += OnCountRandomizationButtonClicked;
-        m_CountRandomizationButton.TrackPropertyValue(loopCountRandomizationEnabledProperty, OnCountRandomizationEnabledChanged);
-
-        m_CountRandomizationRangeSlider = UIToolkitUtilities.GetChildByName<MinMaxSlider>(rootVisualElement, "count-randomization-range-slider");
         m_CountRandomizationRangeSlider.BindProperty(loopCountRandomizationRangeProperty);
-
-        m_CountRandomizationRangeField = UIToolkitUtilities.GetChildByName<Vector2Field>(rootVisualElement, "count-randomization-range-field");
         m_CountRandomizationRangeField.BindProperty(loopCountRandomizationRangeProperty);
 
-        var countRandomizationMinField = UIToolkitUtilities.GetChildByName<FloatField>(m_CountRandomizationRangeField, "unity-x-input");
-        countRandomizationMinField.isDelayed = true;
-        countRandomizationMinField.label = "";
-
-        var countRandomizationMaxField = UIToolkitUtilities.GetChildByName<FloatField>(m_CountRandomizationRangeField, "unity-y-input");
-        countRandomizationMaxField.isDelayed = true;
-        countRandomizationMaxField.label = "";
-
-        m_AutomaticTriggerModeLabel = UIToolkitUtilities.GetChildByName<Label>(rootVisualElement, "automatic-trigger-mode-label");
-        m_LoopLabel = UIToolkitUtilities.GetChildByName<Label>(rootVisualElement, "loop-label");
+        m_TimeRandomizationButton.TrackPropertyValue(triggerTimeRandomizationEnabledProperty, OnTimeRandomizationEnabledChanged);
+        m_LoopRadioButtonGroup.TrackPropertyValue(loopModeProperty, OnLoopChanged);
+        m_CountRandomizationButton.TrackPropertyValue(loopCountRandomizationEnabledProperty, OnCountRandomizationEnabledChanged);
 
         OnTimeRandomizationEnabledChanged(triggerTimeRandomizationEnabledProperty);
         OnLoopChanged(loopModeProperty);
@@ -924,6 +1149,19 @@ sealed class AudioContainerWindow : EditorWindow
 
     #region GlobalEditorCallbackHandlers
 
+    void OnUndoRedoPerformed()
+    {
+        if (m_CachedElements.Count != State.AudioContainer.elements.Length)
+        {
+            // Force a list rebuild when the list size has increased or it will not render correctly
+            // if (m_CachedElements.Count < State.AudioContainer.elements.Length)
+                m_ClipsListView.Rebuild();
+
+            SetTitle();
+            m_CachedElements = State.AudioContainer.elements.ToList();
+        }
+    }
+
     void OnWillSaveAssets(IEnumerable<string> paths)
     {
         if (State.AudioContainer == null)
@@ -934,7 +1172,7 @@ sealed class AudioContainerWindow : EditorWindow
         foreach (var path in paths)
             if (path == currentSelectionPath)
             {
-                SetTitle(false);
+                SetTitle();
                 return;
             }
     }
@@ -958,7 +1196,7 @@ sealed class AudioContainerWindow : EditorWindow
             if (path == State.TargetPath)
             {
                 State.Reset();
-                SetTitle(false);
+                SetTitle();
                 CreateGUI();
                 m_CachedElements.Clear();
                 break;

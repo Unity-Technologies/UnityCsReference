@@ -404,12 +404,17 @@ namespace UnityEditor
                     platformName = platform.name;
                 }
 
-                if (namedBuildTarget == NamedBuildTarget.WebGL || namedBuildTarget == NamedBuildTarget.Server)
+                var iconOption = IconOption.StandardIcons;
+                if (BuildTargetDiscovery.TryGetBuildTarget(platform.defaultTarget, out IBuildTarget iBuildTarget))
+                    iconOption = iBuildTarget.IconPlatformProperties?.IconOptions ?? IconOption.StandardIcons;
+
+
+                if (iconOption == IconOption.NotApplicable)
                 {
                     PlayerSettingsEditor.ShowNoSettings();
                     EditorGUILayout.Space();
                 }
-                else if (namedBuildTarget != NamedBuildTarget.WindowsStoreApps) // UWP does this in its editor extension
+                else if (iconOption != IconOption.None)
                 {
                     // Both default icon and Legacy icons are serialized to the same map
                     // That's why m_LegacyPlatformIcons can be excluded in two places (other place in CommonSettings())
@@ -452,36 +457,6 @@ namespace UnityEditor
                         {
                             var previewWidth = Mathf.Min(kMaxPreviewSize, widths[i]);
                             var previewHeight = (int)((float)heights[i] * previewWidth / widths[i]);   // take into account the aspect ratio
-
-                            if (namedBuildTarget == NamedBuildTarget.iOS)
-                            {
-                                // Spotlight icons begin with 120 but there are two in the list.
-                                // So check if the next one is 80.
-                                if (kinds[i] == IconKind.Spotlight && kinds[i - 1] != IconKind.Spotlight)
-                                {
-                                    var labelRect = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, 20);
-                                    GUI.Label(new Rect(labelRect.x, labelRect.y, EditorGUIUtility.labelWidth, 20), "Spotlight icons", EditorStyles.boldLabel);
-                                }
-
-                                if (kinds[i] == IconKind.Settings && kinds[i - 1] != IconKind.Settings)
-                                {
-                                    var labelRect = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, 20);
-                                    GUI.Label(new Rect(labelRect.x, labelRect.y, EditorGUIUtility.labelWidth, 20), "Settings icons", EditorStyles.boldLabel);
-                                }
-
-                                if (kinds[i] == IconKind.Notification && kinds[i - 1] != IconKind.Notification)
-                                {
-                                    var labelRect = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, 20);
-                                    GUI.Label(new Rect(labelRect.x, labelRect.y, EditorGUIUtility.labelWidth, 20), "Notification icons", EditorStyles.boldLabel);
-                                }
-
-                                if (kinds[i] == IconKind.Store && kinds[i - 1] != IconKind.Store)
-                                {
-                                    var labelRect = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, 20);
-                                    GUI.Label(new Rect(labelRect.x, labelRect.y, EditorGUIUtility.labelWidth, 20), "App Store icons", EditorStyles.boldLabel);
-                                }
-                            }
-
                             var rect = GUILayoutUtility.GetRect(kSlotSize, Mathf.Max(kSlotSize, previewHeight) + kIconSpacing);
                             var width = Mathf.Min(rect.width, EditorGUIUtility.labelWidth + 4 + kSlotSize + kIconSpacing + kMaxPreviewSize);
 
@@ -518,12 +493,6 @@ namespace UnityEditor
                         }
 
                         EditorGUI.EndDisabled();
-
-                        if (namedBuildTarget == NamedBuildTarget.iOS || namedBuildTarget == NamedBuildTarget.tvOS)
-                        {
-                            EditorGUILayout.PropertyField(m_UIPrerenderedIcon, SettingsContent.UIPrerenderedIcon);
-                            EditorGUILayout.Space();
-                        }
                     }
                 }
             }

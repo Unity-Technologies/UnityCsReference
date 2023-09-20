@@ -45,12 +45,9 @@ namespace UnityEditor
             ReportSceneViewInfo();
             ReportBuildPackageIds(report.GetFiles());
 
-            if (BuildTargetDiscovery.TryGetBuildTarget(EditorUserBuildSettings.activeBuildTarget, out var activeBuildTarget))
+            if (BuildTargetDiscovery.TryGetBuildTarget(EditorUserBuildSettings.activeBuildTarget, out var iBuildTarget))
             {
-                if (activeBuildTarget.TryGetProperties(out IBuildPlatformProperties buildProperties))
-                {
-                    buildProperties.ReportBuildTargetPermissions();
-                }
+                iBuildTarget.BuildPlatformProperties?.ReportBuildTargetPermissions();
             }
         }
 
