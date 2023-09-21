@@ -46,22 +46,22 @@ namespace UnityEngine.Rendering
         // contains the per-object information required in the shader for each object. The shader then loads the RGBA pixel from the destination render texture,
         // decodes it to an index index (using the same math as in DecodeIdFromColor), then uses index to look up the per-object property stored in the buffer.
         // The per-object property buffer is "tightly" packed only containing relevant objects for the current camera view (so at most a few 100s or 1000s).
-       [NotNull]
-       public Object[]  idToObjectMapping { get; }
+        [NotNull]
+        public Object[]  idToObjectMapping { get; }
 
-       internal ObjectIdResult(Object[] idToObjectMapping)
-       {
-           this.idToObjectMapping = idToObjectMapping;
-       }
+        internal ObjectIdResult(Object[] idToObjectMapping)
+        {
+            this.idToObjectMapping = idToObjectMapping;
+        }
 
-       public static int DecodeIdFromColor(Color color)
-       {
-           // This logic must be the inverse of the logic in `ColorRGBA32 PickingEncodeIndex(UInt32 index)` in picking.cpp
-           return (int)(color.r * 255) +
-                 ((int)(color.g * 255) <<  8) +
-                 ((int)(color.b * 255) << 16) +
-                 ((int)(color.a * 255) << 24);
-       }
+        public static int DecodeIdFromColor(Color color)
+        {
+            // This logic must be the inverse of the logic in `ColorRGBA32 PickingEncodeIndex(UInt32 index)` in picking.cpp
+            return (int)(color.r * 255) +
+                ((int)(color.g * 255) <<  8) +
+                ((int)(color.b * 255) << 16) +
+                ((int)(color.a * 255) << 24);
+        }
     }
 }
 

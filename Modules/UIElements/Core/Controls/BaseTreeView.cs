@@ -238,8 +238,6 @@ namespace UnityEngine.UIElements
         public BaseTreeView(int itemHeight) : base(null, itemHeight)
         {
             m_ExpandedItemIds = new List<int>();
-
-            viewDataKey = ussClassName;
             AddToClassList(ussClassName);
         }
 

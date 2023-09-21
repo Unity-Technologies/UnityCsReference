@@ -151,7 +151,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Errors = new List<UIError>();
             m_Progress = PackageProgress.None;
 
-            m_IsDeprecated = isDeprecated;
+            m_IsDeprecated = versionList.primary?.HasTag(PackageTag.InstalledFromPath) == false && isDeprecated;
             m_DeprecationMessage = deprecationMessage;
 
             LinkPackageAndVersions();

@@ -151,5 +151,10 @@ namespace UnityEditor.Modules
         {
             return false;
         }
+
+        public virtual bool SupportsStaticSplashScreenBackgroundColor()
+        {
+            return false;
+        }
     }
 }

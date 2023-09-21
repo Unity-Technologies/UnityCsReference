@@ -271,6 +271,8 @@ namespace UnityEditor.Modules
         void SerializedObjectUpdated();
 
         bool SupportsForcedSrgbBlit();
+
+        bool SupportsStaticSplashScreenBackgroundColor();
     }
 
 

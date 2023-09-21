@@ -145,7 +145,7 @@ namespace UnityEditor
         }
 
         // Use picking system to get us ordered list of all visually overlapping gameobjects in screen position from top to bottom
-        static IEnumerable<PickingObject> GetAllOverlapping(Vector2 position)
+        public static IEnumerable<PickingObject> GetAllOverlapping(Vector2 position)
         {
             var allOverlapping = new List<PickingObject>();
             var ignoreList = new List<PickingObject>();

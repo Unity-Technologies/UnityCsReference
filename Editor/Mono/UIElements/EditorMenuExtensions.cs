@@ -8,6 +8,7 @@ using UnityEditor.ShortcutManagement;
 using System.Collections.Generic;
 using System;
 using System.Text.RegularExpressions;
+using UnityEditor.Callbacks;
 using UnityEditorInternal;
 
 namespace UnityEditor.UIElements
@@ -159,7 +160,6 @@ namespace UnityEditor.UIElements
                     s_Shortcuts.Remove(menu);
                     s_MaxShortcutLength.Remove(menu);
                 });
-                menu.onHide += menuWindow.Close;
                 menu.m_OnBeforePerformAction = (submenu, autoClose) =>
                 {
                     if (!submenu && autoClose)
@@ -173,7 +173,16 @@ namespace UnityEditor.UIElements
                         // without temporary disable of cleanup, aux windows would be
                         // closed as soon as they are created.
                         InternalEditorUtility.RetainAuxWindows();
+
+                        CloseAllContextMenus();
                     }
+                };
+                menu.m_OnBack = () =>
+                {
+                    if (s_ActiveMenuWindows != null && s_ActiveMenuWindows.Count > 1)
+                        AuxCleanup(s_ActiveMenuWindows[^2].m_Parent);
+                    else
+                        CloseAllContextMenus();
                 };
 
                 s_ActiveMenuWindows.Add(menuWindow);
@@ -186,10 +195,28 @@ namespace UnityEditor.UIElements
             }
         }
 
+        [DidReloadScripts]
+        static void FindAndCloseAllContextMenus()
+        {
+            EditorWindow lastFocusedWindow = null;
+
+            while (true)
+            {
+                EditorWindow.FocusWindowIfItsOpen<ContextMenu>();
+
+                if (lastFocusedWindow == EditorWindow.focusedWindow ||
+                    EditorWindow.focusedWindow is not ContextMenu)
+                    return;
+
+                lastFocusedWindow = EditorWindow.focusedWindow;
+                EditorWindow.focusedWindow.Close();
+            }
+        }
+
         internal static void CloseAllContextMenus()
         {
             for (int i = s_ActiveMenuWindows.Count - 1; i >= 0; i--)
-                s_ActiveMenuWindows[i].Close();
+                s_ActiveMenuWindows[i].m_Parent.window.Close();
         }
 
         static void AuxCleanup(GUIView view)
@@ -207,7 +234,7 @@ namespace UnityEditor.UIElements
                 return;
 
             for (int i = s_ActiveMenuWindows.Count - 1; i > index; i--)
-                s_ActiveMenuWindows[i].Close();
+                s_ActiveMenuWindows[i].m_Parent.window.Close();
         }
 
         // DropdownMenu

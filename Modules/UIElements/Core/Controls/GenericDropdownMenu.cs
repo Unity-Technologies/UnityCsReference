@@ -145,9 +145,9 @@ namespace UnityEngine.UIElements
 
         internal Action<MenuItem, GenericDropdownMenu> m_SubmenuOverride;
         internal Action<bool, bool> m_OnBeforePerformAction;
+        internal Action m_OnBack;
 
         internal event Action onRebuild;
-        internal event Action onHide;
         internal event Action<char, KeyCode, EventModifiers> onKey;
         internal event Action<KeyboardNavigationOperation> onKeyboardNavigationOperation;
 
@@ -395,7 +395,6 @@ namespace UnityEngine.UIElements
                     m_TargetElement.Focus();
             }
 
-            onHide?.Invoke();
             m_TargetElement = null;
         }
 
@@ -474,6 +473,7 @@ namespace UnityEngine.UIElements
                         Hide(true, false);
                     }
 
+                    m_OnBack?.Invoke();
                     result = true;
                     break;
 
@@ -490,6 +490,7 @@ namespace UnityEngine.UIElements
                         Hide(true, false);
                     }
 
+                    m_OnBack?.Invoke();
                     result = true;
                     break;
 

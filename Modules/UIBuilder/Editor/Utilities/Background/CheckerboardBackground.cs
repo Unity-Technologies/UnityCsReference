@@ -28,6 +28,9 @@ namespace Unity.UI.Builder
 
         Texture2D m_Texture;
 
+        // test access
+        internal Texture2D texture => m_Texture;
+
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="CheckerboardBackground"/>.
         /// </summary>
@@ -192,7 +195,7 @@ namespace Unity.UI.Builder
                 }
             }
 
-            if (generateResources)
+            if (generateResources || m_Texture == null)
             {
                 GenerateResources();
             }

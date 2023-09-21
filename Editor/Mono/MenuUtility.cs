@@ -47,7 +47,7 @@ namespace UnityEditor.Actions
                 + (string.IsNullOrEmpty(shortcut) ? "" : " " + shortcut);
 
             AddAction(menu, path,
-                () => { ExecuteMenuItem(contextArray, menuItemPath); }, enabled,
+                () => { EditorApplication.delayCall += () => ExecuteMenuItem(contextArray, menuItemPath); }, enabled,
                 string.IsNullOrEmpty(iconResource) ? null : EditorGUIUtility.LoadIcon(iconResource),
                 enabled ? string.Empty : Menu.GetDisabledTooltip(menuItemPath));
         }

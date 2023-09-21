@@ -872,6 +872,7 @@ namespace Unity.UI.Builder
                 if (!readOnly)
                 {
                     propertyField.RegisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindEvent);
+                    boundValuePropertyField.RegisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindEvent);
                     boundValuePropertyField.Bind(m_BoundValuesSerializedObject);
                 }
 
@@ -947,10 +948,11 @@ namespace Unity.UI.Builder
             // we need to wait until binding is completed before we register for change events.
             EditorApplication.delayCall += () =>
             {
-                target.RegisterCallback<SerializedPropertyChangeEvent>(OnPropertyFieldValueChange);
+                if (target.name.Equals(builderSerializedPropertyFieldName))
+                    target.RegisterCallback<SerializedPropertyChangeEvent>(OnPropertyFieldValueChange);
 
                 // Remove the binding info so that the RightClickFieldMenuEvent does not use the SerializedObject menu instead.
-                var baseField = target.Q<PropertyField>(builderSerializedPropertyFieldName)?.Q<BindableElement>();
+                var baseField = target.Q<BindableElement>();
                 if (baseField != null)
                     baseField.userData = null;
             };

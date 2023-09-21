@@ -18,6 +18,68 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditor
 {
+    public enum RenderPickingType
+    {
+        RenderFromIgnoreSet,
+        RenderFromFilterSet
+    }
+
+    public readonly struct RenderPickingArgs
+    {
+        public int pickingIndex { get; }
+        public RenderPickingType renderPickingType { get; }
+        public IReadOnlyCollection<GameObject> renderObjectSet { get; }
+
+        internal RenderPickingArgs(int pickingIndex, RenderPickingType renderPickingType, HashSet<GameObject> renderObjectSet)
+        {
+            this.pickingIndex = pickingIndex;
+            this.renderPickingType = renderPickingType;
+            this.renderObjectSet = renderObjectSet;
+        }
+
+        public bool RenderObjectSetContains(GameObject go)
+            => renderObjectSet != null && ((HashSet<GameObject>)renderObjectSet).Contains(go);
+
+        public bool NeedToRenderForPicking(GameObject go)
+        {
+            var contained = RenderObjectSetContains(go);
+            return renderPickingType == RenderPickingType.RenderFromFilterSet ? contained : !contained;
+       }
+    }
+
+    public readonly struct RenderPickingResult
+    {
+        public int renderedPickingIndexCount { get; }
+        public HandleUtility.ResolvePickingCallback resolver { get; }
+        public HandleUtility.ResolvePickingWithWorldPositionCallback resolverWithWorldPos { get; }
+
+        public static readonly RenderPickingResult NoOperation = default;
+
+        public RenderPickingResult(int renderedPickingIndexCount, HandleUtility.ResolvePickingCallback resolver)
+        {
+            if (renderedPickingIndexCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(renderedPickingIndexCount), $"The value ({renderedPickingIndexCount}) must not be negative");
+            if (resolver == null)
+                throw new ArgumentNullException(nameof(resolver));
+
+            this.renderedPickingIndexCount = renderedPickingIndexCount;
+            this.resolver = resolver;
+            this.resolverWithWorldPos = null;
+        }
+        
+        public RenderPickingResult(int renderedPickingIndexCount, HandleUtility.ResolvePickingWithWorldPositionCallback resolver)
+        {
+            if (renderedPickingIndexCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(renderedPickingIndexCount), $"The value ({renderedPickingIndexCount}) must not be negative");
+            if (resolver == null)
+                throw new ArgumentNullException(nameof(resolver));
+
+            this.renderedPickingIndexCount = renderedPickingIndexCount;
+            this.resolverWithWorldPos = resolver;
+            this.resolver = null;
+        }
+    }
+
     // Helper functions for Scene View style 3D GUI
     public sealed partial class HandleUtility
     {
@@ -269,7 +331,7 @@ namespace UnityEditor
         }
 
         // Pixel distance from mouse pointer to a rectangle on screen
-        static Vector3[] s_Points = {Vector3.zero, Vector3.zero, Vector3.zero, Vector3.zero, Vector3.zero};
+        static Vector3[] s_Points = { Vector3.zero, Vector3.zero, Vector3.zero, Vector3.zero, Vector3.zero };
         public static float DistanceToRectangle(Vector3 position, Quaternion rotation, float size)
         {
             return DistanceToRectangleInternal(position, rotation, new Vector2(size, size));
@@ -1212,7 +1274,7 @@ namespace UnityEditor
             if (objects == null)
                 return;
 
-            for (int i = 0; i < objects.Length;  ++i)
+            for (int i = 0; i < objects.Length; ++i)
             {
                 if (objects[i] == null)
                     continue;
@@ -1803,7 +1865,7 @@ namespace UnityEditor
 
         internal static void FilterRendererIDs(Renderer[] renderers, out int[] parentRendererIDs, out int[] childRendererIDs)
         {
-            if(renderers == null)
+            if (renderers == null)
             {
                 Debug.LogWarning("The Renderer array is null. Handles.DrawOutline will not be rendered.");
                 parentRendererIDs = new int[0];
@@ -1905,6 +1967,170 @@ namespace UnityEditor
         public static void Repaint()
         {
             Internal_Repaint();
+        }
+        
+        public delegate UnityObject ResolvePickingCallback(int localPickingIndex);
+        public delegate UnityObject ResolvePickingWithWorldPositionCallback(int localPickingIndex, Vector3 worldPos, float depth);
+        public delegate RenderPickingResult RenderPickingCallback(in RenderPickingArgs args);
+
+        private static readonly List<RenderPickingCallback> s_RenderPickingCallbacks = new();
+        private static readonly List<(int PickingIndexBegin, int PickingIndexEnd, ResolvePickingCallback Resolver, ResolvePickingWithWorldPositionCallback ResolverWithWorldPos)> s_RenderPickingResults = new();
+
+        public static bool RegisterRenderPickingCallback(RenderPickingCallback renderPickingCallback)
+        {
+            if (renderPickingCallback == null)
+                throw new ArgumentNullException(nameof(renderPickingCallback));
+            if (s_InPickingRendering)
+                throw new InvalidOperationException($"{nameof(RegisterRenderPickingCallback)} cannot be called during picking rendering");
+
+            foreach (var registered in s_RenderPickingCallbacks)
+            {
+                if (registered == renderPickingCallback)
+                    return false;
+            }
+
+            s_RenderPickingCallbacks.Add(renderPickingCallback);
+            return true;
+        }
+
+        public static bool UnregisterRenderPickingCallback(RenderPickingCallback renderPickingCallback)
+        {
+            if (renderPickingCallback == null)
+                throw new ArgumentNullException(nameof(renderPickingCallback));
+            if (s_InPickingRendering)
+                throw new InvalidOperationException($"{nameof(UnregisterRenderPickingCallback)} cannot be called during picking rendering");
+
+            for (int i = 0; i < s_RenderPickingCallbacks.Count; ++i)
+            {
+                var registered = s_RenderPickingCallbacks[i];
+                if (registered == renderPickingCallback)
+                {
+                    s_RenderPickingCallbacks.RemoveAt(i);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // todo this will need to be an int or tuple<int,int> when we support non-object selection
+        // todo refactor picking code to remove all the static collections that ferry around include/exclude lists
+        static readonly HashSet<GameObject> s_PickingIncludeSet = new HashSet<GameObject>();
+        static readonly HashSet<GameObject> s_PickingExcludeSet = new HashSet<GameObject>();
+
+        private static bool s_InPickingRendering = false;
+        
+        // Returns true if any of the resolver function uses depth or reconstructed world space position.
+        [RequiredByNativeCode]
+        static bool DoRenderPicking(int pickingIndex)
+        {
+            s_PickingIncludeSet.Clear();
+            s_PickingExcludeSet.Clear();
+
+            if (s_PickingInclude != null)
+            {
+                foreach (var o in s_PickingInclude)
+                    if (o.TryGetGameObject(out var go))
+                        s_PickingIncludeSet.Add(go);
+            }
+
+            if (s_PickingExclude != null)
+            {
+                foreach (var o in s_PickingExclude)
+                {
+                    if (o.TryGetGameObject(out var go))
+                    {
+                        if (s_PickingInclude != null)
+                            s_PickingIncludeSet.Remove(go);
+                        else
+                            s_PickingExcludeSet.Add(go);
+                    }
+                }
+            }
+
+            if (s_PickingInclude != null && s_PickingIncludeSet.Count == 0)
+                return false;
+
+            var nextPickingIndex = pickingIndex;
+            var renderPickingType = s_PickingInclude != null ? RenderPickingType.RenderFromFilterSet : RenderPickingType.RenderFromIgnoreSet;
+            var renderPickingObjectSet = s_PickingInclude != null ? s_PickingIncludeSet : s_PickingExcludeSet;
+            Debug.Assert(s_RenderPickingResults.Count == 0);
+            s_InPickingRendering = true;
+            bool needDepth = false;
+            try
+            {
+                var pickingBuffer = RenderTexture.active;
+                foreach (var cb in s_RenderPickingCallbacks)
+                {
+                    var result = cb(new RenderPickingArgs(nextPickingIndex, renderPickingType, renderPickingObjectSet));
+
+                    if (RenderTexture.active != pickingBuffer)
+                        RenderTexture.active = pickingBuffer;
+
+                    if (result.renderedPickingIndexCount <= 0
+                        || result.resolver == null && result.resolverWithWorldPos == null)
+                        continue;
+
+                    needDepth |= result.resolverWithWorldPos != null;
+                    s_RenderPickingResults.Add((nextPickingIndex, nextPickingIndex + result.renderedPickingIndexCount, result.resolver, result.resolverWithWorldPos));
+                    nextPickingIndex += result.renderedPickingIndexCount;
+                }
+            }
+            finally
+            {
+                s_InPickingRendering = false;
+            }
+            
+            return needDepth;
+        }
+
+        [RequiredByNativeCode]
+        static int ResolvePickingObject(int pickingIndex, Vector3 worldPos, float depth)
+        {
+            foreach (var (begin, end, resolver, resolverWithWorldPos) in s_RenderPickingResults)
+            {
+                if (pickingIndex >= begin && pickingIndex < end)
+                {
+                    Debug.Assert((resolver == null) != (resolverWithWorldPos == null));
+                    var obj = resolver != null ? resolver(pickingIndex - begin) : resolverWithWorldPos(pickingIndex - begin, worldPos, depth);
+                    return obj != null ? obj.GetInstanceID() : 0;
+                }
+            }
+            return 0;
+        }
+
+        [RequiredByNativeCode]
+        static void CleanupPicking()
+        {
+            s_RenderPickingResults.Clear();
+        }
+
+        // Must match the logic in `ColorRGBA32 PickingEncodeIndex(UInt32 index)` in picking.cpp
+        public static Vector4 EncodeSelectionId(int pickingIndex)
+        {
+            uint index = (uint)pickingIndex;
+
+            return new Vector4(
+                (byte)(index & 0xFF),
+                (byte)((index >> 8) & 0xFF),
+                (byte)((index >> 16) & 0xFF),
+                (byte)((index >> 24) & 0xFF)) / 255.0f;
+        }
+
+        // Must match the inverse logic in `ColorRGBA32 PickingEncodeIndex(UInt32 index)` in picking.cpp
+        public static int DecodeSelectionId(Vector4 selectionId)
+        {
+            return (int)(selectionId.x * 255) +
+                  ((int)(selectionId.y * 255) << 8) +
+                  ((int)(selectionId.z * 255) << 16) +
+                  ((int)(selectionId.w * 255) << 24);
+        }
+
+        public static void GetOverlappingObjects(Vector2 position, List<UnityObject> outObjectList)
+        {
+            outObjectList.Clear();
+            foreach (var pobj in SceneViewPicking.GetAllOverlapping(position))
+                outObjectList.Add(pobj.target);
         }
     }
 }
