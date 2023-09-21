@@ -44,7 +44,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         protected virtual PrecompiledAssembly[] GetPrecompiledAssembliesInternal(EditorScriptCompilationOptions compilationOptions, BuildTargetGroup buildTargetGroup, BuildTarget target, string[] extraScriptingDefines)
         {
-            return GetPrecompiledAssembliesNative(compilationOptions, buildTargetGroup, target, extraScriptingDefines);
+            return GetPrecompiledAssembliesNative(compilationOptions, target, extraScriptingDefines);
         }
 
         protected virtual PrecompiledAssembly[] GetAllPrecompiledAssembliesInternal()
@@ -53,7 +53,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [FreeFunction("GetPrecompiledAssembliesManaged")]
-        protected static extern PrecompiledAssembly[] GetPrecompiledAssembliesNative(EditorScriptCompilationOptions compilationOptions, BuildTargetGroup buildTargetGroup, BuildTarget target, string[] extraScriptingDefines);
+        protected static extern PrecompiledAssembly[] GetPrecompiledAssembliesNative(EditorScriptCompilationOptions compilationOptions, BuildTarget target, string[] extraScriptingDefines);
 
         [FreeFunction("GetUnityAssembliesManaged")]
         protected static extern PrecompiledAssembly[] GetUnityAssembliesNative(bool buildingForEditor, BuildTarget target);

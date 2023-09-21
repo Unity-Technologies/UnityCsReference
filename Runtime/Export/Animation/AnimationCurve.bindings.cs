@@ -222,6 +222,9 @@ namespace UnityEngine
         [FreeFunction("AnimationCurveBindings::GetKeys", HasExplicitThis = true, IsThreadSafe = true)]
         extern private Keyframe[] GetKeys();
 
+		[FreeFunction("AnimationCurveBindings::GetHashCode", HasExplicitThis = true, IsThreadSafe = true)]
+        extern public override int GetHashCode();
+
         // Smooth the in and out tangents of the keyframe at /index/.
         [NativeThrows]
         [FreeFunction("AnimationCurveBindings::SmoothTangents", HasExplicitThis = true, IsThreadSafe = true)]
@@ -328,11 +331,6 @@ namespace UnityEngine
             }
 
             return m_Ptr.Equals(other.m_Ptr) || Internal_Equals(other.m_Ptr);
-        }
-
-        public override int GetHashCode()
-        {
-            return m_Ptr.GetHashCode();
         }
 
         public void CopyFrom(AnimationCurve other)

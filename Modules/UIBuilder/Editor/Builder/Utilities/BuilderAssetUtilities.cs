@@ -499,7 +499,7 @@ namespace Unity.UI.Builder
 
                 var vta = ve.GetVisualTreeAsset();
                 var selectedElement = vta.FindElementByType(BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName);
-                vta.RemoveElement(selectedElement);
+                vta.RemoveElementAndDependencies(selectedElement);
             }
             else if (ve.GetVisualElementAsset() != null)
             {

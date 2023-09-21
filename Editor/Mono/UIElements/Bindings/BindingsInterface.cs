@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -19,7 +17,7 @@ namespace UnityEditor.UIElements
 
         void Bind(VisualElement element, object bindingContext, SerializedProperty parentProperty);
 
-        void TrackPropertyValue(VisualElement element, SerializedProperty property, Action<SerializedProperty> callback);
+        void TrackPropertyValue(VisualElement element, SerializedProperty property, Action<object, SerializedProperty> callback);
         void TrackSerializedObjectValue(VisualElement element, SerializedObject property, Action<SerializedObject> callback);
 
         void HandleStyleUpdate(VisualElement element);
@@ -105,6 +103,11 @@ namespace UnityEditor.UIElements
         /// <param name="property">The SerializedProperty to track.</param>
         /// <param name="callback">Invoked when the tracked SerializedProperty value changes.</param>
         public static void TrackPropertyValue(this VisualElement element, SerializedProperty property, Action<SerializedProperty> callback = null)
+        {
+            bindingImpl.TrackPropertyValue(element, property, callback == null ? null : (e, p) => callback(p));
+        }
+
+        internal static void TrackPropertyValue(this VisualElement element, SerializedProperty property, Action<object, SerializedProperty> callback)
         {
             bindingImpl.TrackPropertyValue(element, property, callback);
         }

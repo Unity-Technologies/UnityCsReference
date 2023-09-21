@@ -173,6 +173,7 @@ namespace UnityEngine.UIElements
             this.title = title;
             this.visualMode = visualMode;
             genericData = null;
+            assetPaths = null;
             unityObjectReferences = null;
         }
 
@@ -182,6 +183,7 @@ namespace UnityEngine.UIElements
             this.title = title;
             visualMode = DragVisualMode.Move;
             genericData = null;
+            assetPaths = null;
             unityObjectReferences = null;
             SetGenericData(DragAndDropData.dragSourceKey, target);
         }
@@ -199,6 +201,7 @@ namespace UnityEngine.UIElements
 
         internal Hashtable genericData { get; private set; }
         internal IEnumerable<Object> unityObjectReferences { get; private set; }
+        internal string[] assetPaths { get; private set; }
 
         /// <summary>
         /// Sets data associated with the current drag-and-drop operation.
@@ -218,6 +221,15 @@ namespace UnityEngine.UIElements
         public void SetUnityObjectReferences(IEnumerable<Object> references)
         {
             unityObjectReferences = references;
+        }
+
+        /// <summary>
+        /// Stores an array of paths to assets being dragged during this drag-and-drop operation. 
+        /// </summary>
+        /// <param name="paths">The asset paths.</param>
+        public void SetPaths(string[] paths)
+        {
+            assetPaths = paths;
         }
     }
 }

@@ -40,12 +40,6 @@ namespace UnityEditor
         public IconKind Kind;
     }
 
-    internal struct IconSize
-    {
-        public int Width, Height;
-        public IconKind Kind;
-    }
-
     internal struct LegacyBuildTargetIcons
     {
         [NativeName("m_BuildTarget")]
@@ -67,16 +61,6 @@ namespace UnityEditor
         internal List<Texture2D> m_Textures;
         private Texture2D[] m_PreviewTextures;
 
-        private PlatformIconKind m_Kind;
-
-        private int m_MaxLayerCount;
-        private int m_MinLayerCount;
-        private string m_Description;
-
-        private string m_iconSubKind;
-        private int m_Width;
-        private int m_Height;
-
         public int layerCount
         {
             get
@@ -85,8 +69,7 @@ namespace UnityEditor
             }
             set
             {
-                value = value > m_MaxLayerCount ? m_MaxLayerCount : value;
-                value = value < m_MinLayerCount ? m_MinLayerCount : value;
+                value = Math.Clamp(value, minLayerCount, maxLayerCount);
 
                 if (value < m_Textures.Count)
                     m_Textures.RemoveRange(value, m_Textures.Count - 1);
@@ -95,32 +78,24 @@ namespace UnityEditor
             }
         }
 
-        public int maxLayerCount  { get { return m_MaxLayerCount; } private set { m_MaxLayerCount = value; } }
-        public int minLayerCount  { get { return m_MinLayerCount; } private set { m_MinLayerCount = value; } }
-        internal string description  { get { return m_Description; } private set { m_Description = value; } }
-
-        internal string iconSubKind { get { return m_iconSubKind; } private set { m_iconSubKind = value; } }
-        public int width { get { return m_Width; } private set { m_Width = value; } }
-        public int height { get { return m_Height; } private set { m_Height = value; } }
-
+        public int maxLayerCount  { get; private set; }
+        public int minLayerCount  { get; private set; }
+        internal string description  { get; private set; }
+        public int width { get; private set; }
+        public int height { get; private set; }
         internal bool draggable { get; set; }
 
-        public PlatformIconKind kind
-        {
-            get { return m_Kind; }
-            private set
-            {
-                m_Kind = value;
-            }
-        }
+        public PlatformIconKind kind { get; private set; }
+        internal string iconSubKind { get; private set; }
+
         internal PlatformIconStruct GetPlatformIconStruct()
         {
             PlatformIconStruct platformIconStruct = new PlatformIconStruct();
             platformIconStruct.Textures = m_Textures.ToArray();
-            platformIconStruct.Width = m_Width;
-            platformIconStruct.Height = m_Height;
-            platformIconStruct.Kind = m_Kind.kind;
-            platformIconStruct.SubKind = m_iconSubKind;
+            platformIconStruct.Width = width;
+            platformIconStruct.Height = height;
+            platformIconStruct.Kind = kind.kind;
+            platformIconStruct.SubKind = iconSubKind;
 
             return platformIconStruct;
         }
@@ -154,7 +129,7 @@ namespace UnityEditor
 
         public Texture2D GetTexture(int layer = 0)
         {
-            if (layer < 0 || layer >= m_MaxLayerCount)
+            if (layer < 0 || layer >= maxLayerCount)
                 throw new ArgumentOutOfRangeException(string.Format("Attempting to retrieve icon layer {0}, while the icon only contains {1} layers!", layer, layerCount));
             else if (layer < layerCount)
                 return m_Textures[layer];
@@ -223,7 +198,7 @@ namespace UnityEditor
 
     public class PlatformIconKind
     {
-        internal static readonly PlatformIconKind Any = new PlatformIconKind(-1, "Any", "", BuildTargetGroup.Unknown);
+        internal static readonly PlatformIconKind Any = new PlatformIconKind(-1, "Any", "", NamedBuildTarget.Unknown);
 
         internal int kind { get; private set; }
         internal string platform { get; private set; }
@@ -231,11 +206,10 @@ namespace UnityEditor
         internal string description { get; set; }
         private string kindString { get; set; }
 
-
-        internal PlatformIconKind(int kind, string kindString, string description, BuildTargetGroup platform, string[] customLayerLabels = null)
+        internal PlatformIconKind(int kind, string kindString, string description, NamedBuildTarget platform, string[] customLayerLabels = null)
         {
             this.kind = kind;
-            this.platform = PlayerSettings.GetPlatformName(platform);
+            this.platform = platform.TargetName;
             this.kindString = kindString;
             this.customLayerLabels = customLayerLabels;
             this.description = description;
@@ -402,12 +376,6 @@ namespace UnityEditor
                 return new PlatformIconKind[] {};
 
             return platformIconProvider.GetRequiredPlatformIcons().Keys.ToArray();
-        }
-
-        internal static bool IsDefaultIconAvailable()
-        {
-            var icons = GetAllIconsForPlatform("");
-            return icons.Length > 0 && icons[0] != null;
         }
 
         internal static int GetNonEmptyPlatformIconCount(PlatformIcon[] icons)

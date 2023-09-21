@@ -21,6 +21,7 @@ namespace UnityEngine.UIElements
         object GetGenericData(string key);
         object userData { get; }
         IEnumerable<Object> unityObjectReferences { get; }
+        string[] paths { get; set; }
     }
 
     /// <summary>
@@ -64,5 +65,10 @@ namespace UnityEngine.UIElements
         /// Unity Object references being dragged.
         /// </summary>
         public abstract IEnumerable<Object> unityObjectReferences { get; }
+
+        /// <summary>
+        /// A list of paths to the assets being dragged.
+        /// </summary>
+        public virtual string[] paths { get; set; }
     }
 }

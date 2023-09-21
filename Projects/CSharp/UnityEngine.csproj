@@ -3662,6 +3662,9 @@
     <Compile Include="..\..\Runtime\Export\Graphics\RayTracingAccelerationStructure.bindings.cs">
       <Link>Runtime\Export\Graphics\RayTracingAccelerationStructure.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\RenderPipelineGraphicsSettingsCollection.cs">
+      <Link>Runtime\Export\Graphics\RenderPipelineGraphicsSettingsCollection.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\RenderPipelineGraphicsSettingsExtensions.cs">
       <Link>Runtime\Export\Graphics\RenderPipelineGraphicsSettingsExtensions.cs</Link>
     </Compile>

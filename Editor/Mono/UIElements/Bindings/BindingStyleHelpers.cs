@@ -17,6 +17,9 @@ namespace UnityEditor.UIElements
         static Action<VisualElement, SerializedProperty> s_UpdateElementStyleFromProperty;
         static Action<VisualElement, SerializedProperty> s_UpdatePrefabStateStyleFromProperty;
 
+        // Lets us bypass the default right click menu to show our own.
+        internal static Func<VisualElement, bool> HandleRightClickMenu;
+
         static BindingsStyleHelpers()
         {
             s_RightClickMenuCallback = RightClickFieldMenuEvent;
@@ -444,8 +447,10 @@ namespace UnityEditor.UIElements
 
             var element = evt.currentTarget as VisualElement;
 
+            bool handledExternally = HandleRightClickMenu?.Invoke(element) == true;
+
             var property = element?.userData as SerializedProperty;
-            if (property == null)
+            if (property == null || handledExternally)
                 return;
 
             var wasEnabled = GUI.enabled;

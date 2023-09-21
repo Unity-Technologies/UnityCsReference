@@ -28,6 +28,7 @@ namespace Unity.UI.Builder
             public BuilderDataSourcePathCompleter dataSourcePathCompleter;
             public UIEHelpBox dataSourceWarningBox;
             public UIEHelpBox pathWarningBox;
+	        public UIEHelpBox converterGroupWarningBox;
             public EnumField bindingModeField;
             public PersistedFoldout advancedSettings;
             public BindingConvertersField convertersToUi;
@@ -49,6 +50,7 @@ namespace Unity.UI.Builder
                     dataSourcePathCompleter = baseTestAccess.dataSourcePathCompleter,
                     dataSourceWarningBox = baseTestAccess.dataSourceWarningBox,
                     pathWarningBox = baseTestAccess.pathWarningBox,
+                    converterGroupWarningBox = m_ConverterGroupWarningBox,
                     bindingModeField = m_BindingModeField,
                     advancedSettings = m_AdvancedSettings,
                     convertersToUi = m_ConvertersToUi,
@@ -64,6 +66,7 @@ namespace Unity.UI.Builder
         BindingConvertersField m_ConvertersToUi;
         BindingConvertersField m_ConvertersToSource;
         PopupField<string> m_UpdateTrigger;
+        UIEHelpBox m_ConverterGroupWarningBox;
 
         VisualElement m_RequiresConstantUpdateField;
         VisualElement m_ConvertersToUiField;
@@ -148,6 +151,7 @@ namespace Unity.UI.Builder
             }
 
             UpdateConverterCompleter();
+            UpdateWarningBox();
         }
 
         internal override void UnsetAllAttributes()
@@ -171,9 +175,9 @@ namespace Unity.UI.Builder
 
                     if (fieldElement.GetFirstAncestorOfType<UxmlAssetSerializedDataRoot>() is { } dataRoot && dataRoot.dataDescription.isUxmlObject)
                     {
-                        SynchronizePath(dataRoot.rootPath, false, out var uxmlOwner, out var serializedData, out var _);
-                        currentAttributesUxmlOwner = uxmlOwner as UxmlAsset;
-                        currentSerializedData = serializedData as UxmlSerializedData;
+                        var result = SynchronizePath(dataRoot.rootPath, false);
+                        currentAttributesUxmlOwner = result.uxmlAsset;
+                        currentSerializedData = result.serializedData as UxmlSerializedData;
 
                         if (currentAttributesUxmlOwner != null)
                         {
@@ -225,7 +229,9 @@ namespace Unity.UI.Builder
                     classList = { PersistedFoldout.unindentedUssClassName },
                     value = false
                 };
-                m_ConvertersGroupBox = new GroupBox("Converters");
+                m_ConvertersGroupBox = new GroupBox("Local converters");
+                m_ConverterGroupWarningBox ??= new UIEHelpBox(BuilderConstants.BindingWindowCompatibleWarningBoxText, HelpBoxMessageType.Info);
+                m_ConverterGroupWarningBox.style.display = DisplayStyle.None;
             }
             else
             {
@@ -250,6 +256,7 @@ namespace Unity.UI.Builder
                 m_RequiresConstantUpdateField = row.GetLinkedFieldElements()[0];
 
                 m_AdvancedSettings.Add(m_ConvertersGroupBox);
+                m_AdvancedSettings.Add(m_ConverterGroupWarningBox);
 
                 attribute = desc.FindAttributeWithUxmlName(k_BindingAttr_ConvertersToUi);
                 row = CreateSerializedAttributeRow(attribute, $"{root.rootPath}{attribute.serializedField.Name}", m_ConvertersGroupBox);
@@ -263,7 +270,8 @@ namespace Unity.UI.Builder
             fieldsContainer.Add(root);
 
             // Add any additional fields from inherited types.
-            GenerateSerializedAttributeFields(uxmlSerializedDataDescription, root);
+            var property = m_CurrentElementSerializedObject.FindProperty(bindingSerializedPropertyPathRoot);
+            CreateUxmlObjectField(property, uxmlSerializedDataDescription, root);
 
             if (!isDataBinding)
             {
@@ -273,6 +281,8 @@ namespace Unity.UI.Builder
                 var row = CreateSerializedAttributeRow(attribute, $"{root.rootPath}{attribute.serializedField.Name}", m_AdvancedSettings);
                 m_RequiresConstantUpdateField = row.GetLinkedFieldElements()[0];
             }
+
+            root.Bind(m_CurrentElementSerializedObject);
         }
 
         /// <inheritdoc/>
@@ -317,6 +327,14 @@ namespace Unity.UI.Builder
                 || IsAttributeOverriden(m_ConvertersToSourceField));
         }
 
+        void UpdateWarningBox()
+        {
+            if (m_ConverterGroupWarningBox == null || m_ConvertersToSource == null || m_ConvertersToUi == null)
+                return;
+
+            m_ConverterGroupWarningBox.style.display = m_ConvertersToUi.ContainsUnknownCompatibilityGroup() || m_ConvertersToSource.ContainsUnknownCompatibilityGroup() ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
         public void TransferBindingInstance(string path, BuilderUxmlAttributesView targetView, string boundProperty)
         {
             var undoGroup = Undo.GetCurrentGroup();
@@ -327,24 +345,24 @@ namespace Unity.UI.Builder
             path = property.propertyPath;
 
             // Extract the SerializedData and UxmlObject
-            SynchronizePath(path, true, out var uxmlAsset, out var serializedData, out var _);
+            var result = SynchronizePath(path, true);
 
-            var data = serializedData as Binding.UxmlSerializedData;
+            var data = result.serializedData as Binding.UxmlSerializedData;
             data.property = boundProperty;
 
             // Apply the serialized data back to the original view
-            property.managedReferenceValue = serializedData;
+            property.managedReferenceValue = result.serializedData;
             property.serializedObject.ApplyModifiedProperties();
             Undo.IncrementCurrentGroup();
 
             // Get the UxmlAsset for our new serialized data.
-            targetView.SynchronizePath(path, true, out var newUxmlAsset, out var _, out var _);
+            var resultTarget = targetView.SynchronizePath(path, true);
             Undo.IncrementCurrentGroup();
 
             // Copy attribute values
             targetView.UndoRecordDocument("Add Binding");
-            var bindingWindowUxmlObject = (UxmlAsset)uxmlAsset;
-            var viewUxmlObject = (UxmlAsset)newUxmlAsset;
+            var bindingWindowUxmlObject = result.uxmlAsset;
+            var viewUxmlObject = resultTarget.uxmlAsset;
 
             viewUxmlObject.SetAttribute("property", boundProperty);
 
@@ -391,10 +409,10 @@ namespace Unity.UI.Builder
                     {
                         // Copy this uxml object's attributes.
                         var arrayPath = arrayProperty.propertyPath;
-                        SynchronizePath(arrayPath, false, out var uxmlAsset, out _, out _);
-                        targetView.SynchronizePath(arrayPath, true, out var newUxmlAsset, out _, out _);
+                        var result = SynchronizePath(arrayPath, false);
+                        var resultTarget = targetView.SynchronizePath(arrayPath, true);
 
-                        CopyAttributesRecursively(arrayPath, (UxmlAsset)uxmlAsset, (UxmlAsset)newUxmlAsset, targetView);
+                        CopyAttributesRecursively(arrayPath, result.uxmlAsset, resultTarget.uxmlAsset, targetView);
 
                         arrayProperty = targetView.m_CurrentElementSerializedObject.FindProperty($"{attributePath}.Array.data[{++i}]");
                     }
@@ -402,10 +420,10 @@ namespace Unity.UI.Builder
                 else
                 {
                     // Copy this uxml object's attributes.
-                    SynchronizePath(attributePath, false, out var uxmlAsset, out _, out _);
-                    targetView.SynchronizePath(attributePath, true, out var newUxmlAsset, out _, out _);
+                    var result = SynchronizePath(attributePath, false);
+                    var resultTarget = targetView.SynchronizePath(attributePath, true);
 
-                    CopyAttributesRecursively(attributePath, (UxmlAsset)uxmlAsset, (UxmlAsset)newUxmlAsset, targetView);
+                    CopyAttributesRecursively(attributePath, result.uxmlAsset, resultTarget.uxmlAsset, targetView);
                 }
             }
         }
@@ -414,6 +432,7 @@ namespace Unity.UI.Builder
         protected override void NotifyAttributesChanged(string attributeName = null)
         {
             parentView.NotifyAttributesChanged();
+            UpdateWarningBox();
             base.NotifyAttributesChanged();
         }
 

@@ -46,9 +46,8 @@ namespace UnityEditor
 
             AddToClassList(k_DropdownButtonUSSClass);
 
-            schedule.Execute(Initialize).Until(() => !string.IsNullOrEmpty(text));
-
             RegisterCallback<ClickEvent>(ShowSelectionDropdown);
+            Initialize();
         }
 
         void Initialize()
@@ -206,14 +205,14 @@ namespace UnityEditor
 
         public CameraViewToggle(CamerasOverlay overlay) : base()
         {
-            schedule.Execute(Initialize).StartingIn(100).Until(() => sceneView != null);
-
             m_Overlay = overlay;
             m_Overlay.onWillBeDestroyed += OnWillBeDestroyed;
             m_Overlay.displayedChanged += OnDisplayChanged;
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+
+            Initialize();
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)

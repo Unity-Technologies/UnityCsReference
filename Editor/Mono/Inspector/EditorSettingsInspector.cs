@@ -757,12 +757,6 @@ namespace UnityEditor
             }
             GUILayout.EndHorizontal();
 
-            var overrideAddress = AssetPipelinePreferences.GetCommandLineRemoteAddressOverride();
-            if (overrideAddress != null)
-            {
-                EditorGUILayout.HelpBox("Cache Server remote address forced via command line argument. To use the cache server address specified here please restart Unity without the -CacheServerIPAddress command line argument.", MessageType.Info, true);
-            }
-
             int index = Mathf.Clamp((int)EditorSettings.cacheServerMode, 0, cacheServerModePopupList.Length - 1);
             CreatePopupMenu(Content.mode.text, cacheServerModePopupList, index, SetCacheServerMode);
 

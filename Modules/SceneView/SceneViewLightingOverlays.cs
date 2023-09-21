@@ -639,7 +639,13 @@ namespace UnityEditor
         static readonly PrefColor kSceneViewMaterialReceiveGILightmaps = new PrefColor("Scene/Receive + Contribute GI (Lightmaps)", 47.0f / 255.0f, 153.0f / 255.0f, 41.0f / 255.0f, 1.0f);
         static readonly PrefColor kSceneViewMaterialReceiveGILightProbes = new PrefColor("Scene/Receive + Contribute GI (Light Probes)", 35.0f / 255.0f, 15.0f / 255.0f, 153.0f / 255.0f, 1.0f);
 
-        static readonly PrefColor kSceneViewHighlightBackfaces = new PrefColor("Scene/Back-Facing Geometry", 255.0f / 255.0f, 54.0f / 255.0f, 42.0f / 255.0f, 1.0f);
+        static readonly PrefColor kSceneViewHighlightBackfaces = new PrefColor("Scene/Back-Facing Geometry", 126.0f / 255.0f, 46.0f / 255.0f, 217.0f / 255.0f, 1.0f);
+
+        // Should match colors in BakePipelineBuildVisualization.cpp!
+        static readonly Color kSceneViewInvalidTexel = new Color(247.0f / 255.0f, 79.0f / 255.0f, 65.0f / 255.0f, 255.0f / 255.0f);
+        static readonly Color kSceneViewValidTexel = new Color(12.0f / 255.0f, 99.0f / 255.0f, 8.0f / 255.0f, 255.0f / 255.0f);
+        static readonly Color kSceneViewOverlappingTexel = new Color(247.0f / 255.0f, 79.0f / 255.0f, 65.0f / 255.0f, 255.0f / 255.0f);
+        static readonly Color kSceneViewNonOverlappingTexel = new Color(255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f);
 
         // material validation, contribute GI, and albedo swatches are represented in this array. it is used to update
         // the colors when preferences are changed.
@@ -662,6 +668,10 @@ namespace UnityEditor
 
         // Light exposure
         VisualElement m_GlobalIlluminationContent;
+
+        // Debug view modes
+        VisualElement m_TexelValidityContent;
+        VisualElement m_UVOverlapContent;
 
         public SceneViewLightingColors()
         {
@@ -696,6 +706,8 @@ namespace UnityEditor
             m_ContentRoot.Add(m_BackfaceHighlightsContent = CreateBackfaceHighlightsContent());
             m_ContentRoot.Add(m_AlbedoContent = CreateAlbedoContent());
             m_ContentRoot.Add(m_GlobalIlluminationContent = CreateGIContent());
+            m_ContentRoot.Add(m_TexelValidityContent = CreateTexelValidityContent());
+            m_ContentRoot.Add(m_UVOverlapContent = CreateUVOverlapContent());
 
             OnCameraModeChanged(sceneView.cameraMode);
 
@@ -715,12 +727,16 @@ namespace UnityEditor
 
             bool showValidationLegend = mode.drawMode == DrawCameraMode.ValidateAlbedo || mode.drawMode == DrawCameraMode.ValidateMetalSpecular;
             bool showGIContributorsReceiversLegend = mode.drawMode == DrawCameraMode.GIContributorsReceivers;
+            bool showTexelValidityLegend = mode.drawMode == DrawCameraMode.BakedTexelValidity;
+            bool showUVOverlapLegend = mode.drawMode == DrawCameraMode.BakedUVOverlap;
             bool showBackfaceHighlightsLegend = sceneView.showBackfaceHighlightsToggle && SceneView.GetDrawBackfaceHighlights();
-            bool showPanel = showValidationLegend || showGIContributorsReceiversLegend || showBackfaceHighlightsLegend;
+            bool showPanel = showValidationLegend || showGIContributorsReceiversLegend || showBackfaceHighlightsLegend || showTexelValidityLegend || showUVOverlapLegend;
 
             m_BackfaceHighlightsContent.EnableInClassList(SceneViewLighting.Styles.k_UnityHiddenClass, !showBackfaceHighlightsLegend);
             m_AlbedoContent.EnableInClassList(SceneViewLighting.Styles.k_UnityHiddenClass, !showValidationLegend);
             m_GlobalIlluminationContent.EnableInClassList(SceneViewLighting.Styles.k_UnityHiddenClass, !showGIContributorsReceiversLegend);
+            m_TexelValidityContent.EnableInClassList(SceneViewLighting.Styles.k_UnityHiddenClass, !showTexelValidityLegend);
+            m_UVOverlapContent.EnableInClassList(SceneViewLighting.Styles.k_UnityHiddenClass, !showUVOverlapLegend);
 
             if (showPanel)
             {
@@ -775,7 +791,29 @@ namespace UnityEditor
             return root;
         }
 
-        internal static VisualElement CreateColorSwatch(string label, PrefColor prefColor)
+        VisualElement CreateTexelValidityContent()
+        {
+            var root = new VisualElement() { name = "Texel Validity Content" };
+
+            root.Add(CreateColorSwatch("Invalid Texels", null, kSceneViewInvalidTexel));
+            root.Add(CreateColorSwatch("Valid Texels", null, kSceneViewValidTexel));
+
+            return root;
+        }
+
+        VisualElement CreateUVOverlapContent()
+        {
+            var root = new VisualElement() { name = "UV Overlap Content" };
+
+            root.Add(CreateColorSwatch("Overlapping Texels", null, kSceneViewOverlappingTexel));
+            root.Add(CreateColorSwatch("Non-Overlapping Texels", null, kSceneViewNonOverlappingTexel));
+
+            return root;
+        }
+
+        internal static VisualElement CreateColorSwatch(string label, PrefColor prefColor) => CreateColorSwatch(label, prefColor, Color.magenta);
+
+        internal static VisualElement CreateColorSwatch(string label, PrefColor prefColor, Color fallbackColor)
         {
             var row = new VisualElement() { style = { flexDirection = FlexDirection.Row, marginLeft = 2 } };
             row.AddToClassList(SceneViewLighting.Styles.k_UnityBaseFieldClass);
@@ -787,7 +825,7 @@ namespace UnityEditor
             var colorContent = new VisualElement() { name = SceneViewLighting.Styles.k_SwatchColorContent };
             if (prefColor == null)
             {
-                colorContent.style.backgroundColor = new StyleColor(Color.magenta);
+                colorContent.style.backgroundColor = new StyleColor(fallbackColor);
             }
             else
             {

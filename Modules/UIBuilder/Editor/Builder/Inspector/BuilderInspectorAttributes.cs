@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.Profiling;
-using UnityEngine.UIElements;
 using Unity.Properties;
 using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {

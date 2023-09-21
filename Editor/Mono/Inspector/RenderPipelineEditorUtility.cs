@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace UnityEditor.Rendering
@@ -33,6 +35,37 @@ namespace UnityEditor.Rendering
             }
 
             return null;
+        }
+
+        private static Dictionary<Type, Type> s_RenderPipelineAssetToRenderPipelineType = new ();
+
+        internal static Type GetPipelineTypeFromPipelineAssetType(Type pipelineAssetType)
+        {
+            if (!typeof(RenderPipelineAsset).IsAssignableFrom(pipelineAssetType))
+                return null;
+
+            if (s_RenderPipelineAssetToRenderPipelineType.TryGetValue(pipelineAssetType, out var pipelineType))
+                return pipelineType;
+
+            Type baseGenericType = pipelineAssetType;
+            while (baseGenericType != null)
+            {
+                if (!baseGenericType.IsGenericType || baseGenericType.GetGenericTypeDefinition() != typeof(RenderPipelineAsset<>))
+                {
+                    baseGenericType = baseGenericType.BaseType;
+                    continue;
+                }
+
+                pipelineType = baseGenericType.GetGenericArguments()[0];
+                s_RenderPipelineAssetToRenderPipelineType[pipelineAssetType] = pipelineType;
+                return pipelineType;
+            }
+
+            var pipelineAsset = ScriptableObject.CreateInstance(pipelineAssetType) as RenderPipelineAsset;
+            pipelineType = pipelineAsset.pipelineType;
+            UnityEngine.Object.DestroyImmediate(pipelineAsset);
+            s_RenderPipelineAssetToRenderPipelineType[pipelineAssetType] = pipelineType;
+            return pipelineType;
         }
     }
 }

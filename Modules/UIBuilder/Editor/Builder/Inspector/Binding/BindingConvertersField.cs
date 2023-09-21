@@ -468,5 +468,15 @@ namespace Unity.UI.Builder
             m_ListView.RefreshItems();
             UpdateValueFromGroups();
         }
+
+        internal bool ContainsUnknownCompatibilityGroup()
+        {
+            foreach (var converterGroup in m_ValueAsConverterGroupList)
+            {
+                if (GetGroupCompatibility(converterGroup) == BindingCompatibilityStatus.Unknown)
+                    return true;
+            }
+            return false;
+        }
     }
 }

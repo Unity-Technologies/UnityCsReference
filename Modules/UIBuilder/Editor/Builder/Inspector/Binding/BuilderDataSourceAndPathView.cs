@@ -333,7 +333,7 @@ namespace Unity.UI.Builder
 
             if (!readOnly)
             {
-                propertyField.RegisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindEvent);
+                TrackElementPropertyValue(propertyField, path);
             }
 
             propertyField.RegisterCallback<SerializedPropertyBindEvent, string>(OnPropertyFieldBound, attribute);
@@ -434,9 +434,10 @@ namespace Unity.UI.Builder
 
             var currentUxmlAttributeOwner = attributesUxmlOwner;
 
-            if (isBinding && SynchronizePath(bindingSerializedPropertyPathRoot, false, out var uxmlAsset, out _, out _))
+            var result = SynchronizePath(bindingSerializedPropertyPathRoot, false);
+            if (isBinding && result.success)
             {
-                currentUxmlAttributeOwner = uxmlAsset as UxmlAsset;
+                currentUxmlAttributeOwner = result.uxmlAsset;
             }
 
             if (desc.name is k_BindingAttr_DataSource or k_BindingAttr_DataSourceType)
@@ -516,8 +517,9 @@ namespace Unity.UI.Builder
 
             if (bindingSerializedPropertyPathRoot != null)
             {
-                SynchronizePath(bindingSerializedPropertyPathRoot, true, out _, out _, out var binding);
-                m_DataSourcePathCompleter.binding = binding as DataBinding;
+                CallDeserializeOnElement();
+                var result = SynchronizePath(bindingSerializedPropertyPathRoot, true);
+                m_DataSourcePathCompleter.binding = result.attributeOwner as DataBinding;
             }
 
             m_DataSourcePathCompleter.UpdateResults();

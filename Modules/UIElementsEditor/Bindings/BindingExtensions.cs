@@ -596,7 +596,7 @@ namespace UnityEditor.UIElements.Bindings
                 onUpdateCallback = updateCB;
             }
 
-            public bool Update(SerializedObjectBindingContext context, SerializedProperty  currentProp)
+            public bool Update(SerializedObjectBindingContext context, SerializedProperty  currentProp, List<(object, SerializedProperty, Action<object, SerializedProperty>)> pendingCallbacks)
             {
                 if (currentProp.propertyType != originalPropType)
                 {
@@ -610,7 +610,9 @@ namespace UnityEditor.UIElements.Bindings
                 if (contentHash != newContentHash)
                 {
                     contentHash = newContentHash;
-                    onChangeCallback(cookie, currentProp);
+
+                    // We execute the change callbacks after updating the tracked properties as its possible the callback will make changes to the serialized object.
+                    pendingCallbacks.Add((cookie, currentProp.Copy(), onChangeCallback));
                 }
 
                 return true;
@@ -669,7 +671,7 @@ namespace UnityEditor.UIElements.Bindings
                 }
             }
 
-            public void Update(SerializedObjectBindingContext context, SerializedProperty currentProperty)
+            public void Update(SerializedObjectBindingContext context, SerializedProperty currentProperty, List<(object, SerializedProperty, Action<object, SerializedProperty>)> pendingCallbacks)
             {
                 var hash = currentProperty.hashCodeForPropertyPath;
 
@@ -677,7 +679,7 @@ namespace UnityEditor.UIElements.Bindings
                 {
                     for (int i = 0; i < values.Count; ++i)
                     {
-                        values[i].Update(context, currentProperty);
+                        values[i].Update(context, currentProperty, pendingCallbacks);
                     }
                 }
             }
@@ -765,6 +767,7 @@ namespace UnityEditor.UIElements.Bindings
         }
 
         HashSet<long> visited = new HashSet<long>();
+        List<(object cookie, SerializedProperty p, Action<object, SerializedProperty> onChange)> m_PendingCallbacks = new();
         void UpdateTrackedProperties()
         {
             // Iterating over the entire object, as gathering valid property names hashes is faster than querying
@@ -800,10 +803,25 @@ namespace UnityEditor.UIElements.Bindings
                             break;
                     }
 
-                    m_ValueTracker.Update(this, iterator);
+                    m_ValueTracker.Update(this, iterator, m_PendingCallbacks);
                 }
             }
 
+            // We batch the change callbacks after updating the tracked properties as its possible
+            // the callback will make changes to the serialized object which breaks our iteration during Update.
+            try
+            {
+                foreach (var cb in m_PendingCallbacks)
+                {
+                    cb.onChange(cb.cookie, cb.p);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+
+            m_PendingCallbacks.Clear();
             visited.Clear();
         }
     }
@@ -949,7 +967,7 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
-        public void TrackPropertyValue(VisualElement element, SerializedProperty property, Action<SerializedProperty> callback)
+        public void TrackPropertyValue(VisualElement element, SerializedProperty property, Action<object, SerializedProperty> callback)
         {
             if (property == null)
             {
@@ -964,7 +982,7 @@ namespace UnityEditor.UIElements.Bindings
 
                 if (callback != null)
                 {
-                    request.callback = (e, p) => callback(p);
+                    request.callback = callback;
                 }
                 else
                 {

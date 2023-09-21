@@ -427,7 +427,7 @@ namespace Unity.UI.Builder
             if (element is TemplateAsset)
                 vta.templateAssets.Remove(element as TemplateAsset);
             else
-                vta.visualElementAssets.Remove(element);
+                vta.RemoveElementAndDependencies(element);
         }
 
         public static void ReparentElement(

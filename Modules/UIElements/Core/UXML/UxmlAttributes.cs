@@ -281,8 +281,23 @@ namespace UnityEngine.UIElements
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlObject_InheritanceExample.uxml"/>
     /// </example>
     /// <example>
-    /// You can also use an interface and any UXML objects that implement it.
+    /// You can also use an interface with UXML objects that implement it.
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlObject_InterfaceExample.cs"/>
+    /// </example>
+    /// <example>
+    /// The following example creates multiple UxmlObjects types with custom property drawers.
+    /// It uses UxmlObjects to describe schools, teachers, and students:
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlObject_SchoolDistrict.cs"/>
+    /// </example>
+    /// <example>
+    /// You can use a custom property drawer to display the UXML objects in the Inspector.
+    /// <b>The property drawer must be for the UxmlObject's UxmlSerializedData type</b>.
+    /// For example, to create a property drawer for the UxmlObject Student, the drawer must be for the type Studen.UxmlSerializedData.
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlObject_SchoolDistrictPropertyDrawers.cs"/>
+    /// </example>
+    /// <example>
+    /// Example UXML:
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlObject_SchoolDistrict.uxml"/>
     /// </example>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = false)]
     public class UxmlObjectReferenceAttribute : Attribute
@@ -313,6 +328,8 @@ namespace UnityEngine.UIElements
         /// <param name="uxmlName">The name of the nested UXML element that the UXML Objects are serialized to. __Note__: This field can not be null or empty.</param>
         public UxmlObjectReferenceAttribute(string uxmlName) : this(uxmlName, null)
         {
+            if (uxmlName == "null")
+                throw new ArgumentException("UxmlObjectReferenceAttribute name cannot be \"null\".");
         }
 
         /// <summary>

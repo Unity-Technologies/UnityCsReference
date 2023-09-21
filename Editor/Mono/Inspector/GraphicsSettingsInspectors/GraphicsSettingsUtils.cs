@@ -135,7 +135,7 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                 settingsListInContainer = null;
                 return false;
             }
-            settingsListInContainer = settingsContainer.FindPropertyRelative("m_SettingsList");
+            settingsListInContainer = settingsContainer.FindPropertyRelative("m_SettingsList.m_List");
             return settingsListInContainer != null;
         }
 

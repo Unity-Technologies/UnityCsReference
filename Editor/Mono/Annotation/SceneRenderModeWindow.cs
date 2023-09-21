@@ -83,11 +83,13 @@ namespace UnityEditor
     {
         static class Styles
         {
-            private static GUIStyle s_MenuItem;
-            private static GUIStyle s_Separator;
+            private static GUIStyle menuItem;
+            private static GUIStyle separator;
+            private static GUIContent debuggerLabel;
 
-            public static GUIStyle sMenuItem => s_MenuItem ?? (s_MenuItem = "MenuItem");
-            public static GUIStyle sSeparator => s_Separator ?? (s_Separator = "sv_iconselector_sep");
+            public static GUIStyle s_MenuItem => menuItem ?? (menuItem = "MenuItem");
+            public static GUIStyle s_Separator => separator ?? (separator = "sv_iconselector_sep");
+            public static GUIContent s_DebuggerLabel => debuggerLabel ??= EditorGUIUtility.TrTextContent("Rendering Debugger...");
 
             private static readonly string kShadingMode = "Shading Mode";
             private static readonly string kMiscellaneous = "Miscellaneous";
@@ -220,27 +222,27 @@ namespace UnityEditor
             labelRect.width -= kHeaderHorizontalPadding * 2;
             labelRect.height = kSeparatorHeight;
 
-            GUI.Label(labelRect, GUIContent.none, Styles.sSeparator);
+            GUI.Label(labelRect, GUIContent.none, Styles.s_Separator);
             rect.y += kSeparatorHeight;
         }
 
         //Opens render debugger window located at \newSRP\unity\Packages\com.unity.render-pipelines.core\Editor\Debugging\DebugWindow.cs
         private void DrawRenderingDebuggerShortCut(Rect rect)
         {
-            GUIContent label = new GUIContent("Rendering Debugger...");
             var labelRect = rect;
-            labelRect.y += (kHeaderVerticalPadding * 2f);
-            labelRect.x += kHeaderHorizontalPadding + 15f;
-            labelRect.width = EditorStyles.foldout.CalcSize(label).x;
-            labelRect.height = EditorStyles.foldout.CalcSize(label).y;
+            labelRect.y += kHeaderVerticalPadding;
+            EditorGUI.LabelField(labelRect,string.Empty, Styles.s_MenuItem);
+            labelRect.x -= kHeaderHorizontalPadding;
+            var debuggerLabelSize = EditorStyles.foldout.CalcSize(Styles.s_DebuggerLabel);
+            labelRect.height = debuggerLabelSize.y;
 
-            if (GUI.Button(labelRect, label, EditorStyles.label))
+            if (GUI.Button(labelRect, Styles.s_DebuggerLabel,  Styles.s_MenuItem))
             {
                 EditorApplication.ExecuteMenuItem("Window/Analysis/Rendering Debugger");
                 editorWindow.Close();
             }
+            rect.y += labelRect.height;
 
-            rect.y += EditorGUI.kSingleLineHeight;
         }
 
         private void Draw(float listElementWidth)
@@ -268,10 +270,11 @@ namespace UnityEditor
                     }
 
                     bool previousState = foldoutStates[lastSection];
-                    foldoutStates[lastSection] = EditorGUI.Foldout(
-                        new Rect(drawPos.x + kHeaderHorizontalPadding, drawPos.y, drawPos.width,
-                            EditorGUI.kSingleLineHeight), foldoutStates[lastSection],
-                        EditorGUIUtility.TextContent(lastSection), true);
+                    Rect foldoutRect = new Rect(drawPos.x, drawPos.y, drawPos.width, EditorGUI.kSingleLineHeight);
+
+                    EditorGUI.LabelField(foldoutRect,string.Empty, Styles.s_MenuItem);
+                    foldoutStates[lastSection] = EditorGUI.Foldout(foldoutRect, foldoutStates[lastSection], EditorGUIUtility.TextContent(lastSection), true);
+
                     drawPos.y += EditorGUI.kSingleLineHeight;
 
                     if (previousState != foldoutStates[lastSection])
@@ -358,7 +361,7 @@ namespace UnityEditor
                 EditorGUI.BeginChangeCheck();
 
                 GUI.Toggle(rect, m_SceneView.cameraMode == mode, EditorGUIUtility.TextContent(mode.name),
-                    Styles.sMenuItem);
+                    Styles.s_MenuItem);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_SceneView.cameraMode = mode;

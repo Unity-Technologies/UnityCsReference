@@ -2954,6 +2954,9 @@
     <Compile Include="..\..\Editor\Mono\RenderPipelineGlobalSettingsEditor.cs">
       <Link>Editor\Mono\RenderPipelineGlobalSettingsEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\RenderPipelineGraphicsSettingsCollectionPropertyDrawer.cs">
+      <Link>Editor\Mono\RenderPipelineGraphicsSettingsCollectionPropertyDrawer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\RenderPipelineResourcesEditorUtils.cs">
       <Link>Editor\Mono\RenderPipelineResourcesEditorUtils.cs</Link>
     </Compile>
@@ -10249,6 +10252,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlAttributeConverter.cs">
       <Link>Modules\UIElementsEditor\UXML\UxmlAttributeConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlSerializedDataCreator.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlSerializedDataCreator.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlSerializedDataDescription.cs">
       <Link>Modules\UIElementsEditor\UXML\UxmlSerializedDataDescription.cs</Link>

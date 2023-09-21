@@ -417,8 +417,6 @@ namespace UnityEditor.UIElements
         void CreateVisualTreeAsset(out VisualTreeAsset vta, Hash128 contentHash)
         {
             vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
-            vta.visualElementAssets = new List<VisualElementAsset>();
-            vta.templateAssets = new List<TemplateAsset>();
             vta.contentHash = contentHash.GetHashCode();
         }
 
@@ -907,6 +905,12 @@ namespace UnityEditor.UIElements
         UxmlAsset ResolveType(XElement elt, UxmlAsset parent, VisualTreeAsset visualTreeAsset)
         {
             var (elementNamespaceName, fullName) = ResolveFullType(elt);
+
+            // Is this a null element?
+            if (fullName == UxmlAsset.NullNodeType)
+            {
+                return new UxmlObjectAsset(UxmlAsset.NullNodeType, false);
+            }
 
             // Is the element a UxmlObject?
             if (UxmlSerializedDataRegistry.GetDescription(fullName) is UxmlSerializedDataDescription desc &&

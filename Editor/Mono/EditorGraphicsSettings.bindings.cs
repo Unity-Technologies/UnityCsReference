@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.Build;
 using UnityEditor.Inspector.GraphicsSettingsInspectors;
 using UnityEditor.Rendering.Settings;
@@ -109,6 +110,16 @@ namespace UnityEditor.Rendering
                 settings = baseSettings as TSettings;
 
             return settings != null;
+        }
+
+        [NativeName("GraphicsSettingsCount")] static extern int Internal_GraphicsSettingsCount();
+        [NativeName("GetSettingsForRenderPipelineAt")] static extern Object Internal_GetSettingsForRenderPipelineAt(int index);
+
+        internal static void ForEachPipelineSettings(Action<RenderPipelineGlobalSettings> action)
+        {
+            int count = Internal_GraphicsSettingsCount();
+            for (int i = 0; i < count; ++i)
+                action?.Invoke(Internal_GetSettingsForRenderPipelineAt(i) as RenderPipelineGlobalSettings);
         }
     }
 }

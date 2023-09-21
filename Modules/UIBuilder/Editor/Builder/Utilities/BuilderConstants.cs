@@ -613,14 +613,15 @@ namespace Unity.UI.Builder
         public static readonly string BindingWindowMissingPathErrorMessage = "Path is missing";
         public static readonly string BindingWindowCannotCreateBindingErrorMessage = "Cannot create binding on {0}";
         public static readonly string BindingWindowCannotEditBindingErrorMessage = "Cannot edit binding on {0}";
-        public static readonly string BindingWindowLocalConverterPlaceholderText = "Enter a converter group";
+        public static readonly string BindingWindowLocalConverterPlaceholderText = "Enter a converter ID";
         public static readonly string BindingWindowLocalConverterNotApplicableMessage = "It is not applicable for the specified binding mode";
         public static readonly string BindingWindowConverterCompleter_IncompatibleMessage = "Not currently compatible with type";
         public static readonly string BindingWindowConverterCompleter_CompatibleMessage = "Compatible with type";
         public static readonly string BindingWindowConverterCompleter_UnknownCompatibilityMessage = "Unknown";
-        public static readonly string BindingWindowConverterCompleter_SelectEditedText = "Select to use a custom group ID";
-        public static readonly string BindingWindowConverterCompleter_UseCurrentEntryMessage = "Use \"{0}\" as group ID";
+        public static readonly string BindingWindowConverterCompleter_SelectEditedText = "Select to use a custom converter ID";
+        public static readonly string BindingWindowConverterCompleter_UseCurrentEntryMessage = "Use \"{0}\" as converter ID";
         public static readonly string BindingWindowShowOnlyCompatibleMessage = "Show only compatible";
+        public static readonly string BindingWindowCompatibleWarningBoxText = "Using a converter group with unknown compatibility cannot show a resolved value in the UI Builder but may work at runtime.";
 
         //
         // Dialogs
