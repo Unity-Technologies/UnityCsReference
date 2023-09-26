@@ -1400,15 +1400,24 @@ namespace UnityEditor
 
         internal static void DragPerform(SceneView sceneView, GameObject draggedObject, GameObject go)
         {
-            var defaultParentObject = SceneView.GetDefaultParentObjectIfSet();
+            Transform defaultParentObject = SceneView.GetDefaultParentObjectIfSet();
             var parent = defaultParentObject != null ? defaultParentObject : sceneView.customParentForDraggedObjects;
-
             string uniqueName = GameObjectUtility.GetUniqueNameForSibling(parent, draggedObject.name);
+
             if (parent != null)
-                draggedObject.transform.parent = parent;
+            {
+                draggedObject.transform.SetParent(parent, true);
+            }
+
+            if (defaultParentObject == null && sceneView.customParentForDraggedObjects == null)
+            {
+                draggedObject.transform.SetAsLastSibling();
+            }
+
             draggedObject.hideFlags = 0;
             Undo.RegisterCreatedObjectUndo(draggedObject, "Place " + draggedObject.name);
             DragAndDrop.AcceptDrag();
+
             if (s_ShouldClearSelection)
             {
                 Selection.objects = new[] { draggedObject };
@@ -1420,11 +1429,15 @@ namespace UnityEditor
                 // selection to all of them by joining them to the previous selection list
                 Selection.objects = Selection.gameObjects.Union(new[] { draggedObject }).ToArray();
             }
+
             HandleUtility.ignoreRaySnapObjects = null;
+
             if (SceneView.mouseOverWindow != null)
                 SceneView.mouseOverWindow.Focus();
+
             if (!Application.IsPlaying(draggedObject))
                 draggedObject.name = uniqueName;
+
             s_CyclicNestingDetected = false;
         }
 

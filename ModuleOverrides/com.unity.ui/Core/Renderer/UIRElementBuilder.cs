@@ -154,7 +154,7 @@ namespace UnityEngine.UIElements.UIR
                     out rectParams.topRightRadius,
                     out rectParams.bottomRightRadius);
 
-                MeshGenerator.AdjustBackgroundSizeForBorders(ve, ref rectParams.rect);
+                MeshGenerator.AdjustBackgroundSizeForBorders(ve, ref rectParams);
 
                 mgc.meshGenerator.DrawRectangle(rectParams);
             }
@@ -271,7 +271,7 @@ namespace UnityEngine.UIElements.UIR
                 rectParams.backgroundRepeat = style.backgroundRepeat;
                 rectParams.backgroundSize = style.backgroundSize;
 
-                MeshGenerator.AdjustBackgroundSizeForBorders(ve, ref rectParams.rect);
+                MeshGenerator.AdjustBackgroundSizeForBorders(ve, ref rectParams);
 
                 if (rectParams.texture != null)
                 {
