@@ -135,6 +135,9 @@ namespace UnityEngine.UIElements.UIR
             // Cached sprite geometry, which is expensive to evaluate.
             internal Rect spriteGeomRect;
 
+            // Inset to apply before rendering (left, top, right, bottom)
+            public Vector4 rectInset;
+
             // The color allocation
             internal ColorPage colorPage;
 
@@ -532,6 +535,7 @@ namespace UnityEngine.UIElements.UIR
                     rightSlice = rightSlice,
                     bottomSlice = bottomSlice,
                     sliceScale = sliceScale,
+                    rectInset = rectInset,
                     colorPage = colorPage.ToNativeColorPage()
                 };
             }
@@ -566,16 +570,20 @@ namespace UnityEngine.UIElements.UIR
             bottomRight = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderBottomRightRadius);
         }
 
-        public static void AdjustBackgroundSizeForBorders(VisualElement visualElement, ref Rect rect)
+        public static void AdjustBackgroundSizeForBorders(VisualElement visualElement, ref MeshGenerator.RectangleParams rectParams)
         {
             var style = visualElement.resolvedStyle;
 
+            var inset = Vector4.zero;
+
             // If the border width allows it, slightly shrink the background size to avoid
             // having both the border and background blending together after antialiasing.
-            if (style.borderLeftWidth >= 1.0f && style.borderLeftColor.a >= 1.0f) { rect.x += 0.5f; rect.width -= 0.5f; }
-            if (style.borderTopWidth >= 1.0f && style.borderTopColor.a >= 1.0f) { rect.y += 0.5f; rect.height -= 0.5f; }
-            if (style.borderRightWidth >= 1.0f && style.borderRightColor.a >= 1.0f) { rect.width -= 0.5f; }
-            if (style.borderBottomWidth >= 1.0f && style.borderBottomColor.a >= 1.0f) { rect.height -= 0.5f; }
+            if (style.borderLeftWidth >= 1.0f && style.borderLeftColor.a >= 1.0f) { inset.x = 0.5f; }
+            if (style.borderTopWidth >= 1.0f && style.borderTopColor.a >= 1.0f) { inset.y = 0.5f; }
+            if (style.borderRightWidth >= 1.0f && style.borderRightColor.a >= 1.0f) { inset.z = 0.5f; }
+            if (style.borderBottomWidth >= 1.0f && style.borderBottomColor.a >= 1.0f) { inset.w = 0.5f; }
+
+            rectParams.rectInset = inset;
         }
 
         void BuildEntryFromNativeMesh(MeshWriteDataInterface meshData, Texture texture, bool skipAtlas)
@@ -775,11 +783,14 @@ namespace UnityEngine.UIElements.UIR
                 DrawSprite(rectParams);
             else
             {
+                var nativeParams = rectParams.ToNativeParams();
+                ApplyInset(ref nativeParams, rectParams.texture);
+
                 MeshWriteDataInterface meshData;
                 if (rectParams.texture != null)
-                    meshData = MeshBuilderNative.MakeTexturedRect(rectParams.ToNativeParams(), UIRUtility.k_MeshPosZ);
+                    meshData = MeshBuilderNative.MakeTexturedRect(nativeParams, UIRUtility.k_MeshPosZ);
                 else
-                    meshData = MeshBuilderNative.MakeSolidRect(rectParams.ToNativeParams(), UIRUtility.k_MeshPosZ);
+                    meshData = MeshBuilderNative.MakeSolidRect(nativeParams, UIRUtility.k_MeshPosZ);
 
                 bool skipAtlas = (rectParams.meshFlags & MeshGenerationContext.MeshFlags.SkipDynamicAtlas) == MeshGenerationContext.MeshFlags.SkipDynamicAtlas;
                 BuildEntryFromNativeMesh(meshData, rectParams.texture, skipAtlas);
@@ -1449,6 +1460,32 @@ namespace UnityEngine.UIElements.UIR
 
             bool skipAtlas = rectParams.meshFlags == MeshGenerationContext.MeshFlags.SkipDynamicAtlas;
             m_MeshGenerationContext.entryRecorder.DrawMesh(vertices, indices, sprite.texture, skipAtlas);
+        }
+
+        void ApplyInset(ref MeshBuilderNative.NativeRectParams rectParams, Texture tex)
+        {
+            var rect = rectParams.rect;
+            var inset = rectParams.rectInset;
+            if (Mathf.Approximately(rect.size.x, 0.0f) || Mathf.Approximately(rect.size.y, 0.0f) || inset == Vector4.zero)
+                return;
+
+            var prevRect = rect;
+            rect.x += inset.x;
+            rect.y += inset.y;
+            rect.width -= (inset.x + inset.z);
+            rect.height -= (inset.y + inset.w);
+            rectParams.rect = rect;
+
+            var uv = rectParams.uv;
+            if (tex != null && uv.width > UIRUtility.k_Epsilon && uv.height > UIRUtility.k_Epsilon)
+            {
+                var uvScale = new Vector2(1.0f / prevRect.width, 1.0f / prevRect.height);
+                uv.x += (inset.x * uvScale.x);
+                uv.y += (inset.w * uvScale.y);
+                uv.width -= ((inset.x + inset.z) * uvScale.x);
+                uv.height -= ((inset.y + inset.w) * uvScale.y);
+                rectParams.uv = uv;
+            }
         }
 
         void DrawVectorImage(RectangleParams rectParams)

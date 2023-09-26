@@ -74,11 +74,14 @@ namespace UnityEngine.UIElements
     public enum PickingMode
     {
         /// <summary>
-        /// Picking enabled. Default Value.
+        /// Picking enabled. Default Value. Performs picking based on the position rectangle. In the VisualElement tree hierarchy,
+        /// the picking process works using a similar logic as the rendering but in reverse order: it starts with the front-most
+        /// elements and proceeds step by step towards background elements. Thus, the child elements are picked before parents,
+        /// and the sibling elements further down the list are picked before their predecessors.
         /// </summary>
         Position, // todo better name
         /// <summary>
-        /// Disables picking.
+        /// Prevents picking as the result of a mouse event.
         /// </summary>
         Ignore
     }
