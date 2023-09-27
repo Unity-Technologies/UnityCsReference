@@ -72,6 +72,11 @@ namespace UnityEngine.UIElements
         internal bool m_UpdateTextFromValue;
         private bool m_ForceUpdateDisplay;
 
+        internal bool forceUpdateDisplay
+        {
+            set => m_ForceUpdateDisplay = value;
+        }
+
         /// <summary>
         /// The format string for the value.
         /// </summary>

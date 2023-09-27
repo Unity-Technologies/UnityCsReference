@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Rendering
 {
-    public abstract class RenderPipelineGlobalSettings : ScriptableObject
+    public abstract class RenderPipelineGlobalSettings : ScriptableObject, ISerializationCallbackReceiver
     {
         protected virtual List<IRenderPipelineGraphicsSettings> settingsList
         {
@@ -19,25 +19,11 @@ namespace UnityEngine.Rendering
             }
         }
 
-        private Dictionary<Type, int> m_SettingsMap = null;
-
-        private Dictionary<Type, int> settingsMap
-        {
-            get
-            {
-                if ( m_SettingsMap == null)
-                    RecreateSettingsMap();
-
-                return m_SettingsMap;
-            }
-        }
+        Dictionary<Type, int> settingsMap { get; } = new();
 
         private void RecreateSettingsMap()
         {
-            if (m_SettingsMap == null)
-                m_SettingsMap = new();
-            else
-                m_SettingsMap.Clear();
+            settingsMap.Clear();
 
             if (settingsList == null)
                 return;
@@ -49,7 +35,7 @@ namespace UnityEngine.Rendering
                 if (element == null)
                     continue; //missing script can cause this, preserve data, just not access it
 
-                m_SettingsMap.Add(element.GetType(), i);
+                settingsMap.Add(element.GetType(), i);
             }
         }
 
@@ -83,7 +69,12 @@ namespace UnityEngine.Rendering
         {
             settings = null;
 
-            if (settingsList == null || !settingsMap.TryGetValue(type, out var index))
+            if (settingsList == null)
+                return false;
+
+            Debug.Assert(settingsList.Count == settingsMap.Count);
+
+            if (!settingsMap.TryGetValue(type, out var index))
                 return false;
 
             settings = settingsList[index];
@@ -93,6 +84,15 @@ namespace UnityEngine.Rendering
         protected internal bool Contains(Type type)
         {
             return settingsList != null && settingsMap.ContainsKey(type);
+        }
+
+        public virtual void OnBeforeSerialize()
+        {
+        }
+
+        public virtual void OnAfterDeserialize()
+        {
+            RecreateSettingsMap();
         }
     }
 }

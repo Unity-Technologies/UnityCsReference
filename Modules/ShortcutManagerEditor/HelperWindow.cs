@@ -21,18 +21,26 @@ namespace UnityEditor.ShortcutManagement
         //[MenuItem("Window/General/Helper _%H")]
         static void ShowWindow() => GetWindow<HelperWindow>().Show();
 
-        static HelperWindow() => EditorApplication.globalEventHandler += Init;
-
         static Dictionary<KeyCode, GUIContent> keyIcons;
+        static bool s_Initialized;
 
         static void Init()
         {
+            if (s_Initialized)
+                return;
+
             EditorApplication.globalEventHandler += UpdateContext;
             ContextManager.onTagChange += UpdateContext;
             Selection.selectionChanged += UpdateContext;
             windowFocusChanged += UpdateContext;
+            UpdateContext();
 
-            EditorApplication.globalEventHandler -= Init;
+            s_Initialized = true;
+        }
+
+        void OnEnable()
+        {
+            Init();
         }
 
         static bool HandleKey(Event evt)
@@ -188,6 +196,7 @@ namespace UnityEditor.ShortcutManagement
 
         internal static void StatusBarShortcuts()
         {
+            Init();
             if (keyIcons == null)
             {
                 keyIcons = new Dictionary<KeyCode, GUIContent>();

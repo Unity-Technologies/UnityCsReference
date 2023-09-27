@@ -703,21 +703,13 @@ namespace UnityEditor.UIElements.Bindings
 
         public SerializedObjectBindingContextUpdater AddBindingUpdater(VisualElement element)
         {
-            var b = element.GetBinding(BindingExtensions.s_SerializedBindingContextUpdaterId) as SerializedObjectBindingContextUpdater;
+            var contextUpdater = element.GetBinding(BindingExtensions.s_SerializedBindingContextUpdaterId) as SerializedObjectBindingContextUpdater;
+            if (contextUpdater == null)
+                return SerializedObjectBindingContextUpdater.Create(element, this);
 
-            var contextUpdater = b;
-
-            if (b == null)
-            {
-                contextUpdater = SerializedObjectBindingContextUpdater.Create(element, this);
-            }
-            else
-            {
-                if (contextUpdater == null || contextUpdater.bindingContext != this)
-                {
-                    throw new NotSupportedException("An element can track properties on only one serializedObject at a time");
-                }
-            }
+            var bindingContext = contextUpdater.bindingContext;
+            if (bindingContext == null || bindingContext.serializedObject != serializedObject)
+                throw new NotSupportedException("An element can track properties on only one serializedObject at a time");
 
             return contextUpdater;
         }

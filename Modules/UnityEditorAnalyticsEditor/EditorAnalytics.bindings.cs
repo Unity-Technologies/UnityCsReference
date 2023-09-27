@@ -22,7 +22,7 @@ namespace UnityEditor
     [NativeHeader("Modules/UnityEditorAnalyticsEditor/UnityEditorAnalyticsManager.h")]
     public static class EditorAnalytics
     {
-       
+
         [RequiredByNativeCode]
         internal static void SendAnalyticsToEditor(string analytics)
         {
@@ -180,11 +180,11 @@ namespace UnityEditor
             set;
         }
 
-        internal static AnalyticsResult TryRegisterAnalytic(Analytic analytic)
+        internal static AnalyticsResult TryRegisterAnalytic(Analytic analytic, Assembly assembly)
         {
             if (enabled == false) return AnalyticsResult.AnalyticsDisabled;
 
-            AnalyticsResult result = RegisterEventWithLimit(analytic.info.eventName, analytic.info.maxEventsPerHour, analytic.info.maxNumberOfElements, analytic.info.vendorKey, analytic.info.version, "", Assembly.GetCallingAssembly());
+            AnalyticsResult result = RegisterEventWithLimit(analytic.info.eventName, analytic.info.maxEventsPerHour, analytic.info.maxNumberOfElements, analytic.info.vendorKey, analytic.info.version, "", assembly);
             if (result != AnalyticsResult.Ok)
             {
                 Debug.LogWarning($"Unable to register event {analytic.info.eventName} with vendor key: {analytic.info.vendorKey} and error code {result.ToString()}. Editor Analyitics will not be gathered.");
@@ -196,7 +196,7 @@ namespace UnityEditor
         internal static AnalyticsResult TrySendAnalytic(Analytic analytic)
         {
             if (enabled == false) return AnalyticsResult.AnalyticsDisabled;
-            
+
             AnalyticsResult result = AnalyticsResult.Ok;
             try
             {
@@ -236,8 +236,9 @@ namespace UnityEditor
             if (Attribute.IsDefined(analyticType, typeof(AnalyticInfoAttribute)))
             {
                 AnalyticInfoAttribute info = (AnalyticInfoAttribute)analyticType.GetCustomAttributes(typeof(AnalyticInfoAttribute), true)[0];
-           
-                return SendAnalytic(new Analytic(analytic, info));
+
+                System.Reflection.Assembly assembly = Assembly.GetCallingAssembly();
+                return SendAnalytic(new Analytic(analytic, info), assembly);
             }
             else
             {
@@ -246,11 +247,11 @@ namespace UnityEditor
             }
         }
 
-        public static AnalyticsResult SendAnalytic(Analytic analytic)
+        public static AnalyticsResult SendAnalytic(Analytic analytic, Assembly assembly)
         {
             AnalyticsResult result = AnalyticsResult.Ok;
             {
-                result = TryRegisterAnalytic(analytic);
+                result = TryRegisterAnalytic(analytic, assembly);
 
                 if (result != AnalyticsResult.Ok)
                     return result;

@@ -164,6 +164,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var package = m_PackageDatabase.GetPackage(uniqueId);
+
+            if (package == null)
+                return;
+
             if (isNewItem)
                 TriggerOnListUpdate(added: new[] { package });
             else

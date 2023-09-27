@@ -553,17 +553,17 @@ namespace UnityEditor
                 return GetIOSDeviceRequirementCountForVariantName(name) > 0;
             }
 
-            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
-            [NativeProperty("iOSLaunchScreenPortrait")]
-            internal static Texture2D launchScreenPortrait { get; }
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeProperty("iOSLaunchScreenPortrait", TargetType.Field)]
+            internal extern static Texture2D launchScreenPortrait { get; }
 
-            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
-            [NativeProperty("iOSLaunchScreenLandscape")]
-            internal static Texture2D launchScreenLandscape { get; }
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeProperty("iOSLaunchScreenLandscape", TargetType.Field)]
+            internal extern static Texture2D launchScreenLandscape { get; }
 
-            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
-            [NativeProperty("iOSLaunchScreeniPadImage")]
-            internal static Texture2D launchScreeniPadImage { get; }
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeProperty("iOSLaunchScreeniPadImage", TargetType.Field)]
+            internal extern static Texture2D launchScreeniPadImage { get; }
 
             [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
             [NativeMethod(Name = "SetiOSLaunchScreenImage")]

@@ -640,48 +640,54 @@ namespace UnityEngine.UIElements
             m_ListViewLabel?.EnableInClassList(overMaxMultiEditLimitClassName, m_IsOverMultiEditLimit);
         }
 
+        /// <summary>
+        /// Adds item to underlying list using callback if available
+        /// </summary>
+        /// <remarks>
+        /// Callback is used in precedence:
+        /// 1. `overridingAddButtonBehavior` if present to provide DropDownMenu customisation
+        /// 2. falling back to `onAdd` callback
+        /// 3. finally default `AddItems(1)` is used
+        ///
+        /// After a successful insertion `OnItemsSourceSizeChanged()` is called and selection+scroll is updated
+        /// </remarks>
         void OnAddClicked()
         {
-            var itemsChangedByCustomCallback = false;
             var itemsCountPreCallback = itemsSource?.Count ?? 0;
 
             if (overridingAddButtonBehavior != null)
             {
                 overridingAddButtonBehavior(this, m_AddButton);
-                if (itemsSource != null && itemsCountPreCallback < itemsSource.Count)
-                {
-                    itemsChangedByCustomCallback = true;
-                    OnItemsSourceSizeChanged();
-                }
             }
-            else if (onAdd != null)
+            else
+            if (onAdd != null)
             {
                 onAdd.Invoke(this);
-                if (itemsSource != null && itemsCountPreCallback < itemsSource?.Count)
-                {
-                    itemsChangedByCustomCallback = true;
-                    OnItemsSourceSizeChanged();
-                }
             }
             else
             {
                 AddItems(1);
-                itemsChangedByCustomCallback = true;
             }
 
+            if ( itemsSource != null
+                && itemsCountPreCallback != itemsSource.Count)
+            {
+                OnItemsSourceSizeChanged();
 
-            if (GetProperty(internalBindingKey) == null && itemsChangedByCustomCallback)
-            {
-                SetSelection(itemsSource.Count - 1);
-                ScrollToItem(-1);
-            }
-            else if (itemsChangedByCustomCallback)
-            {
-                schedule.Execute(() =>
+                Action fnSetSelection = () =>
+                    {
+                        SetSelection(itemsSource.Count - 1);
+                        ScrollToItem(-1);
+                    };
+
+                if (GetProperty(internalBindingKey) == null)
                 {
-                    SetSelection(itemsSource.Count - 1);
-                    ScrollToItem(-1);
-                }).ExecuteLater(100);
+                    fnSetSelection();
+                }
+                else
+                {
+                    schedule.Execute(fnSetSelection).ExecuteLater(100);
+                }
             }
 
             if (HasValidDataAndBindings() && m_ArraySizeField != null)

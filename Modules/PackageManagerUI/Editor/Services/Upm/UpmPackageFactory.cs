@@ -316,14 +316,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var version = new PlaceholderPackageVersion($"{packageName}@{productInfo.versionString}", productInfo.displayName, productInfo.versionString, PackageTag.UpmFormat, productSearchInfoFetchError.error);
                         package = CreatePackage(packageName, new PlaceholderVersionList(version), new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated, deprecationMessage: deprecationMessage);
                     }
-                    else if (fetchStatus.IsFetchInProgress(FetchType.ProductSearchInfo))
+                    else
                     {
                         var version = new PlaceholderPackageVersion($"{packageName}@{productInfo.versionString}", productInfo.displayName, productInfo.versionString, PackageTag.UpmFormat);
                         package = CreatePackage(packageName, new PlaceholderVersionList(version), new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated, deprecationMessage: deprecationMessage);
                         SetProgress(package, PackageProgress.Refreshing);
+
+                        if (!fetchStatus.IsFetchInProgress(FetchType.ProductSearchInfo))
+                            m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(packageName, productId);
                     }
-                    else
-                        m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(packageName, productId);
                 }
 
                 if (package == null)
