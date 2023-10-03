@@ -304,7 +304,11 @@ namespace UnityEngine
         MeshIndex,
         ParticleIndex,
         ColorPackedAsTwoFloats,
-        MeshAxisOfRotation
+        MeshAxisOfRotation,
+        NextTrailCenter,
+        PreviousTrailCenter,
+        PercentageAlongTrail,
+        TrailWidth,
     }
 
     // The available vertex streams
