@@ -6,7 +6,7 @@ namespace UnityEngine.UIElements
 {
     internal class FixedHeightVirtualizationController<T> : VerticalVirtualizationController<T> where T : ReusableCollectionItem, new()
     {
-        float resolvedItemHeight => m_ListView.ResolveItemHeight();
+        float resolvedItemHeight => m_CollectionView.ResolveItemHeight();
 
         protected override bool VisibleItemPredicate(T i)
         {
@@ -21,9 +21,14 @@ namespace UnityEngine.UIElements
             return (int)(position.y / resolvedItemHeight);
         }
 
-        public override float GetItemHeight(int index)
+        public override float GetExpectedItemHeight(int index)
         {
             return resolvedItemHeight;
+        }
+
+        public override float GetExpectedContentHeight()
+        {
+            return itemsCount * resolvedItemHeight;
         }
 
         public override void ScrollToItem(int index)
@@ -36,19 +41,19 @@ namespace UnityEngine.UIElements
             {
                 // Scroll to last item
                 int actualCount = (int)(lastHeight / pixelAlignedItemHeight);
-                if (m_ListView.itemsSource.Count < actualCount)
+                if (itemsCount < actualCount)
                     m_ScrollView.scrollOffset = new Vector2(0, 0);
                 else
-                    m_ScrollView.scrollOffset = new Vector2(0, (m_ListView.itemsSource.Count + 1) * pixelAlignedItemHeight);
+                    m_ScrollView.scrollOffset = new Vector2(0, (itemsCount + 1) * pixelAlignedItemHeight);
             }
-            else if (m_FirstVisibleIndex >= index)
+            else if (firstVisibleIndex >= index)
             {
                 m_ScrollView.scrollOffset = Vector2.up * (pixelAlignedItemHeight * index);
             }
             else // index > first
             {
                 var actualCount = (int)(lastHeight / pixelAlignedItemHeight);
-                if (index < m_FirstVisibleIndex + actualCount)
+                if (index < firstVisibleIndex + actualCount)
                     return;
 
                 var d = index - actualCount + 1; // +1 ensures targeted element is fully visible
@@ -59,10 +64,10 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public override void Resize(Vector2 size, int layoutPass)
+        public override void Resize(Vector2 size)
         {
             var pixelAlignedItemHeight = resolvedItemHeight;
-            var contentHeight = m_ListView.itemsSource.Count * pixelAlignedItemHeight;
+            var contentHeight = GetExpectedContentHeight();
             m_ScrollView.contentContainer.style.height = contentHeight;
 
             // Restore scroll offset and preemptively update the highValue
@@ -70,16 +75,16 @@ namespace UnityEngine.UIElements
             // the ScrollView's OnGeometryChanged() didn't update the low
             // and highValues.
             var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
-            var scrollOffset = Mathf.Min(m_ListView.m_ScrollOffset.y, scrollableHeight);
+            var scrollOffset = Mathf.Min(serializedData.scrollOffset.y, scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
 
             // Add only extra items if the list is actually visible.
-            var itemCountFromHeight = (int)(m_ListView.ResolveItemHeight(size.y) / pixelAlignedItemHeight);
+            var itemCountFromHeight = (int)(m_CollectionView.ResolveItemHeight(size.y) / pixelAlignedItemHeight);
             if (itemCountFromHeight > 0)
                 itemCountFromHeight += k_ExtraVisibleItems;
 
-            var itemCount = Mathf.Min(itemCountFromHeight, m_ListView.itemsSource.Count);
+            var itemCount = Mathf.Min(itemCountFromHeight, itemsCount);
 
             if (visibleItemCount != itemCount)
             {
@@ -100,10 +105,8 @@ namespace UnityEngine.UIElements
                     var addCount = itemCount - visibleItemCount;
                     for (var i = 0; i < addCount; i++)
                     {
-                        var index = i + m_FirstVisibleIndex + initialVisibleCount;
-                        var recycledItem = GetOrMakeItem();
-                        m_ActiveItems.Add(recycledItem);
-                        m_ScrollView.Add(recycledItem.rootElement);
+                        var index = i + firstVisibleIndex + initialVisibleCount;
+                        var recycledItem = GetOrMakeItemAtIndex();
 
                         Setup(recycledItem, index);
                     }
@@ -115,24 +118,24 @@ namespace UnityEngine.UIElements
 
         public override void OnScroll(Vector2 scrollOffset)
         {
-            var offset = scrollOffset.y;
+            var offset = Mathf.Max(0, scrollOffset.y);
             var pixelAlignedItemHeight = resolvedItemHeight;
             var firstVisibleItemIndex = (int)(offset / pixelAlignedItemHeight);
 
             m_ScrollView.contentContainer.style.paddingTop = firstVisibleItemIndex * pixelAlignedItemHeight;
-            m_ScrollView.contentContainer.style.height = m_ListView.itemsSource.Count * pixelAlignedItemHeight;
-            m_ListView.m_ScrollOffset.y = scrollOffset.y;
+            m_ScrollView.contentContainer.style.height = itemsCount * pixelAlignedItemHeight;
+            serializedData.scrollOffset.y = scrollOffset.y;
 
-            if (firstVisibleItemIndex != m_FirstVisibleIndex)
+            if (firstVisibleItemIndex != firstVisibleIndex)
             {
-                m_FirstVisibleIndex = firstVisibleItemIndex;
+                firstVisibleIndex = firstVisibleItemIndex;
                 if (m_ActiveItems.Count > 0)
                 {
                     // we try to avoid rebinding a few items
-                    if (m_FirstVisibleIndex < m_ActiveItems[0].index) //we're scrolling up
+                    if (firstVisibleIndex < m_ActiveItems[0].index) //we're scrolling up
                     {
                         //How many do we have to swap back
-                        int count = m_ActiveItems[0].index - m_FirstVisibleIndex;
+                        int count = m_ActiveItems[0].index - firstVisibleIndex;
 
                         var inserting = m_ScrollInsertionList;
 
@@ -150,12 +153,12 @@ namespace UnityEngine.UIElements
                     }
                     else //down
                     {
-                        if (m_FirstVisibleIndex < m_ActiveItems[m_ActiveItems.Count - 1].index)
+                        if (firstVisibleIndex < m_ActiveItems[m_ActiveItems.Count - 1].index)
                         {
                             var inserting = m_ScrollInsertionList;
 
                             int checkIndex = 0;
-                            while (m_FirstVisibleIndex > m_ActiveItems[checkIndex].index)
+                            while (firstVisibleIndex > m_ActiveItems[checkIndex].index)
                             {
                                 var first = m_ActiveItems[checkIndex];
                                 inserting.Add(first);
@@ -173,18 +176,30 @@ namespace UnityEngine.UIElements
                     //Let's rebind everything
                     for (var i = 0; i < m_ActiveItems.Count; i++)
                     {
-                        var index = i + m_FirstVisibleIndex;
+                        var index = i + firstVisibleIndex;
                         Setup(m_ActiveItems[i], index);
                     }
                 }
             }
         }
 
-        internal override T GetOrMakeItem()
+        internal override T GetOrMakeItemAtIndex(int activeItemIndex = -1, int scrollViewIndex = -1)
         {
-            var item = base.GetOrMakeItem();
+            var item = base.GetOrMakeItemAtIndex(activeItemIndex, scrollViewIndex);
             item.rootElement.style.height = resolvedItemHeight;
             return item;
+        }
+
+        internal override void EndDrag(int dropIndex)
+        {
+            m_DraggedItem.rootElement.style.height = resolvedItemHeight;
+
+            if (firstVisibleIndex > m_DraggedItem.index)
+            {
+                m_ScrollView.verticalScroller.value = serializedData.scrollOffset.y - resolvedItemHeight;
+            }
+
+            base.EndDrag(dropIndex);
         }
     }
 }

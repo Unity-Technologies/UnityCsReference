@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -16,7 +16,10 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class PropertyField : VisualElement, IBindable
     {
+        private static readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
         internal static readonly string foldoutTitleBoundLabelProperty = "unity-foldout-bound-title";
+        internal static readonly string listViewBoundFieldProperty = "unity-list-view-property-field-bound";
+        static readonly string listViewNamePrefix = "unity-list-";
 
         /// <summary>
         /// Instantiates a <see cref="PropertyField"/> using the data read from a UXML file.
@@ -421,10 +424,13 @@ namespace UnityEditor.UIElements
         private VisualElement CreateFoldout(SerializedProperty property, object originalField = null)
         {
             property = property.Copy();
-            var foldout = originalField != null && originalField is Foldout ? originalField as Foldout : new Foldout();
-            bool hasCustomLabel = !string.IsNullOrEmpty(label);
+            if (originalField is not Foldout foldout)
+            {
+                foldout = new Foldout();
+            }
+
+            var hasCustomLabel = !string.IsNullOrEmpty(label);
             foldout.text = hasCustomLabel ? label : property.localizedDisplayName;
-            foldout.value = property.isExpanded;
             foldout.bindingPath = property.propertyPath;
             foldout.name = "unity-foldout-" + property.propertyPath;
 
@@ -485,23 +491,28 @@ namespace UnityEditor.UIElements
             return field;
         }
 
-        VisualElement ConfigureListView(ListView listView, SerializedProperty property)
+        VisualElement ConfigureListView(ListView listView, SerializedProperty property, Func<ListView> factory)
         {
+            if (listView == null)
+            {
+                listView = factory();
+                listView.showBorder = true;
+                listView.showAddRemoveFooter = true;
+                listView.showBoundCollectionSize = true;
+                listView.showFoldoutHeader = true;
+                listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
+                listView.showAlternatingRowBackgrounds = AlternatingRowBackground.None;
+            }
+
             var propertyCopy = property.Copy();
-            listView.reorderMode = ListViewReorderMode.Animated;
-            listView.showBorder = true;
-            listView.showAddRemoveFooter = true;
-            listView.showBoundCollectionSize = true;
-            listView.showFoldoutHeader = true;
+            var listViewName = $"{listViewNamePrefix}{property.propertyPath}";
             listView.headerTitle = string.IsNullOrEmpty(label) ? propertyCopy.localizedDisplayName : label;
-            listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
             listView.userData = propertyCopy;
-            listView.showAlternatingRowBackgrounds = AlternatingRowBackground.None;
             listView.bindingPath = property.propertyPath;
-            listView.viewDataKey = property.propertyPath;
-            listView.name = "unity-list-" + property.propertyPath;
-            listView.headerFoldout.viewDataKey = property.propertyPath;
-            listView.Bind(property.serializedObject);
+            listView.viewDataKey = listViewName;
+            listView.name = listViewName;
+            listView.SetProperty(listViewBoundFieldProperty, this);
+
             return listView;
         }
 
@@ -509,7 +520,7 @@ namespace UnityEditor.UIElements
         {
             var propertyType = property.propertyType;
 
-            if (EditorGUI.HasVisibleChildFields(property, true))
+            if (EditorGUI.HasVisibleChildFields(property, true) && !property.isArray)
                 return CreateFoldout(property, originalField);
 
             TrimChildrenContainerSize(0);
@@ -565,11 +576,24 @@ namespace UnityEditor.UIElements
                     if (NativeClassExtensionUtilities.ExtendsANativeType(target))
                         ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
 
+                    // case 1423715: built-in types that are defined on the native side will not reference a C# type, but rather a PPtr<Type>, so in the
+                    // case where we can't extract the C# type from the FieldInfo, we need to extract it from the string representation.
                     if (requiredType == null)
-                        requiredType = typeof(UnityEngine.Object);
+                    {
+                        var targetTypeName = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
+                        foreach (var objectTypes in TypeCache.GetTypesDerivedFrom<UnityEngine.Object>())
+                        {
+                            if (!objectTypes.Name.Equals(targetTypeName, StringComparison.OrdinalIgnoreCase))
+                                continue;
+                            requiredType = objectTypes;
+                            break;
+                        }
+                    }
 
-                    field.objectType = requiredType;
-                    return field;
+                    field.SetObjectTypeWithoutDisplayUpdate(requiredType);
+                    field.UpdateDisplay();
+
+                    return ConfigureField<ObjectField, UnityEngine.Object>(field, property, () => new ObjectField());
                 }
                 case SerializedPropertyType.LayerMask:
                     return ConfigureField<LayerMaskField, int>(originalField as LayerMaskField, property, () => new LayerMaskField());
@@ -682,7 +706,7 @@ namespace UnityEditor.UIElements
 
                 case SerializedPropertyType.Generic:
                     return property.isArray
-                        ? ConfigureListView(new ListView(), property)
+                        ? ConfigureListView(originalField as ListView, property, () => new ListView())
                         : null;
 
                 default:

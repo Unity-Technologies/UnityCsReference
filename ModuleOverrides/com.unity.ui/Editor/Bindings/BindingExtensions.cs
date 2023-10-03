@@ -190,10 +190,9 @@ namespace UnityEditor.UIElements.Bindings
         private void CreateBindingObjectForProperty(VisualElement element, SerializedProperty prop)
         {
             // A bound Foldout (a PropertyField with child properties) is special.
-            if (element is Foldout)
+            if (element is Foldout foldout)
             {
                 // We bind to the given propertyPath but we only bind to its 'isExpanded' state, not its value.
-                var foldout = element as Foldout;
                 SerializedObjectBinding<bool>.CreateBind(
                     foldout, this, prop,
                     p => p.isExpanded,
@@ -202,12 +201,11 @@ namespace UnityEditor.UIElements.Bindings
 
                 return;
             }
-            else if (element is Label && element.GetProperty(PropertyField.foldoutTitleBoundLabelProperty) != null)
+            else if (element is Label label && label.GetProperty(PropertyField.foldoutTitleBoundLabelProperty) != null)
             {
                 // We bind to the given propertyPath but we only bind to its 'localizedDisplayName' state, not its value.
                 // This is a feature from IMGUI where the title of a Foldout will change if one of the child
                 // properties is named "Name" and its value changes.
-                var label = element as Label;
                 SerializedObjectBinding<string>.CreateBind(
                     label, this, prop,
                     p => p.localizedDisplayName,
@@ -216,9 +214,16 @@ namespace UnityEditor.UIElements.Bindings
 
                 return;
             }
-            if (element is ListView)
+            if (element is ListView listView)
             {
-                BindListView(element as ListView,  prop);
+                BindListView(listView,  prop);
+
+                if (listView.headerFoldout != null)
+                {
+                    // The foldout will be bound as hierarchy binding continues.
+                    listView.headerFoldout.bindingPath = prop.propertyPath;
+                }
+
                 return;
             }
 
@@ -1366,6 +1371,18 @@ namespace UnityEditor.UIElements.Bindings
         }
 
         protected abstract void ResetCachedValues();
+
+        public bool ResolveProperty()
+        {
+            boundProperty = (bindingContext != null && bindingContext.IsValid()) ? bindingContext.serializedObject.FindProperty(boundPropertyPath) : null;
+
+            if (m_Field is ObjectField objectField)
+            {
+                objectField.SetProperty(ObjectField.serializedPropertyKey, boundProperty);
+            }
+
+            return boundProperty != null;
+        }
     }
 
     internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBindingBase
@@ -1466,30 +1483,35 @@ namespace UnityEditor.UIElements.Bindings
             if (evt.target != m_Field)
                 return;
 
-            var bindable = evt.target as IBindable;
-            var binding = bindable?.binding;
-
-            if (binding == this && boundProperty != null && bindingContext.IsValid())
+            try
             {
-                if (!isFieldAttached)
-                {
-                    //we don't update when field is not attached to a panel
-                    //but we don't kill binding either
-                    return;
-                }
+                var bindable = evt.target as IBindable;
+                var binding = bindable?.binding;
 
-                UpdateLastFieldValue();
-                if (IsPropertyValid())
+                if (binding == this && ResolveProperty())
                 {
-                    SerializedPropertyHelper.ForceSync(boundProperty);
+                    if (!isFieldAttached)
+                    {
+                        //we don't update when field is not attached to a panel
+                        //but we don't kill binding either
+                        return;
+                    }
+
+                    UpdateLastFieldValue();
+
                     if (SyncFieldValueToProperty())
                     {
-                        bindingContext.UpdateRevision();     //we make sure to Poll the ChangeTracker here
+                        bindingContext.UpdateRevision(); //we make sure to Poll the ChangeTracker here
                         bindingContext.ResetUpdate();
                     }
+
                     BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
                     return;
                 }
+            }
+            catch
+            {
+                //this can happen when serializedObject has been disposed of
             }
 
             // Something was wrong

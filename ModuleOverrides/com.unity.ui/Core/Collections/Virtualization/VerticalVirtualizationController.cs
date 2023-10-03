@@ -11,82 +11,95 @@ namespace UnityEngine.UIElements
     // TODO [GR] Could move some of that stuff to a base CollectionVirtualizationController<T> class (pool, active items, visible items, etc.)
     abstract class VerticalVirtualizationController<T> : CollectionVirtualizationController where T : ReusableCollectionItem, new()
     {
-        protected BaseVerticalCollectionView m_ListView;
-        protected const int k_ExtraVisibleItems = 2;
+        readonly UnityEngine.Pool.ObjectPool<T> m_Pool = new (() => new T(), null, i => i.DetachElement());
 
-        protected readonly UnityEngine.Pool.ObjectPool<T> m_Pool = new UnityEngine.Pool.ObjectPool<T>(() => new T(), null, i => i.DetachElement());
+        protected BaseVerticalCollectionView m_CollectionView;
+        protected const int k_ExtraVisibleItems = 2;
         protected List<T> m_ActiveItems;
+        protected T m_DraggedItem;
 
         public override IEnumerable<ReusableCollectionItem> activeItems => m_ActiveItems as IEnumerable<ReusableCollectionItem>;
 
         int m_LastFocusedElementIndex = -1;
         List<int> m_LastFocusedElementTreeChildIndexes = new List<int>();
 
-        protected int m_FirstVisibleIndex;
+        protected readonly Func<T, bool> m_VisibleItemPredicateDelegate;
 
-        Func<T, bool> m_VisibleItemPredicateDelegate;
+        internal int itemsCount =>
+            m_CollectionView.sourceIncludesArraySize
+                ? m_CollectionView.itemsSource.Count - 1
+                : m_CollectionView.itemsSource.Count;
 
-        protected virtual bool VisibleItemPredicate(T i)
-        {
-            var isBeingDragged = false;
-            if (m_ListView.dragger is ListViewDraggerAnimated dragger)
-                isBeingDragged = dragger.isDragging && i.index == dragger.draggedItem.index;
-
-            return i.rootElement.style.display == DisplayStyle.Flex && !isBeingDragged;
-        }
+        protected virtual bool VisibleItemPredicate(T i)=> i.rootElement.style.display == DisplayStyle.Flex;
 
         internal T firstVisibleItem => m_ActiveItems.FirstOrDefault(m_VisibleItemPredicateDelegate);
         internal T lastVisibleItem => m_ActiveItems.LastOrDefault(m_VisibleItemPredicateDelegate);
 
         public override int visibleItemCount => m_ActiveItems.Count(m_VisibleItemPredicateDelegate);
-        public override int firstVisibleIndex => m_FirstVisibleIndex;
-        public override int lastVisibleIndex => lastVisibleItem?.index ?? -1;
+
+        protected SerializedVirtualizationData serializedData => m_CollectionView.serializedVirtualizationData;
+
+        public override int firstVisibleIndex
+        {
+            get => Mathf.Min(serializedData.firstVisibleIndex, m_CollectionView.viewController.GetItemsCount() - 1);
+            protected set => serializedData.firstVisibleIndex = value;
+        }
 
         // we keep this list in order to minimize temporary gc allocs
-        protected List<T> m_ScrollInsertionList = new List<T>();
+        protected List<T> m_ScrollInsertionList = new ();
 
-        readonly VisualElement k_EmptyRows;
+        VisualElement m_EmptyRows;
 
-        protected float lastHeight => m_ListView.lastHeight;
+        protected float lastHeight => m_CollectionView.lastHeight;
+        protected virtual bool alwaysRebindOnRefresh => true;
 
         protected VerticalVirtualizationController(BaseVerticalCollectionView collectionView)
             : base(collectionView.scrollView)
         {
-            m_ListView = collectionView;
+            m_CollectionView = collectionView;
             m_ActiveItems = new List<T>();
             m_VisibleItemPredicateDelegate = VisibleItemPredicate;
 
-            k_EmptyRows = new VisualElement();
-            k_EmptyRows.AddToClassList(BaseVerticalCollectionView.backgroundFillUssClassName);
+            // ScrollView sets this to true to support Absolute position. It causes issues with the scrollbars with animated reordering.
+            // In the case of a collection view, we know our ReusableCollectionItems need to be in Relative anyway, so no need for it.
+            m_ScrollView.contentContainer.disableClipping = false;
         }
 
         public override void Refresh(bool rebuild)
         {
-            var hasValidBindings = m_ListView.HasValidDataAndBindings();
+            var hasValidBindings = m_CollectionView.HasValidDataAndBindings();
 
             for (var i = 0; i < m_ActiveItems.Count; i++)
             {
-                var index = m_FirstVisibleIndex + i;
+                var index = firstVisibleIndex + i;
                 var recycledItem = m_ActiveItems[i];
                 var isVisible = recycledItem.rootElement.style.display == DisplayStyle.Flex;
 
                 if (rebuild)
                 {
-                    if (hasValidBindings && isVisible)
+                    if (hasValidBindings && recycledItem.index != ReusableCollectionItem.UndefinedIndex)
                     {
-                        m_ListView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
-                        m_ListView.viewController.InvokeDestroyItem(recycledItem);
+                        m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                     }
 
+                    m_CollectionView.viewController.InvokeDestroyItem(recycledItem);
                     m_Pool.Release(recycledItem);
                     continue;
                 }
 
-                if (index >= 0 && index < m_ListView.itemsSource.Count)
+                if (m_CollectionView.itemsSource != null && index >= 0 && index < itemsCount)
                 {
-                    if (hasValidBindings && isVisible)
+                    if (!hasValidBindings)
+                        continue;
+
+                    // Rebind visible items.
+                    if (isVisible || alwaysRebindOnRefresh)
                     {
-                        m_ListView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+                        if (recycledItem.index != ReusableCollectionItem.UndefinedIndex)
+                        {
+                            m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+                        }
+
                         recycledItem.index = ReusableCollectionItem.UndefinedIndex;
                         Setup(recycledItem, index);
                     }
@@ -108,37 +121,53 @@ namespace UnityEngine.UIElements
         protected void Setup(T recycledItem, int newIndex)
         {
             // We want to skip the item that is being reordered with the animated dragger.
-            if (m_ListView.dragger is ListViewDraggerAnimated dragger)
-                if (dragger.isDragging && (dragger.draggedItem.index == newIndex || dragger.draggedItem == recycledItem))
-                    return;
+            var wasGhostItem = recycledItem.isDragGhost;
+            if (GetDraggedIndex() == newIndex)
+            {
+                if (recycledItem.index != ReusableCollectionItem.UndefinedIndex)
+                    m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
 
-            if (newIndex >= m_ListView.itemsSource.Count)
+                recycledItem.SetDragGhost(true);
+                recycledItem.index = m_DraggedItem.index;
+                recycledItem.rootElement.style.display = DisplayStyle.Flex;
+                return;
+            }
+
+            // Restore the state of the item if it was hidden by a drag.
+            if (wasGhostItem)
+            {
+                recycledItem.SetDragGhost(false);
+            }
+
+            if (newIndex >= itemsCount)
             {
                 recycledItem.rootElement.style.display = DisplayStyle.None;
-                if (recycledItem.index >= 0 && recycledItem.index < m_ListView.itemsSource.Count)
+                if (recycledItem.index >= 0 && recycledItem.index < itemsCount)
                 {
-                    m_ListView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+                    m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                     recycledItem.index = ReusableCollectionItem.UndefinedIndex;
                 }
                 return;
             }
 
             recycledItem.rootElement.style.display = DisplayStyle.Flex;
-            if (recycledItem.index == newIndex) return;
 
-            var useAlternateUss = m_ListView.showAlternatingRowBackgrounds != AlternatingRowBackground.None && newIndex % 2 == 1;
+            var newId = m_CollectionView.viewController.GetIdForIndex(newIndex);
+            if (recycledItem.index == newIndex && recycledItem.id == newId) 
+                return;
+
+            var useAlternateUss = m_CollectionView.showAlternatingRowBackgrounds != AlternatingRowBackground.None && newIndex % 2 == 1;
             recycledItem.rootElement.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassName, useAlternateUss);
 
             var previousIndex = recycledItem.index;
-            var newId = m_ListView.viewController.GetIdForIndex(newIndex);
 
             if (recycledItem.index != ReusableCollectionItem.UndefinedIndex)
-                m_ListView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+                m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
 
             recycledItem.index = newIndex;
             recycledItem.id = newId;
 
-            var indexInParent = newIndex - m_FirstVisibleIndex;
+            var indexInParent = newIndex - firstVisibleIndex;
             if (indexInParent >= m_ScrollView.contentContainer.childCount)
             {
                 recycledItem.rootElement.BringToFront();
@@ -152,7 +181,7 @@ namespace UnityEngine.UIElements
                 recycledItem.rootElement.SendToBack();
             }
 
-            m_ListView.viewController.InvokeBindItem(recycledItem, newIndex);
+            m_CollectionView.viewController.InvokeBindItem(recycledItem, newIndex);
 
             // Handle focus cycling
             HandleFocus(recycledItem, previousIndex);
@@ -210,83 +239,141 @@ namespace UnityEngine.UIElements
 
         public override void UpdateBackground()
         {
-            var currentFillHeight = float.IsNaN(k_EmptyRows.layout.size.y) ? 0 : k_EmptyRows.layout.size.y;
-            var backgroundFillHeight = m_ScrollView.contentViewport.layout.size.y - m_ScrollView.contentContainer.layout.size.y - currentFillHeight;
-            if (m_ListView.showAlternatingRowBackgrounds != AlternatingRowBackground.All || backgroundFillHeight <= 0)
+            float backgroundFillHeight;
+            if (m_CollectionView.showAlternatingRowBackgrounds != AlternatingRowBackground.All ||
+                (backgroundFillHeight = m_ScrollView.contentViewport.resolvedStyle.height - GetExpectedContentHeight()) <= 0)
             {
-                k_EmptyRows.RemoveFromHierarchy();
+                m_EmptyRows?.RemoveFromHierarchy();
                 return;
             }
 
             if (lastVisibleItem == null)
                 return;
 
-            if (k_EmptyRows.parent == null)
-                m_ScrollView.contentViewport.Add(k_EmptyRows);
-
-            var pixelAlignedItemHeight = GetItemHeight(-1);
-            var itemsCount = Mathf.FloorToInt(backgroundFillHeight / pixelAlignedItemHeight) + 1;
-            if (itemsCount > k_EmptyRows.childCount)
+            if (m_EmptyRows == null)
             {
-                var itemsToAdd = itemsCount - k_EmptyRows.childCount;
+                m_EmptyRows = new VisualElement()
+                {
+                    classList = {BaseVerticalCollectionView.backgroundFillUssClassName}
+                };
+            }
+
+            if (m_EmptyRows.parent == null)
+                m_ScrollView.contentViewport.Add(m_EmptyRows);
+
+            var pixelAlignedItemHeight = GetExpectedItemHeight(-1);
+            var itemCount = Mathf.FloorToInt(backgroundFillHeight / pixelAlignedItemHeight) + 1;
+
+            if (itemCount > m_EmptyRows.childCount)
+            {
+                var itemsToAdd = itemCount - m_EmptyRows.childCount;
                 for (var i = 0; i < itemsToAdd; i++)
                 {
                     var row = new VisualElement();
 
                     //Inline style is used to prevent a user from changing an item flexShrink property.
                     row.style.flexShrink = 0;
-                    k_EmptyRows.Add(row);
+                    m_EmptyRows.Add(row);
                 }
             }
 
-            var index = lastVisibleIndex;
+            var index = lastVisibleItem?.index ?? -1;
 
-            int emptyRowCount = k_EmptyRows.hierarchy.childCount;
-            for (int i = 0; i < emptyRowCount; ++i)
+            var emptyRowCount = m_EmptyRows.hierarchy.childCount;
+            for (var i = 0; i < emptyRowCount; ++i)
             {
-                var child = k_EmptyRows.hierarchy[i];
+                var child = m_EmptyRows.hierarchy[i];
                 index++;
                 child.style.height = pixelAlignedItemHeight;
                 child.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassName, index % 2 == 1);
             }
         }
 
-        public override void ReplaceActiveItem(int index)
+        internal override void StartDragItem(ReusableCollectionItem item)
         {
-            var i = 0;
-            foreach (var item in m_ActiveItems)
-            {
-                if (item.index == index)
-                {
-                    var recycledItem = GetOrMakeItem();
+            m_DraggedItem = item as T;
 
-                    // Detach the old one
-                    item.DetachElement();
-                    m_ActiveItems.Remove(item);
-                    m_ListView.viewController.InvokeUnbindItem(item, index);
-                    m_ListView.viewController.InvokeDestroyItem(item);
+            // Remove the active item from the list to prevent recycling it.
+            var activeIndex = m_ActiveItems.IndexOf(m_DraggedItem);
+            m_ActiveItems.RemoveAt(activeIndex);
 
-                    // Attach and setup new one.
-                    m_ActiveItems.Insert(i, recycledItem);
-                    m_ScrollView.Add(recycledItem.rootElement);
-                    Setup(recycledItem, index);
-                    break;
-                }
-
-                i++;
-            }
+            // Create a replacement item. Flag it as being dragged, so that we know it needs to stay hidden during item cycling.
+            var replacementItem = GetOrMakeItemAtIndex(activeIndex, activeIndex);
+            Setup(replacementItem, m_DraggedItem.index);
         }
 
-        internal virtual T GetOrMakeItem()
+        internal override void EndDrag(int dropIndex)
+        {
+            // Reinsert the dragged item.
+            var item = m_CollectionView.GetRecycledItemFromIndex(dropIndex);
+            var activeItemIndex = item != null ? m_ScrollView.IndexOf(item.rootElement) : m_ActiveItems.Count;
+            m_ScrollView.Insert(activeItemIndex, m_DraggedItem.rootElement);
+            m_ActiveItems.Insert(activeItemIndex, m_DraggedItem);
+
+            // Release the ghost items.
+            for (var i = 0; i < m_ActiveItems.Count; i++)
+            {
+                var activeItem = m_ActiveItems[i];
+                if (activeItem.isDragGhost)
+                {
+                    // Clear index so that it doesn't get unbound since it was never bound, then restore and release it.
+                    activeItem.index = ReusableCollectionItem.UndefinedIndex;
+                    ReleaseItem(i);
+                    i--;
+                }
+            }
+
+            // We want to avoid releasing items in Refresh, that happens when an item is out of bounds and visible,
+            // so we set the last one invisible and let the virtualization display it if necessary.
+            if (Math.Min(dropIndex, itemsCount - 1) != m_DraggedItem.index)
+            {
+                if (lastVisibleItem != null)
+                    lastVisibleItem.rootElement.style.display = DisplayStyle.None;
+
+                // We unbind in order.
+                if (m_DraggedItem.index < dropIndex)
+                {
+                    m_CollectionView.viewController.InvokeUnbindItem(m_DraggedItem, m_DraggedItem.index);
+                    m_DraggedItem.index = ReusableCollectionItem.UndefinedIndex;
+                }
+                else if (item != null)
+                {
+                    m_CollectionView.viewController.InvokeUnbindItem(item, item.index);
+                    item.index = ReusableCollectionItem.UndefinedIndex;
+                }
+            }
+
+            m_DraggedItem = null;
+        }
+
+        internal virtual T GetOrMakeItemAtIndex(int activeItemIndex = -1, int scrollViewIndex = -1)
         {
             var item = m_Pool.Get();
 
             if (item.rootElement == null)
             {
-                m_ListView.viewController.InvokeMakeItem(item);
+                m_CollectionView.viewController.InvokeMakeItem(item);
             }
 
             item.PreAttachElement();
+
+            if (activeItemIndex == -1)
+            {
+                m_ActiveItems.Add(item);
+            }
+            else
+            {
+                m_ActiveItems.Insert(activeItemIndex, item);
+            }
+
+            if (scrollViewIndex == -1)
+            {
+                m_ScrollView.Add(item.rootElement);
+            }
+            else
+            {
+                m_ScrollView.Insert(scrollViewIndex, item.rootElement);
+            }
 
             return item;
         }
@@ -294,15 +381,21 @@ namespace UnityEngine.UIElements
         internal virtual void ReleaseItem(int activeItemsIndex)
         {
             var item = m_ActiveItems[activeItemsIndex];
-            var index = item.index;
-
-            if (index >= 0 && index < m_ListView.itemsSource.Count)
+            if (item.index != ReusableCollectionItem.UndefinedIndex)
             {
-                m_ListView.viewController.InvokeUnbindItem(item, index);
+                m_CollectionView.viewController.InvokeUnbindItem(item, item.index);
             }
 
             m_Pool.Release(item);
-            m_ActiveItems.RemoveAt(activeItemsIndex);
+            m_ActiveItems.Remove(item);
+        }
+
+        protected int GetDraggedIndex()
+        {
+            if (m_CollectionView.dragger is ListViewDraggerAnimated { isDragging: true } dragger)
+                return dragger.draggedItem.index;
+
+            return ReusableCollectionItem.UndefinedIndex;
         }
     }
 }

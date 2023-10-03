@@ -71,9 +71,8 @@ namespace UnityEditor
         extern public static bool HasPrefabInstanceAnyOverrides(GameObject instanceRoot, bool includeDefaultOverrides);
 
         // Instantiate an asset that is referenced by a prefab and use it on the prefab instance.
-        [FreeFunction]
-        [NativeHeader("Editor/Src/Prefabs/AttachedPrefabAsset.h")]
-        extern public static Object InstantiateAttachedAsset([NotNull("NullExceptionObject")] Object targetObject);
+        [Obsolete("InstantiateAttachedAsset is deprecated")]
+        public static Object InstantiateAttachedAsset(Object targetObject) { return null; }
 
         // Force record property modifications by comparing against the parent prefab.
         [FreeFunction]

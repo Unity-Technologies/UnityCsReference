@@ -17,6 +17,7 @@ using UnityEngine.Scripting;
 using UnityEngineInternal;
 using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
+using UnityEditor.SceneManagement;
 using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 
@@ -117,6 +118,9 @@ namespace UnityEditor
         private static readonly GUIContent s_Text = new GUIContent();
         private static readonly GUIContent s_Image = new GUIContent();
         private static readonly GUIContent s_TextImage = new GUIContent();
+
+        private static GUIContent s_SceneMismatch = TrTextContent("Scene mismatch (cross scene references not supported)");
+        private static GUIContent s_TypeMismatch = TrTextContent("Type mismatch");
 
         internal static readonly SVC<Color> kViewBackgroundColor = new SVC<Color>("view", StyleCatalogKeyword.backgroundColor, GetDefaultBackgroundColor);
 
@@ -937,6 +941,54 @@ namespace UnityEditor
                 s_ObjectContent.image = null;
             }
             return s_ObjectContent;
+        }
+
+        internal static GUIContent ObjectContent(UnityObject obj, Type type, SerializedProperty property, EditorGUI.ObjectFieldValidator validator = null)
+        {
+            if (validator == null)
+                validator = EditorGUI.ValidateObjectFieldAssignment;
+
+            GUIContent temp;
+
+            // If obj or objType are both null, we have to rely on
+            // property.objectReferenceStringValue to display None/Missing and the
+            // correct type. But if not, EditorGUIUtility.ObjectContent is more reliable.
+            // It can take a more specific object type specified as argument into account,
+            // and it gets the icon at the same time.
+            if (obj == null && type == null && property != null)
+            {
+                temp = TempContent(property.objectReferenceStringValue);
+            }
+            else
+            {
+                // In order for ObjectContext to be able to distinguish between None/Missing,
+                // we need to supply an instanceID. For some reason, getting the instanceID
+                // from property.objectReferenceValue is not reliable, so we have to
+                // explicitly check property.objectReferenceInstanceIDValue if a property exists.
+                if (property != null)
+                    temp = ObjectContent(obj, type, property.objectReferenceInstanceIDValue);
+                else
+                    temp = ObjectContent(obj, type);
+            }
+
+            if (property != null)
+            {
+                if (obj != null)
+                {
+                    UnityObject[] references = { obj };
+                    if (EditorSceneManager.preventCrossSceneReferences && EditorGUI.CheckForCrossSceneReferencing(obj, property.serializedObject.targetObject))
+                    {
+                        if (!EditorApplication.isPlaying)
+                            temp = s_SceneMismatch;
+                        else
+                            temp.text = temp.text + string.Format(" ({0})", EditorGUI.GetGameObjectFromObject(obj).scene.name);
+                    }
+                    else if (validator(references, type, property, EditorGUI.ObjectFieldValidatorOptions.ExactObjectTypeValidation) == null)
+                        temp = s_TypeMismatch;
+                }
+            }
+
+            return temp;
         }
 
         internal static GUIContent TempContent(string t)

@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -135,6 +133,11 @@ namespace Unity.UI.Builder
             UnfixElementSizeAndPosition(m_DragPreviewLastParent);
             m_DragPreviewLastParent.UnhideMinSizeSpecialElement();
             m_DragPreviewLastParent = null;
+        }
+
+        protected override IEnumerable<VisualElement> GetSelectedElements()
+        {
+            return documentRootElement.FindSelectedElements();
         }
     }
 }

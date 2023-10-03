@@ -11,42 +11,40 @@ namespace UnityEngine.UIElements
     {
         protected readonly BaseVerticalCollectionView m_View;
 
-        protected List<int> m_SelectedIndices;
+        protected List<int> m_SortedSelectedIds = new ();
 
+        public IEnumerable<int> GetSortedSelectedIds() => m_SortedSelectedIds;
         public BaseReorderableDragAndDropController(BaseVerticalCollectionView view)
         {
             m_View = view;
             enableReordering = true;
         }
 
-        public bool enableReordering { get; set; }
+        public virtual bool enableReordering { get; set; }
 
         public virtual bool CanStartDrag(IEnumerable<int> itemIndices)
         {
             return enableReordering;
         }
 
-        public virtual StartDragArgs SetupDragAndDrop(IEnumerable<int> itemIndices, bool skipText = false)
+        public virtual StartDragArgs SetupDragAndDrop(IEnumerable<int> itemIds, bool skipText = false)
         {
-            // *begin-nonstandard-formatting*
-            m_SelectedIndices ??= new List<int>();
-            // *end-nonstandard-formatting*
-            m_SelectedIndices.Clear();
+            m_SortedSelectedIds.Clear();
 
             var title = string.Empty;
-            if (itemIndices != null)
+            if (itemIds != null)
             {
-                foreach (var index in itemIndices)
+                foreach (var id in itemIds)
                 {
-                    m_SelectedIndices.Add(index);
+                    m_SortedSelectedIds.Add(id);
 
                     if (skipText)
                         continue;
 
                     if (string.IsNullOrEmpty(title))
                     {
-                        var label = m_View.GetRecycledItemFromIndex(index)?.rootElement.Q<Label>();
-                        title = label != null ? label.text : $"Item {index}";
+                        var label = m_View.GetRecycledItemFromId(id)?.rootElement.Q<Label>();
+                        title = label != null ? label.text : $"Item {id}";
                     }
                     else
                     {
@@ -56,12 +54,17 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            m_SelectedIndices.Sort();
+            // Sort indices, store ids.
+            m_SortedSelectedIds.Sort(CompareId);
 
-            return new StartDragArgs(title, m_View);
+            return new StartDragArgs(title, DragVisualMode.Move);
         }
+
+        protected virtual int CompareId(int id1, int id2) => id1.CompareTo(id2);
 
         public abstract DragVisualMode HandleDragAndDrop(IListDragAndDropArgs args);
         public abstract void OnDrop(IListDragAndDropArgs args);
+
+        public virtual void DragCleanup() { }
     }
 }

@@ -56,6 +56,10 @@ namespace UnityEngine.UIElements
             {
                 RemoveFromParent(id, parentId);
             }
+            else
+            {
+                m_RootItemIds.Remove(id);
+            }
 
             return TryRemoveChildrenIds(id);
         }
@@ -80,6 +84,10 @@ namespace UnityEngine.UIElements
             }
             else
             {
+                var rootItemIdsPositionForId = m_RootItemIds.IndexOf(id);
+                if (newParentId == ReusableCollectionItem.UndefinedIndex && rootItemIdsPositionForId < childIndex)
+                    childIndex--;
+
                 m_RootItemIds.Remove(id);
             }
 
@@ -91,7 +99,7 @@ namespace UnityEngine.UIElements
             if (parentId == TreeItem.invalidId)
             {
                 m_ParentIds.Remove(item.id);
-                if (childIndex == -1)
+                if (childIndex < 0 || childIndex >= m_RootItemIds.Count)
                     m_RootItemIds.Add(item.id);
                 else
                     m_RootItemIds.Insert(childIndex, item.id);
@@ -149,9 +157,11 @@ namespace UnityEngine.UIElements
             }
 
             var removed = false;
+            removed |= m_RootItemIds.Remove(id);
             removed |= m_ChildrenIds.Remove(id);
             removed |= m_ParentIds.Remove(id);
             removed |= m_Tree.Remove(id);
+            removed |= m_RootItemIds.Remove(id);
 
             return removed;
         }

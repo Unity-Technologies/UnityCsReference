@@ -61,7 +61,7 @@ namespace UnityEngine.UIElements
 
         internal void InsertChild(TreeViewItemData<T> child, int index)
         {
-            if (index == -1)
+            if (index == -1 || index >= m_Children.Count)
                 m_Children.Add(child);
             else
                 m_Children.Insert(index, child);

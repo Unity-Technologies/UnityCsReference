@@ -56,6 +56,8 @@ namespace UnityEngine.UIElements
         Toggle m_Toggle;
         VisualElement m_Container;
 
+        internal Toggle toggle => m_Toggle;
+
         /// <summary>
         /// This element contains the elements that are shown or hidden when you toggle the <see cref="Foldout"/>.
         /// </summary>

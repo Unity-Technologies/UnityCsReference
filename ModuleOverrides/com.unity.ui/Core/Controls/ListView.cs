@@ -416,18 +416,15 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            var count = viewController.GetItemCount();
+            var count = viewController.GetItemsCount();
+
             if (value > count)
             {
                 viewController.AddItems(value - count);
             }
             else if (value < count)
             {
-                var previousCount = count;
-                for (var i = previousCount - 1; i >= value; i--)
-                {
-                    viewController.RemoveItem(i);
-                }
+                viewController.RemoveItems(count - value);
             }
         }
 
@@ -436,7 +433,7 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
-            m_ArraySizeField?.SetValueWithoutNotify(viewController.GetItemCount().ToString());
+            m_ArraySizeField?.SetValueWithoutNotify(viewController.GetItemsCount().ToString());
         }
 
         Label m_EmptyListLabel;
@@ -582,7 +579,7 @@ namespace UnityEngine.UIElements
                 if (value != m_ReorderMode)
                 {
                     m_ReorderMode = value;
-                    InitializeDragAndDropController();
+                    InitializeDragAndDropController(reorderable);
                     Rebuild();
                 }
             }

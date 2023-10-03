@@ -13,6 +13,8 @@ namespace UnityEngine.UIElements
         StartDragArgs SetupDragAndDrop(IEnumerable<int> itemIndices, bool skipText = false);
         DragVisualMode HandleDragAndDrop(TArgs args);
         void OnDrop(TArgs args);
+        void DragCleanup();
+        IEnumerable<int> GetSortedSelectedIds();
     }
 
     internal enum DragVisualMode
@@ -23,30 +25,37 @@ namespace UnityEngine.UIElements
         Rejected
     }
 
-    internal class StartDragArgs
+    internal struct StartDragArgs
     {
-        public string title { get; }
-        public object userData { get; }
-
-        private readonly Hashtable m_GenericData = new Hashtable();
-
-        internal Hashtable genericData => m_GenericData;
-        internal IEnumerable<Object> unityObjectReferences { get; private set; } = null;
-
-        internal StartDragArgs()
-        {
-            title = string.Empty;
-        }
-
-        public StartDragArgs(string title, object userData)
+        public StartDragArgs(string title, DragVisualMode visualMode)
         {
             this.title = title;
-            this.userData = userData;
+            this.visualMode = visualMode;
+            genericData = null;
+            unityObjectReferences = null;
         }
+
+        // This API is used by com.unity.entities, we cannot remove it yet.
+        internal StartDragArgs(string title, object target)
+        {
+            this.title = title;
+            visualMode = DragVisualMode.Move;
+            genericData = null;
+            unityObjectReferences = null;
+            SetGenericData(DragAndDropData.dragSourceKey, target);
+        }
+
+        public string title { get; }
+
+        public DragVisualMode visualMode { get; }
+
+        internal Hashtable genericData { get; private set; }
+        internal IEnumerable<Object> unityObjectReferences { get; private set; }
 
         public void SetGenericData(string key, object data)
         {
-            m_GenericData[key] = data;
+            genericData ??= new Hashtable();
+            genericData[key] = data;
         }
 
         public void SetUnityObjectReferences(IEnumerable<Object> references)

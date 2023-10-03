@@ -473,7 +473,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
             else if (rectParams.texture != null)
                 MeshBuilder.MakeTexturedRect(rectParams, UIRUtility.k_MeshPosZ, meshAlloc, rectParams.colorPage);
             else
+            {
+                ApplyInset(ref rectParams, rectParams.texture);
                 MeshBuilder.MakeSolidRect(rectParams, UIRUtility.k_MeshPosZ, meshAlloc);
+            }
         }
 
         public void DrawBorder(MeshGenerationContextUtils.BorderParams borderParams)
@@ -527,7 +530,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     out rectParams.topRightRadius,
                     out rectParams.bottomRightRadius);
 
-                MeshGenerationContextUtils.AdjustBackgroundSizeForBorders(currentElement, ref rectParams.rect);
+                MeshGenerationContextUtils.AdjustBackgroundSizeForBorders(currentElement, ref rectParams);
 
                 DrawRectangle(rectParams);
             }
@@ -610,7 +613,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 rectParams.colorPage = ColorPage.Init(m_Owner, currentElement.renderChainData.tintColorID);
                 rectParams.sliceScale = sliceScale;
 
-                MeshGenerationContextUtils.AdjustBackgroundSizeForBorders(currentElement, ref rectParams.rect);
+                MeshGenerationContextUtils.AdjustBackgroundSizeForBorders(currentElement, ref rectParams);
 
                 DrawRectangle(rectParams);
             }
@@ -759,6 +762,32 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             mwd.SetAllVertices(vertices);
             mwd.SetAllIndices(indices);
+        }
+
+        void ApplyInset(ref MeshGenerationContextUtils.RectangleParams rectParams, Texture tex)
+        {
+            var rect = rectParams.rect;
+            var inset = rectParams.rectInset;
+            if (Mathf.Approximately(rect.size.x, 0.0f) || Mathf.Approximately(rect.size.y, 0.0f) || inset == Vector4.zero)
+                return;
+
+            var prevRect = rect;
+            rect.x += inset.x;
+            rect.y += inset.y;
+            rect.width -= (inset.x + inset.z);
+            rect.height -= (inset.y + inset.w);
+            rectParams.rect = rect;
+
+            var uv = rectParams.uv;
+            if (tex != null && uv.width > UIRUtility.k_Epsilon && uv.height > UIRUtility.k_Epsilon)
+            {
+                var uvScale = new Vector2(1.0f / prevRect.width, 1.0f / prevRect.height);
+                uv.x += (inset.x * uvScale.x);
+                uv.y += (inset.w * uvScale.y);
+                uv.width -= ((inset.x + inset.z) * uvScale.x);
+                uv.height -= ((inset.y + inset.w) * uvScale.y);
+                rectParams.uv = uv;
+            }
         }
 
         public void DrawVectorImage(MeshGenerationContextUtils.RectangleParams rectParams)

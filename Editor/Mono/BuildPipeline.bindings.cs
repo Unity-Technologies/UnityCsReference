@@ -453,6 +453,14 @@ namespace UnityEditor
             if (!BuildPlayerWindow.DefaultBuildMethods.IsBuildPathValid(locationPathName, out var msg))
                 throw new ArgumentException($"Invalid build path: '{locationPathName}'. {msg}");
 
+            if (buildTargetGroup == BuildTargetGroup.Standalone)
+            {
+                if (subtarget == (int)StandaloneBuildSubtarget.NoSubtarget)
+                    subtarget = (int)EditorUserBuildSettings.standaloneBuildSubtarget;
+
+                EditorUserBuildSettings.standaloneBuildSubtarget = (StandaloneBuildSubtarget)subtarget;
+            }
+
             return BuildPlayerInternalNoCheck(levels, locationPathName, assetBundleManifestPath, buildTargetGroup, target, subtarget, options, extraScriptingDefines, false);
         }
 

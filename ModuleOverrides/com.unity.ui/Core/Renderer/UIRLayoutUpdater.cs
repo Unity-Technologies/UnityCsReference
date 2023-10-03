@@ -14,7 +14,11 @@ namespace UnityEngine.UIElements
     // - Only call dirty repaint when the layout rect has changed instead of "yogaNode.HasNewLayout"
     internal class UIRLayoutUpdater : BaseVisualTreeUpdater
     {
-        const int kMaxValidateLayoutCount = 5;
+         // When changing this value, we always consider that some controls may require multiple passes to compute their layout.
+         // We also consider that these controls can also be nested inside other similar controls.
+         // For example, a simple scroll view may need more than 2 passes to lay out the viewport and scrollers.
+         // Therefore, having a deep hierachy of scroll views can require a fair amount of layout passes.
+        const int kMaxValidateLayoutCount = 10;
 
 
         private static readonly string s_Description = "Update Layout";

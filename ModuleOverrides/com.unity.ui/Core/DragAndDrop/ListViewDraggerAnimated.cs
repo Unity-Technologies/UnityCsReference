@@ -16,27 +16,31 @@ namespace UnityEngine.UIElements
         Vector3 m_CurrentPointerPosition;
         ReusableCollectionItem m_Item;
         ReusableCollectionItem m_OffsetItem;
-        public bool isDragging => m_Item != null;
+        public bool isDragging { get; private set; }
         public ReusableCollectionItem draggedItem => m_Item;
 
-        internal override bool supportsDragEvents => false;
+        protected override bool supportsDragEvents => false;
 
         public ListViewDraggerAnimated(BaseVerticalCollectionView listView)
             : base(listView) {}
 
-        protected override StartDragArgs StartDrag(Vector3 pointerPosition)
+        protected internal override StartDragArgs StartDrag(Vector3 pointerPosition)
         {
-            targetListView.ClearSelection();
+            targetView.ClearSelection();
 
             var recycledItem = GetRecycledItem(pointerPosition);
             if (recycledItem == null)
                 return default;
 
-            targetListView.SetSelection(recycledItem.index);
+            targetView.SetSelection(recycledItem.index);
 
+            isDragging = true;
             m_Item = recycledItem;
+            targetView.virtualizationController.StartDragItem(m_Item);
+
             var y = m_Item.rootElement.layout.y;
             m_SelectionHeight = m_Item.rootElement.layout.height;
+
             m_Item.rootElement.style.position = Position.Absolute;
             m_Item.rootElement.style.height = m_Item.rootElement.layout.height;
             m_Item.rootElement.style.width = m_Item.rootElement.layout.width;
@@ -47,7 +51,7 @@ namespace UnityEngine.UIElements
             m_CurrentPointerPosition = pointerPosition;
             m_LocalOffsetOnStart = targetScrollView.contentContainer.WorldToLocal(pointerPosition).y - y;
 
-            var item = targetListView.GetRecycledItemFromIndex(m_CurrentIndex + 1);
+            var item = targetView.GetRecycledItemFromIndex(m_CurrentIndex + 1);
             if (item != null)
             {
                 m_OffsetItem = item;
@@ -56,17 +60,17 @@ namespace UnityEngine.UIElements
                 Animate(m_OffsetItem, m_SelectionHeight);
 
                 m_OffsetItem.rootElement.style.paddingTop = m_SelectionHeight;
-                if (targetListView.virtualizationMethod == CollectionVirtualizationMethod.FixedHeight)
-                    m_OffsetItem.rootElement.style.height = targetListView.fixedItemHeight + m_SelectionHeight;
+                if (targetView.virtualizationMethod == CollectionVirtualizationMethod.FixedHeight)
+                    m_OffsetItem.rootElement.style.height = targetView.fixedItemHeight + m_SelectionHeight;
             }
 
             return dragAndDropController.SetupDragAndDrop(new[] { m_Item.index }, true);
         }
 
-        protected override DragVisualMode UpdateDrag(Vector3 pointerPosition)
+        protected internal override void UpdateDrag(Vector3 pointerPosition)
         {
             if (m_Item == null)
-                return DragVisualMode.Rejected;
+                return;
 
             HandleDragAndScroll(pointerPosition);
 
@@ -79,47 +83,50 @@ namespace UnityEngine.UIElements
 
             var y = targetScrollView.contentContainer.resolvedStyle.paddingTop;
             m_CurrentIndex = -1;
-            foreach (var item in targetListView.activeItems)
+            foreach (var item in targetView.activeItems)
             {
-                if (item.rootElement.style.display == DisplayStyle.None)
+                if (item.index < 0 || (item.rootElement.style.display == DisplayStyle.None && !item.isDragGhost))
                     continue;
 
-                var child = item;
-                if (child == m_Item)
+                if (item.index == m_Item.index && item.index < targetView.itemsSource.Count - 1)
                 {
+                    var nextExpectedHeight = targetView.virtualizationController.GetExpectedItemHeight(item.index + 1);
+                    if (itemLayout.y <= y + nextExpectedHeight * 0.5f)
+                    {
+                        m_CurrentIndex = item.index;
+                    }
+
                     continue;
                 }
 
-                var trueHeight = child.rootElement.layout.height - child.rootElement.resolvedStyle.paddingTop;
-
-                var shouldSkip = targetListView.sourceIncludesArraySize && child.index == 0;
-                if (!shouldSkip && m_CurrentIndex == -1 && itemLayout.y <= y + trueHeight * 0.5f)
+                var expectedHeight = targetView.virtualizationController.GetExpectedItemHeight(item.index);
+                var shouldSkip = targetView.sourceIncludesArraySize && item.index == 0;
+                if (!shouldSkip && itemLayout.y <= y + expectedHeight * 0.5f)
                 {
-                    m_CurrentIndex = child.index;
+                    if (m_CurrentIndex == -1)
+                        m_CurrentIndex = item.index;
 
-                    if (m_OffsetItem == child)
+                    if (m_OffsetItem == item)
                         break;
 
                     Animate(m_OffsetItem, 0);
-                    Animate(child, m_SelectionHeight);
-                    m_OffsetItem = child;
+                    Animate(item, m_SelectionHeight);
+                    m_OffsetItem = item;
                     break;
                 }
 
-                y += trueHeight;
+                y += expectedHeight;
             }
 
             if (m_CurrentIndex == -1)
             {
-                m_CurrentIndex = targetListView.itemsSource.Count;
+                m_CurrentIndex = targetView.itemsSource.Count;
                 Animate(m_OffsetItem, 0);
                 m_OffsetItem = null;
             }
 
             m_Item.rootElement.layout = itemLayout;
             m_Item.rootElement.BringToFront();
-
-            return DragVisualMode.Move;
         }
 
         void Animate(ReusableCollectionItem element, float paddingTop)
@@ -136,17 +143,17 @@ namespace UnityEngine.UIElements
 
             element.animator?.Stop();
             element.animator?.Recycle();
-            var targetStyle = targetListView.virtualizationMethod == CollectionVirtualizationMethod.FixedHeight ? new StyleValues { paddingTop = paddingTop, height = targetListView.ResolveItemHeight() + paddingTop } : new StyleValues { paddingTop = paddingTop };
+            var targetStyle = targetView.virtualizationMethod == CollectionVirtualizationMethod.FixedHeight ? new StyleValues { paddingTop = paddingTop, height = targetView.ResolveItemHeight() + paddingTop } : new StyleValues { paddingTop = paddingTop };
             element.animator = element.rootElement.experimental.animation.Start(targetStyle, 500);
             element.animator.KeepAlive();
         }
 
-        protected override void OnDrop(Vector3 pointerPosition)
+        protected internal override void OnDrop(Vector3 pointerPosition)
         {
-            if (m_Item != null && targetListView.binding == null)
-            {
-                targetListView.virtualizationController.ReplaceActiveItem(m_Item.index);
-            }
+            // Stop dragging first, to allow the list to refresh properly dragged items.
+            isDragging = false;
+            m_Item.rootElement.ClearManualLayout();
+            targetView.virtualizationController.EndDrag(m_CurrentIndex);
 
             if (m_OffsetItem != null)
             {
@@ -154,22 +161,26 @@ namespace UnityEngine.UIElements
                 m_OffsetItem.animator?.Recycle();
                 m_OffsetItem.animator = null;
                 m_OffsetItem.rootElement.style.paddingTop = 0;
-                if (targetListView.virtualizationMethod == CollectionVirtualizationMethod.FixedHeight)
-                    m_OffsetItem.rootElement.style.height = targetListView.ResolveItemHeight();
+                if (targetView.virtualizationMethod == CollectionVirtualizationMethod.FixedHeight)
+                    m_OffsetItem.rootElement.style.height = targetView.ResolveItemHeight();
             }
 
-            base.OnDrop(pointerPosition);
-
-            if (m_Item != null && targetListView.binding != null)
+            var dragPosition = new DragPosition
             {
-                targetListView.virtualizationController.ReplaceActiveItem(m_Item.index);
-            }
+                recycledItem = m_Item,
+                insertAtIndex = m_CurrentIndex,
+                dropPosition = DragAndDropPosition.BetweenItems
+            };
 
-            m_OffsetItem = null;
+            var args = MakeDragAndDropArgs(dragPosition);
+            dragAndDropController.OnDrop(args);
+            dragAndDrop.AcceptDrag();
+
             m_Item = null;
+            m_OffsetItem = null;
         }
 
-        protected override void ClearDragAndDropUI()
+        protected override void ClearDragAndDropUI(bool dragCancelled)
         {
             // Nothing to clear.
         }
@@ -178,7 +189,7 @@ namespace UnityEngine.UIElements
         {
             dragPosition.recycledItem = m_Item;
             dragPosition.insertAtIndex = m_CurrentIndex;
-            dragPosition.dragAndDropPosition = DragAndDropPosition.BetweenItems;
+            dragPosition.dropPosition = DragAndDropPosition.BetweenItems;
             return true;
         }
     }

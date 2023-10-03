@@ -317,6 +317,8 @@ namespace UnityEditor
 
         internal static SceneView.CameraMode GetBuiltinCameraMode(DrawCameraMode drawMode)
         {
+            if (drawMode == DrawCameraMode.Normal)
+                drawMode = DrawCameraMode.Textured;
             return Styles.sBuiltinCameraModes.Single(mode => mode.drawMode == drawMode);
         }
 

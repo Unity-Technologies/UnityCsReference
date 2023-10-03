@@ -67,7 +67,7 @@ namespace UnityEditor
         // Mouse coords when we started the drag (used to figure out when we should trigger a drag)
         static Vector2 s_StartDragPosition;
         // Are we dragging yet?
-        static int s_DragMode;
+        static bool s_IsDragging;
         // A view that shouldn't be docked to (to make sure we don't attach to a single view with only the tab that we're dragging)
         static internal View s_IgnoreDockingForView = null;
 
@@ -265,7 +265,7 @@ namespace UnityEditor
 
             if (parent == null)
             {
-                window.InternalCloseWindow();
+                window?.InternalCloseWindow();
                 return;
             }
 
@@ -769,7 +769,7 @@ namespace UnityEditor
 
         private static void CheckDragWindowExists()
         {
-            if (s_DragMode == 1 && !PaneDragTab.get.m_Window)
+            if (s_IsDragging && !PaneDragTab.get.m_Window)
             {
                 s_OriginalDragSource.RemoveTab(s_DragPane);
                 DestroyImmediate(s_DragPane);
@@ -786,7 +786,7 @@ namespace UnityEditor
 
             // Detect if hotcontrol was cleared while dragging (happens when pressing Esc).
             // We do not listen for the Escape keydown event because it is sent to the dragged window (not this dockarea)
-            if (s_DragMode != 0 && GUIUtility.hotControl == 0)
+            if (s_IsDragging && GUIUtility.hotControl == 0)
             {
                 PaneDragTab.get.Close();
                 ResetDragVars();
@@ -812,7 +812,7 @@ namespace UnityEditor
 
                                     GUIUtility.hotControl = id;
                                     s_StartDragPosition = evt.mousePosition;
-                                    s_DragMode = 0;
+                                    s_IsDragging = false;
                                     evt.Use();
                                     break;
                                 case 2:
@@ -849,9 +849,8 @@ namespace UnityEditor
                         // check if we're allowed to drag tab
                         bool dragAllowed = (window.showMode != ShowMode.MainWindow || AllowTabAction());
 
-                        if (s_DragMode == 0 && delta.sqrMagnitude > 99 && dragAllowed)
+                        if (!s_IsDragging && delta.sqrMagnitude > 99 && dragAllowed)
                         {
-                            s_DragMode = 1;
                             s_PlaceholderPos = selected;
                             s_DragPane = m_Panes[selected];
 
@@ -860,20 +859,31 @@ namespace UnityEditor
 
                             s_OriginalDragSource = this;
                             float tabWidth = GetTabWidth(tabStyle, selected);
-                            PaneDragTab.get.Show(
-                                new Rect(tabAreaRect.x + screenRect.x + tabWidth * selected, tabAreaRect.y + screenRect.y, tabWidth, tabAreaRect.height - 1f),
-                                s_DragPane.titleContent,
-                                position.size,
-                                GUIUtility.GUIToScreenPoint(evt.mousePosition)
-                            );
-                            EditorApplication.update += CheckDragWindowExists;
-                            Invoke("OnTabDragging", s_DragPane);
+
+                            try
+                            {
+                                PaneDragTab.get.Show(
+                                    new Rect(tabAreaRect.x + screenRect.x + tabWidth * selected, tabAreaRect.y + screenRect.y, tabWidth, tabAreaRect.height - 1f),
+                                    s_DragPane.titleContent,
+                                    position.size,
+                                    GUIUtility.GUIToScreenPoint(evt.mousePosition));
+
+                                s_IsDragging = true;
+
+                                EditorApplication.update += CheckDragWindowExists;
+                                Invoke("OnTabDragging", s_DragPane);
+                            }
+                            catch
+                            {
+                                ResetDragVars();
+                                throw;
+                            }
 
                             // We just showed a window. Exit the GUI because the window might be
                             // repainting already (esp. on Windows)
                             GUIUtility.ExitGUI();
                         }
-                        if (s_DragMode == 1)
+                        if (s_IsDragging)
                         {
                             // Go over all container windows, ask them to dock the window.
                             DropInfo di = null;
@@ -928,10 +938,10 @@ namespace UnityEditor
                     if (GUIUtility.hotControl == id)
                     {
                         Vector2 screenMousePos = GUIUtility.GUIToScreenPoint(evt.mousePosition);
-                        if (s_DragMode != 0)
+                        if (s_IsDragging)
                         {
                             // This is where we want to insert it.
-                            s_DragMode = 0;
+                            s_IsDragging = false;
                             PaneDragTab.get.Close();
                             EditorApplication.update -= CheckDragWindowExists;
 
@@ -1109,7 +1119,7 @@ namespace UnityEditor
             s_DragPane = null;
             s_DropInfo = null;
             s_PlaceholderPos = -1;
-            s_DragMode = 0;
+            s_IsDragging = false;
             s_OriginalDragSource = null;
         }
 

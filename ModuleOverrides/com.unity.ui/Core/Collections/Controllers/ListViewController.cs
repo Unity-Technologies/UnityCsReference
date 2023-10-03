@@ -25,6 +25,7 @@ namespace UnityEngine.UIElements
                 listItem.bindableElement.style.flexBasis = StyleKeyword.Initial;
                 listItem.bindableElement.style.marginTop = 0f;
                 listItem.bindableElement.style.marginBottom = 0f;
+                listItem.bindableElement.style.paddingTop = 0f;
                 listItem.bindableElement.style.flexGrow = 0f;
                 listItem.bindableElement.style.flexShrink = 0f;
             }
@@ -64,10 +65,34 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
-                    for (var i = 0; i < itemCount; i++)
+                    var sourceType = itemsSource.GetType();
+                    bool IsGenericList(Type t) => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IList<>);
+                    Type listType = null;
+                    foreach (var type in sourceType.GetInterfaces())
                     {
-                        indices.Add(previousCount + i);
-                        itemsSource.Add(default);
+                        if (IsGenericList(type))
+                        {
+                            listType = type;
+                            break;
+                        }
+                    }
+
+                    if (listType != null && listType.GetGenericArguments()[0].IsValueType)
+                    {
+                        var elementValueType = listType.GetGenericArguments()[0];
+                        for (var i = 0; i < itemCount; i++)
+                        {
+                            indices.Add(previousCount + i);
+                            itemsSource.Add(Activator.CreateInstance(elementValueType));
+                        }
+                    }
+                    else
+                    {
+                        for (var i = 0; i < itemCount; i++)
+                        {
+                            indices.Add(previousCount + i);
+                            itemsSource.Add(default);
+                        }
                     }
                 }
 
@@ -86,6 +111,18 @@ namespace UnityEngine.UIElements
 
         public virtual void Move(int index, int newIndex)
         {
+            if (itemsSource == null)
+                return;
+
+            if (index == newIndex)
+                return;
+
+            var minIndex = Mathf.Min(index, newIndex);
+            var maxIndex = Mathf.Max(index, newIndex);
+
+            if (minIndex < 0 || maxIndex >= itemsSource.Count)
+                return;
+
             var destinationIndex = newIndex;
             var direction = newIndex < index ? 1 : -1;
 
@@ -131,6 +168,29 @@ namespace UnityEngine.UIElements
 
             RaiseItemsRemoved(indices);
             RaiseOnSizeChanged();
+        }
+
+        internal virtual void RemoveItems(int itemCount)
+        {
+            if (itemCount <= 0)
+                return;
+
+            var previousCount = GetItemsCount();
+            var indices = ListPool<int>.Get();
+            try
+            {
+                var newItemCount = previousCount - itemCount;
+                for (var i = newItemCount; i < previousCount; i++)
+                {
+                    indices.Add(i);
+                }
+
+                RemoveItems(indices);
+            }
+            finally
+            {
+                ListPool<int>.Release(indices);
+            }
         }
 
         protected void RaiseOnSizeChanged()
