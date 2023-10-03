@@ -723,12 +723,20 @@ namespace UnityEditor
 
             if (!win)
             {
-                win = ScriptableObject.CreateInstance(t) as EditorWindow;
-                AssignTitle(win, title);
-                if (utility)
-                    win.ShowUtility();
-                else
-                    win.Show();
+                try
+                {
+                    win = ScriptableObject.CreateInstance(t) as EditorWindow;
+                	AssignTitle(win, title);
+                    if (utility)
+                        win.ShowUtility();
+                    else
+                        win.Show();
+                }
+                catch
+                {
+                    win.Close();
+                    throw;
+                }
             }
             else if (focus)
             {

@@ -251,6 +251,10 @@ namespace Unity.UI.Builder
 // Use old API only if version is >= 2019_4 and <= 2020_3
                     return scrollView.verticalScrollerVisibility != ScrollerVisibility.Hidden;
                 }
+                else if (attributeName == "touch-scroll-type")
+                {
+                    return scrollView.touchScrollBehavior;
+                }
             }
             else if (currentVisualElement is ListView listView)
             {

@@ -8,14 +8,18 @@ namespace UnityEngine.UIElements
     {
         object target { get; }
         int insertAtIndex { get; }
+        int parentId { get; }
+        int childIndex { get; }
         IDragAndDropData dragAndDropData { get; }
         DragAndDropPosition dragAndDropPosition { get; }
     }
 
-    internal struct ListDragAndDropArgs : IListDragAndDropArgs
+    internal struct DragAndDropArgs : IListDragAndDropArgs
     {
         public object target { get; set; }
         public int insertAtIndex { get; set; }
+        public int parentId { get; set; }
+        public int childIndex { get; set; }
         public DragAndDropPosition dragAndDropPosition { get; set;  }
         public IDragAndDropData dragAndDropData { get; set; }
     }

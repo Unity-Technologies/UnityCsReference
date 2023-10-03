@@ -66,6 +66,11 @@ namespace Unity.UI.Builder
             m_DragPreviewLastParent = null;
         }
 
+        protected virtual IEnumerable<VisualElement> GetSelectedElements()
+        {
+            return selection.selection;
+        }
+
         protected override VisualElement CreateDraggedElement()
         {
             var classPillTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
@@ -87,20 +92,25 @@ namespace Unity.UI.Builder
         {
             m_ElementsToReparent.Clear();
 
-            // Create list of elements to reparent.
-            foreach (var selectedElement in selection.selection)
+            if (!selection.isEmpty)
             {
-                if (!ExplorerCanStartDrag(selectedElement))
-                    continue;
+                var selectedElements = GetSelectedElements();
 
-                var elementToReparent = new ElementToReparent()
+                // Create list of elements to reparent.
+                foreach (var selectedElement in selectedElements)
                 {
-                    element = selectedElement,
-                    oldParent = selectedElement.parent,
-                    oldIndex = selectedElement.parent.IndexOf(selectedElement)
-                };
+                    if (!ExplorerCanStartDrag(selectedElement))
+                        continue;
 
-                m_ElementsToReparent.Add(elementToReparent);
+                    var elementToReparent = new ElementToReparent()
+                    {
+                        element = selectedElement,
+                        oldParent = selectedElement.parent,
+                        oldIndex = selectedElement.parent.IndexOf(selectedElement)
+                    };
+
+                    m_ElementsToReparent.Add(elementToReparent);
+                }
             }
 
             // We still need a primary element that is "being dragged" for visualization purporses.
@@ -156,14 +166,15 @@ namespace Unity.UI.Builder
             if (oldParent != newParent)
             {
                 if (index < 0 || index > newParent.childCount - 1)
+                {
                     newParent.Insert(newParent.childCount, elementToReparent);
+                    return newParent.childCount;
+                }
                 else
+                {
                     newParent.Insert(index, elementToReparent);
-
-                if (index < newParent.childCount)
                     return index + 1;
-                else
-                    return index;
+                }
             }
 
             if (index < 0)

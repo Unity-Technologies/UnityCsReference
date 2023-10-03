@@ -78,7 +78,7 @@ namespace UnityEngine.UIElements
                 m_SelectedItems = new List<ITreeViewItem>();
                 foreach (var treeItem in items)
                 {
-                    foreach (var itemId in m_ListView.currentSelectionIds)
+                    foreach (var itemId in m_ListView.selectedIds)
                     {
                         if (treeItem.id == itemId)
                             m_SelectedItems.Add(treeItem);

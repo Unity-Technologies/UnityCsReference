@@ -130,6 +130,7 @@ namespace UnityEngine.UIElements
             else // we assume unitless or pixel values
             {
                 x = x_cache.value;
+                x = float.IsNaN(x) ? 0.0f : x;
             }
 
             float y;
@@ -142,9 +143,12 @@ namespace UnityEngine.UIElements
             else // we assume unitless or pixel values
             {
                 y = y_cache.value;
+                y = float.IsNaN(y) ? 0.0f : y;
             }
 
             float z = translationOperation.z;
+            z = float.IsNaN(z) ? 0.0f : z;
+
             return new Vector3(x, y, z);
         }
 
@@ -192,8 +196,23 @@ namespace UnityEngine.UIElements
             return new Vector3(x, y, z);
         }
 
-        private Quaternion ResolveRotation() => computedStyle.rotate.ToQuaternion();
-        private Vector3 ResolveScale() => computedStyle.scale.value;
+        private Quaternion ResolveRotation()
+        {
+            var rotate = computedStyle.rotate;
+            var axis = rotate.axis;
+            if (float.IsNaN(rotate.angle.value) || float.IsNaN(axis.x) || float.IsNaN(axis.y) || float.IsNaN(axis.z))
+                rotate = Rotate.Initial();
+
+            return rotate.ToQuaternion();
+        }
+
+        private Vector3 ResolveScale()
+        {
+            Vector3 s = computedStyle.scale.value;
+            s = (float.IsNaN(s.x) || float.IsNaN(s.y) || float.IsNaN(s.z)) ? Vector3.one : s;
+
+            return s;
+        }
 
         internal class CustomStyleAccess : ICustomStyle
         {

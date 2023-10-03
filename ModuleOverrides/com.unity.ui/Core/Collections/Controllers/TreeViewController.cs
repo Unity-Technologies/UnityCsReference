@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Profiling;
 using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
@@ -14,6 +15,7 @@ namespace UnityEngine.UIElements
         Dictionary<int, TreeItem> m_TreeItems = new Dictionary<int, TreeItem>();
         List<int> m_RootIndices = new List<int>();
         List<TreeViewItemWrapper> m_ItemWrappers = new List<TreeViewItemWrapper>();
+        HashSet<int> m_TreeItemIdsWithItemWrappers = new HashSet<int>();
         List<TreeViewItemWrapper> m_WrapperInsertionList = new List<TreeViewItemWrapper>();
 
         protected Experimental.TreeView treeView => view as Experimental.TreeView;
@@ -43,8 +45,8 @@ namespace UnityEngine.UIElements
         public abstract IEnumerable<int> GetAllItemIds(IEnumerable<int> rootIds = null);
         public abstract int GetParentId(int id);
         public abstract IEnumerable<int> GetChildrenIds(int id);
-        public abstract void Move(int id, int newParentId, int childIndex = -1);
-        public abstract bool TryRemoveItem(int id);
+        public abstract void Move(int id, int newParentId, int childIndex = -1, bool rebuildTree = true);
+        public abstract bool TryRemoveItem(int id, bool rebuildTree = true);
 
         internal override void InvokeMakeItem(ReusableCollectionItem reusableItem)
         {
@@ -65,7 +67,7 @@ namespace UnityEngine.UIElements
         {
             if (reusableItem is ReusableTreeViewItem treeItem)
             {
-                treeItem.Indent(GetIndentationDepth(index));
+                treeItem.Indent(GetIndentationDepthByIndex(index));
                 treeItem.SetExpandedWithoutNotify(IsExpandedByIndex(index));
                 treeItem.SetToggleVisibility(HasChildrenByIndex(index));
             }
@@ -82,6 +84,25 @@ namespace UnityEngine.UIElements
             }
 
             base.InvokeDestroyItem(reusableItem);
+        }
+
+        /// <inheritdoc />
+        protected override void BindItem(VisualElement element, int index)
+        {
+            if (treeView.bindItem == null)
+            {
+                var isMakeItemSet = treeView.makeItem != null;
+
+                if (isMakeItemSet)
+                    throw new NotImplementedException("You must specify bindItem if makeItem is specified.");
+
+                var label = (Label)element;
+                var item = GetItemForIndex(index);
+                label.text = item?.ToString() ?? "null";
+                return;
+            }
+
+            treeView.bindItem.Invoke(element, index);
         }
 
         private void OnItemPointerUp(PointerUpEvent evt)
@@ -140,7 +161,7 @@ namespace UnityEngine.UIElements
             treeView.scrollView.contentContainer.Focus();
         }
 
-        public override int GetItemCount()
+        public override int GetItemsCount()
         {
             return m_ItemWrappers?.Count ?? 0;
         }
@@ -152,12 +173,15 @@ namespace UnityEngine.UIElements
 
         public override int GetIndexForId(int id)
         {
-            for (var index = 0; index < m_ItemWrappers.Count; index++)
+            if (m_TreeItemIdsWithItemWrappers.Contains(id))
             {
-                var wrapper = m_ItemWrappers[index];
-                if (wrapper.id == id)
+                for (var index = 0; index < m_ItemWrappers.Count; index++)
                 {
-                    return index;
+                    var wrapper = m_ItemWrappers[index];
+                    if (wrapper.id == id)
+                    {
+                        return index;
+                    }
                 }
             }
 
@@ -167,6 +191,11 @@ namespace UnityEngine.UIElements
         public override int GetIdForIndex(int index)
         {
             return IsIndexValid(index) ? m_ItemWrappers[index].id : TreeItem.invalidId;
+        }
+
+        public bool Exists(int id)
+        {
+            return m_TreeItems.ContainsKey(id);
         }
 
         public virtual bool HasChildren(int id)
@@ -205,9 +234,23 @@ namespace UnityEngine.UIElements
             return -1;
         }
 
-        int GetIndentationDepth(int index)
+        public int GetIndentationDepth(int id)
         {
-            return IsIndexValid(index) ? m_ItemWrappers[index].depth : 0;
+            var depth = 0;
+            var parentId = GetParentId(id);
+            while (parentId != -1)
+            {
+                parentId = GetParentId(parentId);
+                depth++;
+            }
+
+            return depth;
+        }
+
+        public int GetIndentationDepthByIndex(int index)
+        {
+            var id = GetIdForIndex(index);
+            return GetIndentationDepth(id);
         }
 
         public bool IsExpanded(int id)
@@ -223,23 +266,27 @@ namespace UnityEngine.UIElements
             return IsExpanded(m_ItemWrappers[index].id);
         }
 
+        static readonly ProfilerMarker K_ExpandItemByIndex = new ProfilerMarker(ProfilerCategory.Scripts, "BaseTreeViewController.ExpandItemByIndex");
+
         public void ExpandItemByIndex(int index, bool expandAllChildren, bool refresh = true)
         {
+            using var marker = K_ExpandItemByIndex.Auto();
             if (!HasChildrenByIndex(index))
                 return;
 
-            if (!treeView.expandedItemIds.Contains(GetIdForIndex(index)) || expandAllChildren)
+            var id = GetIdForIndex(index);
+
+            if (!treeView.expandedItemIds.Contains(id) || expandAllChildren)
             {
                 var childrenIds = GetChildrenIdsByIndex(index);
                 var childrenIdsList = new List<int>();
                 foreach (var childId in childrenIds)
                 {
-                    if (m_ItemWrappers.All(x => x.id != childId))
+                    if (!m_TreeItemIdsWithItemWrappers.Contains(childId))
                         childrenIdsList.Add(childId);
                 }
 
-                CreateWrappers(childrenIdsList, GetIndentationDepth(index) + 1,
-                    ref m_WrapperInsertionList);
+                CreateWrappers(childrenIdsList, GetIndentationDepth(id) + 1, ref m_WrapperInsertionList);
                 m_ItemWrappers.InsertRange(index + 1, m_WrapperInsertionList);
                 if (!treeView.expandedItemIds.Contains(m_ItemWrappers[index].id))
                     treeView.expandedItemIds.Add(m_ItemWrappers[index].id);
@@ -248,7 +295,6 @@ namespace UnityEngine.UIElements
 
             if (expandAllChildren)
             {
-                var id = GetIdForIndex(index);
                 var childrenIds = GetChildrenIds(id);
                 foreach (var childId in GetAllItemIds(childrenIds))
                     if (!treeView.expandedItemIds.Contains(childId))
@@ -259,7 +305,7 @@ namespace UnityEngine.UIElements
                 treeView.RefreshItems();
         }
 
-        public void ExpandItem(int id, bool expandAllChildren)
+        public void ExpandItem(int id, bool expandAllChildren, bool refresh = true)
         {
             if (!HasChildren(id))
                 return;
@@ -269,7 +315,7 @@ namespace UnityEngine.UIElements
                 if (m_ItemWrappers[i].id == id)
                     if (expandAllChildren || !IsExpandedByIndex(i))
                     {
-                        ExpandItemByIndex(i, expandAllChildren);
+                        ExpandItemByIndex(i, expandAllChildren, refresh);
                         return;
                     }
 
@@ -296,11 +342,16 @@ namespace UnityEngine.UIElements
 
             var recursiveChildCount = 0;
             var currentIndex = index + 1;
-            var currentDepth = GetIndentationDepth(index);
-            while (currentIndex < m_ItemWrappers.Count && GetIndentationDepth(currentIndex) > currentDepth)
+            var currentDepth = GetIndentationDepthByIndex(index);
+            while (currentIndex < m_ItemWrappers.Count && GetIndentationDepthByIndex(currentIndex) > currentDepth)
             {
                 recursiveChildCount++;
                 currentIndex++;
+            }
+            var end = index + 1 + recursiveChildCount;
+            for (int i = index + 1; i < end; i++)
+            {
+                m_TreeItemIdsWithItemWrappers.Remove(m_ItemWrappers[i].id);
             }
 
             m_ItemWrappers.RemoveRange(index + 1, recursiveChildCount);
@@ -348,6 +399,7 @@ namespace UnityEngine.UIElements
         internal void RegenerateWrappers()
         {
             m_ItemWrappers.Clear();
+            m_TreeItemIdsWithItemWrappers.Clear();
 
             var rootItemIds = GetRootItemIds();
             if (rootItemIds == null)
@@ -357,12 +409,21 @@ namespace UnityEngine.UIElements
             SetItemsSourceWithoutNotify(m_ItemWrappers);
         }
 
+        static readonly ProfilerMarker k_CreateWrappers = new ProfilerMarker("BaseTreeViewController.CreateWrappers");
         void CreateWrappers(IEnumerable<int> treeViewItemIds, int depth, ref List<TreeViewItemWrapper> wrappers)
         {
+            using var marker = k_CreateWrappers.Auto();
+            if (treeViewItemIds == null || wrappers == null || m_TreeItemIdsWithItemWrappers == null)
+                return;
+
             foreach (var id in treeViewItemIds)
             {
-                var wrapper = new TreeViewItemWrapper(m_TreeItems[id], depth);
+                if (!m_TreeItems.TryGetValue(id, out var treeItem))
+                    continue;
+
+                var wrapper = new TreeViewItemWrapper(treeItem, depth);
                 wrappers.Add(wrapper);
+                m_TreeItemIdsWithItemWrappers.Add(id); 
 
                 if (treeView?.expandedItemIds == null)
                     continue;
@@ -375,6 +436,11 @@ namespace UnityEngine.UIElements
         bool IsIndexValid(int index)
         {
             return index >= 0 && index < m_ItemWrappers.Count;
+        }
+
+        internal void RaiseItemParentChanged(int id, int newParentId)
+        {
+            RaiseItemIndexChanged(id, newParentId);
         }
     }
 
@@ -390,17 +456,21 @@ namespace UnityEngine.UIElements
             RebuildTree();
         }
 
-        public void AddItem(in TreeViewItemData<T> item, int parentId, int childIndex)
+        public void AddItem(in TreeViewItemData<T> item, int parentId, int childIndex, bool rebuildTree = true)
         {
             m_TreeData.AddItem(item, parentId, childIndex);
-            RebuildTree();
+
+            if (rebuildTree)
+                RebuildTree();
         }
 
-        public override bool TryRemoveItem(int id)
+        public override bool TryRemoveItem(int id, bool rebuildTree = true)
         {
             if (m_TreeData.TryRemove(id))
             {
-                RebuildTree();
+                if (rebuildTree)
+                    RebuildTree();
+
                 return true;
             }
 
@@ -448,7 +518,7 @@ namespace UnityEngine.UIElements
             return GetItemIds(item.children);
         }
 
-        public override void Move(int id, int newParentId, int childIndex = -1)
+        public override void Move(int id, int newParentId, int childIndex = -1, bool rebuildTree = true)
         {
             if (id == newParentId)
                 return;
@@ -457,7 +527,12 @@ namespace UnityEngine.UIElements
                 return;
 
             m_TreeData.Move(id, newParentId, childIndex);
-            RaiseItemIndexChanged(GetIndexForId(id), GetIndexForId(newParentId) + childIndex + 1);
+
+            if (rebuildTree)
+            {
+                RebuildTree();
+                RaiseItemParentChanged(id, newParentId);
+            }
         }
 
         bool IsChildOf(int childId, int id)

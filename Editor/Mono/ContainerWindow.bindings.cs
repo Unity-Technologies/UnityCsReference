@@ -42,6 +42,8 @@ namespace UnityEditor
             [FreeFunction(k_ScriptingPrefix + "SetPosition", HasExplicitThis = true)] set;
         }
 
+        [FreeFunction(k_ScriptingPrefix + "SetFreeze", HasExplicitThis = true)]
+        public extern void SetFreeze(bool freeze);
         public extern bool maximized {[FreeFunction(k_ScriptingPrefix + "IsWindowMaximized", HasExplicitThis = true)] get; }
 
         [FreeFunction(k_ScriptingPrefix + "SetAlpha", HasExplicitThis = true)]
@@ -83,7 +85,7 @@ namespace UnityEditor
         [FreeFunction(k_ScriptingPrefix + "Internal_SetMinMaxSizes", HasExplicitThis = true)]
         private extern void Internal_SetMinMaxSizes(Vector2 minSize, Vector2 maxSize);
 
-        [FreeFunction(k_ScriptingPrefix + "Internal_Show", HasExplicitThis = true)]
+        [FreeFunction(k_ScriptingPrefix + "Internal_Show", HasExplicitThis = true, ThrowsException = true)]
         private extern void Internal_Show(Rect r, int showMode, Vector2 minSize, Vector2 maxSize);
 
         [FreeFunction(k_ScriptingPrefix + "Internal_BringLiveAfterCreation", HasExplicitThis = true)]

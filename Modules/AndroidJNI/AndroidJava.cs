@@ -110,7 +110,7 @@ namespace UnityEngine
                 MethodInfo methodResult = null;
                 if (NullArgs > 0)
                 {
-                    MethodInfo[] methods = this.GetType().GetMethods();
+                    MethodInfo[] methods = this.GetType().GetMethods(binderFlags);
 
                     var matches = 0;
 

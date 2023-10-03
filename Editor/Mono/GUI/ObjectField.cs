@@ -409,43 +409,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        // If obj or objType are both null, we have to rely on
-                        // property.objectReferenceStringValue to display None/Missing and the
-                        // correct type. But if not, EditorGUIUtility.ObjectContent is more reliable.
-                        // It can take a more specific object type specified as argument into account,
-                        // and it gets the icon at the same time.
-                        if (obj == null && objType == null && property != null)
-                        {
-                            temp = EditorGUIUtility.TempContent(property.objectReferenceStringValue);
-                        }
-                        else
-                        {
-                            // In order for ObjectContext to be able to distinguish between None/Missing,
-                            // we need to supply an instanceID. For some reason, getting the instanceID
-                            // from property.objectReferenceValue is not reliable, so we have to
-                            // explicitly check property.objectReferenceInstanceIDValue if a property exists.
-                            if (property != null)
-                                temp = EditorGUIUtility.ObjectContent(obj, objType, property.objectReferenceInstanceIDValue);
-                            else
-                                temp = EditorGUIUtility.ObjectContent(obj, objType);
-                        }
-
-                        if (property != null)
-                        {
-                            if (obj != null)
-                            {
-                                Object[] references = { obj };
-                                if (EditorSceneManager.preventCrossSceneReferences && CheckForCrossSceneReferencing(obj, property.serializedObject.targetObject))
-                                {
-                                    if (!EditorApplication.isPlaying)
-                                        temp = s_SceneMismatch;
-                                    else
-                                        temp.text = temp.text + string.Format(" ({0})", GetGameObjectFromObject(obj).scene.name);
-                                }
-                                else if (validator(references, objType, property, ObjectFieldValidatorOptions.ExactObjectTypeValidation) == null)
-                                    temp = s_TypeMismatch;
-                            }
-                        }
+                        temp = EditorGUIUtility.ObjectContent(obj, objType, property, validator);
                     }
 
                     switch (visualType)

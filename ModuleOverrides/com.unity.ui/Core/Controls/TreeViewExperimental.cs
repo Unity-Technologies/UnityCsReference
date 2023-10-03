@@ -199,7 +199,6 @@ namespace UnityEngine.UIElements.Experimental
             }
 
             base.SetViewController(controller);
-            RefreshItems();
 
             if (controller != null)
             {
@@ -286,7 +285,7 @@ namespace UnityEngine.UIElements.Experimental
         /// <returns>The children item identifiers.</returns>
         public IEnumerable<int> GetChildrenIdsForIndex(int index)
         {
-            return viewController.GetChildrenIdsByIndex(GetIdForIndex(index));
+            return viewController.GetChildrenIdsByIndex(index);
         }
 
         /// <summary>
@@ -351,12 +350,16 @@ namespace UnityEngine.UIElements.Experimental
         /// <param name="childIndex">The child index in the parent's children list.</param>
         /// <typeparam name="T">Type of the data inside TreeViewItemData.</typeparam>
         /// <exception cref="ArgumentException">Throws if the type does not match with the item source data type.</exception>
-        public void AddItem<T>(TreeViewItemData<T> item, int parentId = -1, int childIndex = -1)
+        public void AddItem<T>(TreeViewItemData<T> item, int parentId = -1, int childIndex = -1, bool rebuildTree = true)
         {
             if (viewController is DefaultTreeViewController<T> defaultController)
             {
-                defaultController.AddItem(item, parentId, childIndex);
-                RefreshItems();
+                defaultController.AddItem(item, parentId, childIndex, rebuildTree);
+
+                if (rebuildTree)
+                    RefreshItems();
+
+                return;
             }
 
             Type dataSourceType = null;

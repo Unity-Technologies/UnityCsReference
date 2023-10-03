@@ -234,7 +234,7 @@ namespace UnityEditor.UIElements
                 FieldDescription[] fieldDescriptions = DescribeFields();
                 foreach (var fd in fieldDescriptions)
                 {
-                    m_Fields[i].value = (fd.read(rawValue));
+                    m_Fields[i].SetValueWithoutNotify(fd.read(rawValue));
                     i++;
                 }
             }

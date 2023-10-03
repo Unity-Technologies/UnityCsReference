@@ -637,7 +637,7 @@ namespace UnityEditor
                         // We want to stay, but tell the parent (MainWindow) to Cleanup, so he can reduce us to zero-size
                         /*                  parent.RemoveChild (this);*/
                     }
-                    ic.Cleanup();
+                    ic?.Cleanup();
                 }
             }
             else

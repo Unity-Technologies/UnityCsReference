@@ -133,8 +133,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                return m_Versions.LastOrDefault(v => v.HasTag(PackageTag.PreRelease) &&
-                    (v.version?.IsHigherPreReleaseIterationOf(m_LifecycleNextVersion) == true || v.version == m_LifecycleNextVersion));
+                return m_Versions.LastOrDefault(v => v.version?.IsEqualOrPatchOf(m_LifecycleNextVersion) == true);
             }
         }
 
@@ -208,7 +207,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_InstalledIndex >= 0)
             {
                 m_Versions[m_InstalledIndex].SetInstalled(false);
-                if (m_Versions[m_InstalledIndex].installedFromPath)
+                if (m_Versions[m_InstalledIndex].HasTag(PackageTag.InstalledFromPath))
                     m_Versions.RemoveAt(m_InstalledIndex);
             }
             newVersion.SetInstalled(true);

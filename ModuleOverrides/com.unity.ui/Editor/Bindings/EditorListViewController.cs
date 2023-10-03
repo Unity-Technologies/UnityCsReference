@@ -13,14 +13,14 @@ namespace UnityEditor.UIElements.Bindings
     {
         public SerializedObjectList serializedObjectList => itemsSource as SerializedObjectList;
 
-        public override int GetItemCount()
+        public override int GetItemsCount()
         {
             return serializedObjectList?.Count ?? 0;
         }
 
         public override void AddItems(int itemCount)
         {
-            var previousCount = GetItemCount();
+            var previousCount = GetItemsCount();
             serializedObjectList.ArrayProperty.arraySize += itemCount;
             serializedObjectList.ApplyChanges();
 
@@ -42,12 +42,37 @@ namespace UnityEditor.UIElements.Bindings
             RaiseOnSizeChanged();
         }
 
+        internal override void RemoveItems(int itemCount)
+        {
+            var previousCount = GetItemsCount();
+            serializedObjectList.ArrayProperty.arraySize -= itemCount;
+
+            var indices = ListPool<int>.Get();
+            try
+            {
+                for (var i = previousCount - itemCount; i < previousCount; i++)
+                {
+                    indices.Add(i);
+                }
+
+                RaiseItemsRemoved(indices);
+            }
+            finally
+            {
+                ListPool<int>.Release(indices);
+            }
+
+            serializedObjectList.ApplyChanges();
+            RaiseOnSizeChanged();
+        }
+
         public override void RemoveItems(List<int> indices)
         {
             indices.Sort();
 
             RaiseItemsRemoved(indices);
 
+            var listCount = serializedObjectList.Count;
             for (var i = indices.Count - 1; i >= 0; i--)
             {
                 var index = indices[i];
@@ -58,7 +83,8 @@ namespace UnityEditor.UIElements.Bindings
                     index--;
                 }
 
-                serializedObjectList.RemoveAt(index);
+                serializedObjectList.RemoveAt(index, listCount);
+                listCount--;
             }
 
             serializedObjectList.ApplyChanges();

@@ -232,15 +232,12 @@ namespace UnityEditor
 
         internal static void ForceClose()
         {
-            if (s_guiView == null || s_guiView.window == null) { return; }
-            s_guiView.window.Close();
+            s_guiView?.window?.Close();
         }
 
         public static void SetAlpha(float percent)
         {
-            if (s_guiView == null) { return; }
-
-            s_guiView.window.SetAlpha(percent);
+            s_guiView?.window?.SetAlpha(percent);
         }
 
         void ValidateCloseRequest(Event currentEvent, bool keepDynamicHintRegardlessOfMousePosition)

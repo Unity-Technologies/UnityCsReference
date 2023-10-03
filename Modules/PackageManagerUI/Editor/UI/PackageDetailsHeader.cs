@@ -97,7 +97,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshVersionLabel();
             RefreshVersionInfoIcon();
             RefreshName();
-            RefreshRegistry();
+            RefreshDetailRegistryContainer();
 
             RefreshEmbeddedFeatureSetWarningBox();
         }
@@ -351,11 +351,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(versionInfoIcon, false);
         }
 
-        private void RefreshRegistry()
+        private void RefreshDetailRegistryContainer()
         {
             var registry = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString)?.registry;
-            var showRegistry = registry != null && !m_Package.Is(PackageType.AssetStore);
+            var isByUnity = registry?.isDefault == true && !m_Version.HasTag(PackageTag.InstalledFromPath);
+            var showRegistry = registry != null && (isByUnity || !string.IsNullOrEmpty(registry?.name)) && !m_Package.Is(PackageType.AssetStore);
             UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
+
+            if (showRegistry)
+            {
+                detailRegistryName.text = isByUnity ? "Unity" : registry.name;
+                detailRegistryName.tooltip = registry.url;
+            }
+
+            RefreshScopedRegistryInfoBox(showRegistry, registry);
+        }
+
+        private void RefreshScopedRegistryInfoBox(bool showRegistry, RegistryInfo registry)
+        {
+            UIUtils.SetElementDisplay(scopedRegistryInfoBox, showRegistry);
 
             if (m_Version.HasTag(PackageTag.Experimental))
             {
@@ -376,8 +390,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ScopedRegistry];
                 UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
-                detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
-                detailRegistryName.tooltip = registry.url;
             }
         }
 

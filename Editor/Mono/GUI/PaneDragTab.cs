@@ -144,6 +144,9 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
+            if (!m_Window)
+                return;
+
             if (Event.current.type != EventType.Repaint)
                 return;
 

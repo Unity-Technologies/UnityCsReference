@@ -113,22 +113,30 @@ namespace UnityEditor
 
         internal void ShowPopupWithMode(ShowMode mode, bool giveFocus)
         {
-            if (mode == ShowMode.MainWindow)
-                throw new ArgumentException("Cannot create more than one main window.");
+            try
+            {
+                if (mode == ShowMode.MainWindow)
+                    throw new ArgumentException("Cannot create more than one main window.");
 
-            m_ShowMode = (int)mode;
-            Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize);
-            if (m_RootView)
-                m_RootView.SetWindowRecurse(this);
-            Internal_SetTitle(m_Title);
-            Save();
-            //  only set focus if mode is a popupMenu.
-            Internal_BringLiveAfterCreation(true, giveFocus, false);
+                m_ShowMode = (int)mode;
+                Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize);
+                if (m_RootView)
+                    m_RootView.SetWindowRecurse(this);
+                Internal_SetTitle(m_Title);
+                Save();
+                //  only set focus if mode is a popupMenu.
+                Internal_BringLiveAfterCreation(true, giveFocus, false);
 
-            // Fit window to screen - needs to be done after bringing the window live
-            position = FitWindowRectToScreen(m_PixelRect, true, false);
-            rootView.position = new Rect(0, 0, GUIUtility.RoundToPixelGrid(m_PixelRect.width), GUIUtility.RoundToPixelGrid(m_PixelRect.height));
-            rootView.Reflow();
+                // Fit window to screen - needs to be done after bringing the window live
+                position = FitWindowRectToScreen(m_PixelRect, true, false);
+                rootView.position = new Rect(0, 0, GUIUtility.RoundToPixelGrid(m_PixelRect.width), GUIUtility.RoundToPixelGrid(m_PixelRect.height));
+                rootView.Reflow();
+            }
+            catch
+            {
+                DestroyImmediate(this, true);
+                throw;
+            }
         }
 
         private static readonly Color lightSkinColor = new Color(0.541f, 0.541f, 0.541f, 1.0f);
@@ -138,59 +146,67 @@ namespace UnityEditor
         // Show the editor window.
         public void Show(ShowMode showMode, bool loadPosition, bool displayImmediately, bool setFocus)
         {
-            if (showMode == ShowMode.MainWindow && s_MainWindow && s_MainWindow != this)
-                throw new InvalidOperationException("Trying to create a second main window from layout when one already exists.");
+            try
+            {
+                if (showMode == ShowMode.MainWindow && s_MainWindow && s_MainWindow != this)
+                    throw new InvalidOperationException("Trying to create a second main window from layout when one already exists.");
 
-            bool useMousePos = showMode == ShowMode.AuxWindow;
-            if (showMode == ShowMode.AuxWindow)
-                showMode = ShowMode.Utility;
+                bool useMousePos = showMode == ShowMode.AuxWindow;
+                if (showMode == ShowMode.AuxWindow)
+                    showMode = ShowMode.Utility;
 
-            if (showMode == ShowMode.Utility
-                || showMode == ShowMode.ModalUtility
-                || showMode == ShowMode.AuxWindow
-                || IsPopup(showMode))
-                m_DontSaveToLayout = true;
+                if (showMode == ShowMode.Utility
+                    || showMode == ShowMode.ModalUtility
+                    || showMode == ShowMode.AuxWindow
+                    || IsPopup(showMode))
+                    m_DontSaveToLayout = true;
 
-            m_ShowMode = (int)showMode;
+                m_ShowMode = (int)showMode;
 
-            // Load previous position/size
-            if (!isPopup)
-                Load(loadPosition);
-            if (useMousePos)
-                LoadInCurrentMousePosition();
+                // Load previous position/size
+                if (!isPopup)
+                    Load(loadPosition);
+                if (useMousePos)
+                    LoadInCurrentMousePosition();
 
-            var initialMaximizedState = m_Maximized;
+                var initialMaximizedState = m_Maximized;
 
-            Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize);
+                Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize);
 
-            // Tell the main view its now in this window (quick hack to get platform-specific code to move its views to the right window)
-            if (m_RootView)
-                m_RootView.SetWindowRecurse(this);
+                // Tell the main view its now in this window (quick hack to get platform-specific code to move its views to the right window)
+                if (m_RootView)
+                    m_RootView.SetWindowRecurse(this);
 
-            Internal_SetTitle(m_Title);
+                Internal_SetTitle(m_Title);
 
-            SetBackgroundColor(skinBackgroundColor);
+                SetBackgroundColor(skinBackgroundColor);
 
-            Internal_BringLiveAfterCreation(displayImmediately, setFocus, initialMaximizedState);
+                Internal_BringLiveAfterCreation(displayImmediately, setFocus, initialMaximizedState);
 
-            // Window could be killed by now in user callbacks...
-            if (!this)
-                return;
+                // Window could be killed by now in user callbacks...
+                if (!this)
+                    return;
 
-            if (showMode == ShowMode.MainWindow)
-                s_MainWindow = this;
+                if (showMode == ShowMode.MainWindow)
+                    s_MainWindow = this;
 
-            // Fit window to screen - needs to be done after bringing the window live
-            position = FitWindowRectToScreen(m_PixelRect, true, useMousePos);
-            rootView.position = new Rect(0, 0, GUIUtility.RoundToPixelGrid(m_PixelRect.width), GUIUtility.RoundToPixelGrid(m_PixelRect.height));
+                // Fit window to screen - needs to be done after bringing the window live
+                position = FitWindowRectToScreen(m_PixelRect, true, useMousePos);
+                rootView.position = new Rect(0, 0, GUIUtility.RoundToPixelGrid(m_PixelRect.width), GUIUtility.RoundToPixelGrid(m_PixelRect.height));
 
-            rootView.Reflow();
+                rootView.Reflow();
 
-            // save position right away
-            Save();
+                // save position right away
+                Save();
 
-            // Restore the initial maximized state since Internal_BringLiveAfterCreation might not be reflected right away and Save() might alter it.
-            m_Maximized = initialMaximizedState;
+                // Restore the initial maximized state since Internal_BringLiveAfterCreation might not be reflected right away and Save() might alter it.
+                m_Maximized = initialMaximizedState;
+            }
+            catch
+            {
+                DestroyImmediate(this, true);
+                throw;
+            }
         }
 
         public void OnEnable()

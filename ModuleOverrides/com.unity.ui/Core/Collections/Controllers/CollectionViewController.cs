@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements
             {
                 if (m_ItemsSource == value)
                     return;
+
                 m_ItemsSource = value;
                 RaiseItemsSourceChanged();
             }
@@ -42,7 +43,7 @@ namespace UnityEngine.UIElements
             Assert.IsNotNull(m_View, "View must not be null.");
         }
 
-        public virtual int GetItemCount()
+        public virtual int GetItemsCount()
         {
             return m_ItemsSource?.Count ?? 0;
         }
@@ -99,7 +100,7 @@ namespace UnityEngine.UIElements
             return m_View.makeItem.Invoke();
         }
 
-        public virtual void BindItem(VisualElement element, int index)
+        protected virtual void BindItem(VisualElement element, int index)
         {
             if (m_View.bindItem == null)
             {

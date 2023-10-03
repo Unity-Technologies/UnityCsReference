@@ -147,6 +147,8 @@ namespace UnityEngine.UIElements
             UxmlFloatAttributeDescription m_Elasticity = new UxmlFloatAttributeDescription
             { name = "elasticity", defaultValue = k_DefaultElasticity };
 
+            UxmlLongAttributeDescription m_ElasticAnimationIntervalMs = new UxmlLongAttributeDescription
+                { name = "elastic-animation-interval-ms", defaultValue = k_DefaultElasticAnimationInterval };
 
             /// <summary>
             /// Initialize <see cref="ScrollView"/> properties using values from the attribute bag.
@@ -183,8 +185,14 @@ namespace UnityEngine.UIElements
                 scrollView.scrollDecelerationRate = m_ScrollDecelerationRate.GetValueFromBag(bag, cc);
                 scrollView.touchScrollBehavior = m_TouchScrollBehavior.GetValueFromBag(bag, cc);
                 scrollView.elasticity = m_Elasticity.GetValueFromBag(bag, cc);
+                scrollView.elasticAnimationIntervalMs = m_ElasticAnimationIntervalMs.GetValueFromBag(bag, cc);
             }
         }
+
+        // ScrollViews can take more than 3 passes to stabilize. This can be the case when a scrollview contains elements with height bound to their width (e.g label with wrapped text).
+        // Beyond 5 passes, we assume that the layout may never be stabilized then we stop updating the visibility of the scrollers.
+        private const int k_MaxLocalLayoutPassCount = 5;
+        private int m_FirstLayoutPass = -1; // The layout pass when the first geometry changed occurred. It may not be layoutPass = 0, which could occur when you have nested ScrollViews.
 
         ScrollerVisibility m_HorizontalScrollerVisibility;
 
@@ -463,6 +471,26 @@ namespace UnityEngine.UIElements
             set => m_NestedInteractionKind = value;
         }
 
+        static readonly long k_DefaultElasticAnimationInterval = 16;
+        long m_ElasticAnimationIntervalMs = k_DefaultElasticAnimationInterval;
+
+        /// <summary>
+        /// Specifies the minimum amount of time in milliseconds between each elastic spring animation execution.
+        /// </summary>
+        public long elasticAnimationIntervalMs
+        {
+            get { return m_ElasticAnimationIntervalMs; }
+            set
+            {
+                var previous = m_ElasticAnimationIntervalMs;
+                m_ElasticAnimationIntervalMs = value;
+                if (previous != m_ElasticAnimationIntervalMs)
+                {
+                    m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(m_ElasticAnimationIntervalMs);
+                }
+            }
+        }
+
         void OnHorizontalScrollDragElementChanged(GeometryChangedEvent evt)
         {
             if (evt.oldRect.size == evt.newRect.size)
@@ -523,7 +551,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void UpdateContentViewTransform()
+        internal void UpdateContentViewTransform()
         {
             // Adjust contentContainer's position
             var t = contentContainer.transform.position;
@@ -855,6 +883,9 @@ namespace UnityEngine.UIElements
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
+            m_ScheduledLayoutPassResetItem?.Pause();
+            ResetLayoutPass();
+
             if (evt.originPanel == null)
             {
                 return;
@@ -911,16 +942,43 @@ namespace UnityEngine.UIElements
             bool needsVerticalCached = needsVertical;
             bool needsHorizontalCached = needsHorizontal;
 
-            // Here, we allow the removal of the scrollbar only in the first layout pass.
-            // Addition is always allowed.
-            if (evt.layoutPass > 0)
+            if (m_FirstLayoutPass == -1)
+                m_FirstLayoutPass = evt.layoutPass;
+            else
             {
-                needsVerticalCached = needsVerticalCached || isVerticalScrollDisplayed;
-                needsHorizontalCached = needsHorizontalCached || isHorizontalScrollDisplayed;
+                // Here, we update the visibility of the scrollbars for only few layout pass.
+                // Exceeding this limit could suggest that the layout will never be stabilized if we keep showing/hiding the scrollbars.
+                if ((evt.layoutPass - m_FirstLayoutPass) > k_MaxLocalLayoutPassCount)
+                {
+                    needsVerticalCached = needsVerticalCached || isVerticalScrollDisplayed;
+                    needsHorizontalCached = needsHorizontalCached || isHorizontalScrollDisplayed;
+                }
             }
 
             UpdateScrollers(needsHorizontalCached, needsVerticalCached);
             UpdateContentViewTransform();
+            ScheduleResetLayoutPass();
+        }
+
+        private IVisualElementScheduledItem m_ScheduledLayoutPassResetItem;
+
+        void ScheduleResetLayoutPass()
+        {
+            // Reset the cached layout pass information in the next frame.
+            if (m_ScheduledLayoutPassResetItem == null)
+            {
+                m_ScheduledLayoutPassResetItem = schedule.Execute(ResetLayoutPass);
+            }
+            else
+            {
+                m_ScheduledLayoutPassResetItem.Pause();
+                m_ScheduledLayoutPassResetItem.Resume();
+            }
+        }
+
+        void ResetLayoutPass()
+        {
+            m_FirstLayoutPass = -1;
         }
 
         private int m_ScrollingPointerId = PointerId.invalidPointerId;
@@ -938,7 +996,9 @@ namespace UnityEngine.UIElements
         VisualElement m_CapturedTarget;
         EventCallback<PointerMoveEvent> m_CapturedTargetPointerMoveCallback;
         EventCallback<PointerUpEvent> m_CapturedTargetPointerUpCallback;
-        private IVisualElementScheduledItem m_PostPointerUpAnimation;
+
+        // Internal for tests
+        internal IVisualElementScheduledItem m_PostPointerUpAnimation;
 
         // Compute the new scroll view offset from a pointer delta, taking elasticity into account.
         // Low and high limits are the values beyond which the scrollview starts to show resistance to scrolling (elasticity).
@@ -1354,20 +1414,25 @@ namespace UnityEngine.UIElements
 
             if (touchScrollBehavior == TouchScrollBehavior.Elastic || hasInertia)
             {
-                ComputeInitialSpringBackVelocity();
-
-                if (m_PostPointerUpAnimation == null)
-                {
-                    m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(30);
-                }
-                else
-                {
-                    m_PostPointerUpAnimation.Resume();
-                }
+                ExecuteElasticSpringAnimation();
             }
 
             contentContainer.ReleasePointer(pointerId);
             return true;
+        }
+
+        void ExecuteElasticSpringAnimation()
+        {
+            ComputeInitialSpringBackVelocity();
+
+            if (m_PostPointerUpAnimation == null)
+            {
+                m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(m_ElasticAnimationIntervalMs);
+            }
+            else
+            {
+                m_PostPointerUpAnimation.Resume();
+            }
         }
 
         void AdjustScrollers()
@@ -1407,16 +1472,6 @@ namespace UnityEngine.UIElements
             verticalScroller.highValue = scrollableHeight;
             horizontalScroller.lowValue = 0f;
             horizontalScroller.highValue = scrollableWidth;
-
-            if (!needsVertical || !(scrollableHeight > 0f))
-            {
-                verticalScroller.value = 0f;
-            }
-
-            if (!needsHorizontal || !(scrollableWidth > 0f))
-            {
-                horizontalScroller.value = 0f;
-            }
         }
 
         private void OnScrollersGeometryChanged(GeometryChangedEvent evt)
@@ -1428,7 +1483,7 @@ namespace UnityEngine.UIElements
 
             var newShowHorizontal = needsHorizontal && m_HorizontalScrollerVisibility != ScrollerVisibility.Hidden;
 
-            // Add some space if both scrollers are visible
+            // Align the right side of the horizontal scroller with the left side of the vertical scroller.
             if (newShowHorizontal)
             {
                 horizontalScroller.style.marginRight = verticalScroller.layout.width;
@@ -1471,7 +1526,22 @@ namespace UnityEngine.UIElements
             }
 
             if (updateContentViewTransform)
+            {
+                // Update elastic behavior
+                if (touchScrollBehavior == TouchScrollBehavior.Elastic)
+                {
+                    m_LowBounds = new Vector2(
+                        Mathf.Min(horizontalScroller.lowValue, horizontalScroller.highValue),
+                        Mathf.Min(verticalScroller.lowValue, verticalScroller.highValue));
+                    m_HighBounds = new Vector2(
+                        Mathf.Max(horizontalScroller.lowValue, horizontalScroller.highValue),
+                        Mathf.Max(verticalScroller.lowValue, verticalScroller.highValue));
+
+                    ExecuteElasticSpringAnimation();
+                }
+
                 UpdateContentViewTransform();
+            }
         }
 
         void OnRootCustomStyleResolved(CustomStyleResolvedEvent evt)

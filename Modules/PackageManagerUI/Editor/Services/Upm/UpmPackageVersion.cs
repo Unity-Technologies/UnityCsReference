@@ -82,8 +82,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_IsInstalled;
         public override bool isInstalled => m_IsInstalled;
 
-        public bool installedFromPath => HasTag(PackageTag.Local | PackageTag.Custom | PackageTag.Git);
-
         public override bool isAvailableOnDisk => m_IsFullyFetched && !string.IsNullOrEmpty(m_ResolvedPath);
 
         [SerializeField]
@@ -142,7 +140,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 m_DisplayName = GetDisplayName(packageInfo);
                 m_PackageId = packageInfo.packageId;
-                if (installedFromPath)
+                if (HasTag(PackageTag.InstalledFromPath))
                     m_PackageId = m_PackageId.Replace("\\", "/");
 
                 ProcessErrors(packageInfo);
@@ -224,7 +222,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_Tag |= PackageTag.Unity;
 
             m_Tag |= PackageTag.Installable | PackageTag.Removable;
-            if (isInstalled && isDirectDependency && !installedFromPath && !HasTag(PackageTag.BuiltIn))
+            if (isInstalled && isDirectDependency && !HasTag(PackageTag.InstalledFromPath) && !HasTag(PackageTag.BuiltIn))
                 m_Tag |= PackageTag.Embeddable;
 
             // lifecycle tags should not apply to scoped registry packages

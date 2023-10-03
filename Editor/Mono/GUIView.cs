@@ -48,7 +48,17 @@ namespace UnityEditor
         {
             ContainerWindow oldWindow = this.window;
             base.SetWindow(win); // Sets this.window(m_Window) to win
-            Internal_Init(m_DepthBufferBits, m_AntiAliasing);
+
+            try
+            {
+                Internal_Init(m_DepthBufferBits, m_AntiAliasing);
+            }
+            catch
+            {
+                parent?.RemoveChild(this);
+                throw;
+            }
+
             if (!win)
             {
                 // Tell the native ContainerWindow we were attached to that we

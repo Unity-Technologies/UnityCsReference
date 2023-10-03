@@ -22,16 +22,14 @@ namespace UnityEngine.UIElements
 
         // Used in tests
         internal bool isRegistered => m_IsRegistered;
+        internal DragState dragState => m_DragState;
 
-        private const int k_DistanceToActivation = 5;
-
-        // Need to store the args here for player, since we won't have access to DragAndDropUtility methods.
-        internal DefaultDragAndDropClient dragAndDropClient;
-        internal virtual bool supportsDragEvents => true;
+        protected virtual bool supportsDragEvents => true;
 
         internal bool useDragEvents => isEditorContext && supportsDragEvents;
+        protected IDragAndDrop dragAndDrop => DragAndDropUtility.GetDragAndDrop(m_Target.panel);
 
-        bool isEditorContext
+        internal virtual bool isEditorContext
         {
             get
             {
@@ -67,6 +65,7 @@ namespace UnityEngine.UIElements
             m_Target.RegisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent);
             m_Target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
             m_Target.RegisterCallback<PointerCancelEvent>(OnPointerCancelEvent);
+            m_Target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCapturedOut);
 
             m_Target.RegisterCallback<DragUpdatedEvent>(OnDragUpdate);
             m_Target.RegisterCallback<DragPerformEvent>(OnDragPerformEvent);
@@ -91,6 +90,7 @@ namespace UnityEngine.UIElements
             m_Target.UnregisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent);
             m_Target.UnregisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
             m_Target.UnregisterCallback<PointerCancelEvent>(OnPointerCancelEvent);
+            m_Target.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCapturedOut);
             m_Target.UnregisterCallback<DragUpdatedEvent>(OnDragUpdate);
             m_Target.UnregisterCallback<DragPerformEvent>(OnDragPerformEvent);
             m_Target.UnregisterCallback<DragExitedEvent>(OnDragExitedEvent);
@@ -103,11 +103,13 @@ namespace UnityEngine.UIElements
         }
 
         protected abstract bool CanStartDrag(Vector3 pointerPosition);
-        protected abstract StartDragArgs StartDrag(Vector3 pointerPosition);
-        protected abstract DragVisualMode UpdateDrag(Vector3 pointerPosition);
 
-        protected abstract void OnDrop(Vector3 pointerPosition);
-        protected abstract void ClearDragAndDropUI();
+        // Internal for tests.
+        protected internal abstract StartDragArgs StartDrag(Vector3 pointerPosition);
+        protected internal abstract void UpdateDrag(Vector3 pointerPosition);
+        protected internal abstract void OnDrop(Vector3 pointerPosition);
+
+        protected abstract void ClearDragAndDropUI(bool dragCancelled);
 
         private void OnPointerDownEvent(PointerDownEvent evt)
         {
@@ -129,30 +131,46 @@ namespace UnityEngine.UIElements
 
         internal void OnPointerUpEvent(PointerUpEvent evt)
         {
-            if (!useDragEvents)
+            if (!useDragEvents && m_DragState == DragState.Dragging)
             {
-                if (m_DragState == DragState.Dragging)
-                {
-                    m_Target.ReleasePointer(evt.pointerId);
-                    OnDrop(evt.position);
-                    ClearDragAndDropUI();
-                    evt.StopPropagation();
-                }
+                var target = GetDropTarget(evt.position) ?? this;
+                target.UpdateDrag(evt.position);
+                target.OnDrop(evt.position);
+                target.ClearDragAndDropUI(false);
+                evt.StopPropagation();
             }
 
+            m_Target.ReleasePointer(evt.pointerId);
+            ClearDragAndDropUI(m_DragState == DragState.Dragging);
+            dragAndDrop.DragCleanup();
             m_DragState = DragState.None;
         }
 
         private void OnPointerLeaveEvent(PointerLeaveEvent evt)
         {
-            if (evt.target == m_Target)
-                ClearDragAndDropUI();
+            ClearDragAndDropUI(false);
         }
 
         void OnPointerCancelEvent(PointerCancelEvent evt)
         {
             if (!useDragEvents)
-                ClearDragAndDropUI();
+                ClearDragAndDropUI(true);
+
+            m_Target.ReleasePointer(evt.pointerId);
+            ClearDragAndDropUI(m_DragState == DragState.Dragging);
+            dragAndDrop.DragCleanup();
+            m_DragState = DragState.None;
+        }
+
+        private void OnPointerCapturedOut(PointerCaptureOutEvent evt)
+        {
+            // Whenever the pointer is captured by another element, like a text input, we should reset the drag state.
+            if (!useDragEvents)
+                ClearDragAndDropUI(true);
+
+            ClearDragAndDropUI(m_DragState == DragState.Dragging);
+            dragAndDrop.DragCleanup();
+            m_DragState = DragState.None;
         }
 
         private void OnDragExitedEvent(DragExitedEvent evt)
@@ -160,7 +178,16 @@ namespace UnityEngine.UIElements
             if (!useDragEvents)
                 return;
 
-            ClearDragAndDropUI();
+            var view = evt.target as BaseVerticalCollectionView;
+            view?.dragger?.ClearDragAndDropUI(false);
+
+            var target = GetDropTarget(evt.mousePosition);
+            if (target != null && target != view?.dragger)
+            {
+                target.ClearDragAndDropUI(false);
+            }
+
+            evt.StopPropagation();
         }
 
         private void OnDragPerformEvent(DragPerformEvent evt)
@@ -169,10 +196,12 @@ namespace UnityEngine.UIElements
                 return;
 
             m_DragState = DragState.None;
-            OnDrop(evt.mousePosition);
+            var target = GetDropTarget(evt.mousePosition);
+            target?.OnDrop(evt.mousePosition);
+            target?.ClearDragAndDropUI(false);
 
-            ClearDragAndDropUI();
-            DragAndDropUtility.dragAndDrop.AcceptDrag();
+            m_Target.ReleasePointer(PointerId.mousePointerId);
+            evt.StopPropagation();
         }
 
         private void OnDragUpdate(DragUpdatedEvent evt)
@@ -180,54 +209,77 @@ namespace UnityEngine.UIElements
             if (!useDragEvents)
                 return;
 
-            var visualMode = UpdateDrag(evt.mousePosition);
-            DragAndDropUtility.dragAndDrop.SetVisualMode(visualMode);
+            var target = GetDropTarget(evt.mousePosition);
+            target?.UpdateDrag(evt.mousePosition);
+            if (target != this)
+            {
+                ClearDragAndDropUI(false);
+            }
+
+            evt.StopPropagation();
         }
 
 
         private void OnPointerMoveEvent(PointerMoveEvent evt)
         {
-            if (useDragEvents)
-            {
-                if (m_DragState != DragState.CanStartDrag)
-                    return;
-            }
-            else
-            {
-                if (m_DragState == DragState.Dragging)
-                {
-                    UpdateDrag(evt.position);
-                    return;
-                }
+            if (evt.isHandledByDraggable)
+                return;
 
-                if (m_DragState != DragState.CanStartDrag)
-                    return;
+            if (!useDragEvents && m_DragState == DragState.Dragging)
+            {
+                var target = GetDropTarget(evt.position) ?? this;
+                target.UpdateDrag(evt.position);
+                return;
             }
 
-            if (Mathf.Abs(m_Start.x - evt.position.x) > k_DistanceToActivation ||
-                Mathf.Abs(m_Start.y - evt.position.y) > k_DistanceToActivation)
+            // Ignore moves if we're not on the target that started drag.
+            if (m_DragState != DragState.CanStartDrag)
+                return;
+
+            var delta = m_Start - evt.position;
+            if (delta.sqrMagnitude >= ScrollView.ScrollThresholdSquared)
             {
                 var startDragArgs = StartDrag(m_Start);
 
-                if (useDragEvents)
+                if (!useDragEvents)
                 {
-                    // Drag can only be started by mouse events or else it will throw an error, so we leave early.
-                    if (Event.current.type != EventType.MouseDown && Event.current.type != EventType.MouseDrag)
-                        return;
-
-                    DragAndDropUtility.dragAndDrop.StartDrag(startDragArgs);
+                    if (supportsDragEvents)
+                    {
+                        dragAndDrop.StartDrag(startDragArgs, evt.position);
+                    }
                 }
-                else // Force default drag and drop client for runtime panels.
+                // Drag can only be started by mouse events or else it will throw an error, so we leave early.
+                else if (Event.current != null && Event.current.type != EventType.MouseDown && Event.current.type != EventType.MouseDrag)
                 {
-                    m_Target.CapturePointer(evt.pointerId);
-                    evt.StopPropagation();
-
-                    dragAndDropClient = new DefaultDragAndDropClient();
-                    dragAndDropClient.StartDrag(startDragArgs);
+                    return;
+                }
+                else
+                {
+                    dragAndDrop.StartDrag(startDragArgs, evt.position);
                 }
 
                 m_DragState = DragState.Dragging;
+                m_Target.CapturePointer(evt.pointerId);
+                evt.isHandledByDraggable = true;
+                evt.StopPropagation();
             }
+        }
+
+        DragEventsProcessor GetDropTarget(Vector2 position)
+        {
+            DragEventsProcessor target = null;
+            if (m_Target.worldBound.Contains(position))
+            {
+                target = this;
+            }
+            else if (supportsDragEvents)
+            {
+                var leafTarget = m_Target.elementPanel.Pick(position);
+                var targetView = leafTarget?.GetFirstOfType<BaseVerticalCollectionView>();
+                target = targetView?.dragger;
+            }
+
+            return target;
         }
     }
 }

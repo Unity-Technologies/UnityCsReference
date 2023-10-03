@@ -47,11 +47,24 @@ namespace UnityEngine.UIElements
         DynamicHeight,
     }
 
+    [Serializable]
+    class SerializedVirtualizationData
+    {
+        public Vector2 scrollOffset;
+        public int firstVisibleIndex;
+        public float contentPadding;
+        public float contentHeight;
+        public int anchoredItemIndex;
+        public float anchorOffset;
+    }
+
     /// <summary>
     /// Base class for controls that display virtualized vertical content inside a scroll view.
     /// </summary>
     public abstract class BaseVerticalCollectionView : BindableElement, ISerializationCallbackReceiver
     {
+        internal const string internalBindingKey = "__unity-collection-view-internal-binding";
+
         /// <summary>
         /// Obsolete. Use <see cref="BaseVerticalCollectionView.onItemsChosen"/> instead.
         /// </summary>
@@ -141,8 +154,11 @@ namespace UnityEngine.UIElements
             get => m_MakeItem;
             set
             {
-                m_MakeItem = value;
-                Rebuild();
+                if (value != m_MakeItem)
+                {
+                    m_MakeItem = value;
+                    Rebuild();
+                }
             }
         }
 
@@ -160,8 +176,11 @@ namespace UnityEngine.UIElements
             get => m_BindItem;
             set
             {
-                m_BindItem = value;
-                RefreshItems();
+                if (value != m_BindItem)
+                {
+                    m_BindItem = value;
+                    RefreshItems();
+                }
             }
         }
 
@@ -250,7 +269,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         public IEnumerable<int> selectedIndices => m_SelectedIndices;
 
-        internal List<int> currentSelectionIds => m_SelectedIds;
+        [SerializeField]
+        internal SerializedVirtualizationData serializedVirtualizationData = new SerializedVirtualizationData();
+
+        internal List<int> selectedIds => m_SelectedIds;
 
         static readonly List<ReusableCollectionItem> k_EmptyItems = new List<ReusableCollectionItem>();
         internal IEnumerable<ReusableCollectionItem> activeItems => m_VirtualizationController?.activeItems ?? k_EmptyItems;
@@ -302,14 +324,6 @@ namespace UnityEngine.UIElements
             get => m_Dragger?.dragAndDropController?.enableReordering ?? false;
             set
             {
-                if (m_Dragger?.dragAndDropController == null)
-                {
-                    if (value)
-                        InitializeDragAndDropController();
-
-                    return;
-                }
-
                 var controller = m_Dragger.dragAndDropController;
                 if (controller != null && controller.enableReordering != value)
                 {
@@ -358,7 +372,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static readonly int s_DefaultItemHeight = 30;
+        internal static readonly int s_DefaultItemHeight = 22;
         internal float m_FixedItemHeight = s_DefaultItemHeight;
         internal bool m_ItemHeightIsInline;
         CollectionVirtualizationMethod m_VirtualizationMethod;
@@ -522,7 +536,7 @@ namespace UnityEngine.UIElements
             return new ListViewDragger(this);
         }
 
-        internal void InitializeDragAndDropController()
+        internal void InitializeDragAndDropController(bool enableReordering)
         {
             if (m_Dragger != null)
             {
@@ -533,6 +547,10 @@ namespace UnityEngine.UIElements
 
             m_Dragger = CreateDragger();
             m_Dragger.dragAndDropController = CreateDragAndDropController();
+            if (m_Dragger.dragAndDropController == null)
+                return;
+
+            m_Dragger.dragAndDropController.enableReordering = enableReordering;
         }
 
         internal abstract ICollectionDragAndDropController CreateDragAndDropController();
@@ -587,6 +605,14 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public static readonly string dragHoverBarUssClassName = ussClassName + "__drag-hover-bar";
         /// <summary>
+        /// The USS class name of the drag hover circular marker used to indicate depth.
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to the bar that appears when the user drags an item in the list. Any styling applied to this class affects
+        /// every BaseVerticalCollectionView located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
+        public static readonly string dragHoverMarkerUssClassName = ussClassName + "__drag-hover-marker";
+        /// <summary>
         /// The USS class name applied to an item element on drag hover.
         /// </summary>
         /// <remarks>
@@ -609,7 +635,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// Unity adds this USS class to every odd-numbered item in the BaseVerticalCollectionView when the
-        /// <see cref="BaseVerticalCollectionView.showAlternatingRowBackground"/> property is set to <c>ContentOnly</c> or <c>All</c>.
+        /// <see cref="BaseVerticalCollectionView.showAlternatingRowBackgrounds"/> property is set to <c>ContentOnly</c> or <c>All</c>.
         /// When the <c>showAlternatingRowBackground</c> property is set to either of those values, odd-numbered items
         /// are displayed with a different background color than even-numbered items. This USS class is used to differentiate
         /// odd-numbered items from even-numbered items. When the <c>showAlternatingRowBackground</c> property is set to
@@ -625,7 +651,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public static readonly string listScrollViewUssClassName = ussClassName + "__scroll-view";
 
-        internal static readonly string backgroundFillUssClassName = ussClassName + "__background";
+        internal static readonly string backgroundFillUssClassName = ussClassName + "__background-fill";
 
         /// <summary>
         /// Creates a <see cref="BaseVerticalCollectionView"/> with all default properties.
@@ -639,11 +665,10 @@ namespace UnityEngine.UIElements
             m_ScrollOffset = Vector2.zero;
 
             m_ScrollView = new ScrollView();
-            m_ScrollView.viewDataKey = "list-view__scroll-view";
             m_ScrollView.AddToClassList(listScrollViewUssClassName);
             m_ScrollView.verticalScroller.valueChanged += v => OnScroll(new Vector2(0, v));
 
-            RegisterCallback<GeometryChangedEvent>(OnSizeChanged);
+            m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnSizeChanged);
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
 
             m_ScrollView.contentContainer.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -660,6 +685,8 @@ namespace UnityEngine.UIElements
 
             m_ItemIndexChangedCallback = OnItemIndexChanged;
             m_ItemsSourceChangedCallback = OnItemsSourceChanged;
+
+            InitializeDragAndDropController(false);
         }
 
         /// <summary>
@@ -692,7 +719,7 @@ namespace UnityEngine.UIElements
         /// <returns>The TreeView item's root element.</returns>
         public VisualElement GetRootElementForId(int id)
         {
-            return activeItems.FirstOrDefault(t => t.id == id)?.GetRootElement();
+            return activeItems.FirstOrDefault(t => t.id == id)?.rootElement;
         }
 
         /// <summary>
@@ -717,18 +744,12 @@ namespace UnityEngine.UIElements
         void OnItemIndexChanged(int srcIndex, int dstIndex)
         {
             itemIndexChanged?.Invoke(srcIndex, dstIndex);
-            if (!(binding is IInternalListViewBinding))
-                RefreshItems();
-            else
-                schedule.Execute(RefreshItems).ExecuteLater(100);
+            RefreshItems();
         }
 
         void OnItemsSourceChanged()
         {
             itemsSourceChanged?.Invoke();
-            // When bound, the ListViewBinding class takes care of refreshing when the array size is updated.
-            if (!(binding is IInternalListViewBinding))
-                RefreshItems();
         }
 
         /// <summary>
@@ -741,6 +762,7 @@ namespace UnityEngine.UIElements
             {
                 if (recycledItem.index == index)
                 {
+                    viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                     viewController.InvokeBindItem(recycledItem, recycledItem.index);
                     break;
                 }
@@ -868,9 +890,9 @@ namespace UnityEngine.UIElements
             virtualizationController.OnScroll(offset);
         }
 
-        private void Resize(Vector2 size, int layoutPass = -1)
+        private void Resize(Vector2 size)
         {
-            virtualizationController.Resize(size, layoutPass);
+            virtualizationController.Resize(size);
             m_LastHeight = size.y;
             virtualizationController.UpdateBackground();
         }
@@ -1144,10 +1166,24 @@ namespace UnityEngine.UIElements
 
                     break;
                 case 2:
-                    if (onItemsChosen != null)
+                    if (onItemsChosen == null)
+                        return;
+
+                    var wasClickedIndexInSelection = false;
+                    foreach (var index in selectedIndices)
                     {
-                        ProcessSingleClick(clickedIndex);
+                        if (clickedIndex == index)
+                        {
+                            wasClickedIndexInSelection = true;
+                            break;
+                        }
                     }
+
+                    ProcessSingleClick(clickedIndex);
+
+                    // Only invoke itemsChosen if we're clicking on the same entry. Case UUM-42450.
+                    if (!wasClickedIndexInSelection)
+                        return;
 
                     onItemsChosen?.Invoke(m_SelectedItems);
                     break;
@@ -1387,12 +1423,12 @@ namespace UnityEngine.UIElements
             // and set it back in Setup().
             else if (evt.eventTypeId == FocusEvent.TypeId())
             {
-                m_VirtualizationController.OnFocus(evt.leafTarget as VisualElement);
+                m_VirtualizationController?.OnFocus(evt.leafTarget as VisualElement);
             }
             else if (evt.eventTypeId == BlurEvent.TypeId())
             {
                 BlurEvent e = evt as BlurEvent;
-                m_VirtualizationController.OnBlur(e?.relatedTarget as VisualElement);
+                m_VirtualizationController?.OnBlur(e?.relatedTarget as VisualElement);
             }
             else if (evt.eventTypeId == NavigationSubmitEvent.TypeId())
             {
@@ -1412,7 +1448,7 @@ namespace UnityEngine.UIElements
                 Mathf.Approximately(evt.newRect.height, evt.oldRect.height))
                 return;
 
-            Resize(evt.newRect.size, evt.layoutPass);
+            Resize(evt.newRect.size);
         }
 
         private void OnCustomStyleResolved(CustomStyleResolvedEvent e)

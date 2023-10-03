@@ -545,6 +545,7 @@ namespace UnityEditor.SceneManagement
                                 dummyCanvas.sortingOrder = instanceCanvas.sortingOrder;
                                 dummyCanvas.referencePixelsPerUnit = instanceCanvas.referencePixelsPerUnit;
                                 dummyCanvas.stagePriority = (byte)stagePriority;
+                                dummyCanvas.sortingLayerID = instanceCanvas.sortingLayerID;
                             }
                         }
 
