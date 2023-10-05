@@ -111,7 +111,7 @@ namespace UnityEditor
         }
         internal static ViewTool s_LockedViewTool = ViewTool.None;
         internal static int s_ButtonDown = -1;
-        public static bool viewToolActive => SceneViewMotion.viewToolActive;
+        public static bool viewToolActive => SceneViewMotion.viewToolIsActive;
 
         static Vector3 s_HandlePosition;
         static bool s_HandlePositionComputed;

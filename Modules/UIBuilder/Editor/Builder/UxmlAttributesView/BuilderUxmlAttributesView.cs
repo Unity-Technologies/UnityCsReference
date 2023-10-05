@@ -61,6 +61,7 @@ namespace Unity.UI.Builder
         internal SerializedObject m_CurrentElementSerializedObject;
         TempSerializedData m_TempSerializedData;
         int? m_CurrentUndoGroup;
+        readonly List<(VisualElement target, SerializedProperty property)> m_BatchedChanges = new();
         bool m_DocumentUndoRecorded;
         static bool s_IsInsideUndoRedoUpdate;
 
@@ -87,6 +88,22 @@ namespace Unity.UI.Builder
         {
             [SerializeReference]
             public UxmlSerializedData serializedData;
+        }
+
+        internal class DisableUndoScope : IDisposable
+        {
+            BuilderUxmlAttributesView m_View;
+
+            public DisableUndoScope(BuilderUxmlAttributesView view)
+            {
+                m_View = view;
+                m_View.SetUndoEnabled(false);
+            }
+
+            public void Dispose()
+            {
+                m_View.SetUndoEnabled(true);
+            }
         }
 
         internal enum AttributeFieldSource
@@ -171,12 +188,14 @@ namespace Unity.UI.Builder
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
             BindingsStyleHelpers.HandleRightClickMenu = HandleRightClickMenu;
             this.inspector = inspector;
+            SerializedObjectBindingContext.PostProcessTrackedPropertyChanges += ProcessBatchedChanges;
         }
 
         ~BuilderUxmlAttributesView()
         {
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             BindingsStyleHelpers.HandleRightClickMenu = null;
+            SerializedObjectBindingContext.PostProcessTrackedPropertyChanges -= ProcessBatchedChanges;
         }
 
         void OnUndoRedoPerformed()
@@ -235,6 +254,26 @@ namespace Unity.UI.Builder
             m_IsInTemplateInstance = isInTemplate;
             SetAttributesOwner(uxmlDocument, visualElement);
             fieldsContainer.Clear();
+
+            // Special case for toggle button groups.
+            // We want to sync the length of the state with the number of buttons in the hierarchy.
+            if (visualElement is ToggleButtonGroup group)
+            {
+                var stateProperty = m_CurrentElementSerializedObject.FindProperty(serializedRootPath + "value");
+                var lengthProperty = stateProperty.FindPropertyRelative("m_Length");
+                var length = lengthProperty.intValue;
+
+                var buttonCount = group.Query<Button>().ToList().Count;
+                if (buttonCount != length && buttonCount < ToggleButtonGroupState.maxLength)
+                {
+                    var value = group.value;
+                    value.length = buttonCount;
+                    group.SetValueWithoutNotify(value);
+
+                    lengthProperty.intValue = buttonCount;
+                    m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
+                }
+            }
         }
 
         /// <summary>
@@ -345,8 +384,9 @@ namespace Unity.UI.Builder
             if (binding is not SerializedObjectBindingBase bindingBase)
                 return;
 
-            object value;
             var serializedProperty = m_CurrentElementSerializedObject.FindProperty(path);
+
+            object value;
             var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
 
             if (result.uxmlAsset.TryGetAttributeValue(attribute.name, out var uxmlValueString) &&
@@ -363,7 +403,10 @@ namespace Unity.UI.Builder
             {
                 serializedProperty.boxedValue = value;
                 serializedProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-                bindingBase.OnPropertyValueChanged(serializedProperty);
+
+                var propField = fieldElement.Q<PropertyField>() ?? fieldElement.GetFirstAncestorOfType<PropertyField>();
+                var context = SerializedObjectBindingContext.GetBindingContextFromElement(propField);
+                context?.UpdateRevision();
             }
             else
             {
@@ -373,32 +416,38 @@ namespace Unity.UI.Builder
 
         public void SetBoundValue(VisualElement fieldElement, object value)
         {
-            var bindableElement = fieldElement?.Q<BindableElement>();
+            var dataField = fieldElement as UxmlSerializedDataAttributeField ?? fieldElement.GetFirstAncestorOfType<UxmlSerializedDataAttributeField>();
+            var serializedAttribute = dataField.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
+            var property = m_CurrentElementSerializedObject.FindProperty(serializedRootPath + serializedAttribute.serializedField.Name);
+
+            var bindableElement = fieldElement.Q<BindableElement>();
             var binding = bindableElement?.GetBinding(BindingExtensions.s_SerializedBindingId);
             if (binding is not SerializedObjectBindingBase bindingBase)
                 return;
 
-            var dataField = fieldElement as UxmlSerializedDataAttributeField ?? fieldElement.GetFirstAncestorOfType<UxmlSerializedDataAttributeField>();
-            var serializedAttribute = dataField.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
-
-            var property = m_CurrentElementSerializedObject.FindProperty(serializedRootPath + serializedAttribute.serializedField.Name);
             var handler = ScriptAttributeUtility.GetHandler(property);
-
             if (handler.hasPropertyDrawer)
             {
-                // We need to set the serialized property so that custom property drawers get the update.
                 var previous = property.boxedValue;
                 if (previous != value)
                 {
                     property.boxedValue = value;
                     property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-                    bindingBase.OnPropertyValueChanged(property);
+
+                    var propField = fieldElement.Q<PropertyField>() ?? fieldElement.GetFirstAncestorOfType<PropertyField>();
+                    var context = SerializedObjectBindingContext.GetBindingContextFromElement(propField);
+                    context?.UpdateRevision();
                 }
             }
             else
             {
                 bindingBase.SyncValueWithoutNotify(value);
             }
+        }
+
+        void SetUndoEnabled(bool enableUndo)
+        {
+            undoEnabled = enableUndo;
         }
 
         internal void RemoveBindingFromSerializedData(VisualElement fieldElement, string property)
@@ -964,18 +1013,12 @@ namespace Unity.UI.Builder
             if (s_IsInsideUndoRedoUpdate)
                 return;
 
-            // We track the undo group so we can fold multiple change events into 1.
-            if (m_CurrentUndoGroup == null)
-            {
-                m_CurrentUndoGroup = Undo.GetCurrentGroup();
-                EditorApplication.delayCall += () => m_CurrentUndoGroup = null;
-            }
-
+            var undoGroup = GetCurrentUndoGroup();
             Undo.IncrementCurrentGroup();
             CallDeserializeOnElement();
             SynchronizePath(propertyPath, true);
             NotifyAttributesChanged();
-            Undo.CollapseUndoOperations(m_CurrentUndoGroup.Value);
+            Undo.CollapseUndoOperations(undoGroup);
         }
 
         void ShowAddUxmlObjectMenu(VisualElement element, UxmlSerializedAttributeDescription attribute, Action<Type> action)
@@ -1035,6 +1078,12 @@ namespace Unity.UI.Builder
                 fieldElement.Add(propertyField);
 
                 propertyField.Bind(m_CurrentElementSerializedObject);
+
+                // Special case for ToggleButtonGroup
+                if (m_CurrentElement is ToggleButtonGroup && attribute.name == nameof(ToggleButtonGroup.value))
+                {
+                    propertyField.RegisterCallback<SerializedPropertyBindEvent>(OnPropertyFieldBound);
+                }
             }
 
             // Create row.
@@ -1049,6 +1098,52 @@ namespace Unity.UI.Builder
             SetupStyleRow(styleRow, fieldElement, attribute);
 
             return styleRow;
+        }
+
+        void OnPropertyFieldBound(SerializedPropertyBindEvent evt)
+        {
+            if (m_CurrentElement is not ToggleButtonGroup groupElement)
+                return;
+
+            var propertyField = evt.elementTarget;
+            var groupField = propertyField.Q<ToggleButtonGroup>();
+            if (groupField == null)
+                return;
+
+            // Special case for toggle button groups.
+            // We want to sync the length of the value with the number of buttons in the hierarchy, and we want to match the
+            // allowMultipleSelection and allowEmptySelection attributes so that the value matches the state of the group.
+            var obj = m_CurrentElementSerializedObject;
+            var valueProperty = obj.FindProperty(serializedRootPath + nameof(ToggleButtonGroup.value));
+            var multipleProperty = obj.FindProperty(serializedRootPath + nameof(ToggleButtonGroup.isMultipleSelection));
+            var allowEmptyProperty = obj.FindProperty(serializedRootPath + nameof(ToggleButtonGroup.allowEmptySelection));
+
+            groupField.isMultipleSelection = multipleProperty.boolValue;
+            groupField.allowEmptySelection = allowEmptyProperty.boolValue;
+
+            var fieldElement = GetRootFieldElement(propertyField);
+            fieldElement.TrackPropertyValue(multipleProperty, p =>
+            {
+                groupField.isMultipleSelection = p.boolValue;
+                groupElement.isMultipleSelection = p.boolValue;
+                valueProperty.structValue = groupField.value;
+                p.serializedObject.ApplyModifiedProperties();
+
+                attributesUxmlOwner.SetAttribute("is-multiple-selection", p.boolValue.ToString().ToLower());
+                attributesUxmlOwner.SetAttribute("value", groupField.value.ToString());
+                PostAttributeValueChange(fieldElement, groupField.value.ToString(), attributesUxmlOwner);
+            });
+            fieldElement.TrackPropertyValue(allowEmptyProperty, p =>
+            {
+                groupField.allowEmptySelection = p.boolValue;
+                groupElement.allowEmptySelection = p.boolValue;
+                valueProperty.structValue = groupField.value;
+                p.serializedObject.ApplyModifiedProperties();
+
+                attributesUxmlOwner.SetAttribute("allow-empty-selection", p.boolValue.ToString().ToLower());
+                attributesUxmlOwner.SetAttribute("value", groupField.value.ToString());
+                PostAttributeValueChange(fieldElement, groupField.value.ToString(), attributesUxmlOwner);
+            });
         }
 
         protected void SetupStyleRow(BuilderStyleRow styleRow, VisualElement fieldElement, UxmlAttributeDescription attribute)
@@ -1398,7 +1493,10 @@ namespace Unity.UI.Builder
                         if (attributeValue == null || !UxmlAttributeConverter.TryConvertToString(attributeValue, m_UxmlDocument, out var stringValue))
                             stringValue = attributeValue?.ToString();
 
-                        PostAttributeValueChange(attribute.name, stringValue, uxmlAsset);
+                        using (new DisableUndoScope(this))
+                        {
+                            PostAttributeValueChange(attribute.name, stringValue, uxmlAsset);
+                        }
                     }
                 }
             }
@@ -1446,6 +1544,11 @@ namespace Unity.UI.Builder
             if (s_IsInsideUndoRedoUpdate || m_CurrentElement == null || obj is not VisualElement target || target.panel == null)
                 return;
 
+            m_BatchedChanges.Add((target, property));
+        }
+
+        int GetCurrentUndoGroup()
+        {
             // We track the undo group so we can fold multiple change events into 1.
             if (m_CurrentUndoGroup == null)
             {
@@ -1453,37 +1556,57 @@ namespace Unity.UI.Builder
                 EditorApplication.delayCall += () => m_CurrentUndoGroup = null;
             }
 
-            var fieldElement = GetRootFieldElement(target);
+            return m_CurrentUndoGroup.Value;
+        }
 
-            var currentAttributeUxmlOwner = attributesUxmlOwner;
-            var currentUxmlSerializedData = uxmlSerializedData;
+        void ProcessBatchedChanges()
+        {
+            if (m_BatchedChanges.Count == 0)
+                return;
 
-            Undo.IncrementCurrentGroup();
-            var revertGroup = Undo.GetCurrentGroup();
-            var result = SynchronizePath(property.propertyPath, true);
+            var undoGroup = GetCurrentUndoGroup();
+            using var pool = ListPool<(UxmlAsset uxmlOwner, VisualElement fieldElement, object newValue, UxmlSerializedData serializedData)>.Get(out var changesToProcess);
 
-            var description = result.attributeDescription ?? fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
-            currentAttributeUxmlOwner = result.uxmlAsset;
-            currentUxmlSerializedData = result.serializedData as UxmlSerializedData;
-            var newValue = description.GetSerializedValue(currentUxmlSerializedData);
-
-            // We choose to disregard callbacks when the value remains unchanged,
-            // which can occur during an Undo/Redo when the bound fields are updated.
-            // To do this we compare the value on the attribute owner to its serialized value,
-            // if they match then we consider them to have not changed.
-            if (result.attributeOwner != null)
+            try
             {
-                description.TryGetValueFromObject(result.attributeOwner, out var previousValue);
-
-                // Unity serializes null values as default objects, so we need to do the same to compare.
-                if (!description.isUxmlObject && previousValue == null && !typeof(Object).IsAssignableFrom(description.type) && description.type.GetConstructor(Type.EmptyTypes) != null)
-                    previousValue = Activator.CreateInstance(description.type);
-
-                if (UxmlAttributeComparison.ObjectEquals(previousValue, newValue))
+                foreach (var changeEvent in m_BatchedChanges)
                 {
-                    Undo.RevertAllDownToGroup(revertGroup);
-                    return;
+                    var fieldElement = GetRootFieldElement(changeEvent.target);
+
+                    Undo.IncrementCurrentGroup();
+                    var revertGroup = Undo.GetCurrentGroup();
+                    var result = SynchronizePath(changeEvent.property.propertyPath, true);
+
+                    var description = result.attributeDescription ?? fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
+                    var currentAttributeUxmlOwner = result.uxmlAsset;
+                    var currentUxmlSerializedData = result.serializedData as UxmlSerializedData;
+                    var newValue = description.GetSerializedValue(currentUxmlSerializedData);
+
+                    // We choose to disregard callbacks when the value remains unchanged,
+                    // which can occur during an Undo/Redo when the bound fields are updated.
+                    // To do this we compare the value on the attribute owner to its serialized value,
+                    // if they match then we consider them to have not changed.
+                    if (result.attributeOwner != null)
+                    {
+                        description.TryGetValueFromObject(result.attributeOwner, out var previousValue);
+
+                        // Unity serializes null values as default objects, so we need to do the same to compare.
+                        if (!description.isUxmlObject && previousValue == null && !typeof(Object).IsAssignableFrom(description.type) && description.type.GetConstructor(Type.EmptyTypes) != null)
+                            previousValue = Activator.CreateInstance(description.type);
+
+                        if (UxmlAttributeComparison.ObjectEquals(previousValue, newValue))
+                        {
+                            Undo.RevertAllDownToGroup(revertGroup);
+                            return;
+                        }
+                    }
+
+                    changesToProcess.Add((currentAttributeUxmlOwner, fieldElement, newValue, currentUxmlSerializedData));
                 }
+            }
+            finally
+            {
+                m_BatchedChanges.Clear();
             }
 
             // Apply changes to the whole element
@@ -1494,17 +1617,23 @@ namespace Unity.UI.Builder
             // Now resync as its possible that the setters made changes during Deserialize, e.g clamping values.
             m_SerializedDataDescription.SyncSerializedData(m_CurrentElement, uxmlSerializedData);
 
-            if (newValue == null || !UxmlAttributeConverter.TryConvertToString(newValue, m_UxmlDocument, out var stringValue))
-                stringValue = newValue?.ToString();
+            foreach (var change in changesToProcess)
+            {
+                if (change.newValue == null || !UxmlAttributeConverter.TryConvertToString(change.newValue, m_UxmlDocument, out var stringValue))
+                    stringValue = change.newValue?.ToString();
+                
+                PostAttributeValueChange(change.fieldElement, stringValue, change.uxmlOwner);
 
-            PostAttributeValueChange(fieldElement, stringValue, currentAttributeUxmlOwner);
-
-            // Use the undo group of the field if it has one, otherwise use the current undo group
-            var fieldUndoGroup = (int?)fieldElement.Q<BindableElement>()?.GetProperty(SerializedObjectBindingBase.UndoGroupPropertyKey);
-            Undo.CollapseUndoOperations(fieldUndoGroup ?? m_CurrentUndoGroup.Value);
-
+                // Use the undo group of the field if it has one, otherwise use the current undo group
+                var fieldUndoGroup = change.fieldElement.Q<BindableElement>()?.GetProperty(SerializedObjectBindingBase.UndoGroupPropertyKey);
+                if (fieldUndoGroup != null)
+                    undoGroup = (int)fieldUndoGroup;
+            }
+            
             // Update the serialized object to reflect the changes made by PostAttributeValueChange.
             m_CurrentElementSerializedObject.UpdateIfRequiredOrScript();
+
+            Undo.CollapseUndoOperations(undoGroup);
         }
 
         /// <summary>

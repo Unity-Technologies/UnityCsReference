@@ -33,5 +33,7 @@ namespace UnityEngine.UIElements
 
         internal abstract void StartDragItem(ReusableCollectionItem item);
         internal abstract void EndDrag(int dropIndex);
+
+        public abstract void UnbindAll();
     }
 }

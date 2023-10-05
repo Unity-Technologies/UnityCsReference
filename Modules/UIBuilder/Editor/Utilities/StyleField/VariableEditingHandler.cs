@@ -182,6 +182,7 @@ namespace Unity.UI.Builder
             else
                 targetField.AddToClassList(BuilderConstants.ReadOnlyStyleClassName);
 
+            completer.EnsurePopupIsCreated();
             ShowPopup(this);
         }
 

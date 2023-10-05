@@ -127,6 +127,9 @@ namespace UnityEditor.Overlays
 
                 m_CollapsedIcon = value;
 
+                if (m_CollapsedContent == null)
+                    return;
+
                 var iconElement = collapsedContent.Q<Label>(classes: k_CollapsedIconButton);
                 if(iconElement != null)
                 {
@@ -189,7 +192,7 @@ namespace UnityEditor.Overlays
 
         public bool collapsed
         {
-            get => collapsedContent.parent == contentRoot;
+            get => m_CollapsedContent != null && m_CollapsedContent.parent == contentRoot;
 
             set
             {
@@ -200,7 +203,7 @@ namespace UnityEditor.Overlays
                 }
 
                 m_Collapsed = value;
-                if (m_Collapsed != (collapsedContent.parent == contentRoot))
+                if (m_Collapsed != (m_CollapsedContent != null && m_CollapsedContent.parent == contentRoot))
                     RebuildContent();
             }
         }

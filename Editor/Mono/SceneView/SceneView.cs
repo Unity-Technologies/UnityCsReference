@@ -1035,7 +1035,6 @@ namespace UnityEditor
         }
         private static MouseCursor s_LastCursor = MouseCursor.Arrow;
         private static readonly List<CursorRect> s_MouseRects = new List<CursorRect>();
-        private bool s_DraggingCursorIsCached;
 
         internal static void AddCursorRect(Rect rect, MouseCursor cursor)
         {
@@ -1086,6 +1085,12 @@ namespace UnityEditor
         Light[] m_Light = new Light[3];
 
         RectSelection m_RectSelection;
+
+        internal RectSelection rectSelection => m_RectSelection;
+
+        SceneViewMotion m_SceneViewMotion;
+
+        internal SceneViewMotion sceneViewMotion => m_SceneViewMotion;
 
         [SerializeField]
         SceneViewViewpoint m_Viewpoint = new SceneViewViewpoint();
@@ -1301,7 +1306,10 @@ namespace UnityEditor
         internal void OnLostFocus()
         {
             if (lastActiveSceneView == this)
-                SceneViewMotion.ResetMotion();
+            {
+                m_SceneViewMotion.ResetMotion();
+                m_SceneViewMotion.CompleteSceneViewMotionTool();
+            }
         }
 
         private void OnBeforeRemovedAsTab()
@@ -1324,15 +1332,18 @@ namespace UnityEditor
         {
             baseRootVisualElement.Insert(0, prefabToolbar);
             rootVisualElement.Add(cameraViewVisualElement);
-            rootVisualElement.RegisterCallback<MouseEnterEvent>(e => SceneViewMotion.s_ViewportsUnderMouse = true);
-            rootVisualElement.RegisterCallback<MouseLeaveEvent>(e => SceneViewMotion.s_ViewportsUnderMouse = false);
+
+            m_SceneViewMotion = new SceneViewMotion();
+
+            rootVisualElement.RegisterCallback<MouseEnterEvent>(e => m_SceneViewMotion.viewportsUnderMouse = true);
+            rootVisualElement.RegisterCallback<MouseLeaveEvent>(e => m_SceneViewMotion.viewportsUnderMouse = false);
 
             m_OrientationGizmo = overlayCanvas.overlays.FirstOrDefault(x => x is SceneOrientationGizmo) as SceneOrientationGizmo;
 
             titleContent = GetLocalizedTitleContent();
 
-            m_RectSelection = new RectSelection(this);
-            SceneViewMotion.ResetDragState();
+            m_RectSelection = new RectSelection();
+            m_SceneViewMotion.CompleteSceneViewMotionTool();
             m_Viewpoint.AssignSceneView(this);
 
             if (m_Grid == null)
@@ -1607,7 +1618,7 @@ namespace UnityEditor
             CleanupEditorDragFunctions();
             if (m_StageHandling != null)
                 m_StageHandling.OnDisable();
-            SceneViewMotion.DeactivateFlyModeContext();
+            m_SceneViewMotion.DeactivateFlyModeContext();
             ObjectFactory.componentWasAdded -= OnComponentWasAdded;
 
             base.OnDisable();
@@ -1642,7 +1653,7 @@ namespace UnityEditor
 
         internal override void OnMaximized()
         {
-            SceneViewMotion.ResetDragState();
+            m_SceneViewMotion.CompleteSceneViewMotionTool();
             Repaint();
         }
 
@@ -2424,6 +2435,7 @@ namespace UnityEditor
                     cursor = MouseCursor.Zoom;
                     break;
             }
+
             if (cursor != MouseCursor.Arrow)
                 AddCursorRect(cameraRect, cursor);
         }
@@ -2473,7 +2485,7 @@ namespace UnityEditor
             Event evt = Event.current;
 
             //overlay.displayed cannot be changed during the layout event
-            if(evt.type != EventType.Layout)
+            if (evt.type != EventType.Layout)
             {
                 bool shouldShow = lastActiveSceneView == this;
                 foreach(var overlay in overlayCanvas.overlays)
@@ -2633,12 +2645,12 @@ namespace UnityEditor
             // Do not pass the camera transform to the SceneViewMotion calculations.
             // The camera transform is calculation *output* not *input*.
             // Avoiding using it as input too avoids errors accumulating.
-            SceneViewMotion.DoViewTool(this);
+            m_SceneViewMotion.DoViewTool();
 
             // Update active viewpoint if there's one.
             // Must happen after SceneViewMotion.DoViewTool() so it knows
             // it needs to reflect a motion to the viewpoint (regardless of their nature).
-            m_Viewpoint.UpdateViewpointMotion(m_Position.isAnimating || m_Rotation.isAnimating);
+            m_Viewpoint.UpdateViewpointMotion(this, m_Position.isAnimating || m_Rotation.isAnimating);
 
             Handles.SetCameraFilterMode(Camera.current, UseSceneFiltering() ? Handles.CameraFilterMode.ShowFiltered : Handles.CameraFilterMode.Off);
 
@@ -2687,11 +2699,41 @@ namespace UnityEditor
                 m_StageHandling.EndOnGUI();
         }
 
-        // This will eventually be modified to use the mouse right-click.
-        [Shortcut("Scene View/Show Actions Menu", typeof(SceneView), KeyCode.A)]
-        static void OpenActionsMenu(ShortcutArguments args)
+        class SceneViewActionMenu : IShortcutToolContext
         {
-            if (args.context is SceneView)
+            [InitializeOnLoadMethod]
+            static void Init()
+            {
+                EditorApplication.delayCall += () =>
+                {
+                    ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewActionMenu());
+                };
+            }
+
+            public bool active => focusedWindow is SceneView
+                && (Tools.s_LockedViewTool == ViewTool.None || (Tools.s_LockedViewTool != ViewTool.None && Tools.current == Tool.View));
+
+            public SceneView window => focusedWindow is SceneView ? (SceneView)focusedWindow : null;
+        }
+
+        [Shortcut("Scene View/Show Action Menu", typeof(SceneViewActionMenu), KeyCode.Mouse1)]
+        static void OpenActionMenu(ShortcutArguments args)
+        {
+            // The mouseOverWindow check is necessary for MacOS because right-clicking does not
+            // focus the window under the cursor. This is so the action menu does not appear
+            // when the scene view is in focus and a right-click on another window occurs.
+            // At the time of retrieving the state of the shortcut from SceneViewActionMenu,
+            // mouseOverWindow is null. This is why the check is done here and not in the context.
+            if (mouseOverWindow?.GetType() != typeof(SceneView))
+                return;
+
+            var mousePos = Event.current.mousePosition;
+            var ve = focusedWindow.rootVisualElement.panel.Pick(mousePos);
+            if (ve == null)
+                return;
+
+            var context = args.context as SceneViewActionMenu;
+            if (ve == context.window?.cameraViewVisualElement)
                 ContextMenuUtility.ShowActionMenu();
         }
 
@@ -2935,39 +2977,31 @@ namespace UnityEditor
             Rect cursorRect = new Rect(0, 0, position.width, position.height);
             var checkMouseRects = evt.type == EventType.MouseMove || evt.type == EventType.Repaint;
 
-            if (GUIUtility.hotControl == 0)
-                s_DraggingCursorIsCached = false;
-
-            if (!s_DraggingCursorIsCached)
+            // Determine if mouse is inside a new cursor rect
+            if (checkMouseRects)
             {
-                // Determine if mouse is inside a new cursor rect
                 bool repaintView = false;
                 MouseCursor cursor = MouseCursor.Arrow;
-                if (checkMouseRects)
+
+                foreach (CursorRect r in s_MouseRects)
                 {
-                    foreach (CursorRect r in s_MouseRects)
+                    if (r.rect.Contains(evt.mousePosition))
                     {
-                        if (r.rect.Contains(evt.mousePosition))
-                        {
-                            cursor = r.cursor;
-                            cursorRect = r.rect;
-                            repaintView = true;
-                        }
+                        cursor = r.cursor;
+                        cursorRect = r.rect;
+                        repaintView = true;
                     }
+                }
 
-                    if (GUIUtility.hotControl != 0)
-                        s_DraggingCursorIsCached = true;
-
-                    var cursorChanged = cursor != s_LastCursor;
-                    if (cursorChanged)
-                    {
-                        s_LastCursor = cursor;
-                        InternalEditorUtility.ResetCursor();
-                    }
-                    if (repaintView || cursorChanged)
-                    {
-                        Repaint();
-                    }
+                var cursorChanged = cursor != s_LastCursor;
+                if (cursorChanged)
+                {
+                    s_LastCursor = cursor;
+                    InternalEditorUtility.ResetCursor();
+                }
+                if (repaintView || cursorChanged)
+                {
+                    Repaint();
                 }
             }
 
@@ -3460,7 +3494,7 @@ namespace UnityEditor
         // Look at a specific point from a given direction with a given zoom level, enabling and disabling perspective
         public void LookAt(Vector3 point, Quaternion direction, float newSize, bool ortho, bool instant)
         {
-            SceneViewMotion.ResetMotion();
+            m_SceneViewMotion.ResetMotion();
             FixNegativeSize();
 
             if (instant)

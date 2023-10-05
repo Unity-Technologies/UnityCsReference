@@ -182,6 +182,7 @@ namespace UnityEngine.Rendering
         Light = 2,
         Picking = 3,
         SelectionOutline = 4,
+        Filtering = 5
     }
 
     // Match with BatchCullingProjectionType in C++ side
@@ -392,7 +393,8 @@ namespace UnityEngine.Rendering
             uint inCullingLayerMask,
             ulong inSceneCullingMask,
             int inReceiverPlaneOffset,
-            int inReceiverPlaneCount)
+            int inReceiverPlaneCount,
+            IntPtr inOcclusionBuffer)
         {
             cullingPlanes = inCullingPlanes;
             cullingSplits = inCullingSplits;
@@ -409,6 +411,7 @@ namespace UnityEngine.Rendering
 #pragma warning disable CS0618 // Type or member is obsolete
             isOrthographic = 0;
 #pragma warning restore CS0618 // Type or member is obsolete
+            occlusionBuffer = inOcclusionBuffer;
         }
 
         readonly public NativeArray<Plane> cullingPlanes;
@@ -425,6 +428,7 @@ namespace UnityEngine.Rendering
         readonly public byte isOrthographic;
         readonly public int receiverPlaneOffset;
         readonly public int receiverPlaneCount;
+        readonly internal IntPtr occlusionBuffer;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -454,6 +458,8 @@ namespace UnityEngine.Rendering
         public uint  cullingLayerMask;
         public ulong sceneCullingMask;
         public BatchCullingOutputDrawCommands* drawCommands;
+        public uint brgId;
+        public IntPtr occlusionBuffer;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -538,10 +544,14 @@ namespace UnityEngine.Rendering
         public void SetBatchBuffer(BatchID batchID, GraphicsBufferHandle buffer) { SetDrawCommandBatchBuffer(batchID, buffer); }
 
         public extern BatchMaterialID RegisterMaterial(Material material);
+        internal extern void RegisterMaterials(ReadOnlySpan<int> materialID, Span<BatchMaterialID> batchMaterialID);
+
         public extern void UnregisterMaterial(BatchMaterialID material);
         public extern Material GetRegisteredMaterial(BatchMaterialID material);
 
         public extern BatchMeshID RegisterMesh(Mesh mesh);
+        internal extern void RegisterMeshes(ReadOnlySpan<int> meshID, Span<BatchMeshID> batchMeshID);
+
         public extern void UnregisterMesh(BatchMeshID mesh);
         public extern Mesh GetRegisteredMesh(BatchMeshID mesh);
 
@@ -594,7 +604,8 @@ namespace UnityEngine.Rendering
                         context.cullingLayerMask,
                         context.sceneCullingMask,
                         context.receiverPlaneOffset,
-                        context.receiverPlaneCount
+                        context.receiverPlaneCount,
+                        context.occlusionBuffer
                     ),
                     cullingOutput,
                     userContext
@@ -615,5 +626,8 @@ namespace UnityEngine.Rendering
         {
             public static IntPtr ConvertToNative(BatchRendererGroup batchRendererGroup) => batchRendererGroup.m_GroupHandle;
         }
+
+        [FreeFunction("BatchRendererGroup::OcclusionTestAABB", IsThreadSafe = true)]
+        internal extern static bool OcclusionTestAABB(IntPtr occlusionBuffer, Bounds aabb);
     }
 }

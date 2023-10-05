@@ -8,11 +8,10 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightTransport
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal class RadeonRaysContext : IDeviceContext, IDisposable
+    public class RadeonRaysContext : IDeviceContext, IDisposable
     {
         internal IntPtr m_Ptr;
         internal bool m_OwnsPtr;
@@ -50,7 +49,7 @@ namespace UnityEngine.LightTransport
                 m_Ptr = IntPtr.Zero;
             }
         }
-        public static class BindingsMarshaller
+        internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(RadeonRaysContext obj) => obj.m_Ptr;
         }
@@ -65,7 +64,7 @@ namespace UnityEngine.LightTransport
         public extern void DestroyBuffer(BufferID id);
 
         [NativeMethod(IsThreadSafe = true)]
-        public unsafe extern EventID EnqueueBufferRead(BufferID id, void* result, int length);
+        private unsafe extern EventID EnqueueBufferRead(BufferID id, void* result, int length);
 
         public unsafe EventID ReadBuffer(BufferID id, NativeArray<byte> result)
         {
@@ -74,7 +73,7 @@ namespace UnityEngine.LightTransport
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        public extern unsafe EventID EnqueueBufferWrite(BufferID id, void* result, int length);
+        private extern unsafe EventID EnqueueBufferWrite(BufferID id, void* result, int length);
 
         public unsafe EventID WriteBuffer(BufferID id, NativeArray<byte> data)
         {

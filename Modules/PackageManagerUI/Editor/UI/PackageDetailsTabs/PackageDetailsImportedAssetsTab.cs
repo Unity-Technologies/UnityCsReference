@@ -45,7 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             name = "importedAssetsDetailsContainer";
             m_ListView = new MultiColumnListView
             {
-                sortingEnabled = true,
+                sortingMode = ColumnSortingMode.Custom,
                 name = "ImportedAssetsList",
                 scrollView = { verticalScrollerVisibility = ScrollerVisibility.Auto},
                 selectionType = SelectionType.None,

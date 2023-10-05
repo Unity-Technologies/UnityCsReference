@@ -542,7 +542,13 @@ namespace UnityEditor.UIElements.Bindings
 
         public void ApplyChanges()
         {
-            ArrayProperty.serializedObject.ApplyModifiedProperties();
+            var undoMessage = $"Modified {ArrayProperty.name}";
+            if (ArrayProperty.m_SerializedObject.targetObject.name != string.Empty)
+                undoMessage += $" in {ArrayProperty.m_SerializedObject.targetObject.name}";
+
+            Undo.RegisterCompleteObjectUndo(ArrayProperty.serializedObject.targetObject, undoMessage);
+
+            ArrayProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
         }
 
         public void Insert(int index, object value)

@@ -7,10 +7,9 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightTransport
 {
-    internal struct BufferID
+    public struct BufferID
     {
         public UInt64 Value;
         public BufferID(UInt64 value)
@@ -18,7 +17,7 @@ namespace UnityEngine.LightTransport
             Value = value;
         }
     }
-    internal struct BufferSlice
+    public struct BufferSlice
     {
         public BufferSlice(BufferID id, UInt64 offset)
         {
@@ -28,7 +27,7 @@ namespace UnityEngine.LightTransport
         public BufferID Id;
         public UInt64 Offset;
     }
-    internal struct EventID
+    public struct EventID
     {
         public UInt64 Value;
         public EventID(UInt64 value)
@@ -40,7 +39,7 @@ namespace UnityEngine.LightTransport
     /// Buffer and command queue abstraction layer hiding the underlying storage
     /// and compute architecture (CPU or GPU with unified or dedicated memory).
     /// </summary>
-    internal interface IDeviceContext : IDisposable
+    public interface IDeviceContext : IDisposable
     {
         bool Initialize();
         BufferID CreateBuffer(UInt64 size);
@@ -52,7 +51,7 @@ namespace UnityEngine.LightTransport
         bool Flush();
     }
     [StructLayout(LayoutKind.Sequential)]
-    internal class ReferenceContext : IDeviceContext
+    public class ReferenceContext : IDeviceContext
     {
         private Dictionary<BufferID, NativeArray<byte>> buffers = new();
         private uint nextFreeBufferId;

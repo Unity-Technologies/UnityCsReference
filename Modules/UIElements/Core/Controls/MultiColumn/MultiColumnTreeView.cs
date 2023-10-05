@@ -16,7 +16,8 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BaseTreeView.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private bool sortingEnabled;
+            [SerializeField, HideInInspector] private bool sortingEnabled;
+            [SerializeField] ColumnSortingMode sortingMode;
             [SerializeReference, UxmlObjectReference] private Columns.UxmlSerializedData columns;
             [SerializeReference, UxmlObjectReference] private SortColumnDescriptions.UxmlSerializedData sortColumnDescriptions;
             #pragma warning restore 649
@@ -28,7 +29,9 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (MultiColumnTreeView)obj;
-                e.sortingEnabled = sortingEnabled;
+
+                var legacySortMode = sortingEnabled ? ColumnSortingMode.Custom : ColumnSortingMode.None;
+                e.sortingMode = sortingMode == ColumnSortingMode.None ? legacySortMode : sortingMode;
 
                 if (sortColumnDescriptions != null)
                 {
@@ -62,9 +65,9 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public new class UxmlTraits : BaseTreeView.UxmlTraits
         {
-            readonly UxmlBoolAttributeDescription m_SortingEnabled = new UxmlBoolAttributeDescription { name = "sorting-enabled" };
-            readonly UxmlObjectAttributeDescription<Columns> m_Columns = new UxmlObjectAttributeDescription<Columns>();
-            readonly UxmlObjectAttributeDescription<SortColumnDescriptions> m_SortColumnDescriptions = new UxmlObjectAttributeDescription<SortColumnDescriptions>();
+            readonly UxmlEnumAttributeDescription<ColumnSortingMode> m_SortingMode = new() { name = "sorting-mode", obsoleteNames = new[] { "sorting-enabled" } };
+            readonly UxmlObjectAttributeDescription<Columns> m_Columns = new ();
+            readonly UxmlObjectAttributeDescription<SortColumnDescriptions> m_SortColumnDescriptions = new ();
 
             /// <summary>
             /// Initializes <see cref="MultiColumnTreeView"/> properties using values from the attribute bag.
@@ -77,15 +80,27 @@ namespace UnityEngine.UIElements
                 base.Init(ve, bag, cc);
 
                 var treeView = (MultiColumnTreeView)ve;
-                treeView.sortingEnabled = m_SortingEnabled.GetValueFromBag(bag, cc);
+
+                // Convert potential sorting-enabled boolean attribute to a sorting mode enum value.
+                if (m_SortingMode.TryGetValueFromBagAsString(bag, cc, out var stringSortingMode))
+                {
+                    if (bool.TryParse(stringSortingMode, out var boolSortingMode))
+                    {
+                        treeView.sortingMode = boolSortingMode ? ColumnSortingMode.Custom : ColumnSortingMode.None;
+                    }
+                    else
+                    {
+                        treeView.sortingMode = m_SortingMode.GetValueFromBag(bag, cc);
+                    }
+                }
+
                 treeView.sortColumnDescriptions = m_SortColumnDescriptions.GetValueFromBag(bag, cc);
                 treeView.columns = m_Columns.GetValueFromBag(bag, cc);
             }
         }
 
         Columns m_Columns;
-
-        bool m_SortingEnabled;
+        ColumnSortingMode m_SortingMode;
         SortColumnDescriptions m_SortColumnDescriptions = new SortColumnDescriptions();
         List<SortColumnDescription> m_SortedColumns = new List<SortColumnDescription>();
 
@@ -96,6 +111,7 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// If a column is clicked to change sorting, this event is raised to allow users to sort the tree view items.
+        /// For a default implementation, set <see cref="sortingMode"/> to <see cref="ColumnSortingMode.Default"/>.
         /// </summary>
         public event Action columnSortingChanged;
 
@@ -160,15 +176,30 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Whether or not sorting is enabled in the multi-column header.
         /// </summary>
+        [Obsolete("sortingEnabled has been deprecated. Use sortingMode instead.", false)]
         public bool sortingEnabled
         {
-            get => m_SortingEnabled;
+            get => sortingMode == ColumnSortingMode.Custom;
+            set => sortingMode = value ? ColumnSortingMode.Custom : ColumnSortingMode.None;
+        }
+
+        /// <summary>
+        /// Indicates how columns will be sorted. To enable sorting on the header, use <see cref="ColumnSortingMode.Default"/> or <see cref="ColumnSortingMode.Custom"/>.
+        /// <c>Default</c> the sorting algorithm provided by <see cref="MultiColumnController"/>, acting on indices. Users can also implement their
+        /// own sorting with the <c>Custom</c> mode, by responding to the <see cref="columnSortingChanged"/> event.
+        /// </summary>
+        /// <remarks>
+        /// Reordering will be temporarily disabled when there is at least one sorted column.
+        /// </remarks>
+        public ColumnSortingMode sortingMode
+        {
+            get => m_SortingMode;
             set
             {
-                m_SortingEnabled = value;
+                m_SortingMode = value;
                 if (viewController != null)
                 {
-                    viewController.columnController.header.sortingEnabled = value;
+                    viewController.columnController.sortingMode = value;
                 }
             }
         }
@@ -241,7 +272,7 @@ namespace UnityEngine.UIElements
 
             if (viewController != null)
             {
-                viewController.header.sortingEnabled = m_SortingEnabled;
+                viewController.columnController.sortingMode = m_SortingMode;
                 viewController.columnController.columnSortingChanged += RaiseColumnSortingChanged;
                 viewController.columnController.headerContextMenuPopulateEvent += RaiseHeaderContextMenuPopulate;
             }

@@ -4,10 +4,30 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Pool;
 using UnityEngine.UIElements.Internal;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Defines the sorting mode of a <see cref="MultiColumnListView"/> or <see cref="MultiColumnTreeView"/>.
+    /// </summary>
+    public enum ColumnSortingMode
+    {
+        /// <summary>
+        /// Sorting is disabled.
+        /// </summary>
+        None,
+        /// <summary>
+        /// The default Unity sorting will be used. Define how to compare items in a column with <see cref="Column.comparison"/>.
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Sorting is left to the user in the <see cref="MultiColumnListView.columnSortingChanged"/> or <see cref="MultiColumnTreeView.columnSortingChanged"/>.
+        /// </summary>
+        Custom,
+    }
+
     /// <summary>
     /// The default controller for a multi column view. Takes care of adding the MultiColumnCollectionHeader and
     /// reacting to the various callbacks.
@@ -48,10 +68,24 @@ namespace UnityEngine.UIElements
         /// </summary>
         public event Action<ContextualMenuPopulateEvent, Column> headerContextMenuPopulateEvent;
 
+        List<int> m_SortedIndices;
+        ColumnSortingMode m_SortingMode;
+
         BaseVerticalCollectionView m_View;
         VisualElement m_HeaderContainer;
         MultiColumnCollectionHeader m_MultiColumnHeader;
+
         internal MultiColumnCollectionHeader header => m_MultiColumnHeader;
+
+        internal ColumnSortingMode sortingMode
+        {
+            get => m_SortingMode;
+            set
+            {
+                m_SortingMode = value;
+                header.sortingEnabled = m_SortingMode != ColumnSortingMode.None;
+            }
+        }
 
         /// <summary>
         /// Constructor. It will create the <see cref="MultiColumnCollectionHeader"/> to use for the view.
@@ -84,7 +118,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                DefaultBindCellItem(ve, column, item);
+                DefaultBindCellItem(ve, item);
             }
         }
 
@@ -100,7 +134,7 @@ namespace UnityEngine.UIElements
             return label;
         }
 
-        static void DefaultBindCellItem<T>(VisualElement ve, Column column, T item)
+        static void DefaultBindCellItem<T>(VisualElement ve, T item)
         {
             if (ve is Label label)
             {
@@ -275,7 +309,140 @@ namespace UnityEngine.UIElements
             collectionView.scrollView.contentContainer.style.width = targetWidth;
         }
 
-        void OnColumnSortingChanged() => columnSortingChanged?.Invoke();
+        void OnColumnSortingChanged()
+        {
+            if (SortIfNeeded())
+            {
+                m_View.RefreshItems();
+            }
+
+            columnSortingChanged?.Invoke();
+        }
+
+        internal bool SortIfNeeded()
+        {
+            if (sortingMode == ColumnSortingMode.None)
+            {
+                m_View.dragger.enabled = true;
+                return false;
+            }
+
+            m_View.dragger.enabled = header.sortedColumnReadonly.Count == 0;
+
+            if (sortingMode != ColumnSortingMode.Default)
+            {
+                return false;
+            }
+
+            var wasSorted = m_SortedIndices?.Count > 0;
+            if (wasSorted)
+            {
+                // We need to unbind before the indices are sorted, so that the sorted index matches the previous one.
+                m_View.virtualizationController.UnbindAll();
+            }
+
+            m_SortedIndices?.Clear();
+
+            if (header.sortedColumnReadonly.Count == 0)
+            {
+                return wasSorted;
+            }
+
+            using var pool = ListPool<int>.Get(out var sortedList);
+            for (var i = 0; i < m_View.itemsSource.Count; i++)
+            {
+                sortedList.Add(i);
+            }
+
+            sortedList.Sort(CombinedComparison);
+
+            m_SortedIndices ??= new List<int>(capacity: m_View.itemsSource.Count);
+            m_SortedIndices.AddRange(sortedList);
+
+            return true;
+        }
+
+        int CombinedComparison(int a, int b)
+        {
+            if (m_View.viewController is BaseTreeViewController treeViewController)
+            {
+                var idA = treeViewController.GetIdForIndex(a);
+                var idB = treeViewController.GetIdForIndex(b);
+                var parentIdA = treeViewController.GetParentId(idA);
+                var parentIdB = treeViewController.GetParentId(idB);
+
+                // Only sort items within the same parent.
+                if (parentIdA != parentIdB)
+                {
+                    var depthA = treeViewController.GetIndentationDepth(idA);
+                    var depthB = treeViewController.GetIndentationDepth(idB);
+                    var originalDepthA = depthA;
+                    var originalDepthB = depthB;
+
+                    // We walk up until both sides are at the same depth
+                    while (depthA > depthB)
+                    {
+                        depthA--;
+                        idA = parentIdA;
+                        parentIdA = treeViewController.GetParentId(parentIdA);
+                    }
+
+                    while (depthB > depthA)
+                    {
+                        depthB--;
+                        idB = parentIdB;
+                        parentIdB = treeViewController.GetParentId(parentIdB);
+                    }
+
+                    // Now both are at the same depth, we then walk up the tree until we hit the same element
+                    while (parentIdA != parentIdB)
+                    {
+                        idA = parentIdA;
+                        idB = parentIdB;
+                        parentIdA = treeViewController.GetParentId(parentIdA);
+                        parentIdB = treeViewController.GetParentId(parentIdB);
+                    }
+
+                    // We were looking at a node and one of its parent, so compare the original depths. 
+                    if (idA == idB)
+                    {
+                        return originalDepthA.CompareTo(originalDepthB);
+                    }
+
+                    // Compare the indices now that we're at the same depth.
+                    a = treeViewController.GetIndexForId(idA);
+                    b = treeViewController.GetIndexForId(idB);
+                }
+            }
+
+            var result = 0;
+            foreach (var sortedColumn in header.sortedColumns)
+            {
+                result = sortedColumn.column.comparison.Invoke(a, b);
+                if (result != 0)
+                {
+                    if (sortedColumn.direction == SortDirection.Descending)
+                    {
+                        result = -result;
+                    }
+                    break;
+                }
+            }
+
+            // When equal, we keep the current order.
+            return result == 0 ? a.CompareTo(b) : result;
+        }
+
+        internal int GetSortedIndex(int index)
+        {
+            if (m_SortedIndices == null)
+                return index;
+
+            if (index < 0 || index >= m_SortedIndices.Count)
+                return index;
+
+            return m_SortedIndices.Count > 0 ? m_SortedIndices[index] : index;
+        }
 
         void OnContextMenuPopulateEvent(ContextualMenuPopulateEvent evt, Column column) => headerContextMenuPopulateEvent?.Invoke(evt, column);
 

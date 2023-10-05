@@ -9,7 +9,6 @@ using UnityEngine.Bindings;
 using UnityEngine.LightTransport;
 using static UnityEditor.LightBaking.LightBaker;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEditor.LightBaking
 {
     [NativeHeader("Editor/Src/GI/LightBaker/LightBaker.Bindings.h")]
@@ -39,8 +38,16 @@ namespace UnityEditor.LightBaking
                 else
                     return $"Result type: '{type}', message: '{message}'";
             }
-        }
 
+            public IProbeIntegrator.Result ConvertToIProbeIntegratorResult()
+            {
+                IProbeIntegrator.Result result = new IProbeIntegrator.Result();
+                result.type = (IProbeIntegrator.ResultType)type;
+                result.message = message;
+                return result;
+            }
+        }
+    
         public enum Backend
         {
             CPU = 0,

@@ -95,6 +95,19 @@ namespace UnityEditor.ShortcutManagement
             return new KeyCombination(keyCode, ConvertEventModifiersToShortcutModifiers(modifiers, false));
         }
 
+        internal static KeyCombination FromKeyboardInputAndAddEventModifiers(KeyCombination combination, EventModifiers modifiers)
+        {
+            return new KeyCombination(combination.keyCode, combination.modifiers | ConvertEventModifiersToShortcutModifiers(modifiers, false));
+        }
+
+        internal static KeyCombination FromKeyboardInputAndRemoveEventModifiers(KeyCombination combination, EventModifiers modifiers)
+        {
+            var convertedEventModifier = ConvertEventModifiersToShortcutModifiers(modifiers, false);
+            var newModifiers = combination.modifiers & ~convertedEventModifier;
+
+            return new KeyCombination(combination.keyCode, newModifiers);
+        }
+
         internal static KeyCombination FromPrefKeyKeyboardEvent(Event evt)
         {
             return new KeyCombination(evt.keyCode, ConvertEventModifiersToShortcutModifiers(evt.modifiers, true));
@@ -428,6 +441,30 @@ namespace UnityEditor.ShortcutManagement
             { KeyCode.Mouse4, "Mouse 4"},
             { KeyCode.Mouse5, "Mouse 5"},
             { KeyCode.Mouse6, "Mouse 6"},
+        };
+
+        internal static readonly KeyCode[] k_MouseKeyCodes = new KeyCode[7]
+        {
+            KeyCode.Mouse0,
+            KeyCode.Mouse1,
+            KeyCode.Mouse2,
+            KeyCode.Mouse3,
+            KeyCode.Mouse4,
+            KeyCode.Mouse5,
+            KeyCode.Mouse6
+        };
+
+        internal static readonly Dictionary<KeyCode, EventModifiers> k_KeyCodeToEventModifiers = new Dictionary<KeyCode, EventModifiers>()
+        {
+            { KeyCode.None, EventModifiers.None},
+            { KeyCode.LeftAlt, EventModifiers.Alt},
+            { KeyCode.RightAlt, EventModifiers.Alt},
+            { KeyCode.LeftControl, EventModifiers.Control},
+            { KeyCode.RightControl, EventModifiers.Control},
+            { KeyCode.LeftCommand, EventModifiers.Command},
+            { KeyCode.RightCommand, EventModifiers.Command},
+            { KeyCode.LeftShift, EventModifiers.Shift},
+            { KeyCode.RightShift, EventModifiers.Shift}
         };
 
         static bool TryFormatKeycode(KeyCode code, StringBuilder builder)

@@ -54,6 +54,7 @@ namespace UnityEngine.UIElements
 
         float m_LeftIndentation = -1f;
         float m_SiblingBottom = -1f;
+        bool m_Enabled = true;
 
         const int k_AutoScrollAreaSize = 5;
         const int k_BetweenElementsAreaSize = 5;
@@ -66,6 +67,28 @@ namespace UnityEngine.UIElements
 
         public ICollectionDragAndDropController dragAndDropController { get; set; }
 
+        // Some settings can disable reordering temporarily, like multi column sorting 
+        internal bool enabled
+        {
+            get => m_Enabled;
+            set
+            {
+                m_Enabled = value;
+
+                // Avoid a full refresh by directly updating the visible handles.
+                if (targetView is BaseListView)
+                {
+                    foreach (var item in targetView.activeItems)
+                    {
+                        if (item is not ReusableListViewItem listItem)
+                            continue;
+
+                        listItem.SetDragHandleEnabled(targetView.dragger.enabled);
+                    }
+                }
+            }
+        }
+
         public ListViewDragger(BaseVerticalCollectionView listView)
             : base(listView) {}
 
@@ -75,6 +98,9 @@ namespace UnityEngine.UIElements
                 return false;
 
             if (!targetScrollView.contentContainer.worldBound.Contains(pointerPosition))
+                return false;
+
+            if (!enabled)
                 return false;
 
             var recycledItem = GetRecycledItem(pointerPosition);

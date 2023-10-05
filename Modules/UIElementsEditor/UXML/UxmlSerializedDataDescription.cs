@@ -206,11 +206,8 @@ namespace UnityEditor.UIElements
             {
                 if (!IsValidAttributeType(fieldInfo.FieldType))
                 {
-                    if (!InternalEditorUtility.IsUnityAssembly(elementType))
-                    {
-                        Debug.LogError($"[UxmlElement] '{elementType.Name}' has a [UxmlAttribute] '{GetUxmlName(fieldInfo)}' of an unknown type '{fieldInfo.FieldType.Name}'.\n" +
-                                       $"To fix this error define a custom {nameof(UxmlAttributeConverter)}<{fieldInfo.FieldType.Name}>.");
-                    }
+                    Debug.LogError($"[UxmlElement] '{elementType.Name}' has a [UxmlAttribute] '{GetUxmlName(fieldInfo)}' of an unknown type '{fieldInfo.FieldType.Name}'.\n" +
+                                   $"To fix this error define a custom {nameof(UxmlAttributeConverter)}<{fieldInfo.FieldType.Name}>.");
                     return null;
                 }
 

@@ -40,8 +40,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     continue;
                 }
 
-                completeWarningErrors.Add(errorOutput[i]);
-                isWarningError = true;
+                if (regex.Match(errorOutput[i]).Success || (internalErrorRegex != null && internalErrorRegex.Match(errorOutput[i]).Success))
+                {
+                    completeWarningErrors.Add(errorOutput[i]);
+                    isWarningError = true;
+                }
+                else if (completeWarningErrors.Count > 0)
+                    completeWarningErrors[completeWarningErrors.Count - 1] += "\n" + errorOutput[i];
             }
 
             foreach (var line in completeWarningErrors)

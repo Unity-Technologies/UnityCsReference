@@ -152,6 +152,12 @@ namespace UnityEngine.UIElements
             var target = evt.currentTarget as VisualElement;
             var toggle = target.Q<Toggle>(BaseTreeView.itemToggleUssClassName);
             var index = ((ReusableTreeViewItem)toggle.userData).index;
+
+            if (this is MultiColumnTreeViewController multiColumnTreeViewController)
+            {
+                index = multiColumnTreeViewController.columnController.GetSortedIndex(index);
+            }
+
             var id = GetIdForIndex(index);
             var wasExpanded = IsExpandedByIndex(index);
 
@@ -189,8 +195,13 @@ namespace UnityEngine.UIElements
         {
             var toggle = evt.target as Toggle;
             var index = ((ReusableTreeViewItem)toggle.userData).index;
-            var isExpanded = IsExpandedByIndex(index);
 
+            if (this is MultiColumnTreeViewController multiColumnTreeViewController)
+            {
+                index = multiColumnTreeViewController.columnController.GetSortedIndex(index);
+            }
+
+            var isExpanded = IsExpandedByIndex(index);
             if (isExpanded)
                 CollapseItemByIndex(index, false);
             else
@@ -410,8 +421,12 @@ namespace UnityEngine.UIElements
                         ExpandItemByIndex(GetIndexForId(childId), true, false);
             }
 
+            HierarchyChanged();
+
             if (refresh)
+            {
                 baseTreeView.RefreshItems();
+            }
         }
 
         /// <summary>
@@ -478,6 +493,7 @@ namespace UnityEngine.UIElements
             }
 
             m_ItemWrappers.RemoveRange(index + 1, recursiveChildCount);
+            HierarchyChanged();
             baseTreeView.RefreshItems();
         }
 
@@ -566,7 +582,13 @@ namespace UnityEngine.UIElements
 
             CreateWrappers(rootItemIds, 0, ref m_ItemWrappers);
             SetItemsSourceWithoutNotify(m_ItemWrappers);
+            HierarchyChanged();
         }
+
+        /// <summary>
+        /// Entry point for when the hierarchy view model was updated. This can be switched to use the PreRefresh method once the tree view backend refactoring work lands.
+        /// </summary>
+        private protected virtual void HierarchyChanged() { }
 
         static readonly ProfilerMarker k_CreateWrappers = new ProfilerMarker("BaseTreeViewController.CreateWrappers");
         void CreateWrappers(IEnumerable<int> treeViewItemIds, int depth, ref List<TreeViewItemWrapper> wrappers)
@@ -600,6 +622,7 @@ namespace UnityEngine.UIElements
         internal void RaiseItemParentChanged(int id, int newParentId)
         {
             RaiseItemIndexChanged(id, newParentId);
+            HierarchyChanged();
         }
     }
 }

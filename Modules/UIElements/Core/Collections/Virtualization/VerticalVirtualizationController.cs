@@ -81,7 +81,7 @@ namespace UnityEngine.UIElements
 
                 if (rebuild)
                 {
-                    if (hasValidBindings)
+                    if (hasValidBindings && recycledItem.index != ReusableCollectionItem.UndefinedIndex)
                     {
                         m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                     }
@@ -119,6 +119,18 @@ namespace UnityEngine.UIElements
                 m_Pool.Clear();
                 m_ActiveItems.Clear();
                 m_ScrollView.Clear();
+            }
+        }
+
+        public override void UnbindAll()
+        {
+            var hasValidBindings = m_CollectionView.HasValidDataAndBindings();
+            if (!hasValidBindings)
+                return;
+
+            foreach (var recycledItem in m_ActiveItems)
+            {
+                m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
             }
         }
 

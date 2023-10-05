@@ -253,7 +253,7 @@ namespace Unity.UI.Builder
                 m_Popup.anchoredControl = m_TextField.visualInput;
         }
 
-        void EnsurePopupIsCreated()
+        internal void EnsurePopupIsCreated()
         {
             if (m_Popup == null)
             {

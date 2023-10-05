@@ -19,8 +19,7 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class ToggleButtonGroup : BaseField<ToggleButtonGroupState>
     {
-        private const int k_MaxToggleButtons = 64;
-        private static readonly string k_MaxToggleButtonGroupMessage = $"The number of buttons added to ToggleButtonGroup has exceeds the maximum allowed ({k_MaxToggleButtons}). The newly added button will not be treated as part of this control.";
+        private static readonly string k_MaxToggleButtonGroupMessage = $"The number of buttons added to ToggleButtonGroup exceeds the maximum allowed ({ToggleButtonGroupState.maxLength}). The newly added button will not be treated as part of this control.";
 
         internal static readonly BindingId isMultipleSelectionProperty = nameof(isMultipleSelection);
         internal static readonly BindingId allowEmptySelectionProperty = nameof(allowEmptySelection);
@@ -115,11 +114,20 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string buttonStandaloneClassName = buttonClassName + "--standalone";
 
-        // Main container that will hold the group of buttons.
+        /// <summary>
+        /// USS class name for empty state label.
+        /// </summary>
+        public static readonly string emptyStateLabelClassName = buttonGroupClassName + "__empty-label";
+
+        // Main container that will hold the group of buttons. This is what we set as the visualInput element.
         VisualElement m_ButtonGroupContainer;
 
         // Hold a list of available buttons on the group.
         List<Button> m_Buttons = new();
+
+        // Used for the empty state.
+        VisualElement m_EmptyLabel;
+        const string k_EmptyStateLabel = "Group has no buttons.";
 
         private bool m_IsMultipleSelection;
         private bool m_AllowEmptySelection;
@@ -193,7 +201,7 @@ namespace UnityEngine.UIElements
         /// Constructs a ToggleButtonGroup.
         /// </summary>
         /// <param name="label">The text used as a label.</param>
-        public ToggleButtonGroup(string label) : this(label, new ToggleButtonGroupState(0, k_MaxToggleButtons)) { }
+        public ToggleButtonGroup(string label) : this(label, new ToggleButtonGroupState(0, ToggleButtonGroupState.maxLength)) { }
 
         /// <summary>
         /// Constructs a ToggleButtonGroup.
@@ -210,7 +218,8 @@ namespace UnityEngine.UIElements
             : base(label)
         {
             AddToClassList(ussClassName);
-            Add(m_ButtonGroupContainer = new VisualElement { name = containerUssClassName, classList = { buttonGroupClassName } });
+            visualInput = new VisualElement { name = containerUssClassName, classList = { buttonGroupClassName } };
+            m_ButtonGroupContainer = visualInput;
 
             // Note: We are changing the workflow through these series of callback. The desired workflow is when a user
             //       adds a new button, we would take the button and apply the necessary style and give it the designed
@@ -218,12 +227,13 @@ namespace UnityEngine.UIElements
             //       of this control, we need to make sure that elementAdded is hooked for ToggleButtonGroup and its
             //       internal contentContainer separately, otherwise it would not receive the expected workflow when a
             //       control is added into this.
-            elementAdded += OnToggleButtonGroupElementAdded;
             m_ButtonGroupContainer.elementAdded += OnButtonGroupContainerElementAdded;
             m_ButtonGroupContainer.elementRemoved += OnButtonGroupContainerElementRemoved;
 
             SetValueWithoutNotify(toggleButtonGroupState);
         }
+
+        public override VisualElement contentContainer => m_ButtonGroupContainer ?? this;
 
         protected override void UpdateMixedValueContent()
         {
@@ -248,37 +258,36 @@ namespace UnityEngine.UIElements
         public override void SetValueWithoutNotify(ToggleButtonGroupState newValue)
         {
             if (newValue.length == 0)
-                newValue = new ToggleButtonGroupState(0, k_MaxToggleButtons);
+            {
+                newValue = new ToggleButtonGroupState(0, 0);
+
+                m_EmptyLabel ??= new Label(k_EmptyStateLabel) { name = emptyStateLabelClassName, classList = { emptyStateLabelClassName } };
+                visualInput.Insert(0, m_EmptyLabel);
+            }
+            else
+            {
+                m_EmptyLabel?.RemoveFromHierarchy();
+            }
 
             base.SetValueWithoutNotify(newValue);
             UpdateButtonStates(newValue);
-        }
-
-        void OnToggleButtonGroupElementAdded(VisualElement ve)
-        {
-            if (ve is not Button button)
-                return;
-
-            if (m_Buttons.Count > k_MaxToggleButtons)
-            {
-                Debug.LogWarning(k_MaxToggleButtonGroupMessage);
-                return;
-            }
-
-            m_ButtonGroupContainer.Add(button);
         }
 
         void OnButtonGroupContainerElementAdded(VisualElement ve)
         {
             if (ve is not Button button)
             {
+                // We want the empty label there. Early out.
+                if (ve == m_EmptyLabel)
+                    return;
+
                 // Since we only allow buttons, we move anything that is not a button outside of our contentContainer.
-                Add(ve);
+                hierarchy.Add(ve);
                 return;
             }
 
             // The plus one being the button being added.
-            if (m_Buttons.Count + 1 > k_MaxToggleButtons)
+            if (m_Buttons.Count + 1 > ToggleButtonGroupState.maxLength)
             {
                 Debug.LogWarning(k_MaxToggleButtonGroupMessage);
                 return;
@@ -293,13 +302,26 @@ namespace UnityEngine.UIElements
             m_Buttons = m_ButtonGroupContainer.Query<Button>().ToList();
             UpdateButtonsStyling();
 
+            var needsSetValue = false;
             var toggleButtonGroupState = value;
-            var selected = toggleButtonGroupState.GetActiveOptions(stackalloc int[toggleButtonGroupState.length]);
+
+            // If there are more buttons than the ToggleButtonGroupState length, we need to increase it so that it doesn't throw.
+            if (m_Buttons.Count >= value.length && m_Buttons.Count <= ToggleButtonGroupState.maxLength)
+            {
+                toggleButtonGroupState.length = m_Buttons.Count;
+                needsSetValue = true;
+            }
+
             // If we don't allow empty selection, we set the first button to be checked.
-            if (selected.Length == 0 && !allowEmptySelection)
+            if (value.data == 0 && !allowEmptySelection)
             {
                 toggleButtonGroupState[0] = true;
-                SetValueWithoutNotify(toggleButtonGroupState);
+                needsSetValue = true;
+            }
+
+            if (needsSetValue)
+            {
+                value = toggleButtonGroupState;
             }
         }
 
@@ -320,6 +342,8 @@ namespace UnityEngine.UIElements
             m_Buttons.Remove(button);
             UpdateButtonsStyling();
 
+            toggleButtonGroupState.length = m_Buttons.Count;
+
             if (m_Buttons.Count == 0)
             {
                 toggleButtonGroupState.ResetAllOptions();
@@ -332,7 +356,7 @@ namespace UnityEngine.UIElements
                 if (!allowEmptySelection && selected.Length == 1)
                     toggleButtonGroupState[0] = true;
 
-                SetValueWithoutNotify(toggleButtonGroupState);
+                value = toggleButtonGroupState;
             }
         }
 
