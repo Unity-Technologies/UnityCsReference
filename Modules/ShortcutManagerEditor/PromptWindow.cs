@@ -24,12 +24,12 @@ namespace UnityEditor.ShortcutManagement
         Button m_SubmitButton;
 
         public static void Show(string title, string headerText, string messageText, string valueLabel, string initialValue,
-            string acceptButtonText, Func<string, string> validator, Action<string> action)
+            string acceptButtonText, Func<string, string> validator, Action<string> action, float windowWidth = 380f, float windowHeight = 160f)
         {
             var promptWindow = GetWindow<PromptWindow>(true, title, true);
 
             // TODO: Ideally the window size should be fixed according to its contents
-            promptWindow.minSize = promptWindow.maxSize = new Vector2(380, 160);
+            promptWindow.minSize = promptWindow.maxSize = new Vector2(windowWidth, windowHeight);
 
             promptWindow.m_HeaderTextElement.text = headerText;
             promptWindow.m_MessageTextElement.text = messageText;

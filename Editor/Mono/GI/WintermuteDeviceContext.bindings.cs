@@ -9,7 +9,6 @@ using Unity.Collections;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightTransport
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -20,7 +19,7 @@ namespace UnityEngine.LightTransport
         private Dictionary<BufferID, NativeArray<byte>> buffers = new();
         private uint nextFreeBufferId;
         private uint nextFreeEventId;
-        public static class BindingsMarshaller
+        internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(WintermuteContext obj) => obj.m_Ptr;
         }

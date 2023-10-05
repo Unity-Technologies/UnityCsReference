@@ -522,8 +522,11 @@ namespace Unity.UI.Builder
             if (bindingSerializedPropertyPathRoot != null)
             {
                 CallDeserializeOnElement();
-                var result = SynchronizePath(bindingSerializedPropertyPathRoot, true);
-                m_DataSourcePathCompleter.binding = result.attributeOwner as DataBinding;
+                using (new DisableUndoScope(this))
+                {
+                    var result = SynchronizePath(bindingSerializedPropertyPathRoot, true);
+                    m_DataSourcePathCompleter.binding = result.attributeOwner as DataBinding;
+                }
             }
 
             m_DataSourcePathCompleter.UpdateResults();

@@ -2,18 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
     internal static class AssetPreviewUpdater
     {
-        static readonly Type[] s_InspectorsRequireFullPipelineInitialization = new[] { typeof(MaterialEditor), typeof(ModelInspector), typeof(GameObjectInspector) };
-
         [RequiredByNativeCode]
         public static Texture2D CreatePreviewForAsset(Object obj, Object[] subAssets, string assetPath)
         {
@@ -37,30 +33,20 @@ namespace UnityEditor
             if (info.DeclaringType == typeof(Editor))
                 return null;
 
-
             var editor = Editor.CreateEditor(obj);
-
             if (editor == null)
                 return null;
 
             //Check that Render Pipeline is ready
+            //Beware: AssetImportWorkers have their own Render Pipeline instance. Render Pipeline will be separately created for each one of them.
             var pipelineWasNotInitialized = !RenderPipelineManager.pipelineSwitchCompleted;
 
-            //We keep this call to initialize Render Pipeline when Render Pipeline is not ready
-            var tex = editor.RenderStaticPreview(assetPath, subAssets, width, height);
+            //We always keep this call to initialize Render Pipeline when Render Pipeline was not ready
+            var previewTexture = editor.RenderStaticPreview(assetPath, subAssets, width, height);
 
-            //If Render Pipeline was not created before we will ignore the results and mark it dirty.
-            if (pipelineWasNotInitialized)
-            {
-                for (int i = 0; i < s_InspectorsRequireFullPipelineInitialization.Length; i++)
-                {
-                    if (type != s_InspectorsRequireFullPipelineInitialization[i])
-                        continue;
-                    EditorUtility.SetDirty(obj);
-                    Object.DestroyImmediate(editor);
-                    return null;
-                }
-            }
+            //If after render our Render Pipeline is initialized we re-render to have a valid result
+            if (pipelineWasNotInitialized && RenderPipelineManager.pipelineSwitchCompleted)
+                previewTexture = editor.RenderStaticPreview(assetPath, subAssets, width, height);
 
             // For debugging we write the preview to a file (keep)
             //{
@@ -71,8 +57,7 @@ namespace UnityEditor
             //}
 
             Object.DestroyImmediate(editor);
-
-            return tex;
+            return previewTexture;
         }
     }
 }

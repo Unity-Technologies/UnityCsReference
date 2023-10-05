@@ -82,6 +82,7 @@ namespace UnityEngine
         extern public bool              receiveShadows { get; set; }
 
         extern public bool              forceRenderingOff { get; set; }
+        extern internal bool            allowGPUDrivenRendering { get; set; }
 
         [NativeName("GetIsStaticShadowCaster")] extern private bool GetIsStaticShadowCaster();
         [NativeName("SetIsStaticShadowCaster")] extern private void SetIsStaticShadowCaster(bool value);
@@ -210,6 +211,8 @@ namespace UnityEngine
         {
             GetClosestReflectionProbesInternal(result);
         }
+
+        extern public LODGroup LODGroup { get; }
     }
 
     [NativeHeader("Runtime/Graphics/TrailRenderer.h")]

@@ -118,8 +118,8 @@ namespace Unity.UI.Builder
                     if (elementType.GetCustomAttribute<HideInInspector>() != null)
                         continue;
 
-                    // Ignore elements with generic parameters
-                    if (elementType.ContainsGenericParameters)
+                    // Ignore elements with generic parameters and abstract elements
+                    if (elementType.ContainsGenericParameters || elementType.IsAbstract)
                         continue;
 
                     // UxmlElements with a custom name appear in SerializedDataTypes twice, we only need 1 item with the custom name.

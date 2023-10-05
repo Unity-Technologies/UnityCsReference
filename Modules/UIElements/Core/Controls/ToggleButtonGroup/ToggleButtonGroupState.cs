@@ -12,11 +12,17 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// The structure that keeps track of the <see cref="Button"/> states inside a <see cref="ToggleButtonGroup"/>.
     /// </summary>
+    /// <remarks>
+    /// To set properties on how to serialize this type, use <see cref="ToggleButtonGroupStatePropertiesAttribute"/>.
+    /// </remarks>
     [Serializable]
     public struct ToggleButtonGroupState : IEquatable<ToggleButtonGroupState>, IComparable<ToggleButtonGroupState>
     {
-        private const int k_MaxLength = 64;
+        internal const int maxLength = 64;
+
+        [SerializeField]
         private ulong m_Data;
+        [SerializeField]
         private int m_Length;
 
         /// <summary>
@@ -30,8 +36,8 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public ToggleButtonGroupState(ulong optionsBitMask, int length)
         {
-            if (length is < 0 or > k_MaxLength)
-                throw new ArgumentOutOfRangeException(nameof(length), $"length of {length} should be greater than or equal to 0 and less than or equal to {k_MaxLength}.");
+            if (length is < 0 or > maxLength)
+                throw new ArgumentOutOfRangeException(nameof(length), $"length of {length} should be greater than or equal to 0 and less than or equal to {maxLength}.");
 
             m_Data = optionsBitMask;
             m_Length = length;
@@ -41,7 +47,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns the number of toggle button options available.
         /// </summary>
-        public int length => m_Length;
+        public int length
+        {
+            get => m_Length;
+            internal set => m_Length = value;
+        }
+
+        internal ulong data => m_Data;
 
         /// <summary>
         /// The option based on the index.
@@ -53,7 +65,7 @@ namespace UnityEngine.UIElements
             get
             {
                 if (index < 0 || index >= m_Length)
-                    throw new ArgumentOutOfRangeException(nameof(index), $"index of {index} should be in the range of 0 and ({m_Length} - 1) inclusively.");
+                    throw new ArgumentOutOfRangeException(nameof(index), $"index of {index} should be in the range of 0 and {m_Length - 1} inclusively.");
 
                 var bit = 1ul << index;
                 return (m_Data & bit) == bit;
@@ -61,7 +73,7 @@ namespace UnityEngine.UIElements
             set
             {
                 if (index < 0 || index >= m_Length)
-                    throw new ArgumentOutOfRangeException(nameof(index), $"index of {index} should be in the range of 0 and ({m_Length} - 1) inclusively.");
+                    throw new ArgumentOutOfRangeException(nameof(index), $"index of {index} should be in the range of 0 and {m_Length - 1} inclusively.");
 
                 var option = 1ul << index;
                 if (value)
@@ -293,7 +305,7 @@ namespace UnityEngine.UIElements
 
         private void ResetOptions(int startingIndex)
         {
-            for (var i = startingIndex; i < k_MaxLength; ++i)
+            for (var i = startingIndex; i < maxLength; ++i)
             {
                 var option = 1ul << i;
                 m_Data &= ~option;
@@ -349,6 +361,12 @@ namespace UnityEngine.UIElements
         public override int GetHashCode()
         {
             return HashCode.Combine(m_Data, m_Length);
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return Convert.ToString((long)m_Data, toBase:2).PadLeft(length, '0');
         }
     }
 }

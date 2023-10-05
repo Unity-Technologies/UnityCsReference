@@ -46,7 +46,6 @@ namespace Unity.UI.Builder
             private set
             {
                 m_IsCreatingBinding = value;
-                m_AttributesView.undoEnabled = !value;
                 m_AttributesView.callInitOnValueChange = !value;
             }
         }
@@ -59,12 +58,17 @@ namespace Unity.UI.Builder
         /// <summary>
         /// The property of the binding to create or to edit.
         /// </summary>
-        public IProperty bindableProperty => PropertyContainer.GetProperty(selectedVisualElement, new PropertyPath(bindingPropertyName));
+        public IProperty bindableProperty => PropertyContainer.GetProperty(currentVisualElement, new PropertyPath(bindingPropertyName));
 
         /// <summary>
         /// The VisualElement currently selected.
         /// </summary>
-        VisualElement selectedVisualElement => m_Inspector.currentVisualElement;
+        VisualElement selectedVisualElement => m_Inspector.selectedVisualElement;
+
+        /// <summary>
+        /// The VisualElement currently selected or cached if none are selected.
+        /// </summary>
+        VisualElement currentVisualElement => m_Inspector.currentVisualElement;
 
         public Action closing;
         public Action closeRequested;
@@ -285,7 +289,7 @@ namespace Unity.UI.Builder
             // Restore the property attribute default value.
             propertyAttribute.defaultValue = previousDefault;
 
-            m_AttributesView.SetAttributesOwnerFromCopy(m_Inspector.document.visualTreeAsset, selectedVisualElement);
+            m_AttributesView.SetAttributesOwnerFromCopy(m_Inspector.document.visualTreeAsset, currentVisualElement);
 
             // Add the Binding serialized data to the current element's binding list.
             var property = m_AttributesView.m_CurrentElementSerializedObject.FindProperty(m_AttributesView.serializedRootPath + "bindings");
@@ -306,12 +310,15 @@ namespace Unity.UI.Builder
             m_AttributesView.bindingUxmlSerializedDataDescription = description;
 
             // Restore the bindingMode attribute default value and update the uxml asset
-            if (bindingModeAttribute != null)
+            using (new BuilderUxmlAttributesView.DisableUndoScope(m_AttributesView))
             {
-                // need to update the uxmlAsset with the binding mode change
-                var result = m_AttributesView.SynchronizePath(uxmlObjectPropertyPath, true);
-                result.uxmlAsset?.SetAttribute("binding-mode", BindingMode.ToTarget.ToString());
-                bindingModeAttribute.defaultValue = previousBindingModeDefault;
+                if (bindingModeAttribute != null)
+                {
+                    // need to update the uxmlAsset with the binding mode change
+                    var result = m_AttributesView.SynchronizePath(uxmlObjectPropertyPath, true);
+                    result.uxmlAsset?.SetAttribute("binding-mode", BindingMode.ToTarget.ToString());
+                    bindingModeAttribute.defaultValue = previousBindingModeDefault;
+                }
             }
         }
 
@@ -330,7 +337,7 @@ namespace Unity.UI.Builder
             // Find the binding serializedData
             bindingPropertyName = binding.property;
             m_BindingTypeField.index = m_UxmlBindingTypeNames.IndexOf(description.uxmlFullName);
-            m_AttributesView.SetAttributesOwner(m_Inspector.document.visualTreeAsset, selectedVisualElement);
+            m_AttributesView.SetAttributesOwner(m_Inspector.document.visualTreeAsset, currentVisualElement);
 
             // Find the binding
             var bindingsPath = m_Inspector.attributesSection.serializedRootPath + "bindings";
@@ -353,6 +360,16 @@ namespace Unity.UI.Builder
         /// <inheritdoc/>
         public void SelectionChanged()
         {
+            // if we're undoing the creation of the binding window, we need to close the view
+            // we also need to wait for the selection to be restored before refreshing the view
+            var validBinding = m_AttributesView.m_CurrentElementSerializedObject.FindProperty(m_AttributesView.bindingSerializedPropertyPathRoot)?.managedReferenceValue != null;
+            if (Builder.ActiveWindow.isInUndoRedo && validBinding && selectedVisualElement != null)
+            {
+                Refresh();
+                m_ValidateSelectionScheduledItem?.Pause();
+                return;
+            }
+
             // Delay the validation of the selection because the selection is cleared and restored on Undo/Redo, which triggers many notifications.
             if (m_ValidateSelectionScheduledItem != null)
             {
@@ -377,9 +394,10 @@ namespace Unity.UI.Builder
 
             try
             {
-                if (selectedVisualElement != null)
+                var validBinding = m_AttributesView.m_CurrentElementSerializedObject.FindProperty(m_AttributesView.bindingSerializedPropertyPathRoot)?.managedReferenceValue != null;
+                if (currentVisualElement != null && validBinding)
                 {
-                    var currentVea = selectedVisualElement.GetVisualElementAsset();
+                    var currentVea = currentVisualElement.GetVisualElementAsset();
 
                     // Check if inspector.currentVisualElement has been recreated from its related uxml asset
                     // while the Binding window was opened.

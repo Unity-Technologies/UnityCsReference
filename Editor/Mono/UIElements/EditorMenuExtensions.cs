@@ -529,7 +529,10 @@ namespace UnityEditor.UIElements
 
                     s_MaxShortcutLength.TryAdd(menu, 0f);
                     s_MaxShortcutLength[menu] = Mathf.Max(s_MaxShortcutLength[menu], e.elementTarget.resolvedStyle.width);
-                    e.elementTarget.style.minWidth = s_MaxShortcutLength[menu];
+
+                    var shortcutLabels = menu.menuContainer.Query<Label>(className: shortcutUssClassName).Build();
+                    foreach (var label in shortcutLabels)
+                        label.style.minWidth = s_MaxShortcutLength[menu];
                 });
 
                 return shortcut;

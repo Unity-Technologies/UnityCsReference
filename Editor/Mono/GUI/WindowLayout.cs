@@ -76,7 +76,8 @@ namespace UnityEditor
         const string k_CenterViewClassName = "center_view";
         const string k_BottomViewClassName = "bottom_view";
 
-        private const string kMaximizeRestoreFile = "CurrentMaximizeLayout.dwlt";
+        // used by tests
+        internal const string kMaximizeRestoreFile = "CurrentMaximizeLayout.dwlt";
         private const string kDefaultLayoutName = "Default.wlt";
         internal static string layoutResourcesPath => Path.Combine(EditorApplication.applicationContentsPath, "Resources/Layouts");
         internal static string layoutsPreferencesPath => FileUtil.CombinePaths(InternalEditorUtility.unityPreferencesFolder, "Layouts");
@@ -909,11 +910,12 @@ namespace UnityEditor
                 return;
             }
 
-            UnityObject[] newWindows = InternalEditorUtility.LoadSerializedFileAndForget(Path.Combine(layoutsProjectPath, kMaximizeRestoreFile));
+            var restoreLayout = Path.Combine(layoutsProjectPath, kMaximizeRestoreFile);
+            UnityObject[] newWindows = InternalEditorUtility.LoadSerializedFileAndForget(restoreLayout);
 
             if (newWindows.Length < 2)
             {
-                Debug.Log("Maximized serialized file backup not found");
+                Debug.LogError("Maximized serialized file backup not found.");
                 ResetAllLayouts();
                 return;
             }
@@ -923,7 +925,7 @@ namespace UnityEditor
 
             if (oldRoot == null)
             {
-                Debug.Log("Maximization failed because the root split view was not found");
+                Debug.LogError("Maximization failed because the root split view was not found.");
                 ResetAllLayouts();
                 return;
             }
@@ -931,7 +933,7 @@ namespace UnityEditor
             ContainerWindow parentWindow = win.m_Parent.window;
             if (parentWindow == null)
             {
-                Debug.Log("Maximization failed because the root split view has no container window");
+                Debug.LogError("Maximization failed because the root split view has no container window.");
                 ResetAllLayouts();
                 return;
             }
@@ -1367,7 +1369,7 @@ namespace UnityEditor
                     }
                 }
 
-                if (mainWindowToSetSize) 
+                if (mainWindowToSetSize)
                 {
                     mainWindowToSetSize.SetFreeze(true);
                     mainWindowToSetSize.position = mainWindowPosition;
@@ -1392,7 +1394,7 @@ namespace UnityEditor
                 {
                     throw new LayoutException("Error while reading window layout: no main window found");
                 }
-                
+
                 // Show other windows
                 for (int i = 0; i < newWindows.Count; i++)
                 {
@@ -1615,14 +1617,19 @@ namespace UnityEditor
                 FileUtil.CopyFileIfExists(installationLayoutPath, userLayoutDstPath, overwrite: true);
             }
 
-            // Delete any current project layouts
+            // delete per-project layouts
             if (Directory.Exists(layoutsProjectPath))
                 Directory.Delete(layoutsProjectPath, true);
+
+            // delete per-user layouts
+            if (Directory.Exists(layoutsCurrentModePreferencesPath))
+                Directory.Delete(layoutsCurrentModePreferencesPath, true);
         }
+
 
         public static void ResetAllLayouts(bool quitOnCancel = true)
         {
-            if (!EditorUtility.DisplayDialog("Revert All Window Layouts",
+            if (!Application.isTestRun && !EditorUtility.DisplayDialog("Revert All Window Layouts",
                 "Unity is about to delete all window layouts and restore them to the default settings.",
                 "Continue", quitOnCancel ? "Quit" : "Cancel"))
             {

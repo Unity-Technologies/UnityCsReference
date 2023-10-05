@@ -437,8 +437,7 @@ namespace UnityEditor
                     return null;
             }
         }
-
-
+        
         internal int GetNumTabs()
         {
             DockArea da = m_Parent as DockArea;

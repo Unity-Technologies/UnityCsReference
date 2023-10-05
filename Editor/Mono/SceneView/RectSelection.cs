@@ -3,33 +3,200 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
+using UnityEditor.ShortcutManagement;
+using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
     // Handles picking/selection in the scene view (both "click" type and "drag-rect" type)
-    internal class RectSelection
+    class RectSelection
     {
-        Vector2 m_SelectStartPoint;
+        public enum SelectionType { Normal, Additive, Subtractive }
+
         Vector2 m_SelectMousePoint;
-        Object[] m_SelectionStart;
-        bool m_RectSelecting;
-        Dictionary<GameObject, bool> m_LastSelection;
-        enum SelectionType { Normal, Additive, Subtractive }
+        Vector2 m_StartPoint;
+
+        SelectionType m_CurrentSelectionType;
+
+        Object[] m_SelectionStart = null;
         Object[] m_CurrentSelection = null;
-        readonly EditorWindow m_Window;
 
-        internal static event Action rectSelectionStarting = delegate { };
-        internal static event Action rectSelectionFinished = delegate { };
+        Dictionary<GameObject, bool> m_LastSelection;
 
-        static readonly int s_RectSelectionID = GUIUtility.GetPermanentControlID();
+        public static event Action s_RectSelectionStarting = delegate { };
+        public static event Action s_RectSelectionFinished = delegate { };
 
-        public RectSelection(EditorWindow window)
+        bool m_IsNearestControl = false;
+
+        const string k_PickingEventCommandName = "SceneViewPickingEventCommand";
+        const string k_SetRectSelectionHotControlEventCommandName = "SetRectSelectionHotControlEventCommand";
+
+        const string k_RectSelectionNormal = "Scene View/Rect Selection Normal";
+        const string k_RectSelectionAdditive = "Scene View/Rect Selection Additive";
+        const string k_RectSelectionSubtractive = "Scene View/Rect Selection Subtractive";
+        const string k_PickingNormal = "Scene View/Picking Normal";
+        const string k_PickingAdditive = "Scene View/Picking Additive";
+        const string k_PickingSubtractive = "Scene View/Picking Subtractive";
+
+        readonly int k_RectSelectionID = GUIUtility.GetPermanentControlID();
+
+        [InitializeOnLoadMethod]
+        static void RegisterShortcutContext() => EditorApplication.delayCall += () =>
         {
-            m_Window = window;
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewRectSelection());
+        };
+
+        class SceneViewRectSelection : IShortcutToolContext
+        {
+            public SceneView window => EditorWindow.focusedWindow is SceneView ? (SceneView)EditorWindow.focusedWindow : null;
+
+            public bool active => IsActive;
+
+            public static bool IsActive
+            {
+                get
+                {
+                    if (!(EditorWindow.focusedWindow is SceneView view))
+                        return false;
+                    return view.sceneViewMotion.viewportsUnderMouse;
+                }
+            }
+        }
+
+        [ClutchShortcut(k_RectSelectionNormal, typeof(SceneViewRectSelection), KeyCode.Mouse0)]
+        static void OnNormalRectSelection(ShortcutArguments args)
+        {
+            var context = args.context as SceneViewRectSelection;
+            context.window?.rectSelection.OnRectSelection(args, SelectionType.Normal, context.window);
+        }
+
+        [ClutchShortcut(k_RectSelectionAdditive, typeof(SceneViewRectSelection), KeyCode.Mouse0, ShortcutModifiers.Shift)]
+        static void OnAdditiveRectSelection(ShortcutArguments args)
+        {
+            var context = args.context as SceneViewRectSelection;
+            context.window?.rectSelection.OnRectSelection(args, SelectionType.Additive, context.window);
+        }
+
+        [ClutchShortcut(k_RectSelectionSubtractive, typeof(SceneViewRectSelection), KeyCode.Mouse0, ShortcutModifiers.Action)]
+        static void OnSubtractiveRectSelection(ShortcutArguments args)
+        {
+            var context = args.context as SceneViewRectSelection;
+            context.window?.rectSelection.OnRectSelection(args, SelectionType.Subtractive, context.window);
+        }
+
+        public void OnRectSelection(ShortcutArguments args, SelectionType selectionType, SceneView view)
+        {
+            if (args.stage == ShortcutStage.Begin && GUIUtility.hotControl == 0)
+            {
+                m_CurrentSelectionType = selectionType;
+                StartRectSelection(view);
+            }
+            else if (args.stage == ShortcutStage.End)
+            {
+                CompleteRectSelection();
+            }
+        }
+
+        [Shortcut(k_PickingNormal, typeof(SceneViewRectSelection), KeyCode.Mouse0)]
+        static void OnNormalPicking(ShortcutArguments args)
+        {
+            var context = args.context as SceneViewRectSelection;
+            context.window?.rectSelection.DelayPicking(context.window, SelectionType.Normal);
+        }
+
+        [Shortcut(k_PickingAdditive, typeof(SceneViewRectSelection), KeyCode.Mouse0, ShortcutModifiers.Shift)]
+        static void OnAdditivePicking(ShortcutArguments args)
+        {
+            var context = args.context as SceneViewRectSelection;
+            context.window?.rectSelection.DelayPicking(context.window, SelectionType.Additive);
+        }
+
+        [Shortcut(k_PickingSubtractive, typeof(SceneViewRectSelection), KeyCode.Mouse0, ShortcutModifiers.Action)]
+        static void OnSubtractivePicking(ShortcutArguments args)
+        {
+            var context = args.context as SceneViewRectSelection;
+            context.window?.rectSelection.DelayPicking(context.window, SelectionType.Subtractive);
+        }
+
+        // Delaying the picking to a command event is necessary because some HandleUtility methods
+        // need to be called in an OnGUI.
+        public void DelayPicking(SceneView sceneview, SelectionType selectionType)
+        {
+            if (sceneview == null)
+                return;
+
+            m_CurrentSelectionType = selectionType;
+            sceneview.SendEvent(EditorGUIUtility.CommandEvent(k_PickingEventCommandName));
+        }
+
+        void Pick(SelectionType selectionType, Vector2 mousePos, Event evt)
+        {
+            if (selectionType == SelectionType.Subtractive || selectionType == SelectionType.Additive)
+            {
+                // For shift, we check if EXACTLY the active GO is hovered by mouse and then subtract. Otherwise additive.
+                // For control/cmd, we check if ANY of the selected GO is hovered by mouse and then subtract. Otherwise additive.
+                // Control/cmd takes priority over shift.
+                var hovered = HandleUtility.PickObject(mousePos, false);
+
+                var handledIt = false;
+                // shift-click deselects only if the active GO is exactly what we clicked on
+                if (selectionType != SelectionType.Subtractive && Selection.activeObject == hovered.target)
+                {
+                    UpdateSelection(m_SelectionStart, hovered.target, SelectionType.Subtractive, false);
+                    handledIt = true;
+                }
+
+                // ctrl-click deselects everything up to prefab root, that is already selected
+                if (!handledIt && selectionType == SelectionType.Subtractive)
+                {
+                    var selectedObjects = Selection.objects;
+                    hovered.TryGetComponent<Transform>(out var hoveredTransform);
+                    var hoveredRoot = HandleUtility.FindSelectionBaseForPicking(hoveredTransform);
+                    var deselectList = new List<Object>();
+
+                    while (hovered.target != null)
+                    {
+                        foreach (var obj in selectedObjects)
+                        {
+                            if (obj.Equals(hovered.target))
+                            {
+                                deselectList.Add(hovered.target);
+                                break;
+                            }
+                        }
+
+                        if (hovered.target == hoveredRoot)
+                            break;
+
+                        if (!hovered.TryGetParent(out var parent))
+                            break;
+
+                        hovered = new PickingObject(parent.gameObject);
+                    }
+
+                    if (deselectList.Count > 0)
+                    {
+                        UpdateSelection(m_SelectionStart, deselectList.ToArray(), SelectionType.Subtractive, false);
+                        handledIt = true;
+                    }
+                }
+
+                // we did not deselect anything, so add the new thing into selection instead
+                if (!handledIt)
+                {
+                    var picked = HandleUtility.PickObject(mousePos, true);
+                    UpdateSelection(m_SelectionStart, picked.target, SelectionType.Additive, false);
+                }
+            }
+            else // With no modifier keys, we do the "cycle through overlapped" picking logic in SceneViewPicking.cs
+            {
+                var picked = SceneViewPicking.PickGameObject(mousePos);
+                UpdateSelection(m_SelectionStart, picked.target, selectionType, false);
+            }
+
+            evt.Use();
         }
 
         public void OnGUI()
@@ -38,173 +205,90 @@ namespace UnityEditor
 
             Handles.BeginGUI();
 
-            Vector2 mousePos = evt.mousePosition;
-            int id = s_RectSelectionID;
-
-            switch (evt.GetTypeForControl(id))
+            switch (evt.GetTypeForControl(k_RectSelectionID))
             {
                 case EventType.Layout:
                 case EventType.MouseMove:
                     if (!Tools.viewToolActive)
-                        HandleUtility.AddDefaultControl(id);
-
-                    //Handle the case of the drag being canceled
-                    if (m_RectSelecting && GUIUtility.hotControl != id)
-                    {
-                        CompleteRectSelection();
-                    }
+                        HandleUtility.AddDefaultControl(k_RectSelectionID);
                     break;
-
                 case EventType.MouseDown:
-                    if (HandleUtility.nearestControl == id && evt.button == 0)
-                    {
-                        GUIUtility.hotControl = id;
-                        m_SelectStartPoint = mousePos;
-                        m_SelectionStart = Selection.objects;
-                        m_RectSelecting = false;
-                    }
+                    HandleOnMouseDown(evt);
+                    break;
+                case EventType.MouseUp:
+                    HandleOnMouseUp();
                     break;
                 case EventType.MouseDrag:
-                    if (GUIUtility.hotControl == id)
+                    if (GUIUtility.hotControl == k_RectSelectionID && m_IsNearestControl)
                     {
-                        if (!m_RectSelecting && (mousePos - m_SelectStartPoint).magnitude > 6f && Tools.s_LockedViewTool == ViewTool.None)
+                        m_SelectMousePoint = evt.mousePosition;
+                        GameObject[] rectObjs = HandleUtility.PickRectObjects(EditorGUIExt.FromToRect(m_StartPoint, m_SelectMousePoint));
+                        m_CurrentSelection = rectObjs;
+                        bool setIt = false;
+
+                        if (m_LastSelection == null)
                         {
-                            EditorApplication.modifierKeysChanged += SendCommandsOnModifierKeys;
-                            m_RectSelecting = true;
-                            ActiveEditorTracker.delayFlushDirtyRebuild = true;
-                            m_LastSelection = null;
-                            m_CurrentSelection = null;
-                            rectSelectionStarting();
+                            m_LastSelection = new Dictionary<GameObject, bool>();
+                            setIt = true;
                         }
-                        if (m_RectSelecting)
+
+                        setIt |= m_LastSelection.Count != rectObjs.Length;
+
+                        if (!setIt)
                         {
-                            m_SelectMousePoint = new Vector2(Mathf.Max(mousePos.x, 0), Mathf.Max(mousePos.y, 0));
-                            GameObject[] rectObjs = HandleUtility.PickRectObjects(EditorGUIExt.FromToRect(m_SelectStartPoint, m_SelectMousePoint));
-                            m_CurrentSelection = rectObjs;
-                            bool setIt = false;
-                            if (m_LastSelection == null)
+                            Dictionary<GameObject, bool> set = new Dictionary<GameObject, bool>(rectObjs.Length);
+                            foreach (GameObject g in rectObjs)
+                                set.Add(g, false);
+
+                            foreach (GameObject g in m_LastSelection.Keys)
                             {
-                                m_LastSelection = new Dictionary<GameObject, bool>();
-                                setIt = true;
-                            }
-                            setIt |= m_LastSelection.Count != rectObjs.Length;
-                            if (!setIt)
-                            {
-                                Dictionary<GameObject, bool> set = new Dictionary<GameObject, bool>(rectObjs.Length);
-                                foreach (GameObject g in rectObjs)
-                                    set.Add(g, false);
-                                foreach (GameObject g in m_LastSelection.Keys)
+                                if (!set.ContainsKey(g))
                                 {
-                                    if (!set.ContainsKey(g))
-                                    {
-                                        setIt = true;
-                                        break;
-                                    }
+                                    setIt = true;
+                                    break;
                                 }
                             }
-                            if (setIt)
-                            {
-                                m_LastSelection = new Dictionary<GameObject, bool>(rectObjs.Length);
-                                foreach (GameObject g in rectObjs)
-                                    m_LastSelection.Add(g, false);
-                                if (evt.shift)
-                                    UpdateSelection(m_SelectionStart, rectObjs, SelectionType.Additive, m_RectSelecting);
-                                else if (EditorGUI.actionKey)
-                                    UpdateSelection(m_SelectionStart, rectObjs, SelectionType.Subtractive, m_RectSelecting);
-                                else
-                                    UpdateSelection(m_SelectionStart, rectObjs, SelectionType.Normal, m_RectSelecting);
-                            }
                         }
+
+                        if (setIt)
+                        {
+                            m_LastSelection = new Dictionary<GameObject, bool>(rectObjs.Length);
+
+                            foreach (GameObject g in rectObjs)
+                                m_LastSelection.Add(g, false);
+
+                            UpdateSelection(m_SelectionStart, rectObjs, m_CurrentSelectionType, true);
+                        }
+
                         evt.Use();
                     }
                     break;
-
-                case EventType.Repaint:
-                    if (GUIUtility.hotControl == id && m_RectSelecting)
-                        EditorStyles.selectionRect.Draw(EditorGUIExt.FromToRect(m_SelectStartPoint, m_SelectMousePoint), GUIContent.none, false, false, false, false);
-                    break;
-
-                case EventType.MouseUp:
-                    if (GUIUtility.hotControl == id && evt.button == 0)
+                case EventType.KeyDown: // Escape
+                    if (evt.keyCode == KeyCode.Escape && GUIUtility.hotControl == k_RectSelectionID)
                     {
-                        GUIUtility.hotControl = 0;
-                        if (m_RectSelecting)
-                        {
-                            CompleteRectSelection();
-                            evt.Use();
-                        }
-                        else
-                        {
-                            if (evt.shift || EditorGUI.actionKey)
-                            {
-                                // For shift, we check if EXACTLY the active GO is hovered by mouse and then subtract. Otherwise additive.
-                                // For control/cmd, we check if ANY of the selected GO is hovered by mouse and then subtract. Otherwise additive.
-                                // Control/cmd takes priority over shift.
-                                var hovered = HandleUtility.PickObject(evt.mousePosition, false);
+                        CompleteRectSelection();
 
-                                var handledIt = false;
-                                // shift-click deselects only if the active GO is exactly what we clicked on
-                                if (!EditorGUI.actionKey && Selection.activeObject == hovered.target)
-                                {
-                                    UpdateSelection(m_SelectionStart, hovered.target, SelectionType.Subtractive, m_RectSelecting);
-                                    handledIt = true;
-                                }
+                        // Set the current selection to the previous selection.
+                        Selection.objects = m_SelectionStart;
 
-                                // ctrl-click deselects everything up to prefab root, that is already selected
-                                if (!handledIt && EditorGUI.actionKey)
-                                {
-                                    var selectedObjects = Selection.objects;
-                                    hovered.TryGetComponent<Transform>(out var hoveredTransform);
-                                    var hoveredRoot = HandleUtility.FindSelectionBaseForPicking(hoveredTransform);
-                                    var deselectList = new List<Object>();
-
-                                    while (hovered.target != null)
-                                    {
-                                        if (selectedObjects.Contains(hovered.target))
-                                            deselectList.Add(hovered.target);
-
-                                        if (hovered.target == hoveredRoot)
-                                            break;
-
-                                        if (!hovered.TryGetParent(out var parent))
-                                            break;
-
-                                        hovered = new PickingObject(parent.gameObject);
-                                    }
-
-                                    if (deselectList.Any())
-                                    {
-                                        UpdateSelection(m_SelectionStart, deselectList.ToArray(), SelectionType.Subtractive, m_RectSelecting);
-                                        handledIt = true;
-                                    }
-                                }
-
-                                // we did not deselect anything, so add the new thing into selection instead
-                                if (!handledIt)
-                                {
-                                    var picked = HandleUtility.PickObject(evt.mousePosition, true);
-                                    UpdateSelection(m_SelectionStart, picked.target, SelectionType.Additive, m_RectSelecting);
-                                }
-                            }
-                            else // With no modifier keys, we do the "cycle through overlapped" picking logic in SceneViewPicking.cs
-                            {
-                                var picked = SceneViewPicking.PickGameObject(evt.mousePosition);
-                                UpdateSelection(m_SelectionStart, picked.target, SelectionType.Normal, m_RectSelecting);
-                            }
-
-                            evt.Use();
-                        }
+                        HandleOnMouseUp();
+                    }
+                    break;
+                case EventType.Repaint:
+                    if (GUIUtility.hotControl == k_RectSelectionID && m_IsNearestControl && m_StartPoint != m_SelectMousePoint)
+                    {
+                        EditorStyles.selectionRect.Draw(EditorGUIExt.FromToRect(m_StartPoint, m_SelectMousePoint),
+                            GUIContent.none, false, false, false, false);
                     }
                     break;
                 case EventType.ExecuteCommand:
-                    if (id == GUIUtility.hotControl && evt.commandName == EventCommandNames.ModifierKeysChanged)
+                    if (evt.commandName == k_PickingEventCommandName && m_IsNearestControl)
                     {
-                        if (evt.shift)
-                            UpdateSelection(m_SelectionStart, m_CurrentSelection, SelectionType.Additive, m_RectSelecting);
-                        else if (EditorGUI.actionKey)
-                            UpdateSelection(m_SelectionStart, m_CurrentSelection, SelectionType.Subtractive, m_RectSelecting);
-                        else
-                            UpdateSelection(m_SelectionStart, m_CurrentSelection, SelectionType.Normal, m_RectSelecting);
+                        Pick(m_CurrentSelectionType, m_StartPoint, evt);
+                    }
+                    else if (evt.commandName == k_SetRectSelectionHotControlEventCommandName)
+                    {
+                        GUIUtility.hotControl = k_RectSelectionID;
                         evt.Use();
                     }
                     break;
@@ -213,17 +297,51 @@ namespace UnityEditor
             Handles.EndGUI();
         }
 
-        void CompleteRectSelection()
+        void HandleOnMouseDown(Event evt)
         {
-            EditorApplication.modifierKeysChanged -= SendCommandsOnModifierKeys;
-            m_RectSelecting = false;
-            ActiveEditorTracker.delayFlushDirtyRebuild = false;
-            ActiveEditorTracker.RebuildAllIfNecessary();
-            m_SelectionStart = new Object[0];
-            rectSelectionFinished();
+            if (m_IsNearestControl)
+                m_IsNearestControl = false;
+
+            if (GUIUtility.hotControl == 0 && HandleUtility.nearestControl == k_RectSelectionID)
+            {
+                m_StartPoint = evt.mousePosition;
+                m_SelectMousePoint = m_StartPoint;
+                m_IsNearestControl = true;
+            }
+
+            m_SelectionStart = Selection.objects;
+            m_CurrentSelection = null;
+            m_LastSelection = null;
         }
 
-        static void UpdateSelection(Object[] existingSelection, Object newObject, SelectionType type, bool isRectSelection)
+        void HandleOnMouseUp()
+        {
+            if (GUIUtility.hotControl == k_RectSelectionID)
+                m_IsNearestControl = false;
+        }
+
+        void CompleteRectSelection()
+        {
+            ActiveEditorTracker.delayFlushDirtyRebuild = false;
+            ActiveEditorTracker.RebuildAllIfNecessary();
+            GUIUtility.hotControl = 0;
+            s_RectSelectionFinished();
+        }
+
+        void StartRectSelection(SceneView view)
+        {
+            ActiveEditorTracker.delayFlushDirtyRebuild = true;
+
+            // The hot control needs to be set in an OnGUI call.
+            view.SendEvent(EditorGUIUtility.CommandEvent(k_SetRectSelectionHotControlEventCommandName));
+
+            s_RectSelectionStarting();
+
+            // This is needed to update the selection in case the modifier keys changed.
+            UpdateSelection(m_SelectionStart, m_CurrentSelection, m_CurrentSelectionType, true);
+        }
+
+        void UpdateSelection(Object[] existingSelection, Object newObject, SelectionType type, bool isRectSelection)
         {
             Object[] objs;
             if (newObject == null)
@@ -239,8 +357,11 @@ namespace UnityEditor
             UpdateSelection(existingSelection, objs, type, isRectSelection);
         }
 
-        static void UpdateSelection(Object[] existingSelection, Object[] newObjects, SelectionType type, bool isRectSelection)
+        void UpdateSelection(Object[] existingSelection, Object[] newObjects, SelectionType type, bool isRectSelection)
         {
+            if (existingSelection == null || newObjects == null)
+                return;
+
             Object[] newSelection;
             switch (type)
             {
@@ -248,9 +369,11 @@ namespace UnityEditor
                     if (newObjects.Length > 0)
                     {
                         newSelection = new Object[existingSelection.Length + newObjects.Length];
-                        System.Array.Copy(existingSelection, newSelection, existingSelection.Length);
+                        Array.Copy(existingSelection, newSelection, existingSelection.Length);
+
                         for (int i = 0; i < newObjects.Length; i++)
                             newSelection[existingSelection.Length + i] = newObjects[i];
+
                         Object active = isRectSelection ? newSelection[0] : newObjects[0];
                         Selection.SetSelectionWithActiveObject(newSelection, active);
                     }
@@ -277,13 +400,6 @@ namespace UnityEditor
                     Selection.objects = newObjects;
                     break;
             }
-        }
-
-        // When rect selecting, we update the selected objects based on which modifier keys are currently held down,
-        // so the window needs to repaint.
-        void SendCommandsOnModifierKeys()
-        {
-            m_Window.SendEvent(EditorGUIUtility.CommandEvent(EventCommandNames.ModifierKeysChanged));
         }
     }
 } // namespace

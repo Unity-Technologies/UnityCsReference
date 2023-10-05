@@ -8,6 +8,8 @@ namespace UnityEngine.UIElements
 {
     class ReusableListViewItem : ReusableCollectionItem
     {
+        static readonly string k_SortingDisablesReorderingTooltip = "Reordering is disabled when the collection is being sorted.";
+
         VisualElement m_Container;
         VisualElement m_DragHandle;
         VisualElement m_ItemContainer;
@@ -76,6 +78,15 @@ namespace UnityEngine.UIElements
                     m_DragHandle.RemoveFromHierarchy();
                     rootElement.RemoveFromClassList(BaseListView.reorderableItemUssClassName);
                 }
+            }
+        }
+
+        public void SetDragHandleEnabled(bool enabled)
+        {
+            if (m_DragHandle != null)
+            {
+                m_DragHandle.SetEnabled(enabled);
+                m_DragHandle.tooltip = enabled ? null : k_SortingDisablesReorderingTooltip;
             }
         }
 

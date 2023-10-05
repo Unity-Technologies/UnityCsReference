@@ -6,11 +6,10 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightTransport
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal class BakeProgressState : IDisposable
+    public class BakeProgressState : IDisposable
     {
         [NativeMethod(IsThreadSafe = true)]
         static extern IntPtr Internal_Create();
@@ -26,7 +25,7 @@ namespace UnityEngine.LightTransport
             m_Ptr = Internal_Create();
             m_OwnsPtr = true;
         }
-        public BakeProgressState(IntPtr ptr)
+        private BakeProgressState(IntPtr ptr)
         {
             m_Ptr = ptr;
             m_OwnsPtr = false;

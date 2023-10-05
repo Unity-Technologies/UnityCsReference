@@ -1808,6 +1808,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Controls\ToggleButtonGroup\ToggleButtonGroupState.cs">
       <Link>Modules\UIElements\Core\Controls\ToggleButtonGroup\ToggleButtonGroupState.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\ToggleButtonGroup\ToggleButtonGroupStatePropertiesAttribute.cs">
+      <Link>Modules\UIElements\Core\Controls\ToggleButtonGroup\ToggleButtonGroupStatePropertiesAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\TreeView.cs">
       <Link>Modules\UIElements\Core\Controls\TreeView.cs</Link>
     </Compile>
@@ -4009,6 +4012,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Rendering\BatchRendererGroup.bindings.cs">
       <Link>Runtime\Export\Rendering\BatchRendererGroup.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Rendering\GPUDrivenRendering.bindings.cs">
+      <Link>Runtime\Export\Rendering\GPUDrivenRendering.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Resources\IconAttribute.cs">
       <Link>Runtime\Export\Resources\IconAttribute.cs</Link>

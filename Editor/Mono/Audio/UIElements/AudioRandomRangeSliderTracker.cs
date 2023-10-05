@@ -20,12 +20,7 @@ class AudioRandomRangeSliderTracker : VisualElement
     Slider m_ParentSlider;
     float m_PreviousWidth;
     Vector2 m_Range = Vector2.zero;
-
-    public AudioRandomRangeSliderTracker()
-    {
-        RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-    }
-
+    
     internal static AudioRandomRangeSliderTracker Create(Slider parentSlider, Vector2 range)
     {
         var dragContainer = UIToolkitUtilities.GetChildByName<VisualElement>(parentSlider, "unity-drag-container");
@@ -36,6 +31,7 @@ class AudioRandomRangeSliderTracker : VisualElement
         dragContainer.Insert(insertionIndex, templateContainer);
         var rangeTracker = UIToolkitUtilities.GetChildAtIndex<AudioRandomRangeSliderTracker>(templateContainer, 0);
         rangeTracker.m_ParentSlider = parentSlider;
+        rangeTracker.m_ParentSlider.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         rangeTracker.SetRange(range);
         return rangeTracker;
     }
@@ -43,34 +39,37 @@ class AudioRandomRangeSliderTracker : VisualElement
     internal void SetRange(Vector2 range)
     {
         m_Range = range;
-
-        if (Mathf.Approximately(parent.contentRect.width, 0) || m_Range == Vector2.zero)
-        {
-            style.visibility = Visibility.Hidden;
-            return;
-        }
-
         var minValue = m_ParentSlider.value - Math.Abs(m_Range.x);
         minValue = Mathf.Clamp(minValue, m_ParentSlider.lowValue, m_ParentSlider.highValue);
         var maxValue = m_ParentSlider.value + Mathf.Abs(m_Range.y);
         maxValue = Mathf.Clamp(maxValue, m_ParentSlider.lowValue, m_ParentSlider.highValue);
+
+        if (Mathf.Approximately(parent.contentRect.width, 0) || m_Range == Vector2.zero || Mathf.Approximately(minValue ,maxValue))
+        {
+            style.display = DisplayStyle.None;
+            return;
+        }
+
         var minValueDelta = minValue - m_ParentSlider.lowValue;
         var maxValueDelta = maxValue - m_ParentSlider.lowValue;
-        var minValueFraction = minValueDelta / m_ParentSlider.range;
-        var maxValueFraction = maxValueDelta / m_ParentSlider.range;
-        style.marginLeft = minValueFraction * parent.contentRect.width;
-        style.marginRight = parent.contentRect.width - (maxValueFraction * parent.contentRect.width);
-        style.visibility = Visibility.Visible;
+
+        var pxPerVal = parent.contentRect.width / m_ParentSlider.range;
+        var translate = style.translate.value;
+        translate.x = pxPerVal * minValueDelta;
+        style.translate = translate;
+        style.width = (maxValueDelta - minValueDelta) * pxPerVal;
+        style.display = DisplayStyle.Flex;
     }
 
-    void OnGeometryChanged(GeometryChangedEvent evt)
+    static void OnGeometryChanged(GeometryChangedEvent evt)
     {
-        if (Mathf.Approximately(m_PreviousWidth, parent.contentRect.width))
+        var sliderTracker = UIToolkitUtilities.GetChildByClassName<AudioRandomRangeSliderTracker>(evt.elementTarget, "unity-audio-random-range-slider-tracker");
+        if (Mathf.Approximately(sliderTracker.m_PreviousWidth, sliderTracker.parent.contentRect.width))
         {
             return;
         }
 
-        m_PreviousWidth = parent.contentRect.width;
-        SetRange(m_Range);
+        sliderTracker.m_PreviousWidth = sliderTracker.parent.contentRect.width;
+        sliderTracker.SetRange(sliderTracker.m_Range);
     }
 }

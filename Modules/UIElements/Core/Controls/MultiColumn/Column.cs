@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Internal;
 
@@ -321,6 +322,15 @@ namespace UnityEngine.UIElements
                 NotifyChange(ColumnDataType.Icon);
             }
         }
+
+        /// <summary>
+        /// The comparison to use when using <see cref="ColumnSortingMode.Default"/>. Compares two items by their index in the source.
+        /// </summary>
+        /// <example>
+        /// The following example creates a [[MultiColumnListView]] that can be sorted with the default algorithm:
+        /// <code source="../../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/MultiColumnListView_DefaultSorting.cs"/>
+        /// </example>
+        public Comparison<int> comparison { get; set; }
 
         /// <summary>
         /// The position of the column within its container relative to the other columns.

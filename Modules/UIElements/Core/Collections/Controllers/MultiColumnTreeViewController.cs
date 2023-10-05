@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UIElements.Internal;
 
@@ -33,6 +34,14 @@ namespace UnityEngine.UIElements
             m_ColumnController = new MultiColumnController(columns, sortDescriptions, sortedColumns);
         }
 
+        private protected override void HierarchyChanged()
+        {
+            if (m_ColumnController.SortIfNeeded())
+            {
+                view.RefreshItems();
+            }
+        }
+
         internal override void InvokeMakeItem(ReusableCollectionItem reusableItem)
         {
             if (reusableItem is ReusableMultiColumnTreeViewItem treeItem)
@@ -44,6 +53,18 @@ namespace UnityEngine.UIElements
             {
                 base.InvokeMakeItem(reusableItem);
             }
+        }
+
+        internal override void InvokeBindItem(ReusableCollectionItem reusableItem, int index)
+        {
+            var sortedIndex = m_ColumnController.GetSortedIndex(index);
+            base.InvokeBindItem(reusableItem, sortedIndex);
+        }
+
+        internal override void InvokeUnbindItem(ReusableCollectionItem reusableItem, int index)
+        {
+            var sortedIndex = m_ColumnController.GetSortedIndex(index);
+            base.InvokeUnbindItem(reusableItem, sortedIndex);
         }
 
         /// <inheritdoc />

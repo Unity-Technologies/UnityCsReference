@@ -31,6 +31,16 @@ namespace UnityEngine.UIElements
         public MultiColumnListViewController(Columns columns, SortColumnDescriptions sortDescriptions, List<SortColumnDescription> sortedColumns)
         {
             m_ColumnController = new MultiColumnController(columns, sortDescriptions, sortedColumns);
+            itemsSourceSizeChanged += SortIfNeeded;
+            itemsSourceChanged += SortIfNeeded;
+        }
+
+        void SortIfNeeded()
+        {
+            if (m_ColumnController.SortIfNeeded())
+            {
+                view.RefreshItems();
+            }
         }
 
         internal override void InvokeMakeItem(ReusableCollectionItem reusableItem)
@@ -44,6 +54,24 @@ namespace UnityEngine.UIElements
             {
                 base.InvokeMakeItem(reusableItem);
             }
+        }
+
+        internal override void InvokeBindItem(ReusableCollectionItem reusableItem, int index)
+        {
+            var sortedIndex = m_ColumnController.GetSortedIndex(index);
+            base.InvokeBindItem(reusableItem, sortedIndex);
+
+            if (reusableItem is ReusableListViewItem listItem)
+            {
+                var isSorted = m_ColumnController.header.sortingEnabled && m_ColumnController.header.sortedColumnReadonly.Count > 0;
+                listItem.SetDragHandleEnabled(!isSorted);
+            }
+        }
+
+        internal override void InvokeUnbindItem(ReusableCollectionItem reusableItem, int index)
+        {
+            var sortedIndex = m_ColumnController.GetSortedIndex(index);
+            base.InvokeUnbindItem(reusableItem, sortedIndex);
         }
 
         /// <inheritdoc />

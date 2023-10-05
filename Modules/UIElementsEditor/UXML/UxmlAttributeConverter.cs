@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
-using System.Text;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -220,6 +219,8 @@ namespace UnityEditor.UIElements
     ///* short
     ///* int
     ///* long
+    ///* uint
+    ///* ulong
     ///* Enum
     ///* float
     ///* double
@@ -236,6 +237,9 @@ namespace UnityEditor.UIElements
     ///* [[Vector3]]
     ///* [[Vector3Int]]
     ///* [[Vector4]]
+    ///* [[Gradient]]
+    ///* [[AnimationCurve]]
+    ///* [[ToggleButtonGroupState]]
     /// </remarks>
     /// <example>
     /// The following example creates a custom control that uses a class instance and a list of class instances as its attributes.
@@ -322,6 +326,24 @@ namespace UnityEditor.UIElements
         public override long FromString(string value)
         {
             long.TryParse(value, out var result);
+            return result;
+        }
+    }
+
+    internal class UnsignedIntAttributeConverter : UxmlAttributeConverter<uint>
+    {
+        public override uint FromString(string value)
+        {
+            uint.TryParse(value, out var result);
+            return result;
+        }
+    }
+
+    internal class UnsignedLongAttributeConverter : UxmlAttributeConverter<ulong>
+    {
+        public override ulong FromString(string value)
+        {
+            ulong.TryParse(value, out var result);
             return result;
         }
     }
@@ -560,7 +582,7 @@ namespace UnityEditor.UIElements
             if (!UxmlAttributeConverter.TryGetConverter<T>(out var converter))
                 return string.Empty;
 
-            var sb = GenericPool<StringBuilder>.Get().Clear();
+            var sb = StringBuilderPool.Get();
             for (int i = 0; i < value.Count; i++)
             {
                 var s = converter.ToString(value[i]);
@@ -570,7 +592,7 @@ namespace UnityEditor.UIElements
             }
 
             var result = sb.ToString();
-            GenericPool<StringBuilder>.Release(sb.Clear());
+            StringBuilderPool.Release(sb);
             return result;
         }
     }
@@ -591,7 +613,7 @@ namespace UnityEditor.UIElements
             if (!UxmlAttributeConverter.TryGetConverter<T>(out var converter))
                 return string.Empty;
 
-            var sb = GenericPool<StringBuilder>.Get().Clear();
+            var sb = StringBuilderPool.Get();
             for (int i = 0; i < value.Length; i++)
             {
                 var s = converter.ToString(value[i]);
@@ -601,8 +623,212 @@ namespace UnityEditor.UIElements
             }
 
             var result = sb.ToString();
-            GenericPool<StringBuilder>.Release(sb.Clear());
+            StringBuilderPool.Release(sb);
             return result;
+        }
+    }
+
+    internal class AnimationCurveAttributeConverter : UxmlAttributeConverter<AnimationCurve>
+    {
+        public override AnimationCurve FromString(string value)
+        {
+            if (value == null)
+                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Cannot parse a null string to an AnimationCurve.");
+
+            var animationItems = value.Split('+');
+            if (animationItems.Length < 2)
+                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] AnimationCurve does not have the correct format.");
+
+            var keyFrameItems = animationItems[0].Split(';');
+            if (keyFrameItems.Length <= 0)
+                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] AnimationCurve does not have the correct format.");
+
+            using var pool = ListPool<Keyframe>.Get(out var keyFrames);
+            foreach (var item in keyFrameItems)
+            {
+                var valueList = item.Trim().Substring(1, item.Length - 2); // Remove brackets
+                var keyItems = valueList.Split(',');
+                if (keyItems.Length < 8)
+                    throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] AnimationCurve's KeyFrame does not have enough values.");
+
+                var success = float.TryParse(keyItems[0], out var keyTime);
+                success &= float.TryParse(keyItems[1], out var keyValue);
+                success &= float.TryParse(keyItems[2], out var inTangent);
+                success &= float.TryParse(keyItems[3], out var outTangent);
+                success &= float.TryParse(keyItems[4], out var inWeight);
+                success &= float.TryParse(keyItems[5], out var outWeight);
+                success &= Enum.TryParse<AnimationUtility.TangentMode>(keyItems[6], out var leftTangent);
+                success &= Enum.TryParse<AnimationUtility.TangentMode>(keyItems[7], out var rightTangent);
+                success &= bool.TryParse(keyItems[8], out var broken);
+                success &= Enum.TryParse<WeightedMode>(keyItems[9], out var gradientMode);
+
+                if (!success)
+                    throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] AnimationCurve's KeyFrame does not have the correct format.");
+
+                var keyFrame = new Keyframe(keyTime, keyValue, inTangent, outTangent, inWeight, outWeight) { weightedMode = gradientMode };
+                AnimationUtility.SetKeyLeftTangentMode(ref keyFrame, leftTangent);
+                AnimationUtility.SetKeyRightTangentMode(ref keyFrame, rightTangent);
+                AnimationUtility.SetKeyBroken(ref keyFrame, broken);
+                keyFrames.Add(keyFrame);
+            }
+
+            var wrapModesGroup = animationItems[1];
+            var wrapModeArray = wrapModesGroup.Substring(1, wrapModesGroup.Length - 2); // Remove parenthesis
+            var wrapModes = wrapModeArray.Split(',');
+            var parsed = Enum.TryParse<WrapMode>(wrapModes[0], out var preWrapMode);
+            parsed &= Enum.TryParse<WrapMode>(wrapModes[1], out var postWrapMode);
+
+            if (!parsed)
+                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] AnimationCurve's wrap modes do not have the correct format.");
+
+            return new AnimationCurve(keyFrames.ToArray()) { preWrapMode = preWrapMode, postWrapMode = postWrapMode };
+        }
+
+        public override string ToString(AnimationCurve value)
+        {
+            var sb = StringBuilderPool.Get();
+            for (var i = 0; i < value.keys.Length; i++)
+            {
+                var key = value.keys[i];
+                sb.Append($"{{{key.time.ToString(CultureInfo.InvariantCulture)},");
+                sb.Append($"{key.value.ToString(CultureInfo.InvariantCulture)},");
+                sb.Append($"{key.inTangent.ToString(CultureInfo.InvariantCulture)},");
+                sb.Append($"{key.outTangent.ToString(CultureInfo.InvariantCulture)},");
+                sb.Append($"{key.inWeight.ToString(CultureInfo.InvariantCulture)},");
+                sb.Append($"{key.outWeight.ToString(CultureInfo.InvariantCulture)},");
+                sb.Append($"{AnimationUtility.GetKeyLeftTangentMode(key)},");
+                sb.Append($"{AnimationUtility.GetKeyRightTangentMode(key)},");
+                sb.Append($"{AnimationUtility.GetKeyBroken(key)},");
+                sb.Append($"{key.weightedMode}}}");
+
+                if (i + 1 < value.keys.Length)
+                {
+                    sb.Append(";");
+                }
+            }
+
+            sb.Append($"+({value.preWrapMode},{value.postWrapMode})");
+
+            var result = sb.ToString();
+            StringBuilderPool.Release(sb);
+            return result;
+        }
+    }
+
+    internal class GradientAttributeConverter : UxmlAttributeConverter<Gradient>
+    {
+        public override Gradient FromString(string value)
+        {
+            if (value == null)
+                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Cannot parse a null string to a Gradient.");
+
+            var index = value.IndexOf(":");
+            if (index == -1)
+                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient mode does not have the correct format.");
+
+            var mode = value[..index];
+            var keys = value.Remove(0, index + 1);
+            var parsedMode = Enum.TryParse<GradientMode>(mode, out var gradientMode);
+            if (!parsedMode)
+                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient mode cannot be parsed correctly.");
+
+            var gradientItems = keys.Split('+');
+            if (gradientItems.Length <= 0)
+                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient's keys do not have the correct format.");
+
+            using var poolColor = ListPool<GradientColorKey>.Get(out var gradientColorKeys);
+            var colorKeyItems = gradientItems[0].Split(';');
+            foreach (var item in colorKeyItems)
+            {
+                var valueList = item.Trim().Substring(1, item.Length - 2); // Remove brackets
+                var colorKeys = valueList.Split(',');
+                if (colorKeys.Length <= 0)
+                    throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient's color key does not have enough values.");
+
+                var success = float.TryParse(colorKeys[0], out var time);
+                success &= ColorUtility.TryParseHtmlString(colorKeys[1], out var color);
+
+                if (!success)
+                    throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient's color key could not be parsed correctly.");
+                    
+                gradientColorKeys.Add(new GradientColorKey(color, time));
+            }
+
+            using var poolAlpha = ListPool<GradientAlphaKey>.Get(out var gradientAlphaKeys);
+            var alphaKeyItems = gradientItems[1].Split(';');
+            foreach (var item in alphaKeyItems)
+            {
+                var valueList = item.Trim().Substring(1, item.Length - 2); // Remove brackets
+                var alphaKeys = valueList.Split(',');
+                if (alphaKeys.Length <= 0)
+                    throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient's alpha key does not have enough values.");
+
+                var success = float.TryParse(alphaKeys[0], out var time);
+                success &= float.TryParse(alphaKeys[1], out var alpha);
+
+                if (!success)
+                    throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient's alpha key could not be parsed correctly.");
+
+                gradientAlphaKeys.Add(new GradientAlphaKey(alpha, time));
+            }
+
+            var gradient = new Gradient { mode = gradientMode};
+            gradient.SetKeys(gradientColorKeys.ToArray(), gradientAlphaKeys.ToArray());
+            return gradient;
+        }
+
+        public override string ToString(Gradient value)
+        {
+            var sb = StringBuilderPool.Get();
+            sb.Append($"{value.mode}:");
+
+            for (var i = 0; i < value.colorKeys.Length; i++)
+            {
+                var colorKey = value.colorKeys[i];
+                var s = $"{{{colorKey.time.ToString(CultureInfo.InvariantCulture)},#{ColorUtility.ToHtmlStringRGBA(colorKey.color)}}}";
+                sb.Append(s);
+
+                if (i + 1 != value.colorKeys.Length)
+                    sb.Append(";");
+            }
+
+            sb.Append("+");
+
+            for (var i = 0; i < value.alphaKeys.Length; i++)
+            {
+                var colorKey = value.alphaKeys[i];
+                var s = $"{{{colorKey.time.ToString(CultureInfo.InvariantCulture)},{colorKey.alpha.ToString(CultureInfo.InvariantCulture)}}}";
+                sb.Append(s);
+
+                if (i + 1 != value.alphaKeys.Length)
+                    sb.Append(";");
+            }
+
+            var result = sb.ToString();
+            StringBuilderPool.Release(sb);
+            return result;
+        }
+    }
+
+    internal class ToggleButtonGroupStateAttributeConverter : UxmlAttributeConverter<ToggleButtonGroupState>
+    {
+        public override ToggleButtonGroupState FromString(string value)
+        {
+            ulong state = 0;
+            for (var i = 0; i < value.Length; i++)
+            {
+                if (value[i] == '0')
+                    continue;
+
+                state |= 1UL << (value.Length - 1 - i);
+            }
+
+            return new ToggleButtonGroupState(state, value.Length);
+        }
+
+        public override string ToString(ToggleButtonGroupState value)
+        {
+            return value.ToString();
         }
     }
 }

@@ -398,7 +398,8 @@ namespace UnityEditor.ShortcutManagement
                 m_ViewController.activeProfile,
                 L10n.Tr("Rename"),
                 m_ViewController.CanRenameActiveProfile,
-                m_ViewController.RenameActiveProfile);
+                m_ViewController.RenameActiveProfile,
+                400f, 200f);
         }
 
         void OnDeleteProfileClicked()
@@ -844,7 +845,8 @@ namespace UnityEditor.ShortcutManagement
 
         void StartDrag(VisualElement target)
         {
-            if (m_StartedDrag)
+            //Start dragging only if not started already or if not editing bindings in a field [UUM-47946]
+            if (m_StartedDrag || m_EditingBindings != null)
                 return;
 
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMoveCategoryTable);

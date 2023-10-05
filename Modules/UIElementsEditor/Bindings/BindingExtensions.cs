@@ -380,7 +380,14 @@ namespace UnityEditor.UIElements.Bindings
                     DefaultBind(element, prop, SerializedPropertyHelper.GetHash128PropertyValue, SerializedPropertyHelper.SetHash128PropertyValue, SerializedPropertyHelper.ValueEquals);
                     break;
                 case SerializedPropertyType.ExposedReference:
+                    // nothing to bind here
+                    break;
                 case SerializedPropertyType.Generic:
+                    if (prop.type == nameof(ToggleButtonGroupState))
+                    {
+                        DefaultBind(element, prop, SerializedPropertyHelper.GetToggleStatePropertyValue, SerializedPropertyHelper.SetToggleStatePropertyValue, SerializedPropertyHelper.ValueEquals);
+                    }
+
                     // nothing to bind here
                     break;
                 default:
@@ -760,6 +767,7 @@ namespace UnityEditor.UIElements.Bindings
 
         HashSet<long> visited = new HashSet<long>();
         List<(object cookie, SerializedProperty p, Action<object, SerializedProperty> onChange)> m_PendingCallbacks = new();
+        internal static Action PostProcessTrackedPropertyChanges;
         void UpdateTrackedProperties()
         {
             // Iterating over the entire object, as gathering valid property names hashes is faster than querying
@@ -807,6 +815,7 @@ namespace UnityEditor.UIElements.Bindings
                 {
                     cb.onChange(cb.cookie, cb.p);
                 }
+                PostProcessTrackedPropertyChanges?.Invoke();
             }
             catch (Exception e)
             {
@@ -1651,6 +1660,7 @@ namespace UnityEditor.UIElements.Bindings
             if (field is ObjectField objectField)
             {
                 objectField.SetProperty(ObjectField.serializedPropertyKey, boundProperty);
+                objectField.UpdateDisplay();
             }
         }
 

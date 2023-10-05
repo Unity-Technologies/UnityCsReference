@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.Bindings
 {
@@ -167,6 +168,11 @@ namespace UnityEditor.UIElements.Bindings
             return p.longValue;
         }
 
+        public static ToggleButtonGroupState GetToggleStatePropertyValue(SerializedProperty p)
+        {
+            return (ToggleButtonGroupState)p.structValue;
+        }
+
         //this one is a bit more tricky
         public static string GetEnumPropertyValueAsString(SerializedProperty p)
         {
@@ -316,6 +322,11 @@ namespace UnityEditor.UIElements.Bindings
             {
                 p.intValue = v[0];
             }
+        }
+
+        public static void SetToggleStatePropertyValue(SerializedProperty p, ToggleButtonGroupState v)
+        {
+            p.structValue = v;
         }
 
         //this one is a bit more tricky

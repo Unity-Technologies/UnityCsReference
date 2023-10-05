@@ -78,6 +78,11 @@ namespace UnityEngine
         extern public void SetActiveVertexStreams([NotNull] List<ParticleSystemVertexStream> streams);
         [FreeFunction(Name = "ParticleSystemRendererScriptBindings::GetActiveVertexStreams", HasExplicitThis = true)]
         extern public void GetActiveVertexStreams([NotNull] List<ParticleSystemVertexStream> streams);
+        extern public int activeTrailVertexStreamsCount { get; }
+        [FreeFunction(Name = "ParticleSystemRendererScriptBindings::SetActiveTrailVertexStreams", HasExplicitThis = true)]
+        extern public void SetActiveTrailVertexStreams([NotNull] List<ParticleSystemVertexStream> streams);
+        [FreeFunction(Name = "ParticleSystemRendererScriptBindings::GetActiveTrailVertexStreams", HasExplicitThis = true)]
+        extern public void GetActiveTrailVertexStreams([NotNull] List<ParticleSystemVertexStream> streams);
 
         extern internal bool editorEnabled { get; set; }
         extern public bool supportsMeshInstancing { get; }

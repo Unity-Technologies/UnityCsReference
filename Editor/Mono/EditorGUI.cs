@@ -6605,7 +6605,7 @@ namespace UnityEditor
             if (content.image != null)
             {
                 var labelRect = position;
-                int iconSize = content.image.width + EditorStyles.helpBox.padding.right;
+                int iconSize = (int) (content.image.width / EditorGUIUtility.pixelsPerPoint) + EditorStyles.helpBox.padding.right;
                 labelRect.x += iconSize;
                 labelRect.width -= iconSize;
 

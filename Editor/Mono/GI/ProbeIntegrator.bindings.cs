@@ -7,12 +7,11 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.LightBaking;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightTransport
 {
-    internal interface IProbeIntegrator
+    public interface IProbeIntegrator
     {
-        internal enum ResultType : UInt32
+        public enum ResultType : UInt32
         {
             Success = 0,
             Cancelled,
@@ -23,12 +22,12 @@ namespace UnityEngine.LightTransport
             IOFailed,
             Undefined
         }
-        internal struct Result
+        public struct Result
         {
-            public Result(LightBaker.Result lightBakerResult)
+            public Result(ResultType _type, String _message)
             {
-                type = (ResultType)lightBakerResult.type;
-                message = lightBakerResult.message;
+                type = _type;
+                message = _message;
             }
             public ResultType type;
             public String message;
@@ -93,7 +92,7 @@ namespace UnityEngine.LightTransport
             waitResult = context.WaitForAsyncOperation(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
 
-            return new IProbeIntegrator.Result(lightBakerResult);
+            return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
         public unsafe IProbeIntegrator.Result IntegrateIndirectRadiance(IDeviceContext context,
             int positionOffset, int positionCount, int sampleCount, BufferSlice radianceEstimateOut)
@@ -118,7 +117,7 @@ namespace UnityEngine.LightTransport
             waitResult = context.WaitForAsyncOperation(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
 
-            return new IProbeIntegrator.Result(lightBakerResult);
+            return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
         public unsafe IProbeIntegrator.Result IntegrateValidity(IDeviceContext context,
             int positionOffset, int positionCount, int sampleCount, BufferSlice validityEstimateOut)
@@ -143,10 +142,10 @@ namespace UnityEngine.LightTransport
             waitResult = context.WaitForAsyncOperation(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
 
-            return new IProbeIntegrator.Result(lightBakerResult);
+            return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
     }
-    internal class RadeonRaysProbeIntegrator : IProbeIntegrator
+    public class RadeonRaysProbeIntegrator : IProbeIntegrator
     {
         private IntegrationContext integrationContext;
         private BufferSlice _positions;
@@ -193,7 +192,7 @@ namespace UnityEngine.LightTransport
             waitResult = context.WaitForAsyncOperation(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
 
-            return new IProbeIntegrator.Result(lightBakerResult);
+            return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
         public unsafe IProbeIntegrator.Result IntegrateIndirectRadiance(IDeviceContext context,
             int positionOffset, int positionCount, int sampleCount, BufferSlice radianceEstimateOut)
@@ -218,7 +217,7 @@ namespace UnityEngine.LightTransport
             waitResult = context.WaitForAsyncOperation(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
 
-            return new IProbeIntegrator.Result(lightBakerResult);
+            return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
         public unsafe IProbeIntegrator.Result IntegrateValidity(IDeviceContext context,
             int positionOffset, int positionCount, int sampleCount, BufferSlice validityEstimateOut)
@@ -243,7 +242,7 @@ namespace UnityEngine.LightTransport
             waitResult = context.WaitForAsyncOperation(eventId);
             Debug.Assert(waitResult, "Failed to write validity to context.");
 
-            return new IProbeIntegrator.Result(lightBakerResult);
+            return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
     }
 }

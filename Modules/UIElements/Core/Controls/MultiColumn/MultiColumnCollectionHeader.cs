@@ -196,6 +196,8 @@ namespace UnityEngine.UIElements.Internal
         /// </summary>
         public IEnumerable<SortColumnDescription> sortedColumns => m_SortedColumns;
 
+        internal IReadOnlyList<SortColumnDescription> sortedColumnReadonly => m_SortedColumns;
+
         /// <summary>
         /// The descriptions of sorted columns.
         /// </summary>

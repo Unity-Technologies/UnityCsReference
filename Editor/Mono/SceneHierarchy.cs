@@ -536,8 +536,8 @@ namespace UnityEditor
             EditorApplication.dirtyHierarchySorting += DirtySortingMethods;
             EditorSceneManager.newSceneCreated += OnSceneCreated;
             EditorSceneManager.sceneOpened += OnSceneOpened;
-            RectSelection.rectSelectionStarting += SceneViewRectSelectionStarting;
-            RectSelection.rectSelectionFinished += SceneViewRectSelectionFinished;
+            RectSelection.s_RectSelectionStarting += SceneViewRectSelectionStarting;
+            RectSelection.s_RectSelectionFinished += SceneViewRectSelectionFinished;
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
 
             m_AllowAlphaNumericalSort = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false) || !InternalEditorUtility.isHumanControllingUs; // Always allow alphasorting when running automated tests so we can test alpha sorting
@@ -559,8 +559,8 @@ namespace UnityEditor
             EditorApplication.dirtyHierarchySorting -= DirtySortingMethods;
             EditorSceneManager.newSceneCreated -= OnSceneCreated;
             EditorSceneManager.sceneOpened -= OnSceneOpened;
-            RectSelection.rectSelectionStarting -= SceneViewRectSelectionStarting;
-            RectSelection.rectSelectionFinished -= SceneViewRectSelectionFinished;
+            RectSelection.s_RectSelectionStarting -= SceneViewRectSelectionStarting;
+            RectSelection.s_RectSelectionFinished -= SceneViewRectSelectionFinished;
             EditorApplication.playModeStateChanged -= PlayModeStateChanged;
         }
 

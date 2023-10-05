@@ -7,12 +7,11 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using UnityEngine.Rendering;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightTransport
 {
     namespace PostProcessing
     {
-        internal interface IProbePostProcessor
+        public interface IProbePostProcessor
         {
             // Initialize the post processor.
             bool Initialize(IDeviceContext context);
@@ -212,7 +211,7 @@ namespace UnityEngine.LightTransport
                 Output[probeIdx] = output;
             }
         }
-        internal class ReferenceProbePostProcessor : IProbePostProcessor
+        public class ReferenceProbePostProcessor : IProbePostProcessor
         {
             public bool Initialize(IDeviceContext context)
             {
@@ -322,7 +321,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            bool IProbePostProcessor.ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale)
+            public bool ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale)
             {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
                 if (context is not ReferenceContext refContext)
@@ -465,7 +464,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            bool IProbePostProcessor.ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale)
+            public bool ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale)
             {
                 Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
                 if (context is not WintermuteContext wmContext)
@@ -520,7 +519,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
         }
-        internal class RadeonRaysProbePostProcessor : IProbePostProcessor
+        public class RadeonRaysProbePostProcessor : IProbePostProcessor
         {
             private const int sizeofSphericalHarmonicsL2 = 27 * sizeof(float);
 
@@ -558,7 +557,7 @@ namespace UnityEngine.LightTransport
                 return RadeonRaysContext.AddSphericalHarmonicsL2Internal(rrContext, a.Id, b.Id, sum.Id, probeCount);
             }
 
-            bool IProbePostProcessor.ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale)
+            public bool ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale)
             {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
                 if (context is not RadeonRaysContext rrContext)

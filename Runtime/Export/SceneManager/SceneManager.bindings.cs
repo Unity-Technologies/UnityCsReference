@@ -2,6 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
@@ -133,6 +136,21 @@ namespace UnityEngine.SceneManagement
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
         public static extern void MoveGameObjectToScene([NotNull] GameObject go, Scene scene);
+
+        [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        private extern static void MoveGameObjectsToSceneByInstanceId(IntPtr instanceIds, int instanceCount, Scene scene);
+
+        public static unsafe void MoveGameObjectsToScene(NativeArray<int> instanceIDs, Scene scene)
+        {
+            if (!instanceIDs.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
+
+            if (instanceIDs.Length == 0)
+                return;
+
+            MoveGameObjectsToSceneByInstanceId((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, scene);
+        }
 
         [RequiredByNativeCode]
         internal static AsyncOperation LoadFirstScene_Internal(bool async)

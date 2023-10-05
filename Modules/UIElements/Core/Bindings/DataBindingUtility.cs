@@ -191,7 +191,6 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-
         /// <summary>
         /// Finds the closest unresolved data source object or the data source type and the chain of binding paths inherited from the hierarchy of the specified visual element.
         /// </summary>

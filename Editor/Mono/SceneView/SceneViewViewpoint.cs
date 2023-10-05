@@ -80,9 +80,9 @@ namespace UnityEditor
             && hasActiveViewpoint;
 
         bool shouldExitViewpoint => m_ActiveViewpoint != null && !m_ActiveViewpoint.TargetObject;
-        
+
         internal IViewpoint activeViewpoint => m_ActiveViewpoint;
-        
+
         internal bool hasActiveViewpoint => m_ActiveViewpoint != null && m_ActiveViewpoint.TargetObject;
 
         internal ViewpointSettings cameraOverscanSettings
@@ -135,7 +135,7 @@ namespace UnityEditor
         // When in Camera view.
         // Transfer Camera's transform to the Viewpoint's transform when the SceneView's camera moves.
         // When the active Viewpoint moves (i.e from scripts or animation), transfer the data to the SceneView's Camera.
-        internal void UpdateViewpointMotion(bool sceneViewTransformIsAnimating)
+        internal void UpdateViewpointMotion(SceneView sceneView, bool sceneViewTransformIsAnimating)
         {
             // Exit the viewpoint if viewpoint is unlocked and
             // Scene View camera is moving.
@@ -148,8 +148,8 @@ namespace UnityEditor
             if (!hasActiveViewpoint)
                 return;
 
-            if (SceneViewMotion.cameraSpeed.sqrMagnitude > Mathf.Epsilon
-                    || SceneViewMotion.isDragging
+            if (sceneView.sceneViewMotion.cameraSpeed.sqrMagnitude > Mathf.Epsilon
+                    || sceneView.sceneViewMotion.isDragging
                     || sceneViewTransformIsAnimating)
             {
                 // Camera is moving in the Scene View. Align SceneView's Camera to Viewpoint.

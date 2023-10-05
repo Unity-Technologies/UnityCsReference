@@ -14,6 +14,7 @@ using Unity.CodeEditor;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
+using UnityEngine.SceneManagement;
 
 namespace UnityEditorInternal
 {
@@ -280,7 +281,7 @@ namespace UnityEditorInternal
         extern public static Object[] LoadSerializedFileAndForget(string path);
 
         [FreeFunction("LoadFileAndForgetOperation::LoadSerializedFileAndForgetAsync")]
-        extern public static LoadFileAndForgetOperation LoadSerializedFileAndForgetAsync(string path, long localIdentifierInFile, ulong offsetInFile=0, long fileSize=-1);
+        extern public static LoadFileAndForgetOperation LoadSerializedFileAndForgetAsync(string path, long localIdentifierInFile, ulong offsetInFile=0, long fileSize=-1, Scene destScene = default);
 
         [FreeFunction("InternalEditorUtilityBindings::ProjectWindowDrag")]
         extern public static DragAndDropVisualMode ProjectWindowDrag([Unmarshalled] HierarchyProperty property, bool perform);

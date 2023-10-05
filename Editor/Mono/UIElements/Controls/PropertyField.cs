@@ -21,13 +21,15 @@ namespace UnityEditor.UIElements
         internal static readonly string decoratorDrawersContainerClassName = "unity-decorator-drawers-container";
         internal static readonly string listViewBoundFieldProperty = "unity-list-view-property-field-bound";
         static readonly string listViewNamePrefix = "unity-list-";
+        static readonly string buttonGroupNamePrefix = "unity-button-group-";
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
         {
             #pragma warning disable 649
             [SerializeField] private string bindingPath;
-            [SerializeField] private string label;
+            [SerializeField] internal string label;
+            [SerializeField, HideInInspector] private bool displayLabel;
             #pragma warning restore 649
 
             public override object CreateInstance() => new PropertyField();
@@ -38,7 +40,15 @@ namespace UnityEditor.UIElements
 
                 var e = (PropertyField)obj;
                 e.bindingPath = bindingPath;
-                e.label = label;
+                e.label = (displayLabel || !string.IsNullOrEmpty(label)) ? label : null;
+            }
+
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            {
+                bag.TryGetAttributeValue("label", out label);
+                displayLabel = label != null;
+                handledAttributes.Add("display-label");
+                handledAttributes.Add("label");
             }
         }
 
@@ -721,18 +731,116 @@ namespace UnityEditor.UIElements
             listView.SetProperty(listViewBoundFieldProperty, this);
 
             // Make list view foldout react even when disabled, like EditorGUILayout.Foldout.
-            var toggle = listView.Q<Toggle>(className: Foldout.toggleUssClassName);
+            var toggle = listView.headerFoldout?.toggle;
             if (toggle != null)
                 toggle.m_Clickable.acceptClicksIfDisabled = true;
 
             return listView;
         }
 
+        VisualElement ConfigureToggleButtonGroup(ToggleButtonGroup buttonGroup, SerializedProperty property, Func<ToggleButtonGroup> factory)
+        {
+            var propertyCopy = property.Copy();
+
+            if (buttonGroup == null)
+            {
+                buttonGroup = factory();
+                buttonGroup.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
+                buttonGroup.RegisterValueChangedCallback(OnToggleGroupChanged);
+            }
+
+            var lengthProperty = propertyCopy.FindPropertyRelative("m_Length");
+            var dataProperty = propertyCopy.FindPropertyRelative("m_Data");
+
+            var length = lengthProperty.intValue;
+
+            // Check the field for ToggleButtonGroupStatePropertiesAttribute
+            var fieldInfo = ScriptAttributeUtility.GetFieldInfoFromProperty(property, out _);
+            foreach (var attribute in fieldInfo.GetCustomAttributes(false))
+            {
+                if (attribute is not ToggleButtonGroupStatePropertiesAttribute stateProperties)
+                    continue;
+
+                if (stateProperties.length >= 0)
+                {
+                    length = stateProperties.length;
+                    lengthProperty.intValue = length;
+                    lengthProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                }
+
+                buttonGroup.allowEmptySelection = stateProperties.allowEmptySelection;
+                buttonGroup.isMultipleSelection = stateProperties.allowMultipleSelection;
+                break;
+            }
+
+            var buttonGroupName = $"{buttonGroupNamePrefix}{property.propertyPath}";
+            var fieldLabel = label ?? property.localizedDisplayName;
+            buttonGroup.userData = propertyCopy;
+            buttonGroup.bindingPath = property.propertyPath;
+            buttonGroup.SetProperty(BaseField<ToggleButtonGroupState>.serializedPropertyCopyName, propertyCopy);
+            buttonGroup.name = buttonGroupName;
+            buttonGroup.label = fieldLabel;
+            buttonGroup.Q(className: ToggleButtonGroup.buttonGroupClassName).Clear();
+
+            // Track changes to the ToggleButtonGroupState values.
+            buttonGroup.TrackPropertyValue(propertyCopy);
+            buttonGroup.TrackPropertyValue(propertyCopy, OnPropertyChanged);
+            buttonGroup.TrackPropertyValue(lengthProperty, OnPropertyChanged);
+            buttonGroup.TrackPropertyValue(dataProperty, OnPropertyChanged);
+
+            for (var i = 0; i < length; i++)
+            {
+                buttonGroup.Add(new Button { text = i.ToString() });
+            }
+
+            void OnToggleGroupChanged(ChangeEvent<ToggleButtonGroupState> evt)
+            {
+                propertyCopy.structValue = evt.newValue;
+                propertyCopy.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            void OnPropertyChanged(SerializedProperty _)
+            {
+                var currentLength = buttonGroup.value.length;
+                var newLength = lengthProperty.intValue;
+                var dataValue = dataProperty.ulongValue;
+
+                // Empty state is initialized with max length instead of zero, but we don't want to spawn all buttons here. 
+                if (dataValue == 0 && newLength == ToggleButtonGroupState.maxLength)
+                {
+                    newLength = 0;
+                }
+
+                if (currentLength < newLength)
+                {
+                    for (var i = currentLength; i < newLength; i++)
+                    {
+                        buttonGroup.Add(new Button { text = i.ToString() });
+                    }
+                }
+                else if (currentLength > newLength)
+                {
+                    for (var i = newLength; i < currentLength; i++)
+                    {
+                        var lastItem = buttonGroup.Query<Button>(className: ToggleButtonGroup.buttonClassName).Last();
+                        if (lastItem == null)
+                            break;
+
+                        lastItem.RemoveFromHierarchy();
+                    }
+                }
+
+                buttonGroup.SetValueWithoutNotify((ToggleButtonGroupState)propertyCopy.structValue);
+            }
+
+            return buttonGroup;
+        }
+
         private VisualElement CreateOrUpdateFieldFromProperty(SerializedProperty property, object originalField = null)
         {
             var propertyType = property.propertyType;
 
-            if (EditorGUI.HasVisibleChildFields(property, true) && !property.isArray)
+            if (EditorGUI.HasVisibleChildFields(property, true) && !property.isArray && property.type != nameof(ToggleButtonGroupState))
                 return CreateFoldout(property, originalField);
 
             TrimChildrenContainerSize(0);
@@ -933,6 +1041,11 @@ namespace UnityEditor.UIElements
                     return ConfigureField<Hash128Field, Hash128>(originalField as Hash128Field, property, () => new Hash128Field());
 
                 case SerializedPropertyType.Generic:
+                    if (property.type == nameof(ToggleButtonGroupState))
+                    {
+                        return ConfigureToggleButtonGroup(originalField as ToggleButtonGroup, property, () => new ToggleButtonGroup());
+                    }
+
                     return property.isArray
                         ? ConfigureListView(originalField as ListView, property, () => new ListView())
                         : null;
@@ -974,6 +1087,7 @@ namespace UnityEditor.UIElements
             customPropertyDrawer.RegisterCallback<ChangeEvent<RectInt>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
             customPropertyDrawer.RegisterCallback<ChangeEvent<BoundsInt>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
             customPropertyDrawer.RegisterCallback<ChangeEvent<Hash128>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<ToggleButtonGroupState>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
         }
 
         private int m_PropertyChangedCounter = 0;
