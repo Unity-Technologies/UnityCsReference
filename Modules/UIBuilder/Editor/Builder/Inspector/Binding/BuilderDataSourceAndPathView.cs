@@ -21,6 +21,8 @@ namespace Unity.UI.Builder
         internal const string k_BindingAttr_DataSource = "data-source";
         internal const string k_BindingAttr_DataSourceType = "data-source-type";
         internal const string k_BindingAttr_DataSourcePath = "data-source-path";
+        internal const string k_DataSourceObjectTooltip = "Add an object to use as the data source for this binding.";
+        internal const string k_DataSourceTypeTooltip = "If a source is not yet available, a data source type can be defined. It may provide assistance while authoring by populating the data source path field with options.";
 
         internal struct TestAccess
         {
@@ -238,8 +240,8 @@ namespace Unity.UI.Builder
                 m_BindingsFoldout = new PersistedFoldout() { text = "Bindings", classList = { PersistedFoldout.unindentedUssClassName } };
 
                 m_ButtonStrip = new ToggleButtonGroup("Data Source");
-                m_ButtonStrip.Add(new Button { text = "Asset", style = { flexGrow = 1 } });
-                m_ButtonStrip.Add(new Button { text = "Type", style = { flexGrow = 1 } });
+                m_ButtonStrip.Add(new Button { text = "Object", style = { flexGrow = 1 }, tooltip = k_DataSourceObjectTooltip });
+                m_ButtonStrip.Add(new Button { text = "Type", style = { flexGrow = 1 }, tooltip = k_DataSourceTypeTooltip});
                 m_ButtonStrip.isMultipleSelection = false;
                 m_ButtonStrip.AddToClassList(ToggleButtonGroup.alignedFieldUssClassName);
                 m_ButtonStrip.RegisterValueChangedCallback(evt => SetSourceVisibility(evt.newValue[0]));

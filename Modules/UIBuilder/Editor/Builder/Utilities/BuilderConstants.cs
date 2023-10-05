@@ -588,7 +588,9 @@ namespace Unity.UI.Builder
         public static readonly string AddNewSelectorUndoMessage = "Create USS Selector";
         public static readonly string RenameSelectorUndoMessage = "Rename USS Selector";
         public static readonly string DeleteSelectorUndoMessage = "Delete USS Selector";
+        public static readonly string AddUxmlObject = "Add UXML Object";
         public static readonly string ModifyUxmlObject = "Modify UXML Object";
+        public static readonly string RemoveUxmlObject = "Remove UXML Object";
         public static readonly string MoveUSSSelectorUndoMessage = "Move USS Selector";
         public static readonly string AddBindingUndoMessage = "Add Binding";
         public static readonly string DeleteBindingUndoMessage = "Delete Binding";

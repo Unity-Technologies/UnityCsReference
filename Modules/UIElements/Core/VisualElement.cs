@@ -184,14 +184,19 @@ namespace UnityEngine.UIElements
             [UxmlAttribute("tabindex")]
             [SerializeField] private int tabIndex;
             [SerializeField] private bool focusable;
+
+            [Tooltip(DataBinding.k_DataSourceTooltip)]
             [SerializeField, HideInInspector, DataSourceDrawer] private Object dataSource;
 
             // We use a string here because the PropertyPath struct is not serializable
             [UxmlAttribute("data-source-path")]
+            [Tooltip(DataBinding.k_DataSourcePathTooltip)]
             [SerializeField, HideInInspector] private string dataSourcePathString;
 
             [UxmlAttribute("data-source-type")]
+            [Tooltip(DataBinding.k_DataSourceTooltip)]
             [SerializeField, HideInInspector, DataSourceTypeDrawer(typeof(object))] private string dataSourceTypeString;
+
             [SerializeReference, HideInInspector, UxmlObjectReference("Bindings")] List<Binding.UxmlSerializedData> bindings;
             #pragma warning restore 649
 
@@ -353,6 +358,9 @@ namespace UnityEngine.UIElements
         List<string> m_ClassList;
         private Dictionary<PropertyName, object> m_PropertyBag;
         internal VisualElementFlags m_Flags;
+
+        internal Action editingStarted { get; set; }
+        internal Action editingEnded { get; set; }
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
         private string m_ViewDataKey;

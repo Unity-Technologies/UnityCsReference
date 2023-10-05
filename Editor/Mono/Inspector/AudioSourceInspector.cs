@@ -5,6 +5,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Audio;
 
 namespace UnityEditor
 {
@@ -355,10 +356,7 @@ namespace UnityEditor
             UpdateWrappersAndLegend();
 
             EditorGUILayout.Space();
-            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_AudioResource, Styles.audioResourceLabel);
-
-            var refreshAudioContainerWindow = EditorGUI.EndChangeCheck() && AudioContainerWindow.Instance != null;
 
             EditorGUILayout.PropertyField(m_OutputAudioMixerGroup, Styles.outputMixerGroupLabel);
             EditorGUILayout.PropertyField(m_Mute);
@@ -395,7 +393,17 @@ namespace UnityEditor
             EditorGUILayout.Space();
             EditorGUILayout.Slider(m_Volume, 0f, 1.0f, Styles.volumeLabel);
             EditorGUILayout.Space();
-            EditorGUILayout.Slider(m_Pitch, -3.0f, 3.0f, Styles.pitchLabel);
+
+            var resource = m_AudioResource.objectReferenceValue as AudioResource;
+            if (resource is AudioRandomContainer)
+                {
+                    EditorGUILayout.Slider(m_Pitch, EPSILON, 3.0f, Styles.pitchLabel);
+
+                }
+                else
+                {
+                    EditorGUILayout.Slider(m_Pitch, -3.0f, 3.0f, Styles.pitchLabel);
+                }
 
             EditorGUILayout.Space();
 
@@ -426,11 +434,6 @@ namespace UnityEditor
 
             if (m_LowpassObject != null)
                 m_LowpassObject.ApplyModifiedProperties();
-
-            if (refreshAudioContainerWindow)
-            {
-                AudioContainerWindow.Instance.Refresh();
-            }
         }
 
         private static void SetRolloffToTarget(SerializedProperty property, Object target)

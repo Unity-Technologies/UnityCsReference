@@ -245,6 +245,12 @@ namespace UnityEngine.UIElements
             base.OnViewDataReady();
         }
 
+        internal override void RegisterEditingCallbacks()
+        {
+            base.RegisterEditingCallbacks();
+            labelElement.RegisterCallback<PointerUpEvent>(_ => editingStarted?.Invoke());
+        }
+
         // Implements a control with a value of type T backed by a text.
         /// <summary>
         /// This is the inner representation of the Text input.

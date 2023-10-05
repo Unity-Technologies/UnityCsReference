@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEditor.UIElements.Bindings;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -752,6 +753,8 @@ namespace Unity.UI.Builder
             var desc = UxmlSerializedDataRegistry.GetDescription(serializedDataType.DeclaringType.FullName);
             var instance = desc.CreateDefaultSerializedData();
 
+            Undo.RegisterCompleteObjectUndo(property.m_SerializedObject.targetObject, GetUndoMessage(property));
+
             if (property.isArray)
             {
                 property.InsertArrayElementAtIndex(property.arraySize);
@@ -763,8 +766,7 @@ namespace Unity.UI.Builder
                 property.managedReferenceValue = instance;
             }
 
-            property.serializedObject.ApplyModifiedProperties();
-            Undo.IncrementCurrentGroup();
+            property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
             CallDeserializeOnElement();
 
             SynchronizePath(property.propertyPath, true, out var _, out var _, out var _);
@@ -776,8 +778,9 @@ namespace Unity.UI.Builder
         {
             var undoGroup = Undo.GetCurrentGroup();
 
+            Undo.RegisterCompleteObjectUndo(property.m_SerializedObject.targetObject, GetUndoMessage(property));
+
             SynchronizePath(property.propertyPath, true, out var uxmlAsset, out var _, out var _);
-            Undo.IncrementCurrentGroup();
 
             if (property.isArray)
             {
@@ -795,9 +798,7 @@ namespace Unity.UI.Builder
                 property.managedReferenceValue = null;
             }
 
-            property.serializedObject.ApplyModifiedProperties();
-            Undo.IncrementCurrentGroup();
-            UndoRecordDocument(BuilderConstants.ModifyUxmlObject);
+            property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
             if (property.isArray)
             {
@@ -1196,20 +1197,21 @@ namespace Unity.UI.Builder
                 return;
 
             // Apply changes to the whole element
-            m_CurrentElementSerializedObject.ApplyModifiedProperties();
+            m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
 
             CallDeserializeOnElement();
 
             // Now resync as its possible that the setters made changes during Deserialize, e.g clamping values.
             m_SerializedDataDescription.SyncSerializedData(m_CurrentElement, uxmlSerializedData);
-            Undo.IncrementCurrentGroup();
 
             if (newValue == null || !UxmlAttributeConverter.TryConvertToString(newValue, m_UxmlDocument, out var stringValue))
                 stringValue = newValue?.ToString();
 
             PostAttributeValueChange(fieldElement, stringValue, currentAttributeUxmlOwner);
 
-            Undo.CollapseUndoOperations(undoGroup);
+            // Use the undo group of the field if it has one, otherwise use the current undo group
+            var fieldUndoGroup = (int?)fieldElement.Q<BindableElement>()?.GetProperty(SerializedObjectBindingBase.UndoGroupPropertyKey);
+            Undo.CollapseUndoOperations(fieldUndoGroup ?? undoGroup);
         }
 
         /// <summary>
@@ -1924,8 +1926,15 @@ namespace Unity.UI.Builder
             if (currentFieldSource == AttributeFieldSource.UxmlSerializedData)
             {
                 var prop = m_CurrentElementSerializedObject.FindProperty(serializedRootPath + field.bindingPath);
+
+                var undoMessage = $"Modified {prop.name}";
+                if (prop.m_SerializedObject.targetObject.name != string.Empty)
+                    undoMessage += $" in {prop.m_SerializedObject.targetObject.name}";
+
+                Undo.RegisterCompleteObjectUndo(prop.m_SerializedObject.targetObject, undoMessage);
+
                 prop.stringValue = evt.newValue;
-                m_CurrentElementSerializedObject.ApplyModifiedProperties();
+                m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
                 CallDeserializeOnElement();
             }
 
@@ -2033,6 +2042,15 @@ namespace Unity.UI.Builder
             var styleRow = GetLinkedStyleRow(field);
             if (styleRow != null)
                 UpdateFieldStatus(field);
+        }
+
+        static string GetUndoMessage(SerializedProperty prop)
+        {
+            var undoMessage = $"Modified {prop.name}";
+            if (prop.m_SerializedObject.targetObject.name != string.Empty)
+                undoMessage += $" in {prop.m_SerializedObject.targetObject.name}";
+
+            return undoMessage;
         }
     }
 }

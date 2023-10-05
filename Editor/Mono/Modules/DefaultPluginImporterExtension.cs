@@ -89,6 +89,11 @@ namespace UnityEditor.Modules
             this.properties = properties;
         }
 
+        protected virtual Property[] GetPropertiesForInspector(PluginImporterInspector inspector)
+        {
+            return properties;
+        }
+
         public virtual void ResetValues(PluginImporterInspector inspector)
         {
             hasModified = false;
@@ -104,7 +109,7 @@ namespace UnityEditor.Modules
         {
             if (!propertiesRefreshed) return;
 
-            foreach (var p in properties)
+            foreach (var p in GetPropertiesForInspector(inspector))
             {
                 p.Apply(inspector);
             }
@@ -126,7 +131,7 @@ namespace UnityEditor.Modules
             if (!propertiesRefreshed) RefreshProperties(inspector);
 
             EditorGUI.BeginChangeCheck();
-            foreach (var p in properties)
+            foreach (var p in GetPropertiesForInspector(inspector))
             {
                 // skip CPU property for things that aren't native libs
                 if (p.key == cpuKey && !inspector.importer.isNativePlugin)
@@ -138,7 +143,7 @@ namespace UnityEditor.Modules
 
         protected virtual void RefreshProperties(PluginImporterInspector inspector)
         {
-            foreach (var p in properties)
+            foreach (var p in GetPropertiesForInspector(inspector))
             {
                 p.Reset(inspector);
             }

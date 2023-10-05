@@ -210,21 +210,19 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         var namedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
         var scriptingBackend = PlayerSettings.GetScriptingBackend(namedBuildTarget);
 
-        /*
         if (namedBuildTarget == NamedBuildTarget.Server)
         {
             if (scriptingBackend == ScriptingImplementation.Mono2x && !m_HasServerMonoPlayers)
-                return $"Currently selected scripting backend (Mono) is not installed for {GetHostPlatformName()}.";
-
-            if (scriptingBackend == ScriptingImplementation.IL2CPP && !m_HasServerIl2CppPlayers)
-                return $"Currently selected scripting backend (IL2CPP) is not installed for {GetHostPlatformName()}.";
+                return $"Dedicated Server support (Mono) for {GetHostPlatformName()} is not installed.";
 
             if (scriptingBackend == ScriptingImplementation.IL2CPP && !m_IsRunningOnHostPlatform)
                 return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
 
+            if (scriptingBackend == ScriptingImplementation.IL2CPP && !m_HasServerIl2CppPlayers)
+                return $"Dedicated Server support (IL2CPP) for {GetHostPlatformName()} is not installed.";
+
             return null;
         }
-        */
 
         switch(scriptingBackend)
         {

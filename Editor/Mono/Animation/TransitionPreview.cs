@@ -269,7 +269,7 @@ namespace UnityEditor
             AnimatorStateInfo currentState = m_AvatarPreview.Animator.GetCurrentAnimatorStateInfo(m_LayerIndex);
             m_LeftStateWeightA = currentState.normalizedTime;
             m_LeftStateTimeA = currentTime;
-            while (!hasFinished && currentTime < maxDuration)
+            while (!hasFinished)
             {
                 m_AvatarPreview.Animator.Update(stepTime);
 
@@ -284,7 +284,7 @@ namespace UnityEditor
                     hasStarted = true;
                 }
 
-                if (hasTransitioned && currentTime >= maxDuration)
+                if (hasTransitioned || currentTime >= maxDuration)
                 {
                     hasFinished = true;
                 }
@@ -303,7 +303,7 @@ namespace UnityEditor
                     m_LeftStateTimeB = currentTime;
                 }
 
-                if (hasTransitioned)
+                if (hasTransitioned || hasFinished)
                 {
                     m_RightStateWeightB = currentState.normalizedTime;
                     m_RightStateTimeB = currentTime;
@@ -328,6 +328,11 @@ namespace UnityEditor
 
             float leftDuration =  (m_LeftStateTimeB - m_LeftStateTimeA) / (m_LeftStateWeightB - m_LeftStateWeightA);
             float rightDuration = (m_RightStateTimeB - m_RightStateTimeA) / (m_RightStateWeightB - m_RightStateWeightA);
+
+            // Ensure step times make sense based on these timings
+            // If step time is too small, the samping will take too long
+            currentStateStepTime = Mathf.Max(currentStateStepTime, leftDuration / 600.0f);
+            nextStateStepTime = Mathf.Max(nextStateStepTime, rightDuration / 600.0f);
 
             if (m_MustSampleMotions)
             {

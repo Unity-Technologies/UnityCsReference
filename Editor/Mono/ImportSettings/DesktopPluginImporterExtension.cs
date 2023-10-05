@@ -153,6 +153,9 @@ namespace UnityEditor
         private readonly DesktopSingleCPUProperty m_LinuxManaged;
         private readonly DesktopSingleCPUProperty m_MacOSManaged;
 
+        private Property[] nativeProperties = null;
+        private Property[] managedProperties = null;
+
         public DesktopPluginImporterExtension()
             : base(null)
         {
@@ -169,12 +172,16 @@ namespace UnityEditor
             m_LinuxManaged = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("Linux x64"),BuildTarget.StandaloneLinux64);
             m_MacOSManaged = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("macOS 64-bit"),BuildTarget.StandaloneOSX);
 
-            properties = new Property[]
+            nativeProperties = new Property[]
             {
                 m_Windows32,
                 m_Windows64,
                 m_Linux,
                 m_MacOS,
+            };
+
+            managedProperties = new Property[]
+            {
                 m_Windows32Managed,
                 m_Windows64Managed,
                 m_LinuxManaged,
@@ -206,6 +213,11 @@ namespace UnityEditor
                 return true;
 
             return IsLinuxLibrary(imp.assetPath) || IsCppPluginFile(imp.assetPath);
+        }
+
+        protected override Property[] GetPropertiesForInspector(PluginImporterInspector inspector)
+        {
+            return inspector.importer.isNativePlugin ? nativeProperties : managedProperties;
         }
 
         public override void OnPlatformSettingsGUI(PluginImporterInspector inspector)
@@ -257,7 +269,7 @@ namespace UnityEditor
 
         public void ValidateSingleCPUTargets(PluginImporterInspector inspector)
         {
-            var singleCPUTargets = properties.OfType<DesktopSingleCPUProperty>();
+            var singleCPUTargets = GetPropertiesForInspector(inspector).OfType<DesktopSingleCPUProperty>();
 
             foreach (var target in singleCPUTargets)
             {

@@ -140,7 +140,6 @@ namespace Unity.UI.Builder
         void OnCreateBindingAccepted()
         {
             m_AttributesView.TransferBindingInstance(m_AttributesView.serializedRootPath + "bindings", m_Inspector.attributesSection, bindingPropertyName);
-            m_AttributesView.Dispose();
         }
 
         /// <summary>
@@ -270,6 +269,15 @@ namespace Unity.UI.Builder
             var previousDefault = propertyAttribute.defaultValue;
             propertyAttribute.defaultValue = bindingPropertyName;
 
+            // Set the binding mode attribute default value to ToTarget. This will be restored afterwards.
+            var bindingModeAttribute = description.FindAttributeWithPropertyName(nameof(DataBinding.bindingMode));
+            object previousBindingModeDefault = null;
+            if (bindingModeAttribute != null)
+            {
+                previousBindingModeDefault = bindingModeAttribute.defaultValue;
+                bindingModeAttribute.defaultValue = BindingMode.ToTarget;
+            }
+
             // Create UxmlSerializedData.
             var data = (Binding.UxmlSerializedData)description.CreateDefaultSerializedData();
 
@@ -280,14 +288,30 @@ namespace Unity.UI.Builder
 
             // Add the Binding serialized data to the current element's binding list.
             var property = m_AttributesView.m_CurrentElementSerializedObject.FindProperty(m_AttributesView.serializedRootPath + "bindings");
+
+            var undoMessage = $"Modified {property.name}";
+            if (property.m_SerializedObject.targetObject.name != string.Empty)
+                undoMessage += $" in {property.m_SerializedObject.targetObject.name}";
+
+            Undo.RegisterCompleteObjectUndo(property.m_SerializedObject.targetObject, undoMessage);
+
             property.InsertArrayElementAtIndex(property.arraySize);
             var item = property.GetArrayElementAtIndex(property.arraySize - 1);
             item.managedReferenceValue = data;
-            property.serializedObject.ApplyModifiedProperties();
+            property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
             var uxmlObjectPropertyPath = item.propertyPath;
             m_AttributesView.bindingSerializedPropertyPathRoot = uxmlObjectPropertyPath;
             m_AttributesView.bindingUxmlSerializedDataDescription = description;
+
+            // Restore the bindingMode attribute default value and update the uxml asset
+            if (bindingModeAttribute != null)
+            {
+                // need to update the uxmlAsset with the binding mode change
+                m_AttributesView.SynchronizePath(uxmlObjectPropertyPath, true, out var uxmlAsset, out var _, out _);
+                ((UxmlAsset)uxmlAsset)?.SetAttribute("binding-mode", BindingMode.ToTarget.ToString());
+                bindingModeAttribute.defaultValue = previousBindingModeDefault;
+            }
         }
 
         /// <summary>

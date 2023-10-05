@@ -1350,7 +1350,11 @@ namespace Unity.UI.Builder
                 return attribute?.name == propName;
             }
 
-            VisualElement field = attributeSection.root.Query().Where(IsFieldElement);
+            VisualElement field;
+            if (propName is "data-source" or "data-source-type" or "data-source-path")
+                field = m_HeaderSection.m_DataSourceAndPathView.fieldsContainer.Query().Where(IsFieldElement);
+            else
+                field = attributeSection.root.Query().Where(IsFieldElement);
 
             return field;
         }

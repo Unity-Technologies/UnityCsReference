@@ -804,5 +804,13 @@ namespace UnityEngine.UIElements
                 dragContainer.Add(dragElement);
             }
         }
+
+        internal override void RegisterEditingCallbacks()
+        {
+            labelElement.RegisterCallback<PointerDownEvent>(_ => editingStarted?.Invoke(), TrickleDown.TrickleDown);
+            dragContainer.RegisterCallback<PointerDownEvent>(_ => editingStarted?.Invoke(), TrickleDown.TrickleDown);
+
+            dragContainer.RegisterCallback<PointerUpEvent>(_ => editingEnded?.Invoke());
+        }
     }
 }
