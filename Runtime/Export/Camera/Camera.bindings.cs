@@ -416,15 +416,46 @@ namespace UnityEngine
             if (renderRequest == null)
                 throw new ArgumentException($"{nameof(SubmitRenderRequests)} is invoked with invalid renderRequests");
 
+            if (renderRequest is ObjectIdRequest objectIdRequest)
+            {
+                if (objectIdRequest.destination.depthStencilFormat == Experimental.Rendering.GraphicsFormat.None)
+                {
+                    Debug.LogWarning("ObjectId Render Request submitted without a depth stencil, which can produce results that are not depth tested correctly");
+                }
+                if (GraphicsSettings.currentRenderPipeline == null || !RenderPipelineManager.currentPipeline.IsRenderRequestSupported(this, objectIdRequest))
+                {
+                    // If the render pipeline supports object id rendering let the pipeline handle it.
+                    // Otherwise rely on the built-in support through "magic", which also works with both hdrp/urp shaders
+                    HandleBuiltInObjectIDRenderRequest(objectIdRequest);
+                    return;
+                }
+            }
             if (GraphicsSettings.currentRenderPipeline == null)
             {
-                Debug.LogWarning("Trying to invoke 'SubmitRenderRequests' when no SRP is set. A scriptable render pipeline is needed for this function call");
+                Debug.LogWarning("Trying to invoke 'SubmitRenderRequest' when no SRP is set. A scriptable render pipeline is needed for this function call");
                 return;
             }
             SubmitRenderRequestsInternal(renderRequest);
         }
 
+        void HandleBuiltInObjectIDRenderRequest(ObjectIdRequest renderRequest)
+        {
+            UnityEngine.Object[] objects;
+            objects = SubmitBuiltInObjectIDRenderRequest(
+                renderRequest.destination,
+                renderRequest.mipLevel,
+                renderRequest.face,
+                renderRequest.slice);
+            renderRequest.result = new ObjectIdResult(objects);
+        }
+
         [FreeFunction("CameraScripting::SubmitRenderRequests", HasExplicitThis = true)]  extern private void SubmitRenderRequestsInternal(object requests);
+        [FreeFunction("CameraScripting::SubmitBuiltInObjectIDRenderRequest", HasExplicitThis = true)] [NativeConditional("UNITY_EDITOR")]
+        extern private UnityEngine.Object[] SubmitBuiltInObjectIDRenderRequest(
+            RenderTexture target,
+            int mipLevel,
+            CubemapFace cubemapFace,
+            int depthSlice);
         [FreeFunction("CameraScripting::SetupCurrent")] extern public static void SetupCurrent(Camera cur);
         [FreeFunction("CameraScripting::CopyFrom", HasExplicitThis = true)] extern public void CopyFrom(Camera other);
 

@@ -17,7 +17,7 @@ namespace UnityEditor.ShortcutManagement
         readonly string k_MainMenu = L10n.Tr("Main Menu");
 
         static readonly string k_ProfileNameEmpty = L10n.Tr("Profile name is empty");
-        static readonly string k_ProfileNameUnsupported = L10n.Tr("Name contains unsupported characters");
+        static readonly string k_ProfileNameUnsupported = L10n.Tr("Profile name is unsupported");
         static readonly string k_ProfileExists = L10n.Tr("Profile already exists");
         static readonly string k_DefaultRename = L10n.Tr("Default profile cannot be renamed");
         static readonly string k_ProfileNotFound = L10n.Tr("Couldn't find active profile");

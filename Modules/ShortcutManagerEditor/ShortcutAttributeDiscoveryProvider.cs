@@ -65,7 +65,7 @@ namespace UnityEditor.ShortcutManagement
             public string filePath;
         }
 
-        internal static SequencePoint FindSequencePoint(MethodDefinition methodWithBody)
+        private static SequencePoint FindSequencePoint(MethodDefinition methodWithBody)
         {
             foreach (var instruction in methodWithBody.Body.Instructions)
             {
@@ -77,36 +77,38 @@ namespace UnityEditor.ShortcutManagement
             return null;
         }
 
-        internal static MethodDefinition FromMethodInfo(MethodInfo methodInfo)
+        private static SequencePoint FromMethodInfo(MethodInfo methodInfo)
         {
             var assembly = methodInfo.DeclaringType.Assembly;
             var parms = new ReaderParameters { ReadSymbols = true };
-            var module = ModuleDefinition.ReadModule(assembly.Location, parms);
-
-            var convertedFullName = methodInfo.DeclaringType.FullName.Replace("+", "/");
-            var typeDefinition = module.GetType(convertedFullName);
-            var expectedParams = methodInfo.GetParameters();
-
-            foreach (var methodDefinition in typeDefinition.Methods)
+            using (var assemblyDefinition = AssemblyDefinition.ReadAssembly(assembly.Location, parms))
             {
-                if (methodDefinition.Name != methodInfo.Name)
-                    continue;
 
-                var paramz = methodDefinition.Parameters;
-                if (paramz.Count != expectedParams.Length)
-                    continue;
+                var convertedFullName = methodInfo.DeclaringType.FullName.Replace("+", "/");
+                var typeDefinition = assemblyDefinition.MainModule.GetType(convertedFullName);
+                var expectedParams = methodInfo.GetParameters();
 
-                var sameParameters = true;
-                for (int i = 0; i < expectedParams.Length; ++i)
+                foreach (var methodDefinition in typeDefinition.Methods)
                 {
-                    var typeEquals = paramz[i].ParameterType.FullName == expectedParams[i].ParameterType.FullName;
-                    sameParameters = sameParameters && typeEquals;
-                    if (!sameParameters)
-                        break;
-                }
+                    if (methodDefinition.Name != methodInfo.Name)
+                        continue;
 
-                if (sameParameters)
-                    return methodDefinition;
+                    var paramz = methodDefinition.Parameters;
+                    if (paramz.Count != expectedParams.Length)
+                        continue;
+
+                    var sameParameters = true;
+                    for (int i = 0; i < expectedParams.Length; ++i)
+                    {
+                        var typeEquals = paramz[i].ParameterType.FullName == expectedParams[i].ParameterType.FullName;
+                        sameParameters = sameParameters && typeEquals;
+                        if (!sameParameters)
+                            break;
+                    }
+
+                    if (sameParameters)
+                        return FindSequencePoint(methodDefinition);
+                }
             }
 
             return null;
@@ -114,8 +116,11 @@ namespace UnityEditor.ShortcutManagement
 
         internal static SourceInfo GetSourceInfo(MethodInfo methodInfo)
         {
-            var methodWithBody = FromMethodInfo(methodInfo);
-            var seq = FindSequencePoint(methodWithBody);
+            var seq = FromMethodInfo(methodInfo);
+            if(seq == null)
+            {
+                throw new InvalidOperationException("Can't find symbol information for " + methodInfo);
+            }
             SourceInfo sourceInfo = new SourceInfo()
             {
                 lineNumber = seq.StartLine,

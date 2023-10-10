@@ -182,7 +182,7 @@ namespace UnityEngine
         [FreeFunction("Resources_Bindings::InstanceIDToObject")]
         public extern static Object InstanceIDToObject(int instanceID);
 
-        [FreeFunction("Resources_Bindings::InstanceIDToObjectList")]
+        [FreeFunction("Resources_Bindings::InstanceIDToObjectList", IsThreadSafe = true)]
         extern private static void InstanceIDToObjectList(IntPtr instanceIDs, int instanceCount, List<Object> objects);
 
         public static unsafe void InstanceIDToObjectList(NativeArray<int> instanceIDs, List<Object> objects)
@@ -201,8 +201,11 @@ namespace UnityEngine
             InstanceIDToObjectList((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, objects);
         }
 
-        [FreeFunction("Resources_Bindings::InstanceIDsToValidArray")]
+        [FreeFunction("Resources_Bindings::InstanceIDsToValidArray", IsThreadSafe = true)]
         private static extern unsafe void InstanceIDsToValidArray_Internal(IntPtr instanceIDs, int instanceCount, IntPtr validArray, int validArrayCount);
+
+        [FreeFunction("Resources_Bindings::DoesObjectWithInstanceIDExist", IsThreadSafe = true)]
+        public static extern bool InstanceIDIsValid(int instanceId);
 
         public static unsafe void InstanceIDsToValidArray(NativeArray<int> instanceIDs, NativeArray<bool> validArray)
         {

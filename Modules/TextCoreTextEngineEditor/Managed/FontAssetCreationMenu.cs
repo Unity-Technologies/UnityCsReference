@@ -210,7 +210,7 @@ namespace UnityEditor.TextCore.Text
             fontAsset.atlasTextures = new Texture2D[1];
 
             // Create atlas texture of size zero.
-            Texture2D texture = new Texture2D(0, 0, TextureFormat.Alpha8, false);
+            Texture2D texture = new Texture2D(1, 1, TextureFormat.Alpha8, false);
 
             texture.name = assetName + " Atlas";
             fontAsset.atlasTextures[0] = texture;

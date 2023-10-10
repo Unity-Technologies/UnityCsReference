@@ -7,6 +7,8 @@ using UnityEditorInternal;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Rendering;
+using UnityEngine.UIElements;
+using System;
 
 namespace UnityEditor
 {
@@ -52,19 +54,28 @@ namespace UnityEditor
         SerializedProperty m_Pivot;
         SerializedProperty m_Flip;
         SerializedProperty m_UseCustomVertexStreams;
+        SerializedProperty m_UseCustomTrailVertexStreams;
         SerializedProperty m_VertexStreams;
+        SerializedProperty m_TrailVertexStreams;
         SerializedProperty m_MaskInteraction;
         SerializedProperty m_EnableGPUInstancing;
         SerializedProperty m_ApplyActiveColorSpace;
 
         ReorderableList m_VertexStreamsList;
+        ReorderableList m_TrailVertexStreamsList;
 
-        int m_NumTexCoords;
-        int m_TexCoordChannelIndex;
-        int m_NumInstancedStreams;
-        bool m_HasTangent;
-        bool m_HasColor;
-        bool m_HasGPUInstancing;
+        private class VertexStreamsStats
+        {
+            public int m_NumTexCoords;
+            public int m_TexCoordChannelIndex;
+            public int m_NumInstancedStreams;
+            public bool m_HasTangent;
+            public bool m_HasColor;
+            public bool m_HasGPUInstancing;
+        }
+
+        VertexStreamsStats m_VertexStreamsStats;
+        VertexStreamsStats m_TrailVertexStreamsStats;
 
         static PrefColor s_PivotColor = new PrefColor("Particle System/Pivot", 0.0f, 1.0f, 0.0f, 1.0f);
         static bool s_VisualizePivot = false;
@@ -79,6 +90,30 @@ namespace UnityEditor
             Mesh = 4,
             None = 5
         }
+
+        private struct VertexStreamInfo
+        {
+            [Flags]
+            public enum Mode
+            {
+                Particles = 1 << 0,
+                Trails = 1 << 1,
+
+                All = Particles | Trails
+            };
+
+            public static implicit operator VertexStreamInfo(string n)
+            {
+                return new VertexStreamInfo
+                {
+                    name = n,
+                    mode = Mode.All
+                };
+            }
+
+            public string name;
+            public Mode mode;
+        };
 
         class Texts
         {
@@ -115,6 +150,7 @@ namespace UnityEditor
             public GUIContent flipMeshes = EditorGUIUtility.TrTextContent("Flip", "Cause some mesh particles to be flipped along each of their axes. Use a shader with CullMode=None, to avoid inside-out geometry. (Set between 0 and 1, where a higher value causes more to flip)");
             public GUIContent visualizePivot = EditorGUIUtility.TrTextContent("Visualize Pivot", "Render the pivot positions of the particles.");
             public GUIContent useCustomVertexStreams = EditorGUIUtility.TrTextContent("Custom Vertex Streams", "Choose whether to send custom particle data to the shader.");
+            public GUIContent useCustomTrailVertexStreams = EditorGUIUtility.TrTextContent("Custom Trail Vertex Streams", "Choose whether to send custom particle trail data to the shader.");
             public GUIContent enableGPUInstancing = EditorGUIUtility.TrTextContent("Enable Mesh GPU Instancing", "When rendering mesh particles, use GPU Instancing on platforms where it is supported, and when using shaders that contain a Procedural Instancing pass (#pragma instancing_options procedural).");
             public GUIContent applyActiveColorSpace = EditorGUIUtility.TrTextContent("Apply Active Color Space", "When using Linear Rendering, particle colors will be converted appropriately before being passed to the GPU.");
 
@@ -181,10 +217,13 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Non-uniform Random")
             };
 
-            private string[] vertexStreamsMenu = { "Position", "Normal", "Tangent", "Color", "UV/UV1", "UV/UV2", "UV/UV3", "UV/UV4", "UV/AnimBlend", "UV/AnimFrame", "Center", "VertexID", "Size/Size.x", "Size/Size.xy", "Size/Size.xyz", "Rotation/Rotation", "Rotation/Rotation3D", "Rotation/RotationSpeed", "Rotation/RotationSpeed3D", "Velocity", "Speed", "Lifetime/AgePercent", "Lifetime/InverseStartLifetime", "Random/Stable.x", "Random/Stable.xy", "Random/Stable.xyz", "Random/Stable.xyzw", "Random/Varying.x", "Random/Varying.xy", "Random/Varying.xyz", "Random/Varying.xyzw", "Custom/Custom1.x", "Custom/Custom1.xy", "Custom/Custom1.xyz", "Custom/Custom1.xyzw", "Custom/Custom2.x", "Custom/Custom2.xy", "Custom/Custom2.xyz", "Custom/Custom2.xyzw", "Noise/Sum.x", "Noise/Sum.xy", "Noise/Sum.xyz", "Noise/Impulse.x", "Noise/Impulse.xy", "Noise/Impulse.xyz", "MeshIndex", "ParticleIndex", "ColorPackedAsTwoFloats", "MeshAxisOfRotation" };
-            public string[] vertexStreamsPacked = { "Position", "Normal", "Tangent", "Color", "UV", "UV2", "UV3", "UV4", "AnimBlend", "AnimFrame", "Center", "VertexID", "Size", "Size.xy", "Size.xyz", "Rotation", "Rotation3D", "RotationSpeed", "RotationSpeed3D", "Velocity", "Speed", "AgePercent", "InverseStartLifetime", "StableRandom.x", "StableRandom.xy", "StableRandom.xyz", "StableRandom.xyzw", "VariableRandom.x", "VariableRandom.xy", "VariableRandom.xyz", "VariableRandom.xyzw", "Custom1.x", "Custom1.xy", "Custom1.xyz", "Custom1.xyzw", "Custom2.x", "Custom2.xy", "Custom2.xyz", "Custom2.xyzw", "NoiseSum.x", "NoiseSum.xy", "NoiseSum.xyz", "NoiseImpulse.x", "NoiseImpulse.xy", "NoiseImpulse.xyz", "MeshIndex", "ParticleIndex", "ColorPackedAsTwoFloats", "MeshAxisOfRotation" }; // Keep in sync with enums in ParticleSystemRenderer.h and ParticleSystemEnums.cs
+            private static VertexStreamInfo ParticleVertexStream(string n) { return new VertexStreamInfo { name = n, mode = VertexStreamInfo.Mode.Particles }; }
+            private static VertexStreamInfo TrailVertexStream(string n) { return new VertexStreamInfo { name = n, mode = VertexStreamInfo.Mode.Trails }; }
+
+            private string[] vertexStreamsMenu = { "Position", "Normal", "Tangent", "Color", "UV/UV1", "UV/UV2", "UV/UV3", "UV/UV4", "UV/AnimBlend", "UV/AnimFrame", "Center", "VertexID", "Size/Size.x", "Size/Size.xy", "Size/Size.xyz", "Rotation/Rotation", "Rotation/Rotation3D", "Rotation/RotationSpeed", "Rotation/RotationSpeed3D", "Velocity", "Speed", "Lifetime/AgePercent", "Lifetime/InverseStartLifetime", "Random/Stable.x", "Random/Stable.xy", "Random/Stable.xyz", "Random/Stable.xyzw", "Random/Varying.x", "Random/Varying.xy", "Random/Varying.xyz", "Random/Varying.xyzw", "Custom/Custom1.x", "Custom/Custom1.xy", "Custom/Custom1.xyz", "Custom/Custom1.xyzw", "Custom/Custom2.x", "Custom/Custom2.xy", "Custom/Custom2.xyz", "Custom/Custom2.xyzw", "Noise/Sum.x", "Noise/Sum.xy", "Noise/Sum.xyz", "Noise/Impulse.x", "Noise/Impulse.xy", "Noise/Impulse.xyz", "MeshIndex", "ParticleIndex", "ColorPackedAsTwoFloats", "MeshAxisOfRotation", "Trails/NextCenter", "Trails/PreviousCenter", "Trails/PercentageAlongTrail", "Trails/Width" };
+            public VertexStreamInfo[] vertexStreamsPacked = { "Position", "Normal", "Tangent", "Color", "UV", ParticleVertexStream("UV2"), ParticleVertexStream("UV3"), ParticleVertexStream("UV4"), "AnimBlend", "AnimFrame", "Center", "VertexID", "Size", "Size.xy", "Size.xyz", "Rotation", "Rotation3D", "RotationSpeed", "RotationSpeed3D", "Velocity", "Speed", "AgePercent", "InverseStartLifetime", "StableRandom.x", "StableRandom.xy", "StableRandom.xyz", "StableRandom.xyzw", "VariableRandom.x", "VariableRandom.xy", "VariableRandom.xyz", "VariableRandom.xyzw", "Custom1.x", "Custom1.xy", "Custom1.xyz", "Custom1.xyzw", "Custom2.x", "Custom2.xy", "Custom2.xyz", "Custom2.xyzw", "NoiseSum.x", "NoiseSum.xy", "NoiseSum.xyz", "NoiseImpulse.x", "NoiseImpulse.xy", "NoiseImpulse.xyz", ParticleVertexStream("MeshIndex"), "ParticleIndex", "ColorPackedAsTwoFloats", "MeshAxisOfRotation", TrailVertexStream("NextCenter"), TrailVertexStream("PreviousCenter"), TrailVertexStream("PercentageAlongTrail"), TrailVertexStream("TrailWidth") }; // Keep in sync with enums in ParticleSystemRenderer.h and ParticleSystemEnums.cs
             public string[] vertexStreamPackedTypes = { "POSITION.xyz", "NORMAL.xyz", "TANGENT.xyzw", "COLOR.xyzw" }; // all other types are floats
-            public int[] vertexStreamTexCoordChannels = { 0, 0, 0, 0, 2, 2, 2, 2, 1, 1, 3, 1, 1, 2, 3, 1, 3, 1, 3, 3, 1, 1, 1, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 1, 2, 3, 1, 1, 2, 3 };
+            public int[] vertexStreamTexCoordChannels = { 0, 0, 0, 0, 2, 2, 2, 2, 1, 1, 3, 1, 1, 2, 3, 1, 3, 1, 3, 3, 1, 1, 1, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 1, 2, 3, 1, 1, 2, 3, 3, 3, 1, 1 };
             public string channels = "xyzw|xyz";
             public int vertexStreamsInstancedStart = 8;
 
@@ -272,13 +311,23 @@ namespace UnityEditor
             m_ApplyActiveColorSpace = GetProperty0("m_ApplyActiveColorSpace");
 
             m_UseCustomVertexStreams = GetProperty0("m_UseCustomVertexStreams");
+            m_UseCustomTrailVertexStreams = GetProperty0("m_UseCustomTrailVertexStreams");
+
             m_VertexStreams = GetProperty0("m_VertexStreams");
             m_VertexStreamsList = new ReorderableList(serializedObject, m_VertexStreams, true, true, true, true);
             m_VertexStreamsList.elementHeight = kReorderableListElementHeight;
             m_VertexStreamsList.headerHeight = 0;
             m_VertexStreamsList.onAddDropdownCallback = OnVertexStreamListAddDropdownCallback;
             m_VertexStreamsList.onCanRemoveCallback = OnVertexStreamListCanRemoveCallback;
-            m_VertexStreamsList.drawElementCallback = DrawVertexStreamListElementCallback;
+            m_VertexStreamsList.drawElementCallback = DrawParticleVertexStreamListElementCallback;
+
+            m_TrailVertexStreams = GetProperty0("m_TrailVertexStreams");
+            m_TrailVertexStreamsList = new ReorderableList(serializedObject, m_TrailVertexStreams, true, true, true, true);
+            m_TrailVertexStreamsList.elementHeight = kReorderableListElementHeight;
+            m_TrailVertexStreamsList.headerHeight = 0;
+            m_TrailVertexStreamsList.onAddDropdownCallback = OnTrailVertexStreamListAddDropdownCallback;
+            m_TrailVertexStreamsList.onCanRemoveCallback = OnVertexStreamListCanRemoveCallback;
+            m_TrailVertexStreamsList.drawElementCallback = DrawTrailVertexStreamListElementCallback;
 
             s_VisualizePivot = EditorPrefs.GetBool("VisualizePivot", false);
         }
@@ -420,7 +469,13 @@ namespace UnityEditor
                 GUIToggle(s_Texts.applyActiveColorSpace, m_ApplyActiveColorSpace);
 
                 if (GUIToggle(s_Texts.useCustomVertexStreams, m_UseCustomVertexStreams))
-                    DoVertexStreamsGUI(renderMode);
+                    DoVertexStreamsGUI(m_VertexStreamsList, ref m_VertexStreamsStats, m_Material, renderMode);
+
+                if (trailMaterial != null) // Only show if the system has a second material slot
+                {
+                    if (GUIToggle(s_Texts.useCustomTrailVertexStreams, m_UseCustomTrailVertexStreams))
+                        DoVertexStreamsGUI(m_TrailVertexStreamsList, ref m_TrailVertexStreamsStats, trailMaterial, renderMode);
+                }
             }
 
             EditorGUILayout.Space();
@@ -526,7 +581,7 @@ namespace UnityEditor
             public int stream;
         }
 
-        void SelectVertexStreamCallback(object obj)
+        private void SelectVertexStreamCallback(object obj)
         {
             StreamCallbackData data = (StreamCallbackData)obj;
 
@@ -538,18 +593,17 @@ namespace UnityEditor
             m_ParticleSystemUI.m_RendererSerializedObject.ApplyModifiedProperties();
         }
 
-        private void DoVertexStreamsGUI(RenderMode renderMode)
+        private void DoVertexStreamsGUI(ReorderableList list, ref VertexStreamsStats stats, SerializedProperty serializedMaterial, RenderMode renderMode)
         {
             ParticleSystemRenderer renderer = m_ParticleSystemUI.m_ParticleSystems[0].GetComponent<ParticleSystemRenderer>();
+            bool hasGPUInstancing = false;
+            if (renderMode == RenderMode.Mesh && list == m_VertexStreamsList)
+                hasGPUInstancing = renderer.supportsMeshInstancing;
 
             // render list
-            m_NumTexCoords = 0;
-            m_TexCoordChannelIndex = 0;
-            m_NumInstancedStreams = 0;
-            m_HasTangent = false;
-            m_HasColor = false;
-            m_HasGPUInstancing = (renderMode == RenderMode.Mesh) ? renderer.supportsMeshInstancing : false;
-            m_VertexStreamsList.DoLayoutList();
+            stats = new VertexStreamsStats();
+            stats.m_HasGPUInstancing = hasGPUInstancing;
+            list.DoLayoutList();
 
             if (!m_ParticleSystemUI.multiEdit)
             {
@@ -557,12 +611,12 @@ namespace UnityEditor
                 string errors = "";
 
                 // check we have the same streams as the assigned shader
-                if (m_Material != null)
+                if (serializedMaterial != null)
                 {
-                    Material material = m_Material.objectReferenceValue as Material;
-                    int totalChannelCount = m_NumTexCoords * 4 + m_TexCoordChannelIndex;
+                    Material material = serializedMaterial.objectReferenceValue as Material;
+                    int totalChannelCount = stats.m_NumTexCoords * 4 + stats.m_TexCoordChannelIndex;
                     bool tangentError = false, colorError = false, uvError = false;
-                    bool anyErrors = ParticleSystem.CheckVertexStreamsMatchShader(m_HasTangent, m_HasColor, totalChannelCount, material, ref tangentError, ref colorError, ref uvError);
+                    bool anyErrors = ParticleSystem.CheckVertexStreamsMatchShader(stats.m_HasTangent, stats.m_HasColor, totalChannelCount, material, ref tangentError, ref colorError, ref uvError);
                     if (anyErrors)
                     {
                         errors += "Vertex streams do not match the shader inputs. Particle systems may not render correctly. Ensure your streams match and are used by the shader.";
@@ -577,7 +631,7 @@ namespace UnityEditor
 
                 // check we aren't using too many texcoords
                 int maxTexCoords = ParticleSystem.GetMaxTexCoordStreams();
-                if (m_NumTexCoords > maxTexCoords || (m_NumTexCoords == maxTexCoords && m_TexCoordChannelIndex > 0))
+                if (stats.m_NumTexCoords > maxTexCoords || (stats.m_NumTexCoords == maxTexCoords && stats.m_TexCoordChannelIndex > 0))
                 {
                     if (errors != "")
                         errors += "\n\n";
@@ -585,7 +639,7 @@ namespace UnityEditor
                 }
 
                 // check input meshes aren't using too many UV streams
-                if (renderMode == RenderMode.Mesh)
+                if (renderMode == RenderMode.Mesh && list == m_VertexStreamsList)
                 {
                     Mesh[] meshes = new Mesh[k_MaxNumMeshes];
                     int numMeshes = renderer.GetMeshes(meshes);
@@ -608,77 +662,107 @@ namespace UnityEditor
             }
         }
 
-        private void OnVertexStreamListAddDropdownCallback(Rect rect, UnityEditorInternal.ReorderableList list)
+        private void OnVertexStreamListAddDropdownCallback(Rect rect, ReorderableList list)
         {
-            List<int> notEnabled = new List<int>();
+            OnVertexStreamListAddDropdownCallbackInternal(rect, list, VertexStreamInfo.Mode.Particles);
+
+        }
+
+        private void OnTrailVertexStreamListAddDropdownCallback(Rect rect, ReorderableList list)
+        {
+            OnVertexStreamListAddDropdownCallbackInternal(rect, list, VertexStreamInfo.Mode.Trails);
+        }
+
+        private void OnVertexStreamListAddDropdownCallbackInternal(Rect rect, ReorderableList list, VertexStreamInfo.Mode mode)
+        {
+            SerializedProperty vertexStreams = list.serializedProperty;
+
+            var notEnabled = new List<int>();
             for (int i = 0; i < s_Texts.vertexStreamsPacked.Length; ++i)
             {
-                bool exists = false;
-                for (int j = 0; j < m_VertexStreams.arraySize; ++j)
+                if ((s_Texts.vertexStreamsPacked[i].mode & mode) != 0)
                 {
-                    if (m_VertexStreams.GetArrayElementAtIndex(j).intValue == i)
+                    bool exists = false;
+                    for (int j = 0; j < vertexStreams.arraySize; ++j)
                     {
-                        exists = true;
-                        break;
+                        if (vertexStreams.GetArrayElementAtIndex(j).intValue == i)
+                        {
+                            exists = true;
+                            break;
+                        }
                     }
-                }
 
-                if (!exists)
-                    notEnabled.Add(i);
+                    if (!exists)
+                        notEnabled.Add(i);
+                }
             }
 
             GenericMenu menu = new GenericMenu();
             for (int i = 0; i < notEnabled.Count; ++i)
-                menu.AddItem(s_Texts.vertexStreamsMenuContent[notEnabled[i]], false, SelectVertexStreamCallback, new StreamCallbackData(list, m_VertexStreams, notEnabled[i]));
+                menu.AddItem(s_Texts.vertexStreamsMenuContent[notEnabled[i]], false, SelectVertexStreamCallback, new StreamCallbackData(list, vertexStreams, notEnabled[i]));
             menu.ShowAsContext();
             Event.current.Use();
         }
 
-        private bool OnVertexStreamListCanRemoveCallback(ReorderableList list)
+        private static bool OnVertexStreamListCanRemoveCallback(ReorderableList list)
         {
+            SerializedProperty vertexStreams = list.serializedProperty;
+
             // dont allow position stream to be removed
-            SerializedProperty vertexStream = m_VertexStreams.GetArrayElementAtIndex(list.index);
-            return (s_Texts.vertexStreamsPacked[vertexStream.intValue] != "Position");
+            SerializedProperty vertexStream = vertexStreams.GetArrayElementAtIndex(list.index);
+            return (s_Texts.vertexStreamsPacked[vertexStream.intValue].name != "Position");
         }
 
-        private void DrawVertexStreamListElementCallback(Rect rect, int index, bool isActive, bool isFocused)
+        private void DrawParticleVertexStreamListElementCallback(Rect rect, int index, bool isActive, bool isFocused)
         {
-            SerializedProperty vertexStream = m_VertexStreams.GetArrayElementAtIndex(index);
+            DrawVertexStreamListElementCallback(rect, index, isActive, isFocused, m_VertexStreamsList, m_VertexStreamsStats, isWindowView);
+        }
+
+        private void DrawTrailVertexStreamListElementCallback(Rect rect, int index, bool isActive, bool isFocused)
+        {
+            DrawVertexStreamListElementCallback(rect, index, isActive, isFocused, m_TrailVertexStreamsList, m_TrailVertexStreamsStats, isWindowView);
+        }
+
+        private static void DrawVertexStreamListElementCallback(Rect rect, int index, bool isActive, bool isFocused, ReorderableList list, VertexStreamsStats stats, bool windowed)
+        {
+            SerializedProperty vertexStreams = list.serializedProperty;
+
+            SerializedProperty vertexStream = vertexStreams.GetArrayElementAtIndex(index);
             int vertexStreamValue = vertexStream.intValue;
-            string tcName = isWindowView ? "TEX" : "TEXCOORD";
-            string instancedName = isWindowView ? "INST" : "INSTANCED";
+            string tcName = windowed ? "TEX" : "TEXCOORD";
+            string instancedName = windowed ? "INST" : "INSTANCED";
 
             int numChannels = s_Texts.vertexStreamTexCoordChannels[vertexStreamValue];
-            if (m_HasGPUInstancing && (vertexStreamValue >= s_Texts.vertexStreamsInstancedStart || s_Texts.vertexStreamsPacked[vertexStream.intValue] == "Color"))
+            if (stats.m_HasGPUInstancing && (vertexStreamValue >= s_Texts.vertexStreamsInstancedStart || s_Texts.vertexStreamsPacked[vertexStream.intValue].name == "Color"))
             {
-                if (s_Texts.vertexStreamsPacked[vertexStream.intValue] == "Color")
+                if (s_Texts.vertexStreamsPacked[vertexStream.intValue].name == "Color")
                 {
                     numChannels = 4;
-                    m_HasColor = true;
+                    stats.m_HasColor = true;
                 }
                 string swizzle = s_Texts.channels.Substring(0, numChannels);
-                GUI.Label(rect, s_Texts.vertexStreamsPacked[vertexStreamValue] + " (" + instancedName + m_NumInstancedStreams + "." + swizzle + ")", ParticleSystemStyles.Get().label);
-                m_NumInstancedStreams++;
+                GUI.Label(rect, s_Texts.vertexStreamsPacked[vertexStreamValue].name + " (" + instancedName + stats.m_NumInstancedStreams + "." + swizzle + ")", ParticleSystemStyles.Get().label);
+                stats.m_NumInstancedStreams++;
             }
             else if (numChannels != 0)
             {
-                int swizzleLength = (m_TexCoordChannelIndex + numChannels > 4) ? numChannels + 1 : numChannels;
-                string swizzle = s_Texts.channels.Substring(m_TexCoordChannelIndex, swizzleLength);
-                GUI.Label(rect, s_Texts.vertexStreamsPacked[vertexStreamValue] + " (" + tcName + m_NumTexCoords + "." + swizzle + ")", ParticleSystemStyles.Get().label);
-                m_TexCoordChannelIndex += numChannels;
-                if (m_TexCoordChannelIndex >= 4)
+                int swizzleLength = (stats.m_TexCoordChannelIndex + numChannels > 4) ? numChannels + 1 : numChannels;
+                string swizzle = s_Texts.channels.Substring(stats.m_TexCoordChannelIndex, swizzleLength);
+                GUI.Label(rect, s_Texts.vertexStreamsPacked[vertexStreamValue].name + " (" + tcName + stats.m_NumTexCoords + "." + swizzle + ")", ParticleSystemStyles.Get().label);
+                stats.m_TexCoordChannelIndex += numChannels;
+                if (stats.m_TexCoordChannelIndex >= 4)
                 {
-                    m_TexCoordChannelIndex -= 4;
-                    m_NumTexCoords++;
+                    stats.m_TexCoordChannelIndex -= 4;
+                    stats.m_NumTexCoords++;
                 }
             }
             else
             {
-                GUI.Label(rect, s_Texts.vertexStreamsPacked[vertexStreamValue] + " (" + s_Texts.vertexStreamPackedTypes[vertexStreamValue] + ")", ParticleSystemStyles.Get().label);
-                if (s_Texts.vertexStreamsPacked[vertexStreamValue] == "Tangent")
-                    m_HasTangent = true;
-                if (s_Texts.vertexStreamsPacked[vertexStreamValue] == "Color")
-                    m_HasColor = true;
+                GUI.Label(rect, s_Texts.vertexStreamsPacked[vertexStreamValue].name + " (" + s_Texts.vertexStreamPackedTypes[vertexStreamValue] + ")", ParticleSystemStyles.Get().label);
+                if (s_Texts.vertexStreamsPacked[vertexStreamValue].name == "Tangent")
+                    stats.m_HasTangent = true;
+                if (s_Texts.vertexStreamsPacked[vertexStreamValue].name == "Color")
+                    stats.m_HasColor = true;
             }
         }
 

@@ -112,7 +112,7 @@ namespace UnityEditor
                 }
 
                 w.WriteLine("");
-                w.WriteLine("#if defined(TARGET_IPHONE_SIMULATOR) && TARGET_IPHONE_SIMULATOR");
+                w.WriteLine("#if (defined(TARGET_IPHONE_SIMULATOR) && TARGET_IPHONE_SIMULATOR) || (defined(TARGET_VISIONOS_SIMULATOR) && TARGET_VISIONOS_SIMULATOR)");
                 w.WriteLine("    #define DECL_USER_FUNC(f) void f() __attribute__((weak_import))");
                 w.WriteLine("    #define REGISTER_USER_FUNC(f)\\");
                 w.WriteLine("        do {\\");
@@ -152,7 +152,7 @@ namespace UnityEditor
                 w.WriteLine("#define DLL_EXPORT");
                 w.WriteLine("#endif");
 
-                w.WriteLine("#if !(TARGET_IPHONE_SIMULATOR)");
+                w.WriteLine("#if !(TARGET_IPHONE_SIMULATOR || TARGET_VISIONOS_SIMULATOR)");
                 w.WriteLine("    extern gboolean     mono_aot_only;");
 
                 for (int q = 0; q < fileNames.Length; ++q)
@@ -165,7 +165,7 @@ namespace UnityEditor
 
                     w.WriteLine("    extern gpointer*    mono_aot_module_{0}_info; // {1}", assemblyName, fileName);
                 }
-                w.WriteLine("#endif // !(TARGET_IPHONE_SIMULATOR)");
+                w.WriteLine("#endif // !(TARGET_IPHONE_SIMULATOR || TARGET_VISIONOS_SIMULATOR)");
                 foreach (string nmethod in nativeMethods)
                 {
                     w.WriteLine("    DECL_USER_FUNC({0});", nmethod);
@@ -175,7 +175,7 @@ namespace UnityEditor
                 w.WriteLine("DLL_EXPORT void RegisterMonoModules()");
                 w.WriteLine("{");
 
-                w.WriteLine("#if !(TARGET_IPHONE_SIMULATOR) && !defined(__arm64__)");
+                w.WriteLine("#if !(TARGET_IPHONE_SIMULATOR || TARGET_VISIONOS_SIMULATOR) && !defined(__arm64__)");
                 w.WriteLine("    mono_aot_only = true;");
 
                 if (buildTarget == BuildTarget.iOS)
@@ -192,7 +192,7 @@ namespace UnityEditor
                     w.WriteLine("    mono_aot_register_module(mono_aot_module_{0}_info);", assemblyName);
                 }
 
-                w.WriteLine("#endif // !(TARGET_IPHONE_SIMULATOR) && !defined(__arm64__)");
+                w.WriteLine("#endif // !(TARGET_IPHONE_SIMULATOR || TARGET_VISIONOS_SIMULATOR) && !defined(__arm64__)");
                 w.WriteLine("");
 
                 if (buildTarget == BuildTarget.iOS)

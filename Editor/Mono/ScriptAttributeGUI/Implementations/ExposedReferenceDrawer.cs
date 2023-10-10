@@ -2,12 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 using ObjectField = UnityEditor.UIElements.ObjectField;
 
 abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
@@ -17,7 +14,7 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
     private static Color kMissingOverrideColor = new Color(1.0f, 0.11f, 0.11f, 1.0f);
     protected static string kSetExposedPropertyMsg = "Set Exposed Property";
     protected static string kClearExposedPropertyMsg = "Clear Exposed Property";
-    private  const string kVisualElementName = "ExposedReference";
+    internal  const string kVisualElementName = "ExposedReference";
 
     internal readonly GUIContent ExposePropertyContent = EditorGUIUtility.TrTextContent("Expose Property");
     internal readonly GUIContent UnexposePropertyContent = EditorGUIUtility.TrTextContent("Unexpose Property");
@@ -157,6 +154,15 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
 
         obj.RegisterValueChangedCallback(SetReference);
         obj.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
+
+        Undo.UndoRedoCallback undoRedoCallback = () =>
+        {
+            m_Item.UpdateValue();
+            obj.SetValueWithoutNotify(m_Item.currentReferenceValue);
+        };
+
+        obj.RegisterCallback<AttachToPanelEvent>(evt => Undo.undoRedoPerformed += undoRedoCallback);
+        obj.RegisterCallback<DetachFromPanelEvent>(evt => Undo.undoRedoPerformed -= undoRedoCallback);
 
         return obj;
     }

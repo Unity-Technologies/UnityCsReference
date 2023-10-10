@@ -2938,6 +2938,7 @@ namespace UnityEditor
                 evt.Use();
             }
             else
+            {
                 switch (evt.type)
                 {
                     case EventType.DragUpdated:
@@ -2950,14 +2951,13 @@ namespace UnityEditor
                         applyAndConsumeEvent = true;
                         break;
                 }
+            }
 
             if (applyAndConsumeEvent)
             {
-                if (s_OriginalMaterial == null)
-                {
-                    Undo.RecordObject(FindObjectOfType<RenderSettings>(), Styles.undoAssignSkyboxMaterial);
-                    s_OriginalMaterial = RenderSettings.skybox;
-                }
+                Undo.RecordObject(RenderSettings.GetRenderSettings(), Styles.undoAssignSkyboxMaterial);
+                if (s_OriginalMaterial == null) s_OriginalMaterial = RenderSettings.skybox;
+
                 RenderSettings.skybox = target as Material;
                 if (evt.type == EventType.DragPerform) s_OriginalMaterial = null;
 
