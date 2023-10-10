@@ -1568,6 +1568,7 @@ namespace UnityEditor.UIElements.Bindings
             if (field is ObjectField objectField)
             {
                 objectField.SetProperty(ObjectField.serializedPropertyKey, boundProperty);
+                objectField.UpdateDisplay();
             }
         }
 

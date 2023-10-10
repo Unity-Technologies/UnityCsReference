@@ -49,7 +49,6 @@ namespace UnityEditor
         const string kCacheServerIPAddressKey = "CacheServer2IPAddress";
         const string kCacheServerModeKey = "CacheServer2Mode";
 
-        const string kIpAddressKeyArgs = "-CacheServerIPAddress";
         const string kModeKey = "CacheServerMode";
         const string kDeprecatedEnabledKey = "CacheServerEnabled";
 
@@ -154,10 +153,6 @@ namespace UnityEditor
 
         static void WriteCacheServerPreferences()
         {
-            // Don't change anything if there's a command line override
-            if (GetCommandLineRemoteAddressOverride() != null)
-                return;
-
             CacheServerMode oldMode = (CacheServerMode)EditorPrefs.GetInt(kModeKey);
             var oldPath = EditorPrefs.GetString(LocalCacheServer.PathKey);
             var oldCustomPath = EditorPrefs.GetBool(LocalCacheServer.CustomPathKey);
@@ -194,17 +189,6 @@ namespace UnityEditor
                 //Call ExitGUI after bringing up a dialog to avoid an exception
                 EditorGUIUtility.ExitGUI();
             }
-        }
-
-        public static string GetCommandLineRemoteAddressOverride()
-        {
-            string address = null;
-            var argv = Environment.GetCommandLineArgs();
-            var index = Array.IndexOf(argv, kIpAddressKeyArgs);
-            if (index >= 0 && argv.Length > index + 1)
-                address = argv[index + 1];
-
-            return address;
         }
 
         public override void OnActivate(string searchContext, VisualElement rootElement)
@@ -256,10 +240,6 @@ namespace UnityEditor
 
                 EditorGUILayout.Space();
                 CacheServerGUI();
-
-                var overrideAddress = GetCommandLineRemoteAddressOverride();
-                if (overrideAddress != null)
-                    EditorGUILayout.HelpBox("Cache Server preferences currently forced via command line argument to " + overrideAddress + " and any changes here will not take effect until starting Unity without that command line argument.", MessageType.Info, true);
 
                 if (EditorGUI.EndChangeCheck())
                     s_HasPendingChanges = true;

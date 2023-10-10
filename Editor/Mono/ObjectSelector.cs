@@ -545,10 +545,8 @@ namespace UnityEditor
 
             var shouldRepositionWindow = m_Parent != null;
             ShowWithMode(ShowMode.AuxWindow);
-            string text = "Select " + (requiredTypes[0] == null ? m_RequiredTypes[0] : requiredTypes[0].Name);
-            for (int i = 1; i < requiredTypes.Length; i++)
-                text += (i == requiredTypes.Length - 1 ? " or " : ", ") + (requiredTypes[i] == null ? m_RequiredTypes[i] : requiredTypes[i].Name);
-            titleContent = EditorGUIUtility.TrTextContent(text);
+
+            titleContent = EditorGUIUtility.TrTextContent(GenerateTitleContent(requiredTypes, m_RequiredTypes));
 
             // Deal with window size
             if (shouldRepositionWindow)
@@ -596,6 +594,20 @@ namespace UnityEditor
                 if (initialSelection != 0)
                     m_ListArea.Frame(initialSelection, true, false);
             }
+        }
+
+        internal static string GenerateTitleContent(Type[] requiredTypes, string[] requiredTypeStrings)
+        {
+            var typeName = requiredTypes[0] == null ? requiredTypeStrings[0] : requiredTypes[0].Name;
+            var text = "Select " + ObjectNames.NicifyVariableName(typeName);
+
+            for (int i = 1; i < requiredTypes.Length; i++)
+            {
+                typeName = requiredTypes[i] == null ? requiredTypeStrings[i] : requiredTypes[i].Name;
+                text += (i == requiredTypes.Length - 1 ? " or " : ", ") + ObjectNames.NicifyVariableName(typeName);
+            }
+
+            return text;
         }
 
         void ItemWasDoubleClicked()

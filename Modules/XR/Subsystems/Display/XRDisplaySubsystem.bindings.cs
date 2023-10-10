@@ -232,6 +232,9 @@ namespace UnityEngine.XR
             public Rect srcRect;
             public Rect destRect;
             public IntPtr foveatedRenderingInfo;
+            public bool srcHdrEncoded;
+            public ColorGamut srcHdrColorGamut;
+            public int srcHdrMaxLuminance;
         }
 
         [NativeHeader("Modules/XR/Subsystems/Display/XRDisplaySubsystem.bindings.h")]
@@ -288,5 +291,8 @@ namespace UnityEngine.XR
         [NativeHeader("Runtime/Graphics/CommandBuffer/RenderingCommandBuffer.h")]
         [NativeConditional("ENABLE_XR")]
         extern public bool AddGraphicsThreadMirrorViewBlit(CommandBuffer cmd, bool allowGraphicsStateInvalidate, int mode);
+
+        private HDROutputSettings m_HDROutputSettings;
+        public HDROutputSettings hdrOutputSettings { get { if (m_HDROutputSettings == null) m_HDROutputSettings = new HDROutputSettings(-1); return m_HDROutputSettings; } }
     }
 }

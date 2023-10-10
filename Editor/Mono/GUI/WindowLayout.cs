@@ -72,7 +72,9 @@ namespace UnityEditor
         const string verticalLayoutKey = "vertical";
         const string horizontalLayoutKey = "horizontal";
 
-        private const string kMaximizeRestoreFile = "CurrentMaximizeLayout.dwlt";
+
+        // used by tests
+        internal const string kMaximizeRestoreFile = "CurrentMaximizeLayout.dwlt";
         private const string kDefaultLayoutName = "Default.wlt";
         internal static string layoutResourcesPath => Path.Combine(EditorApplication.applicationContentsPath, "Resources/Layouts");
         internal static string layoutsPreferencesPath => FileUtil.CombinePaths(InternalEditorUtility.unityPreferencesFolder, "Layouts");
@@ -124,6 +126,7 @@ namespace UnityEditor
             GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref bottomViewInfo);
 
             var mainWindow = GenerateLayout(keepMainWindow, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo, layoutData);
+
             if (mainWindow)
                 mainWindow.m_DontSaveToLayout = !Convert.ToBoolean(layoutData["restore_saved_layout"]);
 
@@ -203,10 +206,12 @@ namespace UnityEditor
         internal static ContainerWindow FindMainWindow()
         {
             var containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
+
             foreach (ContainerWindow window in containers)
             {
                 if (window.showMode == ShowMode.MainWindow)
                     return window;
+
             }
 
             return null;
@@ -230,6 +235,7 @@ namespace UnityEditor
                     mainContainerWindow = ScriptableObject.CreateInstance<ContainerWindow>();
                     var mainWindowMinSize = new Vector2(120, 80);
                     var mainWindowMaxSize = new Vector2(8192, 8192);
+
                     if (layoutData.Contains("min_width"))
                     {
                         mainWindowMinSize.x = Convert.ToSingle(layoutData["min_width"]);
@@ -344,6 +350,7 @@ namespace UnityEditor
                 if (viewExpandedData.Contains("size"))
                     viewInfo.defaultSize = Convert.ToSingle(viewExpandedData["size"]);
                 viewInfo.extendedData = viewExpandedData;
+
             }
             else
             {
@@ -867,11 +874,12 @@ namespace UnityEditor
                 return;
             }
 
-            UnityObject[] newWindows = InternalEditorUtility.LoadSerializedFileAndForget(Path.Combine(layoutsProjectPath, kMaximizeRestoreFile));
+            var restoreLayout = Path.Combine(layoutsProjectPath, kMaximizeRestoreFile);
+            UnityObject[] newWindows = InternalEditorUtility.LoadSerializedFileAndForget(restoreLayout);
 
             if (newWindows.Length < 2)
             {
-                Debug.Log("Maximized serialized file backup not found");
+                Debug.LogError("Maximized serialized file backup not found.");
                 ResetAllLayouts();
                 return;
             }
@@ -881,7 +889,7 @@ namespace UnityEditor
 
             if (oldRoot == null)
             {
-                Debug.Log("Maximization failed because the root split view was not found");
+                Debug.LogError("Maximization failed because the root split view was not found.");
                 ResetAllLayouts();
                 return;
             }
@@ -889,7 +897,7 @@ namespace UnityEditor
             ContainerWindow parentWindow = win.m_Parent.window;
             if (parentWindow == null)
             {
-                Debug.Log("Maximization failed because the root split view has no container window");
+                Debug.LogError("Maximization failed because the root split view has no container window.");
                 ResetAllLayouts();
                 return;
             }
@@ -1168,6 +1176,7 @@ namespace UnityEditor
             ShortcutIntegration.instance.RebuildShortcuts();
         }
 
+
         public static bool TryLoadWindowLayout(string path, bool newProjectLayoutWasCreated)
         {
             if (LoadWindowLayout(path, newProjectLayoutWasCreated, true, false))
@@ -1321,6 +1330,7 @@ namespace UnityEditor
                 mainWindow.Show(mainWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
                 if (mainWindowToSetSize && mainWindow.maximized != mainWindowMaximized)
                     mainWindow.ToggleMaximize();
+
                 // Unfreeze to make sure resize work properly.
                 mainWindow.SetFreeze(false);
 
@@ -1335,10 +1345,12 @@ namespace UnityEditor
                         continue;
 
                     EditorWindow win = newWindows[i] as EditorWindow;
+
                     if (win)
                         win.minSize = win.minSize; // Causes minSize to be propagated upwards to parents!
 
                     ContainerWindow containerWindow = newWindows[i] as ContainerWindow;
+
                     if (containerWindow && containerWindow != mainWindow)
                         containerWindow.Show(containerWindow.showMode, loadPosition: false, displayImmediately: true, setFocus: true);
                 }
@@ -1492,6 +1504,7 @@ namespace UnityEditor
                 all.Add(w);
             }
 
+
             InternalEditorUtility.SaveToSerializedFileAndForget(all.Where(o => o).ToArray(), path, true);
         }
 
@@ -1530,14 +1543,19 @@ namespace UnityEditor
                 FileUtil.CopyFileIfExists(installationLayoutPath, userLayoutDstPath, overwrite: true);
             }
 
-            // Delete any current project layouts
+            // delete per-project layouts
             if (Directory.Exists(layoutsProjectPath))
                 Directory.Delete(layoutsProjectPath, true);
+
+            // delete per-user layouts
+            if (Directory.Exists(layoutsCurrentModePreferencesPath))
+                Directory.Delete(layoutsCurrentModePreferencesPath, true);
         }
+
 
         public static void ResetAllLayouts(bool quitOnCancel = true)
         {
-            if (!EditorUtility.DisplayDialog("Revert All Window Layouts",
+            if (!Application.isTestRun && !EditorUtility.DisplayDialog("Revert All Window Layouts",
                 "Unity is about to delete all window layouts and restore them to the default settings.",
                 "Continue", quitOnCancel ? "Quit" : "Cancel"))
             {
@@ -1705,6 +1723,7 @@ namespace UnityEditor
         }
 
         [MenuItem("Window/Audio/Audio Mixer %8", false, 1)]
+
         static void ShowAudioMixer()
         {
             AudioMixerWindow.CreateAudioMixerWindow();

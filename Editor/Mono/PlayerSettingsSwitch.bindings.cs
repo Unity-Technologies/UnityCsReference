@@ -629,10 +629,6 @@ namespace UnityEditor
             [NativeProperty("switchNetworkInterfaceManagerInitializeEnabled", TargetType.Field)]
             extern public static bool networkInterfaceManagerInitializeEnabled { get; set; }
 
-            // Player Connection Enabled
-            [NativeProperty("switchPlayerConnectionEnabled", TargetType.Field)]
-            extern public static bool playerConnectionEnabled { get; set; }
-
             // Using the new path style system
             [NativeProperty("switchUseNewStyleFilepaths", TargetType.Field)]
             extern public static bool useNewStyleFilepaths { get; set; }

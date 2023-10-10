@@ -279,7 +279,8 @@ namespace UnityEngine
         Rec2020 = 2,
         DisplayP3 = 3,
         HDR10 = 4,
-        DolbyHDR = 5
+        DolbyHDR = 5,
+        P3D65G22 = 6
     }
 
     [UsedByNativeCode]
@@ -308,7 +309,8 @@ namespace UnityEngine
         sRGB = 0,
         BT1886 = 1,
         PQ = 2,
-        Linear = 3
+        Linear = 3,
+        Gamma22 = 4
     }
 
     public enum ScreenOrientation

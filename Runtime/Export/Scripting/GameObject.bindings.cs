@@ -12,6 +12,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 
 namespace UnityEngine
@@ -378,6 +380,51 @@ namespace UnityEngine
 
         [FreeFunction(Name = "GameObjectBindings::Find")]
         public static extern GameObject Find(string name);
+
+        [FreeFunction(Name = "GameObjectBindings::SetGameObjectsActiveByInstanceID")]
+        extern private static void SetGameObjectsActive(IntPtr instanceIds, int instanceCount, bool active);
+
+        public static unsafe void SetGameObjectsActive(NativeArray<int> instanceIDs, bool active)
+        {
+            if (!instanceIDs.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
+
+            if (instanceIDs.Length == 0)
+                return;
+
+            SetGameObjectsActive((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, active);
+        }
+
+        public static unsafe void SetGameObjectsActive(ReadOnlySpan<int> instanceIDs, bool active)
+        {
+            if(instanceIDs.Length == 0)
+                return;
+
+            fixed(int* instanceIDsPtr = instanceIDs)
+            {
+                SetGameObjectsActive((IntPtr)instanceIDsPtr, instanceIDs.Length, active);
+            }
+        }
+
+        [FreeFunction("GameObjectBindings::InstantiateGameObjectsByInstanceID")]
+        extern private static void InstantiateGameObjects(int sourceInstanceID, IntPtr newInstanceIDs, IntPtr newTransformInstanceIDs, int count, Scene destinationScene);
+
+        public static unsafe void InstantiateGameObjects(int sourceInstanceID, int count, NativeArray<int> newInstanceIDs, NativeArray<int> newTransformInstanceIDs, Scene destinationScene = default)
+        {
+            if (!newInstanceIDs.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(newInstanceIDs));
+            if (!newTransformInstanceIDs.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(newTransformInstanceIDs));
+            if (count == 0)
+                return;
+            if ((count != newInstanceIDs.Length) || (count != newTransformInstanceIDs.Length))
+                throw new ArgumentException("Size mismatch! Both arrays must already be the size of count.");
+
+            InstantiateGameObjects(sourceInstanceID, (IntPtr)newInstanceIDs.GetUnsafeReadOnlyPtr(), (IntPtr)newTransformInstanceIDs.GetUnsafeReadOnlyPtr(), newInstanceIDs.Length, destinationScene);
+        }
+
+        [FreeFunction(Name = "GameObjectBindings::GetSceneByInstanceID")]
+        public static extern Scene GetScene(int instanceID);
 
         public extern Scene scene
         {

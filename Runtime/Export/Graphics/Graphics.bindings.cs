@@ -1106,7 +1106,9 @@ namespace UnityEngine
         //Don't allow users to construct these themselves, instead they need to be accessed from an internally managed list
         //This lines up with how multiple displays are handled, and while HDR is currently primary display only this will help with
         //future proofing this implementation, see Display in Display.bindings.cs
+        [VisibleToOtherModules("UnityEngine.XRModule")]
         internal HDROutputSettings() { m_DisplayIndex = 0; }
+        [VisibleToOtherModules("UnityEngine.XRModule")]
         internal HDROutputSettings(int displayIndex) { this.m_DisplayIndex = displayIndex; }
 
         public static HDROutputSettings[] displays = new HDROutputSettings[1] { new HDROutputSettings() };

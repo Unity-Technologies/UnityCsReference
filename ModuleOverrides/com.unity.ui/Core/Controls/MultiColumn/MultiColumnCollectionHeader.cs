@@ -160,6 +160,7 @@ namespace UnityEngine.UIElements.Internal
 
         bool m_SortingEnabled;
         List<SortColumnDescription> m_SortedColumns;
+        SortColumnDescriptions m_SortDescriptions;
         List<SortedColumnState> m_OldSortedColumnStates = new List<SortedColumnState>();
         bool m_SortingUpdatesTemporarilyDisabled;
 
@@ -198,7 +199,16 @@ namespace UnityEngine.UIElements.Internal
         /// <summary>
         /// The descriptions of sorted columns.
         /// </summary>
-        public SortColumnDescriptions sortDescriptions { get; }
+        public SortColumnDescriptions sortDescriptions
+        {
+            get => m_SortDescriptions;
+            protected internal set
+            {
+                m_SortDescriptions = value;
+                m_SortDescriptions.changed += UpdateSortedColumns;
+                UpdateSortedColumns();
+            }
+        }
 
         /// <summary>
         ///  The list of columns.
@@ -260,7 +270,6 @@ namespace UnityEngine.UIElements.Internal
             this.columns = columns;
             m_SortedColumns = sortedColumns;
             this.sortDescriptions = sortDescriptions;
-            this.sortDescriptions.changed += UpdateSortedColumns;
 
             columnContainer = new VisualElement()
             {
@@ -480,6 +489,8 @@ namespace UnityEngine.UIElements.Internal
                     OnColumnAdded(column);
                 else
                     OnColumnRemoved(column);
+
+                ApplyColumnSorting();
             }
 
             UpdateColumnControls();
@@ -496,7 +507,7 @@ namespace UnityEngine.UIElements.Internal
         /// <param name="to"></param>
         void OnColumnReordered(Column column, int from, int to)
         {
-            if (!column.visible)
+            if (!column.visible || from == to)
                 return;
 
             if (columnDataMap.TryGetValue(column, out var columnData))
@@ -745,7 +756,8 @@ namespace UnityEngine.UIElements.Internal
         void RaiseColumnSortingChanged()
         {
             ApplyColumnSorting();
-            columnSortingChanged?.Invoke();
+             if (!m_ApplyingViewState)
+                columnSortingChanged?.Invoke();
         }
 
         void ApplyColumnSorting()
