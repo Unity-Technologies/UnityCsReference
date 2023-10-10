@@ -310,6 +310,17 @@ sealed class AudioContainerWindow : EditorWindow
         EditorApplication.update -= OneTimeEditorApplicationUpdate;
     }
 
+    static void InsertUnitFieldForFloatField(VisualElement field, string unit)
+    {
+        var floatInput = UIToolkitUtilities.GetChildByName<VisualElement>(field, "unity-text-input");
+        var unitTextElement = new TextElement
+        {
+            name = "numeric-field-unit-label",
+            text = unit
+        };
+        floatInput.Add(unitTextElement);
+    }
+
     #region Preview
 
     void InitializePreviewElements()
@@ -406,14 +417,18 @@ sealed class AudioContainerWindow : EditorWindow
         var volumeRandomizationMinField = UIToolkitUtilities.GetChildByName<FloatField>(m_VolumeRandomizationRangeField, "unity-x-input");
         var volumeRandomizationMaxField = UIToolkitUtilities.GetChildByName<FloatField>(m_VolumeRandomizationRangeField, "unity-y-input");
 
-        m_VolumeField.formatString = "0.# dB";
+        m_VolumeField.formatString = "0.#";
+        InsertUnitFieldForFloatField(m_VolumeField, "dB");
         m_VolumeField.isDelayed = true;
         volumeRandomizationMinField.isDelayed = true;
         volumeRandomizationMinField.label = "";
-        volumeRandomizationMinField.formatString = "0.# dB";
+        volumeRandomizationMinField.formatString = "0.#";
+        InsertUnitFieldForFloatField(volumeRandomizationMinField, "dB");
         volumeRandomizationMaxField.isDelayed = true;
         volumeRandomizationMaxField.label = "";
-        volumeRandomizationMaxField.formatString = "0.# dB";
+        volumeRandomizationMaxField.formatString = "0.#";
+        InsertUnitFieldForFloatField(volumeRandomizationMaxField, "dB");
+
     }
 
     void SubscribeToVolumeCallbacksAndEvents()
@@ -508,14 +523,17 @@ sealed class AudioContainerWindow : EditorWindow
         var pitchRandomizationMinField = UIToolkitUtilities.GetChildByName<FloatField>(m_PitchRandomizationRangeField, "unity-x-input");
         var pitchRandomizationMaxField = UIToolkitUtilities.GetChildByName<FloatField>(m_PitchRandomizationRangeField, "unity-y-input");
 
-        m_PitchField.formatString = "0 ct";
+        m_PitchField.formatString = "0";
+        InsertUnitFieldForFloatField(m_PitchField, "ct");
         m_PitchField.isDelayed = true;
         pitchRandomizationMinField.isDelayed = true;
         pitchRandomizationMinField.label = "";
-        pitchRandomizationMinField.formatString = "0 ct";
+        pitchRandomizationMinField.formatString = "0";
+        InsertUnitFieldForFloatField(pitchRandomizationMinField, "ct");
         pitchRandomizationMaxField.isDelayed = true;
         pitchRandomizationMaxField.label = "";
-        pitchRandomizationMaxField.formatString = "0 ct";
+        pitchRandomizationMaxField.formatString = "0";
+        InsertUnitFieldForFloatField(pitchRandomizationMaxField, "ct");
     }
 
     void SubscribeToPitchCallbacksAndEvents()
@@ -653,7 +671,10 @@ sealed class AudioContainerWindow : EditorWindow
 
     static VisualElement OnMakeListItem()
     {
-        return UIToolkitUtilities.LoadUxml("UXML/Audio/AudioContainerElement.uxml").Instantiate();
+        var element = UIToolkitUtilities.LoadUxml("UXML/Audio/AudioContainerElement.uxml").Instantiate();
+        var volumeField = UIToolkitUtilities.GetChildByName<FloatField>(element, "volume-field");
+        InsertUnitFieldForFloatField(volumeField, "dB");
+        return element;
     }
 
     void OnBindListItem(VisualElement element, int index)
@@ -665,7 +686,7 @@ sealed class AudioContainerWindow : EditorWindow
         var enabledToggle = UIToolkitUtilities.GetChildByName<Toggle>(element, "enabled-toggle");
         var audioClipField = UIToolkitUtilities.GetChildByName<AudioContainerElementClipField>(element, "audio-clip-field");
         var volumeField = UIToolkitUtilities.GetChildByName<FloatField>(element, "volume-field");
-        volumeField.formatString = "0.# dB";
+        volumeField.formatString = "0.#";
 
         audioClipField.objectType = typeof(AudioClip);
 
@@ -996,14 +1017,18 @@ sealed class AudioContainerWindow : EditorWindow
         m_AutomaticTriggerModeLabel = UIToolkitUtilities.GetChildByName<Label>(m_ContainerRootVisualElement, "automatic-trigger-mode-label");
         m_LoopLabel = UIToolkitUtilities.GetChildByName<Label>(m_ContainerRootVisualElement, "loop-label");
 
-        m_TimeField.formatString = "0.00 s";
+        m_TimeField.formatString = "0.00";
+        InsertUnitFieldForFloatField(m_TimeField, "s");
         m_TimeField.isDelayed = true;
         timeRandomizationMinField.isDelayed = true;
         timeRandomizationMinField.label = "";
         timeRandomizationMinField.formatString = "0.#";
+        InsertUnitFieldForFloatField(timeRandomizationMinField, "s");
         timeRandomizationMaxField.isDelayed = true;
         timeRandomizationMaxField.label = "";
         timeRandomizationMaxField.formatString = "0.#";
+        InsertUnitFieldForFloatField(timeRandomizationMaxField, "s");
+
         m_CountField.formatString = "0.#";
         m_CountField.isDelayed = true;
         countRandomizationMinField.isDelayed = true;
@@ -1151,6 +1176,11 @@ sealed class AudioContainerWindow : EditorWindow
 
     void OnUndoRedoPerformed()
     {
+        if (m_ContainerRootVisualElement == null
+            || m_ContainerRootVisualElement.style.display == DisplayStyle.None
+            || State.AudioContainer == null)
+            return;
+
         if (m_CachedElements.Count != State.AudioContainer.elements.Length)
         {
             // Force a list rebuild when the list size has increased or it will not render correctly

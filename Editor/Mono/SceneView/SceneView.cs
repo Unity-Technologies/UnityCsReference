@@ -1211,6 +1211,26 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
+        static void FrameSelectedMenuItem(bool locked)
+        {
+            var command = locked ? EventCommandNames.FrameSelectedWithLock : EventCommandNames.FrameSelected;
+
+            var win = focusedWindow;
+            var ret = win != null && win.SendEvent(EditorGUIUtility.CommandEvent(command));
+
+            if (!ret)
+            {
+                win = mouseOverWindow;
+                ret = win != null && win.SendEvent(EditorGUIUtility.CommandEvent(command));
+            }
+
+            // if no hovered or focused window used the frame command, send the command to the last active scene view.
+            // as a special case, if the window that used the frame command was hierarchy, also send a frame event to
+            // the last active scene view.
+            if ((!ret || win is SceneHierarchyWindow) && lastActiveSceneView != null)
+                lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent(command));
+        }
+
         public static bool FrameLastActiveSceneView()
         {
             if (lastActiveSceneView == null)
@@ -1218,7 +1238,6 @@ namespace UnityEditor
             return lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent(EventCommandNames.FrameSelected));
         }
 
-        [RequiredByNativeCode]
         public static bool FrameLastActiveSceneViewWithLock()
         {
             if (lastActiveSceneView == null)

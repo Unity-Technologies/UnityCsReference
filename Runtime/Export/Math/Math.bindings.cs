@@ -58,6 +58,8 @@ namespace UnityEngine
 
         [FreeFunction("MatrixScripting::Frustum", IsThreadSafe = true)] extern public static Matrix4x4 Frustum(float left, float right, float bottom, float top, float zNear, float zFar);
         public static Matrix4x4 Frustum(FrustumPlanes fp) { return Frustum(fp.left, fp.right, fp.bottom, fp.top, fp.zNear, fp.zFar); }
+
+        [FreeFunction("MatrixScripting::Internal_CompareApproximately", IsThreadSafe = true)] extern internal static bool CompareApproximately(Matrix4x4 a, Matrix4x4 b, float threshold);
     }
 
     [NativeType(Header = "Runtime/Math/Vector3.h")]

@@ -14,3 +14,4 @@ using System.Runtime.CompilerServices;
 // Make internal visible to integration test project
 [assembly: InternalsVisibleTo("UnityEngine.InputForUIVisualizer")]
 [assembly: InternalsVisibleTo("UnityEngine.InputForUITests")]
+[assembly: InternalsVisibleTo("Unity.Motion.Editor.AnimationWindow")]

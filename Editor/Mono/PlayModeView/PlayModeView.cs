@@ -529,18 +529,22 @@ namespace UnityEditor
 
         void SetPlayModeWindowsStates(EnterPlayModeBehavior behavior)
         {
-            this.m_EnterPlayModeBehavior = behavior;
+            if(m_EnterPlayModeBehavior == behavior)
+                return;
+
+            m_EnterPlayModeBehavior = behavior;
+            OnEnterPlayModeBehaviorChange();
+
+            if (behavior != EnterPlayModeBehavior.PlayMaximized)
+                return;
+
             foreach (var view in s_PlayModeViews)
             {
-                if (view == this)
-                {
+                if (view == this || view.m_EnterPlayModeBehavior != EnterPlayModeBehavior.PlayMaximized)
                     continue;
-                }
-                if (behavior == EnterPlayModeBehavior.PlayMaximized && view.m_EnterPlayModeBehavior == EnterPlayModeBehavior.PlayMaximized)
-                {
-                    // Only one play mode view can be maximized at a time.
-                    view.m_EnterPlayModeBehavior = EnterPlayModeBehavior.PlayUnfocused;
-                }
+
+                // Only one play mode view can be maximized at a time.
+                view.m_EnterPlayModeBehavior = EnterPlayModeBehavior.PlayUnfocused;
                 view.OnEnterPlayModeBehaviorChange();
                 view.Repaint();
             }

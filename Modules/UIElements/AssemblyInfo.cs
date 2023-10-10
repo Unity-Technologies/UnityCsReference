@@ -56,6 +56,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.001")] // com.unity.2d.common: VisualElement.pseudoStates, PseudoStates
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.002")] // com.unity.entities: VisualElementBridge.cs, ListViewBridge.cs
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.003")] // com.unity.vectorgraphics: VectorImage, GradientSettings
+[assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.015")] // com.unity.graphtoolsauthoringframework
+[assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.017")] // com.unity.motion
 
 
 [assembly: InternalsVisibleTo("UnityEditor.Purchasing")] // com.unity.purchasing, VisualElement.AddStyleSheetPath

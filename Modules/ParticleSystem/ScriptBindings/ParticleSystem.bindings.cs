@@ -232,6 +232,9 @@ namespace UnityEngine
         [NativeName("SetUsesCustomData")]
         extern public void AllocateCustomDataAttribute(ParticleSystemCustomData stream);
 
+        extern public bool has3DParticleRotations { [NativeName("Has3DParticleRotations")] get; }
+        extern public bool hasNonUniformParticleSizes { [NativeName("HasNonUniformParticleSizes")] get; }
+
         unsafe extern internal void* GetManagedJobData();
         extern internal JobHandle GetManagedJobHandle();
         extern internal void SetManagedJobHandle(JobHandle handle);

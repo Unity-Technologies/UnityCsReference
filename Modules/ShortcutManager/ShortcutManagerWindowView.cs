@@ -844,7 +844,8 @@ namespace UnityEditor.ShortcutManagement
 
         void StartDrag(VisualElement target)
         {
-            if (m_StartedDrag)
+            //Start dragging only if not started already or if not editing bindings in a field [UUM-47946]
+            if (m_StartedDrag || m_EditingBindings != null)
                 return;
 
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMoveCategoryTable);
