@@ -39,7 +39,7 @@ namespace UnityEditorInternal
                 case "asmdef": return EditorGUIUtility.FindTexture(typeof(AssemblyDefinitionAsset));
                 case "asmref": return EditorGUIUtility.FindTexture(typeof(AssemblyDefinitionAsset));
                 case "mat": return EditorGUIUtility.FindTexture(typeof(Material));
-                case "physicmaterial": return EditorGUIUtility.FindTexture(typeof(PhysicMaterial));
+                case "physicmaterial": return EditorGUIUtility.FindTexture(typeof(PhysicsMaterial));
                 case "prefab": return EditorGUIUtility.FindTexture("Prefab Icon");
                 case "shader": return EditorGUIUtility.FindTexture(typeof(Shader));
                 case "txt": return EditorGUIUtility.FindTexture(typeof(TextAsset));

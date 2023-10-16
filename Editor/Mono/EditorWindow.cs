@@ -111,6 +111,8 @@ namespace UnityEditor
             }
         }
 
+        internal static List<EditorWindow> activeEditorWindows { get; } = new List<EditorWindow>();
+
         internal void SaveViewData()
         {
             m_RequestedViewDataSave = true;
@@ -1253,10 +1255,16 @@ namespace UnityEditor
             EditorApplication.delayCall += () => ShortcutIntegration.instance.contextManager.RegisterToolContext(s_ShortcutContext);
         }
 
-        private void OnDisableINTERNAL()
+        void OnEnableINTERNAL()
+        {
+            activeEditorWindows.Add(this);
+        }
+
+        void OnDisableINTERNAL()
         {
             m_OverlayCanvas.OnContainerWindowDisabled();
             SaveViewDataToDisk();
+            activeEditorWindows.Remove(this);
         }
 
         internal void ReleaseViewData()

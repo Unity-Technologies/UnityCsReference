@@ -28,8 +28,11 @@ namespace UnityEditor
 
         internal static extern Vector3 MakeNiceVector3(Vector3 vector);
 
-        [FreeFunction]
-        public static extern void CaptureScreenshotImmediate(string filePath, int x, int y, int width, int height);
+        [System.Obsolete(@"CaptureScreenshotImmediate is deprecated. Use UnityEngine.ScreenCapture.CaptureScreenshot instead.", true)]
+        public static void CaptureScreenshotImmediate(string filePath, int x, int y, int width, int height)
+        {
+           Debug.LogError("CaptureScreenshotImmediate is deprecated. Use UnityEngine.ScreenCapture.CaptureScreenshot instead.");
+        }
 
         [FreeFunction("MenuController::ExtractSubmenusCommands")]
         public static extern string[] GetSubmenusCommands(string menuPath);
@@ -141,11 +144,11 @@ namespace UnityEditor
 
         public static void PasteGameObjectsFromPasteboard()
         {
-            PasteGameObjectsFromPasteboard(null, 0);
+            PasteGameObjectsFromPasteboard(null, 0, false);
         }
 
         [FreeFunction]
-        internal static extern void PasteGameObjectsFromPasteboard(Transform parent, int customSceneHandle = 0);
+        internal static extern void PasteGameObjectsFromPasteboard(Transform parent, int customSceneHandle = 0, bool worldPositionStays = false);
 
         [FreeFunction("AssetDatabase::GetSingletonAsset")]
         public static extern UnityEngine.Object GetSerializedAssetInterfaceSingleton(string className);

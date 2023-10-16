@@ -40,6 +40,10 @@ namespace UnityEngine.Accessibility
 
         /// The accessibility node behaves like a tab bar.
         TabBar                  = 1 << 6,
+
+        /// The accessibility node behaves like a slider, allowing continuous
+        /// adjustment through a range of values.
+        Slider                  = 1 << 7,
     }
 
     /// <summary>

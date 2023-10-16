@@ -1569,6 +1569,14 @@ namespace UnityEngine.TextCore.Text
                         isMaxVisibleDescenderSet = true;
 
                     // Save Line Information
+                    int firstCharacterIndex = m_FirstVisibleCharacterOfLine;
+                    int lastCharacterIndex = m_LastVisibleCharacterOfLine;
+                    if (generationSettings.textWrappingMode == TextWrappingMode.PreserveWhitespace || generationSettings.textWrappingMode == TextWrappingMode.PreserveWhitespaceNoWrap)
+                    {
+                        firstCharacterIndex = m_FirstCharacterOfLine;
+                        lastCharacterIndex = m_LastCharacterOfLine;
+                    }
+
                     textInfo.lineInfo[m_LineNumber].firstCharacterIndex = m_FirstCharacterOfLine;
                     textInfo.lineInfo[m_LineNumber].firstVisibleCharacterIndex = m_FirstVisibleCharacterOfLine = m_FirstCharacterOfLine > m_FirstVisibleCharacterOfLine ? m_FirstCharacterOfLine : m_FirstVisibleCharacterOfLine;
                     textInfo.lineInfo[m_LineNumber].lastCharacterIndex = m_LastCharacterOfLine = m_CharacterCount;
@@ -1576,8 +1584,8 @@ namespace UnityEngine.TextCore.Text
 
                     textInfo.lineInfo[m_LineNumber].characterCount = textInfo.lineInfo[m_LineNumber].lastCharacterIndex - textInfo.lineInfo[m_LineNumber].firstCharacterIndex + 1;
                     textInfo.lineInfo[m_LineNumber].visibleCharacterCount = m_LineVisibleCharacterCount;
-                    textInfo.lineInfo[m_LineNumber].lineExtents.min = new Vector2(textInfo.textElementInfo[m_FirstVisibleCharacterOfLine].bottomLeft.x, lineDescender);
-                    textInfo.lineInfo[m_LineNumber].lineExtents.max = new Vector2(textInfo.textElementInfo[m_LastVisibleCharacterOfLine].topRight.x, lineAscender);
+                    textInfo.lineInfo[m_LineNumber].lineExtents.min = new Vector2(textInfo.textElementInfo[firstCharacterIndex].bottomLeft.x, lineDescender);
+                    textInfo.lineInfo[m_LineNumber].lineExtents.max = new Vector2(textInfo.textElementInfo[lastCharacterIndex].topRight.x, lineAscender);
                     textInfo.lineInfo[m_LineNumber].length = textInfo.lineInfo[m_LineNumber].lineExtents.max.x - (padding * currentElementScale);
                     textInfo.lineInfo[m_LineNumber].width = widthOfTextArea;
 

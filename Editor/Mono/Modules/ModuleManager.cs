@@ -224,9 +224,18 @@ namespace UnityEditor.Modules
 
         internal static IBuildTarget GetIBuildTarget(BuildTarget target)
         {
-            IPlatformSupportModule module;
             var targetModuleName = BuildTargetDiscovery.GetModuleNameForBuildTarget(target);
-            if (platformSupportModules.TryGetValue(targetModuleName, out module))
+            if (platformSupportModules.TryGetValue(targetModuleName, out var module))
+            {
+                return module.PlatformBuildTarget;
+            }
+
+            return null;
+        }
+
+        internal static IBuildTarget GetIBuildTarget(string moduleName)
+        {
+            if (platformSupportModules.TryGetValue(moduleName, out var module))
             {
                 return module.PlatformBuildTarget;
             }
@@ -417,6 +426,19 @@ namespace UnityEditor.Modules
         internal static IPluginImporterExtension GetPluginImporterExtension(BuildTargetGroup target)
         {
             return GetPluginImporterExtension(GetTargetStringFromBuildTargetGroup(target));
+        }
+
+        internal static IBuildProfileExtension GetBuildProfileExtension(string target)
+        {
+            if (string.IsNullOrEmpty(target))
+                return null;
+
+            if (platformSupportModules.TryGetValue(target, out var module))
+            {
+                return module.CreateBuildProfileExtension();
+            }
+
+            return null;
         }
 
         internal static string GetTargetStringFromBuildTarget(BuildTarget target)

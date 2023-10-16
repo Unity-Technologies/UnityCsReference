@@ -2368,7 +2368,7 @@ namespace UnityEditor
                 }
 
                 Handles.DrawOutlineOrWireframeInternal(kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, 1 - alphaMultiplier, s_CachedParentRenderersFromSelection, s_CachedChildRenderersFromSelection, selectionDrawModeMask);
-                Handles.Internal_FinishDrawingCamera(m_Camera, true);
+                Handles.Internal_FinishDrawingCamera(m_Camera, drawGizmos);
             }
 
             // Reset camera
@@ -2699,31 +2699,12 @@ namespace UnityEditor
                 m_StageHandling.EndOnGUI();
         }
 
-        class SceneViewActionMenu : IShortcutToolContext
-        {
-            [InitializeOnLoadMethod]
-            static void Init()
-            {
-                EditorApplication.delayCall += () =>
-                {
-                    ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewActionMenu());
-                };
-            }
-
-            public bool active => focusedWindow is SceneView
-                && (Tools.s_LockedViewTool == ViewTool.None || (Tools.s_LockedViewTool != ViewTool.None && Tools.current == Tool.View));
-
-            public SceneView window => focusedWindow is SceneView ? (SceneView)focusedWindow : null;
-        }
-
-        [Shortcut("Scene View/Show Action Menu", typeof(SceneViewActionMenu), KeyCode.Mouse1)]
+        [Shortcut("Scene View/Show Action Menu", typeof(SceneView), KeyCode.Mouse1)]
         static void OpenActionMenu(ShortcutArguments args)
         {
             // The mouseOverWindow check is necessary for MacOS because right-clicking does not
             // focus the window under the cursor. This is so the action menu does not appear
             // when the scene view is in focus and a right-click on another window occurs.
-            // At the time of retrieving the state of the shortcut from SceneViewActionMenu,
-            // mouseOverWindow is null. This is why the check is done here and not in the context.
             if (mouseOverWindow?.GetType() != typeof(SceneView))
                 return;
 
@@ -2732,8 +2713,8 @@ namespace UnityEditor
             if (ve == null)
                 return;
 
-            var context = args.context as SceneViewActionMenu;
-            if (ve == context.window?.cameraViewVisualElement)
+            var context = args.context as SceneView;
+            if (ve == context.cameraViewVisualElement)
                 ContextMenuUtility.ShowActionMenu();
         }
 

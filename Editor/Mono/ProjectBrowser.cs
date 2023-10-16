@@ -852,7 +852,7 @@ namespace UnityEditor
                 { "Material", new [] { "Material" } },
                 { "Mesh", new [] { "Mesh" } },
                 { "Model", new [] { "Model" } },
-                { "Physic Material", new [] { "PhysicMaterial" } },
+                { "Physics Material", new [] { "PhysicsMaterial" } },
                 { "Prefab", new [] { "Prefab" } },
                 { "Scene", new [] { "Scene"} },
                 { "Script", new [] { "Script" } },
@@ -2888,8 +2888,9 @@ namespace UnityEditor
                 frame = false;
 
                 // If the item is visible then we can ping it however if it requires revealing then we can not and should indicate why(locked project view).
-                if ((m_ViewMode == ViewMode.TwoColumns && m_ListArea != null && !m_ListArea.IsShowing(instanceID))
-                    || (m_ViewMode == ViewMode.OneColumn && m_AssetTree != null && m_AssetTree.data.GetRow(instanceID) == -1))
+                if (canFrame &&
+                    ((m_ViewMode == ViewMode.TwoColumns && m_ListArea != null && !m_ListArea.IsShowing(instanceID))
+                    || (m_ViewMode == ViewMode.OneColumn && m_AssetTree != null && m_AssetTree.data.GetRow(instanceID) == -1)))
                 {
                     Repaint();
                     m_LockTracker.PingIcon();

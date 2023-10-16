@@ -28,6 +28,8 @@ namespace Unity.UI.Builder
             fieldsContainer = inspector.Q<PersistedFoldout>("inspector-attributes-foldout");
         }
 
+        bool m_IgnoreChangeToInlineValue = false;
+
         /// <inheritdoc/>
         protected override bool IsAttributeIgnored(UxmlAttributeDescription attribute)
         {
@@ -92,7 +94,18 @@ namespace Unity.UI.Builder
         protected override void NotifyAttributesChanged(string attributeName = null)
         {
             var changeType = attributeName == BuilderConstants.UxmlNameAttr ? BuilderHierarchyChangeType.ElementName : BuilderHierarchyChangeType.Attributes;
-            m_Selection.NotifyOfHierarchyChange(inspector, inspector.currentVisualElement, changeType);
+            // During inline editing, if the value used in the field changes from being bound to being inline,
+            // no changes to the asset must be made.
+            // Instead, we force a visual update of the asset to see the inline value in canvas.
+            if (m_IgnoreChangeToInlineValue)
+            {
+                m_IgnoreChangeToInlineValue = false;
+                m_Selection.ForceVisualAssetUpdateWithoutSave(inspector.currentVisualElement, changeType);
+            }
+            else
+            {
+                m_Selection.NotifyOfHierarchyChange(inspector, inspector.currentVisualElement, changeType);
+            }
         }
 
         protected override void BuildAttributeFieldContextualMenu(DropdownMenu menu, BuilderStyleRow styleRow)
@@ -182,6 +195,12 @@ namespace Unity.UI.Builder
             propertyField?.RegisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindCallback);
 
             return row;
+        }
+
+        public override void SetInlineValue(VisualElement fieldElement, string property)
+        {
+            m_IgnoreChangeToInlineValue = true;
+            base.SetInlineValue(fieldElement, property);
         }
 
         private void OnSerializedPropertyBindCallback(SerializedPropertyBindEvent e)

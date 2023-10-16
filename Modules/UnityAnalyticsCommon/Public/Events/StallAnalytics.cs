@@ -18,7 +18,7 @@ namespace UnityEditor.Analytics
     {
         public StallSummaryAnalytic() : base("editorStallSummary", 1) { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static StallSummaryAnalytic CreateStallSummaryAnalytic() { return new StallSummaryAnalytic(); }
 
         public double Duration;
@@ -32,7 +32,7 @@ namespace UnityEditor.Analytics
     {
         public StallMarkerAnalytic() : base("editorStallMarker", 1) { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static StallMarkerAnalytic CreateStallMarkerAnalytic() { return new StallMarkerAnalytic(); }
 
         public string Name;

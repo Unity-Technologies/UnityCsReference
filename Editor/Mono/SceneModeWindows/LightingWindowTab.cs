@@ -42,6 +42,7 @@ namespace UnityEditor
         public virtual void OnHeaderSettingsGUI() { }
         public virtual void OnBakeButtonGUI() { }
         public virtual void OnSelectionChange() { }
+        public virtual bool HasHelpGUI() { return false; }
 
         public virtual void OnSummaryGUI()
         {

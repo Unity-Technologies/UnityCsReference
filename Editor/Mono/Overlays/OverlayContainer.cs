@@ -108,14 +108,12 @@ namespace UnityEditor.Overlays
             beforeSectionContainer = new VisualElement();
             Add(beforeSectionContainer);
             beforeSectionContainer.Add(m_BeforeSectionContent = new VisualElement());
-            beforeSectionContainer.Add(new OverlayContainerDropZone(this, OverlayContainerDropZone.Placement.Start));
             beforeSectionContainer.AddToClassList(k_BeforeClassName);
             beforeSectionContainer.AddToClassList(k_SpacingContainerClassName);
             m_BeforeSectionContent.AddToClassList(k_ContentClassName);
 
             afterSectionContainer = new VisualElement();
             Add(afterSectionContainer);
-            afterSectionContainer.Add(new OverlayContainerDropZone(this, OverlayContainerDropZone.Placement.End));
             afterSectionContainer.Add(m_AfterSectionContent = new VisualElement());
             afterSectionContainer.AddToClassList(k_AfterClassName);
             afterSectionContainer.AddToClassList(k_SpacingContainerClassName);
@@ -206,15 +204,14 @@ namespace UnityEditor.Overlays
             return false;
         }
 
+        public bool HasVisibleOverlays(OverlayContainerSection section)
+        {
+            return GetFirstVisible(section) != null;
+        }
+
         public bool HasVisibleOverlays()
         {
-            if (GetFirstVisible(OverlayContainerSection.BeforeSpacer) != null)
-                return true;
-
-            if (GetFirstVisible(OverlayContainerSection.AfterSpacer) != null)
-                return true;
-
-            return false;
+            return HasVisibleOverlays(OverlayContainerSection.BeforeSpacer) || HasVisibleOverlays(OverlayContainerSection.AfterSpacer);
         }
 
         public int GetSectionCount(OverlayContainerSection section)
@@ -274,9 +271,19 @@ namespace UnityEditor.Overlays
             return null;
         }
 
+        public Overlay GetOverlay(OverlayContainerSection section, int index)
+        {
+            return GetSectionInternal(section)[index];
+        }
+
         public virtual bool IsOverlayLayoutSupported(Layout requested)
         {
             return (m_SupportedOverlayLayouts & requested) > 0;
+        }
+
+        internal virtual IEnumerable<OverlayDropZoneBase> GetDropZones()
+        {
+            return new OverlayDropZoneBase[0];
         }
     }
 
@@ -300,9 +307,11 @@ namespace UnityEditor.Overlays
 
         const string k_ToolbarClassName = "overlay-toolbar-area";
 
-        readonly OverlayDropZoneBase m_NoElementDropZone;
         readonly VisualElement m_ContentContainer;
         readonly ScrollView m_ScrollView;
+        readonly VisualElement m_DockArea;
+        readonly OverlayContainerInsertDropZone m_BeforeDropZone;
+        readonly OverlayContainerInsertDropZone m_AfterDropZone;
 
         float m_ScrollOffsetRequestedValue;
 
@@ -324,8 +333,6 @@ namespace UnityEditor.Overlays
             }
         }
 
-        
-
         public ToolbarOverlayContainer()
         {
             m_ScrollView = new ScrollView(ScrollViewMode.Horizontal);
@@ -334,8 +341,6 @@ namespace UnityEditor.Overlays
             m_ScrollView.RegisterCallback<GeometryChangedEvent>(DelayScrollViewInit);
 
             AddToClassList(k_ToolbarClassName);
-            m_NoElementDropZone = new HiddenToolbarDropZone(this) { name = "NoElementToolbarDropZone" };
-            hierarchy.Add(m_NoElementDropZone);
 
             m_ContentContainer = m_ScrollView.contentContainer;
             Add(beforeSectionContainer);
@@ -346,6 +351,34 @@ namespace UnityEditor.Overlays
                 SetHorizontal();
             else
                 SetVertical();
+
+            m_DockArea = new VisualElement { name = "DockArea", pickingMode = PickingMode.Ignore };
+            m_DockArea.StretchToParentSize();
+            Add(m_DockArea);
+
+            m_DockArea.Add(m_BeforeDropZone = new OverlayContainerInsertDropZone(this, OverlayContainerDropZone.Placement.Start));
+            m_DockArea.Add(m_AfterDropZone = new OverlayContainerInsertDropZone(this, OverlayContainerDropZone.Placement.End));
+            beforeSectionContainer.RegisterCallback<GeometryChangedEvent>((evt) => UpdateDockArea());
+            afterSectionContainer.RegisterCallback<GeometryChangedEvent>((evt) => UpdateDockArea());
+        }
+
+        // Flex containers have some weird interactions with scroll views so we manually updated the "empty space" between before and after sections
+        void UpdateDockArea()
+        {
+            var containerRect = layout;
+            var beforeSectionRect = beforeSectionContainer.layout;
+            var afterSectionRect = afterSectionContainer.layout;
+
+            m_DockArea.style.left = isHorizontal ? beforeSectionRect.width : 0;
+            m_DockArea.style.top = !isHorizontal ? beforeSectionRect.height : 0;
+            m_DockArea.style.width = isHorizontal ? Mathf.Max(containerRect.width - beforeSectionRect.width - afterSectionRect.width, 0) : new StyleLength(StyleKeyword.Auto);
+            m_DockArea.style.height = !isHorizontal ? Mathf.Max(containerRect.height - beforeSectionRect.height - afterSectionRect.height, 0) : new StyleLength(StyleKeyword.Auto);
+        }
+
+        internal override IEnumerable<OverlayDropZoneBase> GetDropZones()
+        {
+            yield return m_BeforeDropZone;
+            yield return m_AfterDropZone;
         }
 
         void DelayScrollViewInit(GeometryChangedEvent evt)

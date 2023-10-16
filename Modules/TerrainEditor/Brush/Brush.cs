@@ -11,7 +11,7 @@ namespace UnityEditor
     [AssetFileNameExtension("brush")]
     internal class Brush : ScriptableObject
     {
-        [MenuItem("Assets/Create/Brush", secondaryPriority = 1)]
+        [MenuItem("Assets/Create/Terrain/Brush", secondaryPriority = 1)]
         public static void CreateNewDefaultBrush()
         {
             Brush b = CreateInstance(DefaultMask(), AnimationCurve.Linear(0, 0, 1, 1), 1.0f, false);

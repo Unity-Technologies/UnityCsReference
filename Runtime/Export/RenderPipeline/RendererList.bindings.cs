@@ -211,6 +211,10 @@ namespace UnityEngine.Rendering.RendererUtils
         /// </summary>
         public uint renderingLayerMask;
         /// <summary>
+        /// The batch layer mask to use for filtering this RendererList.
+        /// </summary>
+        public uint batchLayerMask { get; set; }
+        /// <summary>
         /// Pass index for the override material.
         /// </summary>
         public int overrideMaterialPassIndex;
@@ -240,6 +244,7 @@ namespace UnityEngine.Rendering.RendererUtils
             this.camera = camera;
             this.layerMask = -1;
             this.renderingLayerMask = uint.MaxValue;
+            this.batchLayerMask = uint.MaxValue;
             this.overrideMaterialPassIndex = 0;
             this.overrideShaderPassIndex = 0;
         }
@@ -259,6 +264,7 @@ namespace UnityEngine.Rendering.RendererUtils
             this.camera = camera;
             this.layerMask = -1;
             this.renderingLayerMask = uint.MaxValue;
+            this.batchLayerMask = uint.MaxValue;
             this.overrideMaterialPassIndex = 0;
         }
 
@@ -327,6 +333,7 @@ namespace UnityEngine.Rendering.RendererUtils
             var filterSettings = new FilteringSettings(desc.renderQueueRange, desc.layerMask, desc.renderingLayerMask)
             {
                 excludeMotionVectorObjects = desc.excludeObjectMotionVectors,
+                batchLayerMask = desc.batchLayerMask,
                // sortingLayerRange
             };
 

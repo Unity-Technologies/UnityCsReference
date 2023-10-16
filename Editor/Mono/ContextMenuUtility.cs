@@ -95,6 +95,13 @@ namespace UnityEditor.Actions
             }
         }
 
+        static void AddGameObjectClipboardEntriesTo(DropdownMenu menu)
+        {
+            var isThereGameObjectInSelection = Selection.gameObjects.Length > 0;
+            var isPasteEnabled = CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard();
+            AddClipboardEntriesTo(menu, isThereGameObjectInSelection, isThereGameObjectInSelection, isPasteEnabled, isThereGameObjectInSelection, isThereGameObjectInSelection);
+        }
+
         public static void AddClipboardEntriesTo(DropdownMenu menu)
         {
             var isThereGameObjectInSelection = Selection.gameObjects.Length > 0;
@@ -136,7 +143,7 @@ namespace UnityEditor.Actions
         {
             bool hasSelectedGO = Selection.gameObjects.Length > 0;
             bool hasSelectedExactlyOneGO = Selection.gameObjects.Length == 1;
-            AddClipboardEntriesTo(menu);
+            AddGameObjectClipboardEntriesTo(menu);
 
             menu.AppendSeparator();
 

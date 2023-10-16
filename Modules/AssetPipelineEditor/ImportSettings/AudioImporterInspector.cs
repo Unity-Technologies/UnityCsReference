@@ -128,15 +128,15 @@ namespace UnityEditor
 
         public bool CurrentPlatformHasAutoTranslatedCompression()
         {
-            BuildTargetGroup targetGroup = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
+            var target = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.activeBuildTargetGroup);
 
             foreach (AudioImporter importer in GetAllAudioImporterTargets())
             {
                 AudioCompressionFormat defaultCompressionFormat = importer.defaultSampleSettings.compressionFormat;
                 // Because we only want to query if the importer does not have an override.
-                if (!importer.Internal_ContainsSampleSettingsOverride(targetGroup))
+                if (!importer.Internal_ContainsSampleSettingsOverride(target.TargetName))
                 {
-                    AudioImporterSampleSettings overrideSettings = importer.Internal_GetOverrideSampleSettings(targetGroup);
+                    AudioImporterSampleSettings overrideSettings = importer.Internal_GetOverrideSampleSettings(target.TargetName);
                     AudioCompressionFormat overrideCompressionFormat = overrideSettings.compressionFormat;
 
                     // If we dont have an override, but the translated compression format is different,
@@ -165,11 +165,11 @@ namespace UnityEditor
 
         public bool CurrentSelectionContainsHardwareSounds()
         {
-            BuildTargetGroup targetGroup = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
+            var target = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.activeBuildTargetGroup);
 
             foreach (AudioImporter importer in GetAllAudioImporterTargets())
             {
-                AudioImporterSampleSettings overrideSettings = importer.Internal_GetOverrideSampleSettings(targetGroup);
+                AudioImporterSampleSettings overrideSettings = importer.Internal_GetOverrideSampleSettings(target.TargetName);
                 if (IsHardwareSound(overrideSettings.compressionFormat))
                     return true;
             }

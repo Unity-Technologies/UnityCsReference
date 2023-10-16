@@ -160,7 +160,17 @@ namespace Unity.UI.Builder
             {
                 m_DataSourceViewContainer.style.display = DisplayStyle.Flex;
                 m_DataSourceAndPathView.SetAttributesOwner(m_Inspector.visualTreeAsset, currentVisualElement, m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance);
-                m_DataSourceAndPathView.Refresh();
+
+                if (m_DataSourceAndPathView.refreshScheduledItem != null)
+                {
+                    // Pause to stop it in case it's already running; and then restart it to execute it.
+                    m_DataSourceAndPathView.refreshScheduledItem.Pause();
+                    m_DataSourceAndPathView.refreshScheduledItem.Resume();
+                }
+                else
+                {
+                    m_DataSourceAndPathView.refreshScheduledItem = m_DataSourceAndPathView.fieldsContainer.schedule.Execute(() => m_DataSourceAndPathView.Refresh());
+                }
             }
             else
             {

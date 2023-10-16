@@ -18,7 +18,7 @@ namespace UnityEditor
     }
 
     [NativeHeader("Editor/Mono/Annotation/AnnotationUtility.bindings.h")]
-    [NativeHeader("Editor/Src/AnnotationManager.h")]
+    [NativeHeader("Editor/Src/Gizmos/AnnotationManager.h")]
     static class AnnotationUtility
     {
         // Similar values as in Annotation (in AnnotationManager.h)

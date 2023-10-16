@@ -11,7 +11,7 @@ namespace UnityEditor.TextCore.Text
 {
     static class TextSettingsCreationMenu
     {
-        [MenuItem("Assets/Create/Text/Text Settings", false, 300, true)]
+        [MenuItem("Assets/Create/Text Core/Text Settings", false, 300, true)]
         internal static void CreateTextSettingsAsset()
         {
             string filePath;

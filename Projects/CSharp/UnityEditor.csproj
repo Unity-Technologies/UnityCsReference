@@ -704,6 +704,18 @@
     <Compile Include="..\..\Editor\Mono\BuildPlayerWindowBuildMethods.cs">
       <Link>Editor\Mono\BuildPlayerWindowBuildMethods.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfile.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfile.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileContext.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfileContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileCreate.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfileCreate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfilePlatformSettingsBase.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfilePlatformSettingsBase.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildTarget.cs">
       <Link>Editor\Mono\BuildTarget.cs</Link>
     </Compile>
@@ -836,6 +848,9 @@
     <Compile Include="..\..\Editor\Mono\ContainerWindow.cs">
       <Link>Editor\Mono\ContainerWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\ContextMenuUtility.cs">
+      <Link>Editor\Mono\ContextMenuUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\CustomEditorAttributes.bindings.cs">
       <Link>Editor\Mono\CustomEditorAttributes.bindings.cs</Link>
     </Compile>
@@ -877,9 +892,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\DragAndDrop.bindings.cs">
       <Link>Editor\Mono\DragAndDrop.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\DrawGizmo.cs">
-      <Link>Editor\Mono\DrawGizmo.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\DrivenPropertyManagerInternal.bindings.cs">
       <Link>Editor\Mono\DrivenPropertyManagerInternal.bindings.cs</Link>
@@ -937,75 +949,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\EditorGraphicsSettings.cs">
       <Link>Editor\Mono\EditorGraphicsSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\ArcHandle.cs">
-      <Link>Editor\Mono\EditorHandles\ArcHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\BoneHandle.cs">
-      <Link>Editor\Mono\EditorHandles\BoneHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\BoundsHandle\BoxBoundsHandle.cs">
-      <Link>Editor\Mono\EditorHandles\BoundsHandle\BoxBoundsHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\BoundsHandle\CapsuleBoundsHandle.cs">
-      <Link>Editor\Mono\EditorHandles\BoundsHandle\CapsuleBoundsHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\BoundsHandle\PrimitiveBoundsHandle.cs">
-      <Link>Editor\Mono\EditorHandles\BoundsHandle\PrimitiveBoundsHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\BoundsHandle\SphereBoundsHandle.cs">
-      <Link>Editor\Mono\EditorHandles\BoundsHandle\SphereBoundsHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\Button.cs">
-      <Link>Editor\Mono\EditorHandles\Button.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\ConeFrustrumHandle.cs">
-      <Link>Editor\Mono\EditorHandles\ConeFrustrumHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\ConeHandle.cs">
-      <Link>Editor\Mono\EditorHandles\ConeHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\Disc.cs">
-      <Link>Editor\Mono\EditorHandles\Disc.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\FreeMove.cs">
-      <Link>Editor\Mono\EditorHandles\FreeMove.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\FreeRotate.cs">
-      <Link>Editor\Mono\EditorHandles\FreeRotate.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\PositionHandle.cs">
-      <Link>Editor\Mono\EditorHandles\PositionHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\RadiusHandle.cs">
-      <Link>Editor\Mono\EditorHandles\RadiusHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\RectHandle.cs">
-      <Link>Editor\Mono\EditorHandles\RectHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\RotationHandle.cs">
-      <Link>Editor\Mono\EditorHandles\RotationHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\ScaleHandle.cs">
-      <Link>Editor\Mono\EditorHandles\ScaleHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\SimpleRadiusHandle.cs">
-      <Link>Editor\Mono\EditorHandles\SimpleRadiusHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\Slider1D.cs">
-      <Link>Editor\Mono\EditorHandles\Slider1D.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\Slider2D.cs">
-      <Link>Editor\Mono\EditorHandles\Slider2D.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\SliderScale.cs">
-      <Link>Editor\Mono\EditorHandles\SliderScale.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\TransformHandle.cs">
-      <Link>Editor\Mono\EditorHandles\TransformHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorHandles\VertexSnapping.cs">
-      <Link>Editor\Mono\EditorHandles\VertexSnapping.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\EditorHeaderItemAttribute.cs">
       <Link>Editor\Mono\EditorHeaderItemAttribute.cs</Link>
@@ -1205,12 +1148,6 @@
     <Compile Include="..\..\Editor\Mono\GUI\AboutWindow.cs">
       <Link>Editor\Mono\GUI\AboutWindow.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Actions\EditorAction.cs">
-      <Link>Editor\Mono\GUI\Actions\EditorAction.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Actions\EditorActionTool.cs">
-      <Link>Editor\Mono\GUI\Actions\EditorActionTool.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\AngularDial.cs">
       <Link>Editor\Mono\GUI\AngularDial.cs</Link>
     </Compile>
@@ -1261,9 +1198,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\DragRect.cs">
       <Link>Editor\Mono\GUI\DragRect.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\EditModeTools\PrimitiveColliderTool.cs">
-      <Link>Editor\Mono\GUI\EditModeTools\PrimitiveColliderTool.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\EditorApplicationLayout.cs">
       <Link>Editor\Mono\GUI\EditorApplicationLayout.cs</Link>
@@ -1436,74 +1370,23 @@
     <Compile Include="..\..\Editor\Mono\GUI\TextFieldDropDown.cs">
       <Link>Editor\Mono\GUI\TextFieldDropDown.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Toolbar.cs">
-      <Link>Editor\Mono\GUI\Toolbar.cs</Link>
+    <Compile Include="..\..\Editor\Mono\GUI\Toolbars\EditorToolbar.cs">
+      <Link>Editor\Mono\GUI\Toolbars\EditorToolbar.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Toolbars\Core\EditorToolbar.cs">
-      <Link>Editor\Mono\GUI\Toolbars\Core\EditorToolbar.cs</Link>
+    <Compile Include="..\..\Editor\Mono\GUI\Toolbars\EditorToolbarElementAttribute.cs">
+      <Link>Editor\Mono\GUI\Toolbars\EditorToolbarElementAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Toolbars\Core\EditorToolbarElementAttribute.cs">
-      <Link>Editor\Mono\GUI\Toolbars\Core\EditorToolbarElementAttribute.cs</Link>
+    <Compile Include="..\..\Editor\Mono\GUI\Toolbars\EditorToolbarManager.cs">
+      <Link>Editor\Mono\GUI\Toolbars\EditorToolbarManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Toolbars\Core\EditorToolbarManager.cs">
-      <Link>Editor\Mono\GUI\Toolbars\Core\EditorToolbarManager.cs</Link>
+    <Compile Include="..\..\Editor\Mono\GUI\Toolbars\EditorToolbarUtility.cs">
+      <Link>Editor\Mono\GUI\Toolbars\EditorToolbarUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Toolbars\Core\EditorToolbarUtility.cs">
-      <Link>Editor\Mono\GUI\Toolbars\Core\EditorToolbarUtility.cs</Link>
+    <Compile Include="..\..\Editor\Mono\GUI\Toolbars\MainToolbarImguiContainer.cs">
+      <Link>Editor\Mono\GUI\Toolbars\MainToolbarImguiContainer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\BuiltinTools.cs">
-      <Link>Editor\Mono\GUI\Tools\BuiltinTools.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorTool.cs">
-      <Link>Editor\Mono\GUI\Tools\EditorTool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolAttributes.cs">
-      <Link>Editor\Mono\GUI\Tools\EditorToolAttributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolCache.cs">
-      <Link>Editor\Mono\GUI\Tools\EditorToolCache.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolContext.cs">
-      <Link>Editor\Mono\GUI\Tools\EditorToolContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolGUI.cs">
-      <Link>Editor\Mono\GUI\Tools\EditorToolGUI.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolManager.cs">
-      <Link>Editor\Mono\GUI\Tools\EditorToolManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolSettingsOverlay.cs">
-      <Link>Editor\Mono\GUI\Tools\EditorToolSettingsOverlay.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolUtility.cs">
-      <Link>Editor\Mono\GUI\Tools\EditorToolUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorTools.deprecated.cs">
-      <Link>Editor\Mono\GUI\Tools\EditorTools.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\GameObjectToolContext.cs">
-      <Link>Editor\Mono\GUI\Tools\GameObjectToolContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\IEditor.cs">
-      <Link>Editor\Mono\GUI\Tools\IEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\ToolEntry.cs">
-      <Link>Editor\Mono\GUI\Tools\ToolEntry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\ToolManager.cs">
-      <Link>Editor\Mono\GUI\Tools\ToolManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\ToolShortcutContext.cs">
-      <Link>Editor\Mono\GUI\Tools\ToolShortcutContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\ToolVariantPrefs.cs">
-      <Link>Editor\Mono\GUI\Tools\ToolVariantPrefs.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\Tools.cs">
-      <Link>Editor\Mono\GUI\Tools\Tools.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\TransformManipulator.cs">
-      <Link>Editor\Mono\GUI\Tools\TransformManipulator.cs</Link>
+    <Compile Include="..\..\Editor\Mono\GUI\Toolbars\Toolbar.cs">
+      <Link>Editor\Mono\GUI\Toolbars\Toolbar.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\TreeView\AssetOrGameObjectTreeViewDragging.cs">
       <Link>Editor\Mono\GUI\TreeView\AssetOrGameObjectTreeViewDragging.cs</Link>
@@ -1655,17 +1538,20 @@
     <Compile Include="..\..\Editor\Mono\GameView\GameViewSizesMenuModifyItemUI.cs">
       <Link>Editor\Mono\GameView\GameViewSizesMenuModifyItemUI.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GameView\GameviewGUI.cs">
+      <Link>Editor\Mono\GameView\GameviewGUI.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GameView\IGameViewOnPlayMenuUser.cs">
       <Link>Editor\Mono\GameView\IGameViewOnPlayMenuUser.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GameView\IGameViewSizeMenuUser.cs">
       <Link>Editor\Mono\GameView\IGameViewSizeMenuUser.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GameviewGUI.cs">
-      <Link>Editor\Mono\GameviewGUI.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\GenerateIconsWithMipLevels.cs">
       <Link>Editor\Mono\GenerateIconsWithMipLevels.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Gizmos\DrawGizmo.cs">
+      <Link>Editor\Mono\Gizmos\DrawGizmo.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GlobalObjectId.bindings.cs">
       <Link>Editor\Mono\GlobalObjectId.bindings.cs</Link>
@@ -1697,17 +1583,86 @@
     <Compile Include="..\..\Editor\Mono\Grids\SnapSettings.cs">
       <Link>Editor\Mono\Grids\SnapSettings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\HandleUtility.bindings.cs">
-      <Link>Editor\Mono\HandleUtility.bindings.cs</Link>
+    <Compile Include="..\..\Editor\Mono\Handles\ArcHandle.cs">
+      <Link>Editor\Mono\Handles\ArcHandle.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\HandleUtility.cs">
-      <Link>Editor\Mono\HandleUtility.cs</Link>
+    <Compile Include="..\..\Editor\Mono\Handles\BoneHandle.cs">
+      <Link>Editor\Mono\Handles\BoneHandle.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Handles.bindings.cs">
-      <Link>Editor\Mono\Handles.bindings.cs</Link>
+    <Compile Include="..\..\Editor\Mono\Handles\BoundsHandle\BoxBoundsHandle.cs">
+      <Link>Editor\Mono\Handles\BoundsHandle\BoxBoundsHandle.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Handles.cs">
-      <Link>Editor\Mono\Handles.cs</Link>
+    <Compile Include="..\..\Editor\Mono\Handles\BoundsHandle\CapsuleBoundsHandle.cs">
+      <Link>Editor\Mono\Handles\BoundsHandle\CapsuleBoundsHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\BoundsHandle\PrimitiveBoundsHandle.cs">
+      <Link>Editor\Mono\Handles\BoundsHandle\PrimitiveBoundsHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\BoundsHandle\SphereBoundsHandle.cs">
+      <Link>Editor\Mono\Handles\BoundsHandle\SphereBoundsHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\Button.cs">
+      <Link>Editor\Mono\Handles\Button.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\ConeFrustrumHandle.cs">
+      <Link>Editor\Mono\Handles\ConeFrustrumHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\ConeHandle.cs">
+      <Link>Editor\Mono\Handles\ConeHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\Disc.cs">
+      <Link>Editor\Mono\Handles\Disc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\FreeMove.cs">
+      <Link>Editor\Mono\Handles\FreeMove.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\FreeRotate.cs">
+      <Link>Editor\Mono\Handles\FreeRotate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\HandleUtility.bindings.cs">
+      <Link>Editor\Mono\Handles\HandleUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\HandleUtility.cs">
+      <Link>Editor\Mono\Handles\HandleUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\Handles.bindings.cs">
+      <Link>Editor\Mono\Handles\Handles.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\Handles.cs">
+      <Link>Editor\Mono\Handles\Handles.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\PositionHandle.cs">
+      <Link>Editor\Mono\Handles\PositionHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\RadiusHandle.cs">
+      <Link>Editor\Mono\Handles\RadiusHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\RectHandle.cs">
+      <Link>Editor\Mono\Handles\RectHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\RotationHandle.cs">
+      <Link>Editor\Mono\Handles\RotationHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\ScaleHandle.cs">
+      <Link>Editor\Mono\Handles\ScaleHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\SimpleRadiusHandle.cs">
+      <Link>Editor\Mono\Handles\SimpleRadiusHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\Slider1D.cs">
+      <Link>Editor\Mono\Handles\Slider1D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\Slider2D.cs">
+      <Link>Editor\Mono\Handles\Slider2D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\SliderScale.cs">
+      <Link>Editor\Mono\Handles\SliderScale.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\TransformHandle.cs">
+      <Link>Editor\Mono\Handles\TransformHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Handles\VertexSnapping.cs">
+      <Link>Editor\Mono\Handles\VertexSnapping.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Hardware.bindings.cs">
       <Link>Editor\Mono\Hardware.bindings.cs</Link>
@@ -2480,9 +2435,6 @@
     <Compile Include="..\..\Editor\Mono\Macros\MethodEvaluator.cs">
       <Link>Editor\Mono\Macros\MethodEvaluator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\MainToolbarImguiContainer.cs">
-      <Link>Editor\Mono\MainToolbarImguiContainer.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\MaterialProperty.cs">
       <Link>Editor\Mono\MaterialProperty.cs</Link>
     </Compile>
@@ -2509,9 +2461,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\MenuItem.cs">
       <Link>Editor\Mono\MenuItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\MenuUtility.cs">
-      <Link>Editor\Mono\MenuUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\MeshUtility.bindings.cs">
       <Link>Editor\Mono\MeshUtility.bindings.cs</Link>
@@ -2621,11 +2570,29 @@
     <Compile Include="..\..\Editor\Mono\Overlays\OverlayContainer.cs">
       <Link>Editor\Mono\Overlays\OverlayContainer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayContainerDropZone.cs">
+      <Link>Editor\Mono\Overlays\OverlayContainerDropZone.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayContainerInsertDropZone.cs">
+      <Link>Editor\Mono\Overlays\OverlayContainerInsertDropZone.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayDockArea.cs">
+      <Link>Editor\Mono\Overlays\OverlayDockArea.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Overlays\OverlayDragger.cs">
       <Link>Editor\Mono\Overlays\OverlayDragger.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Overlays\OverlayDropZone.cs">
       <Link>Editor\Mono\Overlays\OverlayDropZone.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayDropZoneBase.cs">
+      <Link>Editor\Mono\Overlays\OverlayDropZoneBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayGhostDropZone.cs">
+      <Link>Editor\Mono\Overlays\OverlayGhostDropZone.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayInsertIndicator.cs">
+      <Link>Editor\Mono\Overlays\OverlayInsertIndicator.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Overlays\OverlayMenu.cs">
       <Link>Editor\Mono\Overlays\OverlayMenu.cs</Link>
@@ -2659,6 +2626,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Overlays\SaveOverlayPreset.cs">
       <Link>Editor\Mono\Overlays\SaveOverlayPreset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\ToolbarDropZone.cs">
+      <Link>Editor\Mono\Overlays\ToolbarDropZone.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Overlays\ToolbarOverlay.cs">
       <Link>Editor\Mono\Overlays\ToolbarOverlay.cs</Link>
@@ -3137,9 +3107,6 @@
     <Compile Include="..\..\Editor\Mono\SceneView\SceneViewViewpoint.cs">
       <Link>Editor\Mono\SceneView\SceneViewViewpoint.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\SceneView\SceneVisibilityState.bindings.cs">
-      <Link>Editor\Mono\SceneView\SceneVisibilityState.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\SceneView\Viewpoint\CameraViewpoint.cs">
       <Link>Editor\Mono\SceneView\Viewpoint\CameraViewpoint.cs</Link>
     </Compile>
@@ -3149,11 +3116,14 @@
     <Compile Include="..\..\Editor\Mono\SceneView\Viewpoint\ViewpointProxyTypeCache.cs">
       <Link>Editor\Mono\SceneView\Viewpoint\ViewpointProxyTypeCache.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\SceneVisibilityHierarchyGUI.cs">
-      <Link>Editor\Mono\SceneVisibilityHierarchyGUI.cs</Link>
+    <Compile Include="..\..\Editor\Mono\SceneVisibility\SceneVisibilityHierarchyGUI.cs">
+      <Link>Editor\Mono\SceneVisibility\SceneVisibilityHierarchyGUI.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\SceneVisibilityManager.cs">
-      <Link>Editor\Mono\SceneVisibilityManager.cs</Link>
+    <Compile Include="..\..\Editor\Mono\SceneVisibility\SceneVisibilityManager.cs">
+      <Link>Editor\Mono\SceneVisibility\SceneVisibilityManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneVisibility\SceneVisibilityState.bindings.cs">
+      <Link>Editor\Mono\SceneVisibility\SceneVisibilityState.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\CustomPropertyDrawerAttribute.cs">
       <Link>Editor\Mono\ScriptAttributeGUI\CustomPropertyDrawerAttribute.cs</Link>
@@ -3458,14 +3428,14 @@
     <Compile Include="..\..\Editor\Mono\Search\SearchService.cs">
       <Link>Editor\Mono\Search\SearchService.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Selection.bindings.cs">
-      <Link>Editor\Mono\Selection.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Selection.cs">
-      <Link>Editor\Mono\Selection.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\SelectionCommands\SelectionCommands.cs">
       <Link>Editor\Mono\SelectionCommands\SelectionCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Selection\Selection.bindings.cs">
+      <Link>Editor\Mono\Selection\Selection.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Selection\Selection.cs">
+      <Link>Editor\Mono\Selection\Selection.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SerializationDebug.bindings.cs">
       <Link>Editor\Mono\SerializationDebug.bindings.cs</Link>
@@ -3581,6 +3551,69 @@
     <Compile Include="..\..\Editor\Mono\TerrainEditor\TerrainInspectorUtil.bindings.cs">
       <Link>Editor\Mono\TerrainEditor\TerrainInspectorUtil.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\BuiltinTools.cs">
+      <Link>Editor\Mono\Tools\BuiltinTools.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\EditorAction.cs">
+      <Link>Editor\Mono\Tools\EditorAction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\EditorActionTool.cs">
+      <Link>Editor\Mono\Tools\EditorActionTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\EditorTool.cs">
+      <Link>Editor\Mono\Tools\EditorTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\EditorToolAttributes.cs">
+      <Link>Editor\Mono\Tools\EditorToolAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\EditorToolCache.cs">
+      <Link>Editor\Mono\Tools\EditorToolCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\EditorToolContext.cs">
+      <Link>Editor\Mono\Tools\EditorToolContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\EditorToolGUI.cs">
+      <Link>Editor\Mono\Tools\EditorToolGUI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\EditorToolManager.cs">
+      <Link>Editor\Mono\Tools\EditorToolManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\EditorToolSettingsOverlay.cs">
+      <Link>Editor\Mono\Tools\EditorToolSettingsOverlay.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\EditorToolUtility.cs">
+      <Link>Editor\Mono\Tools\EditorToolUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\EditorTools.deprecated.cs">
+      <Link>Editor\Mono\Tools\EditorTools.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\GameObjectToolContext.cs">
+      <Link>Editor\Mono\Tools\GameObjectToolContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\IEditor.cs">
+      <Link>Editor\Mono\Tools\IEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\PrimitiveColliderTool.cs">
+      <Link>Editor\Mono\Tools\PrimitiveColliderTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\ToolEntry.cs">
+      <Link>Editor\Mono\Tools\ToolEntry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\ToolManager.cs">
+      <Link>Editor\Mono\Tools\ToolManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\ToolShortcutContext.cs">
+      <Link>Editor\Mono\Tools\ToolShortcutContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\ToolVariantPrefs.cs">
+      <Link>Editor\Mono\Tools\ToolVariantPrefs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\Tools.cs">
+      <Link>Editor\Mono\Tools\Tools.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Tools\TransformManipulator.cs">
+      <Link>Editor\Mono\Tools\TransformManipulator.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\TooltipView\TooltipView.cs">
       <Link>Editor\Mono\TooltipView\TooltipView.cs</Link>
     </Compile>
@@ -3688,6 +3721,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Drawers\Internal\UnityEventItem.cs">
       <Link>Editor\Mono\UIElements\Drawers\Internal\UnityEventItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\EditorFocusMonitor.cs">
+      <Link>Editor\Mono\UIElements\EditorFocusMonitor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\EditorMenuExtensions.cs">
       <Link>Editor\Mono\UIElements\EditorMenuExtensions.cs</Link>
@@ -4276,9 +4312,6 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\AssemblyInfo.cs">
       <Link>Modules\BuildProfileEditor\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\BuildProfileEditor\BuildProfile.cs">
-      <Link>Modules\BuildProfileEditor\BuildProfile.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\BuildProfileWindow.cs">
       <Link>Modules\BuildProfileEditor\BuildProfileWindow.cs</Link>
@@ -6350,6 +6383,9 @@
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerRoleDropdown.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerRoleDropdown.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerRolesDataEditor.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerRolesDataEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\BaseDropdownItem.cs">
       <Link>Modules\PackageManagerUI\Editor\Extensions\BaseDropdownItem.cs</Link>
     </Compile>
@@ -7717,6 +7753,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\PhysicsManagerInspectorBridge.cs">
       <Link>Modules\PhysicsEditor\PhysicsManagerInspectorBridge.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\PhysicsMaterialEditor.cs">
+      <Link>Modules\PhysicsEditor\PhysicsMaterialEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\RigidbodyEditor.cs">
       <Link>Modules\PhysicsEditor\RigidbodyEditor.cs</Link>

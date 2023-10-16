@@ -8,22 +8,22 @@ namespace UnityEditor
 {
     internal enum ScriptTemplate
     {
-        CSharp_NewSceneTemplatePipelineScript = 0,
-        CSharp_NewBehaviourScript,
-        CSharp_NewTestScript,
-        Shader_NewSurfaceShader,
-        Shader_NewUnlitShader,
-        Shader_NewImageEffectShader,
-        CSharp_NewStateMachineBehaviourScript,
-        CSharp_NewSubStateMachineBehaviourScript,
+        CSharp_NewBehaviourScript = 0,
         CSharp_NewPlayableBehaviour,
+        Shader_NewSurfaceShader,
+        CSharp_NewSceneTemplatePipelineScript,
         CSharp_NewPlayableAsset,
-        Shader_NewComputeShader,
+        Shader_NewUnlitShader,
         AsmDef_NewAssembly,
         AsmDef_NewEditModeTestAssembly,
         AsmDef_NewTestAssembly,
         AsmRef_NewAssemblyReference,
+        CSharp_NewTestScript,
+        Shader_NewImageEffectShader,
+        Shader_NewComputeShader,
         Shader_NewRayTracingShader,
+        CSharp_NewStateMachineBehaviourScript,
+        CSharp_NewSubStateMachineBehaviourScript,
         Count
     }
 

@@ -25,8 +25,8 @@ namespace UnityEditor
 
         Dictionary<GameObject, bool> m_LastSelection;
 
-        public static event Action s_RectSelectionStarting = delegate { };
-        public static event Action s_RectSelectionFinished = delegate { };
+        public static event Action rectSelectionStarting = delegate { };
+        public static event Action rectSelectionFinished = delegate { };
 
         bool m_IsNearestControl = false;
 
@@ -50,7 +50,7 @@ namespace UnityEditor
 
         class SceneViewRectSelection : IShortcutToolContext
         {
-            public SceneView window => EditorWindow.focusedWindow is SceneView ? (SceneView)EditorWindow.focusedWindow : null;
+            public SceneView window => EditorWindow.focusedWindow as SceneView;
 
             public bool active => IsActive;
 
@@ -60,7 +60,8 @@ namespace UnityEditor
                 {
                     if (!(EditorWindow.focusedWindow is SceneView view))
                         return false;
-                    return view.sceneViewMotion.viewportsUnderMouse;
+
+                    return view.sceneViewMotion.viewportsUnderMouse && Tools.current != Tool.View;
                 }
             }
         }
@@ -325,7 +326,7 @@ namespace UnityEditor
             ActiveEditorTracker.delayFlushDirtyRebuild = false;
             ActiveEditorTracker.RebuildAllIfNecessary();
             GUIUtility.hotControl = 0;
-            s_RectSelectionFinished();
+            rectSelectionFinished();
         }
 
         void StartRectSelection(SceneView view)
@@ -335,7 +336,7 @@ namespace UnityEditor
             // The hot control needs to be set in an OnGUI call.
             view.SendEvent(EditorGUIUtility.CommandEvent(k_SetRectSelectionHotControlEventCommandName));
 
-            s_RectSelectionStarting();
+            rectSelectionStarting();
 
             // This is needed to update the selection in case the modifier keys changed.
             UpdateSelection(m_SelectionStart, m_CurrentSelection, m_CurrentSelectionType, true);

@@ -43,7 +43,7 @@ namespace UnityEditor.UIElements
                     {
                         conversionType = t.GetGenericArguments()[0];
 
-                        if (conversionType.IsGenericType)
+                        if (conversionType.IsGenericType && conversionType.ContainsGenericParameters)
                             conversionType = conversionType.GetGenericTypeDefinition();
                     }
                 }

@@ -44,7 +44,7 @@ namespace UnityEditor
         // Deserialized legacy icons (all platforms)
         LegacyBuildTargetIcons[] m_AllLegacyIcons;
 
-        // Requried icons for platform. Provided by platform specific IPlatformIconProvider
+        // Required icons for platform. Provided by platform extension
         Dictionary<PlatformIconKind, PlatformIcon[]> m_RequiredIcons;
 
         public PlayerSettingsIconsEditor(PlayerSettingsEditor owner)
@@ -259,14 +259,17 @@ namespace UnityEditor
         internal PlatformIcon[] GetPlatformIcons(BuildTargetGroup platform, PlatformIconKind kind, ref BuildTargetIcons[] allIcons)
         {
             var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(platform);
-            var serializedIcons = PlayerSettings.GetPlatformIconsFromTargetIcons(namedBuildTarget.TargetName, kind.kind, allIcons);
-            var provider = PlayerSettings.GetPlatformIconProvider(namedBuildTarget);
+            if (!BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(namedBuildTarget.TargetName), out var iBuildTarget))
+                return Array.Empty<PlatformIcon>();
+            var requiredIcons = iBuildTarget.IconPlatformProperties?.GetRequiredPlatformIcons();
+            if (requiredIcons == null)
+                return Array.Empty<PlatformIcon>();
 
+            var serializedIcons = PlayerSettings.GetPlatformIconsFromTargetIcons(namedBuildTarget.TargetName, kind.kind, allIcons);
             if (m_RequiredIcons == null)
                 m_RequiredIcons = new Dictionary<PlatformIconKind, PlatformIcon[]>();
             if (!m_RequiredIcons.ContainsKey(kind))
             {
-                var requiredIcons = provider.GetRequiredPlatformIcons();
                 foreach (var requiredIcon in requiredIcons)
                 {
                     if (!m_RequiredIcons.ContainsKey(requiredIcon.Key))
@@ -274,7 +277,7 @@ namespace UnityEditor
                 }
             }
 
-            var icons = PlatformIcon.GetRequiredPlatformIconsByType(provider, kind, m_RequiredIcons);
+            var icons = PlatformIcon.GetRequiredPlatformIconsByType(kind, m_RequiredIcons);
             if (serializedIcons.Length <= 0)
             {
                 // Map legacy icons to required icons
@@ -298,16 +301,17 @@ namespace UnityEditor
         void SetIconsForPlatform(BuildTargetGroup targetGroup, PlatformIcon[] icons, PlatformIconKind kind, ref BuildTargetIcons[] allIcons)
         {
             var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
-            var platformIconProvider = PlayerSettings.GetPlatformIconProvider(namedBuildTarget);
-            if (platformIconProvider == null)
+            if (!BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(namedBuildTarget.TargetName), out var iBuildTarget))
                 return;
 
+            var requiredIcons = iBuildTarget.IconPlatformProperties?.GetRequiredPlatformIcons();
+            if (requiredIcons == null)
+                return;
 
             if (m_RequiredIcons == null)
                 m_RequiredIcons = new Dictionary<PlatformIconKind, PlatformIcon[]>();
             if (!m_RequiredIcons.ContainsKey(kind))
             {
-                var requiredIcons = platformIconProvider.GetRequiredPlatformIcons();
                 foreach (var requiredIcon in requiredIcons)
                 {
                     if (!m_RequiredIcons.ContainsKey(requiredIcon.Key))
@@ -315,7 +319,7 @@ namespace UnityEditor
                 }
             }
 
-            var requiredIconCount = PlatformIcon.GetRequiredPlatformIconsByType(platformIconProvider, kind, m_RequiredIcons).Length;
+            var requiredIconCount = PlatformIcon.GetRequiredPlatformIconsByType(kind, m_RequiredIcons).Length;
 
             PlatformIconStruct[] iconStructs;
             if (icons == null)
@@ -393,28 +397,25 @@ namespace UnityEditor
                 var selectedDefault = (m_SelectedPlatform < 0);
                 // Set default platform variables
                 BuildPlatform platform = null;
-                namedBuildTarget = NamedBuildTarget.Standalone;
                 var platformName = "";
 
                 // Override if a platform is selected
                 if (!selectedDefault)
                 {
                     platform = m_ValidPlatforms[m_SelectedPlatform];
-                    namedBuildTarget = platform.namedBuildTarget;
                     platformName = platform.name;
                 }
 
-                var iconOption = IconOption.StandardIcons;
+                var iconUISettings = IconSettings.StandardIcons;
                 if (BuildTargetDiscovery.TryGetBuildTarget(platform.defaultTarget, out IBuildTarget iBuildTarget))
-                    iconOption = iBuildTarget.IconPlatformProperties?.IconOptions ?? IconOption.StandardIcons;
+                    iconUISettings = iBuildTarget.IconPlatformProperties?.IconUISettings ?? IconSettings.StandardIcons;
 
-
-                if (iconOption == IconOption.NotApplicable)
+                if (iconUISettings == IconSettings.None)
                 {
                     PlayerSettingsEditor.ShowNoSettings();
                     EditorGUILayout.Space();
                 }
-                else if (iconOption != IconOption.None)
+                else if (iconUISettings == IconSettings.StandardIcons)
                 {
                     // Both default icon and Legacy icons are serialized to the same map
                     // That's why m_LegacyPlatformIcons can be excluded in two places (other place in CommonSettings())

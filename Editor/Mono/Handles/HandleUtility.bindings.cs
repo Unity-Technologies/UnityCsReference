@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [NativeHeader("Editor/Mono/HandleUtility.bindings.h")]
+    [NativeHeader("Editor/Mono/Handles/HandleUtility.bindings.h")]
     [StaticAccessor("HandleUtilityBindings", StaticAccessorType.DoubleColon)]
     public sealed partial class HandleUtility
     {

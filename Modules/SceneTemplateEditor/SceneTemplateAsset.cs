@@ -181,7 +181,7 @@ namespace UnityEditor.SceneTemplate
             return AssetDatabase.GetAssetPath(templateScene.GetInstanceID());
         }
 
-        [MenuItem("Assets/Create/Scene Template", priority = 201, secondaryPriority = 1)]
+        [MenuItem("Assets/Create/Scene/Scene Template", priority = 2, secondaryPriority = 1)]
         private static void CreateNewDefaultTemplate()
         {
             var template = CreateInstance<SceneTemplateAsset>();

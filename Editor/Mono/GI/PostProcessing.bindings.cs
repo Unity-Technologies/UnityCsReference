@@ -21,12 +21,9 @@ namespace UnityEngine.LightTransport
 
             // Unity expects the following of the irradiance SH coefficients:
             // 1) For L0 and L1, they must have the SH standard normalization terms folded into them (to avoid doing this multiplication in shader).
-            // 2) They must be divided by π for historical reasons.
+            // 2) They must be divided by Pi for historical reasons.
             // 3) L1 terms must be in yzx order (rather than standard xyz).
             //    This is flipped back in GetShaderConstantsFromNormalizedSH before passed to shader.
-            // 4) For L2 we cannot (always) use 1) due to how these basis functions have more than one term.
-            //    In the below we just copy Unity's existing logic which is coupled to GetShaderConstantsFromNormalizedSH.
-            //    Because we use fC2, fC3 and fC4 directly, the division by π is not needed.
             bool ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount);
 
             // Add two sets of SH coefficients together.
@@ -102,19 +99,26 @@ namespace UnityEngine.LightTransport
             [WriteOnly] public NativeSlice<SphericalHarmonicsL2> IrradianceOut;
             public void Execute(int probeIdx)
             {
+                float shY0Normalization = Mathf.Sqrt(1.0f / Mathf.PI) / 2.0f;
+
+                float shY1Normalization = Mathf.Sqrt(3.0f / Mathf.PI) / 2.0f;
+
+                float shY2_2Normalization = Mathf.Sqrt(15.0f / Mathf.PI) / 2.0f;
+                float shY2_1Normalization = shY2_2Normalization;
+                float shY20Normalization = Mathf.Sqrt(5.0f / Mathf.PI) / 4.0f;
+                float shY21Normalization = shY2_2Normalization;
+                float shY22Normalization = Mathf.Sqrt(15.0f / Mathf.PI) / 4.0f;
+
                 SphericalHarmonicsL2 irradiance = IrradianceIn[probeIdx];
                 var output = new SphericalHarmonicsL2();
                 for (int rgb = 0; rgb < 3; ++rgb)
                 {
                     // L0
-                    float shY0Normalization = Mathf.Sqrt(1.0f / Mathf.PI) / 2.0f;
                     output[rgb, SH.L00] = irradiance[rgb, SH.L00];
                     output[rgb, SH.L00] *= shY0Normalization; // 1)
                     output[rgb, SH.L00] /= Mathf.PI; // 2)
 
                     // L1
-                    float shY1Normalization = Mathf.Sqrt(3.0f / Mathf.PI) / 2.0f;
-
                     output[rgb, SH.L1_1] = irradiance[rgb, SH.L10]; // 3)
                     output[rgb, SH.L1_1] *= shY1Normalization; // 1)
                     output[rgb, SH.L1_1] /= Mathf.PI; // 3 )
@@ -128,16 +132,25 @@ namespace UnityEngine.LightTransport
                     output[rgb, SH.L11] /= Mathf.PI; // 2)
 
                     // L2
-                    float fC2 = Mathf.Sqrt(15.0f) / (8.0f * Mathf.Sqrt(Mathf.PI));
-                    float fC3 = Mathf.Sqrt(5.0f) / (16.0f * Mathf.Sqrt(Mathf.PI));
-                    float fC4 = 0.5f * fC2;
+                    output[rgb, SH.L2_2] = irradiance[rgb, SH.L2_2];
+                    output[rgb, SH.L2_2] *= shY2_2Normalization; // 1)
+                    output[rgb, SH.L2_2] /= Mathf.PI; // 2)
 
-                    output[rgb, SH.L2_2] = irradiance[rgb, SH.L2_2] * fC2; // 4)
-                    output[rgb, SH.L2_1] = irradiance[rgb, SH.L2_1] * fC2; // 4)
-                    output[rgb, SH.L20] = irradiance[rgb, SH.L20] * fC3; // 4)
-                    output[rgb, SH.L21] = irradiance[rgb, SH.L21] * fC2; // 4)
-                    output[rgb, SH.L22] = irradiance[rgb, SH.L22] * fC4; // 4)
+                    output[rgb, SH.L2_1] = irradiance[rgb, SH.L2_1];
+                    output[rgb, SH.L2_1] *= shY2_1Normalization; // 1)
+                    output[rgb, SH.L2_1] /= Mathf.PI; // 2)
 
+                    output[rgb, SH.L20] = irradiance[rgb, SH.L20];
+                    output[rgb, SH.L20] *= shY20Normalization; // 1)
+                    output[rgb, SH.L20] /= Mathf.PI; // 2)
+
+                    output[rgb, SH.L21] = irradiance[rgb, SH.L21];
+                    output[rgb, SH.L21] *= shY21Normalization; // 1)
+                    output[rgb, SH.L21] /= Mathf.PI; // 2)
+
+                    output[rgb, SH.L22] = irradiance[rgb, SH.L22];
+                    output[rgb, SH.L22] *= shY22Normalization; // 1)
+                    output[rgb, SH.L22] /= Mathf.PI; // 2)
                 }
                 IrradianceOut[probeIdx] = output;
             }
@@ -255,6 +268,16 @@ namespace UnityEngine.LightTransport
                 if (context is not ReferenceContext refContext)
                     return false;
 
+                float shY0Normalization = Mathf.Sqrt(1.0f / Mathf.PI) / 2.0f;
+
+                float shY1Normalization = Mathf.Sqrt(3.0f / Mathf.PI) / 2.0f;
+
+                float shY2_2Normalization = Mathf.Sqrt(15.0f / Mathf.PI) / 2.0f;
+                float shY2_1Normalization = shY2_2Normalization;
+                float shY20Normalization = Mathf.Sqrt(5.0f / Mathf.PI) / 4.0f;
+                float shY21Normalization = shY2_2Normalization;
+                float shY22Normalization = Mathf.Sqrt(15.0f / Mathf.PI) / 4.0f;
+
                 NativeArray<byte> irradianceInNativeArray = refContext.GetNativeArray(irradianceIn.Id);
                 NativeArray<byte> irradianceOutNativeArray = refContext.GetNativeArray(irradianceOut.Id);
                 NativeArray<SphericalHarmonicsL2> IrradianceIn = irradianceInNativeArray.Reinterpret<SphericalHarmonicsL2>(1);
@@ -266,14 +289,11 @@ namespace UnityEngine.LightTransport
                     for (int rgb = 0; rgb < 3; ++rgb)
                     {
                         // L0
-                        float shY0Normalization = Mathf.Sqrt(1.0f / Mathf.PI) / 2.0f;
                         output[rgb, SH.L00] = irradiance[rgb, SH.L00];
                         output[rgb, SH.L00] *= shY0Normalization; // 1)
                         output[rgb, SH.L00] /= Mathf.PI; // 2)
 
                         // L1
-                        float shY1Normalization = Mathf.Sqrt(3.0f / Mathf.PI) / 2.0f;
-
                         output[rgb, SH.L1_1] = irradiance[rgb, SH.L10]; // 3)
                         output[rgb, SH.L1_1] *= shY1Normalization; // 1)
                         output[rgb, SH.L1_1] /= Mathf.PI; // 3 )
@@ -287,15 +307,25 @@ namespace UnityEngine.LightTransport
                         output[rgb, SH.L11] /= Mathf.PI; // 2)
 
                         // L2
-                        float fC2 = Mathf.Sqrt(15.0f) / (8.0f * Mathf.Sqrt(Mathf.PI));
-                        float fC3 = Mathf.Sqrt(5.0f) / (16.0f * Mathf.Sqrt(Mathf.PI));
-                        float fC4 = 0.5f * fC2;
+                        output[rgb, SH.L2_2] = irradiance[rgb, SH.L2_2];
+                        output[rgb, SH.L2_2] *= shY2_2Normalization; // 1)
+                        output[rgb, SH.L2_2] /= Mathf.PI; // 2)
 
-                        output[rgb, SH.L2_2] = irradiance[rgb, SH.L2_2] * fC2; // 4)
-                        output[rgb, SH.L2_1] = irradiance[rgb, SH.L2_1] * fC2; // 4)
-                        output[rgb, SH.L20] = irradiance[rgb, SH.L20] * fC3; // 4)
-                        output[rgb, SH.L21] = irradiance[rgb, SH.L21] * fC2; // 4)
-                        output[rgb, SH.L22] = irradiance[rgb, SH.L22] * fC4; // 4)
+                        output[rgb, SH.L2_1] = irradiance[rgb, SH.L2_1];
+                        output[rgb, SH.L2_1] *= shY2_1Normalization; // 1)
+                        output[rgb, SH.L2_1] /= Mathf.PI; // 2)
+
+                        output[rgb, SH.L20] = irradiance[rgb, SH.L20];
+                        output[rgb, SH.L20] *= shY20Normalization; // 1)
+                        output[rgb, SH.L20] /= Mathf.PI; // 2)
+
+                        output[rgb, SH.L21] = irradiance[rgb, SH.L21];
+                        output[rgb, SH.L21] *= shY21Normalization; // 1)
+                        output[rgb, SH.L21] /= Mathf.PI; // 2)
+
+                        output[rgb, SH.L22] = irradiance[rgb, SH.L22];
+                        output[rgb, SH.L22] *= shY22Normalization; // 1)
+                        output[rgb, SH.L22] /= Mathf.PI; // 2)
                     }
                     IrradianceOut[probeIdx] = output;
                 }

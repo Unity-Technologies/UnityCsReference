@@ -2,33 +2,39 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEditorInternal;
 using UnityEditor.Presets;
+using UnityEditor.UIElements;
+using UnityEditor.UIElements.ProjectSettings;
+using UnityEditorInternal;
+using UnityEngine;
+using UnityEngine.UIElements;
+using Button = UnityEngine.UIElements.Button;
+using Debug = System.Diagnostics.Debug;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(TagManager))]
     internal class TagManagerInspector : ProjectSettingsBaseEditor
     {
-        protected SerializedProperty m_Tags;
-        protected SerializedProperty m_SortingLayers;
-        protected SerializedProperty m_Layers;
-        ReorderableList m_TagsList;
-        ReorderableList m_SortLayersList;
-        ReorderableList m_LayersList;
+        const string k_ProjectPath = "Project/Tags and Layers";
+        const string k_AssetPath = "ProjectSettings/TagManager.asset";
 
-        protected bool m_IsEditable = false;
+        const string k_BodyTemplate = "UXML/ProjectSettings/TagManagerInspector-Body.uxml";
+        const string k_ProjectSettingsStyleSheet = "StyleSheets/ProjectSettings/ProjectSettingsCommon.uss";
+        internal override string targetTitle => "Tags & Layers";
 
-        private static InitialExpansionState s_InitialExpansionState = InitialExpansionState.None;
+        bool isEditable => AssetDatabase.IsOpenForEdit(k_AssetPath, StatusQueryOptions.UseCachedIfPossible);
+
+        static InitialExpansionState s_InitialExpansionState = InitialExpansionState.None;
+
         internal enum InitialExpansionState
         {
             None = 0,
             Tags = 1,
             Layers = 2,
-            SortingLayers = 3
+            SortingLayers = 3,
+            RenderingLayers = 4
         }
 
         internal class Styles
@@ -36,72 +42,13 @@ namespace UnityEditor
             public static GUIContent tags = EditorGUIUtility.TrTextContent("Tags");
             public static GUIContent sortingLayers = EditorGUIUtility.TrTextContent("Sorting Layers");
             public static GUIContent layers = EditorGUIUtility.TrTextContent("Layers");
+            public static GUIContent renderingLayers = EditorGUIUtility.TrTextContent("Rendering Layers");
+
+            public static float elementHeight = EditorGUIUtility.singleLineHeight + 2;
+            public const float headerListHeight = 3;
         }
 
-        public TagManager tagManager
-        {
-            get { return target as TagManager; }
-        }
-
-        public virtual void OnEnable()
-        {
-            // Tags.
-            m_Tags = serializedObject.FindProperty("tags");
-
-            if (m_TagsList == null)
-            {
-                m_TagsList = new ReorderableList(serializedObject, m_Tags, false, false, true, true);
-                m_TagsList.onAddDropdownCallback = NewElement;
-                m_TagsList.onRemoveCallback = RemoveFromTagsList;
-                m_TagsList.drawElementCallback = DrawTagListElement;
-                m_TagsList.elementHeight = EditorGUIUtility.singleLineHeight + 2;
-                m_TagsList.headerHeight = 3;
-            }
-
-            // Sorting layers.
-            m_SortingLayers = serializedObject.FindProperty("m_SortingLayers");
-            if (m_SortLayersList == null)
-            {
-                m_SortLayersList = new ReorderableList(serializedObject, m_SortingLayers, true, false, true, true);
-                m_SortLayersList.onReorderCallback = ReorderSortLayerList;
-                m_SortLayersList.onAddCallback = AddToSortLayerList;
-                m_SortLayersList.onRemoveCallback = RemoveFromSortLayerList;
-                m_SortLayersList.onCanRemoveCallback = CanRemoveSortLayerEntry;
-                m_SortLayersList.drawElementCallback = DrawSortLayerListElement;
-                m_SortLayersList.elementHeight = EditorGUIUtility.singleLineHeight + 2;
-                m_SortLayersList.headerHeight = 3;
-            }
-            // Layers.
-            m_Layers = serializedObject.FindProperty("layers");
-            System.Diagnostics.Debug.Assert(m_Layers.arraySize ==  32);
-            if (m_LayersList == null)
-            {
-                m_LayersList = new ReorderableList(serializedObject, m_Layers, false, false, false, false);
-                m_LayersList.drawElementCallback = DrawLayerListElement;
-                m_LayersList.elementHeight = EditorGUIUtility.singleLineHeight + 2;
-                m_LayersList.headerHeight = 3;
-            }
-
-            if (s_InitialExpansionState != InitialExpansionState.None)
-            {
-                m_Tags.isExpanded = false;
-                m_SortingLayers.isExpanded = false;
-                m_Layers.isExpanded = false;
-                switch (s_InitialExpansionState)
-                {
-                    case InitialExpansionState.Tags:
-                        m_Tags.isExpanded = true;
-                        break;
-                    case InitialExpansionState.Layers:
-                        m_Layers.isExpanded = true;
-                        break;
-                    case InitialExpansionState.SortingLayers:
-                        m_SortingLayers.isExpanded = true;
-                        break;
-                }
-                s_InitialExpansionState = InitialExpansionState.None;
-            }
-        }
+        public TagManager tagManager => target as TagManager;
 
         internal static void ShowWithInitialExpansion(InitialExpansionState initialExpansionState)
         {
@@ -109,38 +56,345 @@ namespace UnityEditor
             Selection.activeObject = EditorApplication.tagManager;
         }
 
-        class EnterNamePopup : PopupWindowContent
+        #region Sorting Layers
+
+        bool CanEditSortLayerEntry(int index)
+        {
+            if (index < 0 || index >= tagManager.GetSortingLayerCount())
+                return false;
+            return !tagManager.IsSortingLayerDefault(index);
+        }
+
+        #endregion
+
+        public override VisualElement CreateInspectorGUI()
+        {
+            var visualTreeAsset = EditorGUIUtility.Load(k_BodyTemplate) as VisualTreeAsset;
+            var content = visualTreeAsset.Instantiate();
+
+            var tagsProperty = serializedObject.FindProperty("tags");
+            var sortingLayersProperty = serializedObject.FindProperty("m_SortingLayers");
+            var layersProperty = serializedObject.FindProperty("layers");
+            var renderingLayersProperty = serializedObject.FindProperty("m_RenderingLayers");
+
+            Debug.Assert(layersProperty.arraySize == 32);
+            Debug.Assert(renderingLayersProperty.arraySize == 32);
+
+            var tagsList = SetupTags(content, tagsProperty);
+            var sortingLayers = SetupSortingLayers(content, sortingLayersProperty);
+            var layers = SetupLayers(content, layersProperty);
+            var renderingLayers = SetupRenderingLayers(content, renderingLayersProperty);
+
+            if (s_InitialExpansionState != InitialExpansionState.None)
+            {
+                tagsProperty.isExpanded = false;
+                sortingLayersProperty.isExpanded = false;
+                layersProperty.isExpanded = false;
+                renderingLayersProperty.isExpanded = false;
+                switch (s_InitialExpansionState)
+                {
+                    case InitialExpansionState.Tags:
+                        tagsProperty.isExpanded = true;
+                        tagsList.Q<Foldout>().value = true;
+                        break;
+                    case InitialExpansionState.SortingLayers:
+                        sortingLayersProperty.isExpanded = true;
+                        sortingLayers.Q<Foldout>().value = true;
+                        break;
+                    case InitialExpansionState.Layers:
+                        layersProperty.isExpanded = true;
+                        layers.Q<Foldout>().value = true;
+                        break;
+                    case InitialExpansionState.RenderingLayers:
+                        renderingLayersProperty.isExpanded = true;
+                        renderingLayers.Q<Foldout>().value = true;
+                        break;
+                }
+
+                s_InitialExpansionState = InitialExpansionState.None;
+            }
+
+            content.Bind(serializedObject);
+            return content;
+        }
+
+        VisualElement SetupTags(VisualElement content, SerializedProperty tagsProperty)
+        {
+            var tagsList = content.Q<ListView>("Tags");
+            tagsList.fixedItemHeight = Styles.elementHeight;
+            tagsList.headerTitle = Styles.tags.text;
+            tagsList.makeItem = () =>
+            {
+                var tagListElement = new VisualElement { classList = { "tag-list__element" } };
+                tagListElement.Add(new Label()
+                {
+                    name = "Title",
+                    classList = { "tag-list__element__title" }
+                });
+                tagListElement.Add(new Label
+                {
+                    name = "Value"
+                });
+                return tagListElement;
+            };
+            tagsList.bindItem = (ve, index) =>
+            {
+                ve.Q<Label>("Title").text = $"Tag {index}";
+                ve.Q<Label>("Value").text = index < tagsProperty.arraySize
+                    ? tagsProperty.GetArrayElementAtIndex(index).stringValue
+                    : "Unknown";
+            };
+            tagsList.onAdd += (listView) =>
+            {
+                var addButton = listView.Q<Button>("unity-list-view__add-button");
+                PopupWindow.Show(addButton.worldBound, new EnterTagNamePopup(tagsProperty, s =>
+                {
+                    tagManager.AddTag(s);
+                    serializedObject.ApplyModifiedProperties();
+                }));
+            };
+            tagsList.onRemove += (listView) =>
+            {
+                if (tagsProperty.arraySize == 0)
+                    return;
+
+                var indexForRemoval = listView.selectedIndex;
+                if (indexForRemoval == -1)
+                    indexForRemoval = tagsProperty.arraySize - 1;
+
+                var tag = tagsProperty.GetArrayElementAtIndex(indexForRemoval).stringValue;
+                if (string.IsNullOrEmpty(tag))
+                    return;
+
+                var isPreset = Preset.IsEditorTargetAPreset(target);
+                if (!isPreset)
+                {
+                    var go = GameObject.FindWithTag(tag);
+                    if (go != null)
+                    {
+                        EditorUtility.DisplayDialog("Error", "Can't remove this tag because it is being used by " + go.name, "OK");
+                        return;
+                    }
+                }
+
+                tagManager.RemoveTag(tag);
+                serializedObject.ApplyModifiedProperties();
+            };
+            //TextFields in Array are not bind correctly so we need to refresh them manually
+            content.TrackPropertyValue(tagsProperty, sp => tagsList.RefreshItems());
+            return tagsList;
+        }
+
+        VisualElement SetupSortingLayers(VisualElement content, SerializedProperty sortingLayersProperty)
+        {
+            var sortingLayers = content.Q<ListView>("SortingLayers");
+            sortingLayers.fixedItemHeight = Styles.elementHeight;
+            sortingLayers.headerTitle = Styles.sortingLayers.text;
+            sortingLayers.makeItem = () => new TextField();
+
+            void SortingLayersChanged(ChangeEvent<string> evt)
+            {
+                if (evt.target is not TextField textField)
+                    return;
+                evt.StopPropagation();
+                var index = (int)textField.userData;
+                tagManager.SetSortingLayerName(index, evt.newValue);
+                serializedObject.ApplyModifiedProperties();
+            }
+
+            sortingLayers.bindItem = (ve, index) =>
+            {
+                var textField = ve as TextField;
+                textField.label = $"Layer {index}";
+                textField.SetValueWithoutNotify(tagManager.GetSortingLayerName(index));
+
+                var isEnable = isEditable && CanEditSortLayerEntry(index);
+                textField.SetEnabled(isEnable);
+                textField.userData = index;
+
+                textField.RegisterValueChangedCallback(SortingLayersChanged);
+            };
+            sortingLayers.unbindItem = (ve, index) =>
+            {
+                var textField = ve as TextField;
+                textField.UnregisterValueChangedCallback(SortingLayersChanged);
+            };
+            sortingLayers.itemIndexChanged += (prev, next) =>
+            {
+                serializedObject.ApplyModifiedProperties();
+                tagManager.UpdateSortingLayersOrder();
+            };
+            sortingLayers.onAdd += (listView) =>
+            {
+                serializedObject.ApplyModifiedProperties();
+                tagManager.AddSortingLayer();
+                serializedObject.Update();
+
+                listView.selectedIndex = tagManager.GetSortingLayerCount() - 1; // select just added one
+
+                if (SortingLayer.onLayerAdded != null)
+                    SortingLayer.onLayerAdded(SortingLayer.layers[listView.selectedIndex]);
+            };
+            sortingLayers.onRemove += (listView) =>
+            {
+                if (tagManager.GetSortingLayerCount() == 0 || !CanEditSortLayerEntry(listView.selectedIndex))
+                    return;
+
+                if (SortingLayer.onLayerRemoved != null)
+                    SortingLayer.onLayerRemoved(SortingLayer.layers[listView.selectedIndex]);
+
+                listView.viewController.RemoveItem(listView.selectedIndex);
+                serializedObject.ApplyModifiedProperties();
+                serializedObject.Update();
+                tagManager.UpdateSortingLayersOrder();
+            };
+            //TextFields in Array are not bind correctly so we need to refresh them manually
+            content.TrackPropertyValue(sortingLayersProperty, sp => sortingLayers.RefreshItems());
+            return sortingLayers;
+        }
+
+        VisualElement SetupLayers(VisualElement content, SerializedProperty layersProperty)
+        {
+            var layers = content.Q<ListView>("Layers");
+            layers.fixedItemHeight = Styles.elementHeight;
+            layers.headerTitle = Styles.layers.text;
+            layers.makeItem = () => new TextField();
+
+            void LayersChanged(ChangeEvent<string> evt)
+            {
+                if (evt.target is not TextField textField)
+                    return;
+                evt.StopPropagation();
+                var index = (int)textField.userData;
+                layersProperty.GetArrayElementAtIndex(index).stringValue = evt.newValue;
+                serializedObject.ApplyModifiedProperties();
+            }
+
+            layers.bindItem = (ve, index) =>
+            {
+                // Layers up to 8 used to be reserved for Builtin Layers
+                // As layers with indices 3, 6 and 7 were empty,
+                // it was decided to change them to User Layers
+                // However, we cannot shift layers around so we need to explicitly handle
+                // the gap where layer index == 3 in the layer stack
+                var isUserLayer = index is > 5 or 3;
+                var editable = isEditable && isUserLayer;
+
+                var textField = ve as TextField;
+                var layerName = layersProperty.GetArrayElementAtIndex(index).stringValue;
+
+                textField.label = isUserLayer ? $" User Layer {index}" : $" Builtin Layer {index}";
+                textField.SetValueWithoutNotify(layerName);
+                textField.SetEnabled(editable);
+                textField.userData = index;
+
+                textField.RegisterValueChangedCallback(LayersChanged);
+            };
+            layers.unbindItem = (ve, index) =>
+            {
+                var textField = ve as TextField;
+                textField.UnregisterValueChangedCallback(LayersChanged);
+            };
+            //TextFields in Array are not bind correctly so we need to refresh them manually
+            content.TrackPropertyValue(layersProperty, sp => layers.RefreshItems());
+            return layers;
+        }
+
+        VisualElement SetupRenderingLayers(VisualElement content, SerializedProperty renderingLayersProperty)
+        {
+            var renderingLayers = content.Q<ListView>("RenderingLayers");
+            if (!Unsupported.IsDeveloperMode())
+            {
+                renderingLayers.style.display = DisplayStyle.None;
+                return renderingLayers;
+            }
+
+            renderingLayers.fixedItemHeight = Styles.elementHeight;
+            renderingLayers.headerTitle = Styles.renderingLayers.text;
+            renderingLayers.makeItem = () => new TextField();
+
+            void RenderingLayersChanged(ChangeEvent<string> evt)
+            {
+                if (evt.target is not TextField textField)
+                    return;
+                evt.StopPropagation();
+                var index = (int)textField.userData;
+                renderingLayersProperty.GetArrayElementAtIndex(index).stringValue = evt.newValue;
+                serializedObject.ApplyModifiedProperties();
+            }
+
+            renderingLayers.bindItem = (ve, index) =>
+            {
+                var textField = ve as TextField;
+                textField.label = $" Rendering Layer {index}";
+                textField.SetValueWithoutNotify(tagManager.RenderingLayerToString(index));
+
+                var isEnabled = isEditable && !tagManager.IsIndexReservedForDefaultRenderingLayer(index);
+                textField.SetEnabled(isEnabled);
+                textField.userData = index;
+
+                textField.RegisterValueChangedCallback(RenderingLayersChanged);
+            };
+            renderingLayers.unbindItem = (ve, index) =>
+            {
+                var textField = ve as TextField;
+                textField.UnregisterValueChangedCallback(RenderingLayersChanged);
+            };
+            //TextFields in Array are not bind correctly so we need to refresh them manually
+            content.TrackPropertyValue(renderingLayersProperty, sp => renderingLayers.RefreshItems());
+            return renderingLayers;
+        }
+
+        [SettingsProvider]
+        static SettingsProvider CreateProjectSettingsProvider()
+        {
+            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(k_ProjectPath, k_AssetPath, SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>());
+            provider.activateHandler = (text, root) =>
+            {
+                var serializedObject = provider.settingsEditor.serializedObject;
+                var titleBar = new ProjectSettingsTitleBar("Tags and Layers");
+                titleBar.Initialize(serializedObject);
+
+                var styleSheet = EditorGUIUtility.Load(k_ProjectSettingsStyleSheet) as StyleSheet;
+                root.styleSheets.Add(styleSheet);
+
+                root.Add(titleBar);
+                root.Add(provider.settingsEditor.CreateInspectorGUI());
+            };
+            return provider;
+        }
+
+        class EnterTagNamePopup : PopupWindowContent
         {
             public delegate void EnterDelegate(string str);
-            readonly EnterDelegate EnterCB;
-            private string m_NewTagName = "New tag";
-            private bool m_NeedsFocus = true;
 
-            public EnterNamePopup(SerializedProperty tags, EnterDelegate cb)
+            readonly EnterDelegate m_EnterCallback;
+            string m_NewTagName = "New tag";
+            bool m_NeedsFocus = true;
+
+            public EnterTagNamePopup(SerializedProperty tags, EnterDelegate callback)
             {
-                EnterCB = cb;
+                m_EnterCallback = callback;
 
-
-                List<string> existingTagNames = new List<string>();
-                for (int i = 0; i < tags.arraySize; i++)
+                var existingTagNames = new List<string>();
+                for (var i = 0; i < tags.arraySize; i++)
                 {
-                    string tagName = tags.GetArrayElementAtIndex(i).stringValue;
+                    var tagName = tags.GetArrayElementAtIndex(i).stringValue;
                     if (!string.IsNullOrEmpty(tagName))
                         existingTagNames.Add(tagName);
                 }
+
                 m_NewTagName = ObjectNames.GetUniqueName(existingTagNames.ToArray(), m_NewTagName);
             }
 
-            public override Vector2 GetWindowSize()
-            {
-                return new Vector2(400, EditorGUI.kSingleLineHeight * 2 + EditorGUI.kControlVerticalSpacing + 14);
-            }
+            public override Vector2 GetWindowSize() =>
+                new(400, EditorGUI.kSingleLineHeight * 2 + EditorGUI.kControlVerticalSpacing + 14);
 
             public override void OnGUI(Rect windowRect)
             {
                 GUILayout.Space(5);
-                Event evt = Event.current;
-                bool hitEnter = evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter);
+                var evt = Event.current;
+                var hitEnter = evt.type == EventType.KeyDown && evt.keyCode is KeyCode.Return or KeyCode.KeypadEnter;
                 GUI.SetNextControlName("TagName");
                 m_NewTagName = EditorGUILayout.TextField("New Tag Name", m_NewTagName);
 
@@ -152,239 +406,11 @@ namespace UnityEditor
 
                 GUI.enabled = m_NewTagName.Length != 0;
                 var savePressed = GUILayout.Button("Save");
-                if (!string.IsNullOrWhiteSpace(m_NewTagName) && (savePressed || hitEnter))
-                {
-                    EnterCB(m_NewTagName);
-                    editorWindow.Close();
-                }
-            }
-        }
-
-        void NewElement(Rect buttonRect, ReorderableList list)
-        {
-            int sizeBeforeupdate = list.count;
-            string[] tagListBeforeUpdate = tagManager.tags;
-
-            buttonRect.x -= 400;
-            buttonRect.y -= 13;
-            PopupWindow.Show(buttonRect, new EnterNamePopup(m_Tags, s => {
-                tagManager.AddTag(s);
-                serializedObject.Update();
-
-                string[] tagListAfterUpdate = tagManager.tags;
-                int nativeObjCount = tagListAfterUpdate.Length;
-
-                int pos = Array.IndexOf(tagListBeforeUpdate, s);
-                if (pos == -1)
-                {
-                    if (sizeBeforeupdate == list.count)
-                    {
-                        SerializedProperty arraySize = list.serializedProperty.FindPropertyRelative("Array.size");
-                        arraySize.intValue++;
-                        list.index = list.serializedProperty.arraySize - 1;
-                        list.serializedProperty.GetArrayElementAtIndex(list.index).stringValue = tagListAfterUpdate[tagListAfterUpdate.Length - 1];
-                        arraySize.serializedObject.ApplyModifiedProperties();
-                        list.serializedProperty.serializedObject.ApplyModifiedProperties();
-                    }
-                }
-            }));
-        }
-
-        private void RemoveFromTagsList(ReorderableList list)
-        {
-            SerializedProperty tag = m_Tags.GetArrayElementAtIndex(list.index);
-            if (tag.stringValue == "") return;
-
-            bool isPreset = Preset.IsEditorTargetAPreset(target);
-            if (!isPreset)
-            {
-                GameObject go = GameObject.FindWithTag(tag.stringValue);
-                if (go != null)
-                {
-                    EditorUtility.DisplayDialog("Error", "Can't remove this tag because it is being used by " + go.name, "OK");
+                if (string.IsNullOrWhiteSpace(m_NewTagName) || (!savePressed && !hitEnter))
                     return;
-                }
+                m_EnterCallback(m_NewTagName);
+                editorWindow.Close();
             }
-
-            tagManager.RemoveTag(tag.stringValue);
-        }
-
-        private void DrawTagListElement(Rect rect, int index, bool selected, bool focused)
-        {
-            // nicer looking with selected list row and a text field in it
-            rect.yMin += 1;
-            rect.yMax -= 1;
-
-            string name = m_Tags.GetArrayElementAtIndex(index).stringValue;
-            EditorGUI.LabelField(rect, " Tag " + index, name);
-        }
-
-        void AddToSortLayerList(ReorderableList list)
-        {
-            int sizeBeforeupdate = list.count;
-            int nativeObjCount = tagManager.GetSortingLayerCount();
-
-            if (nativeObjCount <= list.count)
-            {
-                serializedObject.ApplyModifiedProperties();
-                tagManager.AddSortingLayer();
-                serializedObject.Update();
-            }
-
-            list.index = list.serializedProperty.arraySize - 1; // select just added one
-
-            if (sizeBeforeupdate == list.count)
-            {
-                SerializedProperty arraySize = list.serializedProperty.FindPropertyRelative("Array.size");
-                arraySize.intValue++;
-                arraySize.serializedObject.ApplyModifiedProperties();
-                list.serializedProperty.GetArrayElementAtIndex(list.index).FindPropertyRelative("name").stringValue = "New Layer";
-                list.serializedProperty.serializedObject.ApplyModifiedProperties();
-            }
-
-            if (SortingLayer.onLayerAdded != null)
-                SortingLayer.onLayerAdded(SortingLayer.layers[list.index]);
-        }
-
-        public void ReorderSortLayerList(ReorderableList list)
-        {
-            serializedObject.ApplyModifiedProperties();
-            tagManager.UpdateSortingLayersOrder();
-        }
-
-        private void RemoveFromSortLayerList(ReorderableList list)
-        {
-            if (SortingLayer.onLayerRemoved != null)
-                SortingLayer.onLayerRemoved(SortingLayer.layers[list.index]);
-
-            ReorderableList.defaultBehaviours.DoRemoveButton(list);
-            serializedObject.ApplyModifiedProperties();
-            serializedObject.Update();
-            tagManager.UpdateSortingLayersOrder();
-        }
-
-        private bool CanEditSortLayerEntry(int index)
-        {
-            if (index < 0 || index >= tagManager.GetSortingLayerCount())
-                return false;
-            return !tagManager.IsSortingLayerDefault(index);
-        }
-
-        private bool CanRemoveSortLayerEntry(ReorderableList list)
-        {
-            return CanEditSortLayerEntry(list.index);
-        }
-
-        private void DrawSortLayerListElement(Rect rect, int index, bool selected, bool focused)
-        {
-            // nicer looking with selected list row and a text field in it
-            rect.yMin += 1;
-            rect.yMax -= 1;
-
-            bool oldEnabled = GUI.enabled;
-            GUI.enabled = m_IsEditable && CanEditSortLayerEntry(index);
-
-            string oldName = tagManager.GetSortingLayerName(index);
-            string newName = EditorGUI.TextField(rect, " Layer " + index, oldName);
-            if (newName != oldName)
-            {
-                serializedObject.ApplyModifiedProperties();
-                tagManager.SetSortingLayerName(index, newName);
-                serializedObject.Update();
-            }
-
-            GUI.enabled = oldEnabled;
-        }
-
-        private void DrawLayerListElement(Rect rect, int index, bool selected, bool focused)
-        {
-            // nicer looking with selected list row and a text field in it
-            rect.yMin += 1;
-            rect.yMax -= 1;
-
-            // Layers up to 8 used to be reserved for Builtin Layers
-            // As layers with indices 3, 6 and 7 were empty,
-            // it was decided to change them to User Layers
-            // However, we cannot shift layers around so we need to explicitly handle
-            // the gap where layer index == 3 in the layer stack
-            bool isUserLayer = index > 5 || index == 3;
-
-            bool oldEnabled = GUI.enabled;
-            GUI.enabled = m_IsEditable && isUserLayer;
-
-            string oldName = m_Layers.GetArrayElementAtIndex(index).stringValue;
-            string newName;
-            if (isUserLayer)
-            {
-                newName = EditorGUI.TextField(rect, " User Layer " + index, oldName);
-            }
-            else
-            {
-                newName = EditorGUI.TextField(rect, " Builtin Layer " + index, oldName);
-            }
-
-            if (newName != oldName)
-            {
-                m_Layers.GetArrayElementAtIndex(index).stringValue = newName;
-            }
-
-            GUI.enabled = oldEnabled;
-        }
-
-        // Want something better than "TagManager"
-        internal override string targetTitle
-        {
-            get { return "Tags & Layers"; }
-        }
-
-        public override void OnInspectorGUI()
-        {
-            serializedObject.Update();
-
-            m_IsEditable = AssetDatabase.IsOpenForEdit("ProjectSettings/TagManager.asset", StatusQueryOptions.UseCachedIfPossible);
-
-            bool oldEnabled = GUI.enabled;
-            GUI.enabled = m_IsEditable;
-
-            // Tags
-            m_Tags.isExpanded = EditorGUILayout.Foldout(m_Tags.isExpanded, Styles.tags, true);
-            if (m_Tags.isExpanded)
-            {
-                EditorGUI.indentLevel++;
-                m_TagsList.DoLayoutList();
-                EditorGUI.indentLevel--;
-            }
-
-            // Sorting layers
-            m_SortingLayers.isExpanded = EditorGUILayout.Foldout(m_SortingLayers.isExpanded, Styles.sortingLayers, true);
-            if (m_SortingLayers.isExpanded)
-            {
-                EditorGUI.indentLevel++;
-                m_SortLayersList.DoLayoutList();
-                EditorGUI.indentLevel--;
-            }
-
-            // Layers
-            m_Layers.isExpanded = EditorGUILayout.Foldout(m_Layers.isExpanded, Styles.layers, true);
-            if (m_Layers.isExpanded)
-            {
-                EditorGUI.indentLevel++;
-                m_LayersList.DoLayoutList();
-                EditorGUI.indentLevel--;
-            }
-
-            GUI.enabled = oldEnabled;
-
-            serializedObject.ApplyModifiedProperties();
-        }
-
-        [SettingsProvider]
-        static SettingsProvider CreateProjectSettingsProvider()
-        {
-            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
-                "Project/Tags and Layers", "ProjectSettings/TagManager.asset",
-                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>());
-            return provider;
         }
     }
 }

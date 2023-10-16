@@ -300,7 +300,7 @@ namespace UnityEditor.SceneTemplate
             {
                 defaultInstantiationMode = TemplateInstantiationMode.Clone,
             });
-            defaultDependencyTypeInfos.Add(new DependencyTypeInfo("UnityEngine.PhysicMaterial")
+            defaultDependencyTypeInfos.Add(new DependencyTypeInfo("UnityEngine.PhysicsMaterial")
             {
                 defaultInstantiationMode = TemplateInstantiationMode.Clone,
             });

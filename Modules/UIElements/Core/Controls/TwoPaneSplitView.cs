@@ -9,7 +9,7 @@ using Unity.Properties;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A SplitView that contains two resizable panes. One pane is fixed-size while the other pane has flex-grow style set to 1 to take all remaining space. The border between he panes is draggable to resize both panes. Both horizontal and vertical modes are supported. Requires _exactly_ two child elements to operate.
+    /// A SplitView that contains two resizable panes. One pane is fixed-size while the other pane has flex-grow style set to 1 to take all remaining space. The border between the panes is draggable to resize both panes. Both horizontal and vertical modes are supported. Requires exactly two child elements to operate.
     /// </summary>
     public class TwoPaneSplitView : VisualElement
     {

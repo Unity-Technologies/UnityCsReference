@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Styled visual element that matches the EditorGUILayout.Popup IMGUI element. This element doesn't have any functionality. It's just a container with a border and a title, rather than a window or popup.
+    /// Styled visual text element. This element doesn't have any functionality. It's just a container with a border and a title, rather than a window or popup.
     /// </summary>
     /// <example>
     /// <code>

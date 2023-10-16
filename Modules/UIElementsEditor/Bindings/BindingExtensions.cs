@@ -1149,7 +1149,10 @@ namespace UnityEditor.UIElements.Bindings
                         context.Bind(element);
                         break;
                     case RequestType.DelayBind:
-                        context.ContinueBinding(element, parentProperty);
+                        if (context.IsValid())  // Sometimes our serializedObject might have vanished, after a domain reload
+                        {
+                            context.ContinueBinding(element, parentProperty);
+                        }
                         break;
                     case RequestType.TrackProperty:
                     {

@@ -76,7 +76,13 @@ namespace UnityEditor.Modules
             internal virtual void OnGUI(PluginImporterInspector inspector)
             {
                 if (type == typeof(bool)) value = EditorGUILayout.Toggle(name, (bool)value);
-                else if (type.IsEnum) value = EditorGUILayout.EnumPopup(name, (Enum)value);
+                else if (type.IsEnum)
+                {
+                    if (type.GetCustomAttributes(typeof(FlagsAttribute), false).Length > 0)
+                        value = EditorGUILayout.EnumFlagsField(name, (Enum)value);
+                    else
+                        value = EditorGUILayout.EnumPopup(name, (Enum)value);
+                }
                 else if (type == typeof(string)) value = EditorGUILayout.TextField(name, (string)value);
                 else throw new NotImplementedException("Don't know how to display value.");
             }

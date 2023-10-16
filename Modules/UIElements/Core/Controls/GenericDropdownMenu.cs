@@ -341,6 +341,7 @@ namespace UnityEngine.UIElements
             m_ListView.itemsSource = Array.Empty<MenuItem>();
             m_ListView.Rebuild();
             m_ListView.EnableInClassList(latentUssClassName, false);
+            m_ListView.EnableInClassList(clickUssClassName, false);
             m_ListView.RemoveFromHierarchy();
             s_ListPool.Release(m_ListView);
 

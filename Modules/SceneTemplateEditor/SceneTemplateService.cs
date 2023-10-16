@@ -669,7 +669,7 @@ namespace UnityEditor.SceneTemplate
             EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
         }
 
-        [MenuItem("Assets/Create/Scene Template From Scene", priority = 201, secondaryPriority = 2)]
+        [MenuItem("Assets/Create/Scene/Scene Template From Scene", priority = 3, secondaryPriority = 2)]
         private static void CreateTemplateFromScene()
         {
             var sourceSceneAsset = Selection.activeObject as SceneAsset;
@@ -679,7 +679,7 @@ namespace UnityEditor.SceneTemplate
             CreateTemplateFromScene(sourceSceneAsset, null, SceneTemplateAnalytics.TemplateCreationType.CreateFromTargetSceneMenu);
         }
 
-        [MenuItem("Assets/Create/Scene Template From Scene", validate = true)]
+        [MenuItem("Assets/Create/Scene/Scene Template From Scene", true)]
         private static bool ValidateCreateTemplateFromScene()
         {
             return Selection.activeObject is SceneAsset;

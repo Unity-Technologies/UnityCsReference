@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Build;
 using UnityEngine;
 using UnityEngine.Bindings;
 
@@ -62,70 +63,69 @@ namespace UnityEditor
 
         public bool ContainsSampleSettingsOverride(string platform)
         {
-            return ValidatePlatform(platform, "AudioImporter.ContainsSampleSettingsOverride", out BuildTargetGroup platformGroup) ?
-                Internal_ContainsSampleSettingsOverride(platformGroup) :
+            return ValidatePlatform(platform, "AudioImporter.ContainsSampleSettingsOverride") ?
+                Internal_ContainsSampleSettingsOverride(platform) :
                 false;
         }
         public bool ContainsSampleSettingsOverride(BuildTargetGroup platformGroup)
         {
             return ValidatePlatform(platformGroup, "AudioImporter.ContainsSampleSettingsOverride") ?
-                Internal_ContainsSampleSettingsOverride(platformGroup) :
+                Internal_ContainsSampleSettingsOverride(NamedBuildTarget.FromBuildTargetGroup(platformGroup).TargetName) :
                 false;
         }
 
         [NativeName("ContainsSampleSettingsOverride")]
-        internal extern bool Internal_ContainsSampleSettingsOverride(BuildTargetGroup platformGroup);
+        internal extern bool Internal_ContainsSampleSettingsOverride(string platform);
 
         public AudioImporterSampleSettings GetOverrideSampleSettings(string platform)
         {
-            return ValidatePlatform(platform, "AudioImporter.GetOverrideSampleSettings", out BuildTargetGroup platformGroup) ?
-                Internal_GetOverrideSampleSettings(platformGroup) :
+            return ValidatePlatform(platform, "AudioImporter.GetOverrideSampleSettings") ?
+                Internal_GetOverrideSampleSettings(platform) :
                 defaultSampleSettings;
         }
         public AudioImporterSampleSettings GetOverrideSampleSettings(BuildTargetGroup platformGroup)
         {
             return ValidatePlatform(platformGroup, "AudioImporter.GetOverrideSampleSettings") ?
-                Internal_GetOverrideSampleSettings(platformGroup) :
+                Internal_GetOverrideSampleSettings(NamedBuildTarget.FromBuildTargetGroup(platformGroup).TargetName) :
                 defaultSampleSettings;
         }
 
         [NativeName("GetTranslatedSettingsForPlatform")]
-        internal extern AudioImporterSampleSettings Internal_GetOverrideSampleSettings(BuildTargetGroup platformGroup);
+        internal extern AudioImporterSampleSettings Internal_GetOverrideSampleSettings(string platform);
 
         public bool SetOverrideSampleSettings(string platform, AudioImporterSampleSettings settings)
         {
-            return ValidatePlatform(platform, "AudioImporter.SetOverrideSampleSettings", out BuildTargetGroup platformGroup) ?
-                Internal_SetOverrideSampleSettings(platformGroup, settings) :
+            return ValidatePlatform(platform, "AudioImporter.SetOverrideSampleSettings") ?
+                Internal_SetOverrideSampleSettings(platform, settings) :
                 false;
         }
         public bool SetOverrideSampleSettings(BuildTargetGroup platformGroup, AudioImporterSampleSettings settings)
         {
             return ValidatePlatform(platformGroup, "AudioImporter.SetOverrideSampleSettings") ?
-                Internal_SetOverrideSampleSettings(platformGroup, settings) :
+                Internal_SetOverrideSampleSettings(NamedBuildTarget.FromBuildTargetGroup(platformGroup).TargetName, settings) :
                 false;
         }
 
 
         [NativeName("SetSampleSettingsForPlatform")]
-        internal extern bool Internal_SetOverrideSampleSettings(BuildTargetGroup platformGroup, AudioImporterSampleSettings settings);
+        internal extern bool Internal_SetOverrideSampleSettings(string platform, AudioImporterSampleSettings settings);
 
         public bool ClearSampleSettingOverride(string platform)
         {
-            return ValidatePlatform(platform, "AudioImporter.ClearSampleSettingOverride", out BuildTargetGroup platformGroup) ?
-                Internal_ClearSampleSettingOverride(platformGroup) :
+            return ValidatePlatform(platform, "AudioImporter.ClearSampleSettingOverride") ?
+                Internal_ClearSampleSettingOverride(platform) :
                 false;
         }
         public bool ClearSampleSettingOverride(BuildTargetGroup platformGroup)
         {
             return ValidatePlatform(platformGroup, "AudioImporter.ClearSampleSettingOverride") ?
-                Internal_ClearSampleSettingOverride(platformGroup) :
+                Internal_ClearSampleSettingOverride(NamedBuildTarget.FromBuildTargetGroup(platformGroup).TargetName) :
                 false;
         }
 
-        private static bool ValidatePlatform(string platformName, string methodName, out BuildTargetGroup group)
+        private static bool ValidatePlatform(string platformName, string methodName)
         {
-            group = BuildPipeline.GetBuildTargetGroupByName(platformName);
-            return ValidatePlatform(group, methodName);
+            return ValidatePlatform(BuildPipeline.GetBuildTargetGroupByName(platformName), methodName);
         }
 
         private static bool ValidatePlatform(BuildTargetGroup platformGroup, string methodName)
@@ -138,7 +138,7 @@ namespace UnityEditor
         }
 
         [NativeName("ClearSampleSettingOverride")]
-        internal extern bool Internal_ClearSampleSettingOverride(BuildTargetGroup platformGroup);
+        internal extern bool Internal_ClearSampleSettingOverride(string platformGroup);
 
         // Force this clip to mono?
         public extern bool forceToMono { get; set; }

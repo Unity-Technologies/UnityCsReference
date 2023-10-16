@@ -48,7 +48,7 @@ namespace UnityEngine.Analytics
     {
         public BatchRenderGroupUsageAnalytic() : base("brgUsageEvent", 1) { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         public static BatchRenderGroupUsageAnalytic CreateBatchRenderGroupUsageAnalytic() { return new BatchRenderGroupUsageAnalytic(); }
 
         public int maxBRGInstance;
@@ -64,7 +64,7 @@ namespace UnityEngine.Analytics
     {
         public UaaLApplicationLaunchAnalytic() : base("UaaLApplicationLaunch", 1) { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         public static UaaLApplicationLaunchAnalytic CreateUaaLApplicationLaunchAnalytic() { return new UaaLApplicationLaunchAnalytic(); }
 
         public int launch_type;

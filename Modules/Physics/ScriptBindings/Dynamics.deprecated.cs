@@ -8,28 +8,6 @@ using System.Collections;
 
 namespace UnityEngine
 {
-    public partial class PhysicMaterial
-    {
-        [Obsolete("Use PhysicMaterial.bounciness instead (UnityUpgradable) -> bounciness")]
-        public float bouncyness { get { return bounciness; } set { bounciness = value; } }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
-        public Vector3 frictionDirection2 { get { return Vector3.zero; } set {} }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
-        public float dynamicFriction2 { get { return 0; } set {} }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
-        public float staticFriction2 { get { return 0; } set {} }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
-        public Vector3 frictionDirection { get { return Vector3.zero; } set {} }
-    }
-
     partial struct RaycastHit
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]

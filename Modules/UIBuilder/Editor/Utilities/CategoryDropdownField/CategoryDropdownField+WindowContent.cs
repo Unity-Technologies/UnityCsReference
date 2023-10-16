@@ -265,7 +265,7 @@ namespace Unity.UI.Builder
                                     categoryItem.categoryName == item.displayName)
                                 {
                                     if (categoryItem.displayName.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                        categoryItem.value.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0)
+                                        categoryItem.value?.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0)
                                     {
                                         shouldDisplayCategory = true;
                                         categoryElement.style.display = DisplayStyle.Flex;
@@ -284,7 +284,7 @@ namespace Unity.UI.Builder
                         }
                         case ItemType.Item:
                             if (item.displayName.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                item.value.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0)
+                                item.value?.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0)
                             {
                                 element.style.display = DisplayStyle.Flex;
                             }

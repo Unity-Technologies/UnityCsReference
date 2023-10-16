@@ -284,6 +284,14 @@ namespace UnityEditor.SceneManagement
                 afterSuccessfullySwitchedToStage?.Invoke(stage);
 
                 m_Analytics.ChangingStageEnded(stage, changeTypeAnalytics);
+
+                // Unload assets that are no longer referenced after switching stages (UUM-49014).
+                // If a user is opening one Prefab Asset after another this ensures that we still
+                // keep assets in memory to a minimum.
+                if (stage.stageHandle.isMainStage || setAsFirstItemAfterMainStage)
+                {
+                    EditorUtility.UnloadUnusedAssetsImmediate();
+                }
             }
             else
             {

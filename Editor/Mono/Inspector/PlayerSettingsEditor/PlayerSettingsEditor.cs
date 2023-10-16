@@ -251,12 +251,6 @@ namespace UnityEditor
             public static readonly GUIContent hdrOutputRequireHDRRenderingWarning = EditorGUIUtility.TrTextContent("The active Render Pipeline does not have HDR enabled. Enable HDR in the Render Pipeline Asset to see the changes.");
 
             public static readonly GUIContent captureStartupLogs = EditorGUIUtility.TrTextContent("Capture Startup Logs", "Capture startup logs for later processing (e.g., by com.unity.logging");
-
-            // WebGPU
-            public static readonly GUIContent webGLEnableWebGPU = EditorGUIUtility.TrTextContent("Enable WebGPU Support", "Enable WebGPU. This feature is experimental and not ready for production use. Changing this value will enable the WebGPU Graphics API in the WebGL build target. This option cannot be disabled if WebGPU is enabled in any Graphics API lists. To disable WebGPU Support, first remove it from the Graphics API lists.");
-
-            // End WebGPU
-
             public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings");
             public static readonly string undoChangedGraphicsAPIString              = L10n.Tr("Changed Graphics API Settings");
             public static readonly string undoChangedScriptingDefineString          = L10n.Tr("Changed Scripting Define Settings");
@@ -657,8 +651,8 @@ namespace UnityEditor
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
             m_RequireES32                   = FindPropertyAssert("openGLRequireES32");
 
-            // WebGPU
-            m_WebGPUSupportEnabled           = FindPropertyAssert("webGLEnableWebGPU");
+            // WebGPU - Forcibly enable in source builds to make it easier to test.
+            m_WebGPUSupportEnabled         = FindPropertyAssert("webGLEnableWebGPU");
 
             m_LegacyClampBlendShapeWeights = FindPropertyAssert("legacyClampBlendShapeWeights");
             m_AndroidEnableTango           = FindPropertyAssert("AndroidEnableTango");
@@ -1251,8 +1245,8 @@ namespace UnityEditor
                 availableDevices = availableDeviceList.ToArray();
             }
 
-            // Gate the display of WebGPU based on the WebGL.enableWebGPU flag
-            if (!PlayerSettings.WebGL.enableWebGPU)
+            // Gate the display of WebGPU based on the WebGL.enableWebGPU flag or if we are in a source build
+            if (!PlayerSettings.WebGL.enableWebGPU && !Unsupported.IsSourceBuild())
             {
                 var availableDeviceList = availableDevices.ToList();
                 availableDeviceList.Remove(GraphicsDeviceType.WebGPU);
@@ -1911,19 +1905,6 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_ForceSRGBBlit, SettingsContent.forceSRGBBlit);
             }
 
-            // WebGPU Support
-            if (platform.namedBuildTarget == NamedBuildTarget.WebGL
-                || platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
-            {
-                var hasWebGPUInApiList = CheckIfWebGPUInGfxAPIList();
-                // Ensure that the setting is consistent if the API is in the list.
-                if (hasWebGPUInApiList)
-                {
-                    m_WebGPUSupportEnabled.boolValue = true;
-                    PlayerSettings.WebGL.enableWebGPU = true;
-                }
-            }
-
             // Graphics APIs
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
             {
@@ -2493,6 +2474,10 @@ namespace UnityEditor
         // WebGPU
         private static IReadOnlyList<BuildTarget> k_WebGPUSupportedBuildTargets => new List<BuildTarget> {
             BuildTarget.WebGL,
+            // The following is Google's Dawn native implementatation for WebGPU.
+            BuildTarget.StandaloneWindows,
+            BuildTarget.StandaloneWindows64,
+            // Dawn currently isn't supported on OSX or Linux.
         };
 
         private bool CheckIfWebGPUInGfxAPIList()

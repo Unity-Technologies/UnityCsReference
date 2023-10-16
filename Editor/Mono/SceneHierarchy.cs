@@ -536,8 +536,8 @@ namespace UnityEditor
             EditorApplication.dirtyHierarchySorting += DirtySortingMethods;
             EditorSceneManager.newSceneCreated += OnSceneCreated;
             EditorSceneManager.sceneOpened += OnSceneOpened;
-            RectSelection.s_RectSelectionStarting += SceneViewRectSelectionStarting;
-            RectSelection.s_RectSelectionFinished += SceneViewRectSelectionFinished;
+            RectSelection.rectSelectionStarting += SceneViewRectSelectionStarting;
+            RectSelection.rectSelectionFinished += SceneViewRectSelectionFinished;
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
 
             m_AllowAlphaNumericalSort = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false) || !InternalEditorUtility.isHumanControllingUs; // Always allow alphasorting when running automated tests so we can test alpha sorting
@@ -559,8 +559,8 @@ namespace UnityEditor
             EditorApplication.dirtyHierarchySorting -= DirtySortingMethods;
             EditorSceneManager.newSceneCreated -= OnSceneCreated;
             EditorSceneManager.sceneOpened -= OnSceneOpened;
-            RectSelection.s_RectSelectionStarting -= SceneViewRectSelectionStarting;
-            RectSelection.s_RectSelectionFinished -= SceneViewRectSelectionFinished;
+            RectSelection.rectSelectionStarting -= SceneViewRectSelectionStarting;
+            RectSelection.rectSelectionFinished -= SceneViewRectSelectionFinished;
             EditorApplication.playModeStateChanged -= PlayModeStateChanged;
         }
 
@@ -1148,9 +1148,12 @@ namespace UnityEditor
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste"));
 
             if (ClipboardUtility.CanPasteAsChild())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste As Child"), false, ClipboardUtility.PasteGOAsChild);
+            {
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste as Child (Keep World Transform)"), false, () => ClipboardUtility.PasteGOAsChild(true));
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste as Child (Keep Local Transform)"), false, () => ClipboardUtility.PasteGOAsChild(false));
+            }
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste As Child"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste as Child"));
 
             menu.AddSeparator("");
 
@@ -1310,9 +1313,12 @@ namespace UnityEditor
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste"));
             if (ClipboardUtility.CanPasteAsChild())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste As Child"), false, ClipboardUtility.PasteGOAsChild);
+            {
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste as Child (Keep World Transform)"), false, () => ClipboardUtility.PasteGOAsChild(true));
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste as Child (Keep Local Transform)"), false, () => ClipboardUtility.PasteGOAsChild(false));
+            }
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste As Child"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste as Child"));
 
             menu.AddSeparator("");
 

@@ -36,6 +36,7 @@ namespace UnityEditor.Overlays
         internal const string k_ToolbarHorizontalLayout = "overlay-layout--toolbar-horizontal";
         internal const string k_ToolbarVerticalLayout = "overlay-layout--toolbar-vertical";
         const string k_PanelLayout = "overlay-layout--freesize";
+        internal const string draggerName = "unity-overlay-collapse__dragger";
 
         string m_Id, m_RootVisualElementName, m_DisplayName;
         Layout m_ActiveLayout = Layout.Panel;
@@ -75,6 +76,7 @@ namespace UnityEditor.Overlays
         public EditorWindow containerWindow => canvas.containerWindow;
         internal OverlayCanvas canvas { get; set; }
         OverlayContainer m_Container;
+        internal OverlayContainer tempTargetContainer { get; set; }
 
         // Instantiated VisualElement contents
         VisualElement m_CurrentContent;
@@ -82,10 +84,14 @@ namespace UnityEditor.Overlays
         OverlayPopup m_ModalPopup; // collapsed popup root
         VisualElement m_RootVisualElement;
         VisualElement m_ResizeTarget;
+
         internal VisualElement resizeTarget => m_ResizeTarget;
 
         OverlayDropZone m_BeforeDropZone;
         OverlayDropZone m_AfterDropZone;
+
+        internal OverlayDropZone insertBeforeDropZone => m_BeforeDropZone;
+        internal OverlayDropZone insertAfterDropZone => m_AfterDropZone;
 
         // Callbacks
         public event Action<Layout> layoutChanged;
@@ -321,8 +327,14 @@ namespace UnityEditor.Overlays
                 title.text = displayName;
                 displayNameChanged += () => title.text = displayName;
 
-                m_RootVisualElement.Insert(0, m_BeforeDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.Before));
-                m_RootVisualElement.Add(m_AfterDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.After));
+                var dockArea = new VisualElement() { name = "OverlayDockArea" };
+                dockArea.pickingMode = PickingMode.Ignore;
+                dockArea.StretchToParentSize();
+                m_RootVisualElement.Add(dockArea);
+
+                dockArea.Add(m_BeforeDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.Before));
+                dockArea.Add(m_AfterDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.After));
+
                 m_RootVisualElement.tooltip = L10n.Tr(displayName);
 
                 m_ResizeTarget = m_RootVisualElement.Q("unity-overlay");
@@ -442,6 +454,10 @@ namespace UnityEditor.Overlays
             // Is layout requesting a toolbar while Overlay is not implementing ICreateToolbar?
             if ((int)(requested & supportedLayouts) < 1)
                 return false;
+
+            if (tempTargetContainer != null)
+                return tempTargetContainer.IsOverlayLayoutSupported(requested);
+
             return floating || container == null || container.IsOverlayLayoutSupported(requested);
         }
 
@@ -496,6 +512,7 @@ namespace UnityEditor.Overlays
             // the collapsed property is not modified. The next time a content rebuild is requested we'll try again to
             // create the contents with the stored state.
             bool isCollapsed = m_Collapsed || activeLayout == 0;
+            var targetContainer = tempTargetContainer ?? container;
 
             if (isCollapsed)
             {
@@ -510,7 +527,7 @@ namespace UnityEditor.Overlays
 
             m_ContentsChanged = true;
 
-            m_ActiveLayout = m_ActiveLayout == 0 ? container.preferredLayout : m_ActiveLayout;
+            m_ActiveLayout = m_ActiveLayout == 0 ? targetContainer.preferredLayout : m_ActiveLayout;
 
             // Update styling
             if (floating)

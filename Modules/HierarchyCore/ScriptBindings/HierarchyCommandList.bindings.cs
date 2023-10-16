@@ -176,7 +176,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="nodes">The hierarchy nodes to remove.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        public bool Remove(Span<HierarchyNode> nodes) => RemoveNodeSpan(nodes);
+        public bool Remove(ReadOnlySpan<HierarchyNode> nodes) => RemoveNodeSpan(nodes);
 
         /// <summary>
         /// Sets the parent node of a hierarchy node.
@@ -192,7 +192,7 @@ namespace Unity.Hierarchy
         /// <param name="nodes">The hierarchy nodes.</param>
         /// <param name="parent">The hierarchy nodes parent.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        public bool SetParent(Span<HierarchyNode> nodes, in HierarchyNode parent) => SetNodeParentSpan(nodes, in parent);
+        public bool SetParent(ReadOnlySpan<HierarchyNode> nodes, in HierarchyNode parent) => SetNodeParentSpan(nodes, in parent);
 
         /// <summary>
         /// Sets the sorting index for a hierarchy node.
@@ -290,22 +290,22 @@ namespace Unity.Hierarchy
         extern bool AddNodeWithParent(in HierarchyNode parent, out HierarchyNode node);
 
         [NativeThrows, FreeFunction("HierarchyCommandListBindings::AddNodeSpan", HasExplicitThis = true)]
-        extern bool AddNodeSpan(Span<HierarchyNode> nodes);
+        extern bool AddNodeSpan(Span<HierarchyNode> outNodes);
 
         [NativeThrows, FreeFunction("HierarchyCommandListBindings::AddNodeSpanWithParent", HasExplicitThis = true)]
-        extern bool AddNodeSpanWithParent(in HierarchyNode parent, Span<HierarchyNode> nodes);
+        extern bool AddNodeSpanWithParent(in HierarchyNode parent, Span<HierarchyNode> outNodes);
 
         [NativeThrows, FreeFunction("HierarchyCommandListBindings::RemoveNode", HasExplicitThis = true)]
         extern bool RemoveNode(in HierarchyNode node);
 
         [NativeThrows, FreeFunction("HierarchyCommandListBindings::RemoveNodeSpan", HasExplicitThis = true)]
-        extern bool RemoveNodeSpan(Span<HierarchyNode> nodes);
+        extern bool RemoveNodeSpan(ReadOnlySpan<HierarchyNode> nodes);
 
         [NativeThrows, FreeFunction("HierarchyCommandListBindings::SetNodeParent", HasExplicitThis = true)]
         extern bool SetNodeParent(in HierarchyNode node, in HierarchyNode parent);
 
         [NativeThrows, FreeFunction("HierarchyCommandListBindings::SetNodeParentSpan", HasExplicitThis = true)]
-        extern bool SetNodeParentSpan(Span<HierarchyNode> nodes, in HierarchyNode parent);
+        extern bool SetNodeParentSpan(ReadOnlySpan<HierarchyNode> nodes, in HierarchyNode parent);
 
         [NativeThrows, FreeFunction("HierarchyCommandListBindings::SetNodePropertyRaw", HasExplicitThis = true)]
         extern unsafe bool SetNodePropertyRaw(in HierarchyPropertyId property, in HierarchyNode node, void* ptr, int size);

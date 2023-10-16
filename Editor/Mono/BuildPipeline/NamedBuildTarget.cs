@@ -12,6 +12,7 @@ namespace UnityEditor.Build
         private static readonly string[] k_ValidNames =
         {
             "",
+            "FakePlatform",
             "Standalone",
             "Server",
             "iPhone",

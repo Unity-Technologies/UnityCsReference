@@ -25,6 +25,7 @@ namespace UnityEditor.Overlays
         static OverlayEditorWindowAssociation[] s_Overlays;
         static readonly Dictionary<Type, List<Type>> s_OverlaysTypeAssociations = new Dictionary<Type, List<Type>>();
         internal const string nullWindowTypeErrorMsg = "{0} editor window type cannot be null.";
+        const float k_ClampOffset = 0.001f; //Used to make sure we're not clamping exactly on the bounds (which was causing issues)
 
         static OverlayEditorWindowAssociation[] overlays
         {
@@ -59,6 +60,25 @@ namespace UnityEditor.Overlays
 
                 return s_Overlays;
             }
+        }
+
+        // Rect is in world space
+        public static Rect ClampRectToRect(Rect rect, Rect clampingRect)
+        {
+            rect.position -= rect.max - ClampPositionToRect(rect.max, clampingRect);
+            rect.position = ClampPositionToRect(rect.position, clampingRect);
+            return rect;
+        }
+
+        // position is in world space
+        public static Vector2 ClampPositionToRect(Vector2 position, Rect clampingRect)
+        {
+            //keep mouse position within bounds for picking, mathf.epsilon is too small
+            position.x = Mathf.Clamp(position.x, clampingRect.xMin + k_ClampOffset,
+                clampingRect.xMax - k_ClampOffset);
+            position.y = Mathf.Clamp(position.y, clampingRect.yMin + k_ClampOffset,
+                clampingRect.yMax - k_ClampOffset);
+            return position;
         }
 
         internal static List<Type> GetOverlaysForType(Type type)

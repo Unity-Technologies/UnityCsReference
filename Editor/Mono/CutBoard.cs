@@ -60,7 +60,7 @@ namespace UnityEditor
             return hasCutboardData && AreCutAndPasteStagesSame();
         }
 
-        internal static void PasteGameObjects(Transform fallbackParent)
+        internal static void PasteGameObjects(Transform fallbackParent, bool worldPositionStays)
         {
             if (!AreCutAndPasteStagesSame())
                 return;
@@ -68,12 +68,12 @@ namespace UnityEditor
             // Paste as a sibling of a active transform
             if (Selection.activeTransform != null)
             {
-                PasteAsSiblings(Selection.activeTransform);
+                PasteAsSiblings(Selection.activeTransform, worldPositionStays);
             }
             // If nothing selected, paste as child of the fallback parent if present
             else if (fallbackParent != null)
             {
-                PasteAsChildren(fallbackParent);
+                PasteAsChildren(fallbackParent, worldPositionStays);
             }
             // Otherwise, move to the scene of the active object
             else
@@ -83,7 +83,7 @@ namespace UnityEditor
             }
         }
 
-        internal static void PasteAsChildren(Transform parent)
+        internal static void PasteAsChildren(Transform parent, bool worldPositionStays)
         {
             if (m_GOCutboard == null || !AreCutAndPasteStagesSame())
                 return;
@@ -92,7 +92,7 @@ namespace UnityEditor
             {
                 if (go != null && CanSetParent(go, parent))
                 {
-                    SetParent(go, parent);
+                    SetParent(go, parent, worldPositionStays);
                 }
             }
 
@@ -101,14 +101,14 @@ namespace UnityEditor
             Reset();
         }
 
-        private static void PasteAsSiblings(Transform target)
+        private static void PasteAsSiblings(Transform target, bool worldPositionStays)
         {
             foreach (var go in m_GOCutboard)
             {
                 if (go != null && CanSetParent(go, target))
                 {
                     if (target.parent != null)
-                        SetParent(go, target.parent);
+                        SetParent(go, target.parent, worldPositionStays);
                     else
                         MoveToScene(go, target.gameObject.scene);
                 }
@@ -134,9 +134,9 @@ namespace UnityEditor
             Reset();
         }
 
-        private static void SetParent(Transform go, Transform parent)
+        private static void SetParent(Transform go, Transform parent, bool worldPositionStays)
         {
-            Undo.SetTransformParent(go, parent, false, kCutAndPaste);
+            Undo.SetTransformParent(go, parent, worldPositionStays, kCutAndPaste);
             go.SetAsLastSibling();
         }
 

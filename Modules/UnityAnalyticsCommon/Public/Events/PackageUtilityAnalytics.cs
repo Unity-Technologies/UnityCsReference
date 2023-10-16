@@ -18,7 +18,7 @@ namespace UnityEditor.Analytics
     {
         public AssetImportStatusAnalytic() : base("assetImportStatus", 1, UnityEngine.Analytics.SendEventOptions.kAppendBuildTarget) { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         public static AssetImportStatusAnalytic CreateAssetImportStatusAnalytic() { return new AssetImportStatusAnalytic(); }
 
         public string package_name;
@@ -35,7 +35,7 @@ namespace UnityEditor.Analytics
     {
         public AssetImportAnalytic() : base("assetImport", 1) { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         public static AssetImportAnalytic CreateAssetImportAnalytic() { return new AssetImportAnalytic(); }
 
         public string package_name;

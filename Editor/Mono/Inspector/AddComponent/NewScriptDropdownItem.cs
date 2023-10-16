@@ -14,7 +14,6 @@ namespace UnityEditor.AddComponent
     {
         private readonly char[] kInvalidPathChars = new char[] {'<', '>', ':', '"', '|', '?', '*', (char)0};
         private readonly char[] kPathSepChars = new char[] {'/', '\\'};
-        private readonly string kResourcesTemplatePath = "Resources/ScriptTemplates";
 
         private string m_Directory = string.Empty;
 
@@ -110,13 +109,17 @@ namespace UnityEditor.AddComponent
             return ClassExists(m_ClassName);
         }
 
-        private string GetTemplatePath(){
-            if(File.Exists("Assets/ScriptTemplates/81-C# Script-NewBehaviourScript.cs.txt"))
-            {
-                return "Assets/ScriptTemplates/81-C# Script-NewBehaviourScript.cs.txt";
-            }
-            var basePath = Path.Combine(EditorApplication.applicationContentsPath, kResourcesTemplatePath);
-            return Path.Combine(basePath, "81-C# Script-NewBehaviourScript.cs.txt");
+        private string GetTemplatePath()
+        {
+            var scriptTemplatePath = AssetsMenuUtility.GetScriptTemplatePath(ScriptTemplate.CSharp_NewBehaviourScript);
+            var scriptTemplateFilename = scriptTemplatePath.Substring(scriptTemplatePath.LastIndexOf('/'));
+
+            var localScriptTemplatePath = $"Assets/ScriptTemplates/{scriptTemplateFilename}";
+
+            if(File.Exists(localScriptTemplatePath))
+                return localScriptTemplatePath;
+
+            return scriptTemplatePath;
         }
         private void CreateScript()
         {

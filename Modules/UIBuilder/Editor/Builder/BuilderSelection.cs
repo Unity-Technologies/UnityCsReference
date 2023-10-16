@@ -236,24 +236,7 @@ namespace Unity.UI.Builder
             VisualElement element = null,
             BuilderHierarchyChangeType changeType = BuilderHierarchyChangeType.All)
         {
-            if (m_Notifiers == null || m_Notifiers.Count == 0)
-                return;
-
-            VisualElementAsset vea = element?.GetVisualElementAsset();
-            if (vea != null && vea.ruleIndex >= 0 && changeType.HasFlag(BuilderHierarchyChangeType.InlineStyle))
-            {
-                var vta = m_PaneWindow.document.visualTreeAsset;
-                var rule = vta.GetOrCreateInlineStyleRule(vea);
-
-                element.UpdateInlineRule(vta.inlineSheet, rule);
-
-                // Need to enforce this specific style is updated.
-                element.IncrementVersion(VersionChangeType.Opacity | VersionChangeType.Overflow | VersionChangeType.StyleSheet);
-            }
-            else if (m_DocumentRootElement != null)
-            {
-                m_PaneWindow.document.RefreshStyle(m_DocumentRootElement);
-            }
+            ForceVisualAssetUpdateWithoutSave(element, changeType);
 
             // This is so anyone interested can refresh their use of this UXML with
             // the latest (unsaved to disk) changes.
@@ -272,6 +255,30 @@ namespace Unity.UI.Builder
                                             ? BuilderAssetUtilities.LiveReloadChanges.Hierarchy
                                             : 0);
                 BuilderAssetUtilities.LiveReload(liveReloadChanges);
+            }
+        }
+
+        internal void ForceVisualAssetUpdateWithoutSave(
+            VisualElement element = null,
+            BuilderHierarchyChangeType changeType = BuilderHierarchyChangeType.All)
+        {
+            if (m_Notifiers == null || m_Notifiers.Count == 0)
+                return;
+
+            VisualElementAsset vea = element?.GetVisualElementAsset();
+            if (vea != null && vea.ruleIndex >= 0 && changeType.HasFlag(BuilderHierarchyChangeType.InlineStyle))
+            {
+                var vta = m_PaneWindow.document.visualTreeAsset;
+                var rule = vta.GetOrCreateInlineStyleRule(vea);
+
+                element.UpdateInlineRule(vta.inlineSheet, rule);
+
+                // Need to enforce this specific style is updated.
+                element.IncrementVersion(VersionChangeType.Opacity | VersionChangeType.Overflow | VersionChangeType.StyleSheet);
+            }
+            else if (m_DocumentRootElement != null)
+            {
+                m_PaneWindow.document.RefreshStyle(m_DocumentRootElement);
             }
         }
 
