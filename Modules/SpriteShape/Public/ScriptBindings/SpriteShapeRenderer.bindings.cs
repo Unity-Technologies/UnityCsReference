@@ -136,7 +136,20 @@ namespace UnityEngine.U2D
         extern private void SetMeshChannelInfo(int vertexCount, int indexCount, int hotChannelMask);
         extern private SpriteChannelInfo GetDataInfo(SpriteShapeDataType arrayType);
         extern private SpriteChannelInfo GetChannelInfo(VertexAttribute channel);
+
+        /// <summary>
+        /// Sets the local axis aligned bounding box.
+        /// </summary>
+        /// <param name="bounds"> The bounding box to set. </param>
         extern public void SetLocalAABB(Bounds bounds);
+
+
+        /// <summary>
+        /// Returns the <B>SpriteShapeRender's</B> number of submeshes.
+        /// </summary>
+        /// <returns>Returns the number of submeshes.</returns>
+        extern public int GetSplineMeshCount();
+
 
         /// <summary>
         /// Returns Bounds of SpriteShapeRenderer in a NativeArray so C# Job can access it.

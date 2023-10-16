@@ -115,6 +115,24 @@ namespace UnityEngine.Accessibility
         internal static extern void SetLanguage(int id, SystemLanguage language);
 
         /// <summary>
+        /// Called after the native accessibility node with the given ID gains
+        /// or loses accessibility focus.
+        /// </summary>
+        [RequiredByNativeCode]
+        internal static void Internal_InvokeFocusChanged(int id, bool isNodeFocused)
+        {
+            var service = AssistiveSupport.GetService<AccessibilityHierarchyService>();
+
+            if (service == null)
+                return;
+
+            if (service.TryGetNode(id, out var node))
+            {
+                node.FocusChanged(isNodeFocused);
+            }
+        }
+
+        /// <summary>
         /// Called when the native accessibility node with the given ID is
         /// selected (the same as tapping on the UI element when
         /// assistive technologies are off).
@@ -137,11 +155,11 @@ namespace UnityEngine.Accessibility
         }
 
         /// <summary>
-        /// Called after the native accessibility node with the given ID gains
-        /// or loses accessibility focus.
+        /// Called when the content of the native accessibility node with the
+        /// given ID is incremented by the screen reader.
         /// </summary>
         [RequiredByNativeCode]
-        internal static void Internal_InvokeFocusChanged(int id, bool isNodeFocused)
+        internal static void Internal_InvokeIncremented(int id)
         {
             var service = AssistiveSupport.GetService<AccessibilityHierarchyService>();
 
@@ -150,7 +168,25 @@ namespace UnityEngine.Accessibility
 
             if (service.TryGetNode(id, out var node))
             {
-                node.FocusChanged(isNodeFocused);
+                node.Incremented();
+            }
+        }
+
+        /// <summary>
+        /// Called when the content of the native accessibility node with the
+        /// given ID is decremented by the screen reader.
+        /// </summary>
+        [RequiredByNativeCode]
+        internal static void Internal_InvokeDecremented(int id)
+        {
+            var service = AssistiveSupport.GetService<AccessibilityHierarchyService>();
+
+            if (service == null)
+                return;
+
+            if (service.TryGetNode(id, out var node))
+            {
+                node.Decremented();
             }
         }
     }

@@ -217,11 +217,8 @@ namespace UnityEditor.Overlays
         internal const int k_OverlayMinVisibleArea = 24;
 
         const string k_FloatingContainer = "overlay-container--floating";
-        const string k_ToolbarZone = "overlay-toolbar-zone";
         const string k_ToolbarArea = "overlay-toolbar-area";
         const string k_DropTargetClassName = "overlay-droptarget";
-        const string k_GhostClassName = "overlay-ghost";
-        const string k_GhostAreaHovered = "unity-overlay-in-ghost-area";
         const string k_DefaultContainer = "overlay-container-default";
         static VisualTreeAsset s_TreeAsset;
         static VisualTreeAsset s_DropZoneTreeAsset;
@@ -258,7 +255,7 @@ namespace UnityEditor.Overlays
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal OverlayContainer GetDockZoneContainer(DockZone zone)
         {
-            foreach(var container in containers)
+            foreach(var container in m_Containers)
                 if (container.name == k_DockZoneContainerIDs[(int)zone])
                     return container;
             return null;
@@ -299,12 +296,13 @@ namespace UnityEditor.Overlays
         OverlayContainer defaultContainer { get; set; }
         OverlayContainer defaultToolbarContainer { get; set; }
 
-        List<OverlayContainer> containers { get; set; }
+        internal OverlayDockArea dockArea { get; private set; }
+
+        List<OverlayContainer> m_Containers;
+
+        internal IEnumerable<OverlayContainer> containers => m_Containers;
 
         readonly Dictionary<VisualElement, Overlay> m_OverlaysByVE = new Dictionary<VisualElement, Overlay>();
-
-        VisualElement m_OriginGhost;
-        internal OverlayDestinationMarker destinationMarker { get; private set; }
 
         internal IEnumerable<Overlay> overlays => m_Overlays.AsReadOnly();
 
@@ -318,7 +316,7 @@ namespace UnityEditor.Overlays
         internal Action afterOverlaysInitialized;
         internal event Action<bool> overlaysEnabledChanged;
 
-        internal bool overlaysEnabled => containers.All(x => x.style.display != DisplayStyle.None);
+        internal bool overlaysEnabled => m_Containers.All(x => x.style.display != DisplayStyle.None);
 
         internal OverlayCanvas() { }
 
@@ -329,7 +327,7 @@ namespace UnityEditor.Overlays
             if (visible == overlaysEnabled)
                 return;
 
-            foreach (var container in containers)
+            foreach (var container in m_Containers)
                 container.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
 
             overlaysEnabledChanged?.Invoke(visible);
@@ -368,9 +366,9 @@ namespace UnityEditor.Overlays
             floatingContainer.AddToClassList(k_FloatingContainer);
             floatingContainer.name = "Floating";
 
-            containers = ve.Query<OverlayContainer>().ToList();
+            m_Containers = ve.Query<OverlayContainer>().ToList();
 
-            foreach (var container in containers)
+            foreach (var container in m_Containers)
             {
                 container.RegisterCallback<MouseEnterEvent>(OnMouseEnterOverlayContainer);
                 if (container.ClassListContains(k_DefaultContainer))
@@ -386,19 +384,21 @@ namespace UnityEditor.Overlays
                     toolbar.scrollOffset = data.scrollOffset;
             }
 
-            m_OriginGhost = new VisualElement { name = "origin-ghost"};
-            m_OriginGhost.AddToClassList(k_GhostClassName);
-            m_OriginGhost.AddToClassList(k_DropTargetClassName);
-
-            destinationMarker = new OverlayDestinationMarker { name = "dest-marker"};
-            ve.Add(destinationMarker);
-
             SetPickingMode(ve, PickingMode.Ignore);
 
             ve.RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             ve.RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
 
             m_WindowRoot = ve.Q("overlay-window-root");
+
+            ve.Add(dockArea = new OverlayDockArea(this));
+            m_WindowRoot.RegisterCallback<GeometryChangedEvent>((evt) =>
+            {
+                var worldPos = m_WindowRoot.LocalToWorld(evt.newRect.position);
+                dockArea.transform.position = ve.WorldToLocal(worldPos);
+                dockArea.style.width = evt.newRect.width;
+                dockArea.style.height = evt.newRect.height;
+            });
 
             SetOverlaysEnabled(m_OverlaysVisible);
 
@@ -557,31 +557,6 @@ namespace UnityEditor.Overlays
                 overlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent>(overlay.OnGeometryChanged);
         }
 
-        internal Rect GetOriginGhostWorldBound()
-        {
-            return m_OriginGhost.parent == null ? new Rect(-1000, -1000, 0, 0) : m_OriginGhost.worldBound;
-        }
-
-        internal void HideOriginGhost()
-        {
-            m_OriginGhost.RemoveFromHierarchy();
-        }
-
-        internal void ShowOriginGhost(Overlay overlay)
-        {
-            m_OriginGhost.style.width = overlay.rootVisualElement.layout.width;
-            m_OriginGhost.style.height = overlay.rootVisualElement.layout.height;
-            if (overlay.container.GetOverlayIndex(overlay, out var section, out var index))
-            {
-                overlay.container.GetSectionElement(section)?.Insert(index, m_OriginGhost);
-            }
-        }
-
-        internal void UpdateGhostHover(bool hovered)
-        {
-            m_OriginGhost.EnableInClassList(k_GhostAreaHovered, hovered);
-        }
-
         void WriteOrReplaceSaveData(Overlay overlay, int containerIndex = -1)
         {
             if (containerIndex < 0)
@@ -599,10 +574,10 @@ namespace UnityEditor.Overlays
 
         public void OnBeforeSerialize()
         {
-            if (containers == null)
+            if (m_Containers == null)
                 return;
 
-            foreach (var container in containers)
+            foreach (var container in m_Containers)
             {
                 if (container != null)
                 {
@@ -841,7 +816,7 @@ namespace UnityEditor.Overlays
                 overlay.ApplySaveData(data);
             #pragma warning restore 618
 
-            var container = containers.FirstOrDefault(x => data.containerId == x.name);
+            var container = m_Containers.FirstOrDefault(x => data.containerId == x.name);
 
             // Overlays were implemented with the idea that they are always associated with an OverlayContainer. While
             // this doesn't really need to be true (floating Overlays don't need a Container), the code isn't capable
@@ -860,7 +835,7 @@ namespace UnityEditor.Overlays
                 throw new Exception("data.dockPosition is not Top or Bottom, did someone add a new one?");
 
             if(overlay.floating)
-                floatingContainer.Add(overlay.rootVisualElement);
+                overlay.Undock();
 
             // when restoring an overlay from serialized state, always start from "not shown" state so that
             // Overlay.displayedChanged is called
@@ -876,7 +851,7 @@ namespace UnityEditor.Overlays
 
         void RestoreOverlays()
         {
-            if (containers == null)
+            if (m_Containers == null)
                 return;
 
             // Clear OverlayContainer instances and set Overlay.displayed to false. RestoreOverlay expects that Overlay

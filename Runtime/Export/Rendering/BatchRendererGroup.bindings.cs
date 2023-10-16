@@ -274,12 +274,19 @@ namespace UnityEngine.Rendering
         public int rendererPriority;
         private ulong m_sceneCullingMask;
         public byte layer;
+        private byte m_batchLayer;
         private byte m_motionMode;
         private byte m_shadowMode;
         private byte m_receiveShadows;
         private byte m_staticShadowCaster;
         private byte m_allDepthSorted;
         private byte m_isSceneCullingMaskSet;
+
+        public byte batchLayer
+        {
+            get => m_batchLayer;
+            set => m_batchLayer = value;
+        }
 
         public MotionVectorGenerationMode motionMode
         {

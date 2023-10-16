@@ -11,7 +11,7 @@ namespace UnityEditor.TextCore.Text
 {
     internal static class TextStyleAssetCreationMenu
     {
-        [MenuItem("Assets/Create/Text/Text StyleSheet", false, 200)]
+        [MenuItem("Assets/Create/Text Core/Text StyleSheet", false, 200)]
         internal static void CreateTextMeshProObjectPerform()
         {
             string filePath;

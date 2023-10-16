@@ -237,6 +237,7 @@ namespace UnityEngine
             settings.overflowMode = LegacyClippingToNewOverflow(style.clipping);
             settings.wordWrap = rect.width > 0 ? style.wordWrap : false;
             settings.wordWrappingRatio = 0.4f;
+            settings.textWrappingMode = TextWrappingMode.PreserveWhitespace;
             settings.richText = style.richText;
             settings.parseControlCharacters = false;
             settings.isPlaceholder = false;

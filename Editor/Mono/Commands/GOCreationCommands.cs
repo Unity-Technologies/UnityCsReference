@@ -380,7 +380,9 @@ namespace UnityEditor
             Place(ObjectFactory.CreateGameObject("Reflection Probe", typeof(ReflectionProbe)), parent);
         }
 
-        [MenuItem("GameObject/Light/Light Probe Group", priority = 21)]
+        // Adjusted to fit with Probe Volume menu items (Packages\com.unity.render-pipelines.core\Editor\Lighting\ProbeVolumeMenuItems.cs)
+        // Choosing 80000 + 9 to avoid conflicts with any future additions to the Probe Volumes menus
+        [MenuItem("GameObject/Light/Light Probe Group", priority = 80009)]
         static void CreateLightProbeGroup(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;

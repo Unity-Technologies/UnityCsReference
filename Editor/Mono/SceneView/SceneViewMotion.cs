@@ -82,7 +82,7 @@ namespace UnityEditor
         [ReserveModifiers(ShortcutModifiers.Shift)]
         internal class SceneViewViewport : IShortcutToolContext
         {
-            public SceneView window => EditorWindow.focusedWindow is SceneView ? (SceneView)EditorWindow.focusedWindow : null;
+            public SceneView window => EditorWindow.focusedWindow as SceneView;
 
             public bool active => IsActive;
 
@@ -90,8 +90,10 @@ namespace UnityEditor
             {
                 get
                 {
-                    var sceneViewFocus = EditorWindow.focusedWindow is SceneView;
-                    return sceneViewFocus && ((SceneView)EditorWindow.focusedWindow).sceneViewMotion.viewportsUnderMouse && Tools.s_LockedViewTool == ViewTool.None;
+                    if (!(EditorWindow.focusedWindow is SceneView view))
+                        return false;
+
+                    return view.sceneViewMotion.viewportsUnderMouse && Tools.s_LockedViewTool == ViewTool.None;
                 }
             }
         }
@@ -99,7 +101,7 @@ namespace UnityEditor
         [ReserveModifiers(ShortcutModifiers.Shift)]
         class SceneViewViewport2D : IShortcutToolContext
         {
-            public SceneView window => EditorWindow.focusedWindow is SceneView ? (SceneView)EditorWindow.focusedWindow : null;
+            public SceneView window => EditorWindow.focusedWindow as SceneView;
 
             public bool active => SceneViewViewport.IsActive
                 && ((SceneView.lastActiveSceneView?.in2DMode ?? false) || (SceneView.lastActiveSceneView?.isRotationLocked ?? false));
@@ -108,7 +110,7 @@ namespace UnityEditor
         [ReserveModifiers(ShortcutModifiers.Shift)]
         class SceneViewViewport3D : IShortcutToolContext
         {
-            public SceneView window => EditorWindow.focusedWindow is SceneView ? (SceneView)EditorWindow.focusedWindow : null;
+            public SceneView window => EditorWindow.focusedWindow as SceneView;
 
             public bool active => SceneViewViewport.IsActive
                                   && ((!SceneView.lastActiveSceneView?.in2DMode ?? false)
@@ -118,7 +120,7 @@ namespace UnityEditor
         [ReserveModifiers(ShortcutModifiers.Shift)]
         class SceneViewViewportLockedPanTool : IShortcutToolContext
         {
-            public SceneView window => EditorWindow.focusedWindow is SceneView ? (SceneView)EditorWindow.focusedWindow : null;
+            public SceneView window => EditorWindow.focusedWindow as SceneView;
 
             public bool active => IsActive;
 

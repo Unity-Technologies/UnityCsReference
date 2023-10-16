@@ -108,6 +108,7 @@ namespace UnityEngine.TextCore.Text
     internal enum TextOverflowMode { Overflow = 0, Ellipsis = 1, Masking = 2, Truncate = 3, ScrollRect = 4, Page = 5, Linked = 6 }
     
     internal enum TextureMapping { Character = 0, Line = 1, Paragraph = 2, MatchAspect = 3 }
+    [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
     internal enum TextWrappingMode { NoWrap = 0, Normal = 1, PreserveWhitespace = 2, PreserveWhitespaceNoWrap = 3 };
     internal enum TextInputSource { TextInputBox = 0, SetText = 1, SetTextArray = 2, TextString = 3 };
 }

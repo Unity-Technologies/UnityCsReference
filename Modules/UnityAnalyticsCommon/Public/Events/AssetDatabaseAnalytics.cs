@@ -18,7 +18,7 @@ namespace UnityEditor.Analytics
     {
         public AssetDatabaseRefreshAnalytic() : base("assetDatabaseInitRefresh", 1){}
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static AssetDatabaseRefreshAnalytic CreateAssetDatabaseRefreshAnalytic() { return new AssetDatabaseRefreshAnalytic(); }
  
         [SerializeField] public bool isV2;

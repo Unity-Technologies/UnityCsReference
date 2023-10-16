@@ -2,13 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 
 namespace UnityEditor
 {
-    internal class PropertyHandlerCache
+    internal class PropertyHandlerCache : IDisposable
     {
-        protected Dictionary<int, PropertyHandler> m_PropertyHandlers = new Dictionary<int, PropertyHandler>();
+        internal readonly protected Dictionary<int, PropertyHandler> m_PropertyHandlers = new Dictionary<int, PropertyHandler>();
 
         internal PropertyHandler GetHandler(SerializedProperty property)
         {
@@ -47,7 +48,17 @@ namespace UnityEditor
 
         public void Clear()
         {
-            m_PropertyHandlers.Clear();
+            if (m_PropertyHandlers.Count > 0)
+            {
+                foreach (var handler in m_PropertyHandlers.Values)
+                {
+                    handler.Dispose();
+                }
+
+                m_PropertyHandlers.Clear();
+            }
         }
+
+        public void Dispose() => Clear();
     }
 }

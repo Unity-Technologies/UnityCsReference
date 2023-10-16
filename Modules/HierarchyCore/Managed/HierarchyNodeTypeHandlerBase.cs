@@ -62,12 +62,41 @@ namespace Unity.Hierarchy
         public HierarchyNodeType GetNodeType() => GetNodeType(GetType());
 
         /// <summary>
-        /// Retrieves the hierarchy node type name for this hierarchy node type handler.
+        /// Get the type name of this hierarchy node type handler.
         /// </summary>
         /// <returns>The type name of the hierarchy node.</returns>
         public virtual string GetNodeTypeName()
         {
             return string.Empty;
+        }
+
+        /// <summary>
+        /// Determines if a node type handler can accept a specified node as a parent.
+        /// </summary>
+        /// <param name="parent">The hierarchy parent node.</param>
+        /// <returns><see langword="true"/> if the node can be set as a parent, <see langword="false"/> otherwise.</returns>
+        public virtual bool AcceptParent(in HierarchyNode parent)
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Determines if a node type handler can accept a specified node as a child.
+        /// </summary>
+        /// <param name="child">The hierarchy child node.</param>
+        /// <returns><see langword="true"/> if the node can be set as a child, <see langword="false"/> otherwise.</returns>
+        public virtual bool AcceptChild(in HierarchyNode child)
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Determine if the node type handler accept the naming action.
+        /// </summary>
+        /// <returns><see langword="true"/> if the node can be renamed, <see langword="false"/> otherwise.</returns>
+        public virtual bool CanSetName(in HierarchyNode node)
+        {
+            return true;
         }
 
         /// <summary>
@@ -84,21 +113,32 @@ namespace Unity.Hierarchy
         protected abstract bool IntegrateChanges(HierarchyCommandList cmdList);
 
         /// <summary>
-        /// Determines if a node type handler can accept a specified node as a parent.
+        /// Called when a node is renamed in the hierarchy.
         /// </summary>
-        /// <param name="node">The hierarchy parent node.</param>
-        /// <returns><see langword="true"/> if the node can be set as a parent, <see langword="false"/> otherwise.</returns>
-        public virtual bool AcceptParent(in HierarchyNode node)
+        /// <returns><see langword="true"/> if the node is renamed successfully, <see langword="false"/> otherwise.</returns>
+        protected virtual bool OnSetName(in HierarchyNode node, string name)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Called when a node is parented in the hierarchy.
+        /// </summary>
+        /// <param name="node">The node that is parented.</param>
+        /// <param name="parent">The new parent of the node.</param>
+        /// <returns><see langword="true"/> if the node is parented successfully, <see langword="false"/> otherwise.</returns>
+        protected virtual bool OnSetParent(in HierarchyNode node, in HierarchyNode parent)
         {
             return true;
         }
 
         /// <summary>
-        /// Determines if a node type handler can accept a specified node as a child.
+        /// Called when the sorting index of a node is changed in the hierarchy.
         /// </summary>
-        /// <param name="node">The hierarchy child node.</param>
-        /// <returns><see langword="true"/> if the node can be set as a child, <see langword="false"/> otherwise.</returns>
-        public virtual bool AcceptChild(in HierarchyNode node)
+        /// <param name="node">The node that is sorted.</param>
+        /// <param name="index">The new sorting index.</param>
+        /// <returns><see langword="true"/> if the sorting index was applied successfully, <see langword="false"/> otherwise.</returns>
+        protected virtual bool OnSetSortIndex(in HierarchyNode node, int index)
         {
             return true;
         }
@@ -107,7 +147,7 @@ namespace Unity.Hierarchy
         /// Called when a new search query begins.
         /// </summary>
         /// <param name="query"></param>
-        protected internal virtual void SearchBegin(HierarchySearchQueryDescriptor query)
+        protected virtual void SearchBegin(HierarchySearchQueryDescriptor query)
         {
         }
 
@@ -116,7 +156,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns><see langword="true"/> if the node matches the search query, <see langword="false"/> otherwise.</returns>
-        protected internal virtual bool SearchMatch(in HierarchyNode node)
+        protected virtual bool SearchMatch(in HierarchyNode node)
         {
             return false;
         }
@@ -124,11 +164,14 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Called when a search query ends.
         /// </summary>
-        protected internal virtual void SearchEnd()
+        protected virtual void SearchEnd()
         {
         }
 
         [FreeFunction("HierarchyNodeTypeHandlerManager::Get().GetNodeType")]
         static extern HierarchyNodeType GetNodeType(Type type);
+
+        internal void Internal_SearchBegin(HierarchySearchQueryDescriptor query) => SearchBegin(query);
+        internal bool Internal_SearchMatch(in HierarchyNode node) => SearchMatch(in node);
     }
 }

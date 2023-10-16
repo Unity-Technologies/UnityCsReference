@@ -17,7 +17,7 @@ namespace UnityEditor.TextCore.Text
         /// <summary>
         /// Enables the creation of a font asset with unique face info attributes but sharing the same atlas texture and material.
         /// </summary>
-        [MenuItem("Assets/Create/Text/Font Asset Variant", false, 105)]
+        [MenuItem("Assets/Create/Text Core/Font Asset Variant", false, 105)]
         internal static void CreateFontAssetVariant()
         {
             Object target = Selection.activeObject;
@@ -54,20 +54,20 @@ namespace UnityEditor.TextCore.Text
             AssetDatabase.SaveAssets();
         }
 
-        [MenuItem("Assets/Create/Text/Font Asset/SDF", false, 100)]
+        [MenuItem("Assets/Create/Text Core/Font Asset/SDF", false, 100)]
         static void CreateFontAssetSDF()
         {
             CreateFontAsset(GlyphRenderMode.SDFAA);
         }
 
-        [MenuItem("Assets/Create/Text/Font Asset/Bitmap", false, 105)]
+        [MenuItem("Assets/Create/Text Core/Font Asset/Bitmap", false, 105)]
         static void CreateFontAssetBitmap()
         {
             CreateFontAsset(GlyphRenderMode.SMOOTH);
         }
 
 
-        [MenuItem("Assets/Create/Text/Font Asset/Color", false, 110)]
+        [MenuItem("Assets/Create/Text Core/Font Asset/Color", false, 110)]
         static void CreateFontAssetColor()
         {
             CreateFontAsset(GlyphRenderMode.COLOR);

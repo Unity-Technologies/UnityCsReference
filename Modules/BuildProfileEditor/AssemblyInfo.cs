@@ -3,3 +3,5 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("UnityEditor.BuildProfileModule.Tests")]

@@ -20,7 +20,7 @@ namespace Unity.Hierarchy
         readonly HierarchyNode m_Node;
         readonly int m_ParentOffset;
         readonly int m_NextSiblingOffset;
-        readonly int m_ChildCount;
+        readonly int m_ChildrenCount;
         readonly int m_Depth;
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// The number of children nodes that the node has.
         /// </summary>
-        public int ChildCount => m_ChildCount;
+        public int ChildrenCount => m_ChildrenCount;
 
         /// <summary>
         /// The depth of the node.
@@ -61,7 +61,7 @@ namespace Unity.Hierarchy
             m_Node = HierarchyNode.Null;
             m_ParentOffset = 0;
             m_NextSiblingOffset = 0;
-            m_ChildCount = 0;
+            m_ChildrenCount = 0;
             m_Depth = 0;
         }
 
@@ -77,5 +77,10 @@ namespace Unity.Hierarchy
         public override bool Equals(object obj) => obj is HierarchyFlattenedNode node && Equals(node);
         [ExcludeFromDocs]
         public override int GetHashCode() => Node.GetHashCode();
+
+        #region Obsolete code to remove in 2024.1
+        [Obsolete("ChildCount has been renamed to ChildrenCount. (UnityUpgradable) -> ChildrenCount")]
+        public int ChildCount => m_ChildrenCount;
+        #endregion
     }
 }

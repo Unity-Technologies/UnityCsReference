@@ -24,7 +24,5 @@ namespace UnityEngine.Multiplayer.Internal
         Client = 1 << MultiplayerRole.Client,
         Server = 1 << MultiplayerRole.Server,
         ClientAndServer = Client | Server,
-
-        All = Client | Server | ClientAndServer,
     }
 }

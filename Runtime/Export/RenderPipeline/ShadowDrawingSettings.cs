@@ -15,6 +15,7 @@ namespace UnityEngine.Rendering
         CullingResults m_CullingResults;
         int m_LightIndex;
         int m_UseRenderingLayerMaskTest;
+        uint m_BatchLayerMask;
         ShadowSplitData m_SplitData;
         ShadowObjectsFilter m_ObjectsFilter;
         BatchCullingProjectionType m_ProjectionType;
@@ -41,6 +42,12 @@ namespace UnityEngine.Rendering
             set { m_UseRenderingLayerMaskTest = value ? 1 : 0; }
         }
 
+        public uint batchLayerMask
+        {
+            get { return m_BatchLayerMask; }
+            set { m_BatchLayerMask = value; }
+        }
+
         [Obsolete("ShadowDrawingSettings.splitData is deprecated. The equivalent data must be passed to ScriptableRenderContext.CullShadowCasters.")]
         public ShadowSplitData splitData
         {
@@ -60,12 +67,13 @@ namespace UnityEngine.Rendering
             get { return m_ProjectionType; }
             set { m_ProjectionType = value; }
         }
-        
+
         public ShadowDrawingSettings(CullingResults cullingResults, int lightIndex)
         {
             m_CullingResults = cullingResults;
             m_LightIndex = lightIndex;
             m_UseRenderingLayerMaskTest = 0;
+            m_BatchLayerMask = uint.MaxValue;
             m_SplitData = default(ShadowSplitData);
             m_SplitData.shadowCascadeBlendCullingFactor = 1f;
             m_ObjectsFilter = ShadowObjectsFilter.AllObjects;
@@ -81,7 +89,12 @@ namespace UnityEngine.Rendering
 
         public bool Equals(ShadowDrawingSettings other)
         {
-            return m_CullingResults.Equals(other.m_CullingResults) && m_LightIndex == other.m_LightIndex && m_SplitData.Equals(other.m_SplitData) && m_UseRenderingLayerMaskTest.Equals(other.m_UseRenderingLayerMaskTest) && m_ObjectsFilter.Equals(other.m_ObjectsFilter);
+            return m_CullingResults.Equals(other.m_CullingResults)
+                && m_LightIndex == other.m_LightIndex
+                && m_SplitData.Equals(other.m_SplitData)
+                && m_UseRenderingLayerMaskTest.Equals(other.m_UseRenderingLayerMaskTest)
+                && m_BatchLayerMask == other.m_BatchLayerMask
+                && m_ObjectsFilter.Equals(other.m_ObjectsFilter);
         }
 
         public override bool Equals(object obj)
@@ -97,6 +110,7 @@ namespace UnityEngine.Rendering
                 var hashCode = m_CullingResults.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_LightIndex;
                 hashCode = (hashCode * 397) ^ m_UseRenderingLayerMaskTest;
+                hashCode = (hashCode * 397) ^ (int)m_BatchLayerMask;
                 hashCode = (hashCode * 397) ^ m_SplitData.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)m_ObjectsFilter;
                 return hashCode;

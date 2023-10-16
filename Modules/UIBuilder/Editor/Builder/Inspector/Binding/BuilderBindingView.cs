@@ -365,7 +365,7 @@ namespace Unity.UI.Builder
             var validBinding = m_AttributesView.m_CurrentElementSerializedObject.FindProperty(m_AttributesView.bindingSerializedPropertyPathRoot)?.managedReferenceValue != null;
             if (Builder.ActiveWindow.isInUndoRedo && validBinding && selectedVisualElement != null)
             {
-                Refresh();
+                m_AttributesView.RefreshAllAttributeOverrideStyles();
                 m_ValidateSelectionScheduledItem?.Pause();
                 return;
             }

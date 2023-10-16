@@ -345,6 +345,7 @@ namespace UnityEngine.UIElements
             tgs.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(style.unityTextAlign);
 
             tgs.wordWrap = style.whiteSpace == WhiteSpace.Normal;
+            tgs.textWrappingMode = TextWrappingMode.Normal;
 
             tgs.wordWrappingRatio = 0.4f;
             tgs.richText = m_TextElement.enableRichText;

@@ -40,6 +40,7 @@ namespace UnityEditor
             public static readonly GUIContent gpuBakingProfile = EditorGUIUtility.TrTextContent("GPU Baking Profile", "The profile chosen for trading off between performance and memory usage when baking using the GPU.");
 
             public static readonly GUIContent invalidEnvironmentLabel = EditorGUIUtility.TrTextContentWithIcon("Baked environment lighting does not match the current Scene state. Generate Lighting to update this.", MessageType.Warning);
+            public static readonly GUIContent unsupportedDenoisersLabel = EditorGUIUtility.TrTextContentWithIcon("Unsupported denoiser selected", MessageType.Error);
 
             public static readonly int[] progressiveGPUUnknownDeviceValues = { 0 };
             public static readonly GUIContent[] progressiveGPUUnknownDeviceStrings =
@@ -75,6 +76,7 @@ namespace UnityEditor
             void OnGUI();
             void OnSummaryGUI();
             void OnSelectionChange();
+            bool HasHelpGUI();
         }
 
         enum BakeMode
@@ -102,13 +104,13 @@ namespace UnityEditor
 
         Dictionary<Mode, WindowTab> m_Tabs = new Dictionary<Mode, WindowTab>();
 
-        SerializedObject m_LightingSettings;
+        static SerializedObject m_LightingSettings;
 
         bool m_IsRealtimeSupported = false;
         bool m_IsBakedSupported = false;
         bool m_IsEnvironmentSupported = false;
 
-        SerializedObject lightingSettings
+        static SerializedObject lightingSettings
         {
             get
             {
@@ -379,7 +381,7 @@ namespace UnityEditor
             EditorGUILayout.Space();
             EditorGUILayout.BeginHorizontal();
 
-            if (selectedMode == Mode.LightingSettings || selectedMode == Mode.EnvironmentSettings)
+            if (m_Tabs[selectedMode].HasHelpGUI())
                 GUILayout.Space(EditorStyles.iconButton.CalcSize(EditorGUI.GUIContents.helpIcon).x);
 
             GUILayout.FlexibleSpace();
@@ -565,7 +567,7 @@ namespace UnityEditor
                             else
                             {
                                 GUIContent guiContent = anythingCompiling ? Styles.bakeLabelAnythingCompiling : Styles.bakeLabel;
-                                if (EditorGUI.LargeSplitButtonWithDropdownList(guiContent, Styles.BakeModeStrings, BakeDropDownCallback))
+                                if (EditorGUI.LargeSplitButtonWithDropdownList(guiContent, Styles.BakeModeStrings, BakeDropDownCallback, disableMainButton: !SelectedDenoisersSupported()))
                                 {
                                     DoBake();
 
@@ -729,6 +731,15 @@ namespace UnityEditor
 
         internal static void Summary()
         {
+            if (!SelectedDenoisersSupported() && !Lightmapping.isRunning)
+            {
+                using (new EditorGUIUtility.IconSizeScope(Vector2.one * 14))
+                {
+                    GUILayout.BeginVertical();
+                    GUILayout.Label(Styles.unsupportedDenoisersLabel, EditorStyles.wordWrappedMiniLabel);
+                    GUILayout.EndVertical();
+                }
+            }
             bool outdatedEnvironment = RenderSettings.WasUsingAutoEnvironmentBakingWithNonDefaultSettings();
             if (outdatedEnvironment && !Lightmapping.isRunning)
             {
@@ -834,6 +845,32 @@ namespace UnityEditor
                 }
             }
             GUILayout.EndVertical();
+        }
+
+        static bool SelectedDenoisersSupported()
+        {
+            // Only show the error if the user is in Advanced mode
+            if (lightingSettings.FindProperty("m_PVRFilteringMode").enumValueIndex != 2)
+                return true;
+
+            bool usingAO = lightingSettings.FindProperty("m_AO").boolValue;
+
+            LightingSettings lsa;
+            return 
+                Lightmapping.TryGetLightingSettings(out lsa) &&
+                DenoiserSupported(lsa.denoiserTypeDirect) &&
+                DenoiserSupported(lsa.denoiserTypeIndirect) &&
+                (!usingAO || (usingAO && DenoiserSupported(lsa.denoiserTypeAO)));
+        }
+
+        static bool DenoiserSupported(LightingSettings.DenoiserType denoiserType)
+        {
+            if (denoiserType == LightingSettings.DenoiserType.Optix)
+                return Lightmapping.IsOptixDenoiserSupported();
+            if (denoiserType == LightingSettings.DenoiserType.OpenImage)
+                return Lightmapping.IsOpenImageDenoiserSupported();
+
+            return true;
         }
 
         internal static LightingWindow s_Window;

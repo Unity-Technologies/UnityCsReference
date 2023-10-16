@@ -256,7 +256,7 @@ namespace Unity.UI.Builder
         public static readonly string VariableBindingTooltipFormatString =  "    Name: {0}\n    Sheet: {1}";
         public static readonly Dictionary<string, string> InspectorStylePropertiesTooltipsDictionary = new Dictionary<string, string>()
         {
-            {"align-content", "Alignment of the whole area of children on the cross axis if they span over multiple lines in this container."},
+            {"align-content", "Alignment of the whole area of children on the cross axis if they span over multiple lines in this container by using the flex-wrap property."},
             {"align-items", "Alignment of children on the cross axis of this container."},
             {"align-self", "Similar to align-items, but only for this specific element."},
             {"all", "Allows resetting all properties with the initial keyword. Does not apply to custom USS properties."},
@@ -384,6 +384,11 @@ namespace Unity.UI.Builder
                 {$"align-self{FieldTooltipDictionarySeparator}center", "Items are aligned with the center of the cross-axis container."},
                 {$"align-self{FieldTooltipDictionarySeparator}flex-end", "Items are aligned with the bottom of the cross-axis container."},
                 {$"align-self{FieldTooltipDictionarySeparator}stretch", "Items are stretched across the cross-axis container."},
+                {$"align-content{FieldTooltipDictionarySeparator}auto", "Lines of items within the container are aligned the same way as they would be with flex-start."},
+                {$"align-content{FieldTooltipDictionarySeparator}flex-start", "Lines of items within the container are aligned to the start of the container's cross axis."},
+                {$"align-content{FieldTooltipDictionarySeparator}center", "Lines of items within the container are aligned to the center of the container's cross axis."},
+                {$"align-content{FieldTooltipDictionarySeparator}flex-end", "Lines of items within the container are aligned to the end of the container's cross axis."},
+                {$"align-content{FieldTooltipDictionarySeparator}stretch", "Lines of items within the container are aligned to match the height of the container's cross axis."},
                 {$"-unity-font-style{FieldTooltipDictionarySeparator}bold", "Text is bolded."},
                 {$"-unity-font-style{FieldTooltipDictionarySeparator}italic", "Text is italicized."},
                 {$"-unity-text-align{FieldTooltipDictionarySeparator}left", "Aligns text to the left edge of the container."},

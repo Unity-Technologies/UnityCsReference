@@ -9,6 +9,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEditor.Build;
+using UnityEngine;
 
 namespace UnityEditor
 {
@@ -1102,5 +1103,13 @@ namespace UnityEditor
                 SetPlatformSettings("Editor", kSettingManagedDebuggerFixedPort, value.ToString().ToLower());
             }
         }
+
+        internal static extern void CopyToBuildProfile(ScriptableObject buildProfile);
+
+        /// <summary>
+        /// Get if build profile workflow diagnostics flag is set.
+        /// TODO: Temporary method to be removed when build profile workflow is enabled by default.
+        /// </summary>
+        internal static extern bool IsBuildProfileWorkflowEnabled();
     }
 }

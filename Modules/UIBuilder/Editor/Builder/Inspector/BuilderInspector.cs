@@ -121,6 +121,7 @@ namespace Unity.UI.Builder
 
         // Cached Selection
         VisualElement m_CachedVisualElement;
+        internal Binding cachedBinding;
 
         // Sections List (for hiding/showing based on current selection)
         List<VisualElement> m_Sections;
@@ -333,6 +334,8 @@ namespace Unity.UI.Builder
                 m_BindingsCache.onBindingStatusChanged += OnBindingStatusChanged;
                 m_BindingsCache.onBindingRemoved += OnBindingStatusChanged;
             }
+
+            cachedBinding = null;
         }
 
         public void UnsetBoundFieldInlineValue(DropdownMenuAction menuAction)
@@ -346,14 +349,9 @@ namespace Unity.UI.Builder
         public void EnableInlineValueEditing(VisualElement fieldElement)
         {
             boundFieldInlineValueBeingEditedName = BuilderInspectorUtilities.GetBindingProperty(fieldElement);
-
-            var notificationData = new BuilderNotifications.NotificationData()
-            {
-                key = BuilderConstants.inlineEditingNotificationKey,
-                message = BuilderConstants.InlineValuesOnCanvasNotification,
-            };
-
-            m_Notifications.AddNotification(notificationData);
+            var binding = currentVisualElement.GetBinding(boundFieldInlineValueBeingEditedName);
+            if (binding != null)
+                cachedBinding = binding;
 
             if (fieldElement == null)
             {
@@ -387,7 +385,14 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
+                    // Before the StyleField value is changed, we need to manually update the computed style value
+                    // to the base/default unset value in case there is no set inline value.
+                    styleFields.ResetInlineStyle(styleName);
                     styleFields.RefreshStyleFieldValue(styleName, fieldElement, true);
+                    // Because we want the inline value to be reflected immediately, we need to force the field to update the element
+                    // Without marking the file as dirty.
+                    var styleProperty = BuilderInspectorStyleFields.GetLastStyleProperty(currentRule, styleName);
+                    styleFields.PostStyleFieldSteps(fieldElement, styleProperty, styleName, false, false, BuilderInspectorStyleFields.NotifyType.Default, true);
                 }
             }
 
@@ -448,6 +453,9 @@ namespace Unity.UI.Builder
         {
             ToggleInlineEditingClasses(fieldElement, false);
             SetFieldsEnabled(fieldElement, false);
+            if (!currentVisualElement.TryGetBinding(cachedBinding.property, out _))
+                currentVisualElement.SetBinding(cachedBinding.property, cachedBinding);
+            cachedBinding = null;
         }
 
         public void ToggleInlineEditingClasses(VisualElement fieldElement, bool useInlineEditMode)
@@ -698,14 +706,15 @@ namespace Unity.UI.Builder
         void UpdateBoundValue(VisualElement field)
         {
             var attributeName = BuilderInspectorUtilities.GetBindingProperty(field);
+            var isAttribute = field.HasLinkedAttributeDescription();
 
-            if (IsInlineEditingEnabled(field) || boundFieldInlineValueBeingEditedName == attributeName)
+            if (isAttribute && (IsInlineEditingEnabled(field) || boundFieldInlineValueBeingEditedName == attributeName))
             {
                 // Don't update value now, it's being edited
                 return;
             }
 
-            var isAttribute = field.HasLinkedAttributeDescription();
+
             if (isAttribute)
             {
                 var value = currentVisualElement.GetValueByReflection(attributeName);
@@ -735,7 +744,8 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
-                    styleFields.RefreshStyleFieldValue(styleName, field);
+                    var forceInlineIfBinding = IsInlineEditingEnabled(field) && cachedBinding != null && cachedBinding.property == boundFieldInlineValueBeingEditedName;
+                    styleFields.RefreshStyleFieldValue(styleName, field, forceInlineIfBinding);
                 }
             }
         }
@@ -1244,8 +1254,16 @@ namespace Unity.UI.Builder
             // Reselect Icon, Type & Name in Header
             m_HeaderSection.Refresh();
 
-            // Recreate Attribute Fields
-            m_AttributesSection.Refresh();
+            if (m_AttributesSection.refreshScheduledItem != null)
+            {
+                // Pause to stop it in case it's already running; and then restart it to execute it.
+                m_AttributesSection.refreshScheduledItem.Pause();
+                m_AttributesSection.refreshScheduledItem.Resume();
+            }
+            else
+            {
+                m_AttributesSection.refreshScheduledItem = m_AttributesSection.fieldsContainer.schedule.Execute(() => m_AttributesSection.Refresh());
+            }
 
             // Reset current style rule.
             currentRule = null;
@@ -1278,7 +1296,16 @@ namespace Unity.UI.Builder
 
             if ((changeType & BuilderHierarchyChangeType.Attributes) == BuilderHierarchyChangeType.Attributes)
             {
-                m_AttributesSection.Refresh();
+                if (m_AttributesSection.refreshScheduledItem != null)
+                {
+                    // Pause to stop it in case it's already running; and then restart it to execute it.
+                    m_AttributesSection.refreshScheduledItem.Pause();
+                    m_AttributesSection.refreshScheduledItem.Resume();
+                }
+                else
+                {
+                    m_AttributesSection.refreshScheduledItem = m_AttributesSection.fieldsContainer.schedule.Execute(() => m_AttributesSection.Refresh());
+                }
             }
         }
 

@@ -18,7 +18,7 @@ namespace UnityEditor.Analytics
     {
         public LicensingErrorAnalytic() : base("license_error", 1) { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static LicensingErrorAnalytic CreateLicensingErrorAnalytic() { return new LicensingErrorAnalytic(); }
 
         public string licensingErrorType;
@@ -36,7 +36,7 @@ namespace UnityEditor.Analytics
     {
         public LicensingInitAnalytic() : base("license_init", 1) { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static LicensingInitAnalytic CreateLicensingInitAnalytic() { return new LicensingInitAnalytic(); }
 
         public string licensingProtocolVersion;

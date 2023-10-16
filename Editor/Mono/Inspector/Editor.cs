@@ -380,8 +380,8 @@ namespace UnityEditor
         // Note that m_Dirty is not only set through 'isInspectorDirty' but also from C++ in 'SetCustomEditorIsDirty (MonoBehaviour* inspector, bool dirty)'
         int m_IsDirty;
         int m_ReferenceTargetIndex = 0;
-        PropertyHandlerCache m_PropertyHandlerCache = new PropertyHandlerCache();
-        IPreviewable m_DummyPreview;
+        readonly PropertyHandlerCache m_PropertyHandlerCache = new PropertyHandlerCache();
+        internal IPreviewable m_DummyPreview;
         AudioFilterGUI m_AudioFilterGUI;
 
         internal SerializedObject m_SerializedObject = null;
@@ -679,8 +679,9 @@ namespace UnityEditor
         private void OnDisableINTERNAL()
         {
             CleanupPropertyEditor();
-            if (!(preview is Editor))
-                preview.Cleanup();
+            propertyHandlerCache.Dispose();
+            if (m_DummyPreview != null && m_DummyPreview is not Editor)
+                m_DummyPreview.Cleanup();
         }
 
         internal virtual SerializedObject GetSerializedObjectInternal()

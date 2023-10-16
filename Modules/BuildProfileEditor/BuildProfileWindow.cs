@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
-namespace UnityEditor.BuildProfile
+namespace UnityEditor.Build.Profile
 {
     /// <summary>
     /// Build Settings window in 'File > Build Settings'.
@@ -24,7 +24,9 @@ namespace UnityEditor.BuildProfile
         [UsedImplicitly, RequiredByNativeCode]
         public static void ShowBuildProfileWindow()
         {
-            var window = GetWindow<BuildProfileWindow>(false);
+            // TODO: Defer to old build settings experience.
+            // ticket: https://jira.unity3d.com/browse/PLAT-5886
+            var window = BuildPlayerWindow.GetWindow<BuildPlayerWindow>("Build Profiles");
             window.minSize = new Vector2(640, 400);
         }
 

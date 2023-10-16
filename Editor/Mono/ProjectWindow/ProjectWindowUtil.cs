@@ -239,7 +239,7 @@ namespace UnityEditor
 
     public class ProjectWindowUtil
     {
-        [MenuItem("Assets/Create/GUI Skin", false, 601)]
+        [MenuItem("Assets/Create/GUI Skin", false, -18)]
         public static void CreateNewGUISkin()
         {
             GUISkin skin = ScriptableObject.CreateInstance<GUISkin>();
@@ -341,7 +341,7 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScene>(), "New Scene.unity", EditorGUIUtility.FindTexture(typeof(SceneAsset)), null);
         }
 
-        [MenuItem("Assets/Create/Prefab", false, 202)]
+        [MenuItem("Assets/Create/Scene/Prefab", false, 21)]
         static void CreatePrefab()
         {
             StartNameEditingIfProjectWindowExists(
@@ -352,7 +352,7 @@ namespace UnityEditor
                 null);
         }
 
-        [MenuItem("Assets/Create/Prefab Variant", true)]
+        [MenuItem("Assets/Create/Scene/Prefab Variant", true)]
         static bool CreatePrefabVariantValidation()
         {
             var gameObjects = Selection.gameObjects;
@@ -367,7 +367,7 @@ namespace UnityEditor
             return true;
         }
 
-        [MenuItem("Assets/Create/Prefab Variant", false, 203)]
+        [MenuItem("Assets/Create/Scene/Prefab Variant", false, 22)]
         static void CreatePrefabVariant()
         {
             var gameObjects = Selection.gameObjects;

@@ -200,5 +200,10 @@ namespace UnityEditor
                 EditorGUILayout.Space();
             }
         }
+
+        public bool HasHelpGUI()
+        {
+            return true;
+        }
     }
 } // namespace

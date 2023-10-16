@@ -18,7 +18,7 @@ namespace UnityEditor.Analytics
     {
         public BuildAssetBundleAnalytic() : base("unity5BuildAssetBundles", 1) { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static BuildAssetBundleAnalytic CreateBuildAssetBundleAnalytic() { return new BuildAssetBundleAnalytic(); }
 
         public bool success;

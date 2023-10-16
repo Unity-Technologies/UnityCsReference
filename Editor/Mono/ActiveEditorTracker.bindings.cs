@@ -14,7 +14,7 @@ namespace UnityEditor
 {
     // This is a strain for the garbage collector (Small memory for GC, big overhead for engine)
     // Might want to add a manual dispose
-    [NativeHeader("Editor/Src/Utility/ActiveEditorTracker.bindings.h")]
+    [NativeHeader("Editor/Src/Selection/ActiveEditorTracker.bindings.h")]
     [Serializable]
     [RequiredByNativeCode]
     public sealed class ActiveEditorTracker

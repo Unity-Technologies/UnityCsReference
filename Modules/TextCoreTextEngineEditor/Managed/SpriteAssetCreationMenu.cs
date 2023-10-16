@@ -184,7 +184,7 @@ namespace UnityEditor.TextCore.Text
         }
 
 
-        [MenuItem("Assets/Create/Text/Sprite Asset", false, 150)]
+        [MenuItem("Assets/Create/Text Core/Sprite Asset", false, 150)]
         internal static void CreateSpriteAsset()
         {
             Object[] targets = Selection.objects;

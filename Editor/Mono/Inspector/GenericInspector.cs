@@ -354,8 +354,10 @@ namespace UnityEditor
         {
             ResetOptimizedBlock();
             CleanupPropertyEditor();
-            if (!(preview is Editor))
-                preview.Cleanup();
+            propertyHandlerCache.Dispose();
+
+            if (m_DummyPreview != null && m_DummyPreview is not Editor)
+                m_DummyPreview.Cleanup();
         }
 
         internal static bool ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(Object obj)

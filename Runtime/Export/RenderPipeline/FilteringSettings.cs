@@ -14,6 +14,7 @@ namespace UnityEngine.Rendering
         RenderQueueRange m_RenderQueueRange;
         int m_LayerMask;
         uint m_RenderingLayerMask;
+        uint m_BatchLayerMask;
         int m_ExcludeMotionVectorObjects;
         SortingLayerRange m_SortingLayerRange;
 
@@ -24,6 +25,7 @@ namespace UnityEngine.Rendering
             m_RenderQueueRange = renderQueueRange ?? RenderQueueRange.all;
             m_LayerMask = layerMask;
             m_RenderingLayerMask = renderingLayerMask;
+            m_BatchLayerMask = uint.MaxValue;
             m_ExcludeMotionVectorObjects = excludeMotionVectorObjects;
             m_SortingLayerRange = SortingLayerRange.all;
         }
@@ -46,6 +48,12 @@ namespace UnityEngine.Rendering
             set { m_RenderingLayerMask = value; }
         }
 
+        public uint batchLayerMask
+        {
+            get { return m_BatchLayerMask; }
+            set { m_BatchLayerMask = value; }
+        }
+
         public bool excludeMotionVectorObjects
         {
             get { return m_ExcludeMotionVectorObjects != 0; }
@@ -60,7 +68,11 @@ namespace UnityEngine.Rendering
 
         public bool Equals(FilteringSettings other)
         {
-            return m_RenderQueueRange.Equals(other.m_RenderQueueRange) && m_LayerMask == other.m_LayerMask && m_RenderingLayerMask == other.m_RenderingLayerMask && m_ExcludeMotionVectorObjects == other.m_ExcludeMotionVectorObjects;
+            return m_RenderQueueRange.Equals(other.m_RenderQueueRange)
+                && m_LayerMask == other.m_LayerMask
+                && m_RenderingLayerMask == other.m_RenderingLayerMask
+                && m_BatchLayerMask == other.m_BatchLayerMask
+                && m_ExcludeMotionVectorObjects == other.m_ExcludeMotionVectorObjects;
         }
 
         public override bool Equals(object obj)
@@ -76,6 +88,7 @@ namespace UnityEngine.Rendering
                 var hashCode = m_RenderQueueRange.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_LayerMask;
                 hashCode = (hashCode * 397) ^ (int)m_RenderingLayerMask;
+                hashCode = (hashCode * 397) ^ (int)m_BatchLayerMask;
                 hashCode = (hashCode * 397) ^ m_ExcludeMotionVectorObjects;
                 return hashCode;
             }

@@ -26,7 +26,7 @@ namespace UnityEngine.Analytics
     [UnityEngine.Internal.ExcludeFromDocs]
     public class VRDeviceAnalyticAspect : VRDeviceAnalyticBase
     {
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static VRDeviceAnalyticAspect CreateVRDeviceAnalyticAspect() { return new VRDeviceAnalyticAspect(); }
 
         public float vr_aspect_ratio;
@@ -38,7 +38,7 @@ namespace UnityEngine.Analytics
     [UnityEngine.Internal.ExcludeFromDocs]
     public class VRDeviceMirrorAnalytic : VRDeviceAnalyticBase
     {
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static VRDeviceMirrorAnalytic CreateVRDeviceMirrorAnalytic() { return new VRDeviceMirrorAnalytic(); }
 
         public bool vr_device_mirror_mode;
@@ -50,7 +50,7 @@ namespace UnityEngine.Analytics
     [UnityEngine.Internal.ExcludeFromDocs]
     public class VRDeviceUserAnalytic : VRDeviceAnalyticBase
     {
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static VRDeviceUserAnalytic CreateVRDeviceUserAnalytic() { return new VRDeviceUserAnalytic(); }
 
         public int vr_user_presence;
@@ -62,7 +62,7 @@ namespace UnityEngine.Analytics
     [UnityEngine.Internal.ExcludeFromDocs]
     public class VRDeviceActiveControllersAnalytic : VRDeviceAnalyticBase
     {
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static VRDeviceActiveControllersAnalytic CreateVRDeviceActiveControllersAnalytic() { return new VRDeviceActiveControllersAnalytic(); }
 
         public string[] vr_active_controllers;

@@ -356,6 +356,7 @@ namespace UnityEditor.Search
             if (supportsMultiline && IsLineBreak(evt))
             {
                 var currentCursor = textField.cursorIndex;
+                textField.multiline = true;
                 searchField.value = searchField.value.Insert(currentCursor, "\n");
                 UpdateInternalTextData();
                 selectingUtilities.MoveRight();
@@ -623,7 +624,10 @@ namespace UnityEditor.Search
             if (textField == null)
                 return;
 
-            var hasLineBreak = supportsMultiline && searchField.value.Contains('\n') || searchField.value.Contains('\r') || searchField.value.Contains("\r\n");
+            // Quick note: The single line TextField control automatically trims any \n out of its value. Otherwise the
+            // TextCore will interpret them as a new line feeds, making a single line TextField look like multiline.
+            var rawValue = searchField.value == context.searchText.Replace("\n", "") ? context.searchText : searchField.value;
+            var hasLineBreak = supportsMultiline && rawValue.Contains('\n') || rawValue.Contains('\r') || rawValue.Contains("\r\n");
             textField.multiline = hasLineBreak;
             searchField.EnableInClassList(searchFieldMultilineClassName, hasLineBreak);
         }

@@ -16,20 +16,6 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
-    [NativeHeader("Modules/Physics/PhysicMaterial.h")]
-    partial class PhysicMaterial : UnityEngine.Object
-    {
-        public PhysicMaterial() { Internal_CreateDynamicsMaterial(this, "DynamicMaterial"); }
-        public PhysicMaterial(string name) { Internal_CreateDynamicsMaterial(this, name); }
-        extern private static void Internal_CreateDynamicsMaterial([Writable] PhysicMaterial mat, string name);
-
-        extern public float bounciness { get; set; }
-        extern public float dynamicFriction { get; set; }
-        extern public float staticFriction { get; set; }
-        extern public PhysicMaterialCombine frictionCombine { get; set; }
-        extern public PhysicMaterialCombine bounceCombine { get; set; }
-    }
-
     [NativeHeader("Runtime/Interfaces/IRaycast.h")]
     [NativeHeader("PhysicsScriptingClasses.h")]
     [NativeHeader("Modules/Physics/RaycastHit.h")]
@@ -357,9 +343,9 @@ namespace UnityEngine
         }
 
         [NativeMethod("Material")]
-        extern public PhysicMaterial sharedMaterial { get; set; }
+        extern public PhysicsMaterial sharedMaterial { get; set; }
 
-        extern public PhysicMaterial material
+        extern public PhysicsMaterial material
         {
             [NativeMethod("GetClonedMaterial")] get;
             [NativeMethod("SetMaterial")] set;

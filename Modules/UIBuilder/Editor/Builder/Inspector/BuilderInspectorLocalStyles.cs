@@ -267,32 +267,34 @@ namespace Unity.UI.Builder
 
                 content.AppendCategory(new CategoryDropdownContent.Category { name = groupName });
 
-                foreach (var element in kvp.Value)
+                var stringNameHashSet = HashSetPool<string>.Get();
+                var hashSet = HashSetPool<StylePropertyId>.Get();
+
+                try
                 {
-                    var styleName = element.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
-
-                    if (!string.IsNullOrWhiteSpace(styleName))
+                    foreach (var element in kvp.Value)
                     {
-                        var styleId = StyleDebug.GetStylePropertyIdFromName(styleName);
-                        if (!StylePropertyUtil.IsAnimatable(styleId))
-                            continue;
+                        var styleName = element.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
 
-                        if (!string.IsNullOrWhiteSpace(styleId.ToString()))
+                        if (!string.IsNullOrWhiteSpace(styleName))
                         {
-                            content.AppendValue(
-                                new CategoryDropdownContent.ValueItem
-                                {
-                                    categoryName = groupName,
-                                    value = styleName,
-                                    displayName = ObjectNames.NicifyVariableName(styleId.ToString())
-                                });
-                        }
-                    }
+                            var styleId = StyleDebug.GetStylePropertyIdFromName(styleName);
+                            if (!StylePropertyUtil.IsAnimatable(styleId) || !stringNameHashSet.Add(styleName))
+                                continue;
 
-                    if (!(element is FoldoutField foldoutField)) continue;
-                    var hashSet = HashSetPool<StylePropertyId>.Get();
-                    try
-                    {
+                            if (!string.IsNullOrWhiteSpace(styleId.ToString()))
+                            {
+                                content.AppendValue(
+                                    new CategoryDropdownContent.ValueItem
+                                    {
+                                        categoryName = groupName,
+                                        value = styleName,
+                                        displayName = ObjectNames.NicifyVariableName(styleId.ToString())
+                                    });
+                            }
+                        }
+
+                        if (!(element is FoldoutField foldoutField)) continue;
                         foreach (var bindingPath in foldoutField.bindingPathArray)
                         {
                             var shortHandId = StyleDebug.GetStylePropertyIdFromName(bindingPath).GetShorthandProperty();
@@ -309,16 +311,17 @@ namespace Unity.UI.Builder
                                     {
                                         categoryName = groupName,
                                         value = BuilderNameUtilities.ConvertStyleCSharpNameToUssName(
-                                            shortHandId.ToString()),
+                                            shortHandId.ToString().ToCamelCase()),
                                         displayName = ObjectNames.NicifyVariableName(shortHandId.ToString())
                                     });
                             }
                         }
                     }
-                    finally
-                    {
-                        HashSetPool<StylePropertyId>.Release(hashSet);
-                    }
+                }
+                finally
+                {
+                    HashSetPool<string>.Release(stringNameHashSet);
+                    HashSetPool<StylePropertyId>.Release(hashSet);
                 }
             }
 

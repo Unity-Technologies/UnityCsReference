@@ -55,6 +55,11 @@ namespace UnityEditor.UIElements.ProjectSettings
         Object[] m_TargetObjects;
 
         public ProjectSettingsTitleBar()
+        : this (null)
+        {
+        }
+
+        public ProjectSettingsTitleBar(string label)
         {
             AddToClassList(Styles.k_TitleBarClassName);
 
@@ -62,6 +67,9 @@ namespace UnityEditor.UIElements.ProjectSettings
             m_LabelElement.AddToClassList(Styles.k_TitleLabelClassName);
             Add(m_LabelElement);
             Add(new IMGUIContainer(DrawEditorHeaderItems));
+
+            if (!string.IsNullOrEmpty(label))
+                this.label = label;
         }
 
         protected override void Initialize()
@@ -78,17 +86,22 @@ namespace UnityEditor.UIElements.ProjectSettings
 
             var currentRect = GUILayoutUtility.GetRect(btnWidth, btnHeight);
             currentRect.y = btnMargin;
+            currentRect.x += btnWidth;
             EditorGUIUtility.DrawEditorHeaderItems(currentRect, m_TargetObjects);
-            var settingsRect = GUILayoutUtility.GetRect(btnWidth, btnHeight);
+
+            //This needs to be here to not draw HeaderItems and Dropdown for Presets on the same place
+            var settingsRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.optionsButtonStyle);
             settingsRect.y = currentRect.y;
 
             // Settings; process event even for disabled UI
             var wasEnabled = GUI.enabled;
             GUI.enabled = true;
-            var showMenu = EditorGUI.DropdownButton(settingsRect, GUIContent.none, FocusType.Passive, EditorStyles.optionsButtonStyle);
+            var dropdownRect = GUILayoutUtility.GetRect(GUIContent.none,  EditorStyles.optionsButtonStyle);
+            dropdownRect.y = currentRect.y;
+            var showMenu =  EditorGUI.DropdownButton(dropdownRect, GUIContent.none, FocusType.Passive,  EditorStyles.optionsButtonStyle);
             GUI.enabled = wasEnabled;
             if (showMenu)
-                EditorUtility.DisplayObjectContextMenu(settingsRect, m_TargetObjects, 0);
+                EditorUtility.DisplayObjectContextMenu(dropdownRect, m_TargetObjects, 0);
             GUILayout.EndHorizontal();
         }
     }

@@ -30,16 +30,16 @@ namespace UnityEngine
 
     partial class ParticleSystemRenderer
     {
-        [Obsolete("EnableVertexStreams is deprecated.Use SetActiveVertexStreams instead.", false)]
+        [Obsolete("EnableVertexStreams is deprecated. Use SetActiveVertexStreams instead.", false)]
         public void EnableVertexStreams(ParticleSystemVertexStreams streams) { Internal_SetVertexStreams(streams, true); }
-        [Obsolete("DisableVertexStreams is deprecated.Use SetActiveVertexStreams instead.", false)]
+        [Obsolete("DisableVertexStreams is deprecated. Use SetActiveVertexStreams instead.", false)]
         public void DisableVertexStreams(ParticleSystemVertexStreams streams) { Internal_SetVertexStreams(streams, false); }
-        [Obsolete("AreVertexStreamsEnabled is deprecated.Use GetActiveVertexStreams instead.", false)]
+        [Obsolete("AreVertexStreamsEnabled is deprecated. Use GetActiveVertexStreams instead.", false)]
         public bool AreVertexStreamsEnabled(ParticleSystemVertexStreams streams) { return Internal_GetEnabledVertexStreams(streams) == streams; }
-        [Obsolete("GetEnabledVertexStreams is deprecated.Use GetActiveVertexStreams instead.", false)]
+        [Obsolete("GetEnabledVertexStreams is deprecated. Use GetActiveVertexStreams instead.", false)]
         public ParticleSystemVertexStreams GetEnabledVertexStreams(ParticleSystemVertexStreams streams) { return Internal_GetEnabledVertexStreams(streams); }
 
-        [Obsolete("Internal_SetVertexStreams is deprecated.Use SetActiveVertexStreams instead.", false)]
+        [Obsolete("Internal_SetVertexStreams is deprecated. Use SetActiveVertexStreams instead.", false)]
         internal void Internal_SetVertexStreams(ParticleSystemVertexStreams streams, bool enabled)
         {
             List<ParticleSystemVertexStream> streamList = new List<ParticleSystemVertexStream>(activeVertexStreamsCount);
@@ -83,7 +83,7 @@ namespace UnityEngine
             SetActiveVertexStreams(streamList);
         }
 
-        [Obsolete("Internal_GetVertexStreams is deprecated.Use GetActiveVertexStreams instead.", false)]
+        [Obsolete("Internal_GetVertexStreams is deprecated. Use GetActiveVertexStreams instead.", false)]
         internal ParticleSystemVertexStreams Internal_GetEnabledVertexStreams(ParticleSystemVertexStreams streams)
         {
             List<ParticleSystemVertexStream> streamList = new List<ParticleSystemVertexStream>(activeVertexStreamsCount);
@@ -107,5 +107,15 @@ namespace UnityEngine
 
             return (deprecatedStreams & streams);
         }
+
+        [Obsolete("BakeMesh with useTransform is deprecated. Use BakeMesh with ParticleSystemBakeMeshOptions instead.", false)]
+        public void BakeMesh(Mesh mesh, bool useTransform = false) { BakeMesh(mesh, Camera.main, useTransform); }
+        [Obsolete("BakeMesh with useTransform is deprecated. Use BakeMesh with ParticleSystemBakeMeshOptions instead.", false)]
+        public void BakeMesh(Mesh mesh, Camera camera, bool useTransform = false) { BakeMesh(mesh, camera, useTransform ? ParticleSystemBakeMeshOptions.BakeRotationAndScale : ParticleSystemBakeMeshOptions.Default); }
+
+        [Obsolete("BakeTrailsMesh with useTransform is deprecated. Use BakeTrailsMesh with ParticleSystemBakeMeshOptions instead.", false)]
+        public void BakeTrailsMesh(Mesh mesh, bool useTransform = false) { BakeTrailsMesh(mesh, Camera.main, useTransform); }
+        [Obsolete("BakeTrailsMesh with useTransform is deprecated. Use BakeTrailsMesh with ParticleSystemBakeMeshOptions instead.", false)]
+        public void BakeTrailsMesh(Mesh mesh, Camera camera, bool useTransform = false) { BakeTrailsMesh(mesh, camera, useTransform ? ParticleSystemBakeMeshOptions.BakeRotationAndScale : ParticleSystemBakeMeshOptions.Default); }
     }
 }

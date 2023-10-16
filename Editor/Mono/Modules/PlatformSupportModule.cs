@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditor.DeploymentTargets;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEditor.Build.Profile;
 using UnityEngine;
 
 namespace UnityEditor.Modules
@@ -75,6 +76,9 @@ namespace UnityEditor.Modules
         ITextureImportSettingsExtension CreateTextureImportSettingsExtension();
 
         IPluginImporterExtension CreatePluginImporterExtension();
+
+        // Returns an instance of IBuildProfileExtension or null if not supported.
+        IBuildProfileExtension CreateBuildProfileExtension();
 
         // Register platform specific Unity extensions
         // For ex., Metro specifc UnityEngine.Networking.dll which is different from the generic UnityEngine.Networking.dll
@@ -347,6 +351,12 @@ namespace UnityEditor.Modules
     internal interface ITextureImportSettingsExtension
     {
         void ShowImportSettings(BaseTextureImportPlatformSettings editor);
+    }
+
+    // Interface for implementing platform specific setting in Build Profiles window.
+    internal interface IBuildProfileExtension
+    {
+        BuildProfilePlatformSettingsBase CreateBuildProfilePlatformSettings();
     }
 
     // Interface for target device related operations

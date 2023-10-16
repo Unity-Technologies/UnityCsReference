@@ -18,7 +18,7 @@ namespace UnityEditor.Analytics
     {
         public CollabOperationAnalytic() : base("collabOperation", 1) { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static CollabOperationAnalytic CreateCollabOperationAnalytic() { return new CollabOperationAnalytic(); }
 
         public string category;

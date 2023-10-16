@@ -26,7 +26,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// The text field used by the search field to draw and modify the search string.
         /// </summary>
-        protected TextInputType textInputField { get { return m_TextField; } }
+        internal protected TextInputType textInputField { get { return m_TextField; } }
 
         /// <summary>
         /// The search button.

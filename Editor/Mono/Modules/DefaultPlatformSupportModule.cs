@@ -50,6 +50,8 @@ namespace UnityEditor.Modules
 
         public virtual IPluginImporterExtension CreatePluginImporterExtension() { return null; }
 
+        public virtual IBuildProfileExtension CreateBuildProfileExtension() { return null; }
+
         public virtual IDeploymentTargetsExtension CreateDeploymentTargetsExtension() { return null; }
 
         public virtual void RegisterAdditionalUnityExtensions() {}

@@ -34,10 +34,10 @@ namespace UnityEditor
         OnlyUserModifiable = 8
     }
 
-    [NativeHeader("Editor/Src/Selection.bindings.h")]
     [NativeHeader("Editor/Src/Gizmos/GizmoUtil.h")]
-    [NativeHeader("Editor/Src/Selection.h")]
-    [NativeHeader("Editor/Src/SceneInspector.h")]
+    [NativeHeader("Editor/Src/Selection/Selection.bindings.h")]
+    [NativeHeader("Editor/Src/Selection/Selection.h")]
+    [NativeHeader("Editor/Src/Selection/SceneInspector.h")]
     public sealed partial class Selection
     {
         // Returns the top level selection, excluding prefabs.

@@ -72,14 +72,24 @@ namespace Unity.UI.Builder
 
         public static string ConvertStyleCSharpNameToUssName(string csharpName)
         {
-            StylePropertyUtil.s_CSharpNameToUssName.TryGetValue(csharpName, out var ussName);
-            return ussName;
+            if (StylePropertyUtil.s_CSharpNameToUssName.TryGetValue(csharpName, out var ussName))
+                return ussName;
+
+            var dashCasedName = ConvertCamelToDash(csharpName);
+            if (dashCasedName.StartsWith("unity-"))
+                dashCasedName = "-" + dashCasedName;
+
+            return dashCasedName;
         }
 
         public static string ConvertStyleUssNameToCSharpName(string ussName)
         {
-            StylePropertyUtil.s_UssNameToCSharpName.TryGetValue(ussName, out var cSharpStyleName);
-            return cSharpStyleName;
+            if (StylePropertyUtil.s_UssNameToCSharpName.TryGetValue(ussName, out var cSharpStyleName))
+                return cSharpStyleName;
+
+            if (ussName.StartsWith("-unity"))
+                ussName = ussName.Substring(1);
+            return ConvertDashToCamel(ussName);
         }
 
         public static string ConvertUssNameToStyleName(string ussName)

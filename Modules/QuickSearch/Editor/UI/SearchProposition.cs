@@ -400,7 +400,7 @@ namespace UnityEditor.Search
         private static readonly string[] baseTypeFilters = new[]
         {
             "DefaultAsset", "AnimationClip", "AudioClip", "AudioMixer", "ComputeShader", "Font", "GUISKin", "Material", "Mesh",
-            "Model", "PhysicMaterial", "Prefab", "Scene", "Script", "ScriptableObject", "Shader", "Sprite", "StyleSheet", "Texture", "VideoClip"
+            "Model", "PhysicsMaterial", "Prefab", "Scene", "Script", "ScriptableObject", "Shader", "Sprite", "StyleSheet", "Texture", "VideoClip"
         };
 
         public static Dictionary<string, string> help = new Dictionary<string, string>

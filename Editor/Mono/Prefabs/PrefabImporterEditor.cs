@@ -2,10 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
+using System.Collections.Generic;
 using UnityEditor.AssetImporters;
 using UnityEditor.SceneManagement;
-using System.Collections.Generic;
+using UnityEditor.UIElements;
+using UnityEngine;
 
 namespace UnityEditor
 {
@@ -40,8 +41,9 @@ namespace UnityEditor
             public Hash128 hash;
         }
 
-        List<Component> m_TempComponentsResults = new List<Component>();
-        List<TrackedAsset> m_DirtyPrefabAssets = new List<TrackedAsset>();
+        readonly List<Component> m_TempComponentsResults = new List<Component>();
+        readonly List<TrackedAsset> m_DirtyPrefabAssets = new List<TrackedAsset>();
+        bool m_HasPendingChanges;
 
         public override bool showImportedObject { get { return !hasMissingScripts; } }
 
@@ -53,7 +55,7 @@ namespace UnityEditor
             get { return EditorGUI.IsEditingTextField() && !EditorGUIUtility.textFieldHasSelection; }
         }
 
-        bool readyToAutoSave
+        internal bool readyToAutoSave
         {
             get { return !m_SavingHasFailed && !hasMissingScripts && GUIUtility.hotControl == 0 && !isTextFieldCaretShowing && !EditorApplication.isCompiling; }
         }
@@ -66,13 +68,49 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
-            EditorApplication.update += Update;
+            ObjectChangeEvents.changesPublished += ObjectChangeEventPublished;
         }
 
         public override void OnDisable()
         {
-            EditorApplication.update -= Update;
+            if (m_HasPendingChanges)
+            {
+                EditorApplication.update -= WaitToApplyChanges;
+                m_HasPendingChanges = false;
+                SaveDirtyPrefabAssets(false);
+            }
+
+            ObjectChangeEvents.changesPublished -= ObjectChangeEventPublished;
             base.OnDisable();
+        }
+
+        private void ObjectChangeEventPublished(ref ObjectChangeEventStream stream)
+        {
+            if (m_HasPendingChanges)
+                return;
+
+            for (int i = 0; i < stream.length; ++i)
+            {
+                if (stream.GetEventType(i) == ObjectChangeKind.ChangeGameObjectOrComponentProperties)
+                {
+                    stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var changeGameObjectOrComponent);
+                    var asset = EditorUtility.InstanceIDToObject(changeGameObjectOrComponent.instanceId);
+                    if (IsTargetAsset(asset))
+                    {
+                        if (!EditorFocusMonitor.AreBindableElementsSelected() && readyToAutoSave)
+                        {
+                            SaveDirtyPrefabAssets(true);
+                        }
+                        else
+                        {
+                            m_HasPendingChanges = true;
+                            EditorApplication.update += WaitToApplyChanges;
+                        }
+
+                        return;
+                    }
+                }
+            }
         }
 
         protected override void Awake()
@@ -102,14 +140,14 @@ namespace UnityEditor
                 SaveDirtyPrefabAssets(false);
         }
 
-        void Update()
+        void WaitToApplyChanges()
         {
             var time = EditorApplication.timeSinceStartup;
             if (time > m_NextUpdate)
             {
                 m_NextUpdate = time + 0.2;
 
-                if (readyToAutoSave && HasDirtyPrefabAssets())
+                if (!EditorFocusMonitor.AreBindableElementsSelected() && readyToAutoSave)
                     SaveDirtyPrefabAssets(true);
             }
         }
@@ -190,22 +228,28 @@ namespace UnityEditor
                             }
                         }
                     }
+
+                    // We reset the flag after the changes have been applied in order to avoid a new change being detected from the save operation.
+                    if (m_HasPendingChanges)
+                    {
+                        EditorApplication.update -= WaitToApplyChanges;
+                        m_HasPendingChanges = false;
+                    }
                 }
             }
         }
 
-        internal bool HasDirtyPrefabAssets()
+        bool IsTargetAsset(Object obj)
         {
-            if (assetTarget == null)
-                return false;
+            if (obj is Component component)
+                obj = component.gameObject;
 
-            if (typeof(GameObject) != assetTarget.GetType())
-                return false;
-
-            // We just check one target since we assume that a multi-edit will
-            // always edit that target. So no need to spend resources on checking
-            // all targets in multiselection.
-            return IsDirty((GameObject)assetTarget);
+            foreach (var asset in assetTargets)
+            {
+                if (obj == asset)
+                    return true;
+            }
+            return false;
         }
 
         bool IsDirty(GameObject prefabAssetRoot)

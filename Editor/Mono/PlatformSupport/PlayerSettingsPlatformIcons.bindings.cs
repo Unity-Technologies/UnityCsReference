@@ -5,7 +5,6 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 
 using UnityEngine.Bindings;
 using UnityEngine;
@@ -105,7 +104,7 @@ namespace UnityEditor
             return m_Textures.Count(t => t != null) == 0;
         }
 
-        internal static PlatformIcon[] GetRequiredPlatformIconsByType(IPlatformIconProvider platformIcons, PlatformIconKind kind, Dictionary<PlatformIconKind, PlatformIcon[]> requiredIcons)
+        internal static PlatformIcon[] GetRequiredPlatformIconsByType(PlatformIconKind kind, IReadOnlyDictionary<PlatformIconKind, PlatformIcon[]> requiredIcons)
         {
             if (kind != PlatformIconKind.Any)
                 return requiredIcons[kind];
@@ -130,10 +129,8 @@ namespace UnityEditor
         public Texture2D GetTexture(int layer = 0)
         {
             if (layer < 0 || layer >= maxLayerCount)
-                throw new ArgumentOutOfRangeException(string.Format("Attempting to retrieve icon layer {0}, while the icon only contains {1} layers!", layer, layerCount));
-            else if (layer < layerCount)
-                return m_Textures[layer];
-            return null;
+                throw new ArgumentOutOfRangeException($"Attempting to retrieve icon layer {layer}, while the icon only contains {layerCount} layers!");
+            return layer < layerCount ? m_Textures[layer] : null;
         }
 
         public Texture2D[] GetTextures()
@@ -155,9 +152,9 @@ namespace UnityEditor
         {
             if (layer < 0 || layer >= maxLayerCount)
             {
-                throw new ArgumentOutOfRangeException(string.Format("Attempting to set icon layer {0}, while icon only supports {1} layers!", layer, maxLayerCount));
+                throw new ArgumentOutOfRangeException($"Attempting to set icon layer {layer}, while icon only supports {maxLayerCount} layers!");
             }
-            else if (layer > m_Textures.Count - 1)
+            if (layer > m_Textures.Count - 1)
             {
                 for (int i = m_Textures.Count; i <= layer; i++)
                     m_Textures.Add(null);
@@ -175,11 +172,7 @@ namespace UnityEditor
             }
             else if (textures.Length > maxLayerCount || textures.Length < minLayerCount)
             {
-                throw new InvalidOperationException(string.Format("Attempting to assign an incorrect amount of layers to an PlatformIcon, trying to assign {0} textures while the Icon requires atleast {1} but no more than {2} layers",
-                    textures.Length,
-                    minLayerCount,
-                    maxLayerCount
-                ));
+                throw new InvalidOperationException($"Attempting to assign an incorrect amount of layers to an PlatformIcon, trying to assign {textures.Length} textures while the Icon requires atleast {minLayerCount} but no more than {maxLayerCount} layers");
             }
 
             m_Textures = textures.ToList();
@@ -231,46 +224,29 @@ namespace UnityEditor
         public override string ToString() { return kindString; }
     }
 
-    internal interface IPlatformIconProvider
-    {
-        Dictionary<PlatformIconKind, PlatformIcon[]> GetRequiredPlatformIcons();
-        PlatformIconKind GetPlatformIconKindFromEnumValue(IconKind kind);
-    }
-
-
     [NativeHeader("Runtime/Misc/PlayerSettings.h")]
     public partial class PlayerSettings : UnityEngine.Object
     {
-        internal static Dictionary<string, IPlatformIconProvider> platformIconProviders = new Dictionary<string, IPlatformIconProvider>();
-
-        internal static IPlatformIconProvider GetPlatformIconProvider(in NamedBuildTarget buildTarget)
+        // TODO: once we move the icon stuff to a common editor plugin, move it there as well
+        internal static void InitIconsStructs(NamedBuildTarget buildTarget)
         {
-            if (!platformIconProviders.ContainsKey(buildTarget.TargetName))
-                return null;
-            return platformIconProviders[buildTarget.TargetName];
-        }
-
-        internal static bool HasPlatformIconProvider(in NamedBuildTarget buildTarget)
-        {
-            return platformIconProviders.ContainsKey(buildTarget.TargetName);
-        }
-
-        internal static void RegisterPlatformIconProvider(in NamedBuildTarget buildTarget, IPlatformIconProvider platformIconProvider)
-        {
-            if (platformIconProviders.ContainsKey(buildTarget.TargetName))
-                return;
-            platformIconProviders[buildTarget.TargetName] = platformIconProvider;
-
             // This forces icon structures to be initialized in PlayerSettings on Editor start if needed
             // If we don't do this, the following might happen:
             // * Create new project
             // * ProjectSettings.asset will have its m_BuildTargetPlatformIcons structure empty
-            // * But once you build to Android/iOS/tvOS or any platform which uses IPlatformIconProvider, it will initialize m_BuildTargetPlatformIcons
+            // * But once you build to Android/iOS/tvOS or any platform which uses IIconPlatformProperties, it will initialize m_BuildTargetPlatformIcons
             // * Causing ProjectSettings.asset to change after you clicked build
             // * This is bad for incremental builds, at least for the 2nd/sequential build, it will see that ProjectSettings.asset has changed and will start rebuilding resources
-            foreach (var kind in GetSupportedIconKinds(buildTarget))
+            if (!BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(buildTarget.TargetName), out var iBuildTarget))
+                return;
+            var requiredIcons = iBuildTarget.IconPlatformProperties?.GetRequiredPlatformIcons();
+            if (requiredIcons == null)
+                return;
+
+            foreach(var icon in requiredIcons.Keys)
             {
-                GetPlatformIcons(buildTarget, kind);
+                // Init the internal structures with empty icons
+                GetPlatformIcons(buildTarget, icon);
             }
         }
 
@@ -306,13 +282,14 @@ namespace UnityEditor
         // Loops through 'requiredIconSlots' and fills it with icons that are already serialized.
         public static PlatformIcon[] GetPlatformIcons(NamedBuildTarget buildTarget, PlatformIconKind kind)
         {
-            var platformIconProvider = GetPlatformIconProvider(buildTarget);
-            if (platformIconProvider == null)
-                return new PlatformIcon[] {};
+            if (!BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(buildTarget.TargetName), out var iBuildTarget))
+                return Array.Empty<PlatformIcon>();
+            var requiredIcons = iBuildTarget.IconPlatformProperties?.GetRequiredPlatformIcons();
+            if (requiredIcons == null)
+                return Array.Empty<PlatformIcon>();
 
-            var serializedIcons  = GetPlatformIconsInternal(buildTarget.TargetName, kind.kind);
-            var requiredIcons = platformIconProvider.GetRequiredPlatformIcons();
-            var icons = PlatformIcon.GetRequiredPlatformIconsByType(platformIconProvider, kind, requiredIcons);
+            var icons = PlatformIcon.GetRequiredPlatformIconsByType(kind, requiredIcons);
+            var serializedIcons = GetPlatformIconsInternal(buildTarget.TargetName, kind.kind);
 
             if (serializedIcons.Length <= 0)
             {
@@ -336,29 +313,27 @@ namespace UnityEditor
 
         public static void SetPlatformIcons(NamedBuildTarget buildTarget, PlatformIconKind kind, PlatformIcon[] icons)
         {
-            var platformIconProvider = GetPlatformIconProvider(buildTarget);
-            if (platformIconProvider == null)
+            if (!BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(buildTarget.TargetName), out var iBuildTarget))
                 return;
 
-            var requiredIcons = platformIconProvider.GetRequiredPlatformIcons();
-            var requiredIconCount = PlatformIcon.GetRequiredPlatformIconsByType(platformIconProvider, kind, requiredIcons).Length;
+            var requiredIcons = iBuildTarget.IconPlatformProperties?.GetRequiredPlatformIcons();
+            if (requiredIcons == null)
+                return;
+
+            var requiredIconCount = PlatformIcon.GetRequiredPlatformIconsByType(kind, requiredIcons).Length;
 
             PlatformIconStruct[] iconStructs;
             if (icons == null)
                 iconStructs = new PlatformIconStruct[0];
             else if (requiredIconCount != icons.Length)
             {
-                throw new InvalidOperationException(string.Format("Attempting to set an incorrect number of icons for {0} {1} kind, it requires {2} icons but trying to assign {3}.", buildTarget.TargetName,
-                    kind,
-                    requiredIconCount,
-                    icons.Length)
-                );
+                throw new InvalidOperationException($"Attempting to set an incorrect number of icons for {buildTarget.TargetName} {kind} kind, it requires {requiredIconCount} icons but trying to assign {icons.Length}.");
             }
             else
             {
                 iconStructs = icons.Select(
                     i => i.GetPlatformIconStruct()
-                    ).ToArray<PlatformIconStruct>();
+                    ).ToArray();
             }
 
             SetPlatformIconsInternal(buildTarget.TargetName, iconStructs, kind.kind);
@@ -370,12 +345,13 @@ namespace UnityEditor
 
         public static PlatformIconKind[] GetSupportedIconKinds(NamedBuildTarget buildTarget)
         {
-            var platformIconProvider = GetPlatformIconProvider(buildTarget);
-
-            if (platformIconProvider == null)
-                return new PlatformIconKind[] {};
-
-            return platformIconProvider.GetRequiredPlatformIcons().Keys.ToArray();
+            if (BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(buildTarget.TargetName), out var iBuildTarget))
+            {
+                var requiredIcons = iBuildTarget.IconPlatformProperties?.GetRequiredPlatformIcons();
+                if (requiredIcons != null)
+                    return requiredIcons.Keys.ToArray();
+            }
+            return new PlatformIconKind[] { };
         }
 
         internal static int GetNonEmptyPlatformIconCount(PlatformIcon[] icons)
@@ -437,21 +413,21 @@ namespace UnityEditor
 
         public static void SetIcons(NamedBuildTarget buildTarget, Texture2D[] icons, IconKind kind)
         {
-            IPlatformIconProvider iconProvider = GetPlatformIconProvider(buildTarget);
-
-            if (iconProvider == null)
-                SetIconsForPlatform(buildTarget.TargetName, icons, kind);
-            else
+            if (BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(buildTarget.TargetName), out var iBuildTarget))
             {
-                PlatformIconKind platformIconKind = iconProvider.GetPlatformIconKindFromEnumValue(kind);
+                var platformIconKind = iBuildTarget.IconPlatformProperties?.GetPlatformIconKindFromEnumValue(kind);
+                if (platformIconKind != null)
+                {
+                    PlatformIcon[] platformIcons = GetPlatformIcons(buildTarget, platformIconKind);
 
-                PlatformIcon[] platformIcons = GetPlatformIcons(buildTarget, platformIconKind);
+                    for (var i = 0; i < icons.Length; i++)
+                        platformIcons[i].SetTexture(icons[i], 0);
 
-                for (var i = 0; i < icons.Length; i++)
-                    platformIcons[i].SetTexture(icons[i], 0);
-
-                SetPlatformIcons(buildTarget, platformIconKind, platformIcons);
+                    SetPlatformIcons(buildTarget, platformIconKind, platformIcons);
+                }
             }
+            else
+                SetIconsForPlatform(buildTarget.TargetName, icons, kind);
         }
 
         [Obsolete("Use SetIcons(NamedBuildTarget, Texture2D[], IconKind) instead")]
@@ -468,13 +444,10 @@ namespace UnityEditor
         {
             if (BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(buildTarget.TargetName), out var iBuildTarget))
             {
-                IPlatformIconProvider platformIconProvider = iBuildTarget.IconPlatformProperties?.GetPlatformIconProvider();
-                if(platformIconProvider == null)
-                    return PlayerSettings.GetIconsForPlatform(iBuildTarget.TargetName, kind);
-                
-                PlatformIconKind platformIconKind = platformIconProvider.GetPlatformIconKindFromEnumValue(kind);
-
-                return PlayerSettings.GetPlatformIcons(buildTarget, platformIconKind).Select(t => t.GetTexture(0)).ToArray();                
+                var platformIconKind = iBuildTarget.IconPlatformProperties?.GetPlatformIconKindFromEnumValue(kind);
+                return platformIconKind == null ?
+                    GetIconsForPlatform(iBuildTarget.TargetName, kind) :
+                    GetPlatformIcons(buildTarget, platformIconKind).Select(t => t.GetTexture(0)).ToArray();                
             }
             return PlayerSettings.GetIconsForPlatform(buildTarget.TargetName, kind);
         }
@@ -492,16 +465,13 @@ namespace UnityEditor
 
             for (var i = 0; i < legacyIcons.Length; i++)
             {
-                List<PlatformIcon> selectedIcons = new List<PlatformIcon>();
                 foreach (var icon in platformIcons)
                 {
                     if (icon.width == legacyIconWidths[i] && icon.height == legacyIconHeights[i])
                     {
-                        selectedIcons.Add(icon);
+                        icon.SetTextures(legacyIcons[i]);
                     }
                 }
-                foreach (var selectedIcon in selectedIcons)
-                    selectedIcon.SetTextures(legacyIcons[i]);
             }
         }
 
@@ -524,13 +494,10 @@ namespace UnityEditor
         {
             if (BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(buildTarget.TargetName), out var iBuildTarget))
             {
-                IPlatformIconProvider platformIconProvider = iBuildTarget.IconPlatformProperties?.GetPlatformIconProvider();
-                if(platformIconProvider == null)
-                    return GetIconWidthsForPlatform(iBuildTarget.TargetName, kind);
-                
-                PlatformIconKind platformIconKind = platformIconProvider.GetPlatformIconKindFromEnumValue(kind);
-
-                return GetPlatformIcons(buildTarget, platformIconKind).Select(s => s.width).ToArray(); 
+                var platformIconKind = iBuildTarget.IconPlatformProperties?.GetPlatformIconKindFromEnumValue(kind);
+                return platformIconKind == null ?
+                    GetIconWidthsForPlatform(iBuildTarget.TargetName, kind) :
+                    GetPlatformIcons(buildTarget, platformIconKind).Select(s => s.width).ToArray(); 
             }
             return GetIconWidthsForPlatform(buildTarget.TargetName, kind);
         }

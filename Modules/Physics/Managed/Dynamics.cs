@@ -130,7 +130,7 @@ namespace UnityEngine
         public bool  freeSpin { get { return m_FreeSpin == 1; } set { m_FreeSpin = value ? 1 : 0; } }
     }
 
-    // JointSpring is used add a spring force to HingeJoint and PhysicMaterial.
+    // JointSpring is used add a spring force to HingeJoint and PhysicsMaterial.
     public struct JointSpring
     {
         public float spring;
@@ -188,15 +188,6 @@ namespace UnityEngine
         public Vector3 moveDirection { get { return m_MoveDirection; } }
         public float moveLength { get { return m_MoveLength; } }
         private bool push { get { return m_Push != 0; } set { m_Push = value ? 1 : 0; } }
-    }
-
-    // Describes how physics materials of colliding objects are combined.
-    public enum PhysicMaterialCombine
-    {
-        Average = 0,
-        Minimum = 2,
-        Multiply = 1,
-        Maximum = 3
     }
 
     // Describes collision.

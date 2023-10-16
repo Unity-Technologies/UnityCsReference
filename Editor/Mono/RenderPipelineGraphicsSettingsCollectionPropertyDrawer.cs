@@ -44,14 +44,14 @@ namespace UnityEditor.Rendering
                         Debug.LogWarning($"{nameof(IRenderPipelineGraphicsSettings)} {typeName} is duplicated. Only showing first one.");
                     else
                     {
-                        var field = CreatePropertyField(prop, hideInInspector == null);
+                        var field = CreatePropertyField(typeName, prop, hideInInspector == null);
                         categoryElement.Add(typeName, field);
                     }
                 }
                 else
                 {
                     //sort per category
-                    var field = CreatePropertyField(prop, hideInInspector == null);
+                    var field = CreatePropertyField(typeName, prop, hideInInspector == null);
                     categories.Add(name, new SortedDictionary<string, PropertyField>()
                     {
                         { typeName, field }
@@ -62,11 +62,26 @@ namespace UnityEditor.Rendering
             return categories;
         }
 
-        private static PropertyField CreatePropertyField(SerializedProperty prop, bool isEnable)
+        static PropertyField CreatePropertyField(string typeName, SerializedProperty prop, bool isEnable)
         {
-            var propertyField = new PropertyField(prop);
-            propertyField.SetEnabled(isEnable);
+            var propertyField = new PropertyField(prop) { name = typeName };
+            if (!isEnable)
+                propertyField.RegisterCallback<GeometryChangedEvent>(UpdatePropertyLabel);
             return propertyField;
+        }
+
+        static void UpdatePropertyLabel(GeometryChangedEvent evt)
+        {
+            var propertyField = (PropertyField)evt.target;
+            propertyField.Query<Label>(className: "unity-property-field__label")
+                .ForEach(l =>
+                {
+                    l.enableRichText = true;
+                    l.text = $"{l.text} <b>(Hidden)</b>";
+                    l.tooltip = "Field is only visible in developer mode";
+                });
+
+            propertyField.UnregisterCallback<GeometryChangedEvent>(UpdatePropertyLabel);
         }
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)

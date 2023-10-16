@@ -510,6 +510,9 @@ namespace UnityEngine.TextCore.Text
                     // Update the previous line's extents
                     if (currentLine != lastLine)
                     {
+                        var lastCharacterIndex =
+                          (generationSettings.textWrappingMode == TextWrappingMode.PreserveWhitespace || generationSettings.textWrappingMode == TextWrappingMode.PreserveWhitespaceNoWrap)
+                          ? textInfo.lineInfo[lastLine].lastCharacterIndex : textInfo.lineInfo[lastLine].lastVisibleCharacterIndex;
                         textInfo.lineInfo[lastLine].baseline += offset.y;
                         textInfo.lineInfo[lastLine].ascender += offset.y;
                         textInfo.lineInfo[lastLine].descender += offset.y;
@@ -517,12 +520,15 @@ namespace UnityEngine.TextCore.Text
                         textInfo.lineInfo[lastLine].maxAdvance += offset.x;
 
                         textInfo.lineInfo[lastLine].lineExtents.min = new Vector2(textInfo.textElementInfo[textInfo.lineInfo[lastLine].firstCharacterIndex].bottomLeft.x, textInfo.lineInfo[lastLine].descender);
-                        textInfo.lineInfo[lastLine].lineExtents.max = new Vector2(textInfo.textElementInfo[textInfo.lineInfo[lastLine].lastVisibleCharacterIndex].topRight.x, textInfo.lineInfo[lastLine].ascender);
+                        textInfo.lineInfo[lastLine].lineExtents.max = new Vector2(textInfo.textElementInfo[lastCharacterIndex].topRight.x, textInfo.lineInfo[lastLine].ascender);
                     }
 
                     // Update the current line's extents
                     if (i == m_CharacterCount - 1)
                     {
+                        var lastCharacterIndex =
+                         (generationSettings.textWrappingMode == TextWrappingMode.PreserveWhitespace || generationSettings.textWrappingMode == TextWrappingMode.PreserveWhitespaceNoWrap)
+                         ? textInfo.lineInfo[currentLine].lastCharacterIndex : textInfo.lineInfo[currentLine].lastVisibleCharacterIndex;
                         textInfo.lineInfo[currentLine].baseline += offset.y;
                         textInfo.lineInfo[currentLine].ascender += offset.y;
                         textInfo.lineInfo[currentLine].descender += offset.y;
@@ -530,7 +536,7 @@ namespace UnityEngine.TextCore.Text
                         textInfo.lineInfo[currentLine].maxAdvance += offset.x;
 
                         textInfo.lineInfo[currentLine].lineExtents.min = new Vector2(textInfo.textElementInfo[textInfo.lineInfo[currentLine].firstCharacterIndex].bottomLeft.x, textInfo.lineInfo[currentLine].descender);
-                        textInfo.lineInfo[currentLine].lineExtents.max = new Vector2(textInfo.textElementInfo[textInfo.lineInfo[currentLine].lastVisibleCharacterIndex].topRight.x, textInfo.lineInfo[currentLine].ascender);
+                        textInfo.lineInfo[currentLine].lineExtents.max = new Vector2(textInfo.textElementInfo[lastCharacterIndex].topRight.x, textInfo.lineInfo[currentLine].ascender);
                     }
                 }
                 #endregion

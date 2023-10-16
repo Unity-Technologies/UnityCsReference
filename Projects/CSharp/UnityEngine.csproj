@@ -623,6 +623,21 @@
     <Compile Include="..\..\Modules\HierarchyCore\Managed\AssemblyInfo.cs">
       <Link>Modules\HierarchyCore\Managed\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyFlattenedNodeChildren.cs">
+      <Link>Modules\HierarchyCore\Managed\HierarchyFlattenedNodeChildren.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyNodeChildren.cs">
+      <Link>Modules\HierarchyCore\Managed\HierarchyNodeChildren.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyNodeChildrenAlloc.cs">
+      <Link>Modules\HierarchyCore\Managed\HierarchyNodeChildrenAlloc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyNodeChildrenFixed.cs">
+      <Link>Modules\HierarchyCore\Managed\HierarchyNodeChildrenFixed.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyNodeMapUnmanaged.cs">
+      <Link>Modules\HierarchyCore\Managed\HierarchyNodeMapUnmanaged.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyNodeTypeHandlerBase.cs">
       <Link>Modules\HierarchyCore\Managed\HierarchyNodeTypeHandlerBase.cs</Link>
     </Compile>
@@ -635,8 +650,14 @@
     <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchySearch.cs">
       <Link>Modules\HierarchyCore\Managed\HierarchySearch.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyViewNodesEnumerable.cs">
+      <Link>Modules\HierarchyCore\Managed\HierarchyViewNodesEnumerable.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\Managed\IHierarchyProperty.cs">
       <Link>Modules\HierarchyCore\Managed\IHierarchyProperty.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\Managed\NativeSparseArray.cs">
+      <Link>Modules\HierarchyCore\Managed\NativeSparseArray.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\Hierarchy.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\Hierarchy.bindings.cs</Link>
@@ -652,6 +673,9 @@
     </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyNode.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyNode.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyNodeFlags.bindings.cs">
+      <Link>Modules\HierarchyCore\ScriptBindings\HierarchyNodeFlags.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyNodeType.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyNodeType.bindings.cs</Link>
@@ -887,6 +911,9 @@
     <Compile Include="..\..\Modules\Multiplayer\Managed\MultiplayerRole.cs">
       <Link>Modules\Multiplayer\Managed\MultiplayerRole.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Multiplayer\Managed\MultiplayerRolesData.bindings.cs">
+      <Link>Modules\Multiplayer\Managed\MultiplayerRolesData.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ParticleSystem\Managed\IJobParticleSystem.cs">
       <Link>Modules\ParticleSystem\Managed\IJobParticleSystem.cs</Link>
     </Compile>
@@ -955,6 +982,12 @@
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\PhysicsGeometry.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\PhysicsGeometry.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\PhysicsMaterial.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\PhysicsMaterial.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\PhysicsMaterial.deprecated.cs">
+      <Link>Modules\Physics\ScriptBindings\PhysicsMaterial.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\QueryCommand.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\QueryCommand.bindings.cs</Link>

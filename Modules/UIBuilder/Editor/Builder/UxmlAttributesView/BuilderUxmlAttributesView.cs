@@ -67,6 +67,8 @@ namespace Unity.UI.Builder
 
         public string serializedRootPath { get; set; }
 
+        public IVisualElementScheduledItem refreshScheduledItem;
+
         internal class UxmlAssetSerializedDataRoot : VisualElement
         {
             public UxmlSerializedDataDescription dataDescription;
@@ -253,6 +255,7 @@ namespace Unity.UI.Builder
         {
             m_IsInTemplateInstance = isInTemplate;
             SetAttributesOwner(uxmlDocument, visualElement);
+
             fieldsContainer.Clear();
 
             // Special case for toggle button groups.
@@ -367,7 +370,7 @@ namespace Unity.UI.Builder
             callInitOnValueChange = currentFieldSource == AttributeFieldSource.UxmlTraits;
         }
 
-        public void SetInlineValue(VisualElement fieldElement, string property)
+        public virtual void SetInlineValue(VisualElement fieldElement, string property)
         {
             if (serializedRootPath == null)
                 return;
@@ -540,6 +543,16 @@ namespace Unity.UI.Builder
                 {
                     CreateSerializedAttributeRow(desc, $"{parent.rootPath}{desc.serializedField.Name}", parent);
                 }
+            }
+        }
+
+        public void RefreshAllAttributeOverrideStyles()
+        {
+            var fields = GetAttributeFields();
+            foreach (var fieldElement in fields)
+            {
+                UpdateAttributeOverrideStyle(fieldElement);
+                UpdateFieldStatus(fieldElement);
             }
         }
 
@@ -1633,6 +1646,12 @@ namespace Unity.UI.Builder
             // Update the serialized object to reflect the changes made by PostAttributeValueChange.
             m_CurrentElementSerializedObject.UpdateIfRequiredOrScript();
 
+            // If inline editing is enabled on a property that has a UXML binding, we cache the binding
+            // to preview the inline value in the canvas.
+            if (inspector.cachedBinding != null)
+            {
+                inspector.currentVisualElement.ClearBinding(inspector.cachedBinding.property);
+            }
             Undo.CollapseUndoOperations(undoGroup);
         }
 

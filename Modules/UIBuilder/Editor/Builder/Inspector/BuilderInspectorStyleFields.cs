@@ -42,7 +42,7 @@ namespace Unity.UI.Builder
         internal const string refreshStyleFieldMarkerName = "BuilderInspectorStyleFields.RefreshStyleField";
         internal const string refreshStyleFieldValueMarkerName = "BuilderInspectorStyleFields.RefreshStyleFieldValue";
         // ReSharper restore MemberCanBePrivate.Global
-        
+
         static readonly ProfilerMarker k_RefreshStyleFieldMarker = new (refreshStyleFieldMarkerName);
         static readonly ProfilerMarker k_RefreshStyleFieldValueMarker = new (refreshStyleFieldValueMarkerName);
 
@@ -128,6 +128,7 @@ namespace Unity.UI.Builder
             { "overflow", "Display Overflow" },
             { "flex-direction", "Flex Direction" },
             { "flex-wrap", "Flex Wrap" },
+            {"align-content", "Align Content"},
             { "align-items", "Align Items" },
             { "justify-content", "Justify Content" },
             { "align-self", "Align Self" },
@@ -212,7 +213,7 @@ namespace Unity.UI.Builder
             { "SpaceEvenly", "Space Evenly" },
         };
 
-        readonly string[] m_FlexDirectionDependentStyleNames = { "align-items", "justify-content", "align-self" };
+        readonly string[] m_FlexDirectionDependentStyleNames = {"align-items", "justify-content", "align-self", "align-content" };
 
         public void BindStyleField(BuilderStyleRow styleRow, string styleName, VisualElement fieldElement)
         {
@@ -519,7 +520,7 @@ namespace Unity.UI.Builder
             }
 
             fieldElement.SetInspectorStylePropertyName(styleName);
-            
+
             SetUpContextualMenuOnStyleField(fieldElement);
 
             // Add to styleName to field map.
@@ -1990,11 +1991,11 @@ namespace Unity.UI.Builder
             }
         }
 
-        void NotifyStyleChanges(List<string> styles = null, bool selfNotify = false, NotifyType notifyType = NotifyType.Default)
+        void NotifyStyleChanges(List<string> styles = null, bool selfNotify = false, NotifyType notifyType = NotifyType.Default, bool ignoreUnsavedChanges = false)
         {
             BuilderStylingChangeType styleChangeType;
             var hierarchyChangeType = BuilderHierarchyChangeType.InlineStyle;
-            if (notifyType == NotifyType.RefreshOnly)
+            if (notifyType == NotifyType.RefreshOnly || ignoreUnsavedChanges)
             {
                 styleChangeType = BuilderStylingChangeType.RefreshOnly;
             }
@@ -2012,7 +2013,10 @@ namespace Unity.UI.Builder
             else
             {
                 m_Selection.NotifyOfStylingChange(selfNotify ? null : m_Inspector, styles, styleChangeType);
-                m_Selection.NotifyOfHierarchyChange(m_Inspector, currentVisualElement, hierarchyChangeType);
+                if (!ignoreUnsavedChanges)
+                    m_Selection.NotifyOfHierarchyChange(m_Inspector, currentVisualElement, hierarchyChangeType);
+                else
+                    m_Selection.ForceVisualAssetUpdateWithoutSave(currentVisualElement, hierarchyChangeType);
             }
         }
 
@@ -2027,8 +2031,16 @@ namespace Unity.UI.Builder
             return styleProperty;
         }
 
-        void PostStyleFieldSteps(VisualElement target, StyleProperty styleProperty, string styleName, bool isNewValue, bool isVariable = false, NotifyType notifyType = NotifyType.Default)
+        internal void PostStyleFieldSteps(VisualElement target, StyleProperty styleProperty, string styleName, bool isNewValue, bool isVariable = false, NotifyType notifyType = NotifyType.Default, bool ignoreUnsavedChanges = false)
         {
+            // If inline editing is enabled on a property that has a UXML binding, we cache the binding
+            // to preview the inline value in the canvas.
+            if (m_Inspector.cachedBinding != null)
+            {
+                currentVisualElement.ClearBinding(m_Inspector.cachedBinding.property);
+                ResetInlineStyle(styleName);
+            }
+
             if (isVariable)
             {
                 var foldout = target.GetProperty(BuilderConstants.FoldoutFieldPropertyName) as FoldoutField;
@@ -2066,7 +2078,7 @@ namespace Unity.UI.Builder
 
             s_StyleChangeList.Clear();
             s_StyleChangeList.Add(styleName);
-            NotifyStyleChanges(s_StyleChangeList, isVariable, notifyType);
+            NotifyStyleChanges(s_StyleChangeList, isVariable, notifyType, ignoreUnsavedChanges);
 
             if (isNewValue && updateStyleCategoryFoldoutOverrides != null)
                 updateStyleCategoryFoldoutOverrides();
@@ -2078,6 +2090,19 @@ namespace Unity.UI.Builder
             {
                 RefreshStyleField(styleName, item);
             }
+        }
+
+        internal void ResetInlineStyle(string styleName)
+        {
+            var style = currentVisualElement.style;
+            PropertyContainer.TrySetValue(ref style, styleName, StyleKeyword.Null);
+            var vea = currentVisualElement.GetVisualElementAsset();
+            var vta = m_Inspector.document.visualTreeAsset;
+            if (vea == null || vea.ruleIndex < 0)
+                return;
+
+            var rule = vta.inlineSheet.GetRule(vea.ruleIndex);
+            currentVisualElement.UpdateInlineRule(vta.inlineSheet, rule);
         }
 
         bool IsNewValue(StyleProperty styleProperty, params StyleValueType[] supportedValueTypes)

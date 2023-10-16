@@ -99,7 +99,7 @@ namespace UnityEditor
         {
             if (CutBoard.hasCutboardData)
             {
-                CutBoard.PasteGameObjects(fallbackParent);
+                CutBoard.PasteGameObjects(fallbackParent, false);
             }
             // If it is not a Cut operation, execute regular paste
             else
@@ -112,7 +112,7 @@ namespace UnityEditor
             pastedGameObjects?.Invoke(Selection.gameObjects);
         }
 
-        internal static void PasteGOAsChild()
+        internal static void PasteGOAsChild(bool worldPositionStays = false)
         {
             Transform[] selected = Selection.transforms;
 
@@ -144,14 +144,16 @@ namespace UnityEditor
                     }
                     else if (!isSubScene)
                     {
-                        CutBoard.PasteAsChildren(selected[0]);
+                        CutBoard.PasteAsChildren(selected[0], worldPositionStays);
                         pastedGameObjects?.Invoke(Selection.gameObjects);
                     }
                 }
                 // paste after copy
                 else if (pasteToSubScene || !isSubScene)
                 {
-                    Unsupported.PasteGameObjectsFromPasteboard(selected[0], pasteToSubScene ? subScene.handle : 0);
+                    Unsupported.PasteGameObjectsFromPasteboard(selected[0],
+                        pasteToSubScene ? subScene.handle : 0,
+                        worldPositionStays);
                     pastedGameObjects?.Invoke(Selection.gameObjects);
                 }
             }

@@ -11,7 +11,7 @@ namespace UnityEditor.TextCore.Text
 {
     internal static class TextColorGradientAssetCreationMenu
     {
-        [MenuItem("Assets/Create/Text/Color Gradient", false, 250)]
+        [MenuItem("Assets/Create/Text Core/Color Gradient", false, 250)]
         internal static void CreateColorGradient(MenuCommand context)
         {
             string filePath;

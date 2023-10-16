@@ -514,7 +514,6 @@ namespace UnityEditor
             return FindTextureByType(type);
         }
 
-        [ExcludeFromDocs]
         public static GUIContent TrTextContent(string key, string text, string tooltip, Texture icon)
         {
             GUIContent gc = (GUIContent)s_GUIContents[key];
@@ -534,14 +533,12 @@ namespace UnityEditor
             return gc;
         }
 
-        [ExcludeFromDocs]
         public static GUIContent TrTextContent(string text, string tooltip = null, Texture icon = null)
         {
             string key = string.Format("{0}|{1}", text ?? "", tooltip ?? "");
             return TrTextContent(key, text, tooltip, icon);
         }
 
-        [ExcludeFromDocs]
         public static GUIContent TrTextContent(string text, string tooltip, string iconName)
         {
             string key = iconName == null ? string.Format("{0}|{1}", text ?? "", tooltip ?? "") :
@@ -549,43 +546,36 @@ namespace UnityEditor
             return TrTextContent(key, text, tooltip, LoadIconRequired(iconName));
         }
 
-        [ExcludeFromDocs]
         public static GUIContent TrTextContent(string text, Texture icon)
         {
             return TrTextContent(text, null, icon);
         }
 
-        [ExcludeFromDocs]
         public static GUIContent TrTextContentWithIcon(string text, Texture icon)
         {
             return TrTextContent(text, null, icon);
         }
 
-        [ExcludeFromDocs]
         public static GUIContent TrTextContentWithIcon(string text, string iconName)
         {
             return TrTextContent(text, null, iconName);
         }
 
-        [ExcludeFromDocs]
         public static GUIContent TrTextContentWithIcon(string text, string tooltip, string iconName)
         {
             return TrTextContent(text, tooltip, iconName);
         }
 
-        [ExcludeFromDocs]
         public static GUIContent TrTextContentWithIcon(string text, string tooltip, Texture icon)
         {
             return TrTextContent(text, tooltip, icon);
         }
 
-        [ExcludeFromDocs]
         public static GUIContent TrTextContentWithIcon(string text, string tooltip, MessageType messageType)
         {
             return TrTextContent(text, tooltip, GetHelpIcon(messageType));
         }
 
-        [ExcludeFromDocs]
         public static GUIContent TrTextContentWithIcon(string text, MessageType messageType)
         {
             return TrTextContentWithIcon(text, null, messageType);
@@ -617,7 +607,6 @@ namespace UnityEditor
             return outColor;
         }
 
-        [ExcludeFromDocs]
         public static GUIContent TrIconContent(string iconName, string tooltip = null)
         {
             return TrIconContent(iconName, tooltip, false);
@@ -645,7 +634,6 @@ namespace UnityEditor
             return gc;
         }
 
-        [ExcludeFromDocs]
         public static GUIContent TrIconContent(Texture icon, string tooltip = null)
         {
             GUIContent gc = (tooltip != null) ? (GUIContent)s_IconGUIContents[tooltip] : null;

@@ -30,7 +30,7 @@ namespace UnityEngine.Analytics
     {
         public SubsystemsAnalyticStart() : base("SubsystemStart") { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static SubsystemsAnalyticStart CreateSubsystemsAnalyticStart() { return new SubsystemsAnalyticStart(); }
 
     }
@@ -43,7 +43,7 @@ namespace UnityEngine.Analytics
     {
         public SubsystemsAnalyticStop() : base("SubsystemStop") { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static SubsystemsAnalyticStop CreateSubsystemsAnalyticStop() { return new SubsystemsAnalyticStop(); }
 
     }
@@ -56,7 +56,7 @@ namespace UnityEngine.Analytics
     {
         public SubsystemsAnalyticInfo() : base("SubsystemInfo") { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static SubsystemsAnalyticInfo CreateSubsystemsAnalyticInfo() { return new SubsystemsAnalyticInfo(); }
 
         string id;

@@ -533,9 +533,24 @@ namespace UnityEngine.Accessibility
         public bool isFocused => IsInActiveHierarchy() && AccessibilityNodeManager.GetIsFocused(id);
 
         /// <summary>
-        /// Calls the methods in its invocation list when this node is selected by the screen reader.
+        /// Called when the node gains or loses screen reader focus.
+        /// </summary>
+        public event Action<AccessibilityNode, bool> focusChanged;
+
+        /// <summary>
+        /// Called when the user of the screen reader selects this node. 
         /// </summary>
         public event Func<bool> selected;
+
+        /// <summary>
+        /// Called when the user of the screen reader increments the content of the node.
+        /// </summary>
+        public event Action incremented;
+
+        /// <summary>
+        /// Called when the user of the screen reader decrements the content of the node.
+        /// </summary>
+        public event Action decremented;
 
         string m_Label;
         string m_Value;
@@ -661,11 +676,6 @@ namespace UnityEngine.Accessibility
             return m_Hierarchy != null && AssistiveSupport.activeHierarchy == m_Hierarchy;
         }
 
-        /// <summary>
-        /// Called when the node gains or loses screen reader focus.
-        /// </summary>
-        public event Action<AccessibilityNode, bool> focusChanged;
-
         internal void FocusChanged(bool isNodeFocused)
         {
             AccessibilityManager.QueueNotification(new AccessibilityManager.NotificationContext
@@ -683,6 +693,15 @@ namespace UnityEngine.Accessibility
         internal bool Selected()
         {
             return selected?.Invoke() ?? false;
+        }
+        internal void Incremented()
+        {
+            incremented?.Invoke();
+        }
+
+        internal void Decremented()
+        {
+            decremented?.Invoke();
         }
     }
 }
