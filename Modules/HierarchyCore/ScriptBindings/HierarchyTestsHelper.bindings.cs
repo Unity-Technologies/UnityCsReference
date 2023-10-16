@@ -19,9 +19,13 @@ namespace Unity.Hierarchy
             IntegrateChanges = 1 << 2,
             AcceptParent = 1 << 3,
             AcceptChild = 1 << 4,
-            SearchMatch = 1 << 5,
-            SearchEnd = 1 << 6,
-            Dispose = 1 << 7
+            CanSetName = 1 << 5,
+            OnSetName = 1 << 6,
+            OnSetParent = 1 << 7,
+            OnSetSortIndex = 1 << 8,
+            SearchMatch = 1 << 9,
+            SearchEnd = 1 << 10,
+            Dispose = 1 << 11
         }
 
         internal static extern void SetNextHierarchyNodeId(Hierarchy hierarchy, int id);
@@ -37,7 +41,7 @@ namespace Unity.Hierarchy
         internal static bool SearchMatch(HierarchyViewModel model, in HierarchyNode node)
         {
             var handler = model.Hierarchy.GetNodeTypeHandlerBase(in node);
-            return handler?.SearchMatch(in node) ?? false;
+            return handler?.Internal_SearchMatch(in node) ?? false;
         }
 
         internal static extern void SetCapabilitiesScriptingHandler(Hierarchy hierarchy, string nodeTypeName, int cap);

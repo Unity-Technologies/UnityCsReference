@@ -18,7 +18,7 @@ namespace UnityEditor.Analytics
     {
         public TestAnalytic() : base("TestAnalytic", 1) { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         public static TestAnalytic CreateTestAnalytic() { return new TestAnalytic(); }
         public int param;
 

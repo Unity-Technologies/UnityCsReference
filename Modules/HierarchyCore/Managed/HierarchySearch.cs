@@ -16,7 +16,7 @@ namespace Unity.Hierarchy
 
     class DefaultHierarchySearchQueryParser : IHierarchySearchQueryParser
     {
-        static readonly Regex s_Filter = new Regex(@"([#$\w]+)(<=|<|>=|>|<|=|:)(.*)", RegexOptions.Compiled);
+        static readonly Regex s_Filter = new Regex(@"([#$\w\[\]]+)(<=|<|>=|>|<|=|:)(.*)", RegexOptions.Compiled);
 
         static List<string> Tokenize(string s)
         {

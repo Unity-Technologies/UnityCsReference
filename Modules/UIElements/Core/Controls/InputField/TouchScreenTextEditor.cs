@@ -138,6 +138,7 @@ namespace UnityEngine.UIElements
                 textElement.m_TouchScreenKeyboard.active = false;
                 textElement.m_TouchScreenKeyboard = null;
                 m_TouchKeyboardPoller.Pause();
+                TouchScreenKeyboard.hideInput = true;
             }
         }
 

@@ -35,7 +35,7 @@ namespace Unity.Hierarchy
 
         [RequiredByNativeCode] IntPtr m_Ptr;
         [RequiredByNativeCode] readonly bool m_IsWrapper;
-        [RequiredByNativeCode] Hierarchy m_Hierarchy;
+        [RequiredByNativeCode] readonly Hierarchy m_Hierarchy;
 
         [FreeFunction("HierarchyFlattenedBindings::Create")]
         static extern IntPtr Internal_Create(Hierarchy hierarchy);
@@ -110,7 +110,7 @@ namespace Unity.Hierarchy
                 m_Ptr = IntPtr.Zero;
             }
         }
-                
+
         /// <summary>
         /// Gets the <see cref="HierarchyFlattenedNode"/> at a specified index.
         /// </summary>
@@ -151,12 +151,27 @@ namespace Unity.Hierarchy
         public extern HierarchyNode GetNextSibling(in HierarchyNode node);
 
         /// <summary>
+        /// Gets an enumerable of children <see cref="HierarchyNode"/> for the specified node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns>The children enumerable.</returns>
+        public HierarchyFlattenedNodeChildren EnumerateChildren(in HierarchyNode node) => new HierarchyFlattenedNodeChildren(this, node);
+
+        /// <summary>
         /// Gets the number of child nodes that a hierarchy node has.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The number of children.</returns>
         [NativeThrows]
         public extern int GetChildrenCount(in HierarchyNode node);
+
+        /// <summary>
+        /// Gets the number of child nodes that a hierarchy node has, including children of children.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns>The number of child nodes, including children of children.</returns>
+        [NativeThrows]
+        public extern int GetChildrenCountRecursive(in HierarchyNode node);
 
         /// <summary>
         /// Determines the depth of a node.
@@ -231,6 +246,6 @@ namespace Unity.Hierarchy
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         [NativeThrows]
-        extern HierarchyFlattenedNode ElementAt(int index);
+        internal extern HierarchyFlattenedNode ElementAt(int index);
     }
 }

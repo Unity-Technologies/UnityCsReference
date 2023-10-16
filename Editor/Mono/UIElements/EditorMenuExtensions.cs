@@ -64,6 +64,8 @@ namespace UnityEditor.UIElements
 
             Rect GetAdjustedPosition() => GetAdjustedPosition(m_ParentRect, minSize);
 
+            float m_MaxOuterContainerWidth;
+
             // This is static so it can be used in test code conveniently
             internal static Rect GetAdjustedPosition(Rect parentRect, Vector2 size, ScrollView scrollView = null)
             {
@@ -103,7 +105,15 @@ namespace UnityEditor.UIElements
                 menu.outerContainer.style.maxHeight = maxMenuHeight;
                 menu.outerContainer.RegisterCallback<GeometryChangedEvent>(e =>
                 {
-                    maxSize = minSize= menu.outerContainer.worldBound.size;
+                    // Set the outer container and the menu container to the size of the
+                    // longest item in the list.
+                    if (minSize.x < menu.outerContainer.worldBound.size.x)
+                    {
+                        m_MaxOuterContainerWidth = menu.outerContainer.worldBound.size.x;
+                        menu.menuContainer.style.minWidth = m_MaxOuterContainerWidth;
+                    }
+
+                    maxSize = minSize = new Vector2(m_MaxOuterContainerWidth, menu.outerContainer.worldBound.size.y);
                     position = GetAdjustedPosition(m_ParentRect, minSize, menu.m_Parent?.scrollView);
                 });
 
@@ -123,9 +133,9 @@ namespace UnityEditor.UIElements
                 s_ActiveMenus.Add(menu);
 
                 var menuWindow = CreateInstance<ContextMenu>();
-              
+
                 menuWindow.wantsLessLayoutEvents = true;
-              
+
                 var parentMenu = EditorWindow.focusedWindow as ContextMenu;
                 var parentIsMenu = parentMenu != null;
                 menuWindow.m_ParentWindow = parentIsMenu ? parentMenu.m_ParentWindow : EditorWindow.focusedWindow;
@@ -140,7 +150,7 @@ namespace UnityEditor.UIElements
                 var menuPanel = menuWindow.rootVisualElement.panel;
                 var imguiContainer = menuPanel.visualTree.Q<IMGUIContainer>();
                 imguiContainer?.parent?.Remove(imguiContainer);
-                
+
                 menuWindow.m_ParentRect = parent;
                 menuWindow.Host(menu);
                 menuWindow.Focus();
@@ -461,7 +471,7 @@ namespace UnityEditor.UIElements
                 var menu = search.userData as GenericDropdownMenu;
                 var newValue = Regex.Replace(e.newValue, "[^\\w ]+", "");
                 search.SetValueWithoutNotify(newValue);
-                
+
                 ResetHighlighting(menu.root);
 
                 if (string.IsNullOrWhiteSpace(menu.current.name))
@@ -490,9 +500,6 @@ namespace UnityEditor.UIElements
                         break;
                 }
             }));
-
-            var input = search.Q("unity-text-input");
-            input.style.flexGrow = 0;
 
             return search;
         }, GenericDropdownMenu.k_OptimizedMenus);

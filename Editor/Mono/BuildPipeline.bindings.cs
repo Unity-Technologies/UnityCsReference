@@ -373,7 +373,6 @@ namespace UnityEditor
             catch (System.ArgumentException argumentException)
             {
                 Debug.LogException(argumentException);
-                EditorApplication.Exit(1);
                 return null;
             }
             catch (System.Exception exception)

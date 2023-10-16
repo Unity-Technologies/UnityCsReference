@@ -18,7 +18,7 @@ namespace UnityEditor.Analytics
     {
         public MetalPatchShaderComputeBufferAnalytic() : base("MetalPatchShaderComputeBuffersUsage", 1) { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static MetalPatchShaderComputeBufferAnalytic CreateMetalPatchShaderComputeBufferAnalytic() { return new MetalPatchShaderComputeBufferAnalytic(); }
     }
 }

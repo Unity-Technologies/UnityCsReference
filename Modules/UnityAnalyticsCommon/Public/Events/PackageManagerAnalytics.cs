@@ -34,7 +34,7 @@ namespace UnityEditor.Analytics
     {
         public PackageManagerAddPackageAnalytic() : base("addPackage") { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static PackageManagerAddPackageAnalytic CreatePackageManagerAddPackageAnalytic() { return new PackageManagerAddPackageAnalytic(); }
     }
 
@@ -46,7 +46,7 @@ namespace UnityEditor.Analytics
     {
         public PackageManagerTestAnalytic() : base("PackageManager") { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static PackageManagerTestAnalytic CreatePackageManagerTestAnalytic() { return new PackageManagerTestAnalytic(); }
     }
 
@@ -58,7 +58,7 @@ namespace UnityEditor.Analytics
     {
         public PackageManagerRemovePackageAnalytic() : base("removePackage") { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static PackageManagerRemovePackageAnalytic CreatePackageManagerRemovePackageAnalytic() { return new PackageManagerRemovePackageAnalytic(); }
     }
 
@@ -70,7 +70,7 @@ namespace UnityEditor.Analytics
     {
         public PackageManagerResolvePackageAnalytic() : base("resolvePackages") { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static PackageManagerResolvePackageAnalytic CreatePackageManagerResolvePackageAnalytic() { return new PackageManagerResolvePackageAnalytic(); }
 
         public string[] packages;
@@ -88,7 +88,7 @@ namespace UnityEditor.Analytics
     {
         public PackageManagerEmbedPackageAnalytic() : base("embedPackage") { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static PackageManagerEmbedPackageAnalytic CreatePackageManagerEmbedPackageAnalytic() { return new PackageManagerEmbedPackageAnalytic(); }
     }
 
@@ -100,7 +100,7 @@ namespace UnityEditor.Analytics
     {
         public PackageManagerResetPackageAnalytic() : base("resetToDefaultDependencies") { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static PackageManagerResetPackageAnalytic CreatePackageManagerResetPackageAnalytic() { return new PackageManagerResetPackageAnalytic(); }
     }
 
@@ -112,7 +112,7 @@ namespace UnityEditor.Analytics
     {
         public PackageManagerResolveErrorPackageAnalytic() : base("resolveErrorUserAction") { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static PackageManagerResolveErrorPackageAnalytic CreatePackageManagerResolveErrorPackageAnalytic() { return new PackageManagerResolveErrorPackageAnalytic(); }
 
         public string reason;
@@ -127,7 +127,7 @@ namespace UnityEditor.Analytics
     {
         public PackageManagerStartServerPackageAnalytic() : base("startPackageManagerServer") { }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         internal static PackageManagerStartServerPackageAnalytic CreatePackageManagerStartServerPackageAnalytic() { return new PackageManagerStartServerPackageAnalytic(); }
     }
 }
