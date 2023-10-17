@@ -407,6 +407,29 @@ namespace UnityEngine
         Cylinder = 2,
         Box = 3
     }
+	
+    // Mesh baking options
+    [Flags]
+    public enum ParticleSystemBakeMeshOptions
+    {
+        BakeRotationAndScale = 1 << 0,
+        BakePosition = 1 << 1,
+
+        Default = 0
+    }
+
+    // Texture baking options
+    [Flags]
+    public enum ParticleSystemBakeTextureOptions
+    {
+        BakeRotationAndScale = 1 << 0,
+        BakePosition = 1 << 1,
+        PerVertex = 1 << 2,                 // Bake each vertex of each particle (i.e. 4 vertices per billboard)
+        PerParticle = 1 << 3,               // Only bake each particle (i.e. 1 vertex per billboard) Useful if not using any per-vertex data such as UVs or Positions.
+        IncludeParticleIndices = 1 << 4,    // Instead of baking triangle indices for rendering, bake a 2 channel index texture containing triangle indices and particle indices
+
+        Default = PerVertex
+    }
 }
 
 namespace UnityEngine.Rendering

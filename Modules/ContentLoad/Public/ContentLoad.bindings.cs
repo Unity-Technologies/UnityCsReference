@@ -146,7 +146,7 @@ namespace Unity.Loading
     {
 
         [NativeThrows]
-        unsafe internal static extern ContentFile LoadContentFileAsync(ContentNamespace nameSpace, string filename, void *dependencies, int dependencyCount, JobHandle dependentFence);
+        unsafe internal static extern ContentFile LoadContentFileAsync(ContentNamespace nameSpace, string filename, void *dependencies, int dependencyCount, JobHandle dependentFence, bool useUnsafe = false);
 
         [NativeThrows]
         internal extern static ContentFileUnloadHandle ContentFile_UnloadAsync(ContentFile handle);
@@ -191,7 +191,7 @@ namespace Unity.Loading
         {
             unsafe
             {
-                return ContentLoadInterface.LoadContentFileAsync(nameSpace, filename, dependencies.m_Buffer, dependencies.Length, dependentFence);
+                return ContentLoadInterface.LoadContentFileAsync(nameSpace, filename, dependencies.m_Buffer, dependencies.Length, dependentFence, false);
             }
         }
 

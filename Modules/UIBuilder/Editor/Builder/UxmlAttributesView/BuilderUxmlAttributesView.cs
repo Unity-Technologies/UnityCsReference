@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using UnityEngine.UIElements;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEngine;
 
 namespace Unity.UI.Builder
 {
@@ -20,6 +21,7 @@ namespace Unity.UI.Builder
     {
         static readonly string s_AttributeFieldRowUssClassName = "unity-builder-attribute-field-row";
         static readonly string s_AttributeFieldUssClassName = "unity-builder-attribute-field";
+        static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
         VisualTreeAsset m_UxmlDocument;
         VisualElement m_CurrentElement;
         VisualElementAsset m_CurrentUxmlElement;
@@ -367,6 +369,13 @@ namespace Unity.UI.Builder
             {
                 fieldElement.GetFieldStatusIndicator().populateMenuItems =
                     (menu) => BuildAttributeFieldContextualMenu(menu, fieldElement);
+            }
+
+            if (fieldElement is IEditableElement editableElement)
+            {
+                // used to group undo operations (UUM-32599)
+                editableElement.editingStarted += () => SetUndoGroup(fieldElement);
+                editableElement.editingEnded += () => UnsetUndoGroup(fieldElement);
             }
 
             UpdateFieldStatus(fieldElement);
@@ -878,6 +887,8 @@ namespace Unity.UI.Builder
             var attributeType = attribute.GetType();
             bool needRefresh = false;
 
+            var undoGroup = Undo.GetCurrentGroup();
+
             if (value is UnityEngine.Object asset)
             {
                 var assetType = attributeType.GetGenericArguments()[0];
@@ -912,6 +923,10 @@ namespace Unity.UI.Builder
             }
 
             PostAttributeValueChange(field, uxmlValue);
+
+            // Use the undo group of the field if it has one, otherwise use the current undo group
+            var fieldUndoGroup = (int?)field.GetProperty(UndoGroupPropertyKey);
+            Undo.CollapseUndoOperations(fieldUndoGroup ?? undoGroup);
 
             if (needRefresh)
                 Refresh();
@@ -998,6 +1013,18 @@ namespace Unity.UI.Builder
             {
                 UpdateFieldStatus(field as BindableElement);
             }
+        }
+
+        void SetUndoGroup(VisualElement field)
+        {
+            Undo.IncrementCurrentGroup();
+            field?.SetProperty(UndoGroupPropertyKey, Undo.GetCurrentGroup());
+        }
+
+        void UnsetUndoGroup(VisualElement field)
+        {
+            Undo.IncrementCurrentGroup();
+            field?.SetProperty(UndoGroupPropertyKey, null);
         }
     }
 }

@@ -17,15 +17,21 @@ namespace UnityEditor.VFX
     [StaticAccessor("VFXMemorySerializerBindings", StaticAccessorType.DoubleColon)]
     internal static class VFXMemorySerializer
     {
+
+        [FreeFunction(Name = "VFXMemorySerializerBindings::StoreObjects", ThrowsException = true)]
         extern public static string StoreObjects(ScriptableObject[] objects);
 
+        [FreeFunction(Name = "VFXMemorySerializerBindings::StoreObjectsToByteArray", ThrowsException = true)]
         extern public static byte[] StoreObjectsToByteArray(ScriptableObject[] objects, CompressionLevel compressionLevel = CompressionLevel.None);
 
-        [FreeFunction(Name = "VFXMemorySerializerBindings::Internal_ExtractObjects_FromString")]
+        [FreeFunction(Name = "VFXMemorySerializerBindings::Internal_ExtractObjects_FromString", ThrowsException = true)]
         extern private static ScriptableObject[] ExtractObjects_FromString(string data, bool asACopy);
 
-        [FreeFunction(Name = "VFXMemorySerializerBindings::Internal_ExtractObjects_FromByteArray")]
+        [FreeFunction(Name = "VFXMemorySerializerBindings::Internal_ExtractObjects_FromByteArray", ThrowsException = true)]
         extern private static ScriptableObject[] ExtractObjects_FromByteArray(byte[] data, bool asACopy);
+
+        [FreeFunction(Name = "VFXMemorySerializerBindings::Internal_DuplicateObjects", ThrowsException = true)]
+        extern public static ScriptableObject[] DuplicateObjects(ScriptableObject[] objects);
 
         public static ScriptableObject[] ExtractObjects(string data, bool asACopy)
         {
@@ -36,8 +42,5 @@ namespace UnityEditor.VFX
         {
             return ExtractObjects_FromByteArray(data, asACopy);
         }
-
-        [FreeFunction(Name = "VFXMemorySerializerBindings::Internal_DuplicateObjects")]
-        extern public static ScriptableObject[] DuplicateObjects(ScriptableObject[] objects);
     }
 }

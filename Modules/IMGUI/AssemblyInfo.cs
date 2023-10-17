@@ -11,3 +11,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
 [assembly: InternalsVisibleTo("UnityEngine.UI.Tests")]
+[assembly: InternalsVisibleTo("Unity.Motion.Editor.AnimationWindow")]
