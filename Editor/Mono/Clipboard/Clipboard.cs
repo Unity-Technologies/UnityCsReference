@@ -18,6 +18,72 @@ namespace UnityEditor
     {
         static ClipboardState m_State = new ClipboardState();
 
+        public static bool hasLong
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchLong();
+                return m_State.m_HasLong.Value;
+            }
+        }
+
+        public static long longValue
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchLong();
+                return m_State.m_ValueLong;
+            }
+
+            set => EditorGUIUtility.systemCopyBuffer = value.ToString();
+        }
+
+        public static bool hasUlong
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchUlong();
+                return m_State.m_HasUlong.Value;
+            }
+        }
+
+        public static ulong uLongValue
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchUlong();
+                return m_State.m_ValueUlong;
+            }
+
+            set => EditorGUIUtility.systemCopyBuffer = value.ToString();
+        }
+
+        public static bool hasUint
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchUint();
+                return m_State.m_HasUint.Value;
+            }
+        }
+
+        public static uint uIntValue
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchUint();
+                return m_State.m_ValueUint;
+            }
+
+            set => EditorGUIUtility.systemCopyBuffer = value.ToString();
+        }
+
         public static bool hasInteger
         {
             get

@@ -1237,6 +1237,8 @@ namespace UnityEditor.UIElements.Bindings
             bindingContext?.ResetUpdate();
         }
 
+        internal static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
+
         protected IBindable m_Field;
         private SerializedObjectBindingContext m_BindingContext;
 
@@ -1278,6 +1280,13 @@ namespace UnityEditor.UIElements.Bindings
                     {
                         ve.RegisterCallback(m_OnFieldAttachedToPanel);
                         ve.RegisterCallback(m_OnFieldDetachedFromPanel);
+
+                        // used to group undo operations (UUM-32599)
+                        if (ve is IEditableElement editableElement)
+                        {
+                            editableElement.editingStarted += SetUndoGroup;
+                            editableElement.editingEnded += UnsetUndoGroup;
+                        }
 
                         if (string.IsNullOrEmpty(ve.tooltip))
                         {
@@ -1347,6 +1356,22 @@ namespace UnityEditor.UIElements.Bindings
         private void OnFieldDetached(DetachFromPanelEvent evt)
         {
             isFieldAttached = false;
+        }
+
+        void SetUndoGroup()
+        {
+            Undo.IncrementCurrentGroup();
+
+            var field = m_Field as VisualElement;
+            field?.SetProperty(UndoGroupPropertyKey, Undo.GetCurrentGroup());
+        }
+
+        void UnsetUndoGroup()
+        {
+            Undo.IncrementCurrentGroup();
+
+            var field = m_Field as VisualElement;
+            field?.SetProperty(UndoGroupPropertyKey, null);
         }
 
         protected void UpdateFieldIsAttached()
@@ -1524,6 +1549,8 @@ namespace UnityEditor.UIElements.Bindings
 
             try
             {
+                var undoGroup = Undo.GetCurrentGroup();
+
                 var bindable = evt.target as IBindable;
                 var binding = bindable?.binding;
 
@@ -1545,6 +1572,10 @@ namespace UnityEditor.UIElements.Bindings
                     }
 
                     BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
+
+                    var fieldUndoGroup = (int?)(field as VisualElement)?.GetProperty(UndoGroupPropertyKey);
+                    Undo.CollapseUndoOperations(fieldUndoGroup ?? undoGroup);
+
                     return;
                 }
             }
@@ -1565,6 +1596,7 @@ namespace UnityEditor.UIElements.Bindings
             if (field is ObjectField objectField)
             {
                 objectField.SetProperty(ObjectField.serializedPropertyKey, boundProperty);
+                objectField.UpdateDisplay();
             }
         }
 

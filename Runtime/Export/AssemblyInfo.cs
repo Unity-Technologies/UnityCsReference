@@ -47,6 +47,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Tiny.Rendering.Authoring")]
 [assembly: InternalsVisibleTo("Unity.Tiny.Authoring")]
 [assembly: InternalsVisibleTo("Unity.ImageConversionTests")]
+[assembly: InternalsVisibleTo("Unity.Motion.Editor.AnimationWindow")]
 
 // Required for the type forwarder UnityEngine.dll
 [assembly: InternalsVisibleTo("UnityEngine")]

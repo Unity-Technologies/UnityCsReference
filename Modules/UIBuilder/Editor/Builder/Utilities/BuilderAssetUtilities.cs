@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.ProjectWindowCallback;
+using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -18,8 +20,36 @@ namespace Unity.UI.Builder
         public static string assetsPath { get; } = Application.dataPath;
         public static string projectPath { get; } = assetsPath.Substring(0, Application.dataPath.Length - "/Assets".Length);
         public static string packagesPath { get; } = projectPath + "/Packages";
-        
-        
+
+        public const string defaultRuntimeThemeContent = "@import url(\"" + ThemeRegistry.kThemeScheme +
+                                                           "://default\");\nVisualElement {}";
+
+        internal static ThemeStyleSheet CreateDefaultRuntimeAsset(string pathName)
+        {
+            pathName = AssetDatabase.GenerateUniqueAssetPath(pathName);
+
+            var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
+            action.filecontent = defaultRuntimeThemeContent;
+
+            const int instanceId = ProjectBrowser.kAssetCreationInstanceID_ForNonExistingAssets;
+            action.Action(instanceId, pathName, null);
+            action.CleanUp();
+
+            return EditorGUIUtility.Load(pathName) as ThemeStyleSheet;
+        }
+
+        internal static bool IsDefaultRuntimeAsset(string path)
+        {
+            var assetString = File.ReadAllText(path);
+
+            if (!string.IsNullOrEmpty(assetString))
+            {
+                assetString = assetString.Replace("\r", "");
+            }
+
+            return assetString == defaultRuntimeThemeContent;
+        }
+
         static string GetFullPath(string path)
         {
             return Path.GetFullPath(path).Replace("\\", "/");

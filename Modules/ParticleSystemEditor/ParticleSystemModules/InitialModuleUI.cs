@@ -76,7 +76,7 @@ namespace UnityEditor
             public GUIContent cullingMode = EditorGUIUtility.TrTextContent("Culling Mode", "Choose whether to continue simulating the Particle System when offscreen. Catch-up mode pauses offscreen simulations but performs a large simulation step when they become visible, giving the appearance that they were never paused. Automatic uses Pause mode for looping systems, and AlwaysSimulate if not looping.");
             public GUIContent ringBufferMode = EditorGUIUtility.TrTextContent("Ring Buffer Mode", "Rather than dying when their lifetime has elapsed, particles will remain alive until the Max Particles buffer is full, at which point new particles will replace the oldest.");
             public GUIContent ringBufferLoopRange = EditorGUIUtility.TrTextContent("Loop Range", "Particle lifetimes may loop between a fade-in and fade-out time, in order to use curves for the entire time they are alive. Values are in the 0-1 range.");
-            public GUIContent prewarmingSubEmitterWarning = EditorGUIUtility.TrTextContent("Pre-warming a sub-emitter it not necessary and wastes resources. You only need to pre-warm the root Particle System component.");
+            public GUIContent prewarmingSubEmitterWarning = EditorGUIUtility.TrTextContent("Pre-warming a sub-emitter is not necessary and wastes resources. You only need to pre-warm the root Particle System component.");
             public GUIContent x = EditorGUIUtility.TextContent("X");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");

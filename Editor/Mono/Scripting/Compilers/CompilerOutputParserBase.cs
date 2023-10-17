@@ -101,6 +101,11 @@ namespace UnityEditor.Scripting.Compilers
             return msgs;
         }
 
+        protected virtual bool ShouldParseLine(string line)
+        {
+            return true;
+        }
+
         protected abstract string GetErrorIdentifier();
 
         protected virtual string GetInformationIdentifier()

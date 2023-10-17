@@ -113,39 +113,57 @@ namespace Unity.UI.Builder
 
         public void InitCanvasTheme()
         {
+            // Make sure a default runtime theme exists
+            var defaultTssAsset = FindDefaultRuntimeThemeAsset();
+
+            if (defaultTssAsset == null)
+            {
+                // Create the default runtime asset for the user.
+                // Creation should be delayed to not interfere with the windows layout restore
+                schedule.Execute(() =>
+                {
+                    defaultTssAsset = FindDefaultRuntimeThemeAsset();
+
+                    // Make sure again that the default runtime asset doesn't exist
+                    if (defaultTssAsset != null)
+                    {
+                        InitCanvasTheme(defaultTssAsset);
+                    }
+                    else
+                    {
+                        var pathName = $"Assets/{ThemeRegistry.kUnityRuntimeThemeFileName}";
+                        defaultTssAsset = BuilderAssetUtilities.CreateDefaultRuntimeAsset(pathName);
+                        InitCanvasTheme(defaultTssAsset);
+                    }
+                });
+            }
+            else
+            {
+                InitCanvasTheme(defaultTssAsset);
+            }
+        }
+
+        private void InitCanvasTheme(ThemeStyleSheet defaultTssAsset)
+        {
             var currentTheme = document.currentCanvasTheme;
             var currentThemeSheet = document.currentCanvasThemeStyleSheet;
 
             // If canvas theme is editor-only without Editor Extensions mode enabled, treat this as a Runtime theme
             if (!document.fileSettings.editorExtensionMode && IsEditorCanvasTheme(currentTheme))
+            {
                 currentTheme = BuilderDocument.CanvasTheme.Runtime;
+            }
+            else if (currentTheme == BuilderDocument.CanvasTheme.Custom && currentThemeSheet == null)
+            {
+                // Theme file was deleted, fallback to default theme
+                currentTheme = BuilderDocument.CanvasTheme.Runtime;
+            }
 
             // If canvas theme is equal to the obsolete Runtime enum, search for the Unity default runtime theme
             // in the current project.  If that can't be found, try one of the custom themes, otherwise
             // fallback to default Editor theme
             if (currentTheme == BuilderDocument.CanvasTheme.Runtime)
             {
-                var defaultTssAsset = EditorGUIUtility.Load(ThemeRegistry.kUnityRuntimeThemePath) as ThemeStyleSheet;
-                if (defaultTssAsset == null)
-                {
-                    // Try to load or create the default runtime asset for the user
-                    var pathName = $"Assets/{ThemeRegistry.kUnityRuntimeThemeFileName}";
-                    defaultTssAsset = EditorGUIUtility.Load(pathName) as ThemeStyleSheet;
-
-                    if (defaultTssAsset == null)
-                    {
-                        var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
-                        action.filecontent = "@import url(\"" + ThemeRegistry.kThemeScheme +
-                                             "://default\");\nVisualElement {}";
-
-                        var instanceId = ProjectBrowser.kAssetCreationInstanceID_ForNonExistingAssets;
-                        action.Action(instanceId, pathName, null);
-                        action.CleanUp();
-
-                        defaultTssAsset = EditorGUIUtility.Load(pathName) as ThemeStyleSheet;
-                    }
-                }
-
                 if (defaultTssAsset != null)
                 {
                     currentTheme = BuilderDocument.CanvasTheme.Custom;
@@ -170,6 +188,22 @@ namespace Unity.UI.Builder
 
             ChangeCanvasTheme(currentTheme, currentThemeSheet);
             UpdateCanvasThemeMenuStatus();
+        }
+
+        private ThemeStyleSheet FindDefaultRuntimeThemeAsset()
+        {
+            if (m_ThemeManager != null && m_ThemeManager.themeFiles.Count > 0)
+            {
+                foreach (var themeFilePath in m_ThemeManager.themeFiles)
+                {
+                    if (BuilderAssetUtilities.IsDefaultRuntimeAsset(themeFilePath))
+                    {
+                        return AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(themeFilePath);
+                    }
+                }
+            }
+
+            return null;
         }
 
         void RegisterCallbacks(AttachToPanelEvent evt)
