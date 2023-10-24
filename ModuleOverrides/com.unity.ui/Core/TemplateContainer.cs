@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
@@ -68,19 +69,14 @@ namespace UnityEngine.UIElements
                     templateContainer.Add(new Label(string.Format("Unknown Template: '{0}'", templateContainer.templateId)));
                 else
                 {
-                    var bagOverrides = (bag as TemplateAsset)?.attributeOverrides;
-                    var contextOverrides = cc.attributeOverrides;
+                    using var traitsOverridesHandle = ListPool<CreationContext.AttributeOverrideRange>.Get(out var traitsOverrideRanges);
+                    if (null != cc.attributeOverrides)
+                        traitsOverrideRanges.AddRange(cc.attributeOverrides);
+                    var attributeOverrides = (bag as TemplateAsset)?.attributeOverrides;
+                    if (null != attributeOverrides)
+                        traitsOverrideRanges.Add(new CreationContext.AttributeOverrideRange(cc.visualTreeAsset, attributeOverrides));
 
-                    if (bagOverrides != null)
-                    {
-                        if (contextOverrides == null)
-                            contextOverrides = new();
-                        // We want to add new overrides at the end of the list, as we
-                        // want parent instances to always override child instances.
-                        contextOverrides.Add(new CreationContext.AttributeOverrideRange(cc.visualTreeAsset, bagOverrides));
-                    }
-
-                    vta.CloneTree(ve, cc.slotInsertionPoints, contextOverrides);
+                    vta.CloneTree(ve, cc.slotInsertionPoints, traitsOverrideRanges);
                 }
 
                 if (vta == null)

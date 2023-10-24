@@ -337,10 +337,18 @@ namespace UnityEditor.UIElements.Bindings
         public static bool ValueEquals(string value, SerializedProperty p,
             Func<SerializedProperty, string> propertyReadFunc)
         {
-            if (p.propertyType == SerializedPropertyType.Enum)
-                return p.enumDisplayNames[p.enumValueIndex] == value;
-            else
-                return p.ValueEquals(value);
+            switch(p.propertyType)
+            {
+                case SerializedPropertyType.Enum:
+                    return p.enumDisplayNames[p.enumValueIndex].Equals(value, StringComparison.OrdinalIgnoreCase);
+                case SerializedPropertyType.Character:
+                    return !String.IsNullOrEmpty(value) &&
+                           value.Length == 1 &&
+                           GetCharacterPropertyValue(p) == value[0];
+                default:
+                    // Will always return false if propertyType is not String
+                    return p.ValueEquals(value);
+            }
         }
 
         public static bool ValueEquals(AnimationCurve value, SerializedProperty p,
