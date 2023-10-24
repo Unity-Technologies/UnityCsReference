@@ -280,7 +280,7 @@ namespace UnityEditorInternal
             }
             else if (type == typeof(bool) || type == typeof(float) || type == typeof(int))
             {
-                Keyframe tempKey = new Keyframe(time.time, (float)value);
+                Keyframe tempKey = new Keyframe(time.time, Convert.ToSingle(value));
                 if (type == typeof(bool))
                 {
                     AnimationUtility.SetKeyLeftTangentMode(ref tempKey, TangentMode.Constant);
