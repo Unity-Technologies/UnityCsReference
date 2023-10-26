@@ -881,7 +881,8 @@ namespace UnityEngine.TextCore.Text
                 maxAscender = Mathf.Max(maxAscender, textInfo.textElementInfo[lineInfo.firstVisibleCharacterIndex].ascender);
                 maxDescender = Mathf.Min(maxDescender, textInfo.textElementInfo[lineInfo.firstVisibleCharacterIndex].descender);
 
-                renderedWidth = Mathf.Max(renderedWidth, lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x);
+                // UUM-46147: For IMGUI rendered width includes xAdvance for backward compatibility
+                renderedWidth = generationSettings.isIMGUI ? lineInfo.length : Mathf.Max(renderedWidth, lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x);
             }
             renderedHeight = maxAscender - maxDescender;
 

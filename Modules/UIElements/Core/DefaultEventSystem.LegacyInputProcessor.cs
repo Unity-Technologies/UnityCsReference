@@ -122,7 +122,7 @@ namespace UnityEngine.UIElements
                     {
                         // There's different scrollDelta rates between Input Manager, New Input and IMGUI. UITK events use
                         // IMGUI conventions. Factors can vary between platforms (they come from PlatformDependent code).
-                        // For example, InputEvent::InputEvent (InputEventWin.cpp) and NewInput::OnMessage (NewInput.cpp)
+                        // For example, InputEvent::InputEvent (Windows PlatformInputEvent.cpp) and NewInput::OnMessage (NewInput.cpp)
                         // read data differently from the WM_MOUSEWHEEL message.
                         // Since we want to rely as little as possible on IMGUI event position for multiple display support,
                         // we use the mouse position from input and combine it with the scroll delta from IMGUI.

@@ -166,16 +166,7 @@ namespace UnityEditor.Actions
             // Prefab menu items that only make sense if a single object is selected.
             var listOfSceneHierarchyWindows = SceneHierarchyWindow.GetAllSceneHierarchyWindows();
             if (hasSelectedExactlyOneGO && listOfSceneHierarchyWindows.Count > 0)
-            {
-                var sceneHierarchy = listOfSceneHierarchyWindows[0].sceneHierarchy;
-                if (sceneHierarchy is not null)
-                {
-                    menu.AppendSeparator();
-                    var prefabIcon = PrefabUtility.GameObjectStyles.prefabIcon;
-                    AddAction(menu, "Prefab/", null, icon: prefabIcon);
-                    sceneHierarchy.PopulateDropdownMenuWithPrefabMenuItems(menu);
-                }
-            }
+                listOfSceneHierarchyWindows[0].sceneHierarchy?.PopulateDropdownMenuWithPrefabMenuItems(menu);
 
             // Component entries
             if (hasSelectedGO)

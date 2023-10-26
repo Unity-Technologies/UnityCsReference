@@ -53,9 +53,6 @@
     <Compile Include="..\..\Editor\Mono\Accessibility\UserAccessibilitySettings.cs">
       <Link>Editor\Mono\Accessibility\UserAccessibilitySettings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\ActiveEditorTracker.bindings.cs">
-      <Link>Editor\Mono\ActiveEditorTracker.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\AnimationCurvePreviewCache.bindings.cs">
       <Link>Editor\Mono\AnimationCurvePreviewCache.bindings.cs</Link>
     </Compile>
@@ -1499,9 +1496,6 @@
     <Compile Include="..\..\Editor\Mono\GUI\TreeView\TreeViewUtililty.cs">
       <Link>Editor\Mono\GUI\TreeView\TreeViewUtililty.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\TypeSelectionList.cs">
-      <Link>Editor\Mono\GUI\TypeSelectionList.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\VUMeter.cs">
       <Link>Editor\Mono\GUI\VUMeter.cs</Link>
     </Compile>
@@ -1763,57 +1757,6 @@
     <Compile Include="..\..\Editor\Mono\InspectorUtility.cs">
       <Link>Editor\Mono\InspectorUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AddComponent\AddComponentDataSource.cs">
-      <Link>Editor\Mono\Inspector\AddComponent\AddComponentDataSource.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AddComponent\AddComponentGUI.cs">
-      <Link>Editor\Mono\Inspector\AddComponent\AddComponentGUI.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AddComponent\AddComponentWindow.cs">
-      <Link>Editor\Mono\Inspector\AddComponent\AddComponentWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AddComponent\ComponentDropdownItem.cs">
-      <Link>Editor\Mono\Inspector\AddComponent\ComponentDropdownItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AddComponent\NewScriptDropdownItem.cs">
-      <Link>Editor\Mono\Inspector\AddComponent\NewScriptDropdownItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownDataSource.cs">
-      <Link>Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownDataSource.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownGUI.cs">
-      <Link>Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownGUI.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownItem.cs">
-      <Link>Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownState.cs">
-      <Link>Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownState.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownWindow.cs">
-      <Link>Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\DataSources\CallbackDataSource.cs">
-      <Link>Editor\Mono\Inspector\AdvancedDropdown\DataSources\CallbackDataSource.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\DataSources\MultiLevelDataSource.cs">
-      <Link>Editor\Mono\Inspector\AdvancedDropdown\DataSources\MultiLevelDataSource.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\DataSources\MultiselectDataSource.cs">
-      <Link>Editor\Mono\Inspector\AdvancedDropdown\DataSources\MultiselectDataSource.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\DataSources\SimpleDataSource.cs">
-      <Link>Editor\Mono\Inspector\AdvancedDropdown\DataSources\SimpleDataSource.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\EditorGUI\AdvancedDropdown.cs">
-      <Link>Editor\Mono\Inspector\AdvancedDropdown\EditorGUI\AdvancedDropdown.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\EditorGUI\EditorGUIAdvancedDropdown.cs">
-      <Link>Editor\Mono\Inspector\AdvancedDropdown\EditorGUI\EditorGUIAdvancedDropdown.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\EditorGUI\StatelessAdvancedDropdown.cs">
-      <Link>Editor\Mono\Inspector\AdvancedDropdown\EditorGUI\StatelessAdvancedDropdown.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\AimConstraintEditor.cs">
       <Link>Editor\Mono\Inspector\AimConstraintEditor.cs</Link>
     </Compile>
@@ -1964,6 +1907,123 @@
     <Compile Include="..\..\Editor\Mono\Inspector\ConstraintEditorBase.cs">
       <Link>Editor\Mono\Inspector\ConstraintEditorBase.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AddComponent\AddComponentDataSource.cs">
+      <Link>Editor\Mono\Inspector\Core\AddComponent\AddComponentDataSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AddComponent\AddComponentGUI.cs">
+      <Link>Editor\Mono\Inspector\Core\AddComponent\AddComponentGUI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AddComponent\AddComponentWindow.cs">
+      <Link>Editor\Mono\Inspector\Core\AddComponent\AddComponentWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AddComponent\ComponentDropdownItem.cs">
+      <Link>Editor\Mono\Inspector\Core\AddComponent\ComponentDropdownItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AddComponent\NewScriptDropdownItem.cs">
+      <Link>Editor\Mono\Inspector\Core\AddComponent\NewScriptDropdownItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AdvancedDropdown\AdvancedDropdownDataSource.cs">
+      <Link>Editor\Mono\Inspector\Core\AdvancedDropdown\AdvancedDropdownDataSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AdvancedDropdown\AdvancedDropdownGUI.cs">
+      <Link>Editor\Mono\Inspector\Core\AdvancedDropdown\AdvancedDropdownGUI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AdvancedDropdown\AdvancedDropdownItem.cs">
+      <Link>Editor\Mono\Inspector\Core\AdvancedDropdown\AdvancedDropdownItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AdvancedDropdown\AdvancedDropdownState.cs">
+      <Link>Editor\Mono\Inspector\Core\AdvancedDropdown\AdvancedDropdownState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AdvancedDropdown\AdvancedDropdownWindow.cs">
+      <Link>Editor\Mono\Inspector\Core\AdvancedDropdown\AdvancedDropdownWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AdvancedDropdown\DataSources\CallbackDataSource.cs">
+      <Link>Editor\Mono\Inspector\Core\AdvancedDropdown\DataSources\CallbackDataSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AdvancedDropdown\DataSources\MultiLevelDataSource.cs">
+      <Link>Editor\Mono\Inspector\Core\AdvancedDropdown\DataSources\MultiLevelDataSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AdvancedDropdown\DataSources\MultiselectDataSource.cs">
+      <Link>Editor\Mono\Inspector\Core\AdvancedDropdown\DataSources\MultiselectDataSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AdvancedDropdown\DataSources\SimpleDataSource.cs">
+      <Link>Editor\Mono\Inspector\Core\AdvancedDropdown\DataSources\SimpleDataSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AdvancedDropdown\EditorGUI\AdvancedDropdown.cs">
+      <Link>Editor\Mono\Inspector\Core\AdvancedDropdown\EditorGUI\AdvancedDropdown.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AdvancedDropdown\EditorGUI\EditorGUIAdvancedDropdown.cs">
+      <Link>Editor\Mono\Inspector\Core\AdvancedDropdown\EditorGUI\EditorGUIAdvancedDropdown.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\AdvancedDropdown\EditorGUI\StatelessAdvancedDropdown.cs">
+      <Link>Editor\Mono\Inspector\Core\AdvancedDropdown\EditorGUI\StatelessAdvancedDropdown.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\CustomEditor.cs">
+      <Link>Editor\Mono\Inspector\Core\CustomEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\GUI\TypeSelectionList.cs">
+      <Link>Editor\Mono\Inspector\Core\GUI\TypeSelectionList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\GenericInspector.cs">
+      <Link>Editor\Mono\Inspector\Core\GenericInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\InspectorPreviewWindow.cs">
+      <Link>Editor\Mono\Inspector\Core\InspectorPreviewWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\InspectorWindow.cs">
+      <Link>Editor\Mono\Inspector\Core\InspectorWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\PreviewWindow.cs">
+      <Link>Editor\Mono\Inspector\Core\PreviewWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\PropertyEditor.cs">
+      <Link>Editor\Mono\Inspector\Core\PropertyEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\RootEditor.cs">
+      <Link>Editor\Mono\Inspector\Core\RootEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\ScriptAttributeGUI\CustomPropertyDrawerAttribute.cs">
+      <Link>Editor\Mono\Inspector\Core\ScriptAttributeGUI\CustomPropertyDrawerAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\ScriptAttributeGUI\DecoratorDrawer.cs">
+      <Link>Editor\Mono\Inspector\Core\ScriptAttributeGUI\DecoratorDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\ScriptAttributeGUI\GUIDrawer.cs">
+      <Link>Editor\Mono\Inspector\Core\ScriptAttributeGUI\GUIDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\ScriptAttributeGUI\Implementations\DecoratorDrawers.cs">
+      <Link>Editor\Mono\Inspector\Core\ScriptAttributeGUI\Implementations\DecoratorDrawers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\ScriptAttributeGUI\Implementations\ExposedReferenceDrawer.cs">
+      <Link>Editor\Mono\Inspector\Core\ScriptAttributeGUI\Implementations\ExposedReferenceDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\ScriptAttributeGUI\Implementations\ExposedReferenceObject.cs">
+      <Link>Editor\Mono\Inspector\Core\ScriptAttributeGUI\Implementations\ExposedReferenceObject.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\ScriptAttributeGUI\Implementations\PropertyDrawers.cs">
+      <Link>Editor\Mono\Inspector\Core\ScriptAttributeGUI\Implementations\PropertyDrawers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\ScriptAttributeGUI\PropertyDrawer.cs">
+      <Link>Editor\Mono\Inspector\Core\ScriptAttributeGUI\PropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\ScriptAttributeGUI\PropertyHandler.cs">
+      <Link>Editor\Mono\Inspector\Core\ScriptAttributeGUI\PropertyHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\ScriptAttributeGUI\PropertyTrait.cs">
+      <Link>Editor\Mono\Inspector\Core\ScriptAttributeGUI\PropertyTrait.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\ScriptAttributeGUI\ScriptAttributeUtility.cs">
+      <Link>Editor\Mono\Inspector\Core\ScriptAttributeGUI\ScriptAttributeUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\ScriptBindings\Editor.bindings.cs">
+      <Link>Editor\Mono\Inspector\Core\ScriptBindings\Editor.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\Utils\InspectorWindowUtils.cs">
+      <Link>Editor\Mono\Inspector\Core\Utils\InspectorWindowUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\Utils\PropertyDrawerCache.cs">
+      <Link>Editor\Mono\Inspector\Core\Utils\PropertyDrawerCache.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\CubemapArrayInspector.cs">
       <Link>Editor\Mono\Inspector\CubemapArrayInspector.cs</Link>
     </Compile>
@@ -1975,9 +2035,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\CurvePresetLibraryInspector.cs">
       <Link>Editor\Mono\Inspector\CurvePresetLibraryInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\CustomEditor.cs">
-      <Link>Editor\Mono\Inspector\CustomEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\CustomPreviewAttribute.cs">
       <Link>Editor\Mono\Inspector\CustomPreviewAttribute.cs</Link>
@@ -2015,9 +2072,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\GameObjectInspector.cs">
       <Link>Editor\Mono\Inspector\GameObjectInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GenericInspector.cs">
-      <Link>Editor\Mono\Inspector\GenericInspector.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\GenericPresetLibraryInspector.cs">
       <Link>Editor\Mono\Inspector\GenericPresetLibraryInspector.cs</Link>
     </Compile>
@@ -2039,23 +2093,14 @@
     <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsUtils.cs">
       <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsUtils.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\IRenderPipelineGraphicsSettingsPropertyDrawer.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\IRenderPipelineGraphicsSettingsPropertyDrawer.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\RenderPipelineGlobalSettingsAssetProcessor.cs">
       <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\RenderPipelineGlobalSettingsAssetProcessor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\RenderPipelineGraphicsSettingsPropertyDrawer.cs">
+      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\RenderPipelineGraphicsSettingsPropertyDrawer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\IEditorElement.cs">
       <Link>Editor\Mono\Inspector\IEditorElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\InspectorPreviewWindow.cs">
-      <Link>Editor\Mono\Inspector\InspectorPreviewWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\InspectorWindow.cs">
-      <Link>Editor\Mono\Inspector\InspectorWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\InspectorWindowUtils.cs">
-      <Link>Editor\Mono\Inspector\InspectorWindowUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\LODGroupEditor.cs">
       <Link>Editor\Mono\Inspector\LODGroupEditor.cs</Link>
@@ -2192,17 +2237,8 @@
     <Compile Include="..\..\Editor\Mono\Inspector\PreviewRenderUtility.cs">
       <Link>Editor\Mono\Inspector\PreviewRenderUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\PreviewWindow.cs">
-      <Link>Editor\Mono\Inspector\PreviewWindow.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ProjectSettingsBaseEditor.cs">
       <Link>Editor\Mono\Inspector\ProjectSettingsBaseEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\PropertyDrawerCache.cs">
-      <Link>Editor\Mono\Inspector\PropertyDrawerCache.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\PropertyEditor.cs">
-      <Link>Editor\Mono\Inspector\PropertyEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\QualitySettingsEditor.cs">
       <Link>Editor\Mono\Inspector\QualitySettingsEditor.cs</Link>
@@ -2243,17 +2279,11 @@
     <Compile Include="..\..\Editor\Mono\Inspector\ReorderableListWrapper.cs">
       <Link>Editor\Mono\Inspector\ReorderableListWrapper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\RootEditor.cs">
-      <Link>Editor\Mono\Inspector\RootEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\RotationConstraintEditor.cs">
       <Link>Editor\Mono\Inspector\RotationConstraintEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ScaleConstraintEditor.cs">
       <Link>Editor\Mono\Inspector\ScaleConstraintEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\ScriptBindings\Editor.bindings.cs">
-      <Link>Editor\Mono\Inspector\ScriptBindings\Editor.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ScriptExecutionOrderInspector.cs">
       <Link>Editor\Mono\Inspector\ScriptExecutionOrderInspector.cs</Link>
@@ -2888,38 +2918,38 @@
     <Compile Include="..\..\Editor\Mono\Progress\ProgressOrderComparer.cs">
       <Link>Editor\Mono\Progress\ProgressOrderComparer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\ProjectBrowser.cs">
-      <Link>Editor\Mono\ProjectBrowser.cs</Link>
+    <Compile Include="..\..\Editor\Mono\ProjectBrowser\AssetClipboardUtility.cs">
+      <Link>Editor\Mono\ProjectBrowser\AssetClipboardUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\ProjectBrowserColumnOne.cs">
-      <Link>Editor\Mono\ProjectBrowserColumnOne.cs</Link>
+    <Compile Include="..\..\Editor\Mono\ProjectBrowser\CachedFilteredHierachy.cs">
+      <Link>Editor\Mono\ProjectBrowser\CachedFilteredHierachy.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\ProjectBrowserPopups.cs">
-      <Link>Editor\Mono\ProjectBrowserPopups.cs</Link>
+    <Compile Include="..\..\Editor\Mono\ProjectBrowser\GlobSearchUtilities.cs">
+      <Link>Editor\Mono\ProjectBrowser\GlobSearchUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\ProjectBrowser\ProjectBrowser.cs">
+      <Link>Editor\Mono\ProjectBrowser\ProjectBrowser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\ProjectBrowser\ProjectBrowserColumnOne.cs">
+      <Link>Editor\Mono\ProjectBrowser\ProjectBrowserColumnOne.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\ProjectBrowser\ProjectBrowserPopups.cs">
+      <Link>Editor\Mono\ProjectBrowser\ProjectBrowserPopups.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\ProjectBrowser\ProjectWindowUtil.cs">
+      <Link>Editor\Mono\ProjectBrowser\ProjectWindowUtil.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\ProjectBrowser\SavedSearchFilter.cs">
       <Link>Editor\Mono\ProjectBrowser\SavedSearchFilter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\ProjectBrowser\SearchFilter.cs">
+      <Link>Editor\Mono\ProjectBrowser\SearchFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\ProjectBrowser\SearchableEditorWindow.cs">
+      <Link>Editor\Mono\ProjectBrowser\SearchableEditorWindow.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\ProjectTemplateWindow.cs">
       <Link>Editor\Mono\ProjectTemplateWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ProjectWindow\AssetClipboardUtility.cs">
-      <Link>Editor\Mono\ProjectWindow\AssetClipboardUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ProjectWindow\CachedFilteredHierachy.cs">
-      <Link>Editor\Mono\ProjectWindow\CachedFilteredHierachy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ProjectWindow\GlobSearchUtilities.cs">
-      <Link>Editor\Mono\ProjectWindow\GlobSearchUtilities.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ProjectWindow\ProjectWindowUtil.cs">
-      <Link>Editor\Mono\ProjectWindow\ProjectWindowUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ProjectWindow\SearchFilter.cs">
-      <Link>Editor\Mono\ProjectWindow\SearchFilter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ProjectWindow\SearchableEditorWindow.cs">
-      <Link>Editor\Mono\ProjectWindow\SearchableEditorWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\RagdollBuilder.cs">
       <Link>Editor\Mono\RagdollBuilder.cs</Link>
@@ -3124,39 +3154,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneVisibility\SceneVisibilityState.bindings.cs">
       <Link>Editor\Mono\SceneVisibility\SceneVisibilityState.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\CustomPropertyDrawerAttribute.cs">
-      <Link>Editor\Mono\ScriptAttributeGUI\CustomPropertyDrawerAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\DecoratorDrawer.cs">
-      <Link>Editor\Mono\ScriptAttributeGUI\DecoratorDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\GUIDrawer.cs">
-      <Link>Editor\Mono\ScriptAttributeGUI\GUIDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\Implementations\DecoratorDrawers.cs">
-      <Link>Editor\Mono\ScriptAttributeGUI\Implementations\DecoratorDrawers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\Implementations\ExposedReferenceDrawer.cs">
-      <Link>Editor\Mono\ScriptAttributeGUI\Implementations\ExposedReferenceDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\Implementations\ExposedReferenceObject.cs">
-      <Link>Editor\Mono\ScriptAttributeGUI\Implementations\ExposedReferenceObject.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\Implementations\PropertyDrawers.cs">
-      <Link>Editor\Mono\ScriptAttributeGUI\Implementations\PropertyDrawers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\PropertyDrawer.cs">
-      <Link>Editor\Mono\ScriptAttributeGUI\PropertyDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\PropertyHandler.cs">
-      <Link>Editor\Mono\ScriptAttributeGUI\PropertyHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\PropertyTrait.cs">
-      <Link>Editor\Mono\ScriptAttributeGUI\PropertyTrait.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\ScriptAttributeUtility.cs">
-      <Link>Editor\Mono\ScriptAttributeGUI\ScriptAttributeUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\ScriptEditorUtility.cs">
       <Link>Editor\Mono\ScriptEditorUtility.cs</Link>
@@ -3430,6 +3427,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\SelectionCommands\SelectionCommands.cs">
       <Link>Editor\Mono\SelectionCommands\SelectionCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Selection\ActiveEditorTracker.bindings.cs">
+      <Link>Editor\Mono\Selection\ActiveEditorTracker.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Selection\Selection.bindings.cs">
       <Link>Editor\Mono\Selection\Selection.bindings.cs</Link>
@@ -10097,14 +10097,23 @@
     <Compile Include="..\..\Modules\UIElementsEditor\AssemblyInfo.cs">
       <Link>Modules\UIElementsEditor\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\BaseListViewSerializedObjectBinding.cs">
+      <Link>Modules\UIElementsEditor\Bindings\BaseListViewSerializedObjectBinding.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Bindings\BindingExtensions.cs">
       <Link>Modules\UIElementsEditor\Bindings\BindingExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Bindings\EditorListViewController.cs">
       <Link>Modules\UIElementsEditor\Bindings\EditorListViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\ListViewBindings.cs">
-      <Link>Modules\UIElementsEditor\Bindings\ListViewBindings.cs</Link>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\EditorMultiColumnListViewController.cs">
+      <Link>Modules\UIElementsEditor\Bindings\EditorMultiColumnListViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\ListViewSerializedObjectBinding.cs">
+      <Link>Modules\UIElementsEditor\Bindings\ListViewSerializedObjectBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\MultiColumnListViewSerializedObjectBinding.cs">
+      <Link>Modules\UIElementsEditor\Bindings\MultiColumnListViewSerializedObjectBinding.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedPropertyHelper.cs">
       <Link>Modules\UIElementsEditor\Bindings\SerializedPropertyHelper.cs</Link>

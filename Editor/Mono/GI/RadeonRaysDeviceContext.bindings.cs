@@ -64,28 +64,30 @@ namespace UnityEngine.LightTransport
         public extern void DestroyBuffer(BufferID id);
 
         [NativeMethod(IsThreadSafe = true)]
-        private unsafe extern EventID EnqueueBufferRead(BufferID id, void* result, int length);
+        private unsafe extern EventID EnqueueBufferRead(BufferID id, void* result, UInt64 length, UInt64 offset);
 
-        public unsafe EventID ReadBuffer(BufferID id, NativeArray<byte> result)
+        public unsafe EventID ReadBuffer<T>(BufferSlice<T> src, NativeArray<T> dst)
+            where T: struct
         {
-            void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(result);
-            return EnqueueBufferRead(id, ptr, result.Length);
+            void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(dst);
+            return EnqueueBufferRead(src.Id, ptr, (UInt64)dst.Length * (UInt64)UnsafeUtility.SizeOf<T>(), src.Offset);
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        private extern unsafe EventID EnqueueBufferWrite(BufferID id, void* result, int length);
+        private extern unsafe EventID EnqueueBufferWrite(BufferID id, void* result, UInt64 length, UInt64 offset);
 
-        public unsafe EventID WriteBuffer(BufferID id, NativeArray<byte> data)
+        public unsafe EventID WriteBuffer<T>(BufferSlice<T> dst, NativeArray<T> src)
+            where T: struct
         {
-            void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(data);
-            return EnqueueBufferWrite(id, ptr, data.Length);
+            void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(src);
+            return EnqueueBufferWrite(dst.Id, ptr, (UInt64)src.Length * (UInt64)UnsafeUtility.SizeOf<T>(), dst.Offset);
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        public extern bool IsAsyncOperationComplete(EventID id);
+        public extern bool IsCompleted(EventID id);
 
         [NativeMethod(IsThreadSafe = true)]
-		public extern bool WaitForAsyncOperation(EventID id);
+		public extern bool Wait(EventID id);
 
 		[NativeMethod(IsThreadSafe = true)]
         public extern bool Flush();

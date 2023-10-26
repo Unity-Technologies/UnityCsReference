@@ -303,7 +303,7 @@ namespace UnityEditor.UIElements
 
         void OnPointerDown(PointerDownEvent evt)
         {
-            if (visualInput.ContainsPoint(visualInput.WorldToLocal(evt.position)))
+            if (visualInput.ContainsPoint(visualInput.WorldToLocal(evt.position)) && evt.button == (int)MouseButton.LeftMouse)
             {
                 ShowCurveEditor();
                 evt.StopPropagation();

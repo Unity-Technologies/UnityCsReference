@@ -61,6 +61,10 @@ namespace UnityEditor.Rendering
 
         public static void SetRenderPipelineGlobalSettingsAsset(Type renderPipelineType, RenderPipelineGlobalSettings newSettings)
         {
+            //In Worker thread, we cannot update assets
+            if (AssetDatabase.IsAssetImportWorkerProcess())
+                return;
+
             CheckRenderPipelineType(renderPipelineType);
 
             bool globalSettingsAssetChanged;

@@ -12,8 +12,8 @@ namespace UnityEditor
     [UsedByNativeCode,
      NativeHeader("Runtime/Misc/InputEvent.h"),
      NativeHeader("Runtime/Graphics/RenderTexture.h"),
-     NativeHeader("Editor/Src/GUIView.bindings.h"),
-     NativeHeader("Editor/Src/ContainerWindow.bindings.h")]
+     NativeHeader("Editor/Src/Windowing/GUIView.bindings.h"),
+     NativeHeader("Editor/Src/Windowing/ContainerWindow.bindings.h")]
     internal partial class GUIView
     {
         public static extern GUIView current {[NativeMethod("GetCurrentGUIView")] get; }

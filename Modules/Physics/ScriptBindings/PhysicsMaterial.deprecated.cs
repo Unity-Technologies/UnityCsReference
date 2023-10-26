@@ -4,7 +4,6 @@
 
 using System;
 
-
 namespace UnityEngine
 {
     // Describes how physics materials of colliding objects are combined.
@@ -50,4 +49,3 @@ namespace UnityEngine
         public Vector3 frictionDirection { get; set; }
     }
 }
-

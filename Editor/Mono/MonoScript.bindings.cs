@@ -45,7 +45,7 @@ namespace UnityEditor
         // *undocumented*
         // Pass CreateOptions.None to TextAsset constructor so it does not create a native TextAsset object.
         // We create MonoScript native object instead.
-        public MonoScript() : base(TextAsset.CreateOptions.None, null)
+        public MonoScript() : base(TextAsset.CreateOptions.None, (string)null)
         {
             Init_Internal(this);
         }

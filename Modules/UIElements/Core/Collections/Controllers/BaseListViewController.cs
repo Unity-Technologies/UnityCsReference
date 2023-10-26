@@ -15,6 +15,148 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseListViewController : CollectionViewController
     {
+        private protected class SerializedObjectListControllerImpl
+        {
+            private ISerializedObjectList serializedObjectList => m_SerializedObjectListGetter?.Invoke();
+            private Func<ISerializedObjectList> m_SerializedObjectListGetter;
+            private BaseListViewController m_BaseListViewController;
+
+            internal SerializedObjectListControllerImpl(BaseListViewController baseListViewController, Func<ISerializedObjectList> serializedObjectListGetter)
+            {
+                m_BaseListViewController = baseListViewController;
+                m_SerializedObjectListGetter = serializedObjectListGetter;
+            }
+
+            public int GetItemsCount()
+            {
+                return serializedObjectList?.Count ?? 0;
+            }
+
+            internal int GetItemsMinCount()
+            {
+                return serializedObjectList?.minArraySize ?? 0;
+            }
+
+            public void AddItems(int itemCount)
+            {
+                var previousCount = GetItemsCount();
+                serializedObjectList.arraySize += itemCount;
+                serializedObjectList.ApplyChanges();
+
+                var indices = ListPool<int>.Get();
+                try
+                {
+                    for (var i = 0; i < itemCount; i++)
+                    {
+                        indices.Add(previousCount + i);
+                    }
+
+                    m_BaseListViewController.RaiseItemsAdded(indices);
+                }
+                finally
+                {
+                    ListPool<int>.Release(indices);
+                }
+
+                m_BaseListViewController.RaiseOnSizeChanged();
+            }
+
+            internal void RemoveItems(int itemCount)
+            {
+                var previousCount = GetItemsCount();
+                serializedObjectList.arraySize -= itemCount;
+
+                var indices = ListPool<int>.Get();
+                try
+                {
+                    for (var i = previousCount - itemCount; i < previousCount; i++)
+                    {
+                        indices.Add(i);
+                    }
+
+                    m_BaseListViewController.RaiseItemsRemoved(indices);
+                }
+                finally
+                {
+                    ListPool<int>.Release(indices);
+                }
+
+                serializedObjectList.ApplyChanges();
+                m_BaseListViewController.RaiseOnSizeChanged();
+            }
+
+            public void RemoveItems(List<int> indices)
+            {
+                indices.Sort();
+
+                m_BaseListViewController.RaiseItemsRemoved(indices);
+
+                var listCount = serializedObjectList.Count;
+                for (var i = indices.Count - 1; i >= 0; i--)
+                {
+                    var index = indices[i];
+
+                    if (m_BaseListViewController.view.sourceIncludesArraySize)
+                    {
+                        //we must offset everything by 1
+                        index--;
+                    }
+
+                    serializedObjectList.RemoveAt(index, listCount);
+                    listCount--;
+                }
+
+                serializedObjectList.ApplyChanges();
+                m_BaseListViewController.RaiseOnSizeChanged();
+            }
+
+            public void RemoveItem(int index)
+            {
+                if (m_BaseListViewController.view.sourceIncludesArraySize)
+                {
+                    //we must offset everything by 1
+                    index--;
+                }
+
+                using (ListPool<int>.Get(out var indices))
+                {
+                    indices.Add(index);
+                    m_BaseListViewController.RaiseItemsRemoved(indices);
+                }
+
+                serializedObjectList.RemoveAt(index);
+                serializedObjectList.ApplyChanges();
+
+                m_BaseListViewController.RaiseOnSizeChanged();
+            }
+
+            public void ClearItems()
+            {
+                var itemsSourceIndices = Enumerable.Range(0, GetItemsMinCount() - 1);
+                serializedObjectList.arraySize = 0;
+                serializedObjectList.ApplyChanges();
+                m_BaseListViewController.RaiseItemsRemoved(itemsSourceIndices);
+                m_BaseListViewController.RaiseOnSizeChanged();
+            }
+
+            public void Move(int srcIndex, int destIndex)
+            {
+                if (m_BaseListViewController.view.sourceIncludesArraySize)
+                {
+                    //we must offset everything by 1
+                    srcIndex--;
+                    destIndex--;
+                }
+
+                if (srcIndex == destIndex)
+                    return;
+
+                serializedObjectList.Move(srcIndex, destIndex);
+                serializedObjectList.ApplyChanges();
+                m_BaseListViewController.RaiseItemIndexChanged(srcIndex, destIndex);
+            }
+        }
+
         /// <summary>
         /// Raised when the <see cref="CollectionViewController.itemsSource"/> size changes.
         /// </summary>

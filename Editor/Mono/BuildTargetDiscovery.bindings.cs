@@ -80,6 +80,8 @@ namespace UnityEditor
 
         public static extern DiscoveredTargetInfo[] GetBuildTargetInfoList();
 
+        public static extern BuildTarget GetBuildTargetByName(string name);
+
         public static extern int[] GetRenderList(BuildTarget platform);
 
         public static extern string GetModuleNameForBuildTarget(BuildTarget platform);

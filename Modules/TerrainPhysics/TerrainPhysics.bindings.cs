@@ -4,7 +4,6 @@
 
 using UnityEngine.Bindings;
 
-
 namespace UnityEngine
 {
     [NativeHeader("Modules/TerrainPhysics/TerrainCollider.h")]
@@ -23,4 +22,3 @@ namespace UnityEngine
         }
     }
 }
-

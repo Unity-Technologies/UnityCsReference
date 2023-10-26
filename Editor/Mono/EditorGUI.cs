@@ -1260,7 +1260,7 @@ namespace UnityEditor
                         {
                             if (editor.IsEditingControl(id))
                             {
-                                if (style == EditorStyles.toolbarSearchField || style == EditorStyles.searchField)
+                                if (style == EditorStyles.toolbarSearchField || style == EditorStyles.searchField || style.name.Contains("SearchText"))
                                 {
                                     s_OriginalText = "";
                                 }
@@ -3291,16 +3291,16 @@ namespace UnityEditor
             return pm;
         }
 
-        internal static void DeleteListViewItems(ListView listView, SerializedProperty parentArrayProperty)
+        internal static void DeleteListViewItems(BaseListView baseListView, SerializedProperty parentArrayProperty)
         {
-            var previousSelectedIndices = new List<int>(listView.selectedIndices);
+            var previousSelectedIndices = new List<int>(baseListView.selectedIndices);
             previousSelectedIndices.Sort();
-            listView.ClearSelection();
+            baseListView.ClearSelection();
 
             for (int i = previousSelectedIndices.Count - 1; i >= 0; i--)
             {
                 var index = previousSelectedIndices.ElementAt(i);
-                if (index >= listView.itemsSource.Count) continue;
+                if (index >= baseListView.itemsSource.Count) continue;
 
                 SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(index);
                 if (resolvedProperty != null)
@@ -3310,17 +3310,17 @@ namespace UnityEditor
             }
         }
 
-        internal static void DuplicateListViewItems(ListView listView, SerializedProperty parentArrayProperty)
+        internal static void DuplicateListViewItems(BaseListView baseListView, SerializedProperty parentArrayProperty)
         {
-            var previousSelectedIndices = new List<int>(listView.selectedIndices);
+            var previousSelectedIndices = new List<int>(baseListView.selectedIndices);
             previousSelectedIndices.Sort();
             var newSelectedIndices = new List<int>();
-            listView.ClearSelection();
+            baseListView.ClearSelection();
 
             for (int i = previousSelectedIndices.Count - 1; i >= 0; i--)
             {
                 var index = previousSelectedIndices.ElementAt(i);
-                if (index >= listView.itemsSource.Count) continue;
+                if (index >= baseListView.itemsSource.Count) continue;
 
                 SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(index);
                 if (resolvedProperty != null)
@@ -3342,7 +3342,7 @@ namespace UnityEditor
                 newSelectedIndices.Add(previousSelectedIndices[i] + 1);
             }
 
-            listView.SetSelection(newSelectedIndices);
+            baseListView.SetSelection(newSelectedIndices);
         }
 
         internal static void GoToPrefab(string assetPath, GameObject openedFromInstance)
@@ -3959,7 +3959,7 @@ namespace UnityEditor
                     }
                     if (instance.m_ControlID == controlID)
                     {
-                        GUI.changed = selected != instance.m_SelectedIndex;
+                        GUI.changed = showMixedValue || selected != instance.m_SelectedIndex;
                         selected = instance.m_SelectedIndex;
                         instance = null;
                         evt.Use();

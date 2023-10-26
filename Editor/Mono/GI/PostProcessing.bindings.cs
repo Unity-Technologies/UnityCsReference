@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -11,32 +12,32 @@ namespace UnityEngine.LightTransport
 {
     namespace PostProcessing
     {
-        public interface IProbePostProcessor
+        public interface IProbePostProcessor : IDisposable
         {
             // Initialize the post processor.
             bool Initialize(IDeviceContext context);
 
             // Convolve spherical radiance to irradiance.
-            bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount);
+            bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> radianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount);
 
             // Unity expects the following of the irradiance SH coefficients:
             // 1) For L0 and L1, they must have the SH standard normalization terms folded into them (to avoid doing this multiplication in shader).
             // 2) They must be divided by Pi for historical reasons.
             // 3) L1 terms must be in yzx order (rather than standard xyz).
             //    This is flipped back in GetShaderConstantsFromNormalizedSH before passed to shader.
-            bool ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount);
+            bool ConvertToUnityFormat(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> irradianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount);
 
             // Add two sets of SH coefficients together.
-            bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice A, BufferSlice B, BufferSlice sum, int probeCount);
+            bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> A, BufferSlice<SphericalHarmonicsL2> B, BufferSlice<SphericalHarmonicsL2> sum, int probeCount);
 
             // Uniformly scale all SH coefficients.
-            bool ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale);
+            bool ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount, float scale);
 
             // Spherical Harmonics windowing can be used to reduce ringing artifacts.
-            bool WindowSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount);
+            bool WindowSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount);
 
             // Spherical Harmonics de-ringing can be used to reduce ringing artifacts.
-            bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount);
+            bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount);
         }
 
         struct SH
@@ -231,7 +232,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            public bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount)
+            public bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> radianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount)
             {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
                 if (context is not ReferenceContext refContext)
@@ -262,7 +263,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount)
+            public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> irradianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount)
             {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
                 if (context is not ReferenceContext refContext)
@@ -332,7 +333,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice a, BufferSlice b, BufferSlice sum, int probeCount)
+            public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> a, BufferSlice<SphericalHarmonicsL2> b, BufferSlice<SphericalHarmonicsL2> sum, int probeCount)
             {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
                 if (context is not ReferenceContext refContext)
@@ -351,7 +352,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            public bool ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale)
+            public bool ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount, float scale)
             {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
                 if (context is not ReferenceContext refContext)
@@ -368,7 +369,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            public bool WindowSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount)
+            public bool WindowSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount)
             {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
                 if (context is not ReferenceContext refContext)
@@ -405,7 +406,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            public bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount)
+            public bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount)
             {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
                 if (context is not ReferenceContext refContext)
@@ -430,6 +431,10 @@ namespace UnityEngine.LightTransport
                 }
                 return true;
             }
+
+            public void Dispose()
+            {
+            }
         }
         internal class WintermuteProbePostProcessor : IProbePostProcessor
         {
@@ -438,7 +443,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            public bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount)
+            public bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> radianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount)
             {
                 Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
                 if (context is not WintermuteContext wmContext)
@@ -456,7 +461,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount)
+            public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> irradianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount)
             {
                 Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
                 if (context is not WintermuteContext wmContext)
@@ -474,7 +479,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice a, BufferSlice b, BufferSlice sum, int probeCount)
+            public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> a, BufferSlice<SphericalHarmonicsL2> b, BufferSlice<SphericalHarmonicsL2> sum, int probeCount)
             {
                 Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
                 if (context is not WintermuteContext wmContext)
@@ -494,7 +499,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            public bool ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale)
+            public bool ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount, float scale)
             {
                 Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
                 if (context is not WintermuteContext wmContext)
@@ -513,7 +518,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            public bool WindowSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount)
+            public bool WindowSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount)
             {
                 Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
                 if (context is not WintermuteContext wmContext)
@@ -531,7 +536,7 @@ namespace UnityEngine.LightTransport
                 return true;
             }
 
-            public bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount)
+            public bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount)
             {
                 Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
                 if (context is not WintermuteContext wmContext)
@@ -548,6 +553,10 @@ namespace UnityEngine.LightTransport
                 jobHandle.Complete();
                 return true;
             }
+
+            public void Dispose()
+            {
+            }
         }
         public class RadeonRaysProbePostProcessor : IProbePostProcessor
         {
@@ -560,7 +569,7 @@ namespace UnityEngine.LightTransport
                 return RadeonRaysContext.InitializePostProcessingInternal(rrContext);
             }
 
-            public bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice radianceIn, BufferSlice irradianceOut, int probeCount)
+            public bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> radianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount)
             {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
                 if (context is not RadeonRaysContext rrContext)
@@ -569,7 +578,7 @@ namespace UnityEngine.LightTransport
                 return RadeonRaysContext.ConvolveRadianceToIrradianceInternal(rrContext, radianceIn.Id, irradianceOut.Id, probeCount);
             }
 
-            public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice irradianceIn, BufferSlice irradianceOut, int probeCount)
+            public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> irradianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount)
             {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
                 if (context is not RadeonRaysContext rrContext)
@@ -578,7 +587,7 @@ namespace UnityEngine.LightTransport
                 return RadeonRaysContext.ConvertToUnityFormatInternal(rrContext, irradianceIn.Id, irradianceOut.Id, probeCount);
             }
 
-            public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice a, BufferSlice b, BufferSlice sum, int probeCount)
+            public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> a, BufferSlice<SphericalHarmonicsL2> b, BufferSlice<SphericalHarmonicsL2> sum, int probeCount)
             {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
                 if (context is not RadeonRaysContext rrContext)
@@ -587,7 +596,7 @@ namespace UnityEngine.LightTransport
                 return RadeonRaysContext.AddSphericalHarmonicsL2Internal(rrContext, a.Id, b.Id, sum.Id, probeCount);
             }
 
-            public bool ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount, float scale)
+            public bool ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount, float scale)
             {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
                 if (context is not RadeonRaysContext rrContext)
@@ -596,7 +605,7 @@ namespace UnityEngine.LightTransport
                 return RadeonRaysContext.ScaleSphericalHarmonicsL2Internal(rrContext, shIn.Id, shOut.Id, probeCount, scale);
             }
 
-            public bool WindowSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount)
+            public bool WindowSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount)
             {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
                 if (context is not RadeonRaysContext rrContext)
@@ -605,7 +614,7 @@ namespace UnityEngine.LightTransport
                 return RadeonRaysContext.WindowSphericalHarmonicsL2Internal(rrContext, shIn.Id, shOut.Id, probeCount);
             }
 
-            public bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice shIn, BufferSlice shOut, int probeCount)
+            public bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount)
             {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
                 if (context is not RadeonRaysContext rrContext)
@@ -615,7 +624,7 @@ namespace UnityEngine.LightTransport
                 var shInputBuffer = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.TempJob);
                 var shOutputBuffer = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.TempJob);
                 EventID eventId = rrContext.ReadBuffer(shIn.Id, shInputBuffer.Reinterpret<byte>(sizeofSphericalHarmonicsL2));
-                bool waitResult = rrContext.WaitForAsyncOperation(eventId);
+                bool waitResult = rrContext.Wait(eventId);
                 Debug.Assert(waitResult, "Failed to read SH from context.");
 
                 // Currently windowing is done on CPU since the algorithm is not GPU friendly.
@@ -630,9 +639,13 @@ namespace UnityEngine.LightTransport
 
                 // Write back to GPU.
                 eventId = rrContext.WriteBuffer(shOut.Id, shOutputBuffer.Reinterpret<byte>(sizeofSphericalHarmonicsL2));
-                waitResult = rrContext.WaitForAsyncOperation(eventId);
+                waitResult = rrContext.Wait(eventId);
                 Debug.Assert(waitResult, "Failed to write SH to context.");
                 return true;
+            }
+
+            public void Dispose()
+            {
             }
         }
     }

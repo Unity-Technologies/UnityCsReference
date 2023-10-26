@@ -1586,7 +1586,8 @@ namespace UnityEngine.TextCore.Text
                     textInfo.lineInfo[m_LineNumber].visibleCharacterCount = m_LineVisibleCharacterCount;
                     textInfo.lineInfo[m_LineNumber].lineExtents.min = new Vector2(textInfo.textElementInfo[firstCharacterIndex].bottomLeft.x, lineDescender);
                     textInfo.lineInfo[m_LineNumber].lineExtents.max = new Vector2(textInfo.textElementInfo[lastCharacterIndex].topRight.x, lineAscender);
-                    textInfo.lineInfo[m_LineNumber].length = textInfo.lineInfo[m_LineNumber].lineExtents.max.x - (padding * currentElementScale);
+                    // UUM-46147: For IMGUI line length should include xAdvance for backward compatibility
+                    textInfo.lineInfo[m_LineNumber].length = generationSettings.isIMGUI ? textInfo.textElementInfo[m_LastVisibleCharacterOfLine].xAdvance : textInfo.lineInfo[m_LineNumber].lineExtents.max.x - (padding * currentElementScale);
                     textInfo.lineInfo[m_LineNumber].width = widthOfTextArea;
 
                     if (textInfo.lineInfo[m_LineNumber].characterCount == 1)
@@ -1794,7 +1795,8 @@ namespace UnityEngine.TextCore.Text
             textInfo.lineInfo[m_LineNumber].visibleCharacterCount = m_LineVisibleCharacterCount;
             textInfo.lineInfo[m_LineNumber].lineExtents.min = new Vector2(textInfo.textElementInfo[m_FirstVisibleCharacterOfLine].bottomLeft.x, lineDescender);
             textInfo.lineInfo[m_LineNumber].lineExtents.max = new Vector2(textInfo.textElementInfo[m_LastVisibleCharacterOfLine].topRight.x, lineAscender);
-            textInfo.lineInfo[m_LineNumber].length = textInfo.lineInfo[m_LineNumber].lineExtents.max.x;
+            // UUM-46147: For IMGUI line length should include xAdvance for backward compatibility
+            textInfo.lineInfo[m_LineNumber].length = generationSettings.isIMGUI ? textInfo.textElementInfo[m_LastVisibleCharacterOfLine].xAdvance : textInfo.lineInfo[m_LineNumber].lineExtents.max.x;
             textInfo.lineInfo[m_LineNumber].width = width;
 
             float glyphAdjustment = textInfo.textElementInfo[m_LastVisibleCharacterOfLine].adjustedHorizontalAdvance;

@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.TestComponents")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
 
-[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests")] // for UI Test Framework
 
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // for Moq
 
@@ -25,6 +25,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UXMLReferenceGenerator.Bridge")]
+[assembly: InternalsVisibleTo("UnityEditor.UIElements.Tests")] // for UI Test Framework
 
 // TOLERATED: modules or core packages evolving in lockstep with this module
 // Reducing this list means to improve the API design of this module.

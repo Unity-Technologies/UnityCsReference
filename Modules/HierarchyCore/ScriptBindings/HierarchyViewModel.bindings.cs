@@ -258,6 +258,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
         /// <returns>The number of nodes that have the flags set.</returns>
+        [NativeThrows]
         public extern int HasFlagsCount(HierarchyNodeFlags flags);
 
         /// <summary>
@@ -280,6 +281,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
         /// <returns>The number of nodes that does not have the flags set.</returns>
+        [NativeThrows]
         public extern int DoesNotHaveFlagsCount(HierarchyNodeFlags flags);
 
         /// <summary>
@@ -370,6 +372,9 @@ namespace Unity.Hierarchy
         public HierarchyNode[] GetNodesWithFlags(HierarchyNodeFlags flags)
         {
             var count = HasFlagsCount(flags);
+            if (count == 0)
+                return Array.Empty<HierarchyNode>();
+
             var nodes = new HierarchyNode[count];
             GetNodesWithFlagsSpan(flags, nodes);
             return nodes;
@@ -398,6 +403,9 @@ namespace Unity.Hierarchy
         public int[] GetIndicesWithFlags(HierarchyNodeFlags flags)
         {
             var count = HasFlagsCount(flags);
+            if (count == 0)
+                return Array.Empty<int>();
+
             var indices = new int[count];
             GetIndicesWithFlagsSpan(flags, indices);
             return indices;
@@ -419,6 +427,9 @@ namespace Unity.Hierarchy
         public HierarchyNode[] GetNodesWithoutFlags(HierarchyNodeFlags flags)
         {
             var count = DoesNotHaveFlagsCount(flags);
+            if (count == 0)
+                return Array.Empty<HierarchyNode>();
+
             var nodes = new HierarchyNode[count];
             GetNodesWithoutFlagsSpan(flags, nodes);
             return nodes;
@@ -447,6 +458,9 @@ namespace Unity.Hierarchy
         public int[] GetIndicesWithoutFlags(HierarchyNodeFlags flags)
         {
             var count = DoesNotHaveFlagsCount(flags);
+            if (count == 0)
+                return Array.Empty<int>();
+
             var indices = new int[count];
             GetIndicesWithoutFlagsSpan(flags, indices);
             return indices;

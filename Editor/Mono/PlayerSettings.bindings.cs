@@ -815,16 +815,16 @@ namespace UnityEditor
         public static extern void SetOverrideShaderChunkSettingsForPlatform(BuildTarget buildTarget, bool value);
 
         [NativeMethod("GetLightmapEncodingQuality")]
-        internal static extern LightmapEncodingQuality GetLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup);
+        internal static extern LightmapEncodingQuality GetLightmapEncodingQualityForPlatform(BuildTarget platform);
 
         [NativeMethod("SetLightmapEncodingQuality")]
-        internal static extern void SetLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup, LightmapEncodingQuality encodingQuality);
+        internal static extern void SetLightmapEncodingQualityForPlatform(BuildTarget platform, LightmapEncodingQuality encodingQuality);
 
         [NativeMethod("GetHDRCubemapEncodingQuality")]
-        internal static extern HDRCubemapEncodingQuality GetHDRCubemapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup);
+        internal static extern HDRCubemapEncodingQuality GetHDRCubemapEncodingQualityForPlatform(BuildTarget platform);
 
         [NativeMethod("SetHDRCubemapEncodingQuality")]
-        internal static extern void SetHDRCubemapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup, HDRCubemapEncodingQuality encodingQuality);
+        internal static extern void SetHDRCubemapEncodingQualityForPlatform(BuildTarget platform, HDRCubemapEncodingQuality encodingQuality);
 
         [FreeFunction("GetTargetPlatformGraphicsAPIAvailability")]
         internal static extern UnityEngine.Rendering.GraphicsDeviceType[] GetSupportedGraphicsAPIs(BuildTarget platform);
@@ -1753,18 +1753,18 @@ namespace UnityEditor
 
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        internal static extern TextureCompressionFormat GetDefaultTextureCompressionFormat(BuildTargetGroup platform);
+        internal static extern TextureCompressionFormat GetDefaultTextureCompressionFormat(BuildTarget platform);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        internal static extern void SetDefaultTextureCompressionFormat(BuildTargetGroup platform, TextureCompressionFormat format);
+        internal static extern void SetDefaultTextureCompressionFormat(BuildTarget platform, TextureCompressionFormat format);
 
         [NativeMethod("GetTextureCompressionFormats")]
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        internal static extern TextureCompressionFormat[] GetTextureCompressionFormatsImpl(BuildTargetGroup platform);
+        internal static extern TextureCompressionFormat[] GetTextureCompressionFormatsImpl(BuildTarget platform);
 
         [NativeMethod("SetTextureCompressionFormats")]
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        internal static extern void SetTextureCompressionFormatsImpl(BuildTargetGroup platform, TextureCompressionFormat[] formats);
+        internal static extern void SetTextureCompressionFormatsImpl(BuildTarget platform, TextureCompressionFormat[] formats);
 
         [FreeFunction("GetPlayerSettings().GetEditorOnly().RecompileScripts")]
         internal static extern void RecompileScripts(string reason, bool refreshProject = true);

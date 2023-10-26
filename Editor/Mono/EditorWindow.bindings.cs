@@ -6,7 +6,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [NativeHeader("Editor/Src/ContainerWindow.bindings.h")]
+    [NativeHeader("Editor/Src/Windowing/ContainerWindow.bindings.h")]
     public partial class EditorWindow
     {
         [FreeFunction("ContainerWindowBindings::MakeModal")]

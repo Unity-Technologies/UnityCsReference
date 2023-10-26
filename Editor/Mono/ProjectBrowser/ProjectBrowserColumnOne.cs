@@ -2,13 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.IO;
 using System.Collections.Generic;
-using UnityEditor.IMGUI.Controls;
-using UnityEngine;
+using System.IO;
 using UnityEditor.Experimental;
+using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
-using Object = UnityEngine.Object;
+using UnityEngine;
 
 namespace UnityEditor
 {

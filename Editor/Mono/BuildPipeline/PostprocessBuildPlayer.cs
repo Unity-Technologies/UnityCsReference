@@ -90,7 +90,10 @@ namespace UnityEditor
             return postprocessor.PrepareForBuild(buildOptions);
         }
 
-        static public string GetExtensionForBuildTarget(BuildTargetGroup targetGroup, BuildTarget target, int subtarget, BuildOptions options)
+        static public string GetExtensionForBuildTarget(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options) =>
+           GetExtensionForBuildTarget(target, EditorUserBuildSettings.GetActiveSubtargetFor(target), options);
+
+        static public string GetExtensionForBuildTarget(BuildTarget target, int subtarget, BuildOptions options)
         {
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(target);
             if (postprocessor == null)
@@ -98,14 +101,8 @@ namespace UnityEditor
             return postprocessor.GetExtension(target, subtarget, options);
         }
 
-        static public string GetExtensionForBuildTarget(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options) =>
-            GetExtensionForBuildTarget(targetGroup, target, EditorUserBuildSettings.GetActiveSubtargetFor(target), options);
-
-         static public string GetExtensionForBuildTarget(BuildTarget target, int subtarget, BuildOptions options) =>
-            GetExtensionForBuildTarget(BuildTargetGroup.Unknown, target, subtarget, options);
-
-         static public string GetExtensionForBuildTarget(BuildTarget target, BuildOptions options) =>
-            GetExtensionForBuildTarget(BuildTargetGroup.Unknown, target, EditorUserBuildSettings.GetActiveSubtargetFor(target), options);
+        static public string GetExtensionForBuildTarget(BuildTarget target, BuildOptions options) =>
+            GetExtensionForBuildTarget(target, EditorUserBuildSettings.GetActiveSubtargetFor(target), options);
 
         static public bool SupportsInstallInBuildFolder(BuildTarget target)
         {
@@ -118,17 +115,15 @@ namespace UnityEditor
             return false;
         }
 
+        static public bool SupportsLz4Compression(BuildTargetGroup targetGroup, BuildTarget target) =>
+            SupportsLz4Compression(target);
+
         static public bool SupportsLz4Compression(BuildTarget target)
         {
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(target);
             if (postprocessor != null)
                 return postprocessor.SupportsLz4Compression();
             return false;
-        }
-
-        static public bool SupportsLz4Compression(BuildTargetGroup targetGroup, BuildTarget target)
-        {
-            return SupportsLz4Compression(target);
         }
 
         static public Compression GetDefaultCompression(BuildTarget target)
@@ -146,7 +141,7 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static public void Launch(BuildTargetGroup targetGroup, BuildTarget buildTarget, string path, string productName, BuildOptions options, BuildReport buildReport)
+        static public void Launch(BuildTarget buildTarget, string path, string productName, BuildOptions options, BuildReport buildReport)
         {
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(buildTarget);
             if (postprocessor != null)
@@ -233,7 +228,7 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static public void UpdateBootConfig(BuildTargetGroup targetGroup, BuildTarget target, BootConfigData config, BuildOptions options)
+        static public void UpdateBootConfig(BuildTarget target, BootConfigData config, BuildOptions options)
         {
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(target);
             if (postprocessor != null)
@@ -249,7 +244,7 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static public void Postprocess(BuildTargetGroup targetGroup, BuildTarget target, int subtarget, string installPath, string companyName, string productName,
+        static public void Postprocess(BuildTarget target, int subtarget, string installPath, string companyName, string productName,
             BuildOptions options,
             RuntimeClassRegistry usedClassRegistry, BuildReport report)
         {

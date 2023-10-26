@@ -29,7 +29,7 @@ namespace UnityEditor
     }
 
     //[StaticAccessor("ContainerWindowBindings", StaticAccessorType.DoubleColon)]
-    [NativeHeader("Editor/Src/ContainerWindow.bindings.h")]
+    [NativeHeader("Editor/Src/Windowing/ContainerWindow.bindings.h")]
     internal partial class ContainerWindow
     {
         private const string k_ScriptingPrefix = "ContainerWindowBindings::";

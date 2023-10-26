@@ -87,6 +87,11 @@ namespace UnityEngine.Rendering
             }
         }
 
+        public bool forcedVisible
+        {
+            get { return (m_Flags & VisibleLightFlags.ForcedVisible) > 0; }
+        }
+
         public bool Equals(VisibleLight other)
         {
             return m_LightType == other.m_LightType && m_FinalColor.Equals(other.m_FinalColor) && m_ScreenRect.Equals(other.m_ScreenRect) && m_LocalToWorldMatrix.Equals(other.m_LocalToWorldMatrix) && m_Range.Equals(other.m_Range) && m_SpotAngle.Equals(other.m_SpotAngle) && m_InstanceId == other.m_InstanceId && m_Flags == other.m_Flags;

@@ -352,7 +352,7 @@ namespace Unity.Hierarchy
             return query;
         }
 
-        private static T[] Where<T>(IEnumerable<T> src, Func<T, bool> pred)
+        static T[] Where<T>(IEnumerable<T> src, Func<T, bool> pred)
         {
             var count = 0;
             foreach (var e in src)

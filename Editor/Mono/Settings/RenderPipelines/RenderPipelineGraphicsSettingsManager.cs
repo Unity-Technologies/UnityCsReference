@@ -13,6 +13,10 @@ namespace UnityEditor.Rendering.Settings
 {
     internal static class RenderPipelineGraphicsSettingsManager
     {
+        internal const string serializationPathToContainer = "m_Settings";
+        internal const string serializationPathToCollection = serializationPathToContainer + ".m_SettingsList.m_List";
+        internal const string undoResetName = "Reset IRenderPipelineGraphicsSettings: ";
+
         public struct RenderPipelineGraphicsSettingsInfo
         {
             public Type type;
@@ -71,17 +75,17 @@ namespace UnityEditor.Rendering.Settings
         {
             IRenderPipelineGraphicsSettings renderPipelineGraphicsSettings;
 
+            bool hasSettings = asset.TryGet(renderPipelineGraphicsSettingsType.type, out renderPipelineGraphicsSettings);
+
             if (renderPipelineGraphicsSettingsType.isDeprecated)
             {
-                if (asset.TryGet(renderPipelineGraphicsSettingsType.type, out renderPipelineGraphicsSettings))
-                {
+                if (hasSettings)
                     asset.Remove(renderPipelineGraphicsSettings);
-                }
 
                 return;
             }
 
-            if (TryCreateInstance(renderPipelineGraphicsSettingsType.type, true, out renderPipelineGraphicsSettings))
+            if (!hasSettings && TryCreateInstance(renderPipelineGraphicsSettingsType.type, true, out renderPipelineGraphicsSettings))
                 asset.Add(renderPipelineGraphicsSettings);
 
             if (renderPipelineGraphicsSettings is IRenderPipelineResources resource)
@@ -102,6 +106,35 @@ namespace UnityEditor.Rendering.Settings
 
             instance = default;
             return false;
+        }
+
+        internal static void ResetRenderPipelineGraphicsSettings(Type graphicsSettingsType, Type renderPipelineType)
+        {
+            if (graphicsSettingsType == null || renderPipelineType == null)
+                return;
+
+            var renderPipelineGlobalSettings = EditorGraphicsSettings.GetRenderPipelineGlobalSettingsAsset(renderPipelineType);
+            if (!renderPipelineGlobalSettings.TryGet(graphicsSettingsType, out var srpGraphicSetting))
+                return;
+
+            if (!TryCreateInstance(graphicsSettingsType, true, out srpGraphicSetting))
+                return;
+
+            var serializedGlobalSettings = new SerializedObject(renderPipelineGlobalSettings);
+            var settingsIterator = serializedGlobalSettings.FindProperty(serializationPathToCollection);
+            settingsIterator.NextVisible(true); //enter the collection
+            while (settingsIterator.boxedValue?.GetType() != graphicsSettingsType)
+                settingsIterator.NextVisible(false);
+
+            if (srpGraphicSetting is IRenderPipelineResources resource)
+                RenderPipelineResourcesEditorUtils.TryReloadContainedNullFields(resource);
+            
+            using (var notifier = new Notifier.Scope(settingsIterator))
+            {
+                settingsIterator.boxedValue = srpGraphicSetting;
+                if (serializedGlobalSettings.ApplyModifiedProperties())
+                    Undo.SetCurrentGroupName($"{undoResetName}{graphicsSettingsType.Name}");
+            }
         }
     }
 }

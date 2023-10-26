@@ -15,7 +15,7 @@ namespace UnityEditor.Build.Profile
     {
         /// <summary>
         /// Set platform setting based on strings for name and value. Native
-        /// calls this to keep build profiles and EditorUserBuildSettings 
+        /// calls this to keep build profiles and EditorUserBuildSettings
         /// PlatformSettings dictionary in sync for backward compatibility.
         /// </summary>
         public virtual void SetRawPlatformSetting(string name, string value)

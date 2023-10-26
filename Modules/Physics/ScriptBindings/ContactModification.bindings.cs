@@ -3,15 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-
-using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using UnityEngine.Internal;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-
 
 namespace UnityEngine
 {
@@ -254,4 +249,3 @@ namespace UnityEngine
         public ushort otherMaterialIndex;
     }
 }
-

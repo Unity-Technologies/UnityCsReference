@@ -14,18 +14,18 @@ namespace Unity.Hierarchy
         internal enum Capabilities
         {
             None = 0,
-            GetNodeTypeName = 1 << 0,
-            ChangesPending = 1 << 1,
-            IntegrateChanges = 1 << 2,
-            AcceptParent = 1 << 3,
-            AcceptChild = 1 << 4,
-            CanSetName = 1 << 5,
-            OnSetName = 1 << 6,
-            OnSetParent = 1 << 7,
-            OnSetSortIndex = 1 << 8,
-            SearchMatch = 1 << 9,
-            SearchEnd = 1 << 10,
-            Dispose = 1 << 11
+            Dispose = 1 << 0,
+            GetNodeTypeName = 1 << 1,
+            ChangesPending = 1 << 2,
+            IntegrateChanges = 1 << 3,
+            AcceptParent = 1 << 4,
+            AcceptChild = 1 << 5,
+            CanSetName = 1 << 6,
+            OnSetName = 1 << 7,
+            OnSetParent = 1 << 8,
+            OnSetSortIndex = 1 << 9,
+            SearchMatch = 1 << 10,
+            SearchEnd = 1 << 11,
         }
 
         internal static extern void SetNextHierarchyNodeId(Hierarchy hierarchy, int id);

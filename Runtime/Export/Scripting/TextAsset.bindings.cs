@@ -19,6 +19,8 @@ namespace UnityEngine
 
         extern static void Internal_CreateInstance([Writable] TextAsset self, string text);
 
+        extern static void Internal_CreateInstanceFromBytes([Writable] TextAsset self, ReadOnlySpan<byte> bytes);
+
         extern IntPtr GetDataPtr();
         extern long GetDataSize();
 

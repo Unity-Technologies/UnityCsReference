@@ -3054,6 +3054,8 @@ namespace UnityEditor
                     return;
                 }
 
+                // We need to ensure that we start with focus in the rename overlay (UUM-48858)
+                ob.Focus();
                 ob.Repaint();
             }
         }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text;
+using UnityEditor.Rendering.Settings;
 using UnityEditor.UIElements.ProjectSettings;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -129,13 +130,13 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         static bool TryGetSettingsListFromRenderPipelineGlobalSettings(RenderPipelineGlobalSettings globalSettings, out SerializedObject globalSettingsSO, out SerializedProperty settingsContainer, out SerializedProperty settingsListInContainer)
         {
             globalSettingsSO = new SerializedObject(globalSettings);
-            settingsContainer = globalSettingsSO.FindProperty("m_Settings");
+            settingsContainer = globalSettingsSO.FindProperty(RenderPipelineGraphicsSettingsManager.serializationPathToContainer);
             if (settingsContainer == null)
             {
                 settingsListInContainer = null;
                 return false;
             }
-            settingsListInContainer = settingsContainer.FindPropertyRelative("m_SettingsList.m_List");
+            settingsListInContainer = globalSettingsSO.FindProperty(RenderPipelineGraphicsSettingsManager.serializationPathToCollection );
             return settingsListInContainer != null;
         }
 

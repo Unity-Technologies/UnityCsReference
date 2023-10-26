@@ -226,17 +226,18 @@ namespace UnityEditor.UIElements.Bindings
 
                 return;
             }
-            if (element is ListView listView)
+            if (element is BaseListView baseListView)
             {
-                BindListView(listView, prop);
-
-                if (listView.headerFoldout != null)
+                if (BindListView(baseListView, prop))
                 {
-                    // The foldout will be bound as hierarchy binding continues.
-                    listView.headerFoldout.bindingPath = prop.propertyPath;
-                }
+                    if (baseListView.headerFoldout != null)
+                    {
+                        // The foldout will be bound as hierarchy binding continues.
+                        baseListView.headerFoldout.bindingPath = prop.propertyPath;
+                    }
 
-                return;
+                    return;
+                }
             }
 
             switch (prop.propertyType)
@@ -442,7 +443,7 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
-        private bool BindListView(ListView listView, SerializedProperty prop)
+        private bool BindListView(BaseListView baseListView, SerializedProperty prop)
         {
             // This should be done elsewhere. That's what the SerializedPropertyBindEvent are for.
             // Problem is, ListView is in the engine assembly and can't have knowledge of SerializedObjects
@@ -456,15 +457,13 @@ namespace UnityEditor.UIElements.Bindings
                         prop.propertyPath));
                     return false;
                 }
-                ListViewSerializedObjectBinding.CreateBind(listView, this, prop);
 
-                return true;
+                return BaseListViewSerializedObjectBinding.CreateBind(baseListView, this, prop);
             }
-            else
-            {
-                Debug.LogWarning(string.Format("Binding ListView is not supported for {0} properties \"{1}\"", prop.type,
-                    prop.propertyPath));
-            }
+
+            Debug.LogWarning(string.Format("Binding ListView is not supported for {0} properties \"{1}\"", prop.type,
+                prop.propertyPath));
+
             return false;
         }
 
@@ -2387,6 +2386,9 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
+            if(boundProperty.hasMultipleDifferentValues)            
+                lastFieldValueIndex = default;            
+
             if (lastFieldValueIndex >= 0 && lastFieldValueIndex < displayIndexToEnumIndex.Count
                 && boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])
             {

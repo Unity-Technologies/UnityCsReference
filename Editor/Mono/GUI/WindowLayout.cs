@@ -1663,6 +1663,7 @@ namespace UnityEditor
         const int k_Width = 200;
         const int k_Height = 48;
         const int k_HelpBoxHeight = 40;
+        const int k_MaxLayoutNameLength = 128;
 
         static readonly string k_InvalidChars = EditorUtility.GetInvalidFilenameChars();
         static readonly string s_InvalidCharsFormatString = L10n.Tr("Invalid characters: {0}");
@@ -1701,10 +1702,14 @@ namespace UnityEditor
             }
             GUI.SetNextControlName("m_PreferencesName");
             EditorGUI.BeginChangeCheck();
-            m_LayoutName = EditorGUILayout.TextField(m_LayoutName);
-            m_LayoutName = m_LayoutName.TrimEnd();
+            m_LayoutName = EditorGUILayout.TextField(m_LayoutName);            
             if (EditorGUI.EndChangeCheck())
             {
+                if (m_LayoutName.Length > k_MaxLayoutNameLength)
+                {                    
+                    m_LayoutName = m_LayoutName.Substring(0, k_MaxLayoutNameLength);
+                }
+                m_LayoutName = m_LayoutName.TrimEnd();
                 UpdateCurrentInvalidChars();
             }
 

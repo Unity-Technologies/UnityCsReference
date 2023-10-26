@@ -31,7 +31,8 @@ namespace UnityEditor.UIElements.ProjectSettings
         internal static class Styles
         {
             public static readonly string section = "project-settings-section";
-            public static readonly string title = "project-settings-section__title";
+            public static readonly string header = "project-settings-section__header";
+            public static readonly string subheader = "project-settings-section__subheader";
             public static readonly string content = "project-settings-section__content";
         }
 
@@ -88,7 +89,7 @@ namespace UnityEditor.UIElements.ProjectSettings
         void CreateLabelElement(string newLabel)
         {
             labelElement = new Label(newLabel);
-            labelElement.AddToClassList(Styles.title);
+            labelElement.AddToClassList(Styles.header);
             hierarchy.Insert(0, labelElement);
         }
 

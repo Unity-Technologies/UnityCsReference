@@ -488,13 +488,12 @@ namespace UnityEditor
 
         internal static extern void BuildPlayerInternalPostBuild(BuildReport report);
 
-
-        [FreeFunction("WriteBootConfig", ThrowsException = true)]
-        static extern void WriteBootConfig(string outputFile, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options);
+        [FreeFunction("WriteBootConfigInternal", ThrowsException = true)]
+        static extern void WriteBootConfigInternal(string outputFile, BuildTarget target, BuildOptions options);
 
         public static void WriteBootConfig(string outputFile, BuildTarget target, BuildOptions options)
         {
-            WriteBootConfig(outputFile, BuildPipeline.GetBuildTargetGroup(target), target, options);
+            WriteBootConfigInternal(outputFile,  target, options);
         }
 
         [StructLayout(LayoutKind.Sequential)]

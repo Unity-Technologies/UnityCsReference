@@ -100,6 +100,7 @@ namespace UnityEditor
             if (CutBoard.hasCutboardData)
             {
                 CutBoard.PasteGameObjects(fallbackParent, false);
+                RepaintHierarchyWindowsAfterPaste();
             }
             // If it is not a Cut operation, execute regular paste
             else
