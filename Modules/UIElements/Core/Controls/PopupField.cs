@@ -65,10 +65,10 @@ namespace UnityEngine.UIElements
             get { return base.value; }
             set
             {
-                var newIndex = m_Choices?.IndexOf(value) ?? -1;
-                m_Index = newIndex;
+                var previousIndex = m_Index;
+                m_Index = m_Choices?.IndexOf(value) ?? -1;
                 base.value = value;
-                if (m_Index != newIndex)
+                if (m_Index != previousIndex)
                     NotifyPropertyChanged(indexProperty);
             }
         }

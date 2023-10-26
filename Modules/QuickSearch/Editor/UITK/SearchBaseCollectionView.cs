@@ -176,6 +176,9 @@ namespace UnityEditor.Search
         protected virtual void UpdateSelection()
         {
             var selectedIndexes = m_ViewModel.selection.indexes;
+            if (m_ListView.selectedIndices.SequenceEqual(selectedIndexes))
+                return;
+
             var firstSelection = selectedIndexes.Count > 0 ? selectedIndexes[0] : -1;
             m_ListView.SetSelectionWithoutNotify(selectedIndexes);
             if (firstSelection != -1)

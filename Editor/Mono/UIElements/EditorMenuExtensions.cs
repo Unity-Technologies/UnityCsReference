@@ -32,6 +32,7 @@ namespace UnityEditor.UIElements
 
     public static class EditorMenuExtensions
     {
+        const int k_SearchFieldTextLimit = 1024;
         const float k_MaxMenuWidth = 512.0f;
         internal const float k_SubmenuExpandDelay = 0.35f;
         internal const string k_SearchShortcutId = "Main Menu/Edit/Find";
@@ -346,6 +347,8 @@ namespace UnityEditor.UIElements
         static readonly ObjectPool<ToolbarSearchField> s_SearchPool = new(() =>
         {
             var search = new ToolbarSearchField();
+            search.textInputField.maxLength = k_SearchFieldTextLimit;
+
             search.AddToClassList(searchUssClassName);
             search.RegisterValueChangedCallback(e =>
             {

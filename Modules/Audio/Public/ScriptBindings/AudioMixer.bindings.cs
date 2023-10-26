@@ -70,6 +70,6 @@ namespace UnityEngine.Audio
         internal extern float GetAbsoluteAudibilityFromGroup(AudioMixerGroup group);
 
         [NativeMethod]
-        internal extern bool IsInitialized();
+        internal extern bool HasValidSnapshots();
     }
 }

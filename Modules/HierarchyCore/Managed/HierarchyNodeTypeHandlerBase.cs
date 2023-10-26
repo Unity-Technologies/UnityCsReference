@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -18,6 +20,8 @@ namespace Unity.Hierarchy
         [RequiredByNativeCode, VisibleToOtherModules("UnityEditor.HierarchyModule")] internal IntPtr m_Ptr;
         [RequiredByNativeCode, VisibleToOtherModules("UnityEditor.HierarchyModule")] internal bool m_IsWrapper;
         [RequiredByNativeCode] readonly Hierarchy m_Hierarchy;
+
+        static readonly Dictionary<Type, int> s_NodeTypes = new();
 
         /// <summary>
         /// Get the Hierarchy owning this handler.
@@ -59,7 +63,7 @@ namespace Unity.Hierarchy
         /// Retrieves the hierarchy node type for this hierarchy node type handler.
         /// </summary>
         /// <returns>The type of the hierarchy node.</returns>
-        public HierarchyNodeType GetNodeType() => GetNodeType(GetType());
+        public HierarchyNodeType GetNodeType() => new HierarchyNodeType(GetNodeType(GetType()));
 
         /// <summary>
         /// Get the type name of this hierarchy node type handler.
@@ -169,9 +173,78 @@ namespace Unity.Hierarchy
         }
 
         [FreeFunction("HierarchyNodeTypeHandlerManager::Get().GetNodeType")]
-        static extern HierarchyNodeType GetNodeType(Type type);
+        static extern int GetNodeType(Type type);
 
         internal void Internal_SearchBegin(HierarchySearchQueryDescriptor query) => SearchBegin(query);
         internal bool Internal_SearchMatch(in HierarchyNode node) => SearchMatch(in node);
+
+        #region Called From Native
+        static HierarchyNodeTypeHandlerBase GetHandlerFromPtr(IntPtr ptr)
+        {
+            return (HierarchyNodeTypeHandlerBase)GCHandle.FromIntPtr(ptr).Target;
+        }
+
+        [UsedByNativeCode, RequiredMember]
+        static HierarchyNodeTypeHandlerBase InvokeCreateInstance(Type type, Hierarchy hierarchy)
+        {
+            var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+            var parameters = new[] { hierarchy };
+            return (HierarchyNodeTypeHandlerBase)Activator.CreateInstance(type, flags, null, parameters, null);
+        }
+
+        [UsedByNativeCode, RequiredMember]
+        static bool InvokeTryGetNodeType(Type type, out int nodeType)
+        {
+            if (s_NodeTypes.TryGetValue(type, out nodeType))
+                return true;
+
+            var method = type.GetMethod("Internal_GetNodeType", BindingFlags.Static | BindingFlags.NonPublic);
+            if (method != null)
+            {
+                nodeType = (int)method.Invoke(null, null);
+                s_NodeTypes.Add(type, nodeType);
+                return true;
+            }
+
+            nodeType = HierarchyNodeType.k_HierarchyNodeTypeNull;
+            return false;
+        }
+
+        [UsedByNativeCode, RequiredMember]
+        static void InvokeDispose(IntPtr ptr) => GetHandlerFromPtr(ptr).Dispose();
+
+        [UsedByNativeCode, RequiredMember]
+        static string InvokeGetNodeTypeName(IntPtr ptr) => GetHandlerFromPtr(ptr).GetNodeTypeName();
+
+        [UsedByNativeCode, RequiredMember]
+        static bool InvokeAcceptParent(IntPtr ptr, in HierarchyNode node) => GetHandlerFromPtr(ptr).AcceptParent(in node);
+
+        [UsedByNativeCode, RequiredMember]
+        static bool InvokeAcceptChild(IntPtr ptr, in HierarchyNode node) => GetHandlerFromPtr(ptr).AcceptChild(in node);
+
+        [UsedByNativeCode, RequiredMember]
+        static bool InvokeCanSetName(IntPtr ptr, in HierarchyNode node) => GetHandlerFromPtr(ptr).CanSetName(in node);
+
+        [UsedByNativeCode, RequiredMember]
+        static bool InvokeChangesPending(IntPtr ptr) => GetHandlerFromPtr(ptr).ChangesPending();
+
+        [UsedByNativeCode, RequiredMember]
+        static bool InvokeIntegrateChanges(IntPtr ptr, HierarchyCommandList cmdList) => GetHandlerFromPtr(ptr).IntegrateChanges(cmdList);
+
+        [UsedByNativeCode, RequiredMember]
+        static bool InvokeOnSetName(IntPtr ptr, in HierarchyNode node, string name) => GetHandlerFromPtr(ptr).OnSetName(in node, name);
+
+        [UsedByNativeCode, RequiredMember]
+        static bool InvokeOnSetParent(IntPtr ptr, in HierarchyNode node, in HierarchyNode parent) => GetHandlerFromPtr(ptr).OnSetParent(in node, in parent);
+
+        [UsedByNativeCode, RequiredMember]
+        static bool InvokeOnSetSortIndex(IntPtr ptr, in HierarchyNode node, int index) => GetHandlerFromPtr(ptr).OnSetSortIndex(in node, index);
+
+        [UsedByNativeCode, RequiredMember]
+        static bool InvokeSearchMatch(IntPtr ptr, in HierarchyNode node) => GetHandlerFromPtr(ptr).SearchMatch(in node);
+
+        [UsedByNativeCode, RequiredMember]
+        static void InvokeSearchEnd(IntPtr ptr) => GetHandlerFromPtr(ptr).SearchEnd();
+        #endregion
     }
 }

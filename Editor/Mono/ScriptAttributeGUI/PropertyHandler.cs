@@ -11,7 +11,7 @@ using UnityEditorInternal;
 
 namespace UnityEditor
 {
-    internal class PropertyHandler
+    internal class PropertyHandler : IDisposable
     {
         List<PropertyDrawer> m_PropertyDrawers;
         List<DecoratorDrawer> m_DecoratorDrawers;
@@ -496,6 +496,29 @@ namespace UnityEditor
         public NestingContext IncrementNestingContext()
         {
             return NestingContext.Get(this, m_NestingLevel + 1);
+        }
+
+        public void Dispose()
+        {
+            if (m_PropertyDrawers?.Count > 0)
+            {
+                foreach (var propertyDrawer in m_PropertyDrawers)
+                {
+                    if (propertyDrawer is IDisposable disposable)
+                        disposable.Dispose();
+                }
+                m_PropertyDrawers.Clear();
+            }
+
+            if (m_DecoratorDrawers?.Count > 0)
+            {
+                foreach (var decoratorDrawer in m_DecoratorDrawers)
+                {
+                    if (decoratorDrawer is IDisposable disposable)
+                        disposable.Dispose();
+                }
+                m_DecoratorDrawers.Clear();
+            }
         }
 
         public struct NestingContext : IDisposable

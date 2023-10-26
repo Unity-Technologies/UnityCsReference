@@ -680,9 +680,6 @@
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyNodeType.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyNodeType.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyProperties.bindings.cs">
-      <Link>Modules\HierarchyCore\ScriptBindings\HierarchyProperties.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyPropertyDescriptor.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyPropertyDescriptor.bindings.cs</Link>
     </Compile>

@@ -241,10 +241,10 @@ namespace UnityEditor
 
                 if (controller)
                 {
-                    if (controller.IsInitialized())
+                    if (controller.HasValidSnapshots())
                         result.Add(controller);
                     else
-                        Debug.LogError($"Can not display audio mixer window for '{controller.name}' as it has not been properly initialized. The mixer asset is possibly corrupted.");
+                        Debug.LogError($"Can not display audio mixer window for '{controller.name}' as it could not be properly initialized. The mixer asset is possibly corrupted.");
                 }
             }
             return result;
@@ -347,9 +347,9 @@ namespace UnityEditor
 
         void OnMixerControllerChanged()
         {
-            if (m_Controller != null && !m_Controller.IsInitialized())
+            if (m_Controller != null && !m_Controller.HasValidSnapshots())
             {
-                Debug.LogError($"Can not display audio mixer window for '{m_Controller.name}' as it has not been properly initialized. The mixer asset is possibly corrupted.");
+                Debug.LogError($"Can not display audio mixer window for '{m_Controller.name}' as it could not be properly initialized. The mixer asset is possibly corrupted.");
                 return;
             }
 
@@ -384,11 +384,11 @@ namespace UnityEditor
 
             if (m_Controller != oldController)
             {
-                if (m_Controller.IsInitialized())
+                if (m_Controller.HasValidSnapshots())
                     OnMixerControllerChanged();
                 else
                 {
-                    Debug.LogError($"Can not display audio mixer window for '{m_Controller.name}' as it has not been properly initialized. The mixer asset is possibly corrupted.");
+                    Debug.LogError($"Can not display audio mixer window for '{m_Controller.name}' as it could not be properly initialized. The mixer asset is possibly corrupted.");
                 }
             }
         }
