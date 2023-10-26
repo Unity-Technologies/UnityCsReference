@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Rendering.Settings;
 using UnityEditor.Inspector.GraphicsSettingsInspectors;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.ProjectSettings;
@@ -13,6 +14,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
+using UnityEditor.Rendering;
 
 namespace UnityEditor
 {
@@ -40,10 +42,20 @@ namespace UnityEditor
         VisualElement m_CurrentRoot;
         List<GraphicsSettingsUtils.GlobalSettingsContainer> m_GlobalSettings;
 
+        internal Type GetRenderPipelineAssetTypeForSelectedTab()
+        {
+            var currentActiveTabIndex = m_TabbedView?.ActiveTabIndex ?? -1;
+            if(currentActiveTabIndex <= 0 || currentActiveTabIndex > m_GlobalSettings.Count)
+                return null;
+
+            return m_GlobalSettings[currentActiveTabIndex - 1].renderPipelineAssetType;
+        }
+
         void OnEnable()
         {
             s_Instance = this;
             m_VisibilityController.Initialize();
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
         }
 
         public void OnDisable()
@@ -66,6 +78,7 @@ namespace UnityEditor
                 };
                 EditorUserSettings.SetConfigValue(GraphicsSettingsData.persistentViewKey, JsonUtility.ToJson(persistentViewValues));
             }
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
         }
 
         internal void CreateInspectorUI(VisualElement root, bool globalSettingsExist, List<GraphicsSettingsUtils.GlobalSettingsContainer> globalSettings)
@@ -221,6 +234,22 @@ namespace UnityEditor
             public float vertical;
             public float horizontal;
             public int tabIndex;
+        }
+
+        //internal for tests
+        internal static void OnUndoRedoPerformed(in UndoRedoInfo info)
+        {
+            if (!info.undoName.StartsWith(RenderPipelineGraphicsSettingsManager.undoResetName))
+                return;
+
+            EditorGraphicsSettings.ForEachPipelineSettings(globalSettings =>
+            {
+                var serializedGlobalSettings = new SerializedObject(globalSettings);
+                var settingsIterator = serializedGlobalSettings.FindProperty(RenderPipelineGraphicsSettingsManager.serializationPathToCollection);
+
+                using (new Notifier.Scope(settingsIterator, updateStateNow: false))
+                { /* Nothing to do: changes already done before this callback */ }
+            });
         }
     }
 

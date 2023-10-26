@@ -2216,12 +2216,12 @@ namespace UnityEditor
                 {
                     {
                         EditorGUI.BeginChangeCheck();
-                        LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup());
+                        LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatform(platform.defaultTarget);
                         LightmapEncodingQuality[] lightmapEncodingValues = { LightmapEncodingQuality.Low, LightmapEncodingQuality.Normal, LightmapEncodingQuality.High };
                         LightmapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContent.lightmapEncodingNames);
                         if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                         {
-                            PlayerSettings.SetLightmapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup(), newEncodingQuality);
+                            PlayerSettings.SetLightmapEncodingQualityForPlatform(platform.defaultTarget, newEncodingQuality);
 
                             Lightmapping.OnUpdateLightmapEncoding(platform.namedBuildTarget.ToBuildTargetGroup());
 
@@ -2233,12 +2233,12 @@ namespace UnityEditor
 
                     {
                         EditorGUI.BeginChangeCheck();
-                        HDRCubemapEncodingQuality encodingQuality = PlayerSettings.GetHDRCubemapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup());
+                        HDRCubemapEncodingQuality encodingQuality = PlayerSettings.GetHDRCubemapEncodingQualityForPlatform(platform.defaultTarget);
                         HDRCubemapEncodingQuality[] hdrCubemapProbeEncodingValues = { HDRCubemapEncodingQuality.Low, HDRCubemapEncodingQuality.Normal, HDRCubemapEncodingQuality.High };
                         HDRCubemapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.hdrCubemapEncodingLabel, encodingQuality, hdrCubemapProbeEncodingValues, SettingsContent.hdrCubemapEncodingNames);
                         if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                         {
-                            PlayerSettings.SetHDRCubemapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup(), newEncodingQuality);
+                            PlayerSettings.SetHDRCubemapEncodingQualityForPlatform(platform.defaultTarget, newEncodingQuality);
 
                             Lightmapping.OnUpdateHDRCubemapEncoding(platform.namedBuildTarget.ToBuildTargetGroup());
 

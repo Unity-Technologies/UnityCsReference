@@ -680,12 +680,12 @@ namespace UnityEngine.UIElements
             m_Parent?.ChangeSelectedIndex(m_Parent.m_Current.children.IndexOf(root.parent));
         }
 
-        int GetSelectedIndex()
+        internal int GetSelectedIndex()
         {
             int index = 0;
             foreach (var item in m_Current.children)
             {
-                if ((item.element.pseudoStates & PseudoStates.Hover) == PseudoStates.Hover)
+                if ((item.element?.pseudoStates & PseudoStates.Hover) == PseudoStates.Hover)
                 {
                     return index;
                 }
@@ -806,10 +806,18 @@ namespace UnityEngine.UIElements
                 actionUserData = action2,
             };
 
-            // Empty item name must count as a separator. Also don't allow to put two separators next to each other
-            if ((string.IsNullOrWhiteSpace(itemName) || itemName[^1] == '/')
-                && parent.children.Count > 0 && !(parent.children[^1]?.isSeparator ?? true))
-                menuItem.element = CreateSeparator();
+            if (menuItem.isSeparator)
+            {
+                if (parent.children.Count > 0 && !(parent.children[^1]?.isSeparator ?? true))
+                {
+                    menuItem.element = CreateSeparator();
+                }
+                else
+                {
+                    // Don't allow to put two separators next to each other
+                    menuItem.element = null;
+                }
+            }
             else
             {
                 if (parent.HasChild(itemName))

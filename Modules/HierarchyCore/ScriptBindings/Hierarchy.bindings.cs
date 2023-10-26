@@ -25,17 +25,10 @@ namespace Unity.Hierarchy
             public static IntPtr ConvertToNative(Hierarchy hierarchy) => hierarchy.m_Ptr;
         }
 
-        class ExcludeFromBindings
-        {
-            internal HierarchyPropertyString m_UssItemClassListProperty;
-        }
-
         [RequiredByNativeCode] IntPtr m_Ptr;
 #pragma warning disable CS0649
         [RequiredByNativeCode] readonly bool m_IsWrapper;
 #pragma warning restore CS0649
-
-        ExcludeFromBindings m_State;
 
         [FreeFunction("HierarchyBindings::Create")]
         static extern IntPtr Internal_Create();
@@ -82,20 +75,6 @@ namespace Unity.Hierarchy
         public extern bool UpdateNeeded { [NativeMethod("UpdateNeeded")] get; }
 
         internal int Version => GetVersion();
-
-        internal HierarchyPropertyString UssItemClassListProperty
-        {
-            [VisibleToOtherModules("UnityEngine.HierarchyModule")]
-            get
-            {
-                if (!State.m_UssItemClassListProperty.IsCreated)
-                    State.m_UssItemClassListProperty = HierarchyProperties.GetItemClassListProperty(this);
-
-                return State.m_UssItemClassListProperty;
-            }
-        }
-
-        ExcludeFromBindings State => m_State ??= new ExcludeFromBindings();
 
         /// <summary>
         /// Constructs a new <see cref="Hierarchy"/>.

@@ -6,10 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Pool;
 using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 
@@ -144,19 +141,39 @@ namespace UnityEditor.UIElements
             if (t == typeof(UxmlSerializedData))
                 return;
 
-            GatherAttributesForType(t.BaseType, defaultObject);
-
-            var serializedFields = t.GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
-
-            // Some type don't define Uxml attributes and only inherit them
-            if (serializedFields.Length == 0)
-                return;
-
-            foreach (var fieldInfo in serializedFields)
+            var desc = UxmlDescriptionRegistry.GetDescription(t);
+            for (var i = 0; i < desc.attributeDescriptions.Count; ++i)
             {
-                var description = CreateSerializedAttributeDescription(fieldInfo, defaultObject);
-                if (description == null)
-                    continue;
+                var attDescription = desc.attributeDescriptions[i];
+
+                var fieldInfo = attDescription.serializedField;
+                UxmlSerializedAttributeDescription uxmlAttributeDescription;
+                var elementType = defaultObject != null ? defaultObject.GetType() : fieldInfo.DeclaringType.DeclaringType;
+
+                if (fieldInfo.GetCustomAttribute<UxmlObjectReferenceAttribute>() is { } objectReferenceAttribute)
+                {
+                    uxmlAttributeDescription = new UxmlSerializedUxmlObjectAttributeDescription { rootName = objectReferenceAttribute.name };
+                }
+                else
+                {
+                    if (!IsValidAttributeType(fieldInfo.FieldType))
+                    {
+                        Debug.LogError($"[UxmlElement] '{elementType.Name}' has a [UxmlAttribute] '{attDescription.uxmlName}' of an unknown type '{fieldInfo.FieldType.Name}'.\n" +
+                                       $"To fix this error define a custom {nameof(UxmlAttributeConverter)}<{fieldInfo.FieldType.Name}>.");
+                        continue;
+                    }
+
+                    uxmlAttributeDescription = new UxmlSerializedAttributeDescription();
+                }
+
+                uxmlAttributeDescription.name = attDescription.uxmlName;
+                uxmlAttributeDescription.type = attDescription.fieldType;
+                uxmlAttributeDescription.serializedField = attDescription.serializedField;
+                uxmlAttributeDescription.elementType = elementType;
+                uxmlAttributeDescription.obsoleteNames = attDescription.obsoleteNames;
+
+                if (TryGetDefaultValue(fieldInfo, defaultObject, out var defaultValue))
+                    uxmlAttributeDescription.defaultValue = defaultValue;
 
                 // When a UxmlObjectAttribute does not contain a name then we treat it as a legacy field,
                 // one that does not have an element for the field name, e.g MultiColumnListView.
@@ -166,20 +183,9 @@ namespace UnityEditor.UIElements
                     m_UxmlObjectFields.Add(referenceField.name);
                 }
 
-                var attributeName = description.name;
-                if (m_UxmlNameToIndex.TryGetValue(attributeName, out var index))
-                {
-                    // Override base class attribute
-                    m_SerializedAttributes[index] = description;
-                }
-                else
-                {
-                    m_SerializedAttributes.Add(description);
-                    index = m_SerializedAttributes.Count - 1;
-                    m_UxmlNameToIndex[attributeName] = index;
-                }
-
-                m_PropertyNameToIndex[fieldInfo.Name] = index;
+                m_SerializedAttributes.Add(uxmlAttributeDescription);
+                m_UxmlNameToIndex.Add(attDescription.uxmlName, i);
+                m_PropertyNameToIndex.Add(attDescription.cSharpName, i);
             }
         }
 
@@ -189,88 +195,6 @@ namespace UnityEditor.UIElements
         /// <param name="name">The UXML element name to check for.</param>
         /// <returns></returns>
         public bool IsUxmlObjectField(string name) => m_UxmlObjectFields.Contains(name);
-
-        private static UxmlSerializedAttributeDescription CreateSerializedAttributeDescription(FieldInfo fieldInfo, object defaultObject)
-        {
-            UxmlSerializedAttributeDescription uxmlAttributeDescription;
-            if (fieldInfo.GetCustomAttribute<UxmlIgnoreAttribute>() != null)
-                return null;
-
-            var elementType = defaultObject != null ? defaultObject.GetType() : fieldInfo.DeclaringType.DeclaringType;
-
-            if (fieldInfo.GetCustomAttribute<UxmlObjectReferenceAttribute>() is { } objectReferenceAttribute)
-            {
-                uxmlAttributeDescription = new UxmlSerializedUxmlObjectAttributeDescription { rootName = objectReferenceAttribute.name };
-            }
-            else
-            {
-                if (!IsValidAttributeType(fieldInfo.FieldType))
-                {
-                    Debug.LogError($"[UxmlElement] '{elementType.Name}' has a [UxmlAttribute] '{GetUxmlName(fieldInfo)}' of an unknown type '{fieldInfo.FieldType.Name}'.\n" +
-                                   $"To fix this error define a custom {nameof(UxmlAttributeConverter)}<{fieldInfo.FieldType.Name}>.");
-                    return null;
-                }
-
-                uxmlAttributeDescription = new UxmlSerializedAttributeDescription();
-            }
-
-            uxmlAttributeDescription.name = GetUxmlName(fieldInfo);
-            uxmlAttributeDescription.type = fieldInfo.FieldType;
-            uxmlAttributeDescription.serializedField = fieldInfo;
-            uxmlAttributeDescription.elementType = elementType;
-
-            // Type are not serializable. They are serialized as string with a UxmlTypeReferenceAttribute.
-            if (fieldInfo.GetCustomAttribute<UxmlTypeReferenceAttribute>() != null)
-                uxmlAttributeDescription.type = typeof(Type);
-
-            if (TryGetDefaultValue(fieldInfo, defaultObject, out var defaultValue))
-                uxmlAttributeDescription.defaultValue = defaultValue;
-
-            // Look for obsolete names
-            var uxmlAttribute = fieldInfo.GetCustomAttribute<UxmlAttributeAttribute>();
-            if (uxmlAttribute?.obsoleteNames?.Length > 0)
-                uxmlAttributeDescription.obsoleteNames = uxmlAttribute.obsoleteNames;
-
-            var formerlySerializedAttributes = fieldInfo.GetCustomAttributes<FormerlySerializedAsAttribute>();
-            if (formerlySerializedAttributes.Any())
-            {
-                var obsoleteNames = formerlySerializedAttributes.Select(a => a.oldName);
-                if (uxmlAttributeDescription.obsoleteNames == null)
-                    uxmlAttributeDescription.obsoleteNames = obsoleteNames;
-                else
-                    uxmlAttributeDescription.obsoleteNames = uxmlAttributeDescription.obsoleteNames.Concat(obsoleteNames);
-            }
-
-            return uxmlAttributeDescription;
-        }
-
-        internal static string GetUxmlName(FieldInfo fieldInfo)
-        {
-            var uxmlAttribute = fieldInfo.GetCustomAttribute<UxmlAttributeAttribute>();
-            if (!string.IsNullOrEmpty(uxmlAttribute?.name))
-                return uxmlAttribute.name;
-
-            // Use the name of the field to determine the attribute name
-            var sb = GenericPool<StringBuilder>.Get();
-
-            var fieldName = fieldInfo.Name;
-            for (int i = 0; i < fieldName.Length; i++)
-            {
-                var c = fieldName[i];
-                if (char.IsUpper(c))
-                {
-                    c = char.ToLower(c);
-                    if (i > 0)
-                        sb.Append("-");
-                }
-
-                sb.Append(c);
-            }
-
-            var result = sb.ToString();
-            GenericPool<StringBuilder>.Release(sb.Clear());
-            return result;
-        }
 
         public static bool TryGetDefaultValue(FieldInfo fieldInfo, object defaultObject, out object value)
         {

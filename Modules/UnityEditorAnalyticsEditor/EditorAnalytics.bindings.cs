@@ -333,12 +333,12 @@ namespace UnityEditor
         private extern static AnalyticsResult SetEventWithLimitPriority(string eventName, AnalyticsEventPriority eventPriority, int ver, string prefix);
 
         [RequiredByNativeCode]
-        internal static void AddExtraBuildAnalyticsFields(string target, IntPtr eventData)
+        internal static void AddExtraBuildAnalyticsFields(string target, IntPtr eventData, BuildOptions buildOptions)
         {
             var extension = ModuleManager.GetEditorAnalyticsExtension(target);
             if (extension == null)
                 return;
-            extension.AddExtraBuildAnalyticsFields(eventData);
+            extension.AddExtraBuildAnalyticsFields(eventData, buildOptions);
         }
     }
 
@@ -389,13 +389,13 @@ namespace UnityEditor
 
     internal abstract class EditorAnalyticsExtension : IEditorAnalyticsExtension
     {
-        public virtual void AddExtraBuildAnalyticsFields(IntPtr eventData)
+        public virtual void AddExtraBuildAnalyticsFields(IntPtr eventData, BuildOptions buildOptions)
         {
             var evt = new UnityEditor.Analytics.EditorAnalyticsEvent(eventData);
-            AddExtraBuildAnalyticsFields(evt);
+            AddExtraBuildAnalyticsFields(evt, buildOptions);
         }
 
-        public abstract void AddExtraBuildAnalyticsFields(UnityEditor.Analytics.EditorAnalyticsEvent eventData);
+        public abstract void AddExtraBuildAnalyticsFields(UnityEditor.Analytics.EditorAnalyticsEvent eventData, BuildOptions buildOptions);
 
         public void AddAllowedOrientationsParameter(UnityEditor.Analytics.EditorAnalyticsEvent eventData)
         {

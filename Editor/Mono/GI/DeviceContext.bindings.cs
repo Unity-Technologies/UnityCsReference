@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.LightTransport
 {
@@ -16,8 +17,15 @@ namespace UnityEngine.LightTransport
         {
             Value = value;
         }
+
+        public BufferSlice<T> Slice<T>(UInt64 offset = 0)
+            where T : struct
+        {
+            return new BufferSlice<T>(this, offset);
+        }
     }
-    public struct BufferSlice
+    public struct BufferSlice<T>
+        where T : struct
     {
         public BufferSlice(BufferID id, UInt64 offset)
         {
@@ -26,6 +34,31 @@ namespace UnityEngine.LightTransport
         }
         public BufferID Id;
         public UInt64 Offset;
+
+        public BufferSlice<U> SafeReinterpret<U>()
+            where U : struct
+        {
+            if (!UnsafeUtility.IsBlittable<U>())
+                throw new ArgumentException($"Type {typeof(U)} must be blittable. {UnsafeUtility.GetReasonForTypeNonBlittable(typeof(U))}.");
+
+            int oldSize = UnsafeUtility.SizeOf<T>();
+            int newSize = UnsafeUtility.SizeOf<U>();
+            if (oldSize % newSize != 0)
+                throw new ArgumentException($"Type {typeof(T)} size must be a multiple of {typeof(U)} size.");
+
+            return UnsafeReinterpret<U>();
+        }
+
+        public unsafe BufferSlice<U> UnsafeReinterpret<U>()
+            where U : struct
+        {
+            int oldSize = UnsafeUtility.SizeOf<T>();
+            int newSize = UnsafeUtility.SizeOf<U>();
+
+            UInt64 newOffset = (Offset * (UInt64)oldSize) / (UInt64)newSize;
+
+            return new BufferSlice<U>(Id, newOffset);
+        }
     }
     public struct EventID
     {
@@ -44,11 +77,19 @@ namespace UnityEngine.LightTransport
         bool Initialize();
         BufferID CreateBuffer(UInt64 size);
         void DestroyBuffer(BufferID id);
-        EventID WriteBuffer(BufferID id, NativeArray<byte> data);
-        EventID ReadBuffer(BufferID id, NativeArray<byte> result);
-        bool IsAsyncOperationComplete(EventID id);
-        bool WaitForAsyncOperation(EventID id);
+        EventID WriteBuffer<T>(BufferSlice<T> dst, NativeArray<T> src) where T : struct;
+        EventID ReadBuffer<T>(BufferSlice<T> src, NativeArray<T> dst) where T : struct;
+        bool IsCompleted(EventID id);
+        bool Wait(EventID id);
         bool Flush();
+    }
+    public static class DeviceContextExtensions
+    {
+        public static EventID WriteBuffer<T>(this IDeviceContext context, BufferID dst, NativeArray<T> src)
+            where T : struct => context.WriteBuffer(new BufferSlice<T>(dst, 0), src);
+
+        public static EventID ReadBuffer<T>(this IDeviceContext context, BufferID src, NativeArray<T> dst)
+            where T : struct => context.ReadBuffer(new BufferSlice<T>(src, 0), dst);
     }
     [StructLayout(LayoutKind.Sequential)]
     public class ReferenceContext : IDeviceContext
@@ -83,24 +124,27 @@ namespace UnityEngine.LightTransport
             buffers[id].Dispose();
             buffers.Remove(id);
         }
-        public EventID WriteBuffer(BufferID id, NativeArray<byte> data)
+        public EventID WriteBuffer<T>(BufferSlice<T> dst, NativeArray<T> src)
+            where T : struct
         {
-            Debug.Assert(buffers.ContainsKey(id), "Invalid buffer ID given.");
-            var buffer = buffers[id];
-            buffer.CopyFrom(data);
+            Debug.Assert(buffers.ContainsKey(dst.Id), "Invalid buffer ID given.");
+            var dstBuffer = buffers[dst.Id].Reinterpret<T>(1);
+            dstBuffer.GetSubArray((int)dst.Offset, dstBuffer.Length - (int)dst.Offset).CopyFrom(src);
             return new EventID();
         }
-        public EventID ReadBuffer(BufferID buffer, NativeArray<byte> result)
+        public EventID ReadBuffer<T>(BufferSlice<T> src, NativeArray<T> dst)
+            where T : struct
         {
-            Debug.Assert(buffers.ContainsKey(buffer), "Invalid buffer ID given.");
-            buffers[buffer].CopyTo(result);
+            Debug.Assert(buffers.ContainsKey(src.Id), "Invalid buffer ID given.");
+            var srcBuffer = buffers[src.Id].Reinterpret<T>(1);
+            dst.CopyFrom(srcBuffer.GetSubArray((int)src.Offset, srcBuffer.Length - (int)src.Offset));
             return new EventID { Value = nextFreeEventId++ };
         }
-        public bool IsAsyncOperationComplete(EventID id)
+        public bool IsCompleted(EventID id)
         {
             return true;
         }
-        public bool WaitForAsyncOperation(EventID id)
+        public bool Wait(EventID id)
         {
             return true;
         }

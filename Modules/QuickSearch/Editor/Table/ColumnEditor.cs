@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -31,23 +32,11 @@ namespace UnityEditor.Search
             var sc = column.searchColumn;
             if (sc != null)
                 s_Window.titleContent = sc.content ?? s_Window.titleContent;
+
             s_Window.ShowAuxWindow();
             return s_Window;
         }
-
-        static ColumnEditor()
-        {
-            EditorApplication.update += CloseOnLostFocus;
-        }
-        static void CloseOnLostFocus()
-        {
-            if (s_Window != null && focusedWindow && focusedWindow != s_Window)
-            {
-                s_Window.Close();
-                s_Window = null;
-            }
-        }
-
+        
         public void CreateGUI()
         {
             var sc = column.searchColumn;

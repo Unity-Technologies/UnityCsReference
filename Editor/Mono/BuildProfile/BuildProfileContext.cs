@@ -21,13 +21,52 @@ namespace UnityEditor.Build.Profile
     [InitializeOnLoad]
     internal sealed class BuildProfileContext : ScriptableObject
     {
-        const string k_BuildProfilePath = "ProjectSettings/BuildProfiles";
+        const string k_BuildProfileProviderAssetPath = "Library/BuildProfileContext.asset";
+        const string k_BuildProfilePath = "Library/BuildProfiles";
         static BuildProfileContext s_Instance;
+
+        [SerializeField]
+        BuildProfile m_ActiveProfile;
 
         /// <summary>
         /// Cached mapping of BuildTarget to classic platform build profile.
         /// </summary>
         Dictionary<(BuildTarget, StandaloneBuildSubtarget), BuildProfile> m_BuildTargetToClassicPlatformProfile = new();
+
+        /// <summary>
+        /// Specifies the custom build profile used by the build pipeline and editor APIs when getting build settings.
+        /// </summary>
+        /// <remarks>
+        /// Classic platforms, while build profiles in code, are not managed by the AssetDatabase and implement complex
+        /// shared setting behaviour that is not compatible with the new build profile workflow. From the end users
+        /// perspective Classic Platform and Build Profiles are different concepts.
+        /// </remarks>
+        internal BuildProfile activeProfile
+        {
+            get => m_ActiveProfile;
+            set
+            {
+                if (m_ActiveProfile == value)
+                    return;
+
+                if (value == null || value.platformBuildProfile == null)
+                {
+                    m_ActiveProfile = null;
+                    Save();
+                    return;
+                }
+
+                if (m_BuildTargetToClassicPlatformProfile.TryGetValue(
+                        (value.buildTarget, value.subtarget), out var entry) && entry == value)
+                {
+                    Debug.LogWarning("[BuildProfile] Classic Platforms cannot be set as the active build profile.");
+                    return;
+                }
+
+                m_ActiveProfile = value;
+                Save();
+            }
+        }
 
         /// <summary>
         /// Stores metadata required for Build Profile window and legacy APIs
@@ -78,6 +117,9 @@ namespace UnityEditor.Build.Profile
         internal static BuildProfile GetBuildProfileForGetter(
             BuildTarget target, StandaloneBuildSubtarget subTarget = StandaloneBuildSubtarget.Default)
         {
+            if (ShouldReturnActiveProfile(target, subTarget))
+                return instance.activeProfile;
+
             // For backwards compatibility, getter will look for
             // the classic platform build profile for the target platform
             // when no suitable active profile is found.
@@ -88,8 +130,17 @@ namespace UnityEditor.Build.Profile
         internal static BuildProfile GetBuildProfileForSetter(
             BuildTarget target, StandaloneBuildSubtarget subTarget = StandaloneBuildSubtarget.Default)
         {
-            // TODO: Native Setter APIs should only be called when using classic platform profiles.
-            // ticket: https://jira.unity3d.com/browse/PLAT-5887
+            if (ShouldReturnActiveProfile(target, subTarget))
+            {
+                // When invoking a legacy setter, we unset the active profile to prevent
+                // inconsistencies with legacy APIs. That is, all legacy APIs need to write to
+                // the classic platform build profile directly. When doing this, the next getter
+                // MUST return the classic platform build profile containing the newly set value.
+                // The active build profile should be updated directly.
+                Debug.LogWarning($"[BuildProfile] Active build profile ({AssetDatabase.GetAssetPath(instance.activeProfile)}) is set when calling a legacy setter for the same platform. For backwards compatibility, the active build profile has been unset.");
+                instance.activeProfile = null;
+            }
+
             return instance.GetForClassicPlatform(target, subTarget);
         }
 
@@ -123,6 +174,8 @@ namespace UnityEditor.Build.Profile
 
         void OnDisable()
         {
+            Save();
+
             // Platform profiles must be manually serialized for changes to persist.
             foreach (var kvp in m_BuildTargetToClassicPlatformProfile)
             {
@@ -138,7 +191,7 @@ namespace UnityEditor.Build.Profile
 
         void OnEnable()
         {
-            // Load platform build profiles from ProjectSettings folder.
+            // If not library path is not found, we don't have any classic profiles to load.
             if (!Directory.Exists(k_BuildProfilePath))
                 return;
 
@@ -239,8 +292,20 @@ namespace UnityEditor.Build.Profile
 
         static void CreateOrLoad()
         {
-            s_Instance = CreateInstance<BuildProfileContext>();
-            s_Instance.hideFlags = HideFlags.DontSave;
+            var buildProfileContext = InternalEditorUtility.LoadSerializedFileAndForget(k_BuildProfileProviderAssetPath);
+            if (buildProfileContext != null && buildProfileContext.Length > 0)
+            {
+                s_Instance = buildProfileContext[0] as BuildProfileContext;
+                if (s_Instance == null)
+                    Debug.LogError("BuildProfileContext asset exists but could not be loaded.");
+            }
+            else
+            {
+                s_Instance = CreateInstance<BuildProfileContext>();
+                s_Instance.hideFlags = HideFlags.DontSave;
+                Save();
+            }
+
             System.Diagnostics.Debug.Assert(s_Instance != null);
 
             // Only check installed build platforms to create classic profiles
@@ -280,7 +345,29 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        static bool ShouldReturnActiveProfile(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget)
+        {
+            var activeProfile = instance.m_ActiveProfile;
+            if (activeProfile == null || subtarget != activeProfile.subtarget)
+                return false;
+
+            var activeBuildTarget = activeProfile.buildTarget;
+
+            // It's acceptable for windows build target to be either 64 or 32
+            if (buildTarget == BuildTarget.StandaloneWindows64 || buildTarget == BuildTarget.StandaloneWindows)
+            {
+                return activeBuildTarget == BuildTarget.StandaloneWindows64 || activeBuildTarget == BuildTarget.StandaloneWindows;
+            }
+            else
+            {
+                return buildTarget == activeBuildTarget;
+            }
+        }
+
         static string GetFilePathForBuildProfile(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget) =>
             $"{k_BuildProfilePath}/PlatformProfile.{buildTarget}.{subtarget}.asset";
+
+        static void Save() => InternalEditorUtility.SaveToSerializedFileAndForget(new[] { instance },
+            k_BuildProfileProviderAssetPath, true);
     }
 }

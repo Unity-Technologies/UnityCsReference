@@ -680,9 +680,6 @@
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyNodeType.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyNodeType.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyProperties.bindings.cs">
-      <Link>Modules\HierarchyCore\ScriptBindings\HierarchyProperties.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyPropertyDescriptor.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyPropertyDescriptor.bindings.cs</Link>
     </Compile>
@@ -953,8 +950,26 @@
     <Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs">
       <Link>Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Physics\Managed\Dynamics.cs">
-      <Link>Modules\Physics\Managed\Dynamics.cs</Link>
+    <Compile Include="..\..\Modules\Physics\Managed\Collision.cs">
+      <Link>Modules\Physics\Managed\Collision.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\Managed\Collision.deprecated.cs">
+      <Link>Modules\Physics\Managed\Collision.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\Managed\CollisionDetectionMode.cs">
+      <Link>Modules\Physics\Managed\CollisionDetectionMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\Managed\ForceMode.cs">
+      <Link>Modules\Physics\Managed\ForceMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\Managed\JointConstraints.cs">
+      <Link>Modules\Physics\Managed\JointConstraints.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\Managed\JointConstraints.deprecated.cs">
+      <Link>Modules\Physics\Managed\JointConstraints.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\Managed\WheelFrictionCurve.cs">
+      <Link>Modules\Physics\Managed\WheelFrictionCurve.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\Articulations.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\Articulations.bindings.cs</Link>
@@ -962,17 +977,59 @@
     <Compile Include="..\..\Modules\Physics\ScriptBindings\Articulations.deprecated.cs">
       <Link>Modules\Physics\ScriptBindings\Articulations.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\BoxCollider.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\BoxCollider.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\BoxCollider.deprecated.cs">
+      <Link>Modules\Physics\ScriptBindings\BoxCollider.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\CapsuleCollider.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\CapsuleCollider.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\CharacterController.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\CharacterController.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\CharacterJoint.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\CharacterJoint.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\CharacterJoint.deprecated.cs">
+      <Link>Modules\Physics\ScriptBindings\CharacterJoint.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\Collider.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\Collider.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\ConfigurableJoint.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\ConfigurableJoint.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\ConstantForce.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\ConstantForce.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\ContactModification.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\ContactModification.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Physics\ScriptBindings\Dynamics.bindings.cs">
-      <Link>Modules\Physics\ScriptBindings\Dynamics.bindings.cs</Link>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\FixedJoint.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\FixedJoint.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Physics\ScriptBindings\Dynamics.deprecated.cs">
-      <Link>Modules\Physics\ScriptBindings\Dynamics.deprecated.cs</Link>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\HingeJoint.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\HingeJoint.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\ImmediatePhysics.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\ImmediatePhysics.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\Joint.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\Joint.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\MeshCollider.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\MeshCollider.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\MeshCollider.deprecated.cs">
+      <Link>Modules\Physics\ScriptBindings\MeshCollider.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\Physics.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\Physics.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\Physics.deprecated.cs">
+      <Link>Modules\Physics\ScriptBindings\Physics.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\PhysicsContact.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\PhysicsContact.bindings.cs</Link>
@@ -989,11 +1046,32 @@
     <Compile Include="..\..\Modules\Physics\ScriptBindings\PhysicsMaterial.deprecated.cs">
       <Link>Modules\Physics\ScriptBindings\PhysicsMaterial.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\PhysicsScene.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\PhysicsScene.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\QueryCommand.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\QueryCommand.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\QueryCommand.deprecated.cs">
       <Link>Modules\Physics\ScriptBindings\QueryCommand.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\RaycastHit.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\RaycastHit.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\RaycastHit.deprecated.cs">
+      <Link>Modules\Physics\ScriptBindings\RaycastHit.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\Rigidbody.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\Rigidbody.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\Rigidbody.deprecated.cs">
+      <Link>Modules\Physics\ScriptBindings\Rigidbody.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\SphereCollider.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\SphereCollider.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\SpringJoint.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\SpringJoint.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\PropertyContainer+Accept.cs">
       <Link>Modules\Properties\Runtime\Algorithms\PropertyContainer+Accept.cs</Link>
@@ -1588,6 +1666,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\IDefaultTreeViewController.cs">
       <Link>Modules\UIElements\Core\Collections\Controllers\IDefaultTreeViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\ISerializedObjectList.cs">
+      <Link>Modules\UIElements\Core\Collections\Controllers\ISerializedObjectList.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Collections\Controllers\ListViewController.cs">
       <Link>Modules\UIElements\Core\Collections\Controllers\ListViewController.cs</Link>
@@ -2821,6 +2902,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlChildElementDescription.cs">
       <Link>Modules\UIElements\Core\UXML\UxmlChildElementDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlDescriptionRegistry.cs">
+      <Link>Modules\UIElements\Core\UXML\UxmlDescriptionRegistry.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlFactory.cs">
       <Link>Modules\UIElements\Core\UXML\UxmlFactory.cs</Link>

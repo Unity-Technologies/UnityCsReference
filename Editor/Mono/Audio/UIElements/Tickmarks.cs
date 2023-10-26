@@ -49,8 +49,26 @@ namespace UnityEditor.Audio.UIElements
         public Tickmarks() : base()
         {
             generateVisualContent += context => GenerateVisualContent(context);
-
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            RegisterCallback<CustomStyleResolvedEvent>(CustomStylesResolved);
+        }
+
+        private static void CustomStylesResolved(CustomStyleResolvedEvent evt)
+        {
+            Tickmarks element = (Tickmarks)evt.currentTarget;
+            element.GetColorsFromStylesheet();
+        }
+
+        private static readonly CustomStyleProperty<Color> s_TickmarkColorProperty = new("--tickmark-color");
+
+        private Color m_TickmarkColor;
+
+        private void GetColorsFromStylesheet()
+        {
+            if (customStyle.TryGetValue(s_TickmarkColorProperty, out var tickmarkColor))
+            {
+                m_TickmarkColor = tickmarkColor;
+            }
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -58,7 +76,7 @@ namespace UnityEditor.Audio.UIElements
             MarkDirtyRepaint();
         }
 
-        static void GenerateVisualContent(MeshGenerationContext context)
+        private static void GenerateVisualContent(MeshGenerationContext context)
         {
             var painter2D = context.painter2D;
 
@@ -66,7 +84,8 @@ namespace UnityEditor.Audio.UIElements
 
             Scale scale = contentRect.width > 350 ? new LargeScale() : (contentRect.width > 175 ? new CompactScale() : new MiniScale());
 
-            var gray = new Color(0.85f, 0.85f, 0.85f, 1.0f);
+            var tickmarkColor = (context.visualElement as Tickmarks).m_TickmarkColor;
+            var textColor = tickmarkColor.RGBMultiplied(1.2f); // Compensate for a bug in UI Toolkit which causes MeshGenerationContext.DrawText to render text lighter than the color that you provide.
 
             for (int index = 0; index < scale.DivisionCount(); index += 1)
             {
@@ -74,7 +93,7 @@ namespace UnityEditor.Audio.UIElements
 
                 var rect = new Rect(pos - 0.5f, 5.0f, 1.0f, 8.0f);
 
-                painter2D.fillColor = gray;
+                painter2D.fillColor = tickmarkColor;
                 painter2D.BeginPath();
                 painter2D.MoveTo(new Vector2(rect.xMin, rect.yMin));
                 painter2D.LineTo(new Vector2(rect.xMax, rect.yMin));
@@ -94,7 +113,7 @@ namespace UnityEditor.Audio.UIElements
                 {
                     var rect = new Rect(pos - 0.5f + spacing * (subIndex + 1.0f) / (subDivCount + 1.0f), 5.0f, 1.0f, 4.0f);
 
-                    painter2D.fillColor = gray;
+                    painter2D.fillColor = tickmarkColor;
                     painter2D.BeginPath();
                     painter2D.MoveTo(new Vector2(rect.xMin, rect.yMin));
                     painter2D.LineTo(new Vector2(rect.xMax, rect.yMin));
@@ -111,7 +130,7 @@ namespace UnityEditor.Audio.UIElements
 
                 var rect = new Rect(pos - 10.0f, 10, 20.0f, 20.0f);
 
-                context.DrawText(scale.Labels()[index], new Vector2(pos + scale.LabelOffsets()[index], 14.0f), 10.0f, gray);
+                context.DrawText(scale.Labels()[index], new Vector2(pos + scale.LabelOffsets()[index], 14.0f), 10.0f, textColor);
             }
         }
     }

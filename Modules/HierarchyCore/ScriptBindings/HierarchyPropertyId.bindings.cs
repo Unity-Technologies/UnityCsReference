@@ -5,7 +5,6 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
-using UnityEngine.Internal;
 
 namespace Unity.Hierarchy
 {
@@ -14,7 +13,7 @@ namespace Unity.Hierarchy
     /// </summary>
     [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyPropertyId.h")]
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct HierarchyPropertyId : IEquatable<HierarchyPropertyId>
+    readonly struct HierarchyPropertyId : IEquatable<HierarchyPropertyId>
     {
         const int k_HierarchyPropertyIdNull = 0;
 
@@ -44,17 +43,16 @@ namespace Unity.Hierarchy
             m_Id = id;
         }
 
-        [ExcludeFromDocs]
         public static bool operator ==(in HierarchyPropertyId lhs, in HierarchyPropertyId rhs) => lhs.Id == rhs.Id;
-        [ExcludeFromDocs]
+
         public static bool operator !=(in HierarchyPropertyId lhs, in HierarchyPropertyId rhs) => !(lhs == rhs);
-        [ExcludeFromDocs]
+
         public bool Equals(HierarchyPropertyId other) => other.Id == Id;
-        [ExcludeFromDocs]
+
         public override string ToString() => $"{nameof(HierarchyPropertyId)}({(this == Null ? nameof(Null) : Id)})";
-        [ExcludeFromDocs]
+
         public override bool Equals(object obj) => obj is HierarchyPropertyId node && Equals(node);
-        [ExcludeFromDocs]
+
         public override int GetHashCode() => Id.GetHashCode();
     }
 }

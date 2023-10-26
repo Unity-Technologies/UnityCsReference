@@ -92,6 +92,7 @@ namespace UnityEngine.UIElements
             [SerializeField] private bool resizable;
             [SerializeField] private VisualTreeAsset headerTemplate;
             [SerializeField] private VisualTreeAsset cellTemplate;
+            [SerializeField] private string bindingPath;
             #pragma warning restore 649
 
             public override object CreateInstance() => new Column();
@@ -109,6 +110,7 @@ namespace UnityEngine.UIElements
                 e.stretchable = stretchable;
                 e.optional = optional;
                 e.resizable = resizable;
+                e.bindingPath = bindingPath;
 
                 if (headerTemplate != null)
                     e.makeHeader = () => headerTemplate.Instantiate();
@@ -146,6 +148,7 @@ namespace UnityEngine.UIElements
             UxmlBoolAttributeDescription m_Resizable = new UxmlBoolAttributeDescription { name = "resizable", defaultValue = true };
             UxmlStringAttributeDescription m_HeaderTemplateId = new UxmlStringAttributeDescription { name = k_HeaderTemplateAttributeName };
             UxmlStringAttributeDescription m_CellTemplateId = new UxmlStringAttributeDescription { name = k_CellTemplateAttributeName };
+            UxmlStringAttributeDescription m_BindingPath = new UxmlStringAttributeDescription { name = "binding-path" };
 
             static Length ParseLength(string str, Length defaultValue)
             {
@@ -216,6 +219,7 @@ namespace UnityEngine.UIElements
                 obj.stretchable = m_Stretch.GetValueFromBag(bag, cc);
                 obj.optional = m_Optional.GetValueFromBag(bag, cc);
                 obj.resizable = m_Resizable.GetValueFromBag(bag, cc);
+                obj.bindingPath = m_BindingPath.GetValueFromBag(bag, cc);
                 var headerTemplateId = m_HeaderTemplateId.GetValueFromBag(bag, cc);
 
                 if (!string.IsNullOrEmpty(headerTemplateId))
@@ -507,6 +511,11 @@ namespace UnityEngine.UIElements
                 NotifyChange(ColumnDataType.Resizable);
             }
         }
+
+        /// <summary>
+        /// Path of the target property to be bound.
+        /// </summary>
+        public string bindingPath { get; set; }
 
         /// <summary>
         /// Callback for constructing the visual representation of the column in the header.

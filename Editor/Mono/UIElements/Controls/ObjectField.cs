@@ -133,7 +133,7 @@ namespace UnityEditor.UIElements
 
         internal virtual void UpdateDisplay()
         {
-            m_ObjectFieldDisplay.Update();
+            UpdateMixedValueContent();
         }
 
         internal class ObjectFieldDisplay : VisualElement

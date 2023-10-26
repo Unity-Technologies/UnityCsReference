@@ -3,14 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-
 using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
 using UnityEngine.Internal;
 using System.Collections.Generic;
-
-
 
 namespace UnityEngine
 {
@@ -175,6 +171,7 @@ namespace UnityEngine
         Z = 2
     }
 
+    [RequireComponent(typeof(Transform))]
     [NativeHeader("Modules/Physics/ArticulationBody.h")]
     [NativeClass("Physics::ArticulationBody")]
     public partial class ArticulationBody : Behaviour
@@ -377,4 +374,3 @@ namespace UnityEngine
         }
     }
 }
-

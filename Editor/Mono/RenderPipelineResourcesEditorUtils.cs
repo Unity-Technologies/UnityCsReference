@@ -20,6 +20,7 @@ namespace UnityEditor.Rendering
             NothingToUpdate, //There was nothing to reload
             InvalidPathOrNameFound, //Encountered a path that do not exist
             ResourceReloaded, //Some resources got reloaded
+            SkipedDueToNotMainThread, //Worker Thread cannot fully load resources
         }
         
         /// <summary>
@@ -33,6 +34,9 @@ namespace UnityEditor.Rendering
         /// <returns> The status </returns>
         public static ResultStatus TryReloadContainedNullFields(IRenderPipelineResources resource)
         {
+            if (AssetDatabase.IsAssetImportWorkerProcess())
+                return ResultStatus.SkipedDueToNotMainThread;
+
             try
             {
                 if (new Reloader(resource).hasChanged)
@@ -70,6 +74,7 @@ namespace UnityEditor.Rendering
 
             static string GetRootPathForType(Type type)
             {
+                //Warning: PackageManager.PackageInfo.FindForAssembly will always provide null in Worker thread
                 var packageInfo = PackageManager.PackageInfo.FindForAssembly(type.Assembly);
                 return packageInfo == null ? "Assets/" : $"Packages/{packageInfo.name}/";
             }

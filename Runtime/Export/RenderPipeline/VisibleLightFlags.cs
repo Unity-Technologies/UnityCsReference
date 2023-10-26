@@ -11,5 +11,6 @@ namespace UnityEngine.Rendering
     {
         IntersectsNearPlane = 1 << 0,
         IntersectsFarPlane = 1 << 1,
+        ForcedVisible = 1 << 2,
     }
 }

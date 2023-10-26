@@ -131,9 +131,9 @@ sealed class AudioContainerWindowState
             newTarget = m_AudioContainer;
         }
 
-        if (m_TrackedSource == audioSource && m_AudioContainer == newTarget) 
+        if (m_TrackedSource == audioSource && m_AudioContainer == newTarget)
             return;
-        
+
         Reset();
 
         m_TrackedSource = audioSource;
@@ -144,9 +144,9 @@ sealed class AudioContainerWindowState
 
         TargetChanged?.Invoke(this, EventArgs.Empty);
 
-        if (m_TrackedSource == null) 
+        if (m_TrackedSource == null)
             return;
-        
+
         var trackedSourceSO = new SerializedObject(m_TrackedSource);
         var trackedSourceResourceProperty = trackedSourceSO.FindProperty("m_Resource");
         m_ResourceTrackerElement.TrackPropertyValue(trackedSourceResourceProperty, OnResourceChanged);
@@ -154,16 +154,16 @@ sealed class AudioContainerWindowState
     void OnResourceChanged(SerializedProperty property)
     {
         var container = property.objectReferenceValue as AudioRandomContainer;
-        
+
         if (m_AudioContainer == container)
             return;
 
         Reset();
         m_AudioContainer = container;
-        
+
         if (m_AudioContainer != null)
             TargetPath = AssetDatabase.GetAssetPath(m_AudioContainer);
-        
+
         TargetChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -245,7 +245,7 @@ sealed class AudioContainerWindowState
 
     internal float GetMeterValue()
     {
-        return IsPlayingOrPaused() ? m_PreviewAudioSource.GetAudioRandomContainerRuntimeMeterValue() : -80f;
+        return m_PreviewAudioSource.GetAudioRandomContainerRuntimeMeterValue();
     }
 
     internal bool IsDirty()

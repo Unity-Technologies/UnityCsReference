@@ -33,7 +33,7 @@ namespace UnityEngine
 
         public override string ToString() { return text; }
 
-        public TextAsset() : this(CreateOptions.CreateNativeObject, null)
+        public TextAsset() : this(CreateOptions.CreateNativeObject, (string)null)
         {
         }
 
@@ -41,11 +41,24 @@ namespace UnityEngine
         {
         }
 
+        public TextAsset(ReadOnlySpan<byte> bytes) : this(CreateOptions.CreateNativeObject, bytes)
+        {
+
+        }
+
         internal TextAsset(CreateOptions options, string text)
         {
             if (options == CreateOptions.CreateNativeObject)
             {
                 Internal_CreateInstance(this, text);
+            }
+        }
+
+        internal TextAsset(CreateOptions options, ReadOnlySpan<byte> bytes)
+        {
+            if (options == CreateOptions.CreateNativeObject)
+            {
+                Internal_CreateInstanceFromBytes(this, bytes);
             }
         }
 

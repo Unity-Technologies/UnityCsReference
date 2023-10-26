@@ -142,6 +142,9 @@ namespace UnityEditor.SceneManagement
         internal extern static bool GetPreviewScenesVisibleInHierarchy();
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        internal extern static Scene GetDontDestroyOnLoadScene();
+
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("IsPreviewSceneObject")]
         public extern static bool IsPreviewSceneObject(UnityEngine.Object obj);
 

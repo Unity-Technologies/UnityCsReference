@@ -214,7 +214,7 @@ namespace UnityEditor
                 if (IsURL(url))
                     return url;
 
-                // Assume url is a topic that needs to be properly formatted: 
+                // Assume url is a topic that needs to be properly formatted:
                 return FindHelpNamed(url);
             }
 

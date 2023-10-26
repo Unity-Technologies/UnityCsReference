@@ -16,7 +16,7 @@ namespace Unity.Hierarchy
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct HierarchyNodeType : IEquatable<HierarchyNodeType>
     {
-        const int k_HierarchyNodeTypeNull = 0;
+        internal const int k_HierarchyNodeTypeNull = 0;
 
         static readonly HierarchyNodeType s_Null;
         readonly int m_Id;

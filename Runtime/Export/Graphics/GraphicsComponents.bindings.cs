@@ -93,6 +93,7 @@ namespace UnityEngine
         extern public Vector4 boundingSphereOverride { get; set; }
 
         extern public bool useViewFrustumForShadowCasterCull { get; set; }
+        extern public bool forceVisible            { get; set; }
         extern public int   shadowCustomResolution { get; set; }
         extern public float shadowBias             { get; set; }
         extern public float shadowNormalBias       { get; set; }

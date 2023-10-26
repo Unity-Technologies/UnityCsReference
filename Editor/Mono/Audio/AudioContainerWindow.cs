@@ -94,6 +94,7 @@ sealed class AudioContainerWindow : EditorWindow
     bool m_IsInitializing;
     bool m_Day0ElementsInitialized;
     bool m_ContainerElementsInitialized;
+    private bool m_ClipFieldProgressBarsAreCleared = true;
 
     /// <summary>
     /// Holds the previous state of the list elements for undo/delete housekeeping
@@ -155,15 +156,21 @@ sealed class AudioContainerWindow : EditorWindow
 
     void Update()
     {
-        UpdateClipFieldProgressBars();
+        if (State.IsPlayingOrPaused()) { UpdateClipFieldProgressBars(); }
+        else if (!m_ClipFieldProgressBarsAreCleared) { ClearClipFieldProgressBars(); }
 
-        if (m_Meter == null)
-            return;
-
-        if (State != null)
-            m_Meter.Value = State.GetMeterValue();
-        else
-            m_Meter.Value = -80.0f;
+        if (m_Meter != null)
+        {
+            if (State.IsPlayingOrPaused())
+            {
+                if (State != null) { m_Meter.Value = State.GetMeterValue(); }
+                else { m_Meter.Value = -80.0f; }
+            }
+            else
+            {
+                if (m_Meter.Value != -80.0f) { m_Meter.Value = -80.0f; }
+            }
+        }
     }
 
     void OnBecameInvisible()
@@ -331,7 +338,7 @@ sealed class AudioContainerWindow : EditorWindow
         m_SkipButton = UIToolkitUtilities.GetChildByName<Button>(m_ContainerRootVisualElement, "skip-button");
         m_SkipButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(m_ContainerRootVisualElement, "skip-button-image");
 
-        var skipIcon = UIToolkitUtilities.LoadIcon("icon_next");
+        var skipIcon = UIToolkitUtilities.LoadIcon("Skip");
         m_SkipButtonImage.style.backgroundImage = new StyleBackground(skipIcon);
     }
 
@@ -384,8 +391,8 @@ sealed class AudioContainerWindow : EditorWindow
 
         var image =
             State.IsPlayingOrPaused()
-                ? UIToolkitUtilities.LoadIcon("icon_stop")
-                : UIToolkitUtilities.LoadIcon("icon_play");
+                ? UIToolkitUtilities.LoadIcon("Stop")
+                : UIToolkitUtilities.LoadIcon("Play");
 
         m_PlayButtonImage.style.backgroundImage = new StyleBackground(image);
     }
@@ -915,6 +922,8 @@ sealed class AudioContainerWindow : EditorWindow
         foreach (var field in clipFields)
             if (field.Progress != 0.0f)
                 field.Progress = 0.0f;
+
+        m_ClipFieldProgressBarsAreCleared = false;
     }
 
     void ClearClipFieldProgressBars()
@@ -926,6 +935,8 @@ sealed class AudioContainerWindow : EditorWindow
 
         foreach (var field in clipFields)
             field.Progress = 0.0f;
+
+        m_ClipFieldProgressBarsAreCleared = true;
     }
 
     void DoDelayedListRebuild()

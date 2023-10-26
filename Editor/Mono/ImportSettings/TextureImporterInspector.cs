@@ -988,7 +988,7 @@ namespace UnityEditor
                 // Instead, let's check PlayerSettings / BuildSettings.
                 if (textureImporterFormat == TextureImporterFormat.Automatic && t.textureCompression != TextureImporterCompression.Uncompressed)
                 {
-                    TextureCompressionFormat defaultTexCompressionFormat = PlayerSettings.GetDefaultTextureCompressionFormat(BuildPipeline.GetBuildTargetGroup(buildTarget));
+                    TextureCompressionFormat defaultTexCompressionFormat = PlayerSettings.GetDefaultTextureCompressionFormat(buildTarget);
                     if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out IBuildTarget iBuildTarget))
                         if (iBuildTarget.GraphicsPlatformProperties?.IsETCUsedAsDefaultTextureImporter(defaultTexCompressionFormat) ?? false)
                             return true;

@@ -21,7 +21,7 @@ namespace UnityEditor
     public sealed partial class TextureImporter : AssetImporter
     {
         [FreeFunction]
-        private static extern string GetFixedPlatformName(string platform);
+        internal static extern string GetFixedPlatformName(string platform);
 
         [Obsolete("textureFormat is no longer accessible at the TextureImporter level. For old 'simple' formats use the textureCompression property for the equivalent automatic choice (Uncompressed for TrueColor, Compressed and HQCommpressed for 16 bits). For platform specific formats use the [[PlatformTextureSettings]] API. Using this setter will setup various parameters to match the new automatic system as well as possible. Getter will return the last value set.")]
         public extern TextureImporterFormat textureFormat
@@ -103,7 +103,7 @@ namespace UnityEditor
         // public API will always return a valid TextureImporterPlatformSettings, creating it based on the default one if it did not exist.
         public TextureImporterPlatformSettings GetPlatformTextureSettings(string platform)
         {
-            // make sure we are converting the settings to use the proper BuildTargetGroupName to get them (the way it works on other importers)
+            // make sure we are converting the settings to use the proper BuildTarget name to get them (the way it works on other importers)
             platform = GetFixedPlatformName(platform);
 
             TextureImporterPlatformSettings dest = GetPlatformTextureSetting_Internal(platform);

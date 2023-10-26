@@ -11,7 +11,6 @@ using UnityEngine.Scripting;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
 
-
 namespace UnityEditor
 {
     [NativeHeader("Modules/PhysicsEditor/PhysicsVisualizationSettings.h")]
@@ -306,4 +305,3 @@ namespace UnityEditor
         }
     }
 }
-

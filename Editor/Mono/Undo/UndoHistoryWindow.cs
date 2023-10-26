@@ -233,7 +233,6 @@ namespace UnityEditor
         {
             menu.AddItem(EditorGUIUtility.TrTextContent("Show Latest Action First"), m_ShowLatestFirst == true, SetLatestActionFirst);
             menu.AddItem(EditorGUIUtility.TrTextContent("Show Latest Action Last"), m_ShowLatestFirst  == false, SetLatestActionLast);
-            menu.AddSeparator("");
         }
 
         private void SetLatestActionFirst()

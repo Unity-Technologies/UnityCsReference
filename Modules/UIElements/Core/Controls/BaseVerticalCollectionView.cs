@@ -594,7 +594,7 @@ namespace UnityEngine.UIElements
         internal static readonly string k_InvalidTemplateError = "Template Not Found";
         // If we ever change the default item height, we should consider changing the default max height of the view when
         // used in property fields. The rule to look for is ".unity-property-field > .unity-collection-view"
-        internal static readonly int s_DefaultItemHeight = 22;
+        internal const int s_DefaultItemHeight = 22;
         internal float m_FixedItemHeight = s_DefaultItemHeight;
         internal bool m_ItemHeightIsInline;
         CollectionVirtualizationMethod m_VirtualizationMethod;
@@ -1704,6 +1704,7 @@ namespace UnityEngine.UIElements
 
             var key = GetFullHierarchicalViewDataKey();
             OverwriteFromViewData(this, key);
+            m_ScrollView.UpdateContentViewTransform();
         }
 
         [EventInterest(typeof(PointerUpEvent), typeof(FocusInEvent), typeof(FocusOutEvent),

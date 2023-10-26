@@ -23,6 +23,7 @@ namespace UnityEditor.Search
         int ISearchField.controlID => (int)m_SearchField.controlid;
         int ISearchField.cursorIndex => m_TextField?.cursorIndex ?? -1;
         string ISearchField.text => m_TextField?.text ?? context.searchText;
+        private bool m_UseSearchGlobalEventHandler;
 
         string INotifyValueChanged<string>.value
         {
@@ -53,10 +54,11 @@ namespace UnityEditor.Search
         internal QueryBuilder builder => m_QueryBuilder;
         internal TextField searchField => m_TextField;
 
-        public SearchQueryBuilderView(string name, ISearchView viewModel, SearchFieldBase<TextField, string> searchField)
+        public SearchQueryBuilderView(string name, ISearchView viewModel, SearchFieldBase<TextField, string> searchField, bool useSearchGlobalEventHandler)
             : base(name, viewModel, ussClassName)
         {
             m_SearchField = searchField;
+            m_UseSearchGlobalEventHandler = useSearchGlobalEventHandler;
 
             m_CancelButton = new Button(() => {}) { name = "query-builder-unity-cancel" };
             m_CancelButton.AddToClassList(SearchFieldBase<TextField, string>.cancelButtonUssClassName);
@@ -68,9 +70,14 @@ namespace UnityEditor.Search
         protected override void OnAttachToPanel(AttachToPanelEvent evt)
         {
             base.OnAttachToPanel(evt);
-
-            RegisterCallback<KeyDownEvent>(OnKeyDown);
-            RegisterGlobalEventHandler<KeyDownEvent>(GlobalEventHandler, 0);
+            if (m_UseSearchGlobalEventHandler)
+            {
+                RegisterGlobalEventHandler<KeyDownEvent>(KeyEventHandler, 0);
+            }
+            else
+            {
+                RegisterCallback<KeyDownEvent>(OnKeyDown, useTrickleDown: TrickleDown.TrickleDown);
+            }
             On(SearchEvent.RefreshBuilder, RefreshBuilder);
             On(SearchEvent.SearchContextChanged, Rebuild);
             On(SearchEvent.SearchTextChanged, UpdateCancelButton);
@@ -103,8 +110,15 @@ namespace UnityEditor.Search
 
             m_RefreshBuilderOff?.Invoke();
 
-            UnregisterCallback<KeyDownEvent>(OnKeyDown);
-            UnregisterGlobalEventHandler<KeyDownEvent>(GlobalEventHandler);
+            if (m_UseSearchGlobalEventHandler)
+            {
+                UnregisterGlobalEventHandler<KeyDownEvent>(KeyEventHandler);
+            }
+            else
+            {
+                UnregisterCallback<KeyDownEvent>(OnKeyDown);
+            }
+            
             Off(SearchEvent.RefreshBuilder, RefreshBuilder);
             Off(SearchEvent.SearchContextChanged, Rebuild);
             Off(SearchEvent.SearchTextChanged, UpdateCancelButton);
@@ -133,15 +147,19 @@ namespace UnityEditor.Search
 
         private void OnKeyDown(KeyDownEvent evt)
         {
-            if (evt.imguiEvent != null && (m_QueryBuilder?.HandleKeyEvent(evt.imguiEvent) ?? false))
+            if (evt.imguiEvent != null && m_QueryBuilder != null)
             {
-                evt.StopImmediatePropagation();
+                if (KeyEventHandler(evt))
+                    evt.StopImmediatePropagation();
             }
         }
 
-        private bool GlobalEventHandler(KeyDownEvent evt)
+        private bool KeyEventHandler(KeyDownEvent evt)
         {
-            var isHandled = m_QueryBuilder?.HandleGlobalKeyDown(evt) ?? false;
+            if (m_QueryBuilder == null)
+                return false;
+
+            var isHandled = m_QueryBuilder.HandleGlobalKeyDown(evt) || m_QueryBuilder.HandleKeyEvent(evt.imguiEvent);
             if (isHandled)
                 Focus();
             return isHandled;

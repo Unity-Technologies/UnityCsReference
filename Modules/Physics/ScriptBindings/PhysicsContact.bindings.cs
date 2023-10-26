@@ -3,13 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-
 
 namespace UnityEngine
 {
@@ -347,4 +345,3 @@ namespace UnityEngine
         TriggerDefault = NotifyTouchFound | NotifyTouchLost | DetectDiscreteContact
     };
 }
-

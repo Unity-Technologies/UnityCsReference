@@ -9,21 +9,22 @@ using UnityEngine.Audio;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Playables;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 [assembly: InternalsVisibleTo("Unity.AudioMixer.Tests")]
 
-namespace UnityEngine
+namespace UnityEngine.Audio
 {
     [NativeHeader("Modules/Audio/Public/AudioResource.h")]
     public abstract class AudioResource : Object
     {
         protected internal AudioResource() {}
     }
+}
 
+namespace UnityEngine
+{
     // These are speaker types defined for use with [[AudioSettings.speakerMode]].
     public enum AudioSpeakerMode
     {

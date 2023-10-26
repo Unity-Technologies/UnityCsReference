@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 
@@ -77,28 +78,31 @@ namespace UnityEngine.LightTransport
             buffers[id].Dispose();
             buffers.Remove(id);
         }
-        
-        public EventID WriteBuffer(BufferID id, NativeArray<byte> data)
+
+        public EventID WriteBuffer<T>(BufferSlice<T> dst, NativeArray<T> src)
+            where T : struct
         {
-            Debug.Assert(buffers.ContainsKey(id), "Invalid buffer ID given.");
-            var buffer = buffers[id];
-            buffer.CopyFrom(data);
+            Debug.Assert(buffers.ContainsKey(dst.Id), "Invalid buffer ID given.");
+            var dstBuffer = buffers[dst.Id].Reinterpret<T>(1);
+            dstBuffer.GetSubArray((int)dst.Offset, dstBuffer.Length - (int)dst.Offset).CopyFrom(src);
             return new EventID();
         }
 
-        public EventID ReadBuffer(BufferID buffer, NativeArray<byte> result)
+        public EventID ReadBuffer<T>(BufferSlice<T> src, NativeArray<T> dst)
+            where T : struct
         {
-            Debug.Assert(buffers.ContainsKey(buffer), "Invalid buffer ID given.");
-            buffers[buffer].CopyTo(result);
+            Debug.Assert(buffers.ContainsKey(src.Id), "Invalid buffer ID given.");
+            var srcBuffer = buffers[src.Id].Reinterpret<T>(1);
+            dst.CopyFrom(srcBuffer.GetSubArray((int)src.Offset, srcBuffer.Length - (int)src.Offset));
             return new EventID { Value = nextFreeEventId++ };
         }
 
-        public bool IsAsyncOperationComplete(EventID id)
+        public bool IsCompleted(EventID id)
         {
             return true;
         }
 
-        public bool WaitForAsyncOperation(EventID id)
+        public bool Wait(EventID id)
         {
             return true;
         }

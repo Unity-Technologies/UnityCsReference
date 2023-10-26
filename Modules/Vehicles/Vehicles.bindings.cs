@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Bindings;
-using UnityEngine.Scripting;
-
 
 namespace UnityEngine
 {
@@ -21,7 +19,6 @@ namespace UnityEngine
         [NativeName("collider")] private Collider m_Collider;
 
         public Collider collider { get { return m_Collider; } set { m_Collider = value; }}
-
         public Vector3    point { get { return m_Point; } set { m_Point = value; } }
         public Vector3    normal { get { return m_Normal; } set { m_Normal = value; } }
         public Vector3    forwardDir { get { return m_ForwardDir; } set { m_ForwardDir = value; } }
@@ -52,15 +49,10 @@ namespace UnityEngine
         public extern float rpm { get; }
         public extern float sprungMass { get; set; }
         public extern float rotationSpeed { get; set; }
-
         public extern void ResetSprungMasses();
-
         public extern void ConfigureVehicleSubsteps(float speedThreshold, int stepsBelowThreshold, int stepsAboveThreshold);
-
         public extern void GetWorldPose(out Vector3 pos, out Quaternion quat);
         public extern bool GetGroundHit(out WheelHit hit);
-
         extern internal bool isSupported { get; }
     }
 }
-

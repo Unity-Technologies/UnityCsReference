@@ -626,7 +626,7 @@ namespace UnityEditor
             {
                 get
                 {
-                    return GetTextureCompressionFormatsImpl(BuildTargetGroup.Android);
+                    return GetTextureCompressionFormatsImpl(BuildTarget.Android);
                 }
                 set
                 {
@@ -641,7 +641,7 @@ namespace UnityEditor
                             throw new ArgumentException($"{format} can't be used as a target texture compression for Android");
                         }
                     }
-                    SetTextureCompressionFormatsImpl(BuildTargetGroup.Android, value);
+                    SetTextureCompressionFormatsImpl(BuildTarget.Android, value);
                 }
             }
 

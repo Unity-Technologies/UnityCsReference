@@ -15,7 +15,7 @@ namespace UnityEditor
 {
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
-    [NativeHeader("Editor/Mono/Inspector/ScriptBindings/Editor.bindings.h")]
+    [NativeHeader("Editor/Mono/Inspector/Core/ScriptBindings/Editor.bindings.h")]
     [StaticAccessor("EditorBindings", StaticAccessorType.DoubleColon)]
     public partial class Editor
     {

@@ -85,7 +85,7 @@ namespace UnityEditorInternal
     [NativeHeader("Editor/Src/ScriptCompilation/PrecompiledAssemblies.h")]
     [NativeHeader("Editor/Src/AssetPipeline/ObjectHashGenerator.h")]
     [NativeHeader("Editor/Src/AssetPipeline/UnityExtensions.h")]
-    [NativeHeader("Editor/Src/AuxWindowManager.h")]
+    [NativeHeader("Editor/Src/Windowing/AuxWindowManager.h")]
     [NativeHeader("Editor/Src/DisplayDialog.h")]
     [NativeHeader("Editor/Src/DragAndDropForwarding.h")]
     [NativeHeader("Editor/Src/EditorHelper.h")]

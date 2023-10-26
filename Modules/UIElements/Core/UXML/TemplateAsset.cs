@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
@@ -69,25 +71,27 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            // Handle "classic" attribute override.
-            // It's possible that some elements of a template don't have any UxmlSerializedData.
-            // In that case we still need to populate the CreationContext accordingly.
-            var contextOverrides = cc.attributeOverrides;
-            if (m_AttributeOverrides is {Count: > 0})
-            {
-                if (contextOverrides == null)
-                    contextOverrides = new();
+            // Gather the overrides in hierarchical order where overrides coming from the parent VisualTreeAsset will appear in the lists below before the overrides coming from the nested
+            // VisualTreeAssets. The overrides will be processed in reverse order.
+            using var traitsOverridesHandle = ListPool<CreationContext.AttributeOverrideRange>.Get(out var traitsOverrideRanges);
+            using var dataOverridesHandle = ListPool<CreationContext.SerializedDataOverrideRange>.Get(out var serializedDataOverrideRanges);
 
-                // We want to add new overrides at the end of the list, as we
-                // want parent instances to always override child instances.
-                contextOverrides.Add(new CreationContext.AttributeOverrideRange(cc.visualTreeAsset, attributeOverrides));
-            }
+            // Populate traits attribute overrides. This will be used in two contexts:
+            // 1- When an element does not use the Uxml Serialization feature and relies on the Uxml Factory/Traits system.
+            // 2- When an element is using the Uxml Serialization, we'll use these overrides to partially override the UxmlSerializedData.
+            if (null != cc.attributeOverrides)
+                traitsOverrideRanges.AddRange(cc.attributeOverrides);
+            if (null != attributeOverrides)
+                traitsOverrideRanges.Add(new CreationContext.AttributeOverrideRange(cc.visualTreeAsset, attributeOverrides));
 
-            // If the context has serialized data overrides they take over the one inside the template asset because
-            // the importer only store the data of the highest level.
-            // The first template instantiated define the overrides of the whole hierarchy.
-            var serializeDataOverride = cc.serializedDataOverrides ?? serializedDataOverrides;
-            tc.templateSource.CloneTree(tc, new CreationContext(cc.slotInsertionPoints, contextOverrides, serializeDataOverride, null, null));
+            // Populate the serialized data overrides.
+            if (null != cc.serializedDataOverrides)
+                serializedDataOverrideRanges.AddRange(cc.serializedDataOverrides);
+            if (null != serializedDataOverrides)
+                serializedDataOverrideRanges.Add(new CreationContext.SerializedDataOverrideRange(cc.visualTreeAsset, serializedDataOverrides));
+
+            tc.templateSource.CloneTree(tc, new CreationContext(cc.slotInsertionPoints, traitsOverrideRanges, serializedDataOverrideRanges, null, null));
+
             return tc;
         }
 

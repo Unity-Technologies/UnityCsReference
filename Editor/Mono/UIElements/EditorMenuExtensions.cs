@@ -361,6 +361,7 @@ namespace UnityEditor.UIElements
             search.textInputField.maxLength = k_SearchFieldTextLimit;
 
             search.AddToClassList(searchUssClassName);
+            search.style.maxWidth = k_MaxMenuWidth;
             search.RegisterValueChangedCallback(e =>
             {
                 string ClearHighlighting(string text)
@@ -514,9 +515,6 @@ namespace UnityEditor.UIElements
                         break;
                 }
             }));
-
-            var input = search.Q("unity-text-input");
-            input.style.flexGrow = 0;
 
             return search;
         }, GenericDropdownMenu.k_OptimizedMenus);
