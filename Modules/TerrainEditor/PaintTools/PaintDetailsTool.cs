@@ -101,6 +101,11 @@ namespace UnityEditor.TerrainTools
 
                     DetailBrushBounds brushBounds = new DetailBrushBounds(terrainData, ctx, size, t);
 
+                    if (brushBounds.bounds.size == Vector2.zero)
+                    {
+                        continue;
+                    }
+
                     int[] layers = { detailPrototype };
                     if (targetStrength < 0.0F && !Event.current.control)
                         layers = terrainData.GetSupportedLayers(brushBounds.min, brushBounds.bounds.size);

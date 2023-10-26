@@ -344,7 +344,7 @@ namespace UnityEditorInternal
 
                     if (curve.valueType == typeof(bool))
                     {
-                        value = GUI.Toggle(valueFieldRect, m_HierarchyItemValueControlIDs[row], (float)value != 0, GUIContent.none, EditorStyles.toggle) ? 1f : 0f;
+                        value = GUI.Toggle(valueFieldRect, m_HierarchyItemValueControlIDs[row], Convert.ToSingle(value) != 0f, GUIContent.none, EditorStyles.toggle) ? 1f : 0f;
                     }
                     else
                     {
@@ -367,7 +367,7 @@ namespace UnityEditorInternal
                                 valueFieldRect,
                                 valueFieldDragRect,
                                 id,
-                                (int)value,
+                                Convert.ToInt32(value),
                                 EditorGUI.kIntFieldFormatString,
                                 m_AnimationSelectionTextField,
                                 true,
@@ -384,7 +384,7 @@ namespace UnityEditorInternal
                                 valueFieldRect,
                                 valueFieldDragRect,
                                 id,
-                                (float)value,
+                                Convert.ToSingle(value),
                                 "g5",
                                 m_AnimationSelectionTextField,
                                 true);
@@ -394,7 +394,8 @@ namespace UnityEditorInternal
                                 Event.current.Use();
                             }
 
-                            if (float.IsInfinity((float)value) || float.IsNaN((float)value))
+                            var floatValue = Convert.ToSingle(value);
+                            if (float.IsInfinity(floatValue) || float.IsNaN(floatValue))
                                 value = 0f;
                         }
                     }

@@ -152,6 +152,9 @@ namespace Unity.UI.Builder
 
         public void UpdateButtonIcons(List<string> styles)
         {
+            if (m_Target == null)
+                return;
+
             foreach (var style in styles)
             {
                 switch (style)

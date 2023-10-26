@@ -309,9 +309,9 @@ namespace UnityEditor
 
                 foreach (var obj in targets)
                 {
-                    if (obj is TrailRenderer tr)
+                    if (obj is TrailRenderer trail)
                     {
-                        var worldBounds = tr.bounds;
+                        var worldBounds = trail.bounds;
                         Handles.DrawWireCube(worldBounds.center, worldBounds.size);
                     }
                 }
@@ -320,9 +320,9 @@ namespace UnityEditor
             }
 
             // Move trail using shape
-            if (m_PreviewBackupPosition.HasValue)
+            if (target is TrailRenderer tr)
             {
-                if (target is TrailRenderer tr)
+                if (m_PreviewBackupPosition.HasValue)
                 {
                     if (s_PreviewIsPlaying && !s_PreviewIsPaused)
                     {
@@ -387,6 +387,10 @@ namespace UnityEditor
                     {
                         tr.previewTimeScale = 0.0f;
                     }
+                }
+                else
+                {
+                    tr.previewTimeScale = s_PreviewTimeScale; // Not playing or paused, but might be dragging the Trail around the scene view using the Transform gizmo
                 }
             }
         }

@@ -69,7 +69,7 @@ namespace UnityEditor
             List<string> managedLibraries = new List<string>();
             foreach (BuildFile file in buildFiles)
             {
-                if (file.role == "ManagedLibrary")
+                if (file.role == "ManagedLibrary" || file.role == "dll")
                     managedLibraries.Add(file.path);
             }
 

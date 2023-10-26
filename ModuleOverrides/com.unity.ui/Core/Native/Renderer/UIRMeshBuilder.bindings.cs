@@ -71,6 +71,8 @@ namespace UnityEngine.UIElements
             public int bottomSlice;
             public float sliceScale;
 
+            public Vector4 rectInset;
+
             public NativeColorPage colorPage;
         }
 

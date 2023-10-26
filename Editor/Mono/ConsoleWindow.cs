@@ -164,6 +164,8 @@ namespace UnityEditor
         Vector2 m_TextScroll = Vector2.zero;
 
         int m_LastActiveEntryIndex = -1;
+        [NonSerialized]
+        int m_IndexHintCache;
         bool m_RestoreLatestSelection;
 
         //Make sure the minimum height of the panels can accomodate the cpmplete scroll bar icons
@@ -452,7 +454,8 @@ namespace UnityEditor
                 m_ActiveMode = (Mode)entry.mode;
                 entry.callstackTextStartUTF8 = entry.message.Length;
                 m_CallstackTextStart = entry.callstackTextStartUTF16;
-                var entryRow = LogEntries.GetEntryRowIndex(entry.globalLineIndex);
+                var entryRow = LogEntries.GetEntryRowIndex(entry.globalLineIndex, m_IndexHintCache);
+                m_IndexHintCache = entryRow;
                 // ping object referred by the log entry
                 if (entry.instanceID != 0 && m_LastPingedEntryRow != entryRow)
                 {

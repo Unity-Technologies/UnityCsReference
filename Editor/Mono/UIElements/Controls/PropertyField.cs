@@ -19,7 +19,6 @@ namespace UnityEditor.UIElements
         private static readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
         internal static readonly string foldoutTitleBoundLabelProperty = "unity-foldout-bound-title";
         internal static readonly string decoratorDrawersContainerClassName = "unity-decorator-drawers-container";
-        internal static readonly string listViewBoundFieldProperty = "unity-list-view-property-field-bound";
         static readonly string listViewNamePrefix = "unity-list-";
 
         /// <summary>
@@ -690,7 +689,6 @@ namespace UnityEditor.UIElements
             listView.bindingPath = property.propertyPath;
             listView.viewDataKey = listViewName;
             listView.name = listViewName;
-            listView.SetProperty(listViewBoundFieldProperty, this);
 
             // Make list view foldout react even when disabled, like EditorGUILayout.Foldout.
             var toggle = listView.Q<Toggle>(className: Foldout.toggleUssClassName);
