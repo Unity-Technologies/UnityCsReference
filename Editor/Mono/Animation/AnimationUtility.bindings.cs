@@ -267,6 +267,8 @@ namespace UnityEditor
         [NativeThrows]
         extern private static void Internal_SetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, AnimationCurve curve, bool syncEditorCurves);
 
+        extern internal static bool IsDiscreteIntBinding(EditorCurveBinding binding);
+
         extern internal static void SyncEditorCurves([NotNull] AnimationClip clip);
 
         private static void Internal_InvokeOnCurveWasModified(AnimationClip clip, EditorCurveBinding binding, CurveModifiedType type)

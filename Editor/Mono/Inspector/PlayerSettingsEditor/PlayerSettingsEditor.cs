@@ -147,6 +147,7 @@ namespace UnityEditor
             public static readonly GUIContent logObjCUncaughtExceptions = EditorGUIUtility.TrTextContent("Log Obj-C Uncaught Exceptions*");
             public static readonly GUIContent enableCrashReportAPI = EditorGUIUtility.TrTextContent("Enable CrashReport API*");
             public static readonly GUIContent activeColorSpace = EditorGUIUtility.TrTextContent("Color Space*");
+            public static readonly GUIContent unsupportedMSAAFallback = EditorGUIUtility.TrTextContent("MSAA Fallback");
             public static readonly GUIContent colorGamut = EditorGUIUtility.TrTextContent("Color Gamut*");
             public static readonly GUIContent colorGamutForMac = EditorGUIUtility.TrTextContent("Color Gamut For Mac*");
             public static readonly GUIContent metalForceHardShadows = EditorGUIUtility.TrTextContent("Force hard shadows on Metal*");
@@ -395,6 +396,7 @@ namespace UnityEditor
         SerializedProperty m_DefaultScreenHeight;
 
         SerializedProperty m_ActiveColorSpace;
+        SerializedProperty m_UnsupportedMSAAFallback;
         SerializedProperty m_StripUnusedMeshComponents;
         SerializedProperty m_StrictShaderVariantMatching;
         SerializedProperty m_MipStripping;
@@ -548,6 +550,7 @@ namespace UnityEditor
             m_UIStatusBarHidden             = FindPropertyAssert("uIStatusBarHidden");
             m_UIStatusBarStyle              = FindPropertyAssert("uIStatusBarStyle");
             m_ActiveColorSpace              = FindPropertyAssert("m_ActiveColorSpace");
+            m_UnsupportedMSAAFallback       = FindPropertyAssert("unsupportedMSAAFallback");
             m_StripUnusedMeshComponents     = FindPropertyAssert("StripUnusedMeshComponents");
             m_StrictShaderVariantMatching   = FindPropertyAssert("strictShaderVariantMatching");
             m_MipStripping                  = FindPropertyAssert("mipStripping");
@@ -1842,6 +1845,26 @@ namespace UnityEditor
                     }
                     else m_ActiveColorSpace.enumValueIndex = selectedValue;
                     GUIUtility.ExitGUI(); // Fixes case 690421
+                }
+            }
+
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
+            {
+                switch (platform.defaultTarget)
+                {
+                    case BuildTarget.StandaloneOSX:
+                    case BuildTarget.StandaloneWindows:
+                    case BuildTarget.iOS:
+                    case BuildTarget.Android:
+                    case BuildTarget.StandaloneWindows64:
+                    case BuildTarget.WebGL:
+                    case BuildTarget.WSAPlayer:
+                    case BuildTarget.StandaloneLinux64:
+                    case BuildTarget.tvOS:
+                        EditorGUILayout.PropertyField(m_UnsupportedMSAAFallback, SettingsContent.unsupportedMSAAFallback);
+                        break;
+                    default:
+                        break;
                 }
             }
 

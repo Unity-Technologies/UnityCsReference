@@ -55,7 +55,7 @@ namespace UnityEditor
 
 
         /////////////////////////////////////////////////////////////////////////////
-        // Common material properties
+        // Material properties
 
         public extern Color mainColor { get; set; }
 
@@ -71,6 +71,24 @@ namespace UnityEditor
 
         public extern Color hueVariation { get; set; }
         public extern float alphaTestRef { get; set; }
+        public extern bool enableBumpByDefault { get; set; }
+        public extern bool enableHueByDefault { get; set; }
+        public extern bool enableSubsurfaceByDefault { get; set; }
+
+        /////////////////////////////////////////////////////////////////////////////
+        // Lighting properties
+
+        public extern bool castShadowsByDefault { get; set; }
+        public extern bool receiveShadowsByDefault { get; set; }
+        public extern bool useLightProbesByDefault { get; set; }
+        public extern int reflectionProbeUsagesByDefault { get; set; }
+
+        /////////////////////////////////////////////////////////////////////////////
+        // Wind properties
+
+        public static readonly string[] windQualityNames = new[] { "None", "Fastest", "Fast", "Better", "Best", "Palm" };
+        public extern int bestWindQuality { get; }
+        public extern int selectedWindQuality { get; set; }
 
 
         /////////////////////////////////////////////////////////////////////////////
@@ -82,10 +100,20 @@ namespace UnityEditor
             get;
         }
 
+
         public extern bool enableSmoothLODTransition { get; set; }
         public extern bool animateCrossFading { get; set; }
         public extern float billboardTransitionCrossFadeWidth { get; set; }
         public extern float fadeOutWidth { get; set; }
+
+        public extern bool[] enableSettingOverride
+        {
+            [FreeFunction(Name = "SpeedTreeImporterBindings::GetEnableSettingOverride", HasExplicitThis = true)]
+            get;
+            [NativeThrows]
+            [FreeFunction(Name = "SpeedTreeImporterBindings::SetEnableSettingOverride", HasExplicitThis = true)]
+            set;
+        }
 
         public extern float[] LODHeights
         {
@@ -158,10 +186,6 @@ namespace UnityEditor
             [FreeFunction(Name = "SpeedTreeImporterBindings::SetEnableSubsurface", HasExplicitThis = true)]
             set;
         }
-
-        public static readonly string[] windQualityNames = new[] { "None", "Fastest", "Fast", "Better", "Best", "Palm" };
-
-        public extern int bestWindQuality { get; }
 
         public extern int[] windQualities
         {

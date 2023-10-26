@@ -33,7 +33,7 @@ namespace UnityEditor
             public static GUIContent InternalMaterialHelp = EditorGUIUtility.TrTextContent("Materials are embedded inside the imported asset.");
             public static GUIContent MaterialAssignmentsHelp = EditorGUIUtility.TrTextContent("Material assignments can be remapped below.");
 
-            public static GUIContent ExternalMaterialSearchHelp = EditorGUIUtility.TrTextContent("Remap the imported materials to materials from the Unity project.");
+            public static GUIContent ExternalMaterialSearchHelp = EditorGUIUtility.TrTextContent("Searches the user provided directory and matches the materials that share the same name and LOD with the originally imported material.");
 
             public static GUIContent SelectMaterialFolder = EditorGUIUtility.TrTextContent("Select Materials Folder");
         }

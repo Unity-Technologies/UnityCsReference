@@ -8,6 +8,7 @@ using UnityEngine.Scripting;
 using UnityEngine.Playables;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.Internal;
+using UnityEngine;
 
 namespace UnityEditor
 {
@@ -127,6 +128,16 @@ namespace UnityEditor
             binding.m_isDiscreteCurve = 1;
             binding.m_isSerializeReferenceCurve = 0;
             binding.m_isUnknowCurve = 0;
+
+            if (!AnimationUtility.IsDiscreteIntBinding(binding))
+            {
+                Debug.LogWarning(
+                    $"Property [" + inPropertyName + "] is not a supported discrete curve binding. " +
+                    "Discrete curves only support [" + typeof(Enum) + "] and [" + typeof(int) + " with the `DiscreteEvaluation` attribute].");
+
+                binding.m_isDiscreteCurve = 0;
+                binding.m_isUnknowCurve = 1;
+            }
 
             return binding;
         }

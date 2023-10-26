@@ -9,6 +9,7 @@ using System.Linq;
 using UnityEditor.AnimatedValues;
 using UnityEditor.AssetImporters;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -16,82 +17,142 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public static GUIContent LODHeader = EditorGUIUtility.TrTextContent("LODs");
-            public static GUIContent ResetLOD = EditorGUIUtility.TrTextContent("Reset LOD to...", "Unify the LOD settings for all selected assets.");
-            public static GUIContent SmoothLOD = EditorGUIUtility.TrTextContent("Smooth LOD", "Toggles smooth LOD transitions.");
-            public static GUIContent AnimateCrossFading = EditorGUIUtility.TrTextContent("Animate Cross-fading", "Cross-fading is animated instead of being calculated by distance.");
-            public static GUIContent CrossFadeWidth = EditorGUIUtility.TrTextContent("Crossfade Width", "Proportion of the last 3D mesh LOD region width which is used for cross-fading to billboard tree.");
-            public static GUIContent FadeOutWidth = EditorGUIUtility.TrTextContent("Fade Out Width", "Proportion of the billboard LOD region width which is used for fading out the billboard.");
-
             public static GUIContent MeshesHeader = EditorGUIUtility.TrTextContent("Meshes");
-            public static GUIContent ScaleFactor = EditorGUIUtility.TrTextContent("Scale Factor", "How much to scale the tree model compared to what is in the .spm file.");
-            public static GUIContent ScaleFactorHelp = EditorGUIUtility.TrTextContent("The default value of Scale Factor is 0.3048, the conversion ratio from feet to meters, as these are the most conventional measurements used in SpeedTree and Unity, respectively.");
+            public static GUIContent UnitConversion = EditorGUIUtility.TrTextContent("Unit Conversion", "Select the unit conversion to apply to the imported SpeedTree asset");
+            public static GUIContent ScaleFactor = EditorGUIUtility.TrTextContent("Scale Factor", "How much to scale the tree model, interpreting the exported units as meters");
 
-            public static GUIContent MaterialsHeader = EditorGUIUtility.TrTextContent("Materials");
-            public static GUIContent MainColor = EditorGUIUtility.TrTextContent("Main Color", "The color modulating the diffuse lighting component.");
-            public static GUIContent HueVariation = EditorGUIUtility.TrTextContent("Hue Color", "Apply to LODs that have Hue Variation effect enabled.");
-            public static GUIContent AlphaTestRef = EditorGUIUtility.TrTextContent("Alpha Cutoff", "The alpha-test reference value.");
-            public static GUIContent CastShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "The tree casts shadow.");
-            public static GUIContent ReceiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "The tree receives shadow.");
-            public static GUIContent UseLightProbes = EditorGUIUtility.TrTextContent("Use Light Probes", "The tree uses light probe for lighting.");
-            public static GUIContent UseReflectionProbes = EditorGUIUtility.TrTextContent("Use Reflection Probes", "The tree uses reflection probe for rendering.");
+            public static GUIContent EnableColorVariation = EditorGUIUtility.TrTextContent("Color Variation", "Color is determined by linearly interpolating between the Main Color & Color Variation values based on the world position X, Y and Z values");
             public static GUIContent EnableBump = EditorGUIUtility.TrTextContent("Normal Map", "Enable normal mapping (aka Bump mapping).");
-            public static GUIContent EnableHue = EditorGUIUtility.TrTextContent("Enable Hue Variation", "Enable Hue variation color (color is adjusted between Main Color and Hue Color).");
-            public static GUIContent EnableSubsurface = EditorGUIUtility.TrTextContent("Enable Subsurface", "Enable subsurface scattering effects.");
-            public static GUIContent WindQuality = EditorGUIUtility.TrTextContent("Wind Quality", "Controls the wind quality.");
+            public static GUIContent EnableSubsurface = EditorGUIUtility.TrTextContent("Subsurface Scattering", "Enable subsurface scattering effects.");
+            public static GUIContent MainColor = EditorGUIUtility.TrTextContent("Main Color", "The color modulating the diffuse lighting component.");
+            public static GUIContent HueVariation = EditorGUIUtility.TrTextContent("Variation Color (RGB), Intensity (A)", "Tint the tree with the Variation Color");
+            public static GUIContent AlphaTestRef = EditorGUIUtility.TrTextContent("Alpha Cutoff", "The alpha-test reference value.");
 
-            public static GUIContent ApplyAndGenerate = EditorGUIUtility.TrTextContent("Apply & Generate Materials", "Apply current importer settings and generate materials with new settings.");
-            public static GUIContent Regenerate = EditorGUIUtility.TrTextContent("Regenerate Materials", "Regenerate materials from the current importer settings.");
+            public static GUIContent LightingHeader = EditorGUIUtility.TrTextContent("Lighting");
+            public static GUIContent CastShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "The tree casts shadow");
+            public static GUIContent ReceiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "The tree receives shadow");
+            public static GUIContent UseLightProbes = EditorGUIUtility.TrTextContent("Light Probes", "The tree uses light probe for lighting"); // TODO: update help text
+            public static GUIContent UseReflectionProbes = EditorGUIUtility.TrTextContent("Reflection Probes", "The tree uses reflection probe for rendering"); // TODO: update help text
 
             public static GUIContent AdditionalSettingsHeader = EditorGUIUtility.TrTextContent("Additional Settings");
             public static GUIContent MotionVectorMode = EditorGUIUtility.TrTextContent("Motion Vectors", "Motion vector mode to set for the mesh renderer of each LOD object");
-            public static GUIContent[] MotionVectorModeNames =
+            
+
+            public static GUIContent WindHeader = EditorGUIUtility.TrTextContent("Wind");
+            public static GUIContent WindQuality = EditorGUIUtility.TrTextContent("Wind Quality", "Controls the wind effect's quality.");
+
+            public static GUIContent LODHeader = EditorGUIUtility.TrTextContent("LOD");
+            public static GUIContent ResetLOD = EditorGUIUtility.TrTextContent("Reset LOD to...", "Unify the LOD settings for all selected assets");
+            public static GUIContent SmoothLOD = EditorGUIUtility.TrTextContent("Smooth Transitions", "Toggles smooth LOD transitions");
+            public static GUIContent AnimateCrossFading = EditorGUIUtility.TrTextContent("Animate Cross-fading", "Cross-fading is animated instead of being calculated by distance");
+            public static GUIContent CrossFadeWidth = EditorGUIUtility.TrTextContent("Crossfade Width", "Proportion of the last 3D mesh LOD region width which is used for cross-fading to billboard tree");
+            public static GUIContent FadeOutWidth = EditorGUIUtility.TrTextContent("Fade Out Width", "Proportion of the billboard LOD region width which is used for fading out the billboard");
+
+            public static GUIContent EnableLodCustomizationsWarn = EditorGUIUtility.TrTextContent("Customizing LOD options may help with tuning the GPU performance but will likely negatively impact the instanced draw batching, i.e. CPU performance.\nPlease use the per-LOD customizations with careful memory and performance profiling for both CPU and GPU and remember that these options are a trade-off rather than a free win.");
+            public static GUIContent BillboardSettingsHelp = EditorGUIUtility.TrTextContent("Billboard options are separate from the 3D model options shown above.\nChange the options below for influencing billboard rendering.");
+            
+            public static GUIContent ApplyAndGenerate = EditorGUIUtility.TrTextContent("Apply & Generate Materials", "Apply current importer settings and generate asset materials with the new settings.");
+            public static GUIContent Regenerate = EditorGUIUtility.TrTextContent("Regenerate Materials", "Regenerate materials using the current import settings.");
+
+            public static GUIContent[] ReflectionProbeUsageNames = (Enum.GetNames(typeof(ReflectionProbeUsage)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
+            public static GUIContent[] WindQualityNames = SpeedTreeImporter.windQualityNames.Select(s => new GUIContent(s)).ToArray();
+            public static GUIContent[] UnitConversionNames =
+            {
+                  new GUIContent("Leave As Is")
+                , new GUIContent("ft to m")
+                , new GUIContent("cm to m")
+                , new GUIContent("inch to m")
+                , new GUIContent("Custom")
+            };
+            public static GUIContent[] MotionVectorModeNames = // Match SharedRendererDataTypes.h / enum MotionVectorGenerationMode
             {
                   new GUIContent("Camera Motion Only")  // kMotionVectorCamera = 0,    // Use camera motion for motion vectors
                 , new GUIContent("Per Object Motion")   // kMotionVectorObject,        // Use a per object motion vector pass for this object
                 , new GUIContent("Force No Motion")     // kMotionVectorForceNoMotion, // Force no motion for this object (0 into motion buffer)
             };
         }
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // DATA
+        //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+        // mesh 
+        private SerializedProperty m_ScaleFactor;
+        private SerializedProperty m_UnitConversionEnumValue;
+        private SerializedProperty m_MotionVectorModeEnumValue;
+
+        // material
+        private SerializedProperty m_MainColor;
+        private SerializedProperty m_EnableHueVariation;
+        private SerializedProperty m_HueVariation;
+        private SerializedProperty m_AlphaTestRef;
+        private SerializedProperty m_EnableBumpMapping;
+        private SerializedProperty m_EnableSubsurfaceScattering;
+
+        // lighting
+        private SerializedProperty m_EnableShadowCasting;
+        private SerializedProperty m_EnableShadowReceiving;
+        private SerializedProperty m_EnableLightProbeUsage;
+        private SerializedProperty m_ReflectionProbeUsage;
+
+        // wind
+        private SerializedProperty m_HighestWindQuality;
+        private SerializedProperty m_SelectedWindQuality;
+
+        // lod
         private SerializedProperty m_LODSettings;
         private SerializedProperty m_EnableSmoothLOD;
         private SerializedProperty m_AnimateCrossFading;
         private SerializedProperty m_BillboardTransitionCrossFadeWidth;
         private SerializedProperty m_FadeOutWidth;
-        private SerializedProperty m_MainColor;
-        private SerializedProperty m_HueVariation;
-        private SerializedProperty m_AlphaTestRef;
-        private SerializedProperty m_ScaleFactor;
-        private SerializedProperty m_MotionVectorModeEnumValue;
+
         private bool m_AllAreV8;
         private bool m_AllAreNotV8;
-
-        private const float kFeetToMetersRatio = 0.3048f;
 
         // LODGroup GUI
         private int m_SelectedLODSlider = -1;
         private int m_SelectedLODRange = 0;
+        private SavedBool[] m_LODGroupFoldoutHeaderValues = null;
+        private Texture2D[] m_LODColorTextures;
 
         private readonly AnimBool m_ShowSmoothLODOptions = new AnimBool();
         private readonly AnimBool m_ShowCrossFadeWidthOptions = new AnimBool();
 
         public bool doMaterialsHaveDifferentShader = false;
 
+        //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // INTERFACE
+        //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         public SpeedTreeImporterModelEditor(AssetImporterEditor panelContainer)
             : base(panelContainer)
         {}
 
         internal override void OnEnable()
         {
+            m_ScaleFactor = serializedObject.FindProperty("m_ScaleFactor");
+            m_UnitConversionEnumValue = serializedObject.FindProperty("m_UnitConversionEnumValue");
             m_MotionVectorModeEnumValue = serializedObject.FindProperty("m_MotionVectorModeEnumValue");
+
+            m_MainColor = serializedObject.FindProperty("m_MainColor");
+            m_EnableHueVariation = serializedObject.FindProperty("m_EnableHueVariation");
+            m_HueVariation = serializedObject.FindProperty("m_HueVariation");
+            m_AlphaTestRef = serializedObject.FindProperty("m_AlphaTestRef");
+            m_EnableBumpMapping = serializedObject.FindProperty("m_EnableBumpMapping");
+            m_EnableSubsurfaceScattering = serializedObject.FindProperty("m_EnableSubsurfaceScattering");
+
+            m_EnableShadowCasting = serializedObject.FindProperty("m_EnableShadowCasting");
+            m_EnableShadowReceiving = serializedObject.FindProperty("m_EnableShadowReceiving");
+            m_EnableLightProbeUsage = serializedObject.FindProperty("m_EnableLightProbes");
+            m_ReflectionProbeUsage = serializedObject.FindProperty("m_ReflectionProbeEnumValue");
+
+            m_HighestWindQuality = serializedObject.FindProperty("m_BestWindQuality");
+            m_SelectedWindQuality = serializedObject.FindProperty("m_SelectedWindQuality");
+
             m_LODSettings = serializedObject.FindProperty("m_LODSettings");
             m_EnableSmoothLOD = serializedObject.FindProperty("m_EnableSmoothLODTransition");
             m_AnimateCrossFading = serializedObject.FindProperty("m_AnimateCrossFading");
             m_BillboardTransitionCrossFadeWidth = serializedObject.FindProperty("m_BillboardTransitionCrossFadeWidth");
             m_FadeOutWidth = serializedObject.FindProperty("m_FadeOutWidth");
-            m_MainColor = serializedObject.FindProperty("m_MainColor");
-            m_HueVariation = serializedObject.FindProperty("m_HueVariation");
-            m_AlphaTestRef = serializedObject.FindProperty("m_AlphaTestRef");
-            m_ScaleFactor = serializedObject.FindProperty("m_ScaleFactor");
 
             m_ShowSmoothLODOptions.value = m_EnableSmoothLOD.hasMultipleDifferentValues || m_EnableSmoothLOD.boolValue;
             m_ShowSmoothLODOptions.valueChanged.AddListener(Repaint);
@@ -100,6 +161,8 @@ namespace UnityEditor
 
             m_AllAreV8 = importers.All(im => im.isV8);
             m_AllAreNotV8 = importers.All(im => !im.isV8);
+
+            ResetFoldoutLists();
         }
 
         internal override void OnDisable()
@@ -117,6 +180,36 @@ namespace UnityEditor
                 lodCount, area,
                 i => i == lodCount - 1 && (target as SpeedTreeImporter).hasBillboard ? "Billboard" : String.Format("LOD {0}", i),
                 i => m_LODSettings.GetArrayElementAtIndex(i).FindPropertyRelative("height").floatValue);
+        }
+        private void ExpandSelectedHeaderAndCloseRemaining(int index)
+        {
+            // need this to safeguard against drag & drop on Culled section
+            // as that sets the LOD index to 8 which is outside of the total
+            // allowed LOD range
+            if (index >= m_LODSettings.arraySize)
+                return;
+
+            Array.ForEach(m_LODGroupFoldoutHeaderValues, el => el.value = false);
+            m_LODGroupFoldoutHeaderValues[index].value = true;
+        }
+        void InitAndSetFoldoutLabelTextures()
+        {
+            m_LODColorTextures = new Texture2D[m_LODSettings.arraySize];
+            for (int i = 0; i < m_LODColorTextures.Length; i++)
+            {
+                m_LODColorTextures[i] = new Texture2D(1, 1);
+                m_LODColorTextures[i].SetPixel(0, 0, LODGroupGUI.kLODColors[i]);
+            }
+        }
+        void ResetFoldoutLists()
+        {
+            int lodArraySize = m_LODSettings.arraySize;
+            m_LODGroupFoldoutHeaderValues = new SavedBool[lodArraySize];
+            for (int i = 0; i < lodArraySize; i++)
+            {
+                m_LODGroupFoldoutHeaderValues[i] = new SavedBool($"{target.GetType()}.lodFoldout{i}", false);
+            }
+            InitAndSetFoldoutLabelTextures();
         }
 
         public bool HasSameLODConfig()
@@ -197,11 +290,15 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
         }
+
         public override void OnInspectorGUI()
         {
+            // settings GUIs
             ShowMeshGUI();
             ShowAdditionalSettingsGUI();
             ShowMaterialGUI();
+            ShowLightingGUI();
+            ShowWindGUI();
             ShowLODGUI();
 
             EditorGUILayout.Space();
@@ -210,34 +307,87 @@ namespace UnityEditor
             doMaterialsHaveDifferentShader = !materialsNeedToBeUpgraded && DoMaterialsHaveDifferentShader();
 
             if (materialsNeedToBeUpgraded)
-                EditorGUILayout.HelpBox(String.Format("SpeedTree materials need to be upgraded. Please back them up (if modified manually) then hit the \"{0}\" button below.", Styles.ApplyAndGenerate.text), MessageType.Warning);
+            {
+                EditorGUILayout.HelpBox(
+                    String.Format("SpeedTree materials need to be upgraded. Please back them up (if modified manually) then hit the \"{0}\" button below.", Styles.ApplyAndGenerate.text)
+                    , MessageType.Warning
+                );
+            }
 
             if (doMaterialsHaveDifferentShader)
-                EditorGUILayout.HelpBox(String.Format("There is a different SpeedTree shader provided by the current render pipeline which probably is more suitable for rendering. Hit the \"{0}\" button to regenerate the materials.",
-                    (panelContainer as SpeedTreeImporterInspector).GetGenButtonText(HasModified(), materialsNeedToBeUpgraded).text), MessageType.Warning);
+            {
+                EditorGUILayout.HelpBox(
+                    String.Format("There is a different SpeedTree shader provided by the current render pipeline which probably is more suitable for rendering. Hit the \"{0}\" button to regenerate the materials."
+                        , (panelContainer as SpeedTreeImporterInspector).GetGenButtonText(HasModified()
+                        , materialsNeedToBeUpgraded).text
+                    )
+                    , MessageType.Warning
+                );
+            }
         }
 
         private void ShowMeshGUI()
         {
             GUILayout.Label(Styles.MeshesHeader, EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(m_ScaleFactor, Styles.ScaleFactor);
+            EditorGUILayout.Popup(m_UnitConversionEnumValue, Styles.UnitConversionNames, Styles.UnitConversion);
 
-            // Display a help box to explain the rationale for the default value (feet to meters conversion ratio).
-            if (!m_ScaleFactor.hasMultipleDifferentValues && Mathf.Approximately(m_ScaleFactor.floatValue, kFeetToMetersRatio))
+            bool bShowCustomScaleFactor = m_UnitConversionEnumValue.intValue == Styles.UnitConversionNames.Length-1;
+            if (bShowCustomScaleFactor)
             {
-                EditorGUILayout.HelpBox(Styles.ScaleFactorHelp.text, MessageType.Info);
+                EditorGUILayout.PropertyField(m_ScaleFactor, Styles.ScaleFactor);
             }
-        }
 
-        private void ShowMaterialGUI()
+            EditorGUILayout.Space();
+        }
+        public void ShowMaterialGUI()
         {
-            GUILayout.Label(Styles.MaterialsHeader, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Material", EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(m_MainColor, Styles.MainColor);
-            EditorGUILayout.PropertyField(m_HueVariation, Styles.HueVariation);
+            EditorGUILayout.PropertyField(m_EnableHueVariation, Styles.EnableColorVariation);
+            if (importers.First().enableHueByDefault)
+            {
+                EditorGUILayout.PropertyField(m_HueVariation, Styles.HueVariation);
+            }
+
             if (m_AllAreNotV8)
                 EditorGUILayout.Slider(m_AlphaTestRef, 0f, 1f, Styles.AlphaTestRef);
+
+            EditorGUILayout.PropertyField(m_EnableBumpMapping, Styles.EnableBump);
+            EditorGUILayout.PropertyField(m_EnableSubsurfaceScattering, Styles.EnableSubsurface);
+
+            EditorGUILayout.Space();
+        }
+
+        private void ShowLightingGUI()
+        {
+            GUILayout.Label(Styles.LightingHeader, EditorStyles.boldLabel);
+
+            EditorGUILayout.PropertyField(m_EnableShadowCasting, Styles.CastShadows);
+
+            // from the docs page: https://docs.unity3d.com/Manual/SpeedTree.html
+            // Known issues: As with any other renderer, the Receive Shadows option has no effect while using deferred rendering.
+            // TODO: test and conditionally expose this field
+            using (new EditorGUI.DisabledScope(!UnityEngine.Rendering.SupportedRenderingFeatures.active.receiveShadows))
+            {
+                EditorGUILayout.PropertyField(m_EnableShadowReceiving, Styles.ReceiveShadows);
+            }
+
+            EditorGUILayout.PropertyField(m_EnableLightProbeUsage, Styles.UseLightProbes);
+
+
+            EditorGUILayout.Space();
+        }
+
+
+        private void ShowWindGUI()
+        {
+            GUILayout.Label(Styles.WindHeader, EditorStyles.boldLabel);
+            int NumAvailableWindQualityOptions = 1 + m_HighestWindQuality.intValue; // 0 is None, we want at least 1 value
+            ArraySegment<GUIContent> availableWindQualityOptions = new ArraySegment<GUIContent>(Styles.WindQualityNames, 0, NumAvailableWindQualityOptions);
+            EditorGUILayout.Popup(m_SelectedWindQuality, availableWindQualityOptions.ToArray(), Styles.WindQuality);
+            EditorGUILayout.Space();
         }
 
         private void ShowLODGUI()
@@ -245,77 +395,48 @@ namespace UnityEditor
             m_ShowSmoothLODOptions.target = m_EnableSmoothLOD.hasMultipleDifferentValues || m_EnableSmoothLOD.boolValue;
             m_ShowCrossFadeWidthOptions.target = m_AnimateCrossFading.hasMultipleDifferentValues || !m_AnimateCrossFading.boolValue;
 
+            // label
             GUILayout.Label(Styles.LODHeader, EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(m_EnableSmoothLOD, Styles.SmoothLOD);
-
-            EditorGUI.indentLevel++;
-            if (EditorGUILayout.BeginFadeGroup(m_ShowSmoothLODOptions.faded))
+            // LOD Transitions
             {
-                EditorGUILayout.PropertyField(m_AnimateCrossFading, Styles.AnimateCrossFading);
-                if (EditorGUILayout.BeginFadeGroup(m_ShowCrossFadeWidthOptions.faded))
+                EditorGUILayout.PropertyField(m_EnableSmoothLOD, Styles.SmoothLOD);
+                EditorGUI.indentLevel++;
+                if (EditorGUILayout.BeginFadeGroup(m_ShowSmoothLODOptions.faded))
                 {
-                    EditorGUILayout.Slider(m_BillboardTransitionCrossFadeWidth, 0.0f, 1.0f, Styles.CrossFadeWidth);
-                    EditorGUILayout.Slider(m_FadeOutWidth, 0.0f, 1.0f, Styles.FadeOutWidth);
+                    EditorGUILayout.PropertyField(m_AnimateCrossFading, Styles.AnimateCrossFading);
+                    if (EditorGUILayout.BeginFadeGroup(m_ShowCrossFadeWidthOptions.faded))
+                    {
+                        EditorGUILayout.Slider(m_BillboardTransitionCrossFadeWidth, 0.0f, 1.0f, Styles.CrossFadeWidth);
+                        EditorGUILayout.Slider(m_FadeOutWidth, 0.0f, 1.0f, Styles.FadeOutWidth);
+                    }
+                    EditorGUILayout.EndFadeGroup();
                 }
                 EditorGUILayout.EndFadeGroup();
+                EditorGUI.indentLevel--;
             }
-            EditorGUILayout.EndFadeGroup();
-            EditorGUI.indentLevel--;
 
             EditorGUILayout.Space();
+
+            // LOD slider + Customizations
             if (HasSameLODConfig())
             {
-                EditorGUILayout.Space();
-
                 var area = GUILayoutUtility.GetRect(0, LODGroupGUI.kSliderBarHeight, GUILayout.ExpandWidth(true));
                 var lods = GetLODInfoArray(area);
+                bool bDrawLODCustomizationGUI = m_SelectedLODRange != -1 && lods.Count > 0;
+
+                EditorGUILayout.Space();
+
                 DrawLODLevelSlider(area, lods);
 
-                EditorGUILayout.Space();
-                EditorGUILayout.Space();
-
-                if (m_SelectedLODRange != -1 && lods.Count > 0)
+                if (bDrawLODCustomizationGUI)
                 {
-                    EditorGUILayout.LabelField(lods[m_SelectedLODRange].LODName + " Options", EditorStyles.boldLabel);
-                    bool isBillboard = (m_SelectedLODRange == lods.Count - 1) && importers.First().hasBillboard;
-
-                    EditorGUILayout.PropertyField(m_LODSettings.GetArrayElementAtIndex(m_SelectedLODRange).FindPropertyRelative("castShadows"), Styles.CastShadows);
-
-                    using (new EditorGUI.DisabledScope(!UnityEngine.Rendering.SupportedRenderingFeatures.active.receiveShadows))
-                    {
-                        EditorGUILayout.PropertyField(m_LODSettings.GetArrayElementAtIndex(m_SelectedLODRange).FindPropertyRelative("receiveShadows"), Styles.ReceiveShadows);
-                    }
-
-                    var useLightProbes = m_LODSettings.GetArrayElementAtIndex(m_SelectedLODRange).FindPropertyRelative("useLightProbes");
-                    EditorGUILayout.PropertyField(useLightProbes, Styles.UseLightProbes);
-                    if (!useLightProbes.hasMultipleDifferentValues && useLightProbes.boolValue && isBillboard)
-                        EditorGUILayout.HelpBox("Enabling Light Probe for billboards breaks batched rendering and may cause performance problem.", MessageType.Warning);
-
-                    // TODO: reflection probe support when PBS is implemented
-                    //EditorGUILayout.PropertyField(m_LODSettings.GetArrayElementAtIndex(m_SelectedLODRange).FindPropertyRelative("useReflectionProbes"), Styles.UseReflectionProbes);
-
-                    EditorGUILayout.PropertyField(m_LODSettings.GetArrayElementAtIndex(m_SelectedLODRange).FindPropertyRelative("enableBump"), Styles.EnableBump);
-                    EditorGUILayout.PropertyField(m_LODSettings.GetArrayElementAtIndex(m_SelectedLODRange).FindPropertyRelative("enableHue"), Styles.EnableHue);
-
-                    if (m_AllAreV8)
-                        EditorGUILayout.PropertyField(m_LODSettings.GetArrayElementAtIndex(m_SelectedLODRange).FindPropertyRelative("enableSubsurface"), Styles.EnableSubsurface);
-
-                    int bestWindQuality = importers.Min(im => im.bestWindQuality);
-                    if (bestWindQuality > 0)
-                    {
-                        if (isBillboard)
-                        {
-                            bestWindQuality = 1; // billboard has only one level of wind quality
-                        }
-
-                        EditorGUILayout.Popup(
-                            m_LODSettings.GetArrayElementAtIndex(m_SelectedLODRange).FindPropertyRelative("windQuality"),
-                            SpeedTreeImporter.windQualityNames.Take(bestWindQuality + 1).Select(s => new GUIContent(s)).ToArray(),
-                            Styles.WindQuality);
-                    }
+                    GUILayout.Space(5);
+                    DrawLODGroupFoldouts(lods);
                 }
             }
+
+            //  Mixed Value LOD Slider
             else
             {
                 if (CanUnifyLODConfig())
@@ -401,6 +522,7 @@ namespace UnityEditor
                                 {
                                     m_SelectedLODSlider = -1;
                                     m_SelectedLODRange = lod.LODLevel;
+                                    ExpandSelectedHeaderAndCloseRemaining(m_SelectedLODRange);
                                     break;
                                 }
                             }
@@ -432,6 +554,192 @@ namespace UnityEditor
                 }
             }
         }
+
+        private void DrawLODGroupFoldouts(List<LODGroupGUI.LODInfo> lods)
+        {
+            // check camera and bail if null
+            Camera camera = null;
+            if (SceneView.lastActiveSceneView && SceneView.lastActiveSceneView.camera)
+                camera = SceneView.lastActiveSceneView.camera;
+            if (camera == null)
+                return;
+
+            // draw lod foldouts
+            for (int i = 0; i < m_LODSettings.arraySize; i++)
+            {
+                DrawLODGroupFoldout(camera, i, ref m_LODGroupFoldoutHeaderValues[i], lods);
+            }
+        }
+
+        static private string GetLODSubmeshAndTriCountLabel(int numLODs, int lodGroupIndex, SpeedTreeImporter im, LODGroup lodGroup)
+        {
+            LOD[] lods = lodGroup.GetLODs();
+            Debug.Assert(lods.Length == numLODs);
+
+            int[][] primitiveCounts = new int[numLODs][];
+            int[] submeshCounts = new int[numLODs];
+            for (int i = 0; i < lods.Length; i++)
+            {
+                Renderer[] renderers = lods[i].renderers;
+                primitiveCounts[i] = new int[renderers.Length];
+
+                for (int j = 0; j < renderers.Length; j++)
+                {
+                    bool hasMismatchingSubMeshTopologyTypes = LODGroupEditor.CheckIfMeshesHaveMatchingTopologyTypes(renderers);
+
+                    Mesh rendererMesh = LODGroupEditor.GetMeshFromRendererIfAvailable(renderers[j]);
+                    if (rendererMesh == null)
+                        continue;
+
+                    submeshCounts[i] += rendererMesh.subMeshCount;
+
+                    if (hasMismatchingSubMeshTopologyTypes)
+                    {
+                        primitiveCounts[i][j] = rendererMesh.vertexCount;
+                    }
+                    else
+                    {
+                        for (int subMeshIndex = 0; subMeshIndex < rendererMesh.subMeshCount; subMeshIndex++)
+                        {
+                            primitiveCounts[i][j] += (int)rendererMesh.GetIndexCount(subMeshIndex) / 3;
+                        }
+                    }
+                }
+            }
+
+            int totalTriCount = (primitiveCounts.Length > 0 && primitiveCounts[lodGroupIndex] != null)
+                ? primitiveCounts[lodGroupIndex].Sum()
+                : 0;
+            int lod0TriCount = primitiveCounts[0].Sum();
+            var triCountChange = lod0TriCount != 0 ? (float)totalTriCount / lod0TriCount * 100 : 0;
+            string triangleChangeLabel = lodGroupIndex > 0 && lod0TriCount != 0 ? $"({triCountChange.ToString("f2")}% LOD0)" : "";
+
+            bool wideInspector = Screen.width >= 480;
+            triangleChangeLabel = wideInspector ? triangleChangeLabel : "";
+            string submeshCountLabel = wideInspector ? $"- {submeshCounts[lodGroupIndex]} Sub Mesh(es)" : "";
+
+            return $"{totalTriCount} {LODGroupGUI.GUIStyles.m_TriangleCountLabel.text} {triangleChangeLabel} {submeshCountLabel}";
+        }
+        private void DrawLODGroupFoldout(Camera camera, int lodGroupIndex, ref SavedBool foldoutState, List<LODGroupGUI.LODInfo> lodInfoList)
+        {
+            GameObject[] prefabs = assetTargets?.Cast<GameObject>().ToArray(); // In tests assetTargets can become null
+            SpeedTreeImporter[] importerArray = importers.ToArray();
+            int numSelectedAssets = Math.Min(importerArray.Length, prefabs?.Length ?? 0);
+            bool isDrawingSelectedLODGroup = m_SelectedLODRange == lodGroupIndex;
+
+            // even though multiple assets may be selected, this code path
+            // ensures the numLODs match for all the selected assets (see HasSameLODConfig() calls)
+            int numLODs = m_LODSettings.arraySize;
+
+            string LODFoldoutHeaderLabel = (importerArray[0].hasBillboard && lodGroupIndex == m_LODSettings.arraySize - 1)
+                ? "Billboard"
+                : $"LOD {lodGroupIndex}";
+
+            // primitive and submesh counts are displayed only when a single asset is selected
+            string LODFoldoutHeaderGroupAdditionalText = numSelectedAssets == 1
+                ? GetLODSubmeshAndTriCountLabel(numLODs, lodGroupIndex, importerArray[0], prefabs[0].GetComponentInChildren<LODGroup>())
+                : "";
+
+            // ------------------------------------------------------------------------------------------------------------------------------
+
+            if (isDrawingSelectedLODGroup)
+                LODGroupGUI.DrawRoundedBoxAroundLODDFoldout(lodGroupIndex, m_SelectedLODRange);
+            else
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+            foldoutState.value = LODGroupGUI.FoldoutHeaderGroupInternal(
+                GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebarFlat)
+                , foldoutState.value
+                , LODFoldoutHeaderLabel
+                , m_LODColorTextures[lodGroupIndex]
+                , LODGroupGUI.kLODColors[lodGroupIndex] * 0.6f // 0.5f magic number is copied from LODGroupsGUI.cs
+                , LODFoldoutHeaderGroupAdditionalText
+            );
+
+            if (foldoutState.value) // expanded LOD-specific options panel
+            {
+                DrawLODSettingCustomizationGUI(lodInfoList, lodGroupIndex);
+            }
+
+            if (isDrawingSelectedLODGroup)
+                GUILayoutUtility.EndLayoutGroup();
+            else
+                EditorGUILayout.EndVertical();
+        }
+
+        private void DrawLODSettingCustomizationGUI(List<LODGroupGUI.LODInfo> lods, int lodIndex)
+        {
+            bool isBillboard = (lodIndex == lods.Count - 1) && importers.First().hasBillboard;
+            int windQuality = m_HighestWindQuality.intValue;
+            if (isBillboard)
+            {
+                windQuality = 1; // billboard has only one level of wind quality
+            }
+
+
+            SerializedProperty selectedLODProp = m_LODSettings.GetArrayElementAtIndex(lodIndex);
+            SerializedProperty lodSettingOverride = selectedLODProp.FindPropertyRelative("enableSettingOverride");
+
+            // We don't want to clutter the GUI with same options but for billboards, instead
+            // we treat the Billboard LOD level as always 'overrideSettings' and display the
+            // billboard options below without the 'enableSettingOverride' warning text.
+            if (isBillboard)
+            {
+                EditorGUILayout.LabelField("Billboard Options", EditorStyles.boldLabel);
+                EditorGUILayout.HelpBox(Styles.BillboardSettingsHelp.text, MessageType.Info);
+            }
+            else
+            {
+                // Toggle 
+                GUIContent customizationLabel = EditorGUIUtility.TrTextContent(String.Format("Customize {0} options", lods[lodIndex].LODName), "To override options for a certain LOD, check this box and select the LOD from the LOD slider above");
+                EditorGUILayout.PropertyField(lodSettingOverride, customizationLabel);
+
+                // Warning
+                if (lodSettingOverride.boolValue)
+                {
+                    EditorGUILayout.HelpBox(Styles.EnableLodCustomizationsWarn.text, MessageType.Warning);
+                }
+            }
+            EditorGUILayout.Space();
+
+            // settings
+            using (new EditorGUI.DisabledScope(!lodSettingOverride.boolValue))
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Lighting", EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(selectedLODProp.FindPropertyRelative("castShadows"), Styles.CastShadows);
+
+                using (new EditorGUI.DisabledScope(!UnityEngine.Rendering.SupportedRenderingFeatures.active.receiveShadows))
+                {
+                    EditorGUILayout.PropertyField(selectedLODProp.FindPropertyRelative("receiveShadows"), Styles.ReceiveShadows);
+                }
+
+                var useLightProbes = selectedLODProp.FindPropertyRelative("useLightProbes");
+                EditorGUILayout.PropertyField(useLightProbes, Styles.UseLightProbes);
+                if (!useLightProbes.hasMultipleDifferentValues && useLightProbes.boolValue && isBillboard)
+                    EditorGUILayout.HelpBox("Enabling Light Probe for billboards breaks batched rendering and may cause performance problem.", MessageType.Warning);
+
+                // TODO: reflection probe support when PBS is implemented
+                //EditorGUILayout.PropertyField(SelectedLODProp.FindPropertyRelative("useReflectionProbes"), Styles.UseReflectionProbes);
+
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Wind", EditorStyles.boldLabel);
+                EditorGUILayout.Popup(
+                    selectedLODProp.FindPropertyRelative("windQuality"),
+                    SpeedTreeImporter.windQualityNames.Take(windQuality + 1).Select(s => new GUIContent(s)).ToArray(),
+                    Styles.WindQuality);
+
+
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Material", EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(selectedLODProp.FindPropertyRelative("enableHue"), Styles.EnableColorVariation);
+                EditorGUILayout.PropertyField(selectedLODProp.FindPropertyRelative("enableBump"), Styles.EnableBump);
+
+                if (m_AllAreV8)
+                    EditorGUILayout.PropertyField(selectedLODProp.FindPropertyRelative("enableSubsurface"), Styles.EnableSubsurface);
+            }
+        }
+
 
         private void OnResetLODMenuClick(object userData)
         {

@@ -7415,6 +7415,7 @@ namespace UnityEditor
             // Should we inline? All one-line vars as well as Vector2, Vector3, Rect and Bounds properties are inlined.
             if (!HasVisibleChildFields(property))
             {
+                bool canUseExpression = ConstrainProportionsTransformScale.CanUseMathExpressions(property);
                 switch (type)
                 {
                     case SerializedPropertyType.Integer:
@@ -7434,7 +7435,8 @@ namespace UnityEditor
                                     for (var i = 0; i < values.Length; ++i)
                                     {
                                         values[i] = originalValues[i];
-                                        val.expression.Evaluate(ref values[i], i, values.Length);
+                                        if(canUseExpression)
+                                            val.expression.Evaluate(ref values[i], i, values.Length);
                                     }
                                     property.allLongValues = values;
                                 }
@@ -7471,7 +7473,7 @@ namespace UnityEditor
                                     for (var i = 0; i < values.Length; ++i)
                                     {
                                         values[i] = originalValues[i];
-                                        if (val.expression.Evaluate(ref values[i], i, values.Length))
+                                        if (canUseExpression && val.expression.Evaluate(ref values[i], i, values.Length))
                                         {
                                             if (isFloat)
                                                 values[i] = MathUtils.ClampToFloat(values[i]);

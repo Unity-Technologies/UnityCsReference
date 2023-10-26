@@ -493,7 +493,7 @@ namespace UnityEditor
             return false;
         }
 
-        Mesh GetMeshFromRendererIfAvailable(Renderer renderer)
+        public static Mesh GetMeshFromRendererIfAvailable(Renderer renderer)
         {
             if (renderer == null)
                 return null;
@@ -601,7 +601,7 @@ namespace UnityEditor
             InitAndSetFoldoutLabelTextures();
         }
 
-        bool CheckIfSubmeshesHaveMatchingTopologyTypes(Mesh mesh)
+        public static bool CheckIfSubmeshesHaveMatchingTopologyTypes(Mesh mesh)
         {
             var meshTopology = mesh.GetTopology(0);
 
@@ -615,7 +615,7 @@ namespace UnityEditor
             return false;
         }
 
-        bool CheckIfMeshesHaveMatchingTopologyTypes(Renderer[] renderers)
+        public static bool CheckIfMeshesHaveMatchingTopologyTypes(Renderer[] renderers)
         {
             for (int i = 0; i < renderers.Length; i++)
             {

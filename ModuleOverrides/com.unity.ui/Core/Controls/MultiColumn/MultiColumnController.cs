@@ -66,7 +66,6 @@ namespace UnityEngine.UIElements
             m_MultiColumnHeader.columnSortingChanged += OnColumnSortingChanged;
             m_MultiColumnHeader.contextMenuPopulateEvent += OnContextMenuPopulateEvent;
             m_MultiColumnHeader.columnResized += OnColumnResized;
-            m_MultiColumnHeader.viewDataRestored += OnViewDataRestored;
 
             m_MultiColumnHeader.columns.columnAdded += OnColumnAdded;
             m_MultiColumnHeader.columns.columnRemoved += OnColumnRemoved;
@@ -235,7 +234,6 @@ namespace UnityEngine.UIElements
             m_MultiColumnHeader.columnSortingChanged -= OnColumnSortingChanged;
             m_MultiColumnHeader.contextMenuPopulateEvent -= OnContextMenuPopulateEvent;
             m_MultiColumnHeader.columnResized -= OnColumnResized;
-            m_MultiColumnHeader.viewDataRestored -= OnViewDataRestored;
             m_MultiColumnHeader.columns.columnAdded -= OnColumnAdded;
             m_MultiColumnHeader.columns.columnRemoved -= OnColumnRemoved;
             m_MultiColumnHeader.columns.columnReordered -= OnColumnReordered;
@@ -299,31 +297,17 @@ namespace UnityEngine.UIElements
 
         void OnColumnReordered(Column column, int from, int to)
         {
-            if (m_MultiColumnHeader.isApplyingViewState)
-                return;
-
             m_View.Rebuild();
         }
 
         void OnColumnsChanged(Column column, ColumnDataType type)
         {
-            if (m_MultiColumnHeader.isApplyingViewState)
-                return;
-
             if (type == ColumnDataType.Visibility) m_View.Rebuild();
         }
 
         void OnColumnChanged(ColumnsDataType type)
         {
-            if (m_MultiColumnHeader.isApplyingViewState)
-                return;
-
             if (type == ColumnsDataType.PrimaryColumn) m_View.Rebuild();
-        }
-
-        void OnViewDataRestored()
-        {
-            m_View.Rebuild();
         }
     }
 }

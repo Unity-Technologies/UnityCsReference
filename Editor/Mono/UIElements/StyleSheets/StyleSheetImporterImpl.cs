@@ -122,6 +122,11 @@ namespace UnityEditor.UIElements.StyleSheets
                 if (o.name == subAssetPath)
                     return o;
             }
+
+            // We sometimes include the main asset name in the sub-asset name. (UUM-49355)
+            if (mainAsset != null && mainAsset.name == subAssetPath)
+                return mainAsset;
+
             return null;
         }
 

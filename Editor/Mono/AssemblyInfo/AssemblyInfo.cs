@@ -7,6 +7,7 @@ using UnityEngine;
 
 // ADD_NEW_PLATFORM_HERE
 [assembly: InternalsVisibleTo("Unity.LiveNotes")]
+[assembly: InternalsVisibleTo("Unity.Audio.Tests")]
 [assembly: InternalsVisibleTo("Unity.Burst")]
 [assembly: InternalsVisibleTo("Unity.Burst.Editor")]
 [assembly: InternalsVisibleTo("Unity.Cloud.Collaborate.Editor")]
@@ -30,7 +31,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Timeline.Editor")]
 [assembly: InternalsVisibleTo("Unity.PackageManagerUI.Develop.Editor")]
 [assembly: InternalsVisibleTo("Unity.DeviceSimulator.Editor")]
-
 [assembly: InternalsVisibleTo("Unity.Timeline.EditorTests")]
 [assembly: InternalsVisibleTo("UnityEditor.Graphs")]
 [assembly: InternalsVisibleTo("UnityEditor.UWP.Extensions")]

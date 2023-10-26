@@ -1922,10 +1922,8 @@ namespace UnityEngine.Rendering
         UNITY_ASTC_NORMALMAP_ENCODING,
         SHADER_API_GLES30,
         UNITY_UNIFIED_SHADER_PRECISION_MODEL,
-
-        // NOTE: on trunk we've added UNITY_PLATFORM_SUPPORTS_WAVE_32 and UNITY_PLATFORM_SUPPORTS_WAVE_64
-        // NOTE: that go after UNITY_UNIFIED_SHADER_PRECISION_MODEL.
-        // NOTE: we leave a hole here on purpose so that enum values agree
+        UNITY_PLATFORM_SUPPORTS_WAVE_32,
+        UNITY_PLATFORM_SUPPORTS_WAVE_64,
         UNITY_NEEDS_RENDERPASS_FBFETCH_FALLBACK = 35,
     }
 
