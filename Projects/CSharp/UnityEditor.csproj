@@ -2750,9 +2750,6 @@
     <Compile Include="..\..\Editor\Mono\PlayerSettingsAndroid.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsAndroid.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\PlayerSettingsBratwurst.bindings.cs">
-      <Link>Editor\Mono\PlayerSettingsBratwurst.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsDefaultTextureCompressionHandler.cs">
       <Link>Editor\Mono\PlayerSettingsDefaultTextureCompressionHandler.cs</Link>
     </Compile>
@@ -2788,6 +2785,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsTVOS.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsTVOS.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\PlayerSettingsVisionOS.bindings.cs">
+      <Link>Editor\Mono\PlayerSettingsVisionOS.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsVulkan.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsVulkan.bindings.cs</Link>

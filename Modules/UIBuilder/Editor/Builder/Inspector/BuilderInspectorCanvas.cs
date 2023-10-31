@@ -244,6 +244,8 @@ namespace Unity.UI.Builder
 
         public void Refresh()
         {
+            if (m_Document != m_Inspector.document)
+                m_Document = m_Inspector.document;
             // HACK until fix goes in:
             SetDelayOnSizeFieldsEnabled(false);
 

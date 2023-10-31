@@ -83,18 +83,19 @@ namespace Unity.UI.Builder
         static readonly int k_DefaultVisualElementFlexGrow = 1;
         static readonly Color k_DefaultVisualElementBackgroundColor = new (0, 0, 0, 0);
 
+        static readonly AssetModificationProcessor s_AssetModificationProcessor = new AssetModificationProcessor(() =>
+        {
+            RegenerateLibraryContent();
+        });
+        static readonly AssetPostprocessor s_AssetPostProcessor = new AssetPostprocessor(() =>
+        {
+            RegenerateLibraryContent();
+        });
+
         static BuilderLibraryContent()
         {
-            BuilderAssetModificationProcessor.Register(new AssetModificationProcessor(() =>
-            {
-                if (s_ProjectUxmlPathsHash != s_ProjectAssetsScanner.GetAllProjectUxmlFilePathsHash())
-                    RegenerateLibraryContent();
-            }));
-
-            BuilderAssetPostprocessor.Register(new AssetPostprocessor(() =>
-            {
-                RegenerateLibraryContent();
-            }));
+            BuilderAssetModificationProcessor.Register(s_AssetModificationProcessor);
+            BuilderAssetPostprocessor.Register(s_AssetPostProcessor);
         }
 
         public static bool IsEditorOnlyControl(string fullTypeName)
@@ -107,9 +108,19 @@ namespace Unity.UI.Builder
             return s_StandardControls.Contains(fullTypeName);
         }
 
-        public static void RegenerateLibraryContent()
+        public static void RegenerateLibraryContent(bool mustRegisterProcessors = false)
         {
-            // Standard control tree rarely changes and should not be regenerated every time.
+            if (mustRegisterProcessors && !BuilderAssetModificationProcessor.IsProcessorRegistered(s_AssetModificationProcessor))
+                BuilderAssetModificationProcessor.Register(s_AssetModificationProcessor);
+            if (mustRegisterProcessors && !BuilderAssetPostprocessor.IsOneTimeProcessorRegistered(s_AssetPostProcessor))
+                BuilderAssetPostprocessor.Register(s_AssetPostProcessor);
+
+            s_ProjectAssetsScanner.FindAssets();
+            var previousProjectUxmlPathsHash = s_ProjectUxmlPathsHash;
+            s_ProjectUxmlPathsHash = s_ProjectAssetsScanner.GetAllProjectUxmlFilePathsHash();
+            if (previousProjectUxmlPathsHash == s_ProjectUxmlPathsHash)
+                return;
+
             if (standardControlsTree == null)
             {
                 standardControlsTree = GenerateControlsItemsTree();
@@ -124,12 +135,10 @@ namespace Unity.UI.Builder
                         standardControlsTreeNoEditor.Add(item);
                     }
                 }
-                UpdateControlsTypeCache(standardControlsTree);
+                UpdateControlsTypeCache(standardControlsTree, true);
             }
-
             GenerateProjectContentTrees();
             UpdateControlsTypeCache(projectContentTree);
-            s_ProjectUxmlPathsHash = s_ProjectAssetsScanner.GetAllProjectUxmlFilePathsHash();
 
             OnLibraryContentUpdated?.Invoke();
             libraryRegenerationTestCounter++;
@@ -395,17 +404,26 @@ namespace Unity.UI.Builder
             return controlsTree;
         }
 
-        static void UpdateControlsTypeCache(IEnumerable<TreeViewItem> items)
+        static void UpdateControlsTypeCache(IEnumerable<TreeViewItem> items, bool overrideExisting = false)
         {
             foreach (var item in items)
             {
                 var builderLibraryTreeItem = item.data;
                 if (builderLibraryTreeItem.type != null)
-                    s_ControlsTypeCache[builderLibraryTreeItem.type] = builderLibraryTreeItem;
+                {
+                    if (!s_StandardControls.Contains(builderLibraryTreeItem.type.FullName) || overrideExisting)
+                        s_ControlsTypeCache[builderLibraryTreeItem.type] = builderLibraryTreeItem;
+                }
 
                 if (item.hasChildren)
-                    UpdateControlsTypeCache(item.children);
+                    UpdateControlsTypeCache(item.children, overrideExisting);
             }
+        }
+
+        internal static void UnregisterProcessors()
+        {
+            BuilderAssetModificationProcessor.Unregister(s_AssetModificationProcessor);
+            BuilderAssetPostprocessor.Unregister(s_AssetPostProcessor);
         }
     }
 }

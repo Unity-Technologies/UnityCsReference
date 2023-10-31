@@ -592,12 +592,14 @@ namespace UnityEditor.UIElements.Bindings
 
             public SerializedPropertyType originalPropType;
             public int propertyHash;
+            public string propertyPath;
 
             public TrackedValue(SerializedProperty property, Action<object, SerializedProperty> changeCB, Action<object, SerializedProperty> updateCB)
             {
                 contentHash = property.contentHash;
                 originalPropType = property.propertyType;
                 propertyHash = property.hashCodeForPropertyPath;
+                propertyPath = property.propertyPath;
                 onChangeCallback = changeCB;
                 onUpdateCallback = updateCB;
             }
@@ -677,12 +679,52 @@ namespace UnityEditor.UIElements.Bindings
                 }
             }
 
+            private HashSet<int> unvisitedProperties = new HashSet<int>();
+            public void BeginUpdate()
+            {
+                unvisitedProperties.Clear();
+                var keys = m_TrackedValues.Keys;
+                foreach (var i in keys)
+                {
+                    unvisitedProperties.Add(i);
+                }
+            }
+
+            public void EndUpdate(SerializedObjectBindingContext context, List<(object, SerializedProperty, Action<object, SerializedProperty>)> pendingCallbacks)
+            {
+                // We must check the un-visited properties.
+                // This can happen when objects serialized with SerializedReference are present multiple times and we
+                // happen to track the repeated occurrence instead of the first one. We then must go the slow way of
+                // finding the property iterator and comparing the values there.
+                foreach (var hash in unvisitedProperties)
+                {
+                    if (m_TrackedValues.TryGetValue(hash, out var values))
+                    {
+                        if (values.Count > 0)
+                        {
+                            var propertyPath = values[0].propertyPath;
+
+                            var currentProperty = context.serializedObject.FindProperty(propertyPath);
+
+                            if(currentProperty != null)
+                            {
+                                for (int i = 0; i < values.Count; ++i)
+                                {
+                                    values[i].Update(context, currentProperty, pendingCallbacks);
+                                }
+                            }
+                        }
+                    }
+                }
+                unvisitedProperties.Clear();
+            }
             public void Update(SerializedObjectBindingContext context, SerializedProperty currentProperty, List<(object, SerializedProperty, Action<object, SerializedProperty>)> pendingCallbacks)
             {
                 var hash = currentProperty.hashCodeForPropertyPath;
 
                 if (m_TrackedValues.TryGetValue(hash, out var values))
                 {
+                    unvisitedProperties.Remove(hash);
                     for (int i = 0; i < values.Count; ++i)
                     {
                         values[i].Update(context, currentProperty, pendingCallbacks);
@@ -776,6 +818,7 @@ namespace UnityEditor.UIElements.Bindings
 
             visited.Clear();
             {
+                m_ValueTracker.BeginUpdate();
                 var visitChild = true;
                 while (iterator.Next(visitChild))
                 {
@@ -804,6 +847,7 @@ namespace UnityEditor.UIElements.Bindings
 
                     m_ValueTracker.Update(this, iterator, m_PendingCallbacks);
                 }
+                m_ValueTracker.EndUpdate(this, m_PendingCallbacks);
             }
 
             // We batch the change callbacks after updating the tracked properties as its possible
@@ -1199,17 +1243,28 @@ namespace UnityEditor.UIElements.Bindings
         public object dataSource => this;
         public PropertyPath dataSourcePath => default;
 
-        public long GetViewHashCode()
+        private bool IsBindingContextUninitialized()
         {
             if (null == bindingContext)
-                return -1;
+                return true;
 
             if (null == bindingContext.serializedObject)
+                return true;
+            return false;
+        }
+
+        public long GetViewHashCode()
+        {
+            if (IsBindingContextUninitialized())
                 return -1;
 
             var element = boundElement as VisualElement;
             if (null != element)
                 bindingContext.UpdateIfNecessary(element);
+
+            // this can be set back to null on update
+            if (IsBindingContextUninitialized())
+                return -1;
 
             return bindingContext.serializedObject.objectVersion;
         }

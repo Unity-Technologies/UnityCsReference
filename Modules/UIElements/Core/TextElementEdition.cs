@@ -258,6 +258,7 @@ namespace UnityEngine.UIElements
 
         void ProcessMenuCommand(string command)
         {
+            Focus();
             using (ExecuteCommandEvent evt = ExecuteCommandEvent.GetPooled(command))
             {
                 evt.elementTarget = this;

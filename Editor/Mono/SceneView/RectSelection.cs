@@ -89,7 +89,9 @@ namespace UnityEditor
 
         public void OnRectSelection(ShortcutArguments args, SelectionType selectionType, SceneView view)
         {
-            if (args.stage == ShortcutStage.Begin && GUIUtility.hotControl == 0)
+            // Validating that the hotControl is either equal to 0 or k_RectSelectionID allows to only start the rect selection
+            // when no other tool overrides the shortcut key and to change modifiers while rect selecting.
+            if (args.stage == ShortcutStage.Begin && (GUIUtility.hotControl == 0 || GUIUtility.hotControl == k_RectSelectionID))
             {
                 m_CurrentSelectionType = selectionType;
                 StartRectSelection(view);
@@ -269,6 +271,8 @@ namespace UnityEditor
                     {
                         CompleteRectSelection();
 
+                        GUIUtility.hotControl = 0;
+
                         // Set the current selection to the previous selection.
                         Selection.objects = m_SelectionStart;
 
@@ -318,14 +322,16 @@ namespace UnityEditor
         void HandleOnMouseUp()
         {
             if (GUIUtility.hotControl == k_RectSelectionID)
+            {
                 m_IsNearestControl = false;
+                GUIUtility.hotControl = 0;
+            }
         }
 
         void CompleteRectSelection()
         {
             ActiveEditorTracker.delayFlushDirtyRebuild = false;
             ActiveEditorTracker.RebuildAllIfNecessary();
-            GUIUtility.hotControl = 0;
             rectSelectionFinished();
         }
 

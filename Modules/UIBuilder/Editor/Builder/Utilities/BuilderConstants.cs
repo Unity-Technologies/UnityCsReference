@@ -219,6 +219,7 @@ namespace Unity.UI.Builder
         public static readonly string UnresolvedValue = "Unresolved";
         public static readonly string HeightIntFieldValueCannotBeNegativeMessage = "Please enter a positive number. Non-positive numbers will default to 1.";
         public static readonly string UnnamedValue = "<No Name>";
+        public static readonly string ManualUIBuilderUrl = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/UIBuilder.html";
 
         // Tooltip Messages
         public static readonly string FieldStatusIndicatorDefaultTooltip = "Default Value";
@@ -350,6 +351,9 @@ namespace Unity.UI.Builder
             {"word-spacing", "Increases or decreases the space between words."}
         };
 
+        internal const string PixelPercentageInitialValue = "Enter a value as a pixel, percentage, or initial.";
+        internal const string PixelOrInitialValue = "Enter a value as a pixel or initial.";
+
         public static readonly Dictionary<string, string> InspectorStylePropertiesValuesTooltipsDictionary =
             new Dictionary<string, string>
             {
@@ -419,10 +423,23 @@ namespace Unity.UI.Builder
                 {$"text-shadow{FieldTooltipDictionarySeparator}color", "Select color to use for text shadow. X or Y offset must be set to be visible."},
                 {$"text-shadow{FieldTooltipDictionarySeparator}blur-radius", "Strength of blur effect to be applied to text shadow."},
                 {$"ColorField{FieldTooltipDictionarySeparator}", "Choose from a color swatch, change the alpha from zero to see the result."},
-                {$"IntegerField{FieldTooltipDictionarySeparator}", "Enter a value as a pixel, percentage, or initial."},
-                {$"DimensionStyleField{FieldTooltipDictionarySeparator}", "Enter a value as a pixel, percentage, or initial."},
+                {$"IntegerField{FieldTooltipDictionarySeparator}", PixelPercentageInitialValue},
+                {$"DimensionStyleField{FieldTooltipDictionarySeparator}", PixelPercentageInitialValue},
+                {$"DimensionStyleField{FieldTooltipDictionarySeparator}border-top-width", PixelOrInitialValue},
+                {$"DimensionStyleField{FieldTooltipDictionarySeparator}border-right-width", PixelOrInitialValue},
+                {$"DimensionStyleField{FieldTooltipDictionarySeparator}border-bottom-width", PixelOrInitialValue},
+                {$"DimensionStyleField{FieldTooltipDictionarySeparator}border-left-width", PixelOrInitialValue},
+                {$"DimensionStyleField{FieldTooltipDictionarySeparator}-unity-text-outline-width", PixelOrInitialValue},
+                {$"DimensionStyleField{FieldTooltipDictionarySeparator}letter-spacing", PixelOrInitialValue},
+                {$"DimensionStyleField{FieldTooltipDictionarySeparator}word-spacing", PixelOrInitialValue},
+                {$"DimensionStyleField{FieldTooltipDictionarySeparator}-unity-paragraph-spacing", PixelOrInitialValue},
+                {$"DimensionStyleField{FieldTooltipDictionarySeparator}-unity-slice-scale", PixelOrInitialValue},
                 {$"PercentSlider{FieldTooltipDictionarySeparator}", "Drag the slider to select a percentage between 0% and 100%."},
-                {$"IntegerStyleField{FieldTooltipDictionarySeparator}", "Enter a value as a pixel, percentage, or initial."},
+                {$"IntegerStyleField{FieldTooltipDictionarySeparator}", PixelPercentageInitialValue},
+                {$"IntegerStyleField{FieldTooltipDictionarySeparator}-unity-slice-top", PixelOrInitialValue},
+                {$"IntegerStyleField{FieldTooltipDictionarySeparator}-unity-slice-left", PixelOrInitialValue},
+                {$"IntegerStyleField{FieldTooltipDictionarySeparator}-unity-slice-bottom", PixelOrInitialValue},
+                {$"IntegerStyleField{FieldTooltipDictionarySeparator}-unity-slice-right", PixelOrInitialValue},
                 {$"ObjectField{FieldTooltipDictionarySeparator}", "Assign an object by either dragging and dropping it, or by selecting it with the Object Picker."},
             };
 

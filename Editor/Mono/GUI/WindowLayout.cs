@@ -453,12 +453,14 @@ namespace UnityEditor
                 if (LoadWindowLayout(layout, layout != ProjectLayoutPath, false, keepMainWindow, false))
                     return;
 
-            // step 6
-            var defaultLayout = Path.Combine(layoutsDefaultModePreferencesPath, kDefaultLayoutName);
+            // It is not mandatory that modes define a layout. In that case, skip right to the default layout.
+            if (!string.IsNullOrEmpty(ModeService.GetDefaultModeLayout())
+                && LoadWindowLayout(ModeService.GetDefaultModeLayout(), true, false, keepMainWindow, false))
+                return;
 
             // If all else fails, load the default layout that ships with the editor. If that fails, prompt the user to
             // restore the default layouts.
-            if (!LoadWindowLayout(defaultLayout, true, false, keepMainWindow, false))
+            if (!LoadWindowLayout(GetDefaultLayoutPath(), true, false, keepMainWindow, false))
             {
                 int option = 0;
 

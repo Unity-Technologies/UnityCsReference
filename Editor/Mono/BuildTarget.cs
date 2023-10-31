@@ -140,7 +140,7 @@ namespace UnityEditor
 
         QNX = 46,
 
-        Bratwurst = 47,
+        VisionOS = 47,
 
         // obsolete identifiers. We're using different values so that ToString() works.
         [System.Obsolete("Use iOS instead (UnityUpgradable) -> iOS", true)]

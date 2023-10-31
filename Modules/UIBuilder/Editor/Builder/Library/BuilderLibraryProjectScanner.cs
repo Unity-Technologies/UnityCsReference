@@ -14,6 +14,7 @@ using UnityEditor.PackageManager;
 using UnityEditor.UIElements;
 using UnityEditor.Utils;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using BuilderLibraryItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
@@ -53,6 +54,8 @@ namespace Unity.UI.Builder
         }
         static readonly List<string> s_NameSpacesToAvoid = new List<string> { "Unity", "UnityEngine", "UnityEditor" };
         readonly SearchFilter m_SearchFilter;
+        private static IEnumerable<HierarchyProperty> m_Assets;
+        private static readonly Dictionary<string, string> m_AssetIDAndPathPair = new Dictionary<string, string>();
 
         public BuilderLibraryProjectScanner()
         {
@@ -393,13 +396,15 @@ namespace Unity.UI.Builder
 
         public int GetAllProjectUxmlFilePathsHash()
         {
-            var assets = AssetDatabase.FindAllAssets(m_SearchFilter);
+            if (m_Assets == null)
+                return 0;
 
             var sb = new StringBuilder();
-            foreach (var asset in assets)
+            foreach (var asset in m_Assets)
             {
-                var assetPath = AssetDatabase.GetAssetPath(asset.instanceID);
-                sb.Append(assetPath);
+                m_AssetIDAndPathPair.TryGetValue(asset.guid, out var assetPath);
+                if (!string.IsNullOrEmpty(assetPath))
+                    sb.Append(assetPath);
             }
 
             var pathsStr = sb.ToString();
@@ -408,11 +413,16 @@ namespace Unity.UI.Builder
 
         public void ImportUxmlFromProject(BuilderLibraryItem projectCategory, bool includePackages)
         {
+            if (m_Assets == null)
+                return;
+
             var categoryStack = new List<BuilderLibraryItem>();
-            var assets = AssetDatabase.FindAllAssets(m_SearchFilter);
-            foreach (var asset in assets)
+            foreach (var asset in m_Assets)
             {
-                var assetPath = AssetDatabase.GetAssetPath(asset.instanceID);
+                m_AssetIDAndPathPair.TryGetValue(asset.guid, out var assetPath);
+                if (string.IsNullOrEmpty(assetPath))
+                    continue;
+
                 var prettyPath = assetPath;
                 prettyPath = Path.GetDirectoryName(prettyPath);
                 prettyPath = prettyPath.ConvertSeparatorsToUnity();
@@ -465,6 +475,36 @@ namespace Unity.UI.Builder
                     projectCategory.AddChild(newItem);
                 else
                     categoryStack.Last().AddChild(newItem);
+            }
+        }
+
+        internal void FindAssets()
+        {
+            m_Assets = AssetDatabase.FindAllAssets(m_SearchFilter);
+            using var pooledHashSet = HashSetPool<string>.Get(out var assetGuids);
+            foreach (var property in m_Assets)
+            {
+                m_AssetIDAndPathPair[property.guid] = AssetDatabase.GetAssetPath(property.instanceID);
+                assetGuids.Add(property.guid);
+            }
+
+            // If an asset is deleted, we need to remove it from the cache.
+            if (m_AssetIDAndPathPair.Count > m_Assets.Count())
+            {
+                var keyToRemove = "";
+                var removeKey = false;
+                foreach (var key in m_AssetIDAndPathPair.Keys)
+                {
+                   if (assetGuids.Contains(key))
+                       continue;
+
+                   keyToRemove = key;
+                   removeKey = true;
+                   break;
+                }
+
+                if (removeKey)
+                    m_AssetIDAndPathPair.Remove(keyToRemove);
             }
         }
     }

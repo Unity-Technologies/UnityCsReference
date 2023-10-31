@@ -50,6 +50,7 @@ sealed class AudioContainerElement : Object
 }
 
 [NativeHeader("Modules/Audio/Public/AudioRandomContainer.h")]
+[ExcludeFromPreset]
 sealed class AudioRandomContainer : AudioResource
 {
     internal enum ChangeEventType

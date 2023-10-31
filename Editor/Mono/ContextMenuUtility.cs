@@ -196,7 +196,7 @@ namespace UnityEditor.Actions
             if (dropdownMenu.MenuItems().Count == 0)
                 AddAction(dropdownMenu, "No Actions for this Context", null, false);
 
-            dropdownMenu.DoDisplayEditorMenu(new Rect(Event.current.mousePosition, Vector2.zero));
+            dropdownMenu.DisplayEditorMenu(new Rect(Event.current.mousePosition, Vector2.zero));
         }
 
         static T[] ToArray<T>(IEnumerable<T> enumerable) where T : Object

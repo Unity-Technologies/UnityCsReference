@@ -3,25 +3,34 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Unity.Collections;
 using UnityEngine;
+using UnityEngine.Rendering;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
     internal class ScriptAttributeUtility
     {
-        private struct DrawerKeySet
+        readonly struct CustomPropertyDrawerContainer
         {
-            public Type drawer;
-            public Type type;
+            public readonly Type drawerType;
+            public readonly Type[] supportedRenderPipelineTypes;
+            public readonly bool editorForChildClasses;
+
+            public CustomPropertyDrawerContainer(Type drawerType, Type[] supportedRenderPipelineTypes, bool editorForChildClasses)
+            {
+                this.drawerType = drawerType;
+                this.supportedRenderPipelineTypes = supportedRenderPipelineTypes;
+                this.editorForChildClasses = editorForChildClasses;
+            }
         }
 
         // Internal API members
         internal static Stack<PropertyDrawer> s_DrawerStack = new Stack<PropertyDrawer>();
-        private static Dictionary<Type, DrawerKeySet> s_DrawerTypeForType = null;
         private static Dictionary<string, List<PropertyAttribute>> s_BuiltinAttributes = null;
         static Dictionary<Type, List<FieldInfo>> s_AutoLoadProperties;
         private static PropertyHandler s_SharedNullHandler = new PropertyHandler();
@@ -30,13 +39,38 @@ namespace UnityEditor
         private static PropertyHandlerCache s_GlobalCache = new PropertyHandlerCache();
         private static PropertyHandlerCache s_CurrentCache = null;
 
-        internal static PropertyHandlerCache propertyHandlerCache
+        static readonly Lazy<Dictionary<Type, CustomPropertyDrawerContainer[]>> k_DrawerTypeForType = new(BuildDrawerTypeForTypeDictionary);
+        static readonly Dictionary<Type, Type[]> k_SupportedRenderPipelinesForSerializedObject = new();
+
+        static readonly Comparer<CustomPropertyDrawerContainer> k_RenderPipelineTypeComparer
+            = Comparer<CustomPropertyDrawerContainer>.Create((c1, c2)
+                =>
+            {
+                var firstRenderPipelineByFullName1 = c1.supportedRenderPipelineTypes?.FirstOrDefaultSorted();
+                var firstRenderPipelineByFullName2 = c2.supportedRenderPipelineTypes?.FirstOrDefaultSorted();
+                return string.Compare(firstRenderPipelineByFullName1?.FullName, firstRenderPipelineByFullName2?.FullName, StringComparison.Ordinal);
+            });
+
+        static Type[] s_CurrentRenderPipelineAssetTypeArray;
+
+        static Type[] currentRenderPipelineAssetTypeArray
         {
             get
             {
-                return s_CurrentCache ?? s_GlobalCache;
+                if (s_CurrentRenderPipelineAssetTypeArray != null)
+                    return s_CurrentRenderPipelineAssetTypeArray;
+
+                s_CurrentRenderPipelineAssetTypeArray = new[] { GraphicsSettings.currentRenderPipelineAssetType };
+                RenderPipelineManager.activeRenderPipelineAssetChanged += (_, __)
+                    => s_CurrentRenderPipelineAssetTypeArray = new[] { GraphicsSettings.currentRenderPipelineAssetType };
+                return s_CurrentRenderPipelineAssetTypeArray;
             }
-            set { s_CurrentCache = value; }
+        }
+
+        internal static PropertyHandlerCache propertyHandlerCache
+        {
+            get => s_CurrentCache ?? s_GlobalCache;
+            set => s_CurrentCache = value;
         }
 
         internal static void ClearGlobalCache()
@@ -66,55 +100,50 @@ namespace UnityEditor
             if (property.serializedObject.targetObject == null)
                 return null;
             Type t = property.serializedObject.targetObject.GetType();
-            if (t == null)
-                return null;
             string attrKey = t.Name + "_" + property.propertyPath;
             List<PropertyAttribute> attr = null;
             s_BuiltinAttributes.TryGetValue(attrKey, out attr);
             return attr;
         }
 
-        // Called on demand
-        private static void BuildDrawerTypeForTypeDictionary()
+        // Build a dictionary when k_DrawerTypeForType is first accessed
+        static Dictionary<Type, CustomPropertyDrawerContainer[]> BuildDrawerTypeForTypeDictionary()
         {
-            s_DrawerTypeForType = new Dictionary<Type, DrawerKeySet>();
-
-            foreach (var type in TypeCache.GetTypesDerivedFrom<GUIDrawer>())
+            var tempDictionary = new Dictionary<Type, List<CustomPropertyDrawerContainer>>();
+            foreach (var drawerType in TypeCache.GetTypesDerivedFrom<GUIDrawer>())
             {
                 //Debug.Log("Drawer: " + type);
-                object[] attrs = type.GetCustomAttributes(typeof(CustomPropertyDrawer), true);
-                foreach (CustomPropertyDrawer editor in attrs)
+                var customPropertyDrawers = drawerType.GetCustomAttributes<CustomPropertyDrawer>(true);
+                var supportedOnRenderPipelineAttribute = drawerType.GetCustomAttribute<SupportedOnRenderPipelineAttribute>();
+                foreach (CustomPropertyDrawer drawer in customPropertyDrawers)
                 {
-                    //Debug.Log("Base type: " + editor.type);
-                    s_DrawerTypeForType[editor.m_Type] = new DrawerKeySet()
-                    {
-                        drawer = type,
-                        type = editor.m_Type
-                    };
+                    var propertyType = drawer.m_Type;
+                    if (!tempDictionary.ContainsKey(propertyType))
+                        tempDictionary.Add(propertyType, new List<CustomPropertyDrawerContainer>());
 
-                    if (!editor.m_UseForChildren)
-                        continue;
-
-                    var candidateTypes = TypeCache.GetTypesDerivedFrom(editor.m_Type);
-                    foreach (var candidateType in candidateTypes)
-                    {
-                        //Debug.Log("Candidate Type: "+ candidateType);
-                        if (s_DrawerTypeForType.ContainsKey(candidateType)
-                            && (editor.m_Type.IsAssignableFrom(s_DrawerTypeForType[candidateType].type)))
-                        {
-                            //  Debug.Log("skipping");
-                            continue;
-                        }
-
-                        //Debug.Log("Setting");
-                        s_DrawerTypeForType[candidateType] = new DrawerKeySet()
-                        {
-                            drawer = type,
-                            type = editor.m_Type
-                        };
-                    }
+                    tempDictionary[propertyType].AddSorted(new CustomPropertyDrawerContainer(drawerType, supportedOnRenderPipelineAttribute?.renderPipelineTypes, drawer.m_UseForChildren),
+                        k_RenderPipelineTypeComparer);
                 }
             }
+
+            var dictionaryWithArrays = new Dictionary<Type, CustomPropertyDrawerContainer[]>();
+            foreach (var kvp in tempDictionary)
+                dictionaryWithArrays.Add(kvp.Key, kvp.Value.ToArray());
+            return dictionaryWithArrays;
+        }
+
+        static bool IsAppropriateDrawer(Type currentType, Type propertyType, CustomPropertyDrawerContainer customPropertyDrawerContainer, bool skipCheckEditorForChildClasses)
+        {
+            if (currentType == propertyType)
+                return true;
+
+            // Check for drawers with editorForChildClasses set to true and special case for managed references.
+            // The custom property drawers for those are defined with 'useForChildren=false'
+            // (otherwise the dynamic type is not taking into account in the custom property
+            // drawer resolution) so even if 's_DrawerTypeForType' is built (based on static types)
+            // we have to check base types for custom property drawers manually.
+            // Managed references with no drawers should properly try to fallback
+            return (customPropertyDrawerContainer.editorForChildClasses || skipCheckEditorForChildClasses);
         }
 
         /// <summary>
@@ -124,24 +153,85 @@ namespace UnityEditor
         /// looked up is only what is in the cache, which might not play well with
         /// Managed References types (where the dynamic type matters).
         /// </summary>
-        /// <param name="type"></param>
+        /// <param name="type">Find a drawer for provided Type</param>
+        /// <param name="renderPipelineAssetTypes">This can be either GraphicsSettings.currentRenderPipelineAssetType or type from SupportedOnRenderPipeline attribute for serializedObject</param>
+        /// <param name="isPropertyTypeIsManagedReference">Specify if it's known that we deal with ManagedReference property</param>
         /// <returns></returns>
-        internal static Type GetDrawerTypeForType(Type type)
+        internal static Type GetDrawerTypeForType(Type type, Type[] renderPipelineAssetTypes, bool isPropertyTypeIsManagedReference = false)
         {
-            if (s_DrawerTypeForType == null)
-                BuildDrawerTypeForTypeDictionary();
+            var currentRenderPipelineAssetType = GraphicsSettings.currentRenderPipelineAssetType;
+            for (var currentType = type; currentType != null; currentType = currentType.BaseType)
+            {
+                if (k_DrawerTypeForType.Value.TryGetValue(currentType, out var drawerTypes))
+                {
+                    var result = TryFindDrawers(renderPipelineAssetTypes, drawerTypes, currentRenderPipelineAssetType, out var customPropertyDrawerContainer);
+                    if (result && IsAppropriateDrawer(currentType, type, customPropertyDrawerContainer, isPropertyTypeIsManagedReference))
+                        return customPropertyDrawerContainer.drawerType;
+                }
 
-            DrawerKeySet drawerType;
-            s_DrawerTypeForType.TryGetValue(type, out drawerType);
-            if (drawerType.drawer != null)
-                return drawerType.drawer;
+                // check for base generic versions of the drawers
+                if (currentType.IsGenericType && k_DrawerTypeForType.Value.TryGetValue(currentType.GetGenericTypeDefinition(), out var genericDrawerTypes))
+                {
+                    var result = TryFindDrawers(renderPipelineAssetTypes, genericDrawerTypes, currentRenderPipelineAssetType, out var customPropertyDrawerContainer);
+                    if (result && IsAppropriateDrawer(currentType, type, customPropertyDrawerContainer, isPropertyTypeIsManagedReference))
+                        return customPropertyDrawerContainer.drawerType;
+                }
+            }
 
-            //
-            // now check for base generic versions of the drawers...
-            if (type.IsGenericType)
-                s_DrawerTypeForType.TryGetValue(type.GetGenericTypeDefinition(), out drawerType);
+            return null;
+        }
 
-            return drawerType.drawer;
+        static bool TryFindDrawers(Type[] renderPipelineAssetTypes, CustomPropertyDrawerContainer[] drawerTypes, Type currentRenderPipelineAssetType,
+            out CustomPropertyDrawerContainer customPropertyDrawerContainer)
+        {
+            CustomPropertyDrawerContainer? supportedOnRenderPipelineDrawer = null;
+            CustomPropertyDrawerContainer? supportedByBaseRenderPipelineDrawer = null;
+            CustomPropertyDrawerContainer? regularDrawer = null;
+
+            for (var i = 0; i < drawerTypes.Length; i++)
+            {
+                var drawerContainer = drawerTypes[i];
+                if (drawerContainer.supportedRenderPipelineTypes == null)
+                {
+                    regularDrawer ??= drawerContainer;
+                    continue;
+                }
+
+                if (renderPipelineAssetTypes == null)
+                    continue;
+
+                for (int j = 0; j < renderPipelineAssetTypes.Length; j++)
+                {
+                    var renderPipelineAssetType = renderPipelineAssetTypes[j];
+                    var supportedMode = SupportedOnRenderPipelineAttribute.GetSupportedMode(drawerContainer.supportedRenderPipelineTypes, renderPipelineAssetType);
+                    switch (supportedMode)
+                    {
+                        case SupportedOnRenderPipelineAttribute.SupportedMode.Supported:
+
+                            if (supportedOnRenderPipelineDrawer == null || renderPipelineAssetType == currentRenderPipelineAssetType)
+                                supportedOnRenderPipelineDrawer = drawerContainer;
+                            break;
+                        case SupportedOnRenderPipelineAttribute.SupportedMode.SupportedByBaseClass:
+                            supportedByBaseRenderPipelineDrawer ??= drawerContainer;
+                            break;
+                    }
+                }
+            }
+
+            if (supportedOnRenderPipelineDrawer.HasValue)
+            {
+                customPropertyDrawerContainer = supportedOnRenderPipelineDrawer.Value;
+                return true;
+            }
+
+            if (supportedByBaseRenderPipelineDrawer.HasValue)
+            {
+                customPropertyDrawerContainer = supportedByBaseRenderPipelineDrawer.Value;
+                return true;
+            }
+
+            customPropertyDrawerContainer = regularDrawer ?? default;
+            return regularDrawer.HasValue;
         }
 
         /// <summary>
@@ -154,34 +244,17 @@ namespace UnityEditor
         /// <returns>The custom property drawer type or 'null' if not found.</returns>
         internal static Type GetDrawerTypeForPropertyAndType(SerializedProperty property, Type type)
         {
-            // As a side effect this also builds the drawer cache dict
-            var staticDrawerType = GetDrawerTypeForType(type);
-            if (staticDrawerType != null)
-                return staticDrawerType;
-
-            // Special case for managed references.
-            // The custom property drawers for those are defined with 'useForChildren=false'
-            // (otherwise the dynamic type is not taking into account in the custom property
-            // drawer resolution) so even if 's_DrawerTypeForType' is built (based on static types)
-            // we have to check base types for custom property drawers manually.
-            // Managed references with no drawers should properly try to fallback
-            if (property.propertyType == SerializedPropertyType.ManagedReference)
+            var serializedObject = property.serializedObject;
+            var serializedObjectType = serializedObject.targetObject.GetType();
+            if (!k_SupportedRenderPipelinesForSerializedObject.TryGetValue(serializedObjectType, out var supportedOnRenderPipelineTypes))
             {
-                DrawerKeySet drawerTypes;
-
-                FieldInfo foundField = null;
-                for (Type currentType = type; foundField == null && currentType != null; currentType = currentType.BaseType)
-                {
-                    s_DrawerTypeForType.TryGetValue(currentType, out drawerTypes);
-                    if (drawerTypes.drawer != null)
-                    {
-                        s_DrawerTypeForType.Add(type, drawerTypes);
-                        return drawerTypes.drawer;
-                    }
-                }
+                var supportedOn = serializedObjectType.GetCustomAttribute<SupportedOnRenderPipelineAttribute>();
+                supportedOnRenderPipelineTypes = supportedOn?.renderPipelineTypes;
+                k_SupportedRenderPipelinesForSerializedObject.Add(serializedObjectType, supportedOnRenderPipelineTypes);
             }
 
-            return null;
+            var renderPipelineAssetTypes = supportedOnRenderPipelineTypes ?? (GraphicsSettings.isScriptableRenderPipelineEnabled ? currentRenderPipelineAssetTypeArray : null);
+            return GetDrawerTypeForType(type, renderPipelineAssetTypes, property.propertyType == SerializedPropertyType.ManagedReference);
         }
 
         private static List<PropertyAttribute> GetFieldAttributes(FieldInfo field)
@@ -189,11 +262,18 @@ namespace UnityEditor
             if (field == null)
                 return null;
 
-            object[] attrs = field.GetCustomAttributes(typeof(PropertyAttribute), true);
-            if (attrs != null && attrs.Length > 0)
-                return new List<PropertyAttribute>(attrs.Select(e => e as PropertyAttribute).OrderBy(e => e.order));
+            var attrs = field.GetCustomAttributes<PropertyAttribute>(true);
+            Comparer<PropertyAttribute> comparer = null;
+            List<PropertyAttribute> propertyAttributeList = null;
+            foreach (PropertyAttribute attribute in attrs)
+            {
+                propertyAttributeList ??= new List<PropertyAttribute>();
+                comparer ??= Comparer<PropertyAttribute>.Create((p1, p2) => p1.order.CompareTo(p2.order));
 
-            return null;
+                propertyAttributeList.AddSorted(attribute, comparer);
+            }
+
+            return propertyAttributeList;
         }
 
         /// <summary>
@@ -252,17 +332,15 @@ namespace UnityEditor
         {
             var fieldInfo = GetFieldInfoAndStaticTypeFromProperty(property, out type);
             if (fieldInfo == null)
-                return fieldInfo;
+                return null;
 
             // Managed references are a special case, we need to override the static type
             // returned by 'GetFieldInfoFromPropertyPath' for custom property handler matching
             // by the dynamic type of the instance.
             if (property.propertyType == SerializedPropertyType.ManagedReference)
             {
-                Type managedReferenceInstanceType;
-
                 // Try to get a Type instance for the managed reference
-                if (GetTypeFromManagedReferenceFullTypeName(property.managedReferenceFullTypename, out managedReferenceInstanceType))
+                if (GetTypeFromManagedReferenceFullTypeName(property.managedReferenceFullTypename, out var managedReferenceInstanceType))
                 {
                     type = managedReferenceInstanceType;
                 }
@@ -333,7 +411,7 @@ namespace UnityEditor
             public override bool Equals(object obj)
             {
                 if (ReferenceEquals(null, obj)) return false;
-                return obj is Cache && Equals((Cache)obj);
+                return obj is Cache cache && Equals(cache);
             }
 
             public override int GetHashCode()
@@ -357,8 +435,7 @@ namespace UnityEditor
         {
             Cache cache = new Cache(host, path);
 
-            FieldInfoCache fieldInfoCache = null;
-            if (s_FieldInfoFromPropertyPathCache.TryGetValue(cache, out fieldInfoCache))
+            if (s_FieldInfoFromPropertyPathCache.TryGetValue(cache, out var fieldInfoCache))
             {
                 type = fieldInfoCache?.type;
                 return fieldInfoCache?.fieldInfo;
@@ -433,7 +510,7 @@ namespace UnityEditor
             FieldInfo field = null;
 
             // Determine if SerializedObject target is a script or a builtin type
-            UnityEngine.Object target = property.serializedObject.targetObject;
+            Object target = property.serializedObject.targetObject;
             if (NativeClassExtensionUtilities.ExtendsANativeType(target))
             {
                 // For scripts, use reflection to get FieldInfo for the member the property represents
@@ -449,8 +526,7 @@ namespace UnityEditor
                 if (s_BuiltinAttributes == null)
                     PopulateBuiltinAttributes();
 
-                if (attributes == null)
-                    attributes = GetBuiltinAttributes(property);
+                attributes = GetBuiltinAttributes(property);
             }
 
             handler = s_NextHandler;
@@ -489,12 +565,15 @@ namespace UnityEditor
             if (s_AutoLoadProperties == null)
                 s_AutoLoadProperties = new Dictionary<Type, List<FieldInfo>>();
 
-            List<FieldInfo> list;
-            if (!s_AutoLoadProperties.TryGetValue(type, out list))
+            if (!s_AutoLoadProperties.TryGetValue(type, out var list))
             {
-                list = type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)
-                    .Where(f => f.FieldType == typeof(SerializedProperty) && f.IsDefined(typeof(CachePropertyAttribute), false))
-                    .ToList();
+                list = new List<FieldInfo>();
+                foreach (var field in type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance))
+                {
+                    if (field.FieldType == typeof(SerializedProperty) && field.IsDefined(typeof(CachePropertyAttribute), false))
+                        list.Add(field);
+                }
+
                 s_AutoLoadProperties.Add(type, list);
             }
 

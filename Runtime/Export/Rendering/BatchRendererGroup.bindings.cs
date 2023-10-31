@@ -154,6 +154,15 @@ namespace UnityEngine.Rendering
         }
     }
 
+    // Match with BatchDrawCommandType in C++ side
+    public enum BatchDrawCommandType : int
+    {
+        Direct = 0,
+        Indirect = 1,
+        Procedural = 2,
+        ProceduralIndirect = 3,
+    }
+
     // Match with BatchDrawCommandFlags in C++ side
     [Flags]
     public enum BatchDrawCommandFlags : int
@@ -255,15 +264,77 @@ namespace UnityEngine.Rendering
     [StructLayout(LayoutKind.Sequential)]
     public struct BatchDrawCommand
     {
-        public uint visibleOffset;
-        public uint visibleCount;
+        public BatchDrawCommandFlags flags; // includes flipWinding and other dynamic flags
         public BatchID batchID;
         public BatchMaterialID materialID;
+        public ushort splitVisibilityMask;
+        private ushort unusedPadding1;
+        public int sortingPosition; // If HasSortingPosition is set, this points to a float3 in instanceSortingPositions. If not, it will be directly casted into float and used as the distance.
+        public uint visibleOffset;
+
+        public uint visibleCount;
         public BatchMeshID meshID;
         public ushort submeshIndex;
-        public ushort splitVisibilityMask;
+        private ushort unusedPadding2;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BatchDrawCommandIndirect
+    {
         public BatchDrawCommandFlags flags; // includes flipWinding and other dynamic flags
+        public BatchID batchID;
+        public BatchMaterialID materialID;
+        public ushort splitVisibilityMask;
+        private ushort unusedPadding1;
         public int sortingPosition; // If HasSortingPosition is set, this points to a float3 in instanceSortingPositions. If not, it will be directly casted into float and used as the distance.
+        public uint visibleOffset;
+
+        public BatchMeshID meshID;
+        public MeshTopology topology;
+        public GraphicsBufferHandle visibleInstancesBufferHandle;
+        public uint visibleInstancesBufferWindowOffset;
+        public uint visibleInstancesBufferWindowSizeBytes;
+        public GraphicsBufferHandle indirectArgsBufferHandle;
+        public uint indirectArgsBufferOffset;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BatchDrawCommandProcedural
+    {
+        public BatchDrawCommandFlags flags; // includes flipWinding and other dynamic flags
+        public BatchID batchID;
+        public BatchMaterialID materialID;
+        public ushort splitVisibilityMask;
+        private ushort unusedPadding1;
+        public int sortingPosition; // If HasSortingPosition is set, this points to a float3 in instanceSortingPositions. If not, it will be directly casted into float and used as the distance.
+        public uint visibleOffset;
+
+        public uint visibleCount;
+        public MeshTopology topology;
+        public GraphicsBufferHandle indexBufferHandle;
+        public uint baseVertex;
+        public uint indexOffsetBytes;
+        public uint elementCount;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BatchDrawCommandProceduralIndirect
+    {
+        public BatchDrawCommandFlags flags; // includes flipWinding and other dynamic flags
+        public BatchID batchID;
+        public BatchMaterialID materialID;
+        public ushort splitVisibilityMask;
+        private ushort unusedPadding1;
+        public int sortingPosition; // If HasSortingPosition is set, this points to a float3 in instanceSortingPositions. If not, it will be directly casted into float and used as the distance.
+        public uint visibleOffset;
+
+        public MeshTopology topology;
+        public GraphicsBufferHandle indexBufferHandle;
+        public GraphicsBufferHandle visibleInstancesBufferHandle;
+        public uint visibleInstancesBufferWindowOffset;
+        public uint visibleInstancesBufferWindowSizeBytes;
+        public GraphicsBufferHandle indirectArgsBufferHandle;
+        public uint indirectArgsBufferOffset;
     }
 
     // Match with BatchFilterSettings in C++ side
@@ -335,6 +406,8 @@ namespace UnityEngine.Rendering
     [StructLayout(LayoutKind.Sequential)]
     public struct BatchDrawRange
     {
+        // Specifies which array of commands this range indexes into.
+        public BatchDrawCommandType drawCommandsType;
         // The first BatchDrawCommand of this range is at this index in BatchCullingOutputDrawCommands.drawCommands
         public uint drawCommandsBegin;
         // How many BatchDrawCommand structs this range has. Can be 0 if there are no draws.
@@ -349,6 +422,12 @@ namespace UnityEngine.Rendering
         // TempJob allocated by C#, released by C++
         public BatchDrawCommand* drawCommands;
         // TempJob allocated by C#, released by C++
+        public BatchDrawCommandIndirect* indirectDrawCommands;
+        // TempJob allocated by C#, released by C++
+        public BatchDrawCommandProcedural* proceduralDrawCommands;
+        // TempJob allocated by C#, released by C++
+        public BatchDrawCommandProceduralIndirect* proceduralIndirectDrawCommands;
+        // TempJob allocated by C#, released by C++
         public int* visibleInstances;
         // TempJob allocated by C#, released by C++
         public BatchDrawRange* drawRanges;
@@ -357,6 +436,9 @@ namespace UnityEngine.Rendering
         // TempJob allocated by C#, released by C++
         public int* drawCommandPickingInstanceIDs;
         public int drawCommandCount;
+        public int indirectDrawCommandCount;
+        public int proceduralDrawCommandCount;
+        public int proceduralIndirectDrawCommandCount;
         public int visibleInstanceCount;
         public int drawRangeCount;
         public int instanceSortingPositionFloatCount;

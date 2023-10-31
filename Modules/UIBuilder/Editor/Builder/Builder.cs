@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Callbacks;
@@ -49,6 +50,8 @@ namespace Unity.UI.Builder
 
         internal override bool liveReloadPreferenceDefault => true;
         internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
+
+        readonly Action m_UnregisterBuilderLibraryContentProcessors = BuilderLibraryContent.UnregisterProcessors;
 
         public bool codePreviewVisible
         {
@@ -203,6 +206,7 @@ namespace Unity.UI.Builder
             m_MiddleSplitView.RegisterCallback<GeometryChangedEvent>(OnFirstDisplay);
 
             OnEnableAfterAllSerialization();
+            closing += m_UnregisterBuilderLibraryContentProcessors;
         }
 
         // Message received when we dock/undock the window.
@@ -299,6 +303,12 @@ namespace Unity.UI.Builder
             // Sometimes, the panel is not already set
             else
                 rootVisualElement.RegisterCallback<AttachToPanelEvent>(e => SetupPanel());
+        }
+
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+            closing -= m_UnregisterBuilderLibraryContentProcessors;
         }
 
         private void Update()

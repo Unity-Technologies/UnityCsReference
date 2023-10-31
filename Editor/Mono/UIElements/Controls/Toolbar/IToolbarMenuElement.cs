@@ -45,7 +45,7 @@ namespace UnityEditor.UIElements
                 // windows are stuck to the left side of the screen as well as our menus)
                 worldBound.x = 1f;
             }
-            tbe.menu.DoDisplayEditorMenu(worldBound);
+            tbe.menu.DisplayEditorMenu(worldBound);
         }
     }
 }
