@@ -40,6 +40,7 @@ namespace UnityEditor.Search
                 searchContext = CreateContextFromAttribute(searchContextAttribute)
             };
             obj.searchContext.runtimeContext = runtimeContext;
+            obj.AddToClassList(ObjectField.alignedFieldUssClassName);
 
             return obj;
         }

@@ -65,6 +65,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             public string Name;
             public AssemblyFlags Flags;
+
+            public static readonly TargetAssemblyInfo Unknown = new TargetAssemblyInfo { Flags = AssemblyFlags.None, Name = null };
         }
 
         public struct CustomScriptAssemblyAndReference
@@ -1369,6 +1371,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             var matchedAssembly = GetAssemblyGraphBuilder().Match(new []{path}, false);
+            if (matchedAssembly.Count == 0)
+            {
+                return TargetAssemblyInfo.Unknown;
+            }
 
             TargetAssembly targetAssembly;
             var scriptAssembly = matchedAssembly.Single().Key;
