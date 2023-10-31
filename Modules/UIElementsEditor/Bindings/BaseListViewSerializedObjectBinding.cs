@@ -305,12 +305,12 @@ namespace UnityEditor.UIElements.Bindings
 
             isReleased = true;
 
-            ClearView();
-
             ResetContext();
             m_DataList = null;
             m_ArraySize = null;
             m_ListViewArraySize = -1;
+
+            ClearView();
 
             ResetCachedValues();
             PoolRelease();

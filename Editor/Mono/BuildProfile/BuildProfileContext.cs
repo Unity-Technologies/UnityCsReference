@@ -9,6 +9,7 @@ using JetBrains.Annotations;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Build.Profile
@@ -274,6 +275,19 @@ namespace UnityEditor.Build.Profile
             // Only copy after adding to the build target -> classic profiles dictionary, so EditorUserBuildSettings
             // can access the classic profiles when copying the settings
             EditorUserBuildSettings.CopyToBuildProfile(buildProfile);
+
+            // Created profile can also be populated by settings on the managed side
+            string module = BuildTargetDiscovery.GetModuleNameForBuildTarget(buildProfile.buildTarget);
+            var extension = ModuleManager.GetBuildProfileExtension(module);
+            if (extension != null)
+            {
+                extension.CopyPlatformSettingsToBuildProfile(buildProfile.platformBuildProfile);
+            }
+            else
+            {
+                Debug.LogError($"Build profile extension is null for module {module} and build profile {buildProfile.name}");
+            }
+
             SaveBuildProfileInProject(buildProfile);
 
             return buildProfile;

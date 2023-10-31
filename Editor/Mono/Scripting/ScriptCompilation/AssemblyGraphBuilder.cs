@@ -142,10 +142,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 currentMatchingAssemblyDefinition =
                     CheckAndUpdateEditorSpecialFolder(currentMatchingAssemblyDefinition, sourceSpan, matchedBy);
 
-                if (logWarningOnMiss && currentMatchingAssemblyDefinition == null)
+                if (currentMatchingAssemblyDefinition == null)
                 {
-                    Console.WriteLine(
-                        $"Script '{source}' will not be compiled because it exists outside the Assets folder and does not to belong to any assembly definition file.");
+                    if (logWarningOnMiss)
+                    {
+                        Console.WriteLine(
+                            $"Script '{source}' will not be compiled because it exists outside the Assets folder and does not to belong to any assembly definition file.");
+                    }
+
                     continue;
                 }
 

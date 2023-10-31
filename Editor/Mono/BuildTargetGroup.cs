@@ -116,6 +116,6 @@ namespace UnityEditor
 
         QNX = 35,
 
-        Bratwurst = 36,
+        VisionOS = 36,
     }
 }

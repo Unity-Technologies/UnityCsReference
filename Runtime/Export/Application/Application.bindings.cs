@@ -405,6 +405,7 @@ namespace UnityEngine
                 {
                     case RuntimePlatform.IPhonePlayer:
                     case RuntimePlatform.Android:
+                    case RuntimePlatform.VisionOS:
                         return true;
                     case RuntimePlatform.WSAPlayerX86:
                     case RuntimePlatform.WSAPlayerX64:

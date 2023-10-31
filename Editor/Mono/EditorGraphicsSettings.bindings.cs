@@ -139,6 +139,11 @@ namespace UnityEditor.Rendering
                     yield return info.type;
             }
         }
+        
+        public static void PopulateRenderPipelineGraphicsSettings(RenderPipelineGlobalSettings settings)
+        {
+            RenderPipelineGraphicsSettingsManager.PopulateRenderPipelineGraphicsSettings(settings);
+        }
 
         [NativeName("GraphicsSettingsCount")] static extern int Internal_GraphicsSettingsCount();
         [NativeName("GetSettingsForRenderPipelineAt")] static extern Object Internal_GetSettingsForRenderPipelineAt(int index);

@@ -241,9 +241,6 @@ namespace UnityEditor
 
         public void CompleteSceneViewMotionTool()
         {
-            if (GUIUtility.hotControl == k_ViewToolID)
-                GUIUtility.hotControl = 0;
-
             Tools.viewTool = ViewTool.Pan;
             Tools.s_LockedViewTool = ViewTool.None;
             viewToolActiveChanged?.Invoke();
@@ -294,6 +291,10 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     if (GUIUtility.hotControl == 0)
                         m_StartMousePosition = evt.mousePosition;
+                    break;
+                case EventType.MouseUp:
+                    if (GUIUtility.hotControl == k_ViewToolID)
+                        GUIUtility.hotControl = 0;
                     break;
                 case EventType.KeyDown: // Escape
                     HandleKeyDown();

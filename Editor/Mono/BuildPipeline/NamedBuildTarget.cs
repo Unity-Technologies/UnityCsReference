@@ -22,7 +22,7 @@ namespace UnityEditor.Build
             "PS4",
             "XboxOne",
             "tvOS",
-            "Bratwurst",
+            "VisionOS",
             "Nintendo Switch",
             "Stadia",
             "CloudRendering",
@@ -48,7 +48,7 @@ namespace UnityEditor.Build
         public static readonly NamedBuildTarget PS5 = new NamedBuildTarget("PS5");
         public static readonly NamedBuildTarget XboxOne = new NamedBuildTarget("XboxOne");
         public static readonly NamedBuildTarget tvOS = new NamedBuildTarget("tvOS");
-        public static readonly NamedBuildTarget Bratwurst = new NamedBuildTarget("Bratwurst");
+        public static readonly NamedBuildTarget VisionOS = new NamedBuildTarget("VisionOS");
         public static readonly NamedBuildTarget NintendoSwitch = new NamedBuildTarget("Nintendo Switch");
         [System.Obsolete("Stadia has been removed in 2023.1")]
         public static readonly NamedBuildTarget Stadia = new NamedBuildTarget("Stadia");
@@ -103,8 +103,8 @@ namespace UnityEditor.Build
                     return NamedBuildTarget.XboxOne;
                 case BuildTargetGroup.tvOS:
                     return NamedBuildTarget.tvOS;
-                case BuildTargetGroup.Bratwurst:
-                    return NamedBuildTarget.Bratwurst;
+                case BuildTargetGroup.VisionOS:
+                    return NamedBuildTarget.VisionOS;
                 case BuildTargetGroup.Switch:
                     return NamedBuildTarget.NintendoSwitch;
                 case BuildTargetGroup.LinuxHeadlessSimulation:

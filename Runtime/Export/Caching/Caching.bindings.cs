@@ -167,8 +167,10 @@ namespace UnityEngine
         {
         }
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS || PLATFORM_BRATWURST")]
-        extern internal static void SetNoBackupFlag(string url, string assetBundleName, Hash128 hash, bool enabled);
+        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS || PLATFORM_VISIONOS")]
+        [NativeMethod("PlatformCachingSetNoBackupFlag", IsFreeFunction = true)]
+        [NativeHeader("PlatformDependent/iPhonePlayer/PlatformCachingManager.h")]
+        extern internal static void PlatformCachingSetNoBackupFlag(string url, string assetBundleName, Hash128 hash, bool enabled);
 
         [Obsolete("This function is obsolete and will always return -1. Use IsVersionCached instead.")]
         public static int GetVersionFromCache(string url) { return -1; }

@@ -94,7 +94,7 @@ namespace Unity.UI.Builder
             });
 
             AddFocusable(m_HeaderButtonStrip);
-            BuilderLibraryContent.RegenerateLibraryContent();
+            BuilderLibraryContent.RegenerateLibraryContent(true);
 
             RegisterCallback<AttachToPanelEvent>(AttachToPanelCallback);
             RegisterCallback<DetachFromPanelEvent>(DetachFromPanelCallback);

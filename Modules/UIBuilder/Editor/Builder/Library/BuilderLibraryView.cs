@@ -56,7 +56,7 @@ namespace Unity.UI.Builder
             return (BuilderLibraryTreeItem)element.GetProperty(BuilderConstants.LibraryItemLinkedManipulatorVEPropertyName);
         }
 
-        protected void AddItemToTheDocument(BuilderLibraryTreeItem item)
+        internal void AddItemToTheDocument(BuilderLibraryTreeItem item)
         {
             // If this is the uxml file entry of the currently open file, don't allow
             // the user to instantiate it (infinite recursion) or re-open it.

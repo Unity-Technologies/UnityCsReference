@@ -30,6 +30,11 @@ namespace Unity.UI.Builder
             m_ModificationProcessors.Remove(modificationProcessor);
         }
 
+        public static bool IsProcessorRegistered(IBuilderAssetModificationProcessor modificationProcessor)
+        {
+            return m_ModificationProcessors.Contains(modificationProcessor);
+        }
+
         static bool IsUxml(string assetPath)
         {
             if (assetPath.EndsWith("uxml") || assetPath.EndsWith("uxml.meta"))
@@ -49,6 +54,9 @@ namespace Unity.UI.Builder
 
         static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions option)
         {
+            if (!IsUxml(assetPath))
+                return AssetDeleteResult.DidNotDelete;
+
             foreach (var modificationProcessor in m_ModificationProcessors)
                 modificationProcessor.OnAssetChange();
 
@@ -64,6 +72,9 @@ namespace Unity.UI.Builder
 
         static AssetMoveResult OnWillMoveAsset(string sourcePath, string destinationPath)
         {
+            if (!IsUxml(sourcePath))
+                return AssetMoveResult.DidNotMove;
+
             foreach (var modificationProcessor in m_ModificationProcessors)
                 modificationProcessor.OnAssetChange();
 
@@ -79,6 +90,18 @@ namespace Unity.UI.Builder
 
         static string[] OnWillSaveAssets(string[] paths)
         {
+            var usesUxml = false;
+            foreach (var path in paths)
+            {
+                if (!IsUxml(path))
+                    continue;
+                usesUxml = true;
+                break;
+            }
+
+            if (!usesUxml)
+                return paths;
+
             foreach (var modificationProcessor in m_ModificationProcessors)
                 modificationProcessor.OnAssetChange();
 

@@ -215,6 +215,13 @@ namespace Unity.UI.Builder
 
         readonly string[] m_FlexDirectionDependentStyleNames = {"align-items", "justify-content", "align-self", "align-content" };
 
+        static void SetFieldToolTip(VisualElement target, string styleName, VisualElement fieldElement)
+        {
+            if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, fieldElement.typeName, styleName), out var styleValueTooltip) ||
+                BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, fieldElement.typeName, ""), out styleValueTooltip))
+                target.tooltip = styleValueTooltip;
+        }
+
         public void BindStyleField(BuilderStyleRow styleRow, string styleName, VisualElement fieldElement)
         {
             // Link the row.
@@ -267,8 +274,7 @@ namespace Unity.UI.Builder
             else if (IsComputedStyleFloat(val) && fieldElement is DimensionStyleField)
             {
                 var uiField = fieldElement as DimensionStyleField;
-                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, uiField.typeName, ""), out var styleValueTooltip))
-                    uiField.visualInput.tooltip = styleValueTooltip;
+                SetFieldToolTip(uiField.visualInput, styleName, uiField);
                 uiField.RegisterValueChangedCallback(e => OnDimensionStyleFieldValueChange(e, styleName));
             }
             else if (IsComputedStyleInt(val) && fieldElement is IntegerField)
@@ -281,8 +287,7 @@ namespace Unity.UI.Builder
             else if (IsComputedStyleInt(val) && fieldElement is IntegerStyleField)
             {
                 var uiField = fieldElement as IntegerStyleField;
-                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, uiField.typeName, ""), out var styleValueTooltip))
-                    uiField.visualInput.tooltip = styleValueTooltip;
+                SetFieldToolTip(uiField.visualInput, styleName, uiField);
                 uiField.RegisterValueChangedCallback(e => OnIntegerStyleFieldValueChange(e, styleName));
             }
             else if (IsComputedStyleLength(val) && fieldElement is IntegerField)
@@ -295,8 +300,7 @@ namespace Unity.UI.Builder
             else if (IsComputedStyleLength(val) && fieldElement is DimensionStyleField)
             {
                 var uiField = fieldElement as DimensionStyleField;
-                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, uiField.typeName, ""), out var styleValueTooltip))
-                    uiField.visualInput.tooltip = styleValueTooltip;
+                SetFieldToolTip(uiField.visualInput, styleName, uiField);
                 uiField.RegisterValueChangedCallback(e => OnDimensionStyleFieldValueChange(e, styleName));
             }
             else if (IsComputedStyleColor(val) && fieldElement is ColorField)

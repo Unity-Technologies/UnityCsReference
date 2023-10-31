@@ -58,7 +58,17 @@ namespace UnityEditor.UIElements
         internal static readonly string searchCategoryUssClassName = GenericDropdownMenu.ussClassName + "__search-category";
         internal static readonly string shortcutUssClassName = GenericDropdownMenu.ussClassName + "__shortcut";
 
-        static float maxMenuHeight => Screen.currentResolution.height / (Screen.dpi / 96.0f);
+        internal static float maxMenuHeight
+        {
+            get
+            {
+                var height = Screen.mainWindowDisplayInfo.height;
+                if (height == 0)
+                    height = Screen.currentResolution.height;
+
+                return height / EditorGUIUtility.pixelsPerPoint;
+            }
+        }
 
         internal static bool isEditorContextMenuActive => s_ActiveMenus.Count > 0;
 
@@ -181,6 +191,9 @@ namespace UnityEditor.UIElements
 
                     s_Shortcuts.Remove(menu);
                     s_MaxShortcutLength.Remove(menu);
+
+                    if (EditorGUI.IsEditingTextField())
+                        EditorGUI.EndEditingActiveTextField();
                 });
                 menu.m_OnBeforePerformAction = (submenu, autoClose) =>
                 {
@@ -320,14 +333,14 @@ namespace UnityEditor.UIElements
             return genericMenu;
         }
 
-        internal static void DoDisplayEditorMenu(this DropdownMenu menu, Rect rect)
+        public static void DisplayEditorMenu(this DropdownMenu menu, Rect rect)
         {
             var descriptor = menu.m_Descriptor as DropdownMenuDescriptor ?? new DropdownMenuDescriptor();
             var genericMenu = PrepareMenu(menu, null, descriptor);
             genericMenu.DoDisplayGenericDropdownMenu(rect.position + Vector2.up * rect.height, descriptor);
         }
 
-        internal static void DoDisplayEditorMenu(this DropdownMenu menu, EventBase triggerEvent)
+        public static void DisplayEditorMenu(this DropdownMenu menu, EventBase triggerEvent)
         {
             var descriptor = menu.m_Descriptor as DropdownMenuDescriptor ?? new DropdownMenuDescriptor();
             var genericMenu = PrepareMenu(menu, triggerEvent, descriptor);
@@ -640,6 +653,34 @@ namespace UnityEditor.UIElements
 
         internal static void MakeExpandable(this GenericDropdownMenu menu)
         {
+            bool IsMenuItemOpened(GenericDropdownMenu.MenuItem item)
+            {
+                foreach (var activeMenu in s_ActiveMenus)
+                {
+                    if (activeMenu.root.children.Count > 0 && item.children.Count > 0
+                        && item.children[0].guid.Equals(activeMenu.root.children[0].guid))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            GenericDropdownMenu GetItemMenu(GenericDropdownMenu.MenuItem item)
+            {
+                foreach (var activeMenu in s_ActiveMenus)
+                {
+                    foreach (var menuItem in activeMenu.root.children)
+                    {
+                        if (menuItem == item)
+                            return activeMenu;
+                    }
+                }
+
+                return null;
+            }
+
             // Auto expand submenus after pointer hovering on them. This one is recursive so don't do this while initializing submenus
             if (menu.m_Parent == null)
             {
@@ -649,29 +690,8 @@ namespace UnityEditor.UIElements
                     {
                         bool ValidateExpansion()
                         {
-                            if (!s_AllowDelayedExpansion)
+                            if (!s_AllowDelayedExpansion || IsMenuItemOpened(item))
                                 return false;
-
-                            // Check if hovering over a submenu that's already open
-                            foreach (var activeMenu in s_ActiveMenus)
-                            {
-                                if (activeMenu.m_Child == null ||
-                                    activeMenu.m_Child.root.children.Count != item.children.Count)
-                                    continue;
-
-                                var sameItem = true;
-
-                                // Names of submenu items may match identically so we use actions as identifiers
-                                // Example case would be 'Console' window menu 'Stack Trace Logging' submenu
-                                for (int i = 0; i < item.children.Count; i++)
-                                {
-                                    if (item.children[i].action != activeMenu.m_Child.root.children[i].action)
-                                        sameItem = false;
-                                }
-
-                                if (sameItem)
-                                    return false;
-                            }
 
                             return true;
                         }
@@ -689,7 +709,10 @@ namespace UnityEditor.UIElements
                                 AuxCleanup(view);
 
                                 // Focus will have cleared all opened child submenus
-                                menu.m_Child = null;
+                                var hostMenu = GetItemMenu(item);
+                                if(hostMenu != null)
+                                    hostMenu.m_Child = null;
+
                                 item.element?.parent?.EnableInClassList(GenericDropdownMenu.latentUssClassName, false);
                             }
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
@@ -102,7 +103,7 @@ namespace UnityEditor.Overlays
 
         void CheckIfShouldHide(VisualElement focused)
         {
-            if (focused == null || !Contains(focused))
+            if ((focused == null || !Contains(focused)) && !EditorMenuExtensions.isEditorContextMenuActive)
                 Hide();
         }
 

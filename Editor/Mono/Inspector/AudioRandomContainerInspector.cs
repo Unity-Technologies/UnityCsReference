@@ -13,8 +13,22 @@ namespace UnityEditor;
 [CanEditMultipleObjects]
 sealed class AudioRandomContainerInspector : Editor
 {
+    private StyleLength margin = 5;
+
+    private Button button;
+
     public override VisualElement CreateInspectorGUI()
     {
-        return new VisualElement();
+        button = new Button();
+
+        button.text = "Edit Audio Random Container";
+        button.style.marginBottom = margin;
+        button.style.marginTop = margin;
+        button.style.marginLeft = 0;
+        button.style.marginRight = 0;
+        button.style.height = 24;
+        button.clicked += () => { EditorWindow.GetWindow<AudioContainerWindow>(); };
+
+        return button;
     }
 }

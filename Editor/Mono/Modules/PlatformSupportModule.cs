@@ -357,6 +357,12 @@ namespace UnityEditor.Modules
     internal interface IBuildProfileExtension
     {
         BuildProfilePlatformSettingsBase CreateBuildProfilePlatformSettings();
+
+        /// <summary>
+        /// Copy settings to the platform settings base we are passing. This is used, for example, when creating
+        /// a new classic profile and we need to copy settings - that live in the managed side only - to it
+        /// </summary>
+        void CopyPlatformSettingsToBuildProfile(BuildProfilePlatformSettingsBase platformSettingsBase) {}
     }
 
     // Interface for target device related operations

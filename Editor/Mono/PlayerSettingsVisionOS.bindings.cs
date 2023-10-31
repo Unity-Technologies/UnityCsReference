@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    public enum BratwurstSdkVersion
+    public enum VisionOSSdkVersion
     {
         Device = 0,
         Simulator = 1
@@ -19,44 +19,44 @@ namespace UnityEditor
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
     public partial class PlayerSettings : UnityEngine.Object
     {
-        // Bratwurst specific player settings
+        // VisionOS specific player settings
         [NativeHeader("Runtime/Misc/PlayerSettings.h")]
         [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
         [StaticAccessor("GetPlayerSettings()")]
-        public sealed partial class Bratwurst
+        public sealed partial class VisionOS
         {
             private static extern int sdkVersionInt
             {
-                [NativeMethod("GetBratwurstSdkVersion")]
+                [NativeMethod("GetVisionOSSdkVersion")]
                 get;
-                [NativeMethod("SetBratwurstSdkVersion")]
+                [NativeMethod("SetVisionOSSdkVersion")]
                 set;
             }
 
-            public static BratwurstSdkVersion sdkVersion
+            public static VisionOSSdkVersion sdkVersion
             {
-                get { return (BratwurstSdkVersion)sdkVersionInt; }
+                get { return (VisionOSSdkVersion)sdkVersionInt; }
                 set { sdkVersionInt = (int)value; }
             }
 
-            // bratwurst bundle build number
+            // visionos bundle build number
             public static string buildNumber
             {
-                get { return PlayerSettings.GetBuildNumber(NamedBuildTarget.Bratwurst.TargetName); }
-                set { PlayerSettings.SetBuildNumber(NamedBuildTarget.Bratwurst.TargetName, value); }
+                get { return PlayerSettings.GetBuildNumber(NamedBuildTarget.VisionOS.TargetName); }
+                set { PlayerSettings.SetBuildNumber(NamedBuildTarget.VisionOS.TargetName, value); }
             }
 
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
-            [NativeMethod("GetBratwurstMinimumVersionString")]
+            [NativeMethod("GetVisionOSMinimumVersionString")]
             static extern string GetMinimumVersionString();
 
             internal static readonly Version minimumOsVersion = new Version(GetMinimumVersionString());
 
             public static extern string targetOSVersionString
             {
-                [NativeMethod("GetBratwurstTargetOSVersion")]
+                [NativeMethod("GetVisionOSTargetOSVersion")]
                 get;
-                [NativeMethod("SetBratwurstTargetOSVersion")]
+                [NativeMethod("SetVisionOSTargetOSVersion")]
                 set;
             }
         }

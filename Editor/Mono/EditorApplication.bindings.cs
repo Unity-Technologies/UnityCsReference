@@ -272,6 +272,12 @@ namespace UnityEditor
             get;
         }
 
+        public static extern bool isCreateFromTemplate
+        {
+            [FreeFunction("IsCreateFromTemplate")]
+            get;
+        }
+
         internal static extern string userJavascriptPackagesPath
         {
             get;

@@ -1569,6 +1569,11 @@ namespace UnityEngine.TextCore.Text
                         isMaxVisibleDescenderSet = true;
 
                     // Save Line Information
+                    textInfo.lineInfo[m_LineNumber].firstCharacterIndex = m_FirstCharacterOfLine;
+                    textInfo.lineInfo[m_LineNumber].firstVisibleCharacterIndex = m_FirstVisibleCharacterOfLine = m_FirstCharacterOfLine > m_FirstVisibleCharacterOfLine ? m_FirstCharacterOfLine : m_FirstVisibleCharacterOfLine;
+                    textInfo.lineInfo[m_LineNumber].lastCharacterIndex = m_LastCharacterOfLine = m_CharacterCount;
+                    textInfo.lineInfo[m_LineNumber].lastVisibleCharacterIndex = m_LastVisibleCharacterOfLine = m_LastVisibleCharacterOfLine < m_FirstVisibleCharacterOfLine ? m_FirstVisibleCharacterOfLine : m_LastVisibleCharacterOfLine;
+
                     int firstCharacterIndex = m_FirstVisibleCharacterOfLine;
                     int lastCharacterIndex = m_LastVisibleCharacterOfLine;
                     if (generationSettings.textWrappingMode == TextWrappingMode.PreserveWhitespace || generationSettings.textWrappingMode == TextWrappingMode.PreserveWhitespaceNoWrap)
@@ -1576,11 +1581,6 @@ namespace UnityEngine.TextCore.Text
                         firstCharacterIndex = m_FirstCharacterOfLine;
                         lastCharacterIndex = m_LastCharacterOfLine;
                     }
-
-                    textInfo.lineInfo[m_LineNumber].firstCharacterIndex = m_FirstCharacterOfLine;
-                    textInfo.lineInfo[m_LineNumber].firstVisibleCharacterIndex = m_FirstVisibleCharacterOfLine = m_FirstCharacterOfLine > m_FirstVisibleCharacterOfLine ? m_FirstCharacterOfLine : m_FirstVisibleCharacterOfLine;
-                    textInfo.lineInfo[m_LineNumber].lastCharacterIndex = m_LastCharacterOfLine = m_CharacterCount;
-                    textInfo.lineInfo[m_LineNumber].lastVisibleCharacterIndex = m_LastVisibleCharacterOfLine = m_LastVisibleCharacterOfLine < m_FirstVisibleCharacterOfLine ? m_FirstVisibleCharacterOfLine : m_LastVisibleCharacterOfLine;
 
                     textInfo.lineInfo[m_LineNumber].characterCount = textInfo.lineInfo[m_LineNumber].lastCharacterIndex - textInfo.lineInfo[m_LineNumber].firstCharacterIndex + 1;
                     textInfo.lineInfo[m_LineNumber].visibleCharacterCount = m_LineVisibleCharacterCount;

@@ -74,13 +74,35 @@ namespace Unity.UI.Builder
             return false;
         }
 
+        internal static bool IsOneTimeProcessorRegistered(IBuilderOneTimeAssetPostprocessor processor)
+        {
+            return m_OneTimeProcessors.Contains(processor);
+        }
+
+        static bool ContainsBuilderFile(string[] assetPaths)
+        {
+            foreach (var path in assetPaths)
+            {
+                if (!IsBuilderFile(path))
+                    continue;
+                return true;
+            }
+            return false;
+        }
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
+            var importedAssetsContainBuilderFile = ContainsBuilderFile(importedAssets);
+            if (!importedAssetsContainBuilderFile && !ContainsBuilderFile(deletedAssets) && !ContainsBuilderFile(movedAssets) && !ContainsBuilderFile(movedFromAssetPaths))
+                return;
+
             foreach (var processor in m_OneTimeProcessors)
                 processor.OnPostProcessAsset();
 
             foreach (var processor in m_Processors)
                 processor.OnPostprocessAllAssets(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
+
+            if (!importedAssetsContainBuilderFile)
+                return;
 
             foreach (string assetPath in importedAssets)
             {

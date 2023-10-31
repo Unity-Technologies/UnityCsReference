@@ -183,9 +183,10 @@ namespace UnityEditor.UIElements
                     m_UxmlObjectFields.Add(referenceField.name);
                 }
 
+                var nextIndex = m_SerializedAttributes.Count;
                 m_SerializedAttributes.Add(uxmlAttributeDescription);
-                m_UxmlNameToIndex.Add(attDescription.uxmlName, i);
-                m_PropertyNameToIndex.Add(attDescription.cSharpName, i);
+                m_UxmlNameToIndex.Add(attDescription.uxmlName, nextIndex);
+                m_PropertyNameToIndex.Add(attDescription.cSharpName, nextIndex);
             }
         }
 

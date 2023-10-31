@@ -808,8 +808,8 @@ namespace UnityEngine
             if (characterCount == 0)
                 return 0;
 
-            if (p == characterCount)
-                p = PreviousCodePointIndex(p);
+            if (p >= characterCount)
+                p = characterCount - 1;
 
             var t = ClassifyChar(p);
             if (t == CharacterType.NewLine)
@@ -826,7 +826,7 @@ namespace UnityEngine
 
                     case Direction.Forward:
                         p = NextCodePointIndex(p);
-                        if (p == characterCount)
+                        if (p >= characterCount)
                             return characterCount;
                         break;
                 }

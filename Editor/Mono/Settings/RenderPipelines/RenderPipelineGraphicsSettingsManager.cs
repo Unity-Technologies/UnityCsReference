@@ -33,9 +33,17 @@ namespace UnityEditor.Rendering.Settings
 
             var globalSettingsRenderPipelineAssetType = globalSettingsSupportedOn.renderPipelineTypes[0];
 
+            bool assetModified = false;
+
             foreach (var info in FetchRenderPipelineGraphicsSettingInfos(globalSettingsRenderPipelineAssetType))
             {
-                UpdateRenderPipelineGlobalSettings(info, settings);
+                assetModified |= UpdateRenderPipelineGlobalSettings(info, settings);
+            }
+
+            if (assetModified)
+            {
+                EditorUtility.SetDirty(settings);
+                AssetDatabase.SaveAssetIfDirty(settings);
             }
         }
 
@@ -71,8 +79,10 @@ namespace UnityEditor.Rendering.Settings
             }
         }
 
-        static void UpdateRenderPipelineGlobalSettings(RenderPipelineGraphicsSettingsInfo renderPipelineGraphicsSettingsType, RenderPipelineGlobalSettings asset)
+        static bool UpdateRenderPipelineGlobalSettings(RenderPipelineGraphicsSettingsInfo renderPipelineGraphicsSettingsType, RenderPipelineGlobalSettings asset)
         {
+            bool assetModified = false;
+
             IRenderPipelineGraphicsSettings renderPipelineGraphicsSettings;
 
             bool hasSettings = asset.TryGet(renderPipelineGraphicsSettingsType.type, out renderPipelineGraphicsSettings);
@@ -80,16 +90,27 @@ namespace UnityEditor.Rendering.Settings
             if (renderPipelineGraphicsSettingsType.isDeprecated)
             {
                 if (hasSettings)
+                {
                     asset.Remove(renderPipelineGraphicsSettings);
+                    assetModified = true;
+                }
 
-                return;
+                return assetModified;
             }
 
             if (!hasSettings && TryCreateInstance(renderPipelineGraphicsSettingsType.type, true, out renderPipelineGraphicsSettings))
+            {
+                assetModified = true;
                 asset.Add(renderPipelineGraphicsSettings);
+            }
 
             if (renderPipelineGraphicsSettings is IRenderPipelineResources resource)
-                RenderPipelineResourcesEditorUtils.TryReloadContainedNullFields(resource);
+            {
+                var reloadingStatus = RenderPipelineResourcesEditorUtils.TryReloadContainedNullFields(resource);
+                assetModified |= reloadingStatus == RenderPipelineResourcesEditorUtils.ResultStatus.ResourceReloaded;
+            }
+
+            return assetModified;
         }
 
         static bool TryCreateInstance<T>(Type type, bool nonPublic, out T instance)

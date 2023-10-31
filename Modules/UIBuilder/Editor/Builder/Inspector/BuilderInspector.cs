@@ -281,6 +281,10 @@ namespace Unity.UI.Builder
             m_NothingSelectedIdleStateVisualElement.style.display = DisplayStyle.None;
             m_Sections.Add(m_NothingSelectedSection);
 
+            // Update URL with the correct Unity version (UUM-54027)
+            var readMoreLabel = this.Q<Label>("day-zero-documentation-body");
+            readMoreLabel.text = readMoreLabel.text.Replace("{0}", BuilderConstants.ManualUIBuilderUrl);
+
             // Multi-Selection Section
             m_MultiSelectionSection = this.Q("multi-selection-unsupported-message");
             m_MultiSelectionSection.Add(new IMGUIContainer(
