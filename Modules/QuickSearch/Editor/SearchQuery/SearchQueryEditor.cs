@@ -24,6 +24,8 @@ namespace UnityEditor.Search
         private bool m_HasPreview;
         private SearchQueryAsset query => target as SearchQueryAsset;
 
+        VisualElement m_Body;
+
         public override bool RequiresConstantRepaint() => false;
         public override bool UseDefaultMargins() => false;
         internal override bool CanOpenMultipleObjects() => false;
@@ -50,9 +52,9 @@ namespace UnityEditor.Search
 
         public override VisualElement CreateInspectorGUI()
         {
-            var body = new VisualElement();
-            body.AddToClassList("search-inspector");
-            SearchElement.AppendStyleSheets(body);
+            m_Body = new VisualElement();
+            m_Body.AddToClassList("search-inspector");
+            SearchElement.AppendStyleSheets(m_Body);
 
             m_HeaderElement = new VisualElement();
             m_HeaderElement.AddToClassList("search-inspector-header");
@@ -87,12 +89,12 @@ namespace UnityEditor.Search
                 m_HeaderElement.Add(new UIElements.PropertyField(m_ViewStateProperty, "Debug View State") { });
             m_HeaderElement.Add(new SearchGroupBar("", m_ResultView));
 
-            body.Add(m_HeaderElement);
-            body.Add(m_ResultView);
+            m_Body.Add(m_HeaderElement);
+            m_Body.Add(m_ResultView);
 
             m_ResultView.RegisterCallback<AttachToPanelEvent>(OnBodyAttached);
             m_ResultView.RegisterCallback<DetachFromPanelEvent>(OnBodyDetached);
-            return body;
+            return m_Body;
         }
 
         private void OnBodyAttached(AttachToPanelEvent evt)
@@ -187,7 +189,15 @@ namespace UnityEditor.Search
 
         public void OnDisable()
         {
+            // Clear body to prevent accessing disposed properties.
+            m_Body.Clear();
+
             m_ResultView?.Dispose();
+            m_DescriptionProperty.Dispose();
+            m_TextProperty.Dispose();
+            m_IsSearchTemplateProperty.Dispose();
+            m_IconProperty.Dispose();
+            m_ViewStateProperty.Dispose();
         }
     }
 }

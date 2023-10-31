@@ -76,6 +76,10 @@ namespace UnityEditor.Search
             {
                 var prevGroup = currentGroup;
                 viewState.groupChanged?.Invoke(context, value, currentGroup);
+
+                var selectedItems = m_SearchItemSelection != null ? m_SearchItemSelection.ToArray() : Array.Empty<SearchItem>();
+                var newSelectedIndices = new int[selectedItems.Length];
+                
                 viewState.group = value;
                 m_FilteredItems.currentGroup = value;
                 resultView?.OnGroupChanged(prevGroup, value);
@@ -84,6 +88,13 @@ namespace UnityEditor.Search
                     NotifySyncSearch(currentGroup, UnityEditor.SearchService.SearchService.SyncSearchEvent.SyncSearch);
 
                 RefreshContent(RefreshFlags.GroupChanged);
+
+                for (var i  = 0; i < selectedItems.Length; ++i)
+                {
+                    var selectedItem = selectedItems[i];
+                    newSelectedIndices[i] = m_FilteredItems.IndexOf(selectedItem);
+                }
+                SetSelection(true, newSelectedIndices, true);
             }
         }
 
@@ -434,7 +445,7 @@ namespace UnityEditor.Search
             return true;
         }
 
-        private void SetSelection(bool trackSelection, int[] selection)
+        private void SetSelection(bool trackSelection, int[] selection, bool forceChange = false)
         {
             if (!multiselect && selection.Length > 1)
                 selection = new int[] { selection[selection.Length - 1] };
@@ -454,7 +465,7 @@ namespace UnityEditor.Search
                 lastIndexAdded = idx;
             }
 
-            if (lastIndexAdded != k_ResetSelectionIndex)
+            if (lastIndexAdded != k_ResetSelectionIndex || forceChange)
             {
                 m_SearchItemSelection = null;
                 viewState.selectedIds = selectedIds.ToArray();

@@ -44,6 +44,7 @@ namespace UnityEditor.Search
 
         internal static readonly bool isDeveloperBuild = false;
         internal static bool runningTests { get; set; }
+        internal static bool fakeWorkerProcess { get; set; }
 
         struct RootDescriptor
         {
@@ -766,6 +767,11 @@ namespace UnityEditor.Search
             return runningTests;
         }
 
+        internal static bool IsFakeWorkerProcess()
+        {
+            return fakeWorkerProcess;
+        }
+
         internal static bool IsMainProcess()
         {
             if (AssetDatabaseAPI.IsAssetImportWorkerProcess())
@@ -776,6 +782,11 @@ namespace UnityEditor.Search
 
             if (MPE.ProcessService.level != MPE.ProcessLevel.Main)
                 return false;
+
+            if (IsRunningTests())
+            {
+                return !IsFakeWorkerProcess();
+            }
 
             return true;
         }
@@ -1258,7 +1269,7 @@ namespace UnityEditor.Search
         }
 
         internal static bool TryParseObjectValue(in string value, out UnityEngine.Object objValue)
-        {            
+        {
             objValue = null;
             if (string.IsNullOrEmpty(value))
             {

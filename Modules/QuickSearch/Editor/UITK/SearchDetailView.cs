@@ -242,6 +242,8 @@ namespace UnityEditor.Search
 
             if (showOptions.HasAny(ShowDetailsOptions.Inspector))
                 DrawInspector(selection, showOptions);
+            else
+                m_EditorContainer.Clear();
 
             m_RefreshOff?.Invoke();
             m_RefreshOff = null;

@@ -558,6 +558,7 @@ namespace UnityEditor.Search.Providers
             var searchTask = System.Threading.Tasks.Task.Run(() =>
             {
                 // Search index
+                using var immutableScope = db.GetImmutableScope();
                 foreach (var r in index.Search(searchQuery.ToLowerInvariant(), context, provider))
                     results.Add(r);
             }, context.sessions.cancelToken);

@@ -18,6 +18,8 @@ namespace UnityEditor.Search
         private bool m_Disposed;
         private Delayer m_Throttler;
 
+        private Action m_UpdateSelectionOffHandler;
+
         protected T m_ListView;
 
         Rect IResultView.rect => worldBound;
@@ -28,7 +30,7 @@ namespace UnityEditor.Search
             : base(name, viewModel, className)
         {
         }
-        
+
         int IResultView.ComputeVisibleItemCapacity(float size, float height)
         {
             return (int)(height / GetItemHeight()) + 10;
@@ -66,6 +68,10 @@ namespace UnityEditor.Search
             Off(SearchEvent.SelectionHasChanged, OnSelectionChanged);
             m_ListView.itemsChosen -= OnItemsChosen;
             m_ListView.selectedIndicesChanged -= HandleItemsSelected;
+
+            // Make sure to remove callbacks when Detaching from panel
+            m_UpdateSelectionOffHandler?.Invoke();
+            m_UpdateSelectionOffHandler = null;
 
             m_Throttler?.Dispose();
 
@@ -176,10 +182,16 @@ namespace UnityEditor.Search
         protected virtual void UpdateSelection()
         {
             var selectedIndexes = m_ViewModel.selection.indexes;
+            if (m_ListView.selectedIndices.SequenceEqual(selectedIndexes))
+                return;
+
             var firstSelection = selectedIndexes.Count > 0 ? selectedIndexes[0] : -1;
             m_ListView.SetSelectionWithoutNotify(selectedIndexes);
             if (firstSelection != -1)
-                Utils.CallDelayed(() => m_ListView.ScrollToItem(firstSelection), 0.01d);
+            {
+                m_UpdateSelectionOffHandler?.Invoke();
+                m_UpdateSelectionOffHandler = Utils.CallDelayed(() => m_ListView.ScrollToItem(firstSelection), 0.01d);
+            }
         }
 
         private void HandleItemsSelected(IEnumerable<int> selection)

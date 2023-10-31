@@ -103,6 +103,7 @@ namespace UnityEditor.Search
 
         internal List<VisualMessage> visualMessages => m_VisualMessages;
         internal IVisualElementScheduledItem queryErrorsScheduleItem => m_UpdateQueryErrorScheduledItem;
+        internal INotifyValueChanged<string> searchTextInput => m_SearchTextInput;
 
         public TextElement textElement
         {

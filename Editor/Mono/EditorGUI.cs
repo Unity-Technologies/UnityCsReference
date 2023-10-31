@@ -1253,7 +1253,7 @@ namespace UnityEditor
                         {
                             if (editor.IsEditingControl(id))
                             {
-                                if (style == EditorStyles.toolbarSearchField || style == EditorStyles.searchField)
+                                if (style == EditorStyles.toolbarSearchField || style == EditorStyles.searchField || style.name.Contains("SearchText"))
                                 {
                                     s_OriginalText = "";
                                 }

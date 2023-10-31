@@ -204,8 +204,51 @@ namespace UnityEditor.Search
             m_DataSource.searchMatchItemComparer = new ItemPropositionComparer();
         }
 
-        private bool OnSearchItemMatch(in AdvancedDropdownItem item, in string[] words, out bool didMatchStart)
+        struct ItemSearchData
         {
+            public string data;
+            public int lastIndex;
+            public bool isValid => lastIndex != -1;
+        }
+
+        static ItemSearchData[] s_ItemSearchDatas = new ItemSearchData[2];
+        internal static bool DoSearchItemMatch(in AdvancedDropdownItem item, in string[] words, out bool didMatchStart)
+        {            
+            void PrepareItemData(int index, string data)
+            {
+                s_ItemSearchDatas[index].data = data;
+                s_ItemSearchDatas[index].lastIndex = -1;
+                if (!string.IsNullOrEmpty(data))
+                {
+                    s_ItemSearchDatas[index].lastIndex = data.LastIndexOf('(');
+                    s_ItemSearchDatas[index].lastIndex = s_ItemSearchDatas[index].lastIndex == -1 ? data.Length : s_ItemSearchDatas[index].lastIndex;
+                }
+            }
+
+            PrepareItemData(0, item.displayName);
+            PrepareItemData(1, item.name);
+
+            didMatchStart = false;
+            var fp = -1;
+            foreach (var w in words)
+            {                
+                for (var i = 0; i < s_ItemSearchDatas.Length; ++i)
+                {
+                    if (s_ItemSearchDatas[i].isValid)
+                    {
+                        fp = s_ItemSearchDatas[i].data.IndexOf(w, 0, s_ItemSearchDatas[i].lastIndex, StringComparison.OrdinalIgnoreCase);
+                        didMatchStart |= fp != -1 && (fp == 0 || s_ItemSearchDatas[i].data[fp - 1] == ' ');
+                        if (fp != -1)
+                            break;
+                    }
+                }
+
+                if (fp == -1)
+                    return false;
+            }
+            return fp != -1;
+
+            /*
             didMatchStart = false;
             var label = item.displayName ?? item.name;
             var pp = label.LastIndexOf('(');
@@ -215,9 +258,15 @@ namespace UnityEditor.Search
                 var fp = label.IndexOf(w, 0, pp, StringComparison.OrdinalIgnoreCase);
                 if (fp == -1)
                     return false;
-                didMatchStart |= (fp == 0 || label[fp-1] == ' ');
+                didMatchStart |= (fp == 0 || label[fp - 1] == ' ');
             }
             return true;
+            */
+        }
+
+        private bool OnSearchItemMatch(in AdvancedDropdownItem item, in string[] words, out bool didMatchStart)
+        {
+            return DoSearchItemMatch(item, words, out didMatchStart);            
         }
 
         private void OnClose(AdvancedDropdownWindow w = null)
