@@ -282,14 +282,14 @@ namespace UnityEditor.UIElements.Bindings
         {
             isReleased = true;
 
-            ClearListView();
-
             bindingContext = null;
             boundProperty = null;
             m_DataList = null;
 
             m_ArraySize = null;
             m_ListViewArraySize = -1;
+
+            ClearListView();
         }
 
         private UInt64 m_LastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;

@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// The base class for all UIElements events.
+    /// The base class for all UIElements events.  The class implements IDisposable to ensure proper release of the event from the pool and of any unmanaged resources, when necessary.
     /// </summary>
     public abstract class EventBase : IDisposable
     {

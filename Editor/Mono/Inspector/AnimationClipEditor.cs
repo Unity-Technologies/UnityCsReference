@@ -1536,11 +1536,17 @@ namespace UnityEditor
                     sharedOffset = Mathf.FloorToInt(Mathf.Max(0, spread - (eventMarker.width - 1) * (sharedLeft)));
                 }
 
+                // UUM-49717
+                // Depending on the resolution and the scale of the display, the icon size could be greater than the visible height of the timeline.
+                // We divide it so that it fits.
+                float absRectHeight = Mathf.Abs(rect.height);
+                int divider = absRectHeight > 0 && absRectHeight < eventMarker.height ? Mathf.CeilToInt(eventMarker.height / absRectHeight) : 1;
+
                 Rect r = new Rect(
-                    keypos + sharedOffset - eventMarker.width / 2,
+                    keypos + sharedOffset - eventMarker.width / (2 * divider),
                     (rect.height - 10) * (float)(sharedLeft - shared + 1) / Mathf.Max(1, shared - 1),
-                    eventMarker.width,
-                    eventMarker.height);
+                    eventMarker.width / divider,
+                    eventMarker.height / divider);
 
                 hitRects[i] = r;
                 drawRects[i] = r;

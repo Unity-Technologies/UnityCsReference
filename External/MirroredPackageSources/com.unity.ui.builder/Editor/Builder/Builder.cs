@@ -8,6 +8,16 @@ namespace Unity.UI.Builder
 {
     class Builder : BuilderPaneWindow, IBuilderViewportWindow, IHasCustomMenu
     {
+        static Builder()
+        {
+            EditorApplication.fileMenuSaved += () =>
+            {
+                var builder = ActiveWindow;
+                if (builder != null && builder.document.hasUnsavedChanges)
+                    builder.SaveChanges();
+            };
+        }
+
         BuilderSelection m_Selection;
 
         BuilderToolbar m_Toolbar;

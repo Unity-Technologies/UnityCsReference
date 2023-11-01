@@ -154,7 +154,7 @@ namespace UnityEditor.Connect
 
                         AssetDatabase.ImportPackage(location, false);
 
-                        EditorAnalytics.SendImportServicePackageEvent(new ImportPackageInfo() { packageName = Path.GetFileName(k_PackageUri.ToString()) , eTag = etag });
+                        EditorAnalytics.SendImportServicePackageEvent(new ImportPackageInfo() { packageName = Path.GetFileName(k_PackageUri.ToString()), eTag = etag });
 
                         //TODO: ImportPackage is a delayeed operation with no callback. See if we can get a confirmation of successful installation
                         //      before firing our callback, or even before Saving the ETag.
@@ -238,48 +238,30 @@ namespace UnityEditor.Connect
             }
         }
 
-        //TODO: Consider moving to 'core' of services (also exists in Analytics):
-        public void RequestAuthSignature(Action<AsyncOperation> onGet, out UnityWebRequest request)
+        internal void GetGooglePlayKey(Action<string, long> onGetGooglePlayKey)
         {
-            request = UnityWebRequest.Get(String.Format(AnalyticsConfiguration.instance.coreProjectsUrl, UnityConnect.instance.projectInfo.projectGUID));
-            request.suppressErrorsToConsole = true;
-            request.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
-            var operation = request.SendWebRequest();
-            operation.completed += onGet;
+            GetGatewayToken((gatewayToken) =>
+            {
+                GetGooglePlayKeyInternal(gatewayToken, onGetGooglePlayKey);
+            });
         }
 
-        public void GetGooglePlayKey(Action<AsyncOperation> onGet, string authSignature)
-        {
-            var request = UnityWebRequest.Get(GetGoogleKeyResource() + k_GoogleKeyGetSuffix);
-            request.suppressErrorsToConsole = true;
-
-            var encodedAuthToken = ServicesUtils.Base64Encode((UnityConnect.instance.projectInfo.projectGUID + ":" + authSignature));
-            request.SetRequestHeader("Authorization", $"Basic {encodedAuthToken}");
-
-            var operation = request.SendWebRequest();
-            operation.completed += onGet;
+        internal void GetGatewayToken(Action<string> onGetGatewayToken)
+        { 
+            GatewayTokenWebRequest.RequestGatewayToken(onGetGatewayToken, notificationTopic);
         }
 
-        public void SubmitGooglePlayKey(string submittedKey, Action<AsyncOperation> onSubmit, string authSignature)
+
+        internal void GetGooglePlayKeyInternal(string gatewayToken, Action<string, long> onGetGooglePlayKey)
         {
-            var payload = "{\"" + k_GoogleKeyJsonLabel + "\": \"" + submittedKey + "\"}";
-            var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
-            var request = new UnityWebRequest(GetGoogleKeyResource() + k_GoogleKeyPostSuffix,
-                UnityWebRequest.kHttpVerbPOST)
-            { uploadHandler = uploadHandler};
-            request.suppressErrorsToConsole = true;
-
-            var encodedAuthToken = ServicesUtils.Base64Encode((UnityConnect.instance.projectInfo.projectGUID + ":" + authSignature));
-            request.SetRequestHeader("Authorization", $"Basic {encodedAuthToken}");
-            request.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
-            var operation = request.SendWebRequest();
-
-            operation.completed += onSubmit;
-        }
-
-        private string GetGoogleKeyResource()
-        {
-            return PurchasingConfiguration.instance.analyticsApiUrl + k_GoogleKeySubPath + UnityConnect.instance.projectInfo.projectGUID;
+            if (!string.IsNullOrEmpty(gatewayToken))
+            {
+                GetGoogleKeyWebRequest.RequestGooglePlayKey(gatewayToken, onGetGooglePlayKey, notificationTopic);
+            }
+            else
+            {
+                onGetGooglePlayKey?.Invoke(null, -1);
+            }
         }
     }
 }

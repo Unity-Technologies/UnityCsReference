@@ -242,6 +242,8 @@ namespace UnityEditor
 
         internal static CallbackFunction assetBundleNameChanged;
 
+        internal static CallbackFunction fileMenuSaved;
+
         // Delegate for changed keyboard modifier keys.
         public static CallbackFunction modifierKeysChanged;
 
@@ -440,6 +442,12 @@ namespace UnityEditor
 
             foreach (var evt in m_PlayModeStateChangedEvent)
                 evt(state);
+        }
+
+        [RequiredByNativeCode]
+        internal static void Internal_FileMenuSaved()
+        {
+            fileMenuSaved?.Invoke();
         }
 
         static void Internal_CallKeyboardModifiersChanged()

@@ -235,8 +235,14 @@ namespace UnityEditor
             foreach (var prop in AssetDatabase.FindAllAssets(new SearchFilter() { classNames = new[] { "AudioMixerController" } }))
             {
                 var controller = prop.pptrValue as AudioMixerController;
+
                 if (controller)
-                    result.Add(controller);
+                {
+                    if (controller.HasValidSnapshots())
+                        result.Add(controller);
+                    else
+                        Debug.LogError($"Can not display audio mixer window for '{controller.name}' as it could not be properly initialized. The mixer asset is possibly corrupted.");
+                }
             }
             return result;
         }
@@ -340,6 +346,12 @@ namespace UnityEditor
 
         void OnMixerControllerChanged()
         {
+            if (m_Controller != null && !m_Controller.HasValidSnapshots())
+            {
+                Debug.LogError($"Can not display audio mixer window for '{m_Controller.name}' as it could not be properly initialized. The mixer asset is possibly corrupted.");
+                return;
+            }
+
             if (m_Controller)
                 m_Controller.ClearEventHandlers();
 
@@ -377,9 +389,15 @@ namespace UnityEditor
             AudioMixerController oldController = m_Controller;
             if (Selection.activeObject is AudioMixerController)
                 m_Controller = Selection.activeObject as AudioMixerController;
+
             if (m_Controller != oldController)
             {
-                OnMixerControllerChanged();
+                if (m_Controller.HasValidSnapshots())
+                    OnMixerControllerChanged();
+                else
+                {
+                    Debug.LogError($"Can not display audio mixer window for '{m_Controller.name}' as it could not be properly initialized. The mixer asset is possibly corrupted.");
+                }
             }
         }
 

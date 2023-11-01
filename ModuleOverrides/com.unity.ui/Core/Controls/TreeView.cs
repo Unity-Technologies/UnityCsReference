@@ -91,6 +91,19 @@ namespace UnityEngine.UIElements
 
         private Action<VisualElement, ITreeViewItem> m_BindItem;
 
+        /// <summary>
+        /// Callback for binding a data item to the visual element.
+        /// </summary>
+        /// <remarks>
+        /// The method called by this callback receives the VisualElement to bind, and the index of the
+        /// element to bind it to.
+        ///
+        /// If this property and <see cref="makeItem"/> are not set, Unity will try to bind to a SerializedProperty if
+        /// bound, or simply set text in the created Label.
+        ///
+        /// **Note:**: Setting this callback without also setting <see cref="unbindItem"/> might result in unexpected behavior.
+        /// This is because the default implementation of unbindItem expects the default implementation of bindItem.
+        /// </remarks>
         public Action<VisualElement, ITreeViewItem> bindItem
         {
             get { return m_BindItem; }
@@ -101,6 +114,16 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Callback for unbinding a data item from the VisualElement.
+        /// </summary>
+        /// <remarks>
+        /// The method called by this callback receives the VisualElement to unbind, and the index of the
+        /// element to unbind it from.
+        ///
+        /// **Note:**: Setting this callback without also setting <see cref="bindItem"/> might cause unexpected behavior.
+        /// This is because the default implementation of bindItem expects the default implementation of unbindItem.
+        /// </remarks>
         public Action<VisualElement, ITreeViewItem> unbindItem { get; set; }
 
         IList<ITreeViewItem> m_RootItems;
