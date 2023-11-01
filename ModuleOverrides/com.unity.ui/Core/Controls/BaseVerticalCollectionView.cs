@@ -170,6 +170,9 @@ namespace UnityEngine.UIElements
         ///
         /// If this property and <see cref="makeItem"/> are not set, Unity will try to bind to a SerializedProperty if
         /// bound, or simply set text in the created Label.
+        ///
+        /// **Note:**: Setting this callback without also setting <see cref="unbindItem"/> might result in unexpected behavior.
+        /// This is because the default implementation of unbindItem expects the default implementation of bindItem.
         /// </remarks>
         public Action<VisualElement, int> bindItem
         {
@@ -199,6 +202,9 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The method called by this callback receives the VisualElement to unbind, and the index of the
         /// element to unbind it from.
+        ///
+        /// **Note:**: Setting this callback without also setting <see cref="bindItem"/> might cause unexpected behavior.
+        /// This is because the default implementation of bindItem expects the default implementation of unbindItem.
         /// </remarks>
         public Action<VisualElement, int> unbindItem { get; set; }
 

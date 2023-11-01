@@ -498,8 +498,8 @@ namespace UnityEditor
 
             if (string.IsNullOrEmpty(rootNamespace))
             {
-                content = Regex.Replace(content, $"((\\r\\n)|\\n)[ \\t]*{rootNamespaceBeginTag}[ \\t]*", string.Empty);
-                content = Regex.Replace(content, $"((\\r\\n)|\\n)[ \\t]*{rootNamespaceEndTag}[ \\t]*", string.Empty);
+                content = Regex.Replace(content, $"((\\r\\n)|\\n)?[ \\t]*{rootNamespaceBeginTag}[ \\t]*", string.Empty);
+                content = Regex.Replace(content, $"((\\r\\n)|\\n)?[ \\t]*{rootNamespaceEndTag}[ \\t]*", string.Empty);
 
                 return content;
             }

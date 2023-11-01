@@ -41,9 +41,6 @@ namespace UnityEditor.Connect
         const string k_KeywordGooglePlay = "Google Play"; //So devs can find where to place their Google Play Public Key
         const string k_KeywordPublicKey = "public key"; //So devs can find where to place their Google Play Public Key
 
-        const string k_GooglePlayKeyBtnUpdateLabel = "Update";
-        const string k_GooglePlayKeyBtnVerifyLabel = "Verify";
-
         const string k_PurchasingPermissionMessage = "You do not have sufficient permissions to enable / disable Purchasing service.";
         const string k_PurchasingPackageName = "In-App Purchasing Package";
         const string k_GoToDashboardLink = "GoToDashboard";
@@ -78,12 +75,6 @@ namespace UnityEditor.Connect
 
         DisabledState m_DisabledState;
         EnabledState m_EnabledState;
-
-        private struct PublicKeyInfo
-        {
-            public string key;
-            public bool success;
-        }
 
         public PurchasingProjectSettings(string path, SettingsScope scopes, IEnumerable<string> keywords = null)
             : base(path, scopes, k_ServiceName, keywords)
@@ -216,8 +207,6 @@ namespace UnityEditor.Connect
             m_StateMachine.ClearCurrentState();
 
             FinalizeServiceCallbacks();
-
-            m_EnabledState.OnDeactivate();
         }
 
         void InitializeServiceCallbacks()
@@ -375,10 +364,11 @@ namespace UnityEditor.Connect
             const string k_ImportBtn = "ImportBtn";
             const string k_ReimportBtn = "ReimportBtn";
             const string k_UpdateBtn = "UpdateBtn";
-            const string k_UpdateGooglePlayKeyBtn = "UpdateGooglePlayKeyBtn";
             const string k_GooglePlayLink = "GooglePlayLink";
-            const string k_GooglePlayKeyEntry = "GooglePlayKeyEntry";
             const string k_GoToDashboardLink = "GoToDashboard";
+            const string k_DashboardSettingsLink = "DashboardSettingsLink";
+            const string k_GooglePlayKeyText = "GooglePlayKey";
+            
 
             //Package Import status blocks
             const string k_UnimportedMode = "unimported-mode";
@@ -394,25 +384,14 @@ namespace UnityEditor.Connect
             const string k_ErrorServer = "error-server-error";
             const string k_ErrorFethcKey = "error-fetch-key";
 
-            //WebResponse JSON utils
-            const string k_JsonKeyAuthSignature = "auth_signature";
-
             //Popup Messages
             const string k_PackageMigrationHeadsup = "You are about to migrate to the more modern {0}. This will modify your project files. Be sure to make a backup first.\nDo you want to continue?";
-
-            //Notification Messages
-            const string k_AuthSignatureExceptionMessage = "Exception occurred trying to obtain authentication signature for project {0} and was not handled. Message: {1}";
-            const string k_KeyParsingExceptionMessage = "Exception occurred trying to parse Google Play Key and was not handled. Message: {0}";
 
             string packageMigrationHeadsup { get; set; }
             bool m_LookForAssetStoreImport;
             bool m_EligibleForMigration;
 
-            bool m_SettingKey;
             string m_GooglePlayKey;
-
-            string m_ProjectAuthSignature;
-            UnityWebRequest m_AuthSignatureRequest;
 
             enum ImportState
             {
@@ -469,16 +448,6 @@ namespace UnityEditor.Connect
                 // Prepare the package section and update the package information
                 PreparePackageSection(provider.rootVisualElement);
                 UpdatePackageInformation();
-            }
-
-            internal void OnDeactivate()
-            {
-                if (m_AuthSignatureRequest != null)
-                {
-                    m_AuthSignatureRequest.Abort();
-                    m_AuthSignatureRequest.Dispose();
-                    m_AuthSignatureRequest = null;
-                }
             }
 
             void SetupWelcomeIapBlock()
@@ -682,40 +651,33 @@ namespace UnityEditor.Connect
             {
                 RequestRetrieveOperation();
 
-                m_IapOptionsBlock.Q<Button>(k_UpdateGooglePlayKeyBtn).clicked += RequestUpdateOperation;
-
                 m_IapOptionsBlock.Q<Button>(k_GooglePlayLink).clicked += () =>
                 {
                     Application.OpenURL(PurchasingConfiguration.instance.googlePlayDevConsoleUrl);
                 };
+
+                var projectSettingsDashboardLink = m_IapOptionsBlock.Q(k_DashboardSettingsLink);
+                if (projectSettingsDashboardLink != null)
+                {
+                    var clickable = new Clickable(OpenProjectSettingsUnityDashboard);
+                    projectSettingsDashboardLink.AddManipulator(clickable);
+                }
+            }
+
+            static void OpenProjectSettingsUnityDashboard()
+            {
+                Application.OpenURL(BuildProjectSettingsUri());
+            }
+
+            static string BuildProjectSettingsUri()
+            {
+                return string.Format(PurchasingConfiguration.k_ProjectSettingsUrl, UnityConnect.instance.GetOrganizationForeignKey(), CloudProjectSettings.projectId);
             }
 
             void ToggleGoogleKeyStateVisibility(VisualElement fieldBlock, GooglePlayKeyState importState)
             {
                 if (fieldBlock != null)
                 {
-                    var verifiedMode = fieldBlock.Q(k_VerifiedMode);
-                    if (verifiedMode != null)
-                    {
-                        var updateGooglePlayKeyBtn = m_IapOptionsBlock.Q<Button>(k_UpdateGooglePlayKeyBtn);
-                        if (importState == GooglePlayKeyState.Verified)
-                        {
-                            if (updateGooglePlayKeyBtn != null)
-                            {
-                                updateGooglePlayKeyBtn.text = L10n.Tr(k_GooglePlayKeyBtnUpdateLabel);
-                            }
-                            verifiedMode.style.display = DisplayStyle.Flex;
-                        }
-                        else
-                        {
-                            if (updateGooglePlayKeyBtn != null)
-                            {
-                                updateGooglePlayKeyBtn.text = L10n.Tr(k_GooglePlayKeyBtnVerifyLabel);
-                            }
-                            verifiedMode.style.display = DisplayStyle.None;
-                        }
-                    }
-
                     var unVerifiedMode = fieldBlock.Q(k_UnverifiedMode);
                     if (unVerifiedMode != null)
                     {
@@ -760,174 +722,46 @@ namespace UnityEditor.Connect
 
             void RequestRetrieveOperation()
             {
-                m_SettingKey = false;
-                if (m_ProjectAuthSignature == null)
-                {
-                    RequestAuthSignature();
-                }
-                else
-                {
-                    RetrieveGooglePlayKey();
-                }
-            }
-
-            void RequestUpdateOperation()
-            {
-                m_SettingKey = true;
-                if (m_ProjectAuthSignature == null)
-                {
-                    RequestAuthSignature();
-                }
-                else
-                {
-                    SubmitGooglePlayKey();
-                }
-            }
-
-            void RequestAuthSignature()
-            {
-                if (m_AuthSignatureRequest == null)
-                {
-                    PurchasingService.instance.RequestAuthSignature(OnGetAuthSignature, out m_AuthSignatureRequest);
-                }
-            }
-
-            void OnGetAuthSignature(AsyncOperation op)
-            {
-                if (op.isDone && (m_AuthSignatureRequest != null) && m_AuthSignatureRequest.downloadHandler.isDone)
-                {
-                    if ((m_AuthSignatureRequest.result != UnityWebRequest.Result.ProtocolError) && (m_AuthSignatureRequest.result != UnityWebRequest.Result.ConnectionError))
-                    {
-                        var jsonParser = new JSONParser(m_AuthSignatureRequest.downloadHandler.text);
-                        try
-                        {
-                            var json = jsonParser.Parse();
-
-                            m_ProjectAuthSignature = json.AsDict()[k_JsonKeyAuthSignature].AsString();
-                            if (m_SettingKey)
-                            {
-                                SubmitGooglePlayKey();
-                            }
-                            else
-                            {
-                                RetrieveGooglePlayKey();
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            NotificationManager.instance.Publish(provider.serviceInstance.notificationTopic, Notification.Severity.Error,
-                                string.Format(L10n.Tr(k_AuthSignatureExceptionMessage), Connect.UnityConnect.instance.projectInfo.projectName, ex.Message));
-
-                            Debug.LogException(ex);
-                        }
-                    }
-
-                    m_AuthSignatureRequest.Dispose();
-                    m_AuthSignatureRequest = null;
-                }
+                RetrieveGooglePlayKey();
             }
 
             void RetrieveGooglePlayKey()
             {
-                PurchasingService.instance.GetGooglePlayKey(OnGetGooglePlayKey, m_ProjectAuthSignature);
+                PurchasingService.instance.GetGooglePlayKey(OnGetGooglePlayKey);
             }
 
-            void OnGetGooglePlayKey(AsyncOperation op)
+            void OnGetGooglePlayKey(string googlePlayKey, long responseCode)
             {
-                UnityWebRequestAsyncOperation webOp = (UnityWebRequestAsyncOperation)op;
+                m_GooglePlayKey = googlePlayKey;
+                m_GooglePlayKeyState = InterpretKeyStateFromProtocolError(responseCode);
 
-                if (webOp != null && webOp.isDone)
+                if (!string.IsNullOrEmpty(m_GooglePlayKey))
                 {
-                    UnityWebRequest completedRequest = webOp.webRequest;
-                    if (completedRequest != null)
-                    {
-                        if ((completedRequest.result != UnityWebRequest.Result.ProtocolError) && (completedRequest.result != UnityWebRequest.Result.ConnectionError))
-                        {
-                            var jsonParser = new JSONParser(completedRequest.downloadHandler.text);
-                            try
-                            {
-                                var json = jsonParser.Parse();
-                                var rawKey = json.AsDict()[PurchasingService.instance.googleKeyJsonLabel];
-
-                                m_GooglePlayKey = (!rawKey.IsNull()) ? rawKey.AsString() : null;
-
-                                if (!String.IsNullOrEmpty(m_GooglePlayKey))
-                                {
-                                    m_GooglePlayKeyState = GooglePlayKeyState.Verified;
-                                    m_IapOptionsBlock.Q<TextField>(k_GooglePlayKeyEntry).SetValueWithoutNotify(m_GooglePlayKey);
-                                }
-                                else
-                                {
-                                    m_GooglePlayKeyState = GooglePlayKeyState.CantFetch;
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                NotificationManager.instance.Publish(provider.serviceInstance.notificationTopic, Notification.Severity.Error,
-                                    string.Format(L10n.Tr(k_KeyParsingExceptionMessage), ex.Message));
-
-                                Debug.LogException(ex);
-
-                                m_GooglePlayKey = "";
-                                m_GooglePlayKeyState = GooglePlayKeyState.CantFetch;
-                            }
-                        }
-                        else
-                        {
-                            m_GooglePlayKeyState = GooglePlayKeyState.CantFetch;
-                        }
-                    }
+                    m_IapOptionsBlock.Q<TextElement>(k_GooglePlayKeyText).text = m_GooglePlayKey;
                 }
 
                 ToggleGoogleKeyStateVisibility(m_IapOptionsBlock, m_GooglePlayKeyState);
             }
 
-            void SubmitGooglePlayKey()
+            static GooglePlayKeyState InterpretKeyStateFromProtocolError(long responseCode)
             {
-                string keyToSubmit = m_IapOptionsBlock.Q<TextField>(k_GooglePlayKeyEntry).text;
-                PurchasingService.instance.SubmitGooglePlayKey(keyToSubmit, OnSubmitGooglePlayKey, m_ProjectAuthSignature);
-            }
-
-            void OnSubmitGooglePlayKey(AsyncOperation op)
-            {
-                UnityWebRequestAsyncOperation webOp = (UnityWebRequestAsyncOperation)op;
-
-                if (webOp != null)
+                switch (responseCode)
                 {
-                    bool verified = false;
-                    UnityWebRequest completedRequest = webOp.webRequest;
-                    if (completedRequest != null)
-                    {
-                        if ((completedRequest.result != UnityWebRequest.Result.ProtocolError) && (completedRequest.result != UnityWebRequest.Result.ConnectionError))
-                        {
-                            verified = true;
-                            m_GooglePlayKeyState = GooglePlayKeyState.Verified;
-                        }
-                        else if (completedRequest.result == UnityWebRequest.Result.ProtocolError)
-                        {
-                            if (completedRequest.responseCode == 405 || completedRequest.responseCode == 500)
-                            {
-                                m_GooglePlayKeyState = GooglePlayKeyState.ServerError;
-                            }
-                            else if (completedRequest.responseCode == 401 || completedRequest.responseCode == 403)
-                            {
-                                m_GooglePlayKeyState = GooglePlayKeyState.UnauthorizedUser;
-                            }
-                            else
-                            {
-                                m_GooglePlayKeyState = GooglePlayKeyState.InvalidFormat;
-                            }
-                        }
-                        else
-                        {
-                            m_GooglePlayKeyState = GooglePlayKeyState.InvalidFormat;
-                        }
-                    }
-
-                    EditorAnalytics.SendValidatePublicKeyEvent(new PublicKeyInfo() { key = "Google Play", success = verified });
+                    case 200:
+                        return GooglePlayKeyState.Verified;
+                    case 401:
+                    case 403:
+                        return GooglePlayKeyState.UnauthorizedUser;
+                    case 400:
+                    case 404:
+                        return GooglePlayKeyState.CantFetch;
+                    case 405:
+                    case 500:
+                    case -1:
+                        return GooglePlayKeyState.ServerError;
+                    default:
+                        return GooglePlayKeyState.CantFetch; //Could instead use a generic unknown message, but this is good enough.
                 }
-
-                ToggleGoogleKeyStateVisibility(m_IapOptionsBlock, m_GooglePlayKeyState);
             }
 
             //End Options Block

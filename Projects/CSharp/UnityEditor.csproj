@@ -7801,6 +7801,15 @@
     <Compile Include="..\..\Modules\UnityConnectEditor\Common\UnityConnectWebRequestException.cs">
       <Link>Modules\UnityConnectEditor\Common\UnityConnectWebRequestException.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Networking\GatewayTokenWebRequest.cs">
+      <Link>Modules\UnityConnectEditor\Networking\GatewayTokenWebRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Networking\GetGoogleKeyWebRequest.cs">
+      <Link>Modules\UnityConnectEditor\Networking\GetGoogleKeyWebRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Networking\NetworkingUtils.cs">
+      <Link>Modules\UnityConnectEditor\Networking\NetworkingUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\AdsProjectSettings.cs">
       <Link>Modules\UnityConnectEditor\ProjectSettings\AdsProjectSettings.cs</Link>
     </Compile>

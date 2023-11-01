@@ -40,7 +40,9 @@ namespace Unity.Profiling.Editor
 
             if (categoryReferenceCounts.TryGetValue(categoryName, out var referenceCount))
             {
-                referenceCount = Math.Max(--referenceCount, (UInt16)0);
+                if (referenceCount > 0)
+                    referenceCount--;
+
                 categoryReferenceCounts[categoryName] = referenceCount;
 
                 if (referenceCount == 0)

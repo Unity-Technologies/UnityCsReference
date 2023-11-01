@@ -352,7 +352,8 @@ namespace UnityEditor.ShortcutManagement
                 m_ViewController.activeProfile,
                 L10n.Tr("Rename"),
                 m_ViewController.CanRenameActiveProfile,
-                m_ViewController.RenameActiveProfile);
+                m_ViewController.RenameActiveProfile,
+                400f, 200f);
         }
 
         void OnDeleteProfileClicked()

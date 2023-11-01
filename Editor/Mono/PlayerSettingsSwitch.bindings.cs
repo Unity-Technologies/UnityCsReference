@@ -140,10 +140,6 @@ namespace UnityEditor
             [NativeProperty("switchLTOSetting", TargetType.Field)]
             extern public static int switchLTOSetting { get; set; }
 
-            // Whether to enable use of the old Nintendo GOLD linker.
-            [NativeProperty("switchUseGOLDLinker", TargetType.Field)]
-            extern public static bool useSwitchGOLDLinker { get; set; }
-
             // System Memory (used for virtual memory mapping).
             [NativeProperty("switchSystemResourceMemory", TargetType.Field)]
             extern public static int systemResourceMemory { get; set; }
@@ -577,10 +573,6 @@ namespace UnityEditor
             // Network Interface Manager Initialize Enabled
             [NativeProperty("switchNetworkInterfaceManagerInitializeEnabled", TargetType.Field)]
             extern public static bool networkInterfaceManagerInitializeEnabled { get; set; }
-
-            // Player Connection Enabled
-            [NativeProperty("switchPlayerConnectionEnabled", TargetType.Field)]
-            extern public static bool playerConnectionEnabled { get; set; }
 
             // Using the new path style system
             [NativeProperty("switchUseNewStyleFilepaths", TargetType.Field)]

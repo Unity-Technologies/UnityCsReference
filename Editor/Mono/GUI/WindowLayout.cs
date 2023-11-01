@@ -78,8 +78,10 @@ namespace UnityEditor
         internal static string layoutsPreferencesPath => FileUtil.CombinePaths(InternalEditorUtility.unityPreferencesFolder, "Layouts");
         internal static string layoutsModePreferencesPath => FileUtil.CombinePaths(layoutsPreferencesPath, ModeService.currentId);
         internal static string layoutsDefaultModePreferencesPath => FileUtil.CombinePaths(layoutsPreferencesPath, "default");
+        internal static string layoutsCurrentModePreferencesPath => FileUtil.CombinePaths(layoutsPreferencesPath, "current");
         internal static string layoutsProjectPath => FileUtil.CombinePaths("UserSettings", "Layouts");
         internal static string ProjectLayoutPath => GetProjectLayoutPerMode(ModeService.currentId);
+        internal static string currentLayoutName => GetLayoutFileName(ModeService.currentId, Application.unityVersionVer);
 
         [UsedImplicitly, RequiredByNativeCode]
         public static void LoadDefaultWindowPreferences()
@@ -96,7 +98,6 @@ namespace UnityEditor
                 LoadProjectLayout(keepMainWindow);
             else
             {
-
                 var projectLayoutExists = File.Exists(ProjectLayoutPath);
                 if ((projectLayoutExists && Convert.ToBoolean(dynamicLayout["restore_saved_layout"]))
                     || !LoadModeDynamicLayout(keepMainWindow, dynamicLayout))
@@ -368,23 +369,59 @@ namespace UnityEditor
             return true;
         }
 
+        // Used by tests
+        internal static string GetLayoutFileName(string mode, int version) => $"{mode}-{version}.dwlt";
+
+        // Iterate through potential layouts in descending order of precedence.
+        // 1. Last loaded layout in project for matching Unity version
+        // 2. Last loaded layout in project for any Unity version, in descending alphabetical order
+        // 3. Last loaded layout in global preferences for matching Unity version
+        // 4. Last loaded layout in global preferences for any Unity version, in descending alphabetical order
+        // 5. The factory default layout
         private static void LoadProjectLayout(bool keepMainWindow)
         {
-            var projectLayoutExists = File.Exists(ProjectLayoutPath);
-            if (!projectLayoutExists)
+            var mode = ModeService.currentId;
+            var version = Application.unityVersionVer;
+
+            foreach (var layout in GetLastLayout(layoutsProjectPath, mode, version))
+                if (LoadWindowLayout(layout, layout != ProjectLayoutPath, false, keepMainWindow))
+                    return;
+
+            foreach (var layout in GetLastLayout(layoutsCurrentModePreferencesPath, mode, version))
+                if (LoadWindowLayout(layout, true, false, keepMainWindow))
+                    return;
+
+            // It is not mandatory that modes define a layout. In that case, skip right to the default layout.
+            if (!string.IsNullOrEmpty(ModeService.GetDefaultModeLayout())
+                && LoadWindowLayout(ModeService.GetDefaultModeLayout(), true, false, keepMainWindow))
+                return;
+
+            // If all else fails, load the default layout that ships with the editor. If that fails, prompt the user to
+            // restore the default layouts.
+            if (!LoadWindowLayout(GetDefaultLayoutPath(), true, false, keepMainWindow))
             {
-                var currentLayoutPath = GetCurrentLayoutPath();
-                if (EnsureDirectoryCreated(ProjectLayoutPath))
+                int option = 0;
+
+                if (!Application.isTestRun && Application.isHumanControllingUs)
                 {
-                    Console.WriteLine($"[LAYOUT] LoadProjectLayout: Copying Project Current Layout: {ProjectLayoutPath} from {currentLayoutPath}");
-                    FileUtil.CopyFileOrDirectory(currentLayoutPath, ProjectLayoutPath);
+                    option = EditorUtility.DisplayDialogComplex(L10n.Tr("Missing Default Layout"), L10n.Tr("No valid user created or default window layout found. Please revert factory settings to restore the default layouts."),
+                        L10n.Tr("Quit"), L10n.Tr("Revert Factory Settings"), "");
+                }
+                else
+                {
+                    ResetUserLayouts();
+                }
+
+                switch (option)
+                {
+                    case 0:
+                        EditorApplication.Exit(0);
+                        break;
+                    case 1:
+                        ResetFactorySettings();
+                        break;
                 }
             }
-
-            Debug.Assert(File.Exists(ProjectLayoutPath));
-
-            // Load the current project layout
-            LoadWindowLayout(ProjectLayoutPath, !projectLayoutExists, false, keepMainWindow);
         }
 
         [UsedImplicitly, RequiredByNativeCode]
@@ -399,8 +436,48 @@ namespace UnityEditor
 
         internal static void SaveCurrentLayoutPerMode(string modeId)
         {
-            // Save Project Current Layout
+            // Save the layout in two places. Once in the Project/UserSettings directory, then again the global
+            // preferences. The latter is used when opening a new project (or any case where UserSettings/Layouts/ does
+            // not exist).
             SaveWindowLayout(FileUtil.CombinePaths(Directory.GetCurrentDirectory(), GetProjectLayoutPerMode(modeId)));
+            SaveWindowLayout(Path.Combine(layoutsCurrentModePreferencesPath, GetProjectLayoutPerMode(modeId)));
+        }
+
+        // Iterate through potential layout files, prioritizing exact match followed by descending unity version.
+        // IMPORTANT: This function is "dumb" in that it does not do any kind of sophisticated version comparison. If the
+        // naming scheme for current layouts is changed, or this function is called on to sort user saved layouts, you will
+        // need to add more sophisticated filtering.
+        public static IEnumerable<string> GetLastLayout(string directory, string mode, int version)
+        {
+            var currentModeAndVersionLayout = GetLayoutFileName(mode, version);
+            string layoutSearchPattern = $"{mode}-*.*wlt";
+
+            // first try the exact match
+            var preferred = Path.Combine(directory, currentModeAndVersionLayout);
+
+            if(File.Exists(preferred))
+                yield return preferred;
+
+            // if that fails, fall back to layouts for this mode from other unity versions in descending order
+            if (Directory.Exists(directory))
+            {
+                var layouts = Directory.GetFiles(directory, layoutSearchPattern);
+
+                foreach (var path in layouts.OrderByDescending(x => x.ToLower()))
+                    if (path != preferred)
+                        yield return path;
+            }
+        }
+
+        // used by Tests/EditModeAndPlayModeTests/EditorModes
+        internal static IEnumerable<string> GetLastLayout()
+        {
+            var mode = ModeService.currentId;
+            var version = Application.unityVersionVer;
+            foreach (var layout in GetLastLayout(layoutsProjectPath, mode, version))
+                yield return layout;
+            foreach (var layout in GetLastLayout(layoutsCurrentModePreferencesPath, mode, version))
+                yield return layout;
         }
 
         internal static string GetCurrentLayoutPath()
@@ -421,7 +498,7 @@ namespace UnityEditor
 
         internal static string GetProjectLayoutPerMode(string modeId)
         {
-            return FileUtil.CombinePaths(layoutsProjectPath, $"{modeId}-{Application.unityVersionVer}.dwlt");
+            return FileUtil.CombinePaths(layoutsProjectPath, GetLayoutFileName(modeId, Application.unityVersionVer));
         }
 
         private static void InitializeLayoutPreferencesFolder()
@@ -912,6 +989,19 @@ namespace UnityEditor
             }
         }
 
+        private static View FindRootSplitView(EditorWindow win)
+        {
+            View itor = win.m_Parent.parent;
+            View rootSplit = itor;
+            while (itor is SplitView)
+            {
+                rootSplit = itor;
+                itor = itor.parent;
+            }
+
+            return rootSplit;
+        }
+
         public static void AddSplitViewAndChildrenRecurse(View splitview, ArrayList list)
         {
             list.Add(splitview);
@@ -960,14 +1050,8 @@ namespace UnityEditor
 
         public static bool MaximizePrepare(EditorWindow win)
         {
-            // Find Root SplitView
-            View itor = win.m_Parent.parent;
-            View rootSplit = itor;
-            while (itor != null && itor is SplitView)
-            {
-                rootSplit = itor;
-                itor = itor.parent;
-            }
+            View rootSplit = FindRootSplitView(win);
+            View itor = rootSplit.parent;
 
             // Make sure it has a dockarea
             DockArea dockArea = win.m_Parent as DockArea;
@@ -1105,7 +1189,7 @@ namespace UnityEditor
                 UnityObject[] loadedWindows = InternalEditorUtility.LoadSerializedFileAndForget(path);
 
                 if (loadedWindows == null || loadedWindows.Length == 0)
-                    throw new LayoutException($"Window layout at {path} could not be loaded.");
+                    throw new LayoutException($"No windows found in layout.");
 
                 List<UnityObject> newWindows = new List<UnityObject>();
 
@@ -1121,7 +1205,7 @@ namespace UnityEditor
                     {
                         if (!editorWin || !editorWin.m_Parent || !editorWin.m_Parent.window)
                         {
-                            Console.WriteLine("[LAYOUT] Removed unparented EditorWindow while reading window layout: window #" + i + ", type=" +
+                            Console.WriteLine("[LAYOUT] Removed un-parented EditorWindow while reading window layout: window #" + i + ", type=" +
                                 o.GetType() + ", instanceID=" + o.GetInstanceID());
                             UnityObject.DestroyImmediate(editorWin, true);
                             layoutLoadingIssue = true;
@@ -1232,40 +1316,14 @@ namespace UnityEditor
                         containerWindow.Show(containerWindow.showMode, loadPosition: false, displayImmediately: true, setFocus: true);
                 }
 
-                // Unmaximize maximized PlayModeView window if maximize on play is enabled
+                // Un-maximize maximized PlayModeView window if maximize on play is enabled
                 PlayModeView playModeView = GetMaximizedWindow() as PlayModeView;
                 if (playModeView != null && playModeView.enterPlayModeBehavior == PlayModeView.EnterPlayModeBehavior.PlayMaximized)
                     Unmaximize(playModeView);
             }
             catch (Exception ex)
             {
-                Debug.LogError("Failed to load window layout: " + ex);
-
-                int option = 0;
-                if (!Application.isTestRun && Application.isHumanControllingUs)
-                {
-                    option = EditorUtility.DisplayDialogComplex("Failed to load window layout",
-                        $"This can happen if layout contains custom windows and there are compile errors in the project.\r\n\r\n{ex.Message}",
-                        "Load Default Layout", "Quit", "Revert Factory Settings");
-                }
-                else
-                {
-                    ResetUserLayouts();
-                }
-
-                switch (option)
-                {
-                    case 0:
-                        LoadDefaultLayout();
-                        break;
-                    case 1:
-                        EditorApplication.Exit(0);
-                        break;
-                    case 2:
-                        ResetFactorySettings();
-                        break;
-                }
-
+                Debug.LogError($"Failed to load window layout \"{path}\": {ex}");
                 return false;
             }
             finally
@@ -1279,7 +1337,7 @@ namespace UnityEditor
             }
 
             if (layoutLoadingIssue)
-                Debug.Log("The editor layout could not be fully loaded, this can happen when the layout contains EditorWindows not available in this project");
+                Debug.LogWarning($"The layout \"{path}\" could not be fully loaded, this can happen when the layout contains EditorWindows not available in this project.");
 
             return true;
         }
