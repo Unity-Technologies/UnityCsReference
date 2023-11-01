@@ -297,12 +297,12 @@ namespace UnityEditor.UIElements.Bindings
 
             isReleased = true;
 
-            ClearListView();
-
             ResetContext();
             m_DataList = null;
             m_ArraySize = null;
             m_ListViewArraySize = -1;
+
+            ClearListView();
 
             ResetCachedValues();
             s_Pool.Release(this);

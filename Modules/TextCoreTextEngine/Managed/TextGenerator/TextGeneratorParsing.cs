@@ -1574,11 +1574,20 @@ namespace UnityEngine.TextCore.Text
                     textInfo.lineInfo[m_LineNumber].lastCharacterIndex = m_LastCharacterOfLine = m_CharacterCount;
                     textInfo.lineInfo[m_LineNumber].lastVisibleCharacterIndex = m_LastVisibleCharacterOfLine = m_LastVisibleCharacterOfLine < m_FirstVisibleCharacterOfLine ? m_FirstVisibleCharacterOfLine : m_LastVisibleCharacterOfLine;
 
+                    int firstCharacterIndex = m_FirstVisibleCharacterOfLine;
+                    int lastCharacterIndex = m_LastVisibleCharacterOfLine;
+                    if (generationSettings.textWrappingMode == TextWrappingMode.PreserveWhitespace || generationSettings.textWrappingMode == TextWrappingMode.PreserveWhitespaceNoWrap)
+                    {
+                        firstCharacterIndex = m_FirstCharacterOfLine;
+                        lastCharacterIndex = m_LastCharacterOfLine;
+                    }
+
                     textInfo.lineInfo[m_LineNumber].characterCount = textInfo.lineInfo[m_LineNumber].lastCharacterIndex - textInfo.lineInfo[m_LineNumber].firstCharacterIndex + 1;
                     textInfo.lineInfo[m_LineNumber].visibleCharacterCount = m_LineVisibleCharacterCount;
-                    textInfo.lineInfo[m_LineNumber].lineExtents.min = new Vector2(textInfo.textElementInfo[m_FirstVisibleCharacterOfLine].bottomLeft.x, lineDescender);
-                    textInfo.lineInfo[m_LineNumber].lineExtents.max = new Vector2(textInfo.textElementInfo[m_LastVisibleCharacterOfLine].topRight.x, lineAscender);
-                    textInfo.lineInfo[m_LineNumber].length = textInfo.lineInfo[m_LineNumber].lineExtents.max.x - (padding * currentElementScale);
+                    textInfo.lineInfo[m_LineNumber].lineExtents.min = new Vector2(textInfo.textElementInfo[firstCharacterIndex].bottomLeft.x, lineDescender);
+                    textInfo.lineInfo[m_LineNumber].lineExtents.max = new Vector2(textInfo.textElementInfo[lastCharacterIndex].topRight.x, lineAscender);
+                    // UUM-46147: For IMGUI line length should include xAdvance for backward compatibility
+                    textInfo.lineInfo[m_LineNumber].length = generationSettings.isIMGUI ? textInfo.textElementInfo[m_LastVisibleCharacterOfLine].xAdvance : textInfo.lineInfo[m_LineNumber].lineExtents.max.x - (padding * currentElementScale);
                     textInfo.lineInfo[m_LineNumber].width = widthOfTextArea;
 
                     if (textInfo.lineInfo[m_LineNumber].characterCount == 1)
@@ -1786,7 +1795,8 @@ namespace UnityEngine.TextCore.Text
             textInfo.lineInfo[m_LineNumber].visibleCharacterCount = m_LineVisibleCharacterCount;
             textInfo.lineInfo[m_LineNumber].lineExtents.min = new Vector2(textInfo.textElementInfo[m_FirstVisibleCharacterOfLine].bottomLeft.x, lineDescender);
             textInfo.lineInfo[m_LineNumber].lineExtents.max = new Vector2(textInfo.textElementInfo[m_LastVisibleCharacterOfLine].topRight.x, lineAscender);
-            textInfo.lineInfo[m_LineNumber].length = textInfo.lineInfo[m_LineNumber].lineExtents.max.x;
+            // UUM-46147: For IMGUI line length should include xAdvance for backward compatibility
+            textInfo.lineInfo[m_LineNumber].length = generationSettings.isIMGUI ? textInfo.textElementInfo[m_LastVisibleCharacterOfLine].xAdvance : textInfo.lineInfo[m_LineNumber].lineExtents.max.x;
             textInfo.lineInfo[m_LineNumber].width = width;
 
             float glyphAdjustment = textInfo.textElementInfo[m_LastVisibleCharacterOfLine].adjustedHorizontalAdvance;

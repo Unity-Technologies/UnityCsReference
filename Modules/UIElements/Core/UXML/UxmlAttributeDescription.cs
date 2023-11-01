@@ -60,8 +60,14 @@ namespace UnityEngine.UIElements
         /// </summary>
         public IEnumerable<string> obsoleteNames
         {
-            get { return m_ObsoleteNames; }
-            set { m_ObsoleteNames = value.ToArray(); }
+            get => m_ObsoleteNames;
+            set
+            {
+                if (value is string[] array)
+                    m_ObsoleteNames = array;
+                else
+                    m_ObsoleteNames = value.ToArray();
+            }
         }
 
         /// <summary>

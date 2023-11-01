@@ -3826,7 +3826,7 @@ namespace UnityEditor
             if (gameObject == null)
                 return false;
 
-            return StageUtility.IsGameObjectRenderedByCamera(gameObject, camera);
+            return !StageUtility.IsGizmoCulledBySceneCullingMasksOrFocusedScene(gameObject, camera);
         }
 
         public bool FrameSelected()

@@ -88,6 +88,7 @@ namespace UnityEditor
             public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
             public static readonly GUIContent enableHelperBar = EditorGUIUtility.TrTextContent("Enable Helper Bar", "Enables Helper Bar in the status bar at the bottom of the main Unity Editor window.");
             public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
+            public static readonly GUIContent showSecondaryWindowsInTaskbar = EditorGUIUtility.TrTextContent("Show All Windows in Taskbar");
         }
 
         class ExternalProperties
@@ -167,11 +168,14 @@ namespace UnityEditor
         private string[] m_CachedGpuDevices;
         private bool m_ContentScaleChangedThisSession;
         private int m_ContentScalePercentValue;
+        private bool m_TaskbarBehaviorChangedThisSession;
+        private bool m_TaskbarBehaviorValue;
         private bool m_EnableConstrainProportionsScalingForNewObjects;
         private string[] m_CustomScalingLabels = {"100%", "125%", "150%", "175%", "200%", "225%", "250%", "300%", "350%"};
         private int[] m_CustomScalingValues = { 100, 125, 150, 175, 200, 225, 250, 300, 350 };
         private bool m_EnableExtendedLogging;
         private readonly string kContentScalePrefKey = "CustomEditorUIScale";
+        private readonly string kWindowsTaskbarPrefKey = "WindowsTaskbarBehavior";
 
         private struct GICacheSettings
         {
@@ -595,6 +599,22 @@ namespace UnityEditor
             EditorGUI.indentLevel--;
 
             EditorGUILayout.Space();
+
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+            {
+                bool existingBehaviorValue = m_TaskbarBehaviorValue;
+                m_TaskbarBehaviorValue = EditorGUILayout.Toggle(GeneralProperties.showSecondaryWindowsInTaskbar, existingBehaviorValue);
+
+                if (existingBehaviorValue != m_TaskbarBehaviorValue)
+                {
+                    m_TaskbarBehaviorChangedThisSession = true;
+                }
+
+                if (m_TaskbarBehaviorChangedThisSession)
+                {
+                    EditorGUILayout.HelpBox(ExternalProperties.changingThisSettingRequiresRestart.text, MessageType.Warning);
+                }
+            }
 
             ApplyChangesToPrefs();
 
@@ -1099,6 +1119,18 @@ namespace UnityEditor
                 EditorPrefs.SetInt(kContentScalePrefKey, m_ContentScalePercentValue);
             }
 
+            if (m_TaskbarBehaviorChangedThisSession)
+            {
+                if (m_TaskbarBehaviorValue)
+                {
+                    EditorPrefs.SetBool(kWindowsTaskbarPrefKey, m_TaskbarBehaviorValue);
+                }
+                else
+                {
+                    EditorPrefs.DeleteKey(kWindowsTaskbarPrefKey);
+                }
+            }
+
             EditorPrefs.SetBool("ReopenLastUsedProjectOnStartup", m_ReopenLastUsedProjectOnStartup);
             EditorPrefs.SetBool("EnableEditorAnalytics", m_EnableEditorAnalytics);
             EditorPrefs.SetBool("SaveScenesBeforeBuilding", m_AutoSaveScenesBeforeBuilding);
@@ -1233,6 +1265,11 @@ namespace UnityEditor
             {
                 m_ContentScalePercentValue  = CurrentEditorScalingValue;
                 m_ContentScaleChangedThisSession = false;
+            }
+
+            if (EditorPrefs.HasKey(kWindowsTaskbarPrefKey))
+            {
+                m_TaskbarBehaviorValue = EditorPrefs.GetBool(kWindowsTaskbarPrefKey, false);
             }
 
             foreach (IPreferenceWindowExtension extension in prefWinExtensions)

@@ -190,6 +190,9 @@ namespace UnityEditor.Search
         {
             Off(SearchEvent.RefreshContent, OnRefreshed);
             Off(SearchEvent.DisplayModeChanged, UpdateResultViewButton);
+
+            // Make sure to remove callbacks when Detaching from panel
+            EditorApplication.tick -= AdjustTabs;
         }
 
         private void BuildGroups()

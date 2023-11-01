@@ -1113,6 +1113,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal struct SerializedDataOverrideRange
+        {
+            internal readonly VisualTreeAsset sourceAsset;
+            internal readonly List<TemplateAsset.UxmlSerializedDataOverride> attributeOverrides;
+
+            public SerializedDataOverrideRange(VisualTreeAsset sourceAsset, List<TemplateAsset.UxmlSerializedDataOverride> attributeOverrides)
+            {
+                this.sourceAsset = sourceAsset;
+                this.attributeOverrides = attributeOverrides;
+            }
+        }
+
         /// <undoc/>
         // TODO why is this public? It's not used internally and could be obtained by default(CreationContext)
         public static readonly CreationContext Default = new CreationContext();
@@ -1135,7 +1147,9 @@ namespace UnityEngine.UIElements
 
         internal List<AttributeOverrideRange> attributeOverrides { get; private set; }
 
-        internal List<TemplateAsset.UxmlSerializedDataOverride> serializedDataOverrides { get; private set; }
+        internal List<SerializedDataOverrideRange> serializedDataOverrides { get; private set; }
+
+        internal bool hasOverrides => attributeOverrides?.Count > 0 || serializedDataOverrides?.Count > 0;
 
         internal CreationContext(VisualTreeAsset vta)
             : this((Dictionary<string, VisualElement>) null, vta, null)
@@ -1167,7 +1181,7 @@ namespace UnityEngine.UIElements
         internal CreationContext(
             Dictionary<string, VisualElement> slotInsertionPoints,
             List<AttributeOverrideRange> attributeOverrides,
-            List<TemplateAsset.UxmlSerializedDataOverride> serializedDataOverrides,
+            List<SerializedDataOverrideRange> serializedDataOverrides,
             VisualTreeAsset vta, VisualElement target)
         {
             this.target = target;
@@ -1175,24 +1189,6 @@ namespace UnityEngine.UIElements
             this.attributeOverrides = attributeOverrides;
             this.serializedDataOverrides = serializedDataOverrides;
             visualTreeAsset = vta;
-        }
-
-        internal bool TryGetSerializedDataOverride(int elementId, out UxmlSerializedData serializedDataOverride)
-        {
-            serializedDataOverride = null;
-            if (serializedDataOverrides == null)
-                return false;
-
-            for (var i = 0; i < serializedDataOverrides.Count; i++)
-            {
-                if (serializedDataOverrides[i].m_ElementId == elementId)
-                {
-                    serializedDataOverride = serializedDataOverrides[i].m_SerializedData;
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         public override bool Equals(object obj)

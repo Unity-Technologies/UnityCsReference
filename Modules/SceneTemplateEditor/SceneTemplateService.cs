@@ -53,6 +53,24 @@ namespace UnityEditor.SceneTemplate
         }
     }
 
+    internal sealed class ClonePathInfo
+    {
+        public DependencyInfo dependency;
+        public string dependencyPath;
+        public string clonePath;
+
+        public ClonePathInfo(DependencyInfo dependency, string dependencyPath)
+        {
+            this.dependency = dependency;
+            this.dependencyPath = dependencyPath;
+        }
+
+        public override string ToString()
+        {
+            return dependencyPath;
+        }
+    }
+
     public static class SceneTemplateService
     {
         public delegate void NewTemplateInstantiating(SceneTemplateAsset sceneTemplateAsset, string newSceneOutputPath, bool additiveLoad);
@@ -429,7 +447,7 @@ namespace UnityEditor.SceneTemplate
                         Debug.LogError($"Failed to reload scene {scene.path}");
                     }
                     ClearInMemorySceneState();
-                }            
+                }
             }
         }
 
@@ -451,13 +469,12 @@ namespace UnityEditor.SceneTemplate
             try
             {
                 AssetDatabase.StartAssetEditing();
-
                 var dependencyPaths = sceneTemplate.dependencies
                     .Where(d => d.instantiationMode == TemplateInstantiationMode.Clone)
-                    .Select(d => (dependency: d, dependencyPath: AssetDatabase.GetAssetPath(d.dependency))).ToArray();
+                    .Select(d => new ClonePathInfo(d, AssetDatabase.GetAssetPath(d.dependency))).ToArray();
 
                 var nullPath = dependencyPaths.FirstOrDefault(d => string.IsNullOrEmpty(d.dependencyPath));
-                if (nullPath.dependency != null)
+                if (nullPath != null && nullPath.dependency != null)
                 {
                     Debug.LogError("Cannot find dependency path for: " + nullPath.dependency);
                     if (createdDirectory)
@@ -465,14 +482,9 @@ namespace UnityEditor.SceneTemplate
                     return false;
                 }
 
-                var clonedPaths = dependencyPaths.Select(d =>
-                {
-                    var clonedDepName = Path.GetFileName(d.dependencyPath);
-                    var clonedDepPath = Path.Combine(dependencyFolder, clonedDepName).Replace("\\", "/");
-                    return (d.dependencyPath, clonedDepPath);
-                }).ToArray();
-
-                refPathMap = clonedPaths.ToDictionary(d => d.dependencyPath, d => d.clonedDepPath);
+                // Gather all dependencies. Extract their name. For duplicate clone paths format a new name including the former path (without Assets/).
+                var clonePathToInfos = SetupClonePathInfos(dependencyFolder, dependencyPaths);
+                refPathMap = clonePathToInfos.ToDictionary(d => d.dependencyPath, d => d.clonePath);
 
                 if (!AssetDatabase.CopyAssets(refPathMap.Keys.ToArray(), refPathMap.Values.ToArray()))
                 {
@@ -508,6 +520,33 @@ namespace UnityEditor.SceneTemplate
             }
 
             return true;
+        }
+
+        internal static IEnumerable<ClonePathInfo> SetupClonePathInfos(string dependencyFolder, IEnumerable<ClonePathInfo> infos)
+        {
+            var clonePathToInfo = new Dictionary<string, ClonePathInfo>();
+            foreach (var depInfo in infos)
+            {
+                var clonedDepName = Path.GetFileName(depInfo.dependencyPath);
+                depInfo.clonePath = Path.Combine(dependencyFolder, clonedDepName).Replace("\\", "/");
+                if (clonePathToInfo.TryGetValue(depInfo.clonePath, out var existing))
+                {
+                    if (existing.clonePath == depInfo.clonePath)
+                    {
+                        existing.clonePath = CreateUniqueAssetName(dependencyFolder, existing.dependencyPath);
+                    }
+                    depInfo.clonePath = CreateUniqueAssetName(dependencyFolder, depInfo.dependencyPath);
+                }
+                clonePathToInfo[depInfo.clonePath] = depInfo;
+            }
+            return clonePathToInfo.Values;
+        }
+
+        internal static string CreateUniqueAssetName(string folder, string path)
+        {
+            var tokens = path.Split('/');
+            var uniqueName = string.Join("_", tokens.Skip(1));
+            return Path.Combine(folder, uniqueName).Replace("\\", "/");
         }
 
         static void RegisterInMemoryTempFolder()

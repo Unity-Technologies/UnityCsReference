@@ -2807,6 +2807,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlChildElementDescription.cs">
       <Link>Modules\UIElements\Core\UXML\UxmlChildElementDescription.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlDescriptionRegistry.cs">
+      <Link>Modules\UIElements\Core\UXML\UxmlDescriptionRegistry.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlFactory.cs">
       <Link>Modules\UIElements\Core\UXML\UxmlFactory.cs</Link>
     </Compile>
