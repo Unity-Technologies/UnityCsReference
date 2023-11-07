@@ -4118,6 +4118,9 @@
     <Compile Include="..\..\Runtime\Export\RenderPipeline\SupportedRenderingFeatures.cs">
       <Link>Runtime\Export\RenderPipeline\SupportedRenderingFeatures.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\RenderPipeline\UISubset.cs">
+      <Link>Runtime\Export\RenderPipeline\UISubset.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\VisibleLight.cs">
       <Link>Runtime\Export\RenderPipeline\VisibleLight.cs</Link>
     </Compile>

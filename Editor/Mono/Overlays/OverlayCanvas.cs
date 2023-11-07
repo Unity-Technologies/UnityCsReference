@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Serialization;
@@ -263,7 +264,7 @@ namespace UnityEditor.Overlays
 
         //Used by tests
         internal bool m_MouseInCurrentCanvas = false;
-        OverlayMenu m_Menu;
+
         internal string lastAppliedPresetName => m_LastAppliedPresetName;
         List<Overlay> m_Overlays = new List<Overlay>();
         List<Overlay> m_TransientOverlays = new();
@@ -288,7 +289,6 @@ namespace UnityEditor.Overlays
         FloatingOverlayContainer m_FloatingOverlayContainer;
         Overlay m_HoveredOverlay;
 
-        OverlayMenu menu => m_Menu ??= new OverlayMenu(this);
         internal VisualElement rootVisualElement => m_RootVisualElement ??= CreateRoot();
 
         internal Overlay hoveredOverlay => m_HoveredOverlay;
@@ -315,6 +315,8 @@ namespace UnityEditor.Overlays
 
         internal Action afterOverlaysInitialized;
         internal event Action<bool> overlaysEnabledChanged;
+
+        internal event Action overlayListChanged;
 
         internal bool overlaysEnabled => m_Containers.All(x => x.style.display != DisplayStyle.None);
 
@@ -492,8 +494,6 @@ namespace UnityEditor.Overlays
                 //this is not doing anything if it has already been registered
                 overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent>(overlay.OnGeometryChanged);
             }
-
-            menu?.AdjustToParentSize();
         }
 
         void OnMouseLeaveOverlay(MouseLeaveEvent evt)
@@ -514,15 +514,10 @@ namespace UnityEditor.Overlays
                 hoveredOverlay.displayed = false;
         }
 
-        internal void ShowMenu(bool show, bool atMousePosition = true)
+        internal bool HasTransientOverlays()
         {
-            if (show && !menuVisible)
-                menu.Show(atMousePosition && m_MouseInCurrentCanvas);
-            else if (!show)
-                menu.Hide();
+            return m_TransientOverlays.Count > 0;
         }
-
-        internal bool menuVisible => menu.isShown;
 
         internal bool IsTransient(Overlay overlay) => m_TransientOverlays.Contains(overlay);
 
@@ -530,7 +525,6 @@ namespace UnityEditor.Overlays
         {
             Profiler.BeginSample("OverlayCanvas.Initialize");
             containerWindow = window;
-            rootVisualElement.Add(menu);
 
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             var overlayTypes = OverlayUtilities.GetOverlaysForType(window.GetType());
@@ -675,29 +669,62 @@ namespace UnityEditor.Overlays
             root.UnregisterCallback<MouseEnterEvent>(OnMouseEnterOverlay);
             root.UnregisterCallback<MouseLeaveEvent>(OnMouseLeaveOverlay);
             root.RemoveFromHierarchy();
+            overlayListChanged?.Invoke();
             return true;
         }
 
-        public void CreateOverlayPopup<T>() where T : Overlay, new()
+        public void ShowPopup<T>() where T : Overlay, new()
         {
-            if (m_PopupOverlay != null)
+            if (ClosePopupOverlay())
+                return;
+
+            var popup = OverlayPopup.CreateAtCanvasCenter(this, CreateOverlayForPopup<T>());
+            SetActiveOverlayPopup(popup);
+        }
+
+        public void ShowPopupAtMouse<T>() where T : Overlay, new()
+        {
+            if (!m_MouseInCurrentCanvas)
             {
                 ClosePopupOverlay();
                 return;
             }
 
-            if (!m_MouseInCurrentCanvas)
+            ShowPopup<T>(PointerDeviceState.GetPointerPosition(PointerId.mousePointerId, ContextType.Editor));
+        }
+
+        public void ShowPopup<T>(Vector2 position) where T : Overlay, new()
+        {
+            if (ClosePopupOverlay())
                 return;
 
+            var popup = OverlayPopup.CreateAtPosition(this, CreateOverlayForPopup<T>(), position);
+            SetActiveOverlayPopup(popup);
+        }
+
+        T CreateOverlayForPopup<T>() where T : Overlay, new()
+        {
             var overlay = new T();
+            var overlayName = OverlayUtilities.GetDisplayNameFromAttribute(typeof(T));
+            if (overlayName == string.Empty)
+                overlayName = ObjectNames.NicifyVariableName(typeof(T).Name);
+
             // OnCreated must be invoked before contents are requested for the first time
+            overlay.canvas = this;
+            overlay.isPopup = true;
             overlay.OnCreated();
             overlay.displayed = false;
+            overlay.displayName = overlayName;
 
-            m_PopupOverlay = new OverlayPopup(this, overlay);
+            return overlay;
+        }
+
+        void SetActiveOverlayPopup(OverlayPopup popup)
+        {
+            m_PopupOverlay = popup;
             m_PopupOverlay.RegisterCallback<FocusOutEvent>(evt =>
             {
-                if (evt.relatedTarget is VisualElement target && (m_PopupOverlay == target || m_PopupOverlay.Contains(target)))
+                if (evt.relatedTarget is VisualElement target && (m_PopupOverlay == target || m_PopupOverlay.Contains(target)) && !EditorMenuExtensions.isEditorContextMenuActive)
                     return;
 
                 // When the new focus is an embedded IMGUIContainer or popup window, give focus back to the modal
@@ -707,7 +734,7 @@ namespace UnityEditor.Overlays
                 else
                 {
                     ClosePopupOverlay();
-                    overlay.OnWillBeDestroyed();
+                    popup.overlay.OnWillBeDestroyed();
                 }
             });
 
@@ -715,10 +742,14 @@ namespace UnityEditor.Overlays
             m_PopupOverlay.Focus();
         }
 
-        void ClosePopupOverlay()
+        bool ClosePopupOverlay()
         {
-            m_PopupOverlay?.RemoveFromHierarchy();
+            if (m_PopupOverlay == null)
+                return false;
+
+            m_PopupOverlay.RemoveFromHierarchy();
             m_PopupOverlay = null;
+            return true;
         }
 
         // AddOverlay just registers the Overlay with Canvas. It does not init save data or add to a valid container.
@@ -745,8 +776,23 @@ namespace UnityEditor.Overlays
             overlay.rootVisualElement.RegisterCallback<MouseEnterEvent>(OnMouseEnterOverlay);
             overlay.rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeaveOverlay);
 
+
             // OnCreated must be invoked before contents are requested for the first time
             overlay.OnCreated();
+
+            overlayListChanged?.Invoke();
+        }
+
+        internal bool TryGetOverlay(string id, out Overlay overlay)
+        {
+            overlay = m_Overlays.FirstOrDefault(x => x.id == id);
+            return overlay != null;
+        }
+
+        internal bool TryGetOverlay<T>(string id, out T overlay) where T : Overlay
+        {
+            overlay = m_Overlays.FirstOrDefault(x => x is T && x.id == id) as T;
+            return overlay != null;
         }
 
         // GetOrCreateOverlay is used to instantiate Overlays. Do not use this method when deserializing and batch
@@ -758,7 +804,7 @@ namespace UnityEditor.Overlays
             if (string.IsNullOrEmpty(id))
                 id = attrib.id;
 
-            if(m_Overlays.FirstOrDefault(x => x is T && x.id == id) is T overlay)
+            if(TryGetOverlay(id, out T overlay))
                 return overlay;
 
             overlay = new T();

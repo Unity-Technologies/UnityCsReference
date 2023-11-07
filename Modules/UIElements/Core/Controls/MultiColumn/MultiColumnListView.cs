@@ -173,7 +173,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Whether or not sorting is enabled in the multi-column header.
+        /// Whether or not sorting is enabled in the multi-column header. This is deprecated. Use <see cref="sortingMode"/> instead.
         /// </summary>
         [Obsolete("sortingEnabled has been deprecated. Use sortingMode instead.", false)]
         public bool sortingEnabled
@@ -183,12 +183,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Indicates how columns will be sorted. To enable sorting on the header, use <see cref="ColumnSortingMode.Default"/> or <see cref="ColumnSortingMode.Custom"/>.
-        /// <c>Default</c> the sorting algorithm provided by <see cref="MultiColumnController"/>, acting on indices. Users can also implement their
+        /// Indicates how to sort columns. To enable sorting, set it to <see cref="ColumnSortingMode.Default"/> or <see cref="ColumnSortingMode.Custom"/>.
+        /// The <c>Default</c> mode uses the sorting algorithm provided by <see cref="MultiColumnController"/>, acting on indices. You can also implement your
         /// own sorting with the <c>Custom</c> mode, by responding to the <see cref="columnSortingChanged"/> event.
         /// </summary>
         /// <remarks>
-        /// Reordering will be temporarily disabled when there is at least one sorted column.
+        /// __Note__: If there is at least one sorted column, reordering is temporarily disabled.
         /// </remarks>
         public ColumnSortingMode sortingMode
         {

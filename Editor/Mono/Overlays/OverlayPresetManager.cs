@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Overlays
@@ -266,12 +267,12 @@ namespace UnityEditor.Overlays
             return null;
         }
 
-        public static void GenerateMenu(GenericMenu menu, string pathPrefix, EditorWindow window)
+        public static void GenerateMenu(IGenericMenu menu, string pathPrefix, EditorWindow window)
         {
             var presets = GetAllPresets(window.GetType());
             foreach (var preset in presets)
             {
-                menu.AddItem(new GUIContent(pathPrefix + preset.name), false, () =>
+                menu.AddItem(pathPrefix + preset.name, false, () =>
                 {
                     window.overlayCanvas.ApplyPreset(preset);
                 });
@@ -279,7 +280,7 @@ namespace UnityEditor.Overlays
 
             menu.AddSeparator(pathPrefix);
 
-            menu.AddItem(EditorGUIUtility.TrTextContent($"{pathPrefix}Save Preset..."), false, () =>
+            menu.AddItem(L10n.Tr($"{pathPrefix}Save Preset..."), false, () =>
             {
                 SaveOverlayPreset.ShowWindow(window, name =>
                 {
@@ -289,7 +290,7 @@ namespace UnityEditor.Overlays
                 });
             });
 
-            menu.AddItem(EditorGUIUtility.TrTextContent($"{pathPrefix}Save Preset To File..."), false, () =>
+            menu.AddItem(L10n.Tr($"{pathPrefix}Save Preset To File..."), false, () =>
             {
                 string path = EditorUtility.SaveFilePanel("Save window preset to disk...", "", "NewOverlayPreset", k_FileExtension);
                 if (!string.IsNullOrEmpty(path))
@@ -299,7 +300,7 @@ namespace UnityEditor.Overlays
                 }
             });
 
-            menu.AddItem(EditorGUIUtility.TrTextContent($"{pathPrefix}Load Preset From File..."), false, () =>
+            menu.AddItem(L10n.Tr($"{pathPrefix}Load Preset From File..."), false, () =>
             {
                 var filePath = EditorUtility.OpenFilePanel("Load preset from disk...", "", k_FileExtension);
                 if (!string.IsNullOrEmpty(filePath))
@@ -348,13 +349,13 @@ namespace UnityEditor.Overlays
 
             foreach (var preset in presets)
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent($"{pathPrefix}Delete Preset/{preset.name}"), false, () =>
+                menu.AddItem(L10n.Tr($"{pathPrefix}Delete Preset/{preset.name}"), false, () =>
                 {
                     DeletePreset(preset);
                 });
             }
 
-            menu.AddItem(EditorGUIUtility.TrTextContent($"{pathPrefix}Revert All Saved Presets"), false, () =>
+            menu.AddItem(L10n.Tr($"{pathPrefix}Revert All Saved Presets"), false, () =>
             {
                 if (EditorUtility.DisplayDialog(
                     L10n.Tr("Revert All Saved Presets"),

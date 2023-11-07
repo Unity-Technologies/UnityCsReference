@@ -209,7 +209,8 @@ namespace UnityEditor
 
         internal static void ClearInactive()
         {
-            var finishedItems = Progress.EnumerateItems().Where(item => item.finished);
+            // When using synchronous progresses, calling remove will alter the progress items immediately.
+            var finishedItems = Progress.EnumerateItems().Where(item => item.finished).ToList();
             foreach (var item in finishedItems)
             {
                 item.Remove();

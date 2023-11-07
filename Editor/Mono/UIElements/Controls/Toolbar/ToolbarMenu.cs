@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A drop-down menu for the toolbar.
+    /// A drop-down menu for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarMenu|UXML element ToolbarMenu]].
     /// </summary>
     public class ToolbarMenu : TextElement, IToolbarMenuElement
     {

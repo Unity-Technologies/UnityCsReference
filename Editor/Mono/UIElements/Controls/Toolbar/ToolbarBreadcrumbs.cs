@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Creates a breadcrumb UI element for the toolbar to help users navigate a hierarchy. For example, the visual scripting breadcrumb toolbar makes it easier to explore scripts because users can jump to any level of the script by clicking a breadcrumb item.
+    /// Creates a breadcrumb UI element for the toolbar to help users navigate a hierarchy. For example, the visual scripting breadcrumb toolbar makes it easier to explore scripts because users can jump to any level of the script by clicking a breadcrumb item. For more information, refer to [[wiki:UIE-uxml-element-ToolbarBreadcrumbs|UXML element ToolbarBreadcrumbs]].
     /// </summary>
     /// <remarks>
     /// Represents a breadcrumb trail to facilitate navigation between related items in a hierarchy.

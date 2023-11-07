@@ -23,6 +23,7 @@ namespace UnityEditor.Build.Profile
             var buildProfile = ScriptableObject.CreateInstance<BuildProfile>();
             buildProfile.buildTarget = buildTarget;
             buildProfile.subtarget = subtarget;
+            buildProfile.moduleName = moduleName;
             buildProfile.platformBuildProfile = buildProfileExtension.CreateBuildProfilePlatformSettings();
             return buildProfile;
         }

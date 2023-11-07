@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Modules;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Build.Profile
 {
@@ -11,6 +13,7 @@ namespace UnityEditor.Build.Profile
     /// Implementation fetched from BuildProfileExtension, <see cref="ModuleManager.GetBuildProfileExtension"/>.
     /// </summary>
     [Serializable]
+    [VisibleToOtherModules]
     internal abstract class BuildProfilePlatformSettingsBase
     {
         /// <summary>
@@ -29,7 +32,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public virtual string GetRawPlatformSetting(string name)
         {
-            return string.Empty;
+            return null;
         }
     }
 }

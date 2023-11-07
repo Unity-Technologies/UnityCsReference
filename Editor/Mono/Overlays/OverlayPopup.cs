@@ -17,9 +17,12 @@ namespace UnityEditor.Overlays
         const string k_FromVertical = "overlay-popup--from-vertical";
         const string k_Clamped = "overlay-popup--clamped";
 
-        public OverlayPopup(Overlay overlay)
+        public Overlay overlay { get; private set; }
+
+        OverlayPopup(Overlay overlay)
         {
             name = "overlay-popup";
+            this.overlay = overlay;
             Overlay.treeAsset.CloneTree(this);
 
             this.Q(Overlay.k_CollapsedContent)?.RemoveFromHierarchy();
@@ -37,132 +40,128 @@ namespace UnityEditor.Overlays
 
             RegisterCallback<MouseEnterEvent>(evt => m_CursorIsOverPopup = true);
             RegisterCallback<MouseLeaveEvent>(evt => m_CursorIsOverPopup = false);
+        }
 
-            RegisterCallback<GeometryChangedEvent>(evt =>
+        public static OverlayPopup CreateUnderOverlay(Overlay overlay)
+        {
+            var popup = new OverlayPopup(overlay);
+
+            popup.RegisterCallback<GeometryChangedEvent>(evt =>
             {
-
                 var proposed = overlay.collapsedButtonRect;
                 proposed.size = evt.newRect.size;
 
                 if (overlay.layout == Layout.HorizontalToolbar)
-                    this.EnableInClassList(k_FromHorizontal, true);
+                    popup.EnableInClassList(k_FromHorizontal, true);
                 else if (overlay.layout == Layout.VerticalToolbar)
-                    this.EnableInClassList(k_FromVertical, true);
+                    popup.EnableInClassList(k_FromVertical, true);
 
                 if (!overlay.isInToolbar)
-                    this.EnableInClassList(k_OutsideToolbar, true);
+                    popup.EnableInClassList(k_OutsideToolbar, true);
 
                 var overlayWorldBound = overlay.rootVisualElement.worldBound;
                 var placement = OverlayCanvas.ClampRectToBounds(overlay.canvas.windowRoot.worldBound, proposed);
-
-                if (!Mathf.Approximately(proposed.position.x, placement.position.x))
-                    this.EnableInClassList(k_Clamped, true);
-
-                HandleGeometryChangedEvent(overlay.canvas, placement, overlayWorldBound);
+                popup.HandleGeometryChangedEvent(overlay.canvas, placement, overlayWorldBound);
             });
+            return popup;
         }
 
-        public OverlayPopup(OverlayCanvas canvas, Overlay overlay)
+        public static OverlayPopup CreateAtPosition(OverlayCanvas canvas, Overlay overlay, Vector2 position)
         {
-            name = "overlay-popup";
-            Overlay.treeAsset.CloneTree(this);
+            var popup = new OverlayPopup(overlay);
 
-            this.Q(Overlay.k_CollapsedContent)?.RemoveFromHierarchy();
-            this.Q(null, Overlay.k_Header)?.RemoveFromHierarchy();
-
-            focusable = true;
-            pickingMode = PickingMode.Position;
-            AddToClassList(Overlay.ussClassName);
-            style.position = Position.Absolute;
-
-            var root = this.Q("overlay-content");
-            root.renderHints = RenderHints.ClipWithScissors;
-            root.Add(overlay.GetSimpleHeader());
-            root.Add(overlay.CreatePanelContent());
-
-            var mousePosition = PointerDeviceState.GetPointerPosition(PointerId.mousePointerId, ContextType.Editor);
-            mousePosition = canvas.rootVisualElement.WorldToLocal(mousePosition);
-
-            RegisterCallback<MouseEnterEvent>(evt => m_CursorIsOverPopup = true);
-            RegisterCallback<MouseLeaveEvent>(evt => m_CursorIsOverPopup = false);
-
-            RegisterCallback<GeometryChangedEvent>(evt =>
+            popup.RegisterCallback<GeometryChangedEvent>(evt =>
             {
                 //Use mouse position to set the popup to the right coordinates
-                var proposed = new Rect(mousePosition + new Vector2(0f,evt.newRect.height/2f), evt.newRect.size);
-                var overlayWorldBound = new Rect(mousePosition, Vector2.zero);
-
-                if (float.IsNaN(overlayWorldBound.width))
-                    overlayWorldBound.width = 0f;
-                if (float.IsNaN(overlayWorldBound.height))
-                    overlayWorldBound.height = 0f;
+                var proposed = new Rect(position, evt.newRect.size);
+                var overlayWorldBound = new Rect(position, Vector2.zero);
 
                 var placement = OverlayCanvas.ClampRectToBounds(canvas.windowRoot.worldBound, proposed);
                 if (!Mathf.Approximately(proposed.position.x, placement.position.x))
-                    this.EnableInClassList(k_Clamped, true);
+                    popup.EnableInClassList(k_Clamped, true);
 
-                HandleGeometryChangedEvent(canvas, placement, overlayWorldBound);
+                popup.HandleGeometryChangedEvent(canvas, placement, overlayWorldBound);
             });
+            return popup;
+        }
+
+        public static OverlayPopup CreateAtCanvasCenter(OverlayCanvas canvas, Overlay overlay)
+        {
+            var popup = new OverlayPopup(overlay);
+
+            popup.RegisterCallback<GeometryChangedEvent>(evt =>
+            {
+                var size = evt.newRect.size;
+                var parentRect = canvas.rootVisualElement.rect;
+                var middle = parentRect.size / 2f;
+                var position = middle - size / 2f;
+
+                var placement = OverlayCanvas.ClampRectToBounds(canvas.windowRoot.worldBound, new Rect(position, size));
+                popup.Place(placement);
+            });
+            return popup;
         }
 
         void HandleGeometryChangedEvent(OverlayCanvas canvas, Rect placement, Rect overlayWorldBound)
         {
-                var canvasWorld = canvas.rootVisualElement.worldBound;
+            var canvasWorld = canvas.rootVisualElement.worldBound;
 
-                var rightPlacement = overlayWorldBound.x + overlayWorldBound.width;
-                var rightSideSpace = canvasWorld.xMax - rightPlacement;
+            var rightPlacement = overlayWorldBound.x + overlayWorldBound.width;
+            var rightSideSpace = canvasWorld.xMax - rightPlacement;
 
-                var xAdjusted = placement.position.x;
-                var maxWidth = placement.width;
-                if (rightSideSpace >= placement.width)
+            var xAdjusted = placement.position.x;
+            if (rightSideSpace >= placement.width)
+            {
+                xAdjusted = rightPlacement;
+            }
+            else
+            {
+                var leftSideSpace = placement.x - canvas.rootVisualElement.worldBound.x;
+                if (leftSideSpace >= placement.width)
                 {
-                    xAdjusted = rightPlacement;
+                    xAdjusted = overlayWorldBound.x - placement.width;
                 }
-                else
+                else // If neither side has enough space, show the popup on the widest one
                 {
-                    var leftSideSpace = placement.x - canvas.rootVisualElement.worldBound.x;
-                    if (leftSideSpace >= placement.width)
-                    {
+                    if (rightSideSpace > leftSideSpace)
+                        xAdjusted = overlayWorldBound.x + overlayWorldBound.width;
+                    else
                         xAdjusted = overlayWorldBound.x - placement.width;
-                    }
-                    else // If neither side has enough space, show the popup on the widest one
-                    {
-                        if (rightSideSpace > leftSideSpace)
-                            xAdjusted = overlayWorldBound.x + overlayWorldBound.width;
-                        else
-                            xAdjusted = overlayWorldBound.x - placement.width;
 
-                        maxWidth = canvasWorld.xMax - xAdjusted;
-                    }
+                    placement.width = canvasWorld.xMax - xAdjusted;
                 }
+            }
 
-                var yAdjusted = placement.position.y;
-                var bottomSpace = canvasWorld.yMax - yAdjusted;
+            var yAdjusted = placement.position.y;
+            var bottomSpace = canvasWorld.yMax - yAdjusted;
 
-                var maxHeight = placement.height;
-                if (bottomSpace < placement.height)
+            if (bottomSpace < placement.height)
+            {
+                var upPlacement = overlayWorldBound.y + overlayWorldBound.height;
+                var upSpace = upPlacement - canvasWorld.y;
+                if (upSpace >= placement.height)
                 {
-                    var upPlacement = overlayWorldBound.y + overlayWorldBound.height;
-                    var upSpace = upPlacement - canvasWorld.y;
-                    if (upSpace >= placement.height)
-                    {
-                        yAdjusted = upPlacement - placement.height;
-                    }
-                    else // If neither side has enough space, show the popup on the widest one
-                    {
-                        if (bottomSpace <= upSpace)
-                            yAdjusted = upPlacement - placement.height;
-
-                        maxHeight = canvasWorld.yMax - yAdjusted;
-                    }
+                    yAdjusted = upPlacement - placement.height;
                 }
+                else // If neither side has enough space, show the popup on the widest one
+                {
+                    if (bottomSpace <= upSpace)
+                        yAdjusted = upPlacement - placement.height;
 
-                placement.position = new Vector2(xAdjusted, yAdjusted);
+                    placement.height = canvasWorld.yMax - yAdjusted;
+                }
+            }
 
-                style.maxHeight = maxHeight;
-                style.maxWidth = maxWidth;
+            placement.position = new Vector2(xAdjusted, yAdjusted) - canvasWorld.position;
 
-                transform.position = placement.position - canvasWorld.position;
+            Place(placement);
+        }
+
+        void Place(Rect placement)
+        {
+            style.maxHeight = placement.height;
+            style.maxWidth = placement.width;
+            transform.position = placement.position;
         }
     }
 }

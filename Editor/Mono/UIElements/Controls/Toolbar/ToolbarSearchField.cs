@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A search field for the toolbar.
+    /// A search field for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarSearchField|UXML element ToolbarSearchField]].
     /// </summary>
     public class ToolbarSearchField : SearchFieldBase<TextField, string>
     {

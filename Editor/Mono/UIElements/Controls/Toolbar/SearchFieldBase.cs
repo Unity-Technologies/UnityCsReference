@@ -120,7 +120,7 @@ namespace UnityEditor.UIElements
         }
 
         /// <summary>
-        /// The placeholder property represents a short hint intended to aid the users with data entry when the control has no value.
+        /// A short hint to help users understand what to enter in the field.
         /// </summary>
         [CreateProperty]
         public string placeholderText

@@ -2650,7 +2650,7 @@ namespace UnityEditor
             // Update active viewpoint if there's one.
             // Must happen after SceneViewMotion.DoViewTool() so it knows
             // it needs to reflect a motion to the viewpoint (regardless of their nature).
-            m_Viewpoint.UpdateViewpointMotion(this, m_Position.isAnimating || m_Rotation.isAnimating);
+            m_Viewpoint.UpdateViewpointMotion(m_Position.isAnimating || m_Rotation.isAnimating);
 
             Handles.SetCameraFilterMode(Camera.current, UseSceneFiltering() ? Handles.CameraFilterMode.ShowFiltered : Handles.CameraFilterMode.Off);
 

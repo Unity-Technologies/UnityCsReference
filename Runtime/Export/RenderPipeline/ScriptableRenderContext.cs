@@ -455,7 +455,13 @@ namespace UnityEngine.Rendering
         public RendererList CreateUIOverlayRendererList(Camera camera)
         {
             Validate();
-            return CreateUIOverlayRendererList_Internal(camera);
+            return CreateUIOverlayRendererList_Internal(camera, UISubset.All);
+        }
+
+        public RendererList CreateUIOverlayRendererList(Camera camera, UISubset uiSubset)
+        {
+            Validate();
+            return CreateUIOverlayRendererList_Internal(camera, uiSubset);
         }
 
         public RendererList CreateWireOverlayRendererList(Camera camera)

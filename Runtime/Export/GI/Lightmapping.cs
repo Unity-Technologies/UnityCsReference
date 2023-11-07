@@ -678,6 +678,7 @@ namespace UnityEngine
             };
             [RequiredByNativeCode]
             private static RequestLightsDelegate s_RequestLightsDelegate = s_DefaultDelegate;
+
         }
     }
 }

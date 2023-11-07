@@ -20,6 +20,7 @@ namespace UnityEditor.Build.Profile
     /// native bindings for mapping migrated settings to backing profile.
     /// </summary>
     [InitializeOnLoad]
+    [VisibleToOtherModules]
     internal sealed class BuildProfileContext : ScriptableObject
     {
         const string k_BuildProfileProviderAssetPath = "Library/BuildProfileContext.asset";
@@ -30,9 +31,9 @@ namespace UnityEditor.Build.Profile
         BuildProfile m_ActiveProfile;
 
         /// <summary>
-        /// Cached mapping of BuildTarget to classic platform build profile.
+        /// Cached mapping of module name to classic platform build profile.
         /// </summary>
-        Dictionary<(BuildTarget, StandaloneBuildSubtarget), BuildProfile> m_BuildTargetToClassicPlatformProfile = new();
+        Dictionary<(string, StandaloneBuildSubtarget), BuildProfile> m_BuildModuleNameToClassicPlatformProfile = new();
 
         /// <summary>
         /// Specifies the custom build profile used by the build pipeline and editor APIs when getting build settings.
@@ -57,8 +58,8 @@ namespace UnityEditor.Build.Profile
                     return;
                 }
 
-                if (m_BuildTargetToClassicPlatformProfile.TryGetValue(
-                        (value.buildTarget, value.subtarget), out var entry) && entry == value)
+                if (m_BuildModuleNameToClassicPlatformProfile.TryGetValue(
+                        (value.moduleName, value.subtarget), out var entry) && entry == value)
                 {
                     Debug.LogWarning("[BuildProfile] Classic Platforms cannot be set as the active build profile.");
                     return;
@@ -76,6 +77,7 @@ namespace UnityEditor.Build.Profile
         [UsedImplicitly]
         internal static BuildProfileContext instance
         {
+            [VisibleToOtherModules]
             get
             {
                 if (s_Instance == null)
@@ -85,6 +87,13 @@ namespace UnityEditor.Build.Profile
 
                 return s_Instance;
             }
+        }
+
+        internal IList<BuildProfile> classicPlatformProfiles
+        {
+            [VisibleToOtherModules]
+            get;
+            private set;
         }
 
         static BuildProfileContext()
@@ -115,7 +124,7 @@ namespace UnityEditor.Build.Profile
         }
 
         [RequiredByNativeCode, UsedImplicitly]
-        internal static BuildProfile GetBuildProfileForGetter(
+        internal static BuildProfile GetActiveOrClassicBuildProfile(
             BuildTarget target, StandaloneBuildSubtarget subTarget = StandaloneBuildSubtarget.Default)
         {
             if (ShouldReturnActiveProfile(target, subTarget))
@@ -128,7 +137,7 @@ namespace UnityEditor.Build.Profile
         }
 
         [RequiredByNativeCode, UsedImplicitly]
-        internal static BuildProfile GetBuildProfileForSetter(
+        internal static BuildProfile GetClassicProfileAndResetActive(
             BuildTarget target, StandaloneBuildSubtarget subTarget = StandaloneBuildSubtarget.Default)
         {
             if (ShouldReturnActiveProfile(target, subTarget))
@@ -145,10 +154,10 @@ namespace UnityEditor.Build.Profile
             return instance.GetForClassicPlatform(target, subTarget);
         }
 
-        internal static bool TryGetClassicPlatformSettingsBaseForGetter<T>(
+        internal static bool TryGetActiveOrClassicPlatformSettingsBase<T>(
             BuildTarget target, StandaloneBuildSubtarget subTarget, out T result) where T : BuildProfilePlatformSettingsBase
         {
-            BuildProfile buildProfile = GetBuildProfileForGetter(target, subTarget);
+            BuildProfile buildProfile = GetActiveOrClassicBuildProfile(target, subTarget);
             if (buildProfile != null && buildProfile.platformBuildProfile is T platformProfile)
             {
                 result = platformProfile;
@@ -159,10 +168,10 @@ namespace UnityEditor.Build.Profile
             return false;
         }
 
-        internal static bool TryGetClassicPlatformSettingsBaseForSetter<T>(
+        internal static bool TryGetClassicPlatformSettingsBaseAndResetActive<T>(
             BuildTarget target, StandaloneBuildSubtarget subTarget, out T result) where T : BuildProfilePlatformSettingsBase
         {
-            BuildProfile buildProfile = GetBuildProfileForSetter(target, subTarget);
+            BuildProfile buildProfile = GetClassicProfileAndResetActive(target, subTarget);
             if (buildProfile != null && buildProfile.platformBuildProfile is T platformProfile)
             {
                 result = platformProfile;
@@ -178,7 +187,7 @@ namespace UnityEditor.Build.Profile
             Save();
 
             // Platform profiles must be manually serialized for changes to persist.
-            foreach (var kvp in m_BuildTargetToClassicPlatformProfile)
+            foreach (var kvp in m_BuildModuleNameToClassicPlatformProfile)
             {
                 SaveBuildProfileInProject(kvp.Value);
             }
@@ -186,13 +195,15 @@ namespace UnityEditor.Build.Profile
 
         BuildProfile GetForClassicPlatform(BuildTarget target, StandaloneBuildSubtarget subTarget)
         {
-            var key = (target, subTarget);
-            return m_BuildTargetToClassicPlatformProfile.GetValueOrDefault(key);
+            var key = GetKey(target, subTarget);
+            return m_BuildModuleNameToClassicPlatformProfile.GetValueOrDefault(key);
         }
 
         void OnEnable()
         {
-            // If not library path is not found, we don't have any classic profiles to load.
+            classicPlatformProfiles = new List<BuildProfile>();
+
+            // Load platform build profiles from ProjectSettings folder.
             if (!Directory.Exists(k_BuildProfilePath))
                 return;
 
@@ -205,8 +216,8 @@ namespace UnityEditor.Build.Profile
             foreach (var platform in BuildPlatforms.instance.GetValidPlatforms())
             {
                 string path = (platform is BuildPlatformWithSubtarget platformWithSubtarget) ?
-                    GetFilePathForBuildProfile(platform.defaultTarget, (StandaloneBuildSubtarget)platformWithSubtarget.subtarget) :
-                    GetFilePathForBuildProfile(platform.defaultTarget, StandaloneBuildSubtarget.Default);
+                    GetFilePathForBuildProfile(GetKey(platform.defaultTarget, (StandaloneBuildSubtarget)platformWithSubtarget.subtarget)) :
+                    GetFilePathForBuildProfile(GetKey(platform.defaultTarget, StandaloneBuildSubtarget.Default));
 
                 if (!File.Exists(path))
                     continue;
@@ -218,7 +229,8 @@ namespace UnityEditor.Build.Profile
                     continue;
                 }
 
-                m_BuildTargetToClassicPlatformProfile[(profileObj.buildTarget, profileObj.subtarget)] = profileObj;
+                m_BuildModuleNameToClassicPlatformProfile.Add((profileObj.moduleName, profileObj.subtarget), profileObj);
+                classicPlatformProfiles.Add(profileObj);
             }
         }
 
@@ -258,8 +270,8 @@ namespace UnityEditor.Build.Profile
 
         BuildProfile GetOrCreateClassicPlatformBuildProfile(BuildTarget target, StandaloneBuildSubtarget subTarget)
         {
-            var key = (target, subTarget);
-            if (m_BuildTargetToClassicPlatformProfile.TryGetValue(key, out var profile) && profile != null)
+            var key = GetKey(target, subTarget);
+            if (m_BuildModuleNameToClassicPlatformProfile.TryGetValue(key, out var profile) && profile != null)
             {
                 return profile;
             }
@@ -269,8 +281,8 @@ namespace UnityEditor.Build.Profile
             var buildProfile = BuildProfile.CreateInstance(target, subTarget);
             buildProfile.hideFlags = HideFlags.DontSave;
 
-            // Created profile is populated by existing EditorUserBuildSettings.
-            m_BuildTargetToClassicPlatformProfile.Add(key, buildProfile);
+            m_BuildModuleNameToClassicPlatformProfile.Add(key, buildProfile);
+            classicPlatformProfiles.Add(buildProfile);
 
             // Only copy after adding to the build target -> classic profiles dictionary, so EditorUserBuildSettings
             // can access the classic profiles when copying the settings
@@ -293,6 +305,16 @@ namespace UnityEditor.Build.Profile
             return buildProfile;
         }
 
+        static (string, StandaloneBuildSubtarget) GetKey(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget)
+        {
+            if (buildTarget == BuildTarget.NoTarget)
+            {
+                return (string.Empty, subtarget);
+            }
+
+            return (ModuleManager.GetTargetStringFrom(buildTarget), subtarget);
+        }
+
         static void SaveBuildProfileInProject(BuildProfile profile)
         {
             if (!Directory.Exists(k_BuildProfilePath))
@@ -300,8 +322,8 @@ namespace UnityEditor.Build.Profile
                 Directory.CreateDirectory(k_BuildProfilePath);
             }
 
-            InternalEditorUtility.SaveToSerializedFileAndForget(new []{ profile },
-                GetFilePathForBuildProfile(profile.buildTarget, profile.subtarget), true);
+            string path = GetFilePathForBuildProfile((profile.moduleName, profile.subtarget));
+            InternalEditorUtility.SaveToSerializedFileAndForget(new []{ profile }, path, allowTextSerialization: true);
         }
 
         static void CreateOrLoad()
@@ -335,51 +357,51 @@ namespace UnityEditor.Build.Profile
         [RequiredByNativeCode]
         static void SetClassicProfileRawPlatformSetting(string settingName, string settingValue, BuildTarget target, StandaloneBuildSubtarget subtarget)
         {
-            if (TryGetClassicPlatformSettingsBaseForSetter(target, subtarget, out BuildProfilePlatformSettingsBase platformProfile))
+            // If the setting doesn't exist in classic platform, return
+            BuildProfile classicProfile = instance.GetForClassicPlatform(target, subtarget);
+            if (classicProfile == null || classicProfile.platformBuildProfile == null)
+                return;
+
+            if (classicProfile.platformBuildProfile.GetRawPlatformSetting(settingName) == null)
+                return;
+
+            // Setting exists, so we should set new value and reset active if needed
+            if (TryGetClassicPlatformSettingsBaseAndResetActive(target, subtarget, out BuildProfilePlatformSettingsBase platformProfile))
             {
                 platformProfile.SetRawPlatformSetting(settingName, settingValue);
             }
-            else
+            else if (subtarget != StandaloneBuildSubtarget.Server)
             {
-                Debug.LogWarning($"Can't set {settingName} in build profile. The platform build profile settings is null.");
+                // We shouldn't log a warning if it's the server, since it's possible to not have the server installed and have
+                // the set being called. That's because we double write the setting on native side (for player and server)
+                Debug.LogWarning($"Can't set {settingName} in build profile. The platform build profile settings is null. Verify that the module for {target} is installed.");
             }
         }
 
         [RequiredByNativeCode]
-        static string GetClassicProfileRawPlatformSetting(string settingName, BuildTarget target, StandaloneBuildSubtarget subtarget)
+        static string GetActiveOrClassicProfileRawPlatformSetting(string settingName, BuildTarget target, StandaloneBuildSubtarget subtarget)
         {
-            if (TryGetClassicPlatformSettingsBaseForGetter(target, subtarget, out BuildProfilePlatformSettingsBase platformProfile))
+            if (TryGetActiveOrClassicPlatformSettingsBase(target, subtarget, out BuildProfilePlatformSettingsBase platformProfile))
             {
-                return platformProfile.GetRawPlatformSetting(settingName);
+                string value = platformProfile.GetRawPlatformSetting(settingName);
+                return value != null ? value : string.Empty;
             }
-            else
-            {
-                Debug.LogWarning($"Can't get {settingName} from build profile. The platform build profile settings is null.");
-                return string.Empty;
-            }
+
+            return string.Empty;
         }
 
         static bool ShouldReturnActiveProfile(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget)
         {
             var activeProfile = instance.m_ActiveProfile;
-            if (activeProfile == null || subtarget != activeProfile.subtarget)
+            if (activeProfile == null || buildTarget == BuildTarget.NoTarget || subtarget != activeProfile.subtarget)
                 return false;
 
-            var activeBuildTarget = activeProfile.buildTarget;
-
-            // It's acceptable for windows build target to be either 64 or 32
-            if (buildTarget == BuildTarget.StandaloneWindows64 || buildTarget == BuildTarget.StandaloneWindows)
-            {
-                return activeBuildTarget == BuildTarget.StandaloneWindows64 || activeBuildTarget == BuildTarget.StandaloneWindows;
-            }
-            else
-            {
-                return buildTarget == activeBuildTarget;
-            }
+            var targetModuleName = ModuleManager.GetTargetStringFrom(buildTarget);
+            return targetModuleName == activeProfile.moduleName;
         }
 
-        static string GetFilePathForBuildProfile(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget) =>
-            $"{k_BuildProfilePath}/PlatformProfile.{buildTarget}.{subtarget}.asset";
+        static string GetFilePathForBuildProfile((string moduleName, StandaloneBuildSubtarget subtarget) key) =>
+            $"{k_BuildProfilePath}/PlatformProfile.{key.moduleName}.{key.subtarget}.asset";
 
         static void Save() => InternalEditorUtility.SaveToSerializedFileAndForget(new[] { instance },
             k_BuildProfileProviderAssetPath, true);

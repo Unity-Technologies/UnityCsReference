@@ -32,7 +32,8 @@ namespace UnityEditor.ShortcutManagement
             EventType.KeyUp,
             EventType.MouseDown,
             EventType.MouseUp,
-            EventType.MouseDrag
+            EventType.MouseDrag,
+            EventType.ScrollWheel,
         };
 
         Vector2 m_StartPosition;
@@ -148,7 +149,9 @@ namespace UnityEditor.ShortcutManagement
                     return;
                 }
             }
-            else if (evt.type == EventType.MouseDown || evt.type == EventType.KeyDown)
+            else if (evt.type == EventType.MouseDown ||
+                     evt.type == EventType.KeyDown ||
+                     evt.type == EventType.ScrollWheel)
             {
                 m_Directory.FindShortcutEntries(m_KeyCombinationSequence, contextManager, m_Entries);
                 entries = m_Entries;

@@ -97,7 +97,7 @@ namespace UnityEngine.Rendering
         }
         extern private unsafe RendererList CreateSkyboxRendererList_Internal([NotNull] Camera camera, int mode, Matrix4x4 proj, Matrix4x4 view, Matrix4x4 projR, Matrix4x4 viewR);
         extern private unsafe RendererList CreateGizmoRendererList_Internal([NotNull] Camera camera, GizmoSubset gizmoSubset);
-        extern private unsafe RendererList CreateUIOverlayRendererList_Internal([NotNull] Camera camera);
+        extern private unsafe RendererList CreateUIOverlayRendererList_Internal([NotNull] Camera camera, UISubset uiSubset);
         extern private unsafe RendererList CreateWireOverlayRendererList_Internal([NotNull] Camera camera);
 
         extern private unsafe void PrepareRendererListsAsync_Internal(object rendererLists);

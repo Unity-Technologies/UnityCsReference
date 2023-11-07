@@ -95,7 +95,7 @@ namespace UnityEditor.Modules
         {
             return false;
         }
-        
+
         public virtual GraphicsJobMode AdjustGfxJobMode(GraphicsJobMode graphicsJobMode)
         {
             return graphicsJobMode;
@@ -161,5 +161,7 @@ namespace UnityEditor.Modules
         {
             return false;
         }
+
+        public virtual void AutoRotationSectionGUI() {}
     }
 }

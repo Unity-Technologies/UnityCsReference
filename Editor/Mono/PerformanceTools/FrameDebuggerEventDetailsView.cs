@@ -468,7 +468,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 // On some devices the backbuffer gives the None Graphics Format. To prevent us
                 // displaying a black & white texture we force the channels to the selected mask.
                 bool shouldForceSelectedMask = targetTextureFormat == GraphicsFormat.None && m_CachedEventData.m_RenderTargetIsBackBuffer;
-                Vector4 channels = (componentCount > 1 || shouldForceSelectedMask) ? m_SelectedMask : new Vector4(1, 0, 0, 0);
+                Vector4 channels = (!m_CachedEventData.m_RenderTargetIsDepthOnlyRT && (componentCount > 1 || shouldForceSelectedMask)) ? m_SelectedMask : new Vector4(1, 0, 0, 0);
 
                 bool linearColorSpace = QualitySettings.activeColorSpace == ColorSpace.Linear;
                 bool textureSRGB = GraphicsFormatUtility.IsSRGBFormat(targetTextureFormat);

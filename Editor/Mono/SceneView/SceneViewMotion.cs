@@ -284,8 +284,6 @@ namespace UnityEditor
             {
                 case EventType.ScrollWheel:
                     // Default to zooming to mouse position in 2D mode without alt.
-                    // Scrollwheel events are not detected by the shortcut system.
-                    // This event needs to be handled in the OnGUI.
                     HandleScrollWheel(view, view.in2DMode == evt.alt);
                     break;
                 case EventType.MouseDown:
@@ -589,7 +587,7 @@ namespace UnityEditor
             }
         }
 
-        private void HandleScrollWheel(SceneView view, bool zoomTowardsCenter)
+        void HandleScrollWheel(SceneView view, bool zoomTowardsCenter)
         {
             if (Tools.s_LockedViewTool == ViewTool.FPS)
             {
@@ -617,7 +615,10 @@ namespace UnityEditor
             {
                 // When in camera view mode, change the FoV of the selected camera instead.
                 if (view.viewpoint.hasActiveViewpoint)
+                {
+                    view.viewpoint.HandleScrollWheel(view);
                     return;
+                }
 
                 float zoomDelta = Event.current.delta.y;
                 float targetSize;

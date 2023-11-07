@@ -170,7 +170,7 @@ namespace UnityEditor.EditorTools
         {
             var window = args.context as EditorWindow;
             if (window is ISupportsOverlays)
-                window.overlayCanvas.CreateOverlayPopup<EditorToolSettingsOverlay>();
+                window.overlayCanvas.ShowPopup<EditorToolSettingsOverlay>();
         }
     }
 }

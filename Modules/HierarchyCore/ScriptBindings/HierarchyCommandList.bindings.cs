@@ -113,7 +113,6 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The new node if the command succeeds.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-
         public bool Add(out HierarchyNode node) => AddNode(out node);
 
         /// <summary>
@@ -139,11 +138,11 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Adds multiple new nodes that have a specified parent node to the hierarchy.
         /// </summary>
-        /// <param name="count">The number of nodes to create.</param>
         /// <param name="parent">The parent of the new nodes.</param>
+        /// <param name="count">The number of nodes to create.</param>
         /// <param name="nodes">The new nodes if the command succeeds.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        public bool Add(int count, in HierarchyNode parent, out HierarchyNode[] nodes)
+        public bool Add(in HierarchyNode parent, int count, out HierarchyNode[] nodes)
         {
             nodes = new HierarchyNode[count];
             return AddNodeSpanWithParent(in parent, nodes);
@@ -169,14 +168,16 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node to remove.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        public bool Remove(in HierarchyNode node) => RemoveNode(in node);
+        [NativeThrows]
+        public extern bool Remove(in HierarchyNode node);
 
         /// <summary>
-        /// Removes multiple nodes from the hierarchy.
+        /// Recursively removes all children of a node.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes to remove.</param>
+        /// <param name="node">The hierarchy node.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        public bool Remove(ReadOnlySpan<HierarchyNode> nodes) => RemoveNodeSpan(nodes);
+        [NativeThrows]
+        public extern bool RemoveChildren(in HierarchyNode node);
 
         /// <summary>
         /// Sets the parent node of a hierarchy node.
@@ -184,15 +185,8 @@ namespace Unity.Hierarchy
         /// <param name="node">The hierarchy node to set a parent for.</param>
         /// <param name="parent">The hierarchy node to set as the parent node.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        public bool SetParent(in HierarchyNode node, in HierarchyNode parent) => SetNodeParent(in node, in parent);
-
-        /// <summary>
-        /// Sets the parent nodes for multiple hierarchy nodes.
-        /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
-        /// <param name="parent">The hierarchy nodes parent.</param>
-        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        public bool SetParent(ReadOnlySpan<HierarchyNode> nodes, in HierarchyNode parent) => SetNodeParentSpan(nodes, in parent);
+        [NativeThrows]
+        public extern bool SetParent(in HierarchyNode node, in HierarchyNode parent);
 
         /// <summary>
         /// Sets the sorting index for a hierarchy node.
@@ -207,9 +201,10 @@ namespace Unity.Hierarchy
         /// Sorts the child nodes of a hierarchy node by their sort index.
         /// </summary>
         /// <param name="node">The hierarchy node with child nodes to sort by their index.</param>
+        /// <param name="recurse">Whether to sort the child nodes recursively.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         [NativeThrows]
-        public extern bool SortChildren(in HierarchyNode node);
+        public extern bool SortChildren(in HierarchyNode node, bool recurse = false);
 
         /// <summary>
         /// Sets a value for a property of a hierarchy node.
@@ -294,18 +289,6 @@ namespace Unity.Hierarchy
 
         [NativeThrows, FreeFunction("HierarchyCommandListBindings::AddNodeSpanWithParent", HasExplicitThis = true)]
         extern bool AddNodeSpanWithParent(in HierarchyNode parent, Span<HierarchyNode> outNodes);
-
-        [NativeThrows, FreeFunction("HierarchyCommandListBindings::RemoveNode", HasExplicitThis = true)]
-        extern bool RemoveNode(in HierarchyNode node);
-
-        [NativeThrows, FreeFunction("HierarchyCommandListBindings::RemoveNodeSpan", HasExplicitThis = true)]
-        extern bool RemoveNodeSpan(ReadOnlySpan<HierarchyNode> nodes);
-
-        [NativeThrows, FreeFunction("HierarchyCommandListBindings::SetNodeParent", HasExplicitThis = true)]
-        extern bool SetNodeParent(in HierarchyNode node, in HierarchyNode parent);
-
-        [NativeThrows, FreeFunction("HierarchyCommandListBindings::SetNodeParentSpan", HasExplicitThis = true)]
-        extern bool SetNodeParentSpan(ReadOnlySpan<HierarchyNode> nodes, in HierarchyNode parent);
 
         [NativeThrows, FreeFunction("HierarchyCommandListBindings::SetNodePropertyRaw", HasExplicitThis = true)]
         extern unsafe bool SetNodePropertyRaw(in HierarchyPropertyId property, in HierarchyNode node, void* ptr, int size);

@@ -1399,26 +1399,9 @@ namespace UnityEditor
                 context.editorWindow.overlayCanvas.HideHoveredOverlay();
         }
 
-        [Shortcut("Overlays/Show Overlay Menu", typeof(OverlayShortcutContext),  KeyCode.BackQuote)]
-        static void ShowOverlayMenu(ShortcutArguments args)
-        {
-            if (args.context is OverlayShortcutContext context)
-                context.editorWindow.overlayCanvas.ShowMenu(!context.editorWindow.overlayCanvas.menuVisible);
-        }
-
         public bool TryGetOverlay(string id, out Overlay match)
         {
-            foreach (var overlay in overlayCanvas.overlays)
-            {
-                if (overlay.id == id)
-                {
-                    match = overlay;
-                    return true;
-                }
-            }
-
-            match = null;
-            return false;
+            return m_OverlayCanvas.TryGetOverlay(id, out match);
         }
 
         internal void OnBackingScaleFactorChangedInternal()

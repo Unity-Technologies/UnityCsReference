@@ -710,16 +710,14 @@ namespace UnityEditor
             {
                 sizesString.Append(first ? ": " : ", ");
                 first = false;
-                if (s.Value > 1)
-                {
-                    sizesString.Append(s.Value);
-                    sizesString.Append("x");
-                }
-
+                sizesString.Append(s.Value.ToString(CultureInfo.InvariantCulture.NumberFormat));
+                sizesString.Append("x");
+                sizesString.Append("(");
                 sizesString.Append(s.Key.width.ToString(CultureInfo.InvariantCulture.NumberFormat));
                 sizesString.Append("x");
                 sizesString.Append(s.Key.height.ToString(CultureInfo.InvariantCulture.NumberFormat));
                 sizesString.Append("px");
+                sizesString.Append(")");
             }
         }
 
@@ -755,7 +753,7 @@ namespace UnityEditor
             {
                 StringBuilder outputString = new();
 
-                string prefix = Lightmapping.isRunning ? "Generating" : string.Empty;
+                string prefix = Lightmapping.isRunning ? "Generating " : string.Empty;
 
                 // Gather and show light probe stats (we only have this while baking is running)
                 if (Lightmapping.isRunning)
@@ -766,7 +764,7 @@ namespace UnityEditor
                     GatherProbeStats(ref probesCount, ref probeMemorySize);
                     if (probesCount > 0)
                     {
-                        outputString.Append($"{prefix} {probesCount} probe");
+                        outputString.Append($"{prefix}{probesCount.ToString("N0")} probe");
                         outputString.Append(probesCount > 1 ? "s" : string.Empty);
                         DisplaySummaryLine(outputString.ToString(), 0, 0);
                         outputString.Clear();
@@ -785,7 +783,7 @@ namespace UnityEditor
                     GatherBakedLightmapStats(ref bakedLightmapCount, ref bakedTotalMemorySize, ref bakedLightmapSizes, ref shadowmaskMode);
                 if (bakedLightmapCount > 0)
                 {
-                    outputString.Append($"{prefix} {bakedLightmapCount} baked lightmap");
+                    outputString.Append($"{prefix}{bakedLightmapCount.ToString("N0")} baked lightmap");
                     outputString.Append(bakedLightmapCount > 1 ? "s" : string.Empty);
                     outputString.Append(shadowmaskMode ? " with Shadowmask" : string.Empty);
                     outputString.Append(shadowmaskMode && bakedLightmapCount > 1 ? "s" : string.Empty);
@@ -801,7 +799,7 @@ namespace UnityEditor
                 GatherRealTimeLightmapStats(ref rtLightmapCount, ref rtTotalMemorySize, ref rtLightmapSizes);
                 if (rtLightmapCount > 0)
                 {
-                    outputString.Append($"{prefix} {rtLightmapCount} realtime lightmap");
+                    outputString.Append($"{prefix}{rtLightmapCount.ToString("N0")} realtime lightmap");
                     outputString.Append(rtLightmapCount > 1 ? "s" : string.Empty);
                     FormatSizesString(ref outputString, rtLightmapSizes);
                     DisplaySummaryLine(outputString.ToString(), rtLightmapCount, rtTotalMemorySize);
@@ -821,7 +819,7 @@ namespace UnityEditor
                 {
                     string text;
                     if (mraysPerSec >= 0.0)
-                        text = @$"Bake Performance: {mraysPerSec.ToString("0.00", CultureInfo.InvariantCulture.NumberFormat)} mrays/sec";
+                        text = @$"Bake Performance: {mraysPerSec.ToString("N2")} mrays/sec";
                     else
                         text = "";
                     GUILayout.Label(text, Styles.labelStyle);
@@ -856,7 +854,7 @@ namespace UnityEditor
             bool usingAO = lightingSettings.FindProperty("m_AO").boolValue;
 
             LightingSettings lsa;
-            return 
+            return
                 Lightmapping.TryGetLightingSettings(out lsa) &&
                 DenoiserSupported(lsa.denoiserTypeDirect) &&
                 DenoiserSupported(lsa.denoiserTypeIndirect) &&

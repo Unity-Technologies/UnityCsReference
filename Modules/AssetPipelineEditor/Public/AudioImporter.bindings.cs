@@ -63,14 +63,14 @@ namespace UnityEditor
 
         public bool ContainsSampleSettingsOverride(string platform)
         {
-            return ValidatePlatform(platform, "AudioImporter.ContainsSampleSettingsOverride") ?
+            return ValidatePlatform(ref platform, "AudioImporter.ContainsSampleSettingsOverride") ?
                 Internal_ContainsSampleSettingsOverride(platform) :
                 false;
         }
         public bool ContainsSampleSettingsOverride(BuildTargetGroup platformGroup)
         {
-            return ValidatePlatform(platformGroup, "AudioImporter.ContainsSampleSettingsOverride") ?
-                Internal_ContainsSampleSettingsOverride(NamedBuildTarget.FromBuildTargetGroup(platformGroup).TargetName) :
+            return ValidatePlatform(platformGroup, "AudioImporter.ContainsSampleSettingsOverride", out string platformName) ?
+                Internal_ContainsSampleSettingsOverride(platformName) :
                 false;
         }
 
@@ -79,14 +79,14 @@ namespace UnityEditor
 
         public AudioImporterSampleSettings GetOverrideSampleSettings(string platform)
         {
-            return ValidatePlatform(platform, "AudioImporter.GetOverrideSampleSettings") ?
+            return ValidatePlatform(ref platform, "AudioImporter.GetOverrideSampleSettings") ?
                 Internal_GetOverrideSampleSettings(platform) :
                 defaultSampleSettings;
         }
         public AudioImporterSampleSettings GetOverrideSampleSettings(BuildTargetGroup platformGroup)
         {
-            return ValidatePlatform(platformGroup, "AudioImporter.GetOverrideSampleSettings") ?
-                Internal_GetOverrideSampleSettings(NamedBuildTarget.FromBuildTargetGroup(platformGroup).TargetName) :
+            return ValidatePlatform(platformGroup, "AudioImporter.GetOverrideSampleSettings", out string platformName) ?
+                Internal_GetOverrideSampleSettings(platformName) :
                 defaultSampleSettings;
         }
 
@@ -95,14 +95,14 @@ namespace UnityEditor
 
         public bool SetOverrideSampleSettings(string platform, AudioImporterSampleSettings settings)
         {
-            return ValidatePlatform(platform, "AudioImporter.SetOverrideSampleSettings") ?
+            return ValidatePlatform(ref platform, "AudioImporter.SetOverrideSampleSettings") ?
                 Internal_SetOverrideSampleSettings(platform, settings) :
                 false;
         }
         public bool SetOverrideSampleSettings(BuildTargetGroup platformGroup, AudioImporterSampleSettings settings)
         {
-            return ValidatePlatform(platformGroup, "AudioImporter.SetOverrideSampleSettings") ?
-                Internal_SetOverrideSampleSettings(NamedBuildTarget.FromBuildTargetGroup(platformGroup).TargetName, settings) :
+            return ValidatePlatform(platformGroup, "AudioImporter.SetOverrideSampleSettings", out string platformName) ?
+                Internal_SetOverrideSampleSettings(platformName, settings) :
                 false;
         }
 
@@ -112,27 +112,31 @@ namespace UnityEditor
 
         public bool ClearSampleSettingOverride(string platform)
         {
-            return ValidatePlatform(platform, "AudioImporter.ClearSampleSettingOverride") ?
+            return ValidatePlatform(ref platform, "AudioImporter.ClearSampleSettingOverride") ?
                 Internal_ClearSampleSettingOverride(platform) :
                 false;
         }
         public bool ClearSampleSettingOverride(BuildTargetGroup platformGroup)
         {
-            return ValidatePlatform(platformGroup, "AudioImporter.ClearSampleSettingOverride") ?
-                Internal_ClearSampleSettingOverride(NamedBuildTarget.FromBuildTargetGroup(platformGroup).TargetName) :
+            return ValidatePlatform(platformGroup, "AudioImporter.ClearSampleSettingOverride", out string platformName) ?
+                Internal_ClearSampleSettingOverride(platformName) :
                 false;
         }
 
-        private static bool ValidatePlatform(string platformName, string methodName)
+        private static bool ValidatePlatform(ref string platformName, string methodName)
         {
-            return ValidatePlatform(BuildPipeline.GetBuildTargetGroupByName(platformName), methodName);
+            return ValidatePlatform(BuildPipeline.GetBuildTargetGroupByName(platformName), methodName, out platformName);
         }
 
-        private static bool ValidatePlatform(BuildTargetGroup platformGroup, string methodName)
+        private static bool ValidatePlatform(BuildTargetGroup platformGroup, string methodName, out string platformName)
         {
             if (platformGroup != BuildTargetGroup.Unknown)
+            {
+                platformName = BuildPipeline.GetBuildTargetGroupName(platformGroup);
                 return true;
+            }
 
+            platformName = null;
             Debug.LogErrorFormat("Unknown platform passed to {0} ({1})", methodName, platformGroup);
             return false;
         }

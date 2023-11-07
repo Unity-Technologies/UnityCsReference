@@ -443,6 +443,47 @@ namespace UnityEditor
             return true;
         }
 
+        public static event Action<GameObject> prefabInstanceApplying;
+        public static event Action<GameObject> prefabInstanceApplied;
+
+        [RequiredByNativeCode]
+        internal static void Internal_CallPrefabInstanceApplying(GameObject instanceRoot)
+        {
+            Assert.IsNotNull(instanceRoot);
+
+            prefabInstanceApplying?.Invoke(instanceRoot);
+        }
+
+        [RequiredByNativeCode]
+        internal static void Internal_CallPrefabInstanceApplied(GameObject instanceRoot)
+        {
+            Assert.IsNotNull(instanceRoot);
+
+            prefabInstanceApplied?.Invoke(instanceRoot);
+        }
+
+        internal static void RaiseApplyingEvent(SerializedObject serializedObject)
+        {
+            GameObject outermostRoot = GetOutermostPrefabInstanceRoot(serializedObject.targetObject);
+            if (outermostRoot != null)
+                Internal_CallPrefabInstanceApplying(outermostRoot);
+        }
+
+        internal static void RaiseAppliedEvent(SerializedObject serializedObject)
+        {
+            foreach (Object targetObject in serializedObject.targetObjects)
+            {
+                if (PrefabUtility.IsPartOfNonAssetPrefabInstance(targetObject))
+                {
+                    GameObject outermostRoot = GetOutermostPrefabInstanceRoot(targetObject);
+                    if (outermostRoot != null)
+                    {
+                        Internal_CallPrefabInstanceApplied(outermostRoot);
+                    }
+                }
+            }
+        }
+
         public static void ApplyPropertyOverride(SerializedProperty instanceProperty, string assetPath, InteractionMode action)
         {
             DateTime startTime = DateTime.UtcNow;
@@ -534,6 +575,14 @@ namespace UnityEditor
             finally
             {
                 AssetDatabase.StopAssetEditing();
+            }
+
+            foreach (var serializedObject in serializedObjects)
+            {
+                if (changedObjects.Contains(serializedObject))
+                {
+                    RaiseAppliedEvent(serializedObject);
+                }
             }
         }
 
@@ -847,6 +896,7 @@ namespace UnityEditor
                 return;
             }
 
+            var sourceSerializedObjInChangedSet = changedObjects.Contains(prefabSourceSerializedObject);
             SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
             if (sourceProperty == null)
             {
@@ -855,8 +905,16 @@ namespace UnityEditor
                 var instanceArrayProperty = GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(instanceProperty, prefabSourceSerializedObject, InteractionMode.AutomatedAction, out cancel);
                 if (instanceArrayProperty != null)
                 {
+                    if (!sourceSerializedObjInChangedSet)
+                        RaiseApplyingEvent(instanceArrayProperty.serializedObject);
+
                     prefabSourceSerializedObject.CopyFromSerializedProperty(instanceArrayProperty);
-                    changedObjects.Add(prefabSourceSerializedObject);
+
+                    if (!sourceSerializedObjInChangedSet)
+                    {
+                        changedObjects.Add(prefabSourceSerializedObject);
+                        sourceSerializedObjInChangedSet = true;
+                    }
 
                     sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
                     if (sourceProperty == null)
@@ -881,6 +939,9 @@ namespace UnityEditor
                 return;
             }
 
+            if (!sourceSerializedObjInChangedSet)
+                RaiseApplyingEvent(instanceProperty.serializedObject);
+
             // Copy overridden property value to asset
             if (instanceProperty.propertyType == SerializedPropertyType.ManagedReference)
             {
@@ -893,7 +954,8 @@ namespace UnityEditor
                 prefabSourceSerializedObject.CopyFromSerializedProperty(instanceProperty);
             }
 
-            changedObjects.Add(prefabSourceSerializedObject);
+            if (!sourceSerializedObjInChangedSet)
+                changedObjects.Add(prefabSourceSerializedObject);
 
             // Abort if property has reference to object in scene.
             if (sourceProperty.propertyType == SerializedPropertyType.ObjectReference)
@@ -1277,6 +1339,9 @@ namespace UnityEditor
                     Undo.RegisterFullObjectHierarchyUndo(component, actionName);
                 }
 
+                var instanceRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(component);
+                Internal_CallPrefabInstanceApplying(instanceRoot);
+
                 PrefabUtility.ApplyAddedComponent(component, prefabSourceGameObject);
 
                 if (action == InteractionMode.UserAction)
@@ -1297,6 +1362,8 @@ namespace UnityEditor
                         EditorUtility.DisplayDialog(L10n.Tr("Notice!"), L10n.Tr("Some component(s) changed position because of other added components in the variant/nesting chain."), L10n.Tr("OK"));
                     }
                 }
+
+                Internal_CallPrefabInstanceApplied(instanceRoot);
             }
             catch (ArgumentException exception)
             {
@@ -1460,6 +1527,7 @@ namespace UnityEditor
 
             var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
 
+            PrefabUtility.Internal_CallPrefabInstanceApplying(instanceGameObject);
             if (action == InteractionMode.UserAction)
                 Undo.RegisterCompleteObjectUndo(prefabInstanceObject, actionName);
 
@@ -1510,6 +1578,8 @@ namespace UnityEditor
             Undo.SetCurrentGroupName(actionName);
 
             RemoveRemovedComponentOverridesWhichAreInvalid(prefabInstanceObject);
+
+            PrefabUtility.Internal_CallPrefabInstanceApplied(instanceGameObject);
 
             Analytics.SendApplyEvent(
                 Analytics.ApplyScope.RemovedComponent,
@@ -1633,6 +1703,8 @@ namespace UnityEditor
             if (prefabInstanceObject == null)
                 throw new ArgumentNullException(nameof(prefabInstanceObject), "Prefab instance must not be null.");
 
+            PrefabUtility.Internal_CallPrefabInstanceApplying(prefabInstanceRoot);
+
             string assetPath = AssetDatabase.GetAssetPath(assetGameObject);
             GameObject assetRoot = GetRootGameObject(assetGameObject);
             byte[] originalFileContent = null;
@@ -1685,6 +1757,8 @@ namespace UnityEditor
                 startTime,
                 false
             );
+
+            PrefabUtility.Internal_CallPrefabInstanceApplied(prefabInstanceRoot);
         }
 
         public static void ApplyAddedGameObject(GameObject gameObject, string assetPath, InteractionMode action)
@@ -1732,6 +1806,7 @@ namespace UnityEditor
             var sourceRoot = prefabSourceGameObjectParent.transform.root.gameObject;
             byte[] originalFileContent = null;
 
+            PrefabUtility.Internal_CallPrefabInstanceApplying(instanceRoot);
             var actionName = "Apply Added GameObject";
             if (action == InteractionMode.UserAction)
             {
@@ -1777,6 +1852,7 @@ namespace UnityEditor
                 );
             }
 
+            PrefabUtility.Internal_CallPrefabInstanceApplied(instanceRoot);
             EditorUtility.ForceRebuildInspectors();
         }
 
@@ -2225,7 +2301,11 @@ namespace UnityEditor
 
             SaveAsPrefabAssetArgumentCheck(instance, path, true);
 
+            Internal_CallPrefabInstanceApplying(instance);
+
             ApplyPrefabInstance_Internal(instance);
+
+            Internal_CallPrefabInstanceApplied(instance);
         }
 
         // Can't use UnityUpgradable since it doesn't currently support swapping parameter order.

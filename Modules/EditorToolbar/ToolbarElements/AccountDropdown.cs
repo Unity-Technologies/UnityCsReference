@@ -118,9 +118,9 @@ namespace UnityEditor.Toolbars
             {
                 menu.AddSeparator("");
                 if (UnityConnect.instance.online)
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Upgrade to Unity Plus or Pro"), false, () => Application.OpenURL("https://store.unity.com/"));
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Upgrade your Unity plan"), false, () => Application.OpenURL("https://store.unity.com/"));
                 else
-                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Upgrade to Unity Plus or Pro"));
+                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Upgrade your Unity plan"));
             }
 
             menu.DropDown(dropDownRect, true);

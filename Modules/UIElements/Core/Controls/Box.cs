@@ -7,7 +7,7 @@ using System;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Styled visual element to match the IMGUI Box Style.
+    /// Styled visual element to match the IMGUI Box Style. For more information, refer to [[wiki:UIE-uxml-element-box|UXML element Box]].
     /// </summary>
     public class Box : VisualElement
     {
