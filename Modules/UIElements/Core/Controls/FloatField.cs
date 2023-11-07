@@ -9,7 +9,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Makes a text field for entering a float.
+    /// Makes a text field for entering a float. For more information, refer to [[wiki:UIE-uxml-element-FloatField|UXML element FloatField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class FloatField : TextValueField<float>

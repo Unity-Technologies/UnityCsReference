@@ -83,6 +83,7 @@ namespace UnityEditor
         static string kPlayModeDarkenKey = "Playmode tint";
         internal static PrefColor kPlayModeDarken = new PrefColor(kPlayModeDarkenKey, .8f, .8f, .8f, 1);
         internal static event Action<HostView> actualViewChanged;
+        internal static event Action<GenericMenu, EditorWindow> populateDefaultMenuItems;
 
         [SerializeField] private EditorWindow m_ActualView;
         [NonSerialized] protected readonly RectOffset m_BorderSize = new RectOffset();
@@ -949,17 +950,7 @@ namespace UnityEditor
             if (menu.GetItemCount() != 0)
                 menu.AddSeparator("");
 
-            if(window is ISupportsOverlays)
-            {
-                var binding = ShortcutManager.instance.GetShortcutBinding("Overlays/Show Overlay Menu");
-                var visibleMenu = window.overlayCanvas.menuVisible;
-                menu.AddItem(EditorGUIUtility.TrTextContent($"Overlay Menu _{binding}"),
-                    visibleMenu,
-                    () =>
-                    {
-                        window.overlayCanvas.ShowMenu(!visibleMenu, false);
-                    });
-            }
+            populateDefaultMenuItems?.Invoke(menu, window);
 
             if (window && Unsupported.IsDeveloperMode())
             {

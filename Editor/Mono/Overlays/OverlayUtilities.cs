@@ -154,6 +154,18 @@ namespace UnityEditor.Overlays
             return false;
         }
 
+        internal static string GetDisplayNameFromAttribute(Type type)
+        {
+            if (Attribute.IsDefined(type, typeof(OverlayAttribute)))
+            {
+                var attributes = type.GetCustomAttributes(typeof(OverlayAttribute), true);
+                for (int i = 0, c = attributes.Length; i < c; i++)
+                    if (attributes[i] is OverlayAttribute)
+                        return ((OverlayAttribute)attributes[i]).displayName;
+            }
+            return string.Empty;
+        }
+
         internal static string GetSignificantLettersForIcon(string s)
         {
             if (string.IsNullOrEmpty(s))

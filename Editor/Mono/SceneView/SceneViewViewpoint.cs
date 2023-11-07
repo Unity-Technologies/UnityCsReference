@@ -135,7 +135,7 @@ namespace UnityEditor
         // When in Camera view.
         // Transfer Camera's transform to the Viewpoint's transform when the SceneView's camera moves.
         // When the active Viewpoint moves (i.e from scripts or animation), transfer the data to the SceneView's Camera.
-        internal void UpdateViewpointMotion(SceneView sceneView, bool sceneViewTransformIsAnimating)
+        internal void UpdateViewpointMotion(bool sceneViewTransformIsAnimating)
         {
             // Exit the viewpoint if viewpoint is unlocked and
             // Scene View camera is moving.
@@ -148,8 +148,8 @@ namespace UnityEditor
             if (!hasActiveViewpoint)
                 return;
 
-            if (sceneView.sceneViewMotion.cameraSpeed.sqrMagnitude > Mathf.Epsilon
-                    || sceneView.sceneViewMotion.isDragging
+            if (m_SceneView.sceneViewMotion.cameraSpeed.sqrMagnitude > Mathf.Epsilon
+                    || m_SceneView.sceneViewMotion.isDragging
                     || sceneViewTransformIsAnimating)
             {
                 // Camera is moving in the Scene View. Align SceneView's Camera to Viewpoint.
@@ -270,62 +270,39 @@ namespace UnityEditor
             GUI.color = previous;
         }
 
-        [Shortcut(k_CameraPreviewShortcutIdPrefix + "Increase Field of View", typeof(SceneView), KeyCode.WheelUp, ShortcutModifiers.Alt)]
-        static void IncreaseFieldOfView(ShortcutArguments args)
+        internal void HandleScrollWheel(SceneView view)
         {
-            SceneView sv = SceneView.lastActiveSceneView;
-            // Check active tool context
-            if (!sv.viewpoint.viewpointContextIsActive || !(sv.viewpoint.activeViewpoint is ICameraLensData))
-                return;
-
-            DoChangeFieldOfView(sv.viewpoint.activeViewpoint, 1);
-
-            // Repaint the Scene View as a Scrollwheel action doesn't.
-            sv.Repaint();
+            var evt = Event.current;
+            if ((evt.modifiers & EventModifiers.Alt) != 0)
+            {
+                UpdateFieldOfView();
+                view.Repaint();
+            }
+            else if (evt.modifiers == 0)
+            {
+                UpdateOverscan();
+                view.Repaint();
+            }
+            Event.current.Use();
         }
 
-        [Shortcut(k_CameraPreviewShortcutIdPrefix + "Decrease Field of View", typeof(SceneView), KeyCode.WheelDown, ShortcutModifiers.Alt)]
-        static void DecreaseFieldOfView(ShortcutArguments args)
+        void UpdateFieldOfView()
         {
-            SceneView sv = SceneView.lastActiveSceneView;
             // Check active tool context
-            if (!sv.viewpoint.viewpointContextIsActive || !(sv.viewpoint.activeViewpoint is ICameraLensData))
+            if (!viewpointContextIsActive || !(activeViewpoint is ICameraLensData))
                 return;
 
-            DoChangeFieldOfView(sv.viewpoint.activeViewpoint, -1);
-
-            // Repaint the Scene View as a Scrollwheel action doesn't.
-            sv.Repaint();
+            DoChangeFieldOfView(activeViewpoint, (int)Mathf.Sign(Event.current.delta.y));
         }
 
-        [Shortcut(k_CameraPreviewShortcutIdPrefix + "Decrease Size Of Overscan View Guides", typeof(SceneView), KeyCode.WheelUp)]
-        static void IncreaseOverscan(ShortcutArguments args)
+        void UpdateOverscan()
         {
-            SceneView sv = SceneView.lastActiveSceneView as SceneView;
             // Check active tool context
-            if (!sv.viewpoint.viewpointContextIsActive)
+            if (!viewpointContextIsActive)
                 return;
 
             float delta = Event.current.delta.y;
-            sv.viewpoint.cameraOverscanSettings.scale += delta * k_MouseWheelScaleSensitivityMultiplier;
-
-            // Repaint the Scene View as a Scrollwheel action doesn't.
-            sv.Repaint();
-        }
-
-        [Shortcut(k_CameraPreviewShortcutIdPrefix + "Increase Size Of Overscan View Guides", typeof(SceneView), KeyCode.WheelDown)]
-        static void DecreaseOverscan(ShortcutArguments args)
-        {
-            SceneView sv = SceneView.lastActiveSceneView;
-            // Check active tool context
-            if (!sv.viewpoint.viewpointContextIsActive)
-                return;
-
-            float delta = Event.current.delta.y;
-            sv.viewpoint.cameraOverscanSettings.scale += delta * k_MouseWheelScaleSensitivityMultiplier;
-
-            // Repaint the Scene View as a Scrollwheel action doesn't.
-            sv.Repaint();
+            cameraOverscanSettings.scale += delta * k_MouseWheelScaleSensitivityMultiplier;
         }
 
         static void DoChangeFieldOfView(IViewpoint viewpoint, int sign)

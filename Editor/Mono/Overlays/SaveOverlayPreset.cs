@@ -46,12 +46,6 @@ namespace UnityEditor.Overlays
         void OnEnable()
         {
             titleContent = GetLocalizedTitleContent();
-            OverlayMenu.SetKeepAlive(true);
-        }
-
-        void OnDisable()
-        {
-            OverlayMenu.SetKeepAlive(false);
         }
 
         void OnGUI()

@@ -195,6 +195,15 @@ namespace UnityEditor
         Chromium = 5
     }
 
+     // Client browser type
+     [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+     public enum WebGLClientPlatform
+     {
+         Desktop = 0,
+         Android = 1,
+         iOS = 2
+     }
+
     [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
     [Obsolete("WSASubtarget is obsolete and has no effect. It will be removed in a subsequent Unity release.")]
     public enum WSASubtarget
@@ -633,6 +642,13 @@ namespace UnityEditor
             [NativeMethod("GetWebGLClientBrowserType")]
             get;
             [NativeMethod("SetWebGLClientBrowserType")]
+            set;
+        }
+        public static extern WebGLClientPlatform webGLClientPlatform
+        {
+            [NativeMethod("GetWebGLClientPlatform")]
+            get;
+            [NativeMethod("SetWebGLClientPlatform")]
             set;
         }
 

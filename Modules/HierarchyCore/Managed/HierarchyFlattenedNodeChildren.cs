@@ -80,7 +80,7 @@ namespace Unity.Hierarchy
             /// <summary>
             /// Move to next iterable value.
             /// </summary>
-            /// <returns><see langword="true"/> if Current item is valid, otherwise <see langword="false"/>.</returns>
+            /// <returns><see langword="true"/> if Current item is valid, <see langword="false"/> otherwise.</returns>
             public bool MoveNext()
             {
                 if (m_CurrentIndex == -1)

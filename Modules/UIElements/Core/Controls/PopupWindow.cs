@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Styled visual text element. This element doesn't have any functionality. It's just a container with a border and a title, rather than a window or popup.
+    /// Styled visual text element. This element doesn't have any functionality. It's just a container with a border and a title, rather than a window or popup. For more information, refer to [[wiki:UIE-uxml-element-PopupWindow|UXML element PopupWindow]].
     /// </summary>
     /// <example>
     /// <code>

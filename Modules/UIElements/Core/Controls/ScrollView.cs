@@ -45,6 +45,8 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <remarks>
     /// The default is <see cref="ScrollViewMode.Vertical"/>.
+    /// 
+    /// For more information, refer to [[wiki:UIE-uxml-element-ScrollView|UXML element ScrollView]].
     /// </remarks>
     public enum ScrollViewMode
     {
@@ -303,7 +305,7 @@ namespace UnityEngine.UIElements
         long m_ElasticAnimationIntervalMs = 16;
 
         /// <summary>
-        /// Specifies the minimum amount of time in milliseconds between each elastic spring animation execution.
+        /// The minimum amount of time, in milliseconds, between executions of elastic spring animation.
         /// </summary>
         [CreateProperty]
         public long elasticAnimationIntervalMs

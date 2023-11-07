@@ -107,6 +107,7 @@ namespace UnityEditor.LightBaking
             public UInt64 integrationRadiusOffset;
             public UInt32 environmentOcclusionSampleCount;
             public bool ignoreDirectEnvironment;
+            public bool ignoreIndirectEnvironment;
         };
         [Flags]
         public enum LightmapRequestOutputType : UInt32

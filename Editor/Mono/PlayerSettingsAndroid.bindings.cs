@@ -185,6 +185,12 @@ namespace UnityEditor
         public Texture2D banner;
     }
 
+    public enum AndroidAutoRotationBehavior
+    {
+        User = 1,
+        Sensor = 2,
+    }
+
     [Flags]
     public enum AndroidApplicationEntry : uint
     {
@@ -272,6 +278,14 @@ namespace UnityEditor
                 get;
                 [NativeMethod("SetAndroidFullscreenMode")]
                 set;
+            }
+
+            public static extern AndroidAutoRotationBehavior autoRotationBehavior
+            {
+               [NativeMethod("GetAndroidAutoRotationBehavior")]
+               get;
+               [NativeMethod("SetAndroidAutoRotationBehavior")]
+               set;
             }
 
             // Android bundle version code

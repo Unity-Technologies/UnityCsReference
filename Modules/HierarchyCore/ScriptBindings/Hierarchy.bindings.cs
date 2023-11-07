@@ -218,10 +218,10 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Adds multiple new nodes that have a specified parent node to the hierarchy.
         /// </summary>
-        /// <param name="count">The number of nodes to create.</param>
         /// <param name="parent">The parent of the hierarchy nodes.</param>
+        /// <param name="count">The number of nodes to create.</param>
         /// <returns>An array of hierarchy nodes.</returns>
-        public HierarchyNode[] Add(int count, in HierarchyNode parent)
+        public HierarchyNode[] Add(in HierarchyNode parent, int count)
         {
             var nodes = new HierarchyNode[count];
             AddNodeSpanWithParent(in parent, nodes);
@@ -246,14 +246,8 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node to remove from the hierarchy.</param>
         /// <returns><see langword="true"/> if the node was removed, <see langword="false"/> otherwise.</returns>
-        public bool Remove(in HierarchyNode node) => RemoveNode(in node);
-
-        /// <summary>
-        /// Removes multiple nodes from the hierarchy.
-        /// </summary>
-        /// <param name="nodes">The hierarchy nodes to remove from the hierarchy.</param>
-        /// <returns>The number of removed nodes.</returns>
-        public int Remove(ReadOnlySpan<HierarchyNode> nodes) => RemoveNodeSpan(nodes);
+        [NativeThrows]
+        public extern bool Remove(in HierarchyNode node);
 
         /// <summary>
         /// Recursively removes all children of a node.
@@ -270,16 +264,14 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Sets the parent of a hierarchy node.
         /// </summary>
+        /// <remarks>
+        /// This operation fails if either the node or its potential parent have a handler that prohibits this parent-child relationship.
+        /// </remarks>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="parent">The hierarchy node to set as a parent.</param>
-        public void SetParent(in HierarchyNode node, in HierarchyNode parent) => SetNodeParent(in node, in parent);
-
-        /// <summary>
-        /// Sets the parent of multiple hierarchy nodes.
-        /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
-        /// <param name="parent">The hierarchy node to set as a parent.</param>
-        public void SetParent(ReadOnlySpan<HierarchyNode> nodes, in HierarchyNode parent) => SetNodeParentSpan(nodes, in parent);
+        /// <returns><see langword="true"/> if the parent was set, <see langword="false"/> otherwise.</returns>
+        [NativeThrows]
+        public extern bool SetParent(in HierarchyNode node, in HierarchyNode parent);
 
         /// <summary>
         /// Gets the parent of a hierarchy node.
@@ -365,13 +357,16 @@ namespace Unity.Hierarchy
         /// Gets whether the child nodes of a hierarchy node need to be sorted.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
-        /// <returns><see langword="true"/> if the child nodes of a hierarchy node need to be sorted, otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the child nodes of a hierarchy node need to be sorted, <see langword="false"/> otherwise.</returns>
         [NativeThrows]
         public extern bool DoesChildrenNeedsSorting(in HierarchyNode node);
 
         /// <summary>
         /// Creates an unmanaged property with a specified name.
         /// </summary>
+        /// <remarks>
+        /// The result of this method should be stored and reused to avoid the costly lookup by name.
+        /// </remarks>
         /// <param name="name">The property name.</param>
         /// <param name="type">The storage type for the property.</param>
         /// <returns>The property accessor.</returns>
@@ -388,6 +383,9 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Creates a string property with a specified name.
         /// </summary>
+        /// <remarks>
+        /// The result of this method should be stored and reused to avoid the costly lookup by name.
+        /// </remarks>
         /// <param name="name">The property name.</param>
         /// <returns>The property accessor.</returns>
         public HierarchyPropertyString GetOrCreatePropertyString(string name)
@@ -403,10 +401,14 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Sets the name of a hierarchy node.
         /// </summary>
+        /// <remarks>
+        /// This operation fails if the node has a handler that does not allow name changes.
+        /// </remarks>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="name">The name of the node.</param>
+        /// <returns><see langword="true"/> if the name was set, <see langword="false"/> otherwise.</returns>
         [NativeThrows]
-        public extern void SetName(in HierarchyNode node, string name);
+        public extern bool SetName(in HierarchyNode node, string name);
 
         /// <summary>
         /// Gets the name of a hierarchy node.
@@ -470,18 +472,6 @@ namespace Unity.Hierarchy
 
         [NativeThrows, FreeFunction("HierarchyBindings::AddNodeSpanWithParent", HasExplicitThis = true)]
         extern void AddNodeSpanWithParent(in HierarchyNode parent, Span<HierarchyNode> nodes);
-
-        [NativeThrows, FreeFunction("HierarchyBindings::RemoveNode", HasExplicitThis = true)]
-        extern bool RemoveNode(in HierarchyNode node);
-
-        [NativeThrows, FreeFunction("HierarchyBindings::RemoveNodeSpan", HasExplicitThis = true)]
-        extern int RemoveNodeSpan(ReadOnlySpan<HierarchyNode> nodes);
-
-        [NativeThrows, FreeFunction("HierarchyBindings::SetNodeParent", HasExplicitThis = true)]
-        extern void SetNodeParent(in HierarchyNode node, in HierarchyNode parent);
-
-        [NativeThrows, FreeFunction("HierarchyBindings::SetNodeParentSpan", HasExplicitThis = true)]
-        extern void SetNodeParentSpan(ReadOnlySpan<HierarchyNode> nodes, in HierarchyNode parent);
 
         [NativeThrows, FreeFunction("HierarchyBindings::GetNodeChildrenSpan", HasExplicitThis = true)]
         extern int GetNodeChildrenSpan(in HierarchyNode node, Span<HierarchyNode> outChildren);

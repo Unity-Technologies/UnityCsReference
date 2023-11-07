@@ -29,6 +29,7 @@ namespace UnityEditor.Overlays
             readonly List<VisualElement> m_PickingBuffer = new();
             readonly List<OverlayDropZoneBase> m_DropZoneBuffer = new();
             readonly Overlay m_TargetOverlay;
+            readonly OverlayContainer m_OriginContainer;
             readonly OverlayGhostDropZone m_OriginGhostDropZone;
             readonly VisualElement m_CanvasRoot;
             OverlayDropZoneBase m_Hovered;
@@ -36,8 +37,8 @@ namespace UnityEditor.Overlays
             public DockingOperation(OverlayCanvas canvas, Overlay targetOverlay)
             {
                 m_InsertIndicator = new OverlayInsertIndicator();
-                var originContainer = targetOverlay.container;
-                originContainer.GetOverlayIndex(targetOverlay, out var section, out var index);
+                m_OriginContainer = targetOverlay.container;
+                m_OriginContainer.GetOverlayIndex(targetOverlay, out var section, out var index);
                 m_TargetOverlay = targetOverlay;
                 m_CanvasRoot = canvas.rootVisualElement;
                 targetOverlay.rootVisualElement.AddToClassList(k_OverlayDraggedState);
@@ -62,7 +63,7 @@ namespace UnityEditor.Overlays
 
                 foreach (var dropZone in m_DropZones)
                 {
-                    dropZone.Setup(m_InsertIndicator, originContainer, section);
+                    dropZone.Setup(m_InsertIndicator, m_OriginContainer, section);
                     dropZone.Activate(m_TargetOverlay);
                 }
             }
@@ -76,6 +77,10 @@ namespace UnityEditor.Overlays
                     m_Hovered.EndHover();
 
                 m_Hovered = hovered;
+
+                //Remove dropzone f we have a different container
+                if (m_Hovered == null || m_Hovered.targetContainer != m_OriginContainer)
+                    m_OriginGhostDropZone?.RemoveFromHierarchy();
                 
                 if (m_Hovered != null)
                     m_Hovered.BeginHover();

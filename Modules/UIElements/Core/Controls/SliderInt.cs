@@ -7,7 +7,7 @@ using System;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A slider containing Integer discrete values.
+    /// A slider containing Integer discrete values. For more information, refer to [[wiki:UIE-uxml-element-sliderInt|UXML element SliderInt]].
     /// </summary>
     public class SliderInt : BaseSlider<int>
     {

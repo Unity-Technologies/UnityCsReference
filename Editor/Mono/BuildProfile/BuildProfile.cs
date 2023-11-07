@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Build.Profile
@@ -14,6 +15,7 @@ namespace UnityEditor.Build.Profile
     /// </summary>
     [RequiredByNativeCode(GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules]
     internal sealed partial class BuildProfile : ScriptableObject
     {
         /// <summary>
@@ -34,6 +36,16 @@ namespace UnityEditor.Build.Profile
         {
             get => m_Subtarget;
             internal set => m_Subtarget = value;
+        }
+
+        /// <summary>
+        /// Module name used to fetch build profiles.
+        /// </summary>
+        [SerializeField] string m_ModuleName;
+        public string moduleName
+        {
+            get => m_ModuleName;
+            internal set => m_ModuleName = value;
         }
 
         /// <summary>

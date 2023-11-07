@@ -202,7 +202,7 @@ namespace UnityEditor.Modules
             // packages if used in any scenes, as well as any assembly from the Assets folder) as roots.
             var assembliesToProcess = strippingLevel == ManagedStrippingLevel.Disabled
                 ? GetFilesWithRoleFromBuildReport(args.report, "ManagedLibrary", "ManagedEngineAPI").Select(f => f.FileName)
-                : args.usedClassRegistry.GetUserAssemblies();
+                : args.usedClassRegistry.GetUsedUserAssemblies();
 
             return new LinkerConfig
             {

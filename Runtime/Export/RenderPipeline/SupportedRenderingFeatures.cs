@@ -53,6 +53,7 @@ namespace UnityEngine.Rendering
         [Obsolete("Bake with the Progressive Lightmapper. The backend that uses Enlighten to bake is obsolete.", true)]
         public bool enlightenLightmapper { get; set; } = false;
         public bool enlighten { get; set; } = true;
+        public bool skyOcclusion { get; set; } = false;
         public bool lightProbeProxyVolumes { get; set; } = true;
         public bool motionVectors { get; set; } = true;
         public bool receiveShadows { get; set; } = true;

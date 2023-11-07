@@ -2929,12 +2929,12 @@ namespace UnityEditor
             return DoSlider(controlRect, dragZone, id, sliderValue, leftValue, rightValue, kFloatFieldFormatString, textfieldStyle, power);
         }
 
-        internal static int LogarithmicIntSlider(Rect position, string label, int sliderValue, int leftValue, int rightValue, int logbase, int textFieldMin, int textFieldMax)
+        public static int LogarithmicIntSlider(Rect position, string label, int sliderValue, int leftValue, int rightValue, int logbase, int textFieldMin, int textFieldMax)
         {
             return LogarithmicIntSlider(position, EditorGUIUtility.TempContent(label), sliderValue, leftValue, rightValue, logbase, textFieldMin, textFieldMax);
         }
 
-        internal static int LogarithmicIntSlider(Rect position, GUIContent label, int sliderValue, int leftValue, int rightValue, int logbase, int textFieldMin, int textFieldMax)
+        public static int LogarithmicIntSlider(Rect position, GUIContent label, int sliderValue, int leftValue, int rightValue, int logbase, int textFieldMin, int textFieldMax)
         {
             return LogarithmicIntSlider(position, label, sliderValue, leftValue, rightValue, EditorStyles.numberField, logbase, textFieldMin, textFieldMax);
         }

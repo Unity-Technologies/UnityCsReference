@@ -18,7 +18,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="flags">The hierarchy node flags.</param>
-        /// <returns><see langword="true"/> if the node passes the predicate, otherwise <see langword="false"/></returns>
+        /// <returns><see langword="true"/> if the node passes the predicate, <see langword="false"/> otherwise</returns>
         internal delegate bool Predicate(in HierarchyNode node, HierarchyNodeFlags flags);
 
         readonly HierarchyViewModel m_HierarchyViewModel;
@@ -71,7 +71,7 @@ namespace Unity.Hierarchy
             /// <summary>
             /// Move to next iterable value.
             /// </summary>
-            /// <returns><see langword="true"/> if Current item is valid, otherwise <see langword="false"/>.</returns>
+            /// <returns><see langword="true"/> if Current item is valid, <see langword="false"/> otherwise.</returns>
             public bool MoveNext()
             {
                 var count = m_HierarchyFlattened.Count;
@@ -97,7 +97,7 @@ namespace Unity.Hierarchy
             /// <summary>
             /// Check if iteration is done.
             /// </summary>
-            /// <returns><see langword="true"/> if iteration is done, otherwise <see langword="false"/>.</returns>
+            /// <returns><see langword="true"/> if iteration is done, <see langword="false"/> otherwise.</returns>
             public bool Done() => m_Index == m_HierarchyFlattened.Count;
         }
 

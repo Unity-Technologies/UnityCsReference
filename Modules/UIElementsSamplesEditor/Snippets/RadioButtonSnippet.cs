@@ -11,7 +11,7 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
-            /// <sample>
+            #region sample
             // Note: See also RadioButtonGroup in the ChoiceField section of UI Toolkit Samples
 
             // Get a reference to the first radio button from UXML and assign a value to it.
@@ -44,7 +44,7 @@ namespace UnityEditor.UIElements.Samples
             {
                 csharpField2.value = evt.newValue;
             });
-            /// </sample>
+            #endregion
         }
     }
 }

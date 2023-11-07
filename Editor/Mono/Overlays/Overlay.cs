@@ -75,6 +75,7 @@ namespace UnityEditor.Overlays
         // Connections
         public EditorWindow containerWindow => canvas.containerWindow;
         internal OverlayCanvas canvas { get; set; }
+        internal bool isPopup { get; set; }
         OverlayContainer m_Container;
         internal OverlayContainer tempTargetContainer { get; set; }
 
@@ -143,8 +144,10 @@ namespace UnityEditor.Overlays
                                         EditorGUIUtility.LoadIcon(EditorGUIUtility.GetIconPathFromAttribute(GetType())) :
                                         m_CollapsedIcon;
 
-                    iconElement.style.backgroundImage = iconTexture;
-                    iconElement.text = iconTexture != null ? null : OverlayUtilities.GetSignificantLettersForIcon(displayName);
+                    var collapsedIcon = GetCollapsedIconContent();
+                    var image = collapsedIcon.image as Texture2D;
+                    iconElement.style.backgroundImage = image;
+                    iconElement.text = image != null ? null : OverlayUtilities.GetSignificantLettersForIcon(displayName);
                 }
             }
         }
@@ -160,14 +163,12 @@ namespace UnityEditor.Overlays
                 m_CollapsedContent.Q<Button>().clicked += ToggleCollapsedPopup;
 
                 var iconElement = rootVisualElement.Q<Label>(classes: k_CollapsedIconButton);
-                var iconTexture = m_CollapsedIcon == null ?
-                                    EditorGUIUtility.LoadIcon(EditorGUIUtility.GetIconPathFromAttribute(GetType())) :
-                                    m_CollapsedIcon;
 
-                if (iconTexture != null)
-                    iconElement.style.backgroundImage = iconTexture;
+                var collapsedIcon = GetCollapsedIconContent();
+                if (collapsedIcon.image != null)
+                    iconElement.style.backgroundImage = collapsedIcon.image as Texture2D;
                 else
-                    iconElement.text = OverlayUtilities.GetSignificantLettersForIcon(displayName);
+                    iconElement.text = collapsedIcon.text;
 
                 return m_CollapsedContent;
             }
@@ -563,6 +564,18 @@ namespace UnityEditor.Overlays
                 layoutChanged?.Invoke(m_ActiveLayout);
         }
 
+        internal GUIContent GetCollapsedIconContent()
+        {
+            var icon = m_CollapsedIcon == null
+                ? EditorGUIUtility.LoadIcon(EditorGUIUtility.GetIconPathFromAttribute(GetType()))
+                : m_CollapsedIcon;
+
+            if (icon != null)
+                return new GUIContent(icon);
+
+            return new GUIContent(OverlayUtilities.GetSignificantLettersForIcon(displayName));
+        }
+
         internal bool IsResizable()
         {
             return activeLayout == Layout.Panel && !collapsed;
@@ -686,7 +699,7 @@ namespace UnityEditor.Overlays
                 return;
             }
 
-            m_ModalPopup = new OverlayPopup(this);
+            m_ModalPopup = OverlayPopup.CreateUnderOverlay(this);
             ApplySize(m_ModalPopup.Q(className: "overlay-box-background"), true, sizeOverridden);
 
             m_ModalPopup.RegisterCallback<FocusOutEvent>(evt =>

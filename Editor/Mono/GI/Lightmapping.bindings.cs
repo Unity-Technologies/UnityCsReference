@@ -375,7 +375,7 @@ namespace UnityEditor
 #pragma warning restore 0618
         }
 
-        internal static event Action bakeCancelled;
+        public static event Action bakeCancelled;
 
         private static void Internal_CallBakeCancelledFunctions()
         {
@@ -629,6 +629,32 @@ namespace UnityEditor
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/ExtractInstances.h")]
         extern static internal bool IsRendererValid([NotNull] Renderer renderer);
+        
+        public delegate void AdditionalBakeDelegate(ref float progress, ref bool done);
+
+        [RequiredByNativeCode]
+        public static void SetAdditionalBakeDelegate(AdditionalBakeDelegate del) { s_AdditionalBakeDelegate = del != null ? del : s_DefaultAdditionalBakeDelegate; }
+
+        [RequiredByNativeCode]
+        public static AdditionalBakeDelegate GetAdditionalBakeDelegate() { return s_AdditionalBakeDelegate; }
+     
+        [RequiredByNativeCode]
+        public static void ResetAdditionalBakeDelegate() { s_AdditionalBakeDelegate = s_DefaultAdditionalBakeDelegate; }
+     
+        [RequiredByNativeCode]
+        internal static void AdditionalBake(ref float progress, ref bool done)
+        {
+            s_AdditionalBakeDelegate(ref progress, ref done);
+        }
+
+        [RequiredByNativeCode]
+        private static readonly AdditionalBakeDelegate s_DefaultAdditionalBakeDelegate = (ref float progress, ref bool done) =>
+        {
+            progress = 100.0f;
+            done = true;
+        };
+        [RequiredByNativeCode]
+        private static AdditionalBakeDelegate s_AdditionalBakeDelegate = s_DefaultAdditionalBakeDelegate;
     }
 }
 
@@ -638,6 +664,9 @@ namespace UnityEditor.Experimental
     {
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         public static extern bool probesIgnoreDirectEnvironment { get; set; }
+
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
+        public static extern bool probesIgnoreIndirectEnvironment { get; set; }
 
         public static void SetCustomBakeInputs(Vector4[] inputData, int sampleCount)
         {

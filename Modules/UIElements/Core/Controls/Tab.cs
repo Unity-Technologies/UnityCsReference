@@ -13,6 +13,8 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// A Tab has a header that can respond to pointer and mouse events. The header can hold an icon, a label, or both.
     /// The Tab content container can hold anything inside of it giving more flexibility to customize its layout.
+    /// 
+    /// For more information, refer to [[wiki:UIE-uxml-element-tab|UXML element Tab]].
     /// </remarks>
     public class Tab : VisualElement
     {

@@ -584,6 +584,9 @@
     <Compile Include="..\..\Editor\Mono\Audio\UIElements\AudioRandomRangeSliderTracker.cs">
       <Link>Editor\Mono\Audio\UIElements\AudioRandomRangeSliderTracker.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\UIElements\OnAudioFilterReadLevelMeter.cs">
+      <Link>Editor\Mono\Audio\UIElements\OnAudioFilterReadLevelMeter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Audio\UIElements\Tickmarks.cs">
       <Link>Editor\Mono\Audio\UIElements\Tickmarks.cs</Link>
     </Compile>
@@ -709,6 +712,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileCreate.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfileCreate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileModuleUtil.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfileModuleUtil.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfilePlatformSettingsBase.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfilePlatformSettingsBase.cs</Link>
@@ -2501,6 +2507,9 @@
     <Compile Include="..\..\Editor\Mono\Modules\BeeBuildPostprocessor.cs">
       <Link>Editor\Mono\Modules\BeeBuildPostprocessor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Modules\DefaultBuildProfileExtension.cs">
+      <Link>Editor\Mono\Modules\DefaultBuildProfileExtension.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Modules\DefaultBuildWindowExtension.cs">
       <Link>Editor\Mono\Modules\DefaultBuildWindowExtension.cs</Link>
     </Compile>
@@ -2623,9 +2632,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Overlays\OverlayInsertIndicator.cs">
       <Link>Editor\Mono\Overlays\OverlayInsertIndicator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Overlays\OverlayMenu.cs">
-      <Link>Editor\Mono\Overlays\OverlayMenu.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Overlays\OverlayMenuItem.cs">
       <Link>Editor\Mono\Overlays\OverlayMenuItem.cs</Link>
@@ -4313,8 +4319,20 @@
     <Compile Include="..\..\Modules\BuildProfileEditor\AssemblyInfo.cs">
       <Link>Modules\BuildProfileEditor\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\BuildProfileEditor.cs">
+      <Link>Modules\BuildProfileEditor\BuildProfileEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\BuildProfileWindow.cs">
       <Link>Modules\BuildProfileEditor\BuildProfileWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Elements\BuildProfileListLabel.cs">
+      <Link>Modules\BuildProfileEditor\Elements\BuildProfileListLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\TrText.cs">
+      <Link>Modules\BuildProfileEditor\TrText.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Util.cs">
+      <Link>Modules\BuildProfileEditor\Util.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\BuildReportRestService.bindings.cs">
       <Link>Modules\BuildReportingEditor\BuildReportRestService.bindings.cs</Link>
@@ -4513,6 +4531,9 @@
     </Compile>
     <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\ModesDropdown.cs">
       <Link>Modules\EditorToolbar\ToolbarElements\ModesDropdown.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\OverlayMenu.cs">
+      <Link>Modules\EditorToolbar\ToolbarElements\OverlayMenu.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\PlayModeButtons.cs">
       <Link>Modules\EditorToolbar\ToolbarElements\PlayModeButtons.cs</Link>

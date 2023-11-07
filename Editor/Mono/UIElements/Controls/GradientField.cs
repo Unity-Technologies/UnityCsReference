@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Makes a field for editing an <see cref="Gradient"/>.
+    /// Makes a field for editing an <see cref="Gradient"/>. For more information, refer to [[wiki:UIE-uxml-element-GradientField|UXML element GradientField]].
     /// </summary>
     public class GradientField : BaseField<Gradient>
     {
@@ -45,7 +45,7 @@ namespace UnityEditor.UIElements
         /// The <see cref="Gradient"/> currently being exposed by the field.
         /// </summary>
         /// <remarks>
-        /// Note that changing this will not trigger a change event to be sent.
+        /// __Note__: Changing this doesn't trigger sending a change event.
         /// </remarks>
         public override Gradient value
         {

@@ -10,7 +10,7 @@ using Unity.Properties;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A control that allows single selection out of a logical group of <see cref="RadioButton"/> elements. Selecting one will deselect the others.
+    /// A control that allows single selection out of a logical group of <see cref="RadioButton"/> elements. Selecting one will deselect the others. For more information, refer to [[wiki:UIE-uxml-element-RadioButtonGroup|UXML element RadioButtonGroup]].
     /// </summary>
     public class RadioButtonGroup : BaseField<int>, IGroupBox
     {

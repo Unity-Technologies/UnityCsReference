@@ -684,11 +684,6 @@ namespace Unity.UI.Builder
             if (builderWindow == null)
                 builderWindow = Builder.ShowWindow();
 
-            // LoadDocument() will call Clear() which will try to restore from Backup().
-            // If we don't clear the Backups here, they will overwrite the newly post-processed
-            // and re-imported asset we detected here.
-            ClearBackups();
-
             if (string.IsNullOrEmpty(uxmlPath))
                 builderWindow.toolbar.ReloadDocument();
             else
@@ -722,6 +717,11 @@ namespace Unity.UI.Builder
                 if (!found)
                     return;
             }
+
+            // LoadDocument() will call Clear() which will try to restore from Backup().
+            // If we don't clear the Backups here, they will overwrite the newly post-processed
+            // and re-imported asset we detected here.
+            ClearBackups();
 
             if (EditorWindow.HasOpenInstances<Builder>())
             {

@@ -30,6 +30,8 @@ namespace UnityEngine.UIElements
     ///
     /// The TreeView creates VisualElements for the visible items, and supports binding many more. As the user scrolls, the TreeView
     /// recycles VisualElements and re-binds them to new data items.
+    /// 
+    /// For more information, refer to [[wiki:UIE-uxml-element-TreeView|UXML element TreeView]].
     /// </remarks>
     public class TreeView : BaseTreeView
     {

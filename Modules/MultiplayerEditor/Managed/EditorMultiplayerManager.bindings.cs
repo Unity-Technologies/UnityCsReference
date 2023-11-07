@@ -30,6 +30,7 @@ namespace UnityEditor.Multiplayer.Internal
         public static extern void SetStrippingTypesForRole(MultiplayerRole role, Type[] types);
 
         public static extern bool ShouldStripComponentType(MultiplayerRoleFlags activeRoleMask, Component component);
+        public static extern Hash128 ComputeDependencyHash();
 
 
         public static event Func<Rect, UnityEngine.Object[], bool> drawingMultiplayerRoleField;

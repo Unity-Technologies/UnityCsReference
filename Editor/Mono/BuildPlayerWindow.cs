@@ -631,7 +631,7 @@ namespace UnityEditor
             return string.Format("http://{0}.unity3d.com/{1}/{2}/{3}/UnitySetup-{4}-Support-for-Editor-{5}{6}", prefix, suffix, revision, folder, moduleName, shortVersion, extension);
         }
 
-        static string GetUnityHubModuleDownloadURL(string moduleName)
+        internal static string GetUnityHubModuleDownloadURL(string moduleName)
         {
             string fullVersion = InternalEditorUtility.GetFullUnityVersion();
             string revision = "";
@@ -651,7 +651,7 @@ namespace UnityEditor
             return string.Format("unityhub://{0}/{1}/module={2}", shortVersion, revision, moduleName.ToLower());
         }
 
-        bool IsModuleNotInstalled(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
+        internal static bool IsModuleNotInstalled(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
         {
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
             bool installed = BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget).installed;
@@ -706,26 +706,11 @@ namespace UnityEditor
 
             if (IsModuleNotInstalled(namedBuildTarget, buildTarget))
             {
-                GUILayout.Label(EditorGUIUtility.TextContent(string.Format(styles.noModuleLoaded, BuildPlatforms.instance.GetModuleDisplayName(namedBuildTarget, buildTarget))));
-                string url = "";
-
-                if (!isEditorinstalledWithHub || (moduleName == "PS4" || moduleName == "PS5" || moduleName == "XboxOne"))
-                {
-                    if (GUILayout.Button(styles.openDownloadPage, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
-                    {
-                        url = GetPlaybackEngineDownloadURL(moduleName);
-                        Help.BrowseURL(url);
-                    }
-                }
-                else
-                {
-                    if (GUILayout.Button(styles.installModuleWithHub, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
-                    {
-                        url = GetUnityHubModuleDownloadURL(moduleName);
-                        Help.BrowseURL(url);
-                    }
-                }
-                GUILayout.Label(styles.EditorWillNeedToBeReloaded, EditorStyles.wordWrappedMiniLabel);
+                ShowNoModuleLabel(namedBuildTarget, buildTarget, moduleName,
+                    styles.noModuleLoaded,
+                    styles.openDownloadPage,
+                    styles.installModuleWithHub,
+                    styles.EditorWillNeedToBeReloaded);
                 GUIBuildButtons(false, false, false, platform, postprocessor);
                 return;
             }
@@ -952,6 +937,38 @@ namespace UnityEditor
 
             GUIBuildButtons(buildWindowExtension, enableBuildButton, enableBuildAndRunButton,
                 canInstallInBuildFolder, platform, postprocessor);
+        }
+
+        internal static void ShowNoModuleLabel(
+            NamedBuildTarget namedBuildTarget,
+            BuildTarget buildTarget,
+            string moduleName,
+            string noModuleLoaded,
+            GUIContent openDownloadPage,
+            GUIContent installModuleWithHub,
+            string editorWillNeedToBeReloaded)
+        {
+            GUILayout.Label(EditorGUIUtility.TextContent(string.Format(noModuleLoaded, BuildPlatforms.instance.GetModuleDisplayName(namedBuildTarget, buildTarget))));
+            string url = "";
+
+            if (!isEditorinstalledWithHub || (moduleName == "PS4" || moduleName == "PS5" || moduleName == "XboxOne"))
+            {
+                if (GUILayout.Button(openDownloadPage, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                {
+                    url = GetPlaybackEngineDownloadURL(moduleName);
+                    Help.BrowseURL(url);
+                }
+            }
+            else
+            {
+                if (GUILayout.Button(installModuleWithHub, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                {
+                    url = GetUnityHubModuleDownloadURL(moduleName);
+                    Help.BrowseURL(url);
+                }
+            }
+
+            GUILayout.Label(editorWillNeedToBeReloaded, EditorStyles.wordWrappedMiniLabel);
         }
 
         private static void GUIBuildButtons(bool enableBuildButton,

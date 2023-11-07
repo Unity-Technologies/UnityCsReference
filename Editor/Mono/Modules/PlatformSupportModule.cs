@@ -9,6 +9,8 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.Build.Profile;
 using UnityEngine;
+using UnityEngine.Bindings;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Modules
 {
@@ -280,6 +282,8 @@ namespace UnityEditor.Modules
         bool SupportsForcedSrgbBlit();
 
         bool SupportsStaticSplashScreenBackgroundColor();
+
+        void AutoRotationSectionGUI();
     }
 
 
@@ -354,15 +358,28 @@ namespace UnityEditor.Modules
     }
 
     // Interface for implementing platform specific setting in Build Profiles window.
+    [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
     internal interface IBuildProfileExtension
     {
         BuildProfilePlatformSettingsBase CreateBuildProfilePlatformSettings();
 
         /// <summary>
+        /// When editing a build profile asset, this method is invoked to render the UI for
+        /// viewing and/or editing the platform specific settings. <see cref="BuildProfilePlatformSettingsBase"/>.
+        /// </summary>
+        /// <param name="rootProperty">
+        /// Property instance for <see cref="BuildProfile.platformBuildProfile"/>.
+        /// </param>
+        /// <returns>
+        /// Root visual element for the platform specific settings UI.
+        /// </returns>
+        VisualElement CreateSettingsGUI(SerializedObject serializedObject, SerializedProperty rootProperty);
+
+        /// <summary>
         /// Copy settings to the platform settings base we are passing. This is used, for example, when creating
         /// a new classic profile and we need to copy settings - that live in the managed side only - to it
         /// </summary>
-        void CopyPlatformSettingsToBuildProfile(BuildProfilePlatformSettingsBase platformSettingsBase) {}
+        void CopyPlatformSettingsToBuildProfile(BuildProfilePlatformSettingsBase platformSettingsBase);
     }
 
     // Interface for target device related operations

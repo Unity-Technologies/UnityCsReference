@@ -9,7 +9,7 @@ using Unity.Properties;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A vertical or horizontal scrollbar.
+    /// A vertical or horizontal scrollbar. For more information, refer to [[wiki:UIE-uxml-element-scroller|UXML element Scroller]].
     /// </summary>
     public class Scroller : VisualElement
     {
