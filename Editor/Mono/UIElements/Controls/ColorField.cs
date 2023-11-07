@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Makes a field for selecting a color.
+    /// Makes a field for selecting a color. For more information, refer to [[wiki:UIE-uxml-element-ColorField|UXML element ColorField]].
     /// </summary>
     public class ColorField : BaseField<Color>
     {

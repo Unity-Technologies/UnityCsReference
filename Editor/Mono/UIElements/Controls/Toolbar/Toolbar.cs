@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A toolbar for tool windows.
+    /// A toolbar for tool windows. For more information, refer to [[wiki:UIE-uxml-element-Toolbar|UXML element Toolbar]].
     /// </summary>
     public class Toolbar : VisualElement
     {

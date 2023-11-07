@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Makes a field for editing an <see cref="AnimationCurve"/>.
+    /// Makes a field for editing an <see cref="AnimationCurve"/>. For more information, refer to [[wiki:UIE-uxml-element-CurveField|UXML element CurveField]].
     /// </summary>
     public class CurveField : BaseField<AnimationCurve>
     {

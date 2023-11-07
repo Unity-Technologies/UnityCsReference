@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A button for the toolbar.
+    /// A button for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarButton|UXML element ToolbarButton]].
     /// </summary>
     public class ToolbarButton : Button
     {

@@ -107,7 +107,7 @@ namespace UnityEditor
             m_DismissAllBtn = new ToolbarButton(ClearInactive)
             {
                 name = "DismissAllBtn",
-                text = L10n.Tr("Clear inactive"),
+                text = L10n.Tr("Clear Inactive"),
             };
             toolbar.Add(m_DismissAllBtn);
 

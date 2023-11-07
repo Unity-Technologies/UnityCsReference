@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Pool;
 
 using UnityEditor.SceneManagement;
 
@@ -405,10 +406,9 @@ namespace UnityEditor.Search
                 outScenes.Add(scene);
             }
 
-
-            var scenes = new List<Scene>();
+            using var scenesPoolHandle = ListPool<Scene>.Get(out var scenes);
             var stage = StageUtility.GetCurrentStage();
-            if (stage != null)
+            if (stage is not MainStage)
             {
                 for (int i = 0, c = stage.sceneCount; i < c; ++i)
                 {
@@ -423,13 +423,17 @@ namespace UnityEditor.Search
                     var scene = SceneManager.GetSceneAt(i);
                     AddScene(scene, scenes);
                 }
+
+                if (EditorApplication.isPlaying)
+                    AddScene(EditorSceneManager.GetDontDestroyOnLoadScene(), scenes);
             }
 
-            var goRoots = new List<UnityEngine.Object>();
+            using var gameObjectRootPoolHandle = ListPool<UnityEngine.Object>.Get(out var goRoots);
+            using var sceneRootGameObjectPoolHandle = ListPool<GameObject>.Get(out var sceneRootObjects);
             foreach (var scene in scenes)
             {
-                var sceneRootObjects = scene.GetRootGameObjects();
-                if (sceneRootObjects != null && sceneRootObjects.Length > 0)
+                scene.GetRootGameObjects(sceneRootObjects);
+                if (sceneRootObjects.Count > 0)
                     goRoots.AddRange(sceneRootObjects);
             }
 

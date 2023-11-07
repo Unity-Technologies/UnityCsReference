@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A toolbar spacer of static size.
+    /// A toolbar spacer of static size. For more information, refer to [[wiki:UIE-uxml-element-ToolbarSpacer|UXML element ToolbarSpacer]].
     /// </summary>
     public class ToolbarSpacer : VisualElement
     {

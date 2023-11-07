@@ -880,6 +880,7 @@ namespace UnityEngine.UIElements
             {
                 if (recycledItem.index == index)
                 {
+                    viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                     viewController.InvokeBindItem(recycledItem, recycledItem.index);
                     break;
                 }
@@ -1590,6 +1591,7 @@ namespace UnityEngine.UIElements
 
             var key = GetFullHierarchicalViewDataKey();
             OverwriteFromViewData(this, key);
+            m_ScrollView.UpdateContentViewTransform();
         }
 
         [EventInterest(typeof(PointerUpEvent), typeof(FocusEvent), typeof(NavigationSubmitEvent), typeof(BlurEvent))]

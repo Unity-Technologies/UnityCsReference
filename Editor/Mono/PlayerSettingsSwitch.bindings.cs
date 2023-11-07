@@ -140,10 +140,6 @@ namespace UnityEditor
             [NativeProperty("switchLTOSetting", TargetType.Field)]
             extern public static int switchLTOSetting { get; set; }
 
-            // Whether to enable use of the old Nintendo GOLD linker.
-            [NativeProperty("switchUseGOLDLinker", TargetType.Field)]
-            extern public static bool useSwitchGOLDLinker { get; set; }
-
             // System Memory (used for virtual memory mapping).
             [NativeProperty("switchSystemResourceMemory", TargetType.Field)]
             extern public static int systemResourceMemory { get; set; }

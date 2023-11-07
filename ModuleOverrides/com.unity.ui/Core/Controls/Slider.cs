@@ -8,7 +8,7 @@ using System.Globalization;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A slider containing floating point values.
+    /// A slider containing floating point values. For more information, refer to [[wiki:UIE-uxml-element-slider|UXML element Slider]].
     /// </summary>
     public class Slider : BaseSlider<float>
     {

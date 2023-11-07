@@ -100,7 +100,7 @@ namespace UnityEditor.Search
         {
             get
             {
-                if (m_Context == null && m_WasDeserialized)
+                if (m_Context == null && m_WasDeserialized && Utils.IsMainProcess())
                     BuildContext();
                 return m_Context;
             }
@@ -110,6 +110,8 @@ namespace UnityEditor.Search
                 m_Context = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
+
+        internal bool hasContext => m_Context != null;
 
         public string text
         {

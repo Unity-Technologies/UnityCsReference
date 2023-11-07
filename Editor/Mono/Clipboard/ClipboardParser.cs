@@ -187,6 +187,30 @@ namespace UnityEditor
             return int.TryParse(text, out res);
         }
 
+        internal static bool? ParseLong(string text, out long res)
+        {
+            res = 0;
+            if (string.IsNullOrEmpty(text))
+                return false;
+            return long.TryParse(text, out res);
+        }
+
+        internal static bool? ParseUlong(string text, out ulong res)
+        {
+            res = 0;
+            if (string.IsNullOrEmpty(text))
+                return false;
+            return ulong.TryParse(text, out res);
+        }
+
+        internal static bool? ParseUint(string text, out uint res)
+        {
+            res = 0;
+            if(string.IsNullOrEmpty(text))
+                return false;
+            return uint.TryParse(text, out res);
+        }
+
         internal static bool? ParseFloat(string text, out float res)
         {
             res = 0;

@@ -21,7 +21,7 @@ namespace UnityEditor.UIElements.Samples
 
         internal override void Apply(VisualElement container)
         {
-            /// <sample>
+            #region sample
             // Get a reference to the field from UXML,
             // initialize it with an Enum type,
             // and assign a value to it.
@@ -41,7 +41,7 @@ namespace UnityEditor.UIElements.Samples
             {
                 csharpField.value = evt.newValue;
             });
-            /// </sample>
+            #endregion
         }
     }
 }
