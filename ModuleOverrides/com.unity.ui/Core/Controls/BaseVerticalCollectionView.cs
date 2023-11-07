@@ -1591,6 +1591,7 @@ namespace UnityEngine.UIElements
 
             var key = GetFullHierarchicalViewDataKey();
             OverwriteFromViewData(this, key);
+            m_ScrollView.UpdateContentViewTransform();
         }
 
         [EventInterest(typeof(PointerUpEvent), typeof(FocusEvent), typeof(NavigationSubmitEvent), typeof(BlurEvent))]

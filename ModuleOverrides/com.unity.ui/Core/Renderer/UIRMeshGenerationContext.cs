@@ -347,6 +347,9 @@ namespace UnityEngine.UIElements
             // Cached sprite geometry, which is expensive to evaluate.
             internal Rect spriteGeomRect;
 
+            // Inset to apply before rendering (left, top, right, bottom)
+            public Vector4 rectInset;
+
             // The color allocation
             internal ColorPage colorPage;
 
@@ -745,6 +748,7 @@ namespace UnityEngine.UIElements
                     rightSlice = rightSlice,
                     bottomSlice = bottomSlice,
                     sliceScale = sliceScale,
+                    rectInset = rectInset,
                     colorPage = colorPage.ToNativeColorPage()
                 };
             }
@@ -795,16 +799,20 @@ namespace UnityEngine.UIElements
             bottomRight = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderBottomRightRadius);
         }
 
-        public static void AdjustBackgroundSizeForBorders(VisualElement visualElement, ref Rect rect)
+        public static void AdjustBackgroundSizeForBorders(VisualElement visualElement, ref MeshGenerationContextUtils.RectangleParams rectParams)
         {
             var style = visualElement.resolvedStyle;
 
+            var inset = Vector4.zero;
+
             // If the border width allows it, slightly shrink the background size to avoid
             // having both the border and background blending together after antialiasing.
-            if (style.borderLeftWidth >= 1.0f && style.borderLeftColor.a >= 1.0f) { rect.x += 0.5f; rect.width -= 0.5f; }
-            if (style.borderTopWidth >= 1.0f && style.borderTopColor.a >= 1.0f) { rect.y += 0.5f; rect.height -= 0.5f; }
-            if (style.borderRightWidth >= 1.0f && style.borderRightColor.a >= 1.0f) { rect.width -= 0.5f; }
-            if (style.borderBottomWidth >= 1.0f && style.borderBottomColor.a >= 1.0f) { rect.height -= 0.5f; }
+            if (style.borderLeftWidth >= 1.0f && style.borderLeftColor.a >= 1.0f) { inset.x = 0.5f; }
+            if (style.borderTopWidth >= 1.0f && style.borderTopColor.a >= 1.0f) { inset.y = 0.5f; }
+            if (style.borderRightWidth >= 1.0f && style.borderRightColor.a >= 1.0f) { inset.z = 0.5f; }
+            if (style.borderBottomWidth >= 1.0f && style.borderBottomColor.a >= 1.0f) { inset.w = 0.5f; }
+
+            rectParams.rectInset = inset;
         }
     }
 

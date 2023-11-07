@@ -580,12 +580,14 @@ namespace UnityEditor.UIElements.Bindings
 
             public SerializedPropertyType originalPropType;
             public int propertyHash;
+            public string propertyPath;
 
             public TrackedValue(SerializedProperty property, Action<object, SerializedProperty> changeCB, Action<object, SerializedProperty> updateCB)
             {
                 contentHash = property.contentHash;
                 originalPropType = property.propertyType;
                 propertyHash = property.hashCodeForPropertyPath;
+                propertyPath = property.propertyPath;
                 onChangeCallback = changeCB;
                 onUpdateCallback = updateCB;
             }
@@ -663,12 +665,53 @@ namespace UnityEditor.UIElements.Bindings
                 }
             }
 
+            private HashSet<int> unvisitedProperties = new HashSet<int>();
+            public void BeginUpdate()
+            {
+                unvisitedProperties.Clear();
+                var keys = m_TrackedValues.Keys;
+                foreach (var i in keys)
+                {
+                    unvisitedProperties.Add(i);
+                }
+            }
+
+            public void EndUpdate(SerializedObjectBindingContext context)
+            {
+                // We must check the un-visited properties.
+                // This can happen when objects serialized with SerializedReference are present multiple times and we
+                // happen to track the repeated occurrence instead of the first one. We then must go the slow way of
+                // finding the property iterator and comparing the values there.
+                foreach (var hash in unvisitedProperties)
+                {
+                    if (m_TrackedValues.TryGetValue(hash, out var values))
+                    {
+                        if (values.Count > 0)
+                        {
+                            var propertyPath = values[0].propertyPath;
+
+                            var currentProperty = context.serializedObject.FindProperty(propertyPath);
+
+                            if(currentProperty != null)
+                            {
+                                for (int i = 0; i < values.Count; ++i)
+                                {
+                                    values[i].Update(context, currentProperty);
+                                }
+                            }
+                        }
+                    }
+                }
+                unvisitedProperties.Clear();
+            }
+			
             public void Update(SerializedObjectBindingContext context, SerializedProperty currentProperty)
             {
                 var hash = currentProperty.hashCodeForPropertyPath;
 
                 if (m_TrackedValues.TryGetValue(hash, out var values))
                 {
+                    unvisitedProperties.Remove(hash);
                     for (int i = 0; i < values.Count; ++i)
                     {
                         values[i].Update(context, currentProperty);
@@ -769,6 +812,7 @@ namespace UnityEditor.UIElements.Bindings
 
             visited.Clear();
             {
+                m_ValueTracker.BeginUpdate();
                 bool visitChild = true;
                 while (iterator.Next(visitChild))
                 {
@@ -797,6 +841,7 @@ namespace UnityEditor.UIElements.Bindings
 
                     m_ValueTracker.Update(this, iterator);
                 }
+                m_ValueTracker.EndUpdate(this);
             }
 
             visited.Clear();
@@ -1123,7 +1168,10 @@ namespace UnityEditor.UIElements.Bindings
                         context.Bind(element);
                         break;
                     case RequestType.DelayBind:
-                        context.ContinueBinding(element, parentProperty);
+                        if (context.IsValid())  // Sometimes our serializedObject might have vanished, after a domain reload
+                        {
+                            context.ContinueBinding(element, parentProperty);
+                        }
                         break;
                     case RequestType.TrackProperty:
                     {

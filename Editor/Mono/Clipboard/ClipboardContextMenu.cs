@@ -164,10 +164,64 @@ namespace UnityEditor
                     }
                     break;
                 case SerializedPropertyType.Integer:
-                    SetupAction(property, menu, evt,
-                        p => Clipboard.integerValue = p.intValue,
-                        p => Clipboard.hasInteger,
-                        p => p.intValue = Clipboard.integerValue);
+                    {
+                        switch (property.numericType)
+                        {
+                            case SerializedPropertyNumericType.Int64:
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.longValue = p.longValue,
+                                            p => Clipboard.hasLong,
+                                            p => p.longValue = Clipboard.longValue);
+                                break;
+
+                            case SerializedPropertyNumericType.UInt64:
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.uLongValue = p.ulongValue,
+                                            p => Clipboard.hasUlong,
+                                            p => p.ulongValue = Clipboard.uLongValue);
+                                break;
+
+                            case SerializedPropertyNumericType.UInt32:
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.uIntValue = p.uintValue,
+                                            p => Clipboard.hasUint,
+                                            p => p.uintValue = Clipboard.uIntValue);
+                                break;
+
+                            case SerializedPropertyNumericType.UInt16:
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.uIntValue = (System.UInt16)p.uintValue,
+                                            p => Clipboard.hasUint,
+                                            p => p.uintValue = (System.UInt16)Clipboard.uIntValue);
+                                break;
+
+                            case SerializedPropertyNumericType.Int16:
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.integerValue = (System.Int16)p.intValue,
+                                            p => Clipboard.hasInteger,
+                                            p => p.intValue = (System.UInt16)Clipboard.integerValue);
+                                break;
+                            case SerializedPropertyNumericType.UInt8:
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.uIntValue = (System.Byte)p.uintValue,
+                                            p => Clipboard.hasUint,
+                                            p => p.uintValue = (System.Byte)Clipboard.uIntValue);
+                                break;
+                            case SerializedPropertyNumericType.Int8:
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.integerValue = (System.Byte)p.intValue,
+                                            p => Clipboard.hasInteger,
+                                            p => p.intValue = (System.Byte)Clipboard.integerValue);
+                                break;
+
+                            default:
+                                SetupAction(property, menu, evt,
+                                    p => Clipboard.integerValue = p.intValue,
+                                    p => Clipboard.hasInteger,
+                                    p => p.intValue = Clipboard.integerValue);
+                                break;
+                        }                        
+                    }
                     break;
                 case SerializedPropertyType.Float:
                     SetupAction(property, menu, evt,

@@ -8,7 +8,7 @@ using System.Globalization;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A slider containing floating point values.
+    /// A slider containing floating point values. For more information, refer to [[wiki:UIE-uxml-element-slider|UXML element Slider]].
     /// </summary>
     public class Slider : BaseSlider<float>
     {
@@ -132,18 +132,11 @@ namespace UnityEngine.UIElements
             return Math.Abs(highValue - lowValue);
         }
 
-        internal override float ParseStringToValue(string stringValue)
+        internal override float ParseStringToValue(string previousValue, string newValue)
         {
-            float result;
-
-            if (float.TryParse(stringValue.Replace(",", "."), NumberStyles.Float, CultureInfo.InvariantCulture, out result))
-            {
-                return result;
-            }
-            else
-            {
-                return 0f;
-            }
+            if (UINumericFieldsUtils.TryConvertStringToFloat(newValue, previousValue, out var value))
+                return value;
+            return 0;
         }
 
         internal override void ComputeValueFromKey(SliderKey sliderKey, bool isShift)

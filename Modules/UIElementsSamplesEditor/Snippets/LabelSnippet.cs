@@ -12,7 +12,7 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
-            /// <sample>
+            #region sample
             // Get a reference to the label from UXML and update its text.
             var uxmlLabel = container.Q<Label>("the-uxml-label");
             uxmlLabel.text += " (Updated in C#)";
@@ -21,7 +21,7 @@ namespace UnityEditor.UIElements.Samples
             var csharpLabel = new Label("C# Label");
             csharpLabel.AddToClassList("some-styled-label");
             container.Add(csharpLabel);
-            /// </sample>
+            #endregion
         }
     }
 }

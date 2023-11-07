@@ -177,12 +177,12 @@ namespace UnityEditor.Profiling
             get;
         }
 
-        // the current runtime (Editor or Player) session id. This is different from the  
+        // the current runtime (Editor or Player) session id. This is different from the
         internal extern uint runtimeSessionId
         {
             [ThreadSafe]
             get;
-        } 
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         [RequiredByNativeCode]
@@ -389,7 +389,7 @@ namespace UnityEditor.Profiling
         {
             [NativeName("rootId")]
             readonly ulong m_RootId;
-            [NativeName("rootId")]
+            [NativeName("instanceId")]
             readonly int m_InstanceId;
 
             public ulong relatedAllocationRootId => m_RootId;

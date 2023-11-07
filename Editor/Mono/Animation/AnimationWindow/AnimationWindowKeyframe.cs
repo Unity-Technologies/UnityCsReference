@@ -167,11 +167,11 @@ namespace UnityEditorInternal
                 // case 1395978
                 // Negative int values converted to float create NaN values. Limiting discrete int values to only positive values
                 // until we rewrite the animation backend with dedicated int curves.
-                floatValue = UnityEngine.Animations.DiscreteEvaluationAttributeUtilities.ConvertDiscreteIntToFloat(Math.Max((int)value, 0));
+                floatValue = UnityEngine.Animations.DiscreteEvaluationAttributeUtilities.ConvertDiscreteIntToFloat(Math.Max(Convert.ToInt32(value), 0));
             }
             else
             {
-                floatValue = (float)value;
+                floatValue = Convert.ToSingle(value);
             }
 
             var keyframe = new Keyframe(time, floatValue, inTangent, outTangent);

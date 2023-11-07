@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A toggle for the toolbar.
+    /// A toggle for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarToggle|UXML element ToolbarToggle]].
     /// </summary>
     public class ToolbarToggle : Toggle
     {

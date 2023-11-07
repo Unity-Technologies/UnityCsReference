@@ -175,6 +175,57 @@ namespace UnityEditor.Search
             }
         }
 
+        readonly struct ReadLockScope : IDisposable
+        {
+            readonly ReaderWriterLockSlim m_Lock;
+
+            public ReadLockScope(ReaderWriterLockSlim _lock)
+            {
+                m_Lock = _lock;
+                m_Lock.EnterReadLock();
+            }
+
+            public void Dispose()
+            {
+                m_Lock.ExitReadLock();
+            }
+        }
+
+        readonly struct WriteLockScope : IDisposable
+        {
+            readonly ReaderWriterLockSlim m_Lock;
+
+            public WriteLockScope(ReaderWriterLockSlim _lock)
+            {
+                m_Lock = _lock;
+                m_Lock.EnterWriteLock();
+            }
+
+            public void Dispose()
+            {
+                m_Lock.ExitWriteLock();
+            }
+        }
+
+        readonly struct TryWriteLockScope : IDisposable
+        {
+            readonly ReaderWriterLockSlim m_Lock;
+            readonly bool m_Locked;
+            public bool locked => m_Locked;
+
+            public TryWriteLockScope(ReaderWriterLockSlim _lock)
+            {
+                m_Lock = _lock;
+                m_Locked = m_Lock.TryEnterWriteLock(0);
+            }
+
+            public void Dispose()
+            {
+                if (m_Locked)
+                    m_Lock.ExitWriteLock();
+            }
+        }
+
         public IReadOnlyCollection<string> roots => settings.roots;
         public IReadOnlyCollection<string> includePatterns => settings.includes;
         public IReadOnlyCollection<string> excludePatterns => settings.excludes;
@@ -190,11 +241,13 @@ namespace UnityEditor.Search
         [NonSerialized] private int m_UpdateTasks = 0;
         [NonSerialized] private string m_IndexSettingsPath;
         [NonSerialized] private ConcurrentBag<AssetIndexChangeSet> m_UpdateQueue = new ConcurrentBag<AssetIndexChangeSet>();
+        [NonSerialized] private ReaderWriterLockSlim m_ImmutableLock = new(LockRecursionPolicy.SupportsRecursion);
 
         public ObjectIndexer index { get; internal set; }
         public bool loaded { get; private set; }
         public bool ready => this && loaded && index != null && index.IsReady();
         public bool updating => m_UpdateTasks > 0 || !loaded || m_CurrentResolveTask != null || !ready;
+        public bool needsUpdate => !m_UpdateQueue.IsEmpty;
         public string path => m_IndexSettingsPath ?? AssetDatabase.GetAssetPath(this);
 
         internal static event Action<SearchDatabase> indexLoaded;
@@ -216,6 +269,15 @@ namespace UnityEditor.Search
 
         public SearchDatabase Reload(Settings settings)
         {
+            loaded = false;
+
+            using var writeLockScope = new TryWriteLockScope(m_ImmutableLock);
+            if (!writeLockScope.locked)
+            {
+                Dispatcher.Enqueue(() => Reload(settings));
+                return this;
+            }
+
             this.settings = settings;
             index = CreateIndexer(settings);
             name = settings.name;
@@ -371,13 +433,13 @@ namespace UnityEditor.Search
             return EnumerateAll().Where(db => string.Equals(db.path, path, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         }
 
-        public static SearchDatabase ImportAsset(string settingsPath)
+        public static SearchDatabase ImportAsset(string settingsPath, bool forceUpdate = false)
         {
             var currentDb = Find(settingsPath);
             if (currentDb)
                 currentDb.DeleteBackupIndex();
 
-            AssetDatabase.ImportAsset(settingsPath);
+            AssetDatabase.ImportAsset(settingsPath, forceUpdate ? ImportAssetOptions.ForceUpdate : ImportAssetOptions.Default);
             if (currentDb)
                 currentDb.Reload(settingsPath);
             else
@@ -471,33 +533,37 @@ namespace UnityEditor.Search
             if (!this)
                 return;
 
-            var loadTask = new Task("Load", $"Reading {name.ToLowerInvariant()} search index", (task, data) => Setup(), this);
+            loaded = false;
+            var loadTask = new Task("Load", $"Reading {name.ToLowerInvariant()} search index", (task, data) => WaitForReadComplete(task, data, AssignNewIndexAndSetup), this);
             loadTask.RunThread(() =>
             {
                 var step = 0;
                 loadTask.Report($"Reading {bytes.Length} bytes...");
-                if (!index.LoadBytes(bytes))
+                var newIndex = new SearchIndexer();
+                if (!newIndex.LoadBytes(bytes))
                     Debug.LogError($"Failed to load {name} index. Please re-import it.", this);
 
                 loadTask.Report(++step, step + 1);
 
-                Dispatcher.Enqueue(() => loadTask.Resolve(new TaskData(bytes, index)));
+                Dispatcher.Enqueue(() => loadTask.Resolve(new TaskData(bytes, newIndex)));
             });
         }
 
         private void IncrementalLoad(string indexPath)
         {
-            var loadTask = new Task("Read", $"Loading {name.ToLowerInvariant()} search index", (task, data) => Setup(task, data), this);
+            loaded = false;
+            var loadTask = new Task("Read", $"Loading {name.ToLowerInvariant()} search index", (task, data) => WaitForReadComplete(task, data, AssignNewIndexAndSetup), this);
             loadTask.RunThread(() =>
             {
                 loadTask.Report($"Loading {indexPath}...", -1);
                 var fileBytes = File.ReadAllBytes(indexPath);
 
-                if (!index.LoadBytes(fileBytes))
+                var newIndex = new AssetIndexer(settings);
+                if (!newIndex.LoadBytes(fileBytes))
                     throw new Exception($"Failed to load {indexPath}.");
 
                 var deletedAssets = new HashSet<string>();
-                foreach (var d in index.GetDocuments())
+                foreach (var d in newIndex.GetDocuments())
                 {
                     if (d.valid && (!File.Exists(d.source) && !Directory.Exists(d.source)))
                         deletedAssets.Add(d.source);
@@ -511,23 +577,21 @@ namespace UnityEditor.Search
                         return;
                     }
 
-                    bytes = fileBytes;
-
                     loadTask.Report($"Checking for changes...", -1);
-                    var diff = SearchMonitor.GetDiff(index.timestamp, deletedAssets, path =>
+                    var diff = SearchMonitor.GetDiff(newIndex.timestamp, deletedAssets, path =>
                     {
-                        if (index.SkipEntry(path, true))
+                        if (newIndex.SkipEntry(path, true))
                             return false;
 
-                        if (!index.TryGetHash(path, out var hash) || !hash.isValid)
+                        if (!newIndex.TryGetHash(path, out var hash) || !hash.isValid)
                             return true;
 
-                        return hash != index.GetDocumentHash(path);
+                        return hash != newIndex.GetDocumentHash(path);
                     });
                     if (!diff.empty)
                         IncrementalUpdate(diff);
 
-                    loadTask.Resolve(new TaskData(fileBytes, index));
+                    loadTask.Resolve(new TaskData(fileBytes, newIndex));
                 });
             });
         }
@@ -739,14 +803,16 @@ namespace UnityEditor.Search
         {
             m_CurrentResolveTask?.Cancel();
             m_CurrentResolveTask?.Dispose();
-            m_CurrentResolveTask = ResolveArtifacts("Build", $"Building {name.ToLowerInvariant()} search index", OnArtifactsResolved);
+            m_CurrentResolveTask = ResolveArtifacts("Build", $"Building {name.ToLowerInvariant()} search index", (task, data) => WaitForReadComplete(task, data, OnArtifactsResolved));
         }
 
+        // To be used with WaitForReadComplete.
         private void OnArtifactsResolved(Task task, TaskData data)
         {
             m_CurrentResolveTask = null;
             if (task.canceled || task.error != null)
                 return;
+
             index.ApplyFrom(data.combinedIndex);
             bytes = data.bytes;
             // Do not cache indexes while running tests
@@ -756,14 +822,11 @@ namespace UnityEditor.Search
                 Setup();
         }
 
-        private void Setup(Task task, TaskData data)
+        // To be used with WaitForReadComplete.
+        private void AssignNewIndexAndSetup(Task task, TaskData data)
         {
-            if (task.error != null)
-            {
-                Debug.LogException(task.error);
-                return;
-            }
-
+            index.ApplyFrom(data.combinedIndex);
+            bytes = data.bytes;
             Setup();
         }
 
@@ -858,7 +921,7 @@ namespace UnityEditor.Search
 
         private void ProcessIncrementalUpdates()
         {
-            if (ready && !updating)
+            if (ready && !updating && !m_ImmutableLock.IsReadLockHeld)
             {
                 if (m_UpdateQueue.TryTake(out var diff))
                     ProcessIncrementalUpdate(diff);
@@ -875,8 +938,23 @@ namespace UnityEditor.Search
             var taskName = $"Updating {settings.name.ToLowerInvariant()} search index";
 
             Interlocked.Increment(ref m_UpdateTasks);
-            m_CurrentUpdateTask = new Task("Update", taskName, (task, data) => MergeDocuments(task, data, changeset), updates.Length, this);
+            m_CurrentUpdateTask = new Task("Update", taskName, (task, data) =>
+            {
+                WaitForReadComplete(task, data, (t, d) => MergeDocuments(t, d, changeset));
+            }, updates.Length, this);
             ResolveArtifacts(updates, null, m_CurrentUpdateTask, false);
+        }
+
+        private void WaitForReadComplete(Task task, TaskData data, Action<Task, TaskData> callback)
+        {
+            using var tryWriteLockScope = new TryWriteLockScope(m_ImmutableLock);
+            if (tryWriteLockScope.locked)
+                callback(task, data);
+            else
+            {
+                task.Report("Waiting for read completion...");
+                Dispatcher.Enqueue(() => WaitForReadComplete(task, data, callback));
+            }
         }
 
         private void MergeDocuments(Task task, TaskData data, AssetIndexChangeSet changeset)
@@ -895,6 +973,7 @@ namespace UnityEditor.Search
             task.Report("Merging changes to index...");
             task.RunThread(() =>
             {
+                using var writeScope = new WriteLockScope(m_ImmutableLock);
                 index.Merge(changeset.removed, data.combinedIndex, baseScore,
                     (di, indexer, count) => OnDocumentMerged(task, indexer, indexName, di, count));
                 if (saveIndexCache)
@@ -972,6 +1051,12 @@ namespace UnityEditor.Search
             var defaultIndexFolder = Path.GetDirectoryName(defaultSearchDatabaseIndexPath);
             var defaultDbIndexPath = SearchDatabaseImporter.CreateTemplateIndex("_Default", defaultIndexFolder, defaultIndexFilename);
             return ImportAsset(defaultDbIndexPath);
+        }
+
+        // Don't use on the main thread!
+        public IDisposable GetImmutableScope()
+        {
+            return new ReadLockScope(m_ImmutableLock);
         }
     }
 }

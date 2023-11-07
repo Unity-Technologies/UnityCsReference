@@ -57,6 +57,8 @@ namespace UnityEngine.UIElements
     /// To enable horizontal scrolling when the displayed element is wider than the visible area, set the
     ///     <c>horizontal-scrolling-enabled</c> property in UXML or the <see cref="ListView.horizontalScrollingEnabled"/>
     ///     to <c>true</c>.
+    ///     
+    /// For more information, refer to [[wiki:UIE-uxml-element-ListView|ListView]].
     /// </remarks>
     /// <example>
     /// The following example creates an editor window with a list view of a thousand items.
@@ -124,6 +126,9 @@ namespace UnityEngine.UIElements
         ///
         /// If this property and <see cref="makeItem"/> are not set, Unity will try to bind to a SerializedProperty if
         /// bound, or simply set text in the created Label.
+        ///
+        /// **Note:**: Setting this callback without also setting <see cref="unbindItem"/> might result in unexpected behavior.
+        /// This is because the default implementation of unbindItem expects the default implementation of bindItem.
         /// </remarks>
         public new Action<VisualElement, int> bindItem
         {
@@ -149,6 +154,9 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The method called by this callback receives the VisualElement to unbind, and the index of the
         /// element to unbind it from.
+        ///
+        /// **Note:**: Setting this callback without also setting <see cref="bindItem"/> might cause unexpected behavior.
+        /// This is because the default implementation of bindItem expects the default implementation of unbindItem.
         /// </remarks>
         public new Action<VisualElement, int> unbindItem { get; set; }
 

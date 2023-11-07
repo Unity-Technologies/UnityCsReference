@@ -365,7 +365,7 @@ namespace UnityEngine.UIElements
         internal abstract TValueType SliderLerpUnclamped(TValueType a, TValueType b, float interpolant);
         internal abstract float SliderNormalizeValue(TValueType currentValue, TValueType lowerValue, TValueType higherValue);
         internal abstract TValueType SliderRange();
-        internal abstract TValueType ParseStringToValue(string stringValue);
+        internal abstract TValueType ParseStringToValue(string previousValue, string newValue);
         internal abstract void ComputeValueFromKey(SliderKey sliderKey, bool isShift);
 
         internal enum SliderKey
@@ -414,7 +414,13 @@ namespace UnityEngine.UIElements
             if (Mathf.Abs(totalRange) < UIRUtility.k_Epsilon)
                 return;
 
-            float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos, totalRange)) / totalRange;
+            float normalizedDragElementPosition;
+
+            if (clamped)
+                normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos, totalRange)) / totalRange;
+            else
+                normalizedDragElementPosition = dragElementPos / totalRange;
+
             value = SliderLerpDirectionalUnclamped(lowValue, highValue, normalizedDragElementPosition);
         }
 
@@ -722,7 +728,7 @@ namespace UnityEngine.UIElements
 
         void OnTextFieldValueChange(ChangeEvent<string> evt)
         {
-            var newValue = GetClampedValue(ParseStringToValue(evt.newValue));
+            var newValue = GetClampedValue(ParseStringToValue(evt.previousValue, evt.newValue));
             if (!EqualityComparer<TValueType>.Default.Equals(newValue, value))
             {
                 value = newValue;

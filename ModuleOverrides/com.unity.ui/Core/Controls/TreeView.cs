@@ -31,6 +31,8 @@ namespace UnityEngine.UIElements
     ///
     /// The TreeView creates VisualElements for the visible items, and supports binding many more. As the user scrolls, the TreeView
     /// recycles VisualElements and re-binds them to new data items.
+    /// 
+    /// For more information, refer to [[wiki:UIE-uxml-element-TreeView|UXML element TreeView]].
     /// </remarks>
     public class TreeView : BaseTreeView
     {
@@ -89,6 +91,9 @@ namespace UnityEngine.UIElements
         ///
         /// If this property and <see cref="makeItem"/> are not set, Unity will try to bind to a SerializedProperty if
         /// bound, or simply set text in the created Label.
+        ///
+        /// **Note:**: Setting this callback without also setting <see cref="unbindItem"/> might result in unexpected behavior.
+        /// This is because the default implementation of unbindItem expects the default implementation of bindItem.
         /// </remarks>
         public new Action<VisualElement, int> bindItem
         {
@@ -110,6 +115,9 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The method called by this callback receives the VisualElement to unbind, and the index of the
         /// element to unbind it from.
+        ///
+        /// **Note:**: Setting this callback without also setting <see cref="bindItem"/> might cause unexpected behavior.
+        /// This is because the default implementation of bindItem expects the default implementation of unbindItem.
         /// </remarks>
         public new Action<VisualElement, int> unbindItem { get; set; }
 

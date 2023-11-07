@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A slider containing Integer discrete values.
+    /// A slider containing Integer discrete values. For more information, refer to [[wiki:UIE-uxml-element-sliderInt|UXML element SliderInt]].
     /// </summary>
     public class SliderInt : BaseSlider<int>
     {
@@ -134,17 +134,11 @@ namespace UnityEngine.UIElements
             return Math.Abs(highValue - lowValue);
         }
 
-        internal override int ParseStringToValue(string stringValue)
+        internal override int ParseStringToValue(string previousValue, string newValue)
         {
-            int result;
-            if (int.TryParse(stringValue, out result))
-            {
-                return result;
-            }
-            else
-            {
-                return 0;
-            }
+            if (UINumericFieldsUtils.TryConvertStringToInt(newValue, previousValue, out var value))
+                return value;
+            return 0;
         }
 
         internal override void ComputeValueAndDirectionFromClick(float sliderLength, float dragElementLength, float dragElementPos, float dragElementLastPos)
