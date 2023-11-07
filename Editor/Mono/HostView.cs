@@ -11,6 +11,7 @@ using System.Reflection;
 using UnityEditor.Overlays;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.StyleSheets;
+using UnityEditor.UIElements;
 using UnityEditorInternal;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -345,7 +346,11 @@ namespace UnityEditor
             if (m_IsLosingFocus)
                 return;
 
-            EditorGUI.EndEditingActiveTextField();
+            // [UUM-44009] Delayed text editor crashes the editor when opening context menu 
+            // at the same time when applying changes. We work around it by deferring 
+            // finalization to when the context menu is closing.
+            if (!EditorMenuExtensions.isEditorContextMenuActive)
+                EditorGUI.EndEditingActiveTextField();
 
             try
             {

@@ -3140,6 +3140,7 @@ namespace UnityEditor
             menu.AddItem(new GUIContent("Create Variant for Renderer"), false, () => {
 
                 var directory = "Assets/Materials";
+                Directory.CreateDirectory(directory);
                 var assetPath = AssetDatabase.GetAssetPath(material);
                 var assetName = Path.GetFileNameWithoutExtension(assetPath) + " Variant";
                 var package = PackageManager.PackageInfo.FindForAssetPath(assetPath);
@@ -3148,7 +3149,6 @@ namespace UnityEditor
 
                 var path = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(directory, assetName + ".mat"));
                 var variant = new Material(material) { name = assetName, parent = material };
-                Directory.CreateDirectory(directory);
                 AssetDatabase.CreateAsset(variant, path);
 
                 foreach (var renderer in renderers)

@@ -96,7 +96,7 @@ namespace Unity.Hierarchy
         /// Determine whether or not the <see cref="HierarchyNodeMapUnmanaged{T}"/> contains the specified <see cref="HierarchyNode"/>.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
-        /// <returns><see langword="true"/> if the <see cref="HierarchyNodeMapUnmanaged{T}"/> contains the specified <see cref="HierarchyNode"/>, otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the <see cref="HierarchyNodeMapUnmanaged{T}"/> contains the specified <see cref="HierarchyNode"/>, <see langword="false"/> otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(in HierarchyNode node)
         {
@@ -130,7 +130,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="value">The value.</param>
-        /// <returns><see langword="true"/> if the <see cref="HierarchyNode"/>/value pair was added to the <see cref="HierarchyNodeMapUnmanaged{T}"/>, otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the <see cref="HierarchyNode"/>/value pair was added to the <see cref="HierarchyNodeMapUnmanaged{T}"/>, <see langword="false"/> otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryAdd(in HierarchyNode node, in T value)
         {
@@ -142,7 +142,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="value">The value.</param>
-        /// <returns><see langword="true"/> if the <see cref="HierarchyNode"/>/value pair was added to the <see cref="HierarchyNodeMapUnmanaged{T}"/>, otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the <see cref="HierarchyNode"/>/value pair was added to the <see cref="HierarchyNodeMapUnmanaged{T}"/>, <see langword="false"/> otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryAddNoResize(in HierarchyNode node, in T value)
         {
@@ -154,7 +154,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="value">The value.</param>
-        /// <returns><see langword="true"/> if the <see cref="HierarchyNodeMapUnmanaged{T}"/> contains the specified <see cref="HierarchyNode"/>, otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the <see cref="HierarchyNodeMapUnmanaged{T}"/> contains the specified <see cref="HierarchyNode"/>, <see langword="false"/> otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGetValue(in HierarchyNode node, out T value)
         {
@@ -165,7 +165,7 @@ namespace Unity.Hierarchy
         /// Removes the value with the specified <see cref="HierarchyNode"/> from the <see cref="HierarchyNodeMapUnmanaged{T}"/>.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
-        /// <returns><see langword="true"/> if the <see cref="HierarchyNode"/> is found and removed, otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the <see cref="HierarchyNode"/> is found and removed, <see langword="false"/> otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Remove(in HierarchyNode node)
         {

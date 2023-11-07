@@ -72,15 +72,12 @@ namespace UnityEditor
             // as it will load *all* objects at that path and try to create an editor for it.
             // NOTE: When the input system package is uninstalled, InputManager.asset will contain serialized MonoBehaviour objects for which
             //       the C# classes are no longer available. They will thus not load correctly and appear as null entries.
-            var objects = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/InputManager.asset");
-            foreach (var obj in objects)
+            var obj = AssetDatabase.LoadAssetAtPath<InputManager>("ProjectSettings/InputManager.asset");
+            if (obj != null && obj.name == "InputManager")
             {
-                if (obj != null && obj.name == "InputManager")
-                {
-                    var provider = AssetSettingsProvider.CreateProviderFromObject("Project/Input Manager", obj,
-                        SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/InputManager.asset"));
-                    return provider;
-                }
+                var provider = AssetSettingsProvider.CreateProviderFromObject("Project/Input Manager", obj,
+                    SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/InputManager.asset"));
+                return provider;
             }
             return null;
         }

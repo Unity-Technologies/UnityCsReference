@@ -19,6 +19,8 @@ namespace UnityEngine.UIElements
     /// For reorderable tabs, it is important to keep the view-data-key unique for the TabView and Tab elements inside
     /// of it. The view-data-key helps store the state of the tabs such as the order and state. By having an empty
     /// view-data-key, which is the default value, the state of the tabs will not persist when reloading the document.
+    /// 
+    /// For more information, refer to [[wiki:UIE-uxml-element-TabView|UXML element TabView]].
     /// </remarks>
     public class TabView : VisualElement
     {

@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Makes a field for editing an <see cref="AnimationCurve"/>.
+    /// Makes a field for editing an <see cref="AnimationCurve"/>. For more information, refer to [[wiki:UIE-uxml-element-CurveField|UXML element CurveField]].
     /// </summary>
     public class CurveField : BaseField<AnimationCurve>
     {
@@ -303,7 +303,7 @@ namespace UnityEditor.UIElements
 
         void OnPointerDown(PointerDownEvent evt)
         {
-            if (visualInput.ContainsPoint(visualInput.WorldToLocal(evt.position)))
+            if (visualInput.ContainsPoint(visualInput.WorldToLocal(evt.position)) && evt.button == (int)MouseButton.LeftMouse)
             {
                 ShowCurveEditor();
                 evt.StopPropagation();

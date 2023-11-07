@@ -12,7 +12,7 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
-            /// <sample>
+            #region sample
             // Get a reference to the field from UXML and assign a value to it.
             var uxmlField = container.Q<Vector3IntField>("the-uxml-field");
             uxmlField.value = new Vector3Int(23, 12, 88);
@@ -29,7 +29,7 @@ namespace UnityEditor.UIElements.Samples
             {
                 csharpField.value = evt.newValue;
             });
-            /// </sample>
+            #endregion
         }
     }
 }

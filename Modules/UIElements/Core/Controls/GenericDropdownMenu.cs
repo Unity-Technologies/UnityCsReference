@@ -28,6 +28,7 @@ namespace UnityEngine.UIElements
             public Action action;
             public Action<object> actionUserData;
             public bool isCustomContent;
+            internal readonly Guid guid = Guid.NewGuid();
 
             public MenuItem parent;
             public List<MenuItem> children = new();
@@ -414,6 +415,7 @@ namespace UnityEngine.UIElements
             {
                 if (newIndex >= m_Current.children.Count)
                     newIndex = 0;
+                m_ListView.ScrollToItem(newIndex);
 
                 // If all menu items disabled without iteration limit we would enter an endless loop
                 for (int i = 0; newIndex < m_Current.children.Count && i < m_Current.children.Count; i++)
@@ -437,6 +439,7 @@ namespace UnityEngine.UIElements
             {
                 if (newIndex < 0)
                     newIndex = m_Current.children.Count - 1;
+                m_ListView.ScrollToItem(newIndex);
 
                 // If all menu items disabled without iteration limit we would enter an endless loop
                 for (int i = 0; newIndex >= 0 && i < m_Current.children.Count; i++)
@@ -674,7 +677,12 @@ namespace UnityEngine.UIElements
             if (newIndex >= 0 && newIndex < m_Current.children.Count)
             {
                 m_Current.children[newIndex].element.pseudoStates |= PseudoStates.Hover;
-                m_ListView.ScrollTo(m_Current.children[newIndex].element.parent);
+                var elementToSelect = m_Current.children[newIndex].element.parent;
+
+                if (elementToSelect != null)
+                {
+                    m_ListView.ScrollTo(elementToSelect);
+                }
             }
 
             m_Parent?.ChangeSelectedIndex(m_Parent.m_Current.children.IndexOf(root.parent));
@@ -807,9 +815,13 @@ namespace UnityEngine.UIElements
             };
 
             // Empty item name must count as a separator. Also don't allow to put two separators next to each other
-            if ((string.IsNullOrWhiteSpace(itemName) || itemName[^1] == '/')
-                && parent.children.Count > 0 && !(parent.children[^1]?.isSeparator ?? true))
+            if (string.IsNullOrWhiteSpace(itemName) || itemName[^1] == '/')
+            {
+                if (parent.children.Count == 0 || (parent.children[^1]?.isSeparator ?? true))
+                    return null;
+
                 menuItem.element = CreateSeparator();
+            }
             else
             {
                 if (parent.HasChild(itemName))

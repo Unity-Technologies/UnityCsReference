@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
@@ -75,11 +76,36 @@ namespace UnityEditor.Overlays
                 else
                     CheckIfShouldHide(evt.relatedTarget as VisualElement);
             });
+            RegisterCallback<AttachToPanelEvent>(e =>
+            {
+                EditorWindow.windowFocusChanged += HandleFocus;
+            });
+            RegisterCallback<DetachFromPanelEvent>(e =>
+            {
+                EditorWindow.windowFocusChanged -= HandleFocus;
+            });
 
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
             canvas.overlaysEnabledChanged += OnOverlayEnabledChanged;
             focusable = true;
             Hide();
+        }
+
+        // UUM-54099
+        void HandleFocus()
+        {
+            if (!isShown)
+                return;
+
+            if (EditorWindow.focusedWindow is not EditorMenuExtensions.ContextMenu
+                && EditorWindow.focusedWindow != m_Canvas.containerWindow)
+            {
+                Hide();
+            }
+            else if (EditorWindow.focusedWindow == m_Canvas.containerWindow)
+            {
+                Focus();
+            }
         }
 
         void OnCustomStyleResolved(CustomStyleResolvedEvent e)
@@ -102,7 +128,7 @@ namespace UnityEditor.Overlays
 
         void CheckIfShouldHide(VisualElement focused)
         {
-            if (focused == null || !Contains(focused))
+            if ((focused == null || !Contains(focused)) && !EditorMenuExtensions.isEditorContextMenuActive)
                 Hide();
         }
 

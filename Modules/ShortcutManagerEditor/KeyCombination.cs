@@ -40,6 +40,12 @@ namespace UnityEditor.ShortcutManagement
             { KeyCode.Tab, "TAB" },
             { KeyCode.Space, "SPACE"},
 
+            // UUM-40161
+            // Even though ShortcutManager doesn't allow enter key bindings,
+            // we must have this conversion to be able to handle menu shortcut
+            // string which can have enter key bindings.
+            { KeyCode.Return, "ENTER" },
+
             { KeyCode.F1, "F1" },
             { KeyCode.F2, "F2" },
             { KeyCode.F3, "F3" },

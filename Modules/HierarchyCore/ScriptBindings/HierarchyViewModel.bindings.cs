@@ -242,7 +242,7 @@ namespace Unity.Hierarchy
         /// Gets whether or not the specified flags is set on any hierarchy node.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
-        /// <returns><see langword="true"/> if any node have the flags set, otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if any node have the flags set, <see langword="false"/> otherwise.</returns>
         public bool HasFlags(HierarchyNodeFlags flags) => HasFlagsAny(flags);
 
         /// <summary>
@@ -250,7 +250,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="flags">The hierarchy node flags.</param>
-        /// <returns><see langword="true"/> if the flags is set, otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the flags is set, <see langword="false"/> otherwise.</returns>
         public bool HasFlags(in HierarchyNode node, HierarchyNodeFlags flags) => HasFlagsNode(in node, flags);
 
         /// <summary>
@@ -265,7 +265,7 @@ namespace Unity.Hierarchy
         /// Gets whether or not the specified flags is not set on any hierarchy node.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
-        /// <returns><see langword="true"/> if any node have the flags set, otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if any node have the flags set, <see langword="false"/> otherwise.</returns>
         public bool DoesNotHaveFlags(HierarchyNodeFlags flags) => DoesNotHaveFlagsAny(flags);
 
         /// <summary>
@@ -273,7 +273,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="flags">The hierarchy node flags.</param>
-        /// <returns><see langword="true"/> if the flags is not set, otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the flags is not set, <see langword="false"/> otherwise.</returns>
         public bool DoesNotHaveFlags(in HierarchyNode node, HierarchyNodeFlags flags) => DoesNotHaveFlagsNode(in node, flags);
 
         /// <summary>

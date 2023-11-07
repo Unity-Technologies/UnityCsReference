@@ -31,7 +31,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Makes a help box with a message to the user.
+    /// Makes a help box with a message to the user. For more information, refer to [[wiki:UIE-uxml-element-HelpBox|UXML element HelpBox]].
     /// </summary>
     /// <example>
     /// <code>

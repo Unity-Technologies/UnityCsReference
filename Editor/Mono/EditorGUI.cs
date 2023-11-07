@@ -3959,7 +3959,7 @@ namespace UnityEditor
                     }
                     if (instance.m_ControlID == controlID)
                     {
-                        GUI.changed = selected != instance.m_SelectedIndex;
+                        GUI.changed = showMixedValue || selected != instance.m_SelectedIndex;
                         selected = instance.m_SelectedIndex;
                         instance = null;
                         evt.Use();

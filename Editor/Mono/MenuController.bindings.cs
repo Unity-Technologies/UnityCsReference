@@ -27,6 +27,9 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/MenuController.h")]
     internal static class MenuController
     {
+        // Keep in sync with AssetsMenu.cpp
+        private const string k_RevealInFinderLabel = "Open Containing Folder";
+
         static Rect m_PositionOverride = EditorMenuExtensions.k_InvalidRect;
 
         internal static Rect positionOverride
@@ -59,8 +62,21 @@ namespace UnityEditor
                 var isChecked = item.@checked;
                 var disabledTooltipText = item.disabledTooltip;
 
-                menu.AppendAction(itemName, a => EditorApplication.ExecuteMenuItem(menuRoot + "/" + itemPath), a =>
+                menu.AppendAction(itemName, a =>
                 {
+                    // UUM-35952
+                    // ProjectBrowser is an IMGUI window thus it doesn't like when we interrupt GUI repaint
+                    // with actions that create new windows. Therefore we delay 'Reveal in Finder' action to
+                    // happen after ProjectBrowser is done repainting.
+                    if (itemName.Trim() == k_RevealInFinderLabel)
+                    {
+                        EditorApplication.delayCall += () => EditorApplication.ExecuteMenuItem(menuRoot + "/" + itemPath);
+                    }
+                    else
+                    {
+                        EditorApplication.ExecuteMenuItem(menuRoot + "/" + itemPath);
+                    }
+                }, a => {
                     var status = DropdownMenuAction.Status.None;
 
                     status |= isEnabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
@@ -73,7 +89,14 @@ namespace UnityEditor
                 }, null, EditorGUIUtility.LoadIcon(item.icon));
             }
 
-            EditorMenuExtensions.DoDisplayEditorMenu(menu, rectPosition);
+            var parentMenu = EditorWindow.focusedWindow as EditorMenuExtensions.ContextMenu;
+            var parentIsMenu = parentMenu != null;
+
+            if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX
+                && !parentIsMenu && GUIView.mouseOverView is HostView hostView)
+                hostView.Focus();
+
+            EditorMenuExtensions.DisplayEditorMenu(menu, rectPosition);
             positionOverride = EditorMenuExtensions.k_InvalidRect;
         }
 

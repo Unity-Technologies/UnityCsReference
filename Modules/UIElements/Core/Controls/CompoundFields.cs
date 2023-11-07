@@ -231,7 +231,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// A <see cref="Vector2"/> field.
+    /// A <see cref="Vector2"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector2Field|UXML element Vector2Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class Vector2Field : BaseCompositeField<Vector2, FloatField, float>
@@ -333,7 +333,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// A <see cref="Vector3"/> field.
+    /// A <see cref="Vector3"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector3Field|UXML element Vector3Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class Vector3Field : BaseCompositeField<Vector3, FloatField, float>
@@ -440,7 +440,7 @@ namespace UnityEngine.UIElements
 
 
     /// <summary>
-    /// A <see cref="Vector4"/> field.
+    /// A <see cref="Vector4"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector4Field|UXML element Vector4Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class Vector4Field : BaseCompositeField<Vector4, FloatField, float>
@@ -550,7 +550,7 @@ namespace UnityEngine.UIElements
 
 
     /// <summary>
-    /// A <see cref="Vector2Int"/> field.
+    /// A <see cref="Vector2Int"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector2IntField|UXML element Vector2IntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class Vector2IntField : BaseCompositeField<Vector2Int, IntegerField, int>
@@ -653,7 +653,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// A <see cref="Vector3Int"/> field.
+    /// A <see cref="Vector3Int"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector3IntField|UXML element Vector3IntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class Vector3IntField : BaseCompositeField<Vector3Int, IntegerField, int>

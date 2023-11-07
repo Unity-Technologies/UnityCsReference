@@ -37,11 +37,16 @@ namespace Unity.Hierarchy
         protected HierarchyNodeTypeHandlerBase(Hierarchy hierarchy)
         {
             m_Hierarchy = hierarchy;
+            Initialize();
         }
 
         ~HierarchyNodeTypeHandlerBase()
         {
             Dispose(false);
+        }
+
+        internal virtual void Initialize()
+        {
         }
 
         /// <summary>
@@ -209,6 +214,9 @@ namespace Unity.Hierarchy
             nodeType = HierarchyNodeType.k_HierarchyNodeTypeNull;
             return false;
         }
+
+        [UsedByNativeCode, RequiredMember]
+        static void InvokeInitialize(IntPtr ptr) => GetHandlerFromPtr(ptr).Initialize();
 
         [UsedByNativeCode, RequiredMember]
         static void InvokeDispose(IntPtr ptr) => GetHandlerFromPtr(ptr).Dispose();
