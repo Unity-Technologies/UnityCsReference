@@ -1501,7 +1501,11 @@ namespace UnityEditor.ShortcutManagement
         {
             if (evt.GetType() == typeof(PointerDownEvent))
             {
-                m_KeyDown.Add(KeyCode.Mouse0 + evt.button);
+                var keyCode = KeyCode.Mouse0 + evt.button;
+
+                m_KeyDown.Add(keyCode);
+                AppendKeyCombination(keyCode, evt.modifiers);
+
                 Apply();
             }
             evt.StopPropagation();

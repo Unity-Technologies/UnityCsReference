@@ -21,6 +21,8 @@ namespace UnityEngine.UIElements
     ///
     /// To bind a Button's text value to the contents of a variable, set the <c>binding-path</c> property in the
     /// UXML file, or the <c>bindingPath</c> property in the C# code, to a string that contains the variable name.
+    /// 
+    /// For more information, refer to [[wiki:UIE-uxml-element-Button|UXML element Button]].
     /// </remarks>
     public class Button : TextElement
     {

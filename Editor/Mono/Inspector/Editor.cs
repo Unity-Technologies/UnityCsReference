@@ -1364,8 +1364,7 @@ namespace UnityEditor
 
             if (m_SerializedObject == null)
             {
-                m_SerializedObject = new SerializedObject(targets, m_Context);
-                m_SerializedObject.inspectorMode = m_InspectorMode;
+                CreateSerializedObject();
             }
             else
                 m_SerializedObject.Update();
@@ -1383,8 +1382,7 @@ namespace UnityEditor
 
             if (m_SerializedObject == null)
             {
-                m_SerializedObject = new SerializedObject(targets, m_Context);
-                m_SerializedObject.inspectorMode = m_InspectorMode;
+                CreateSerializedObject();
             }
             SerializedProperty property = m_SerializedObject.GetIterator();
 

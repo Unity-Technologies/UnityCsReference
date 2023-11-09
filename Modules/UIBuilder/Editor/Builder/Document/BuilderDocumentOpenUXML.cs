@@ -184,6 +184,11 @@ namespace Unity.UI.Builder
             }
         }
 
+        public bool isAnonymousDocument
+        {
+            get { return string.IsNullOrEmpty(uxmlPath); }
+        }
+
         public float viewportZoomScale
         {
             get
@@ -407,7 +412,7 @@ namespace Unity.UI.Builder
                         return false;
                 }
             }
-            
+
             ClearUndo();
 
             var startTime = DateTime.UtcNow;
@@ -641,6 +646,9 @@ namespace Unity.UI.Builder
             m_VisualTreeAssetBackup = visualTreeAsset.DeepCopy();
             m_VisualTreeAsset = visualTreeAsset;
 
+            // Re-stamp orderInDocument values using BuilderConstants.VisualTreeAssetOrderIncrement
+            VisualTreeAssetUtilities.ReOrderDocument(m_VisualTreeAsset);
+
             PostLoadDocumentStyleSheetCleanup();
 
             hasUnsavedChanges = false;
@@ -676,11 +684,6 @@ namespace Unity.UI.Builder
             if (builderWindow == null)
                 builderWindow = Builder.ShowWindow();
 
-            // LoadDocument() will call Clear() which will try to restore from Backup().
-            // If we don't clear the Backups here, they will overwrite the newly post-processed
-            // and re-imported asset we detected here.
-            ClearBackups();
-
             if (string.IsNullOrEmpty(uxmlPath))
                 builderWindow.toolbar.ReloadDocument();
             else
@@ -714,6 +717,11 @@ namespace Unity.UI.Builder
                 if (!found)
                     return;
             }
+
+            // LoadDocument() will call Clear() which will try to restore from Backup().
+            // If we don't clear the Backups here, they will overwrite the newly post-processed
+            // and re-imported asset we detected here.
+            ClearBackups();
 
             if (EditorWindow.HasOpenInstances<Builder>())
             {
@@ -822,7 +830,15 @@ namespace Unity.UI.Builder
                 openUSSFile.RestoreFromBackup();
 
             if (m_VisualTreeAsset != null && m_VisualTreeAssetBackup != null)
+            {
                 m_VisualTreeAssetBackup.DeepOverwrite(m_VisualTreeAsset);
+                EditorUtility.SetDirty(m_VisualTreeAsset);
+                if (hasUnsavedChanges && !isAnonymousDocument)
+                {
+                    BuilderAssetUtilities.LiveReload(BuilderAssetUtilities.LiveReloadChanges.Hierarchy |
+                                                     BuilderAssetUtilities.LiveReloadChanges.Styles);
+                }
+            }
 
             hasUnsavedChanges = false;
         }

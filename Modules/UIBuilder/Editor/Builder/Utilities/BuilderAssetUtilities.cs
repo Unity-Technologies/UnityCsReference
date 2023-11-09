@@ -631,7 +631,7 @@ namespace Unity.UI.Builder
             return attributeOverrideRanges;
         }
 
-        static public bool WriteTextFileToDisk(string path, string content)
+        public static bool WriteTextFileToDisk(string path, string content)
         {
             bool success = FileUtil.WriteTextFileToDisk(path, content, out string message);
 
@@ -642,6 +642,21 @@ namespace Unity.UI.Builder
             }
 
             return success;
+        }
+
+        // Refresh GameView preview with the latest (unsaved to disk) changes.
+        [Flags]
+        public enum LiveReloadChanges
+        {
+            Hierarchy = 1,
+            Styles = 2
+        }
+        public static void LiveReload(LiveReloadChanges changes)
+        {
+            if ((changes & LiveReloadChanges.Hierarchy) != 0)
+                UIElementsUtility.InMemoryAssetsHierarchyHaveBeenChanged();
+            if ((changes & LiveReloadChanges.Styles) != 0)
+                UIElementsUtility.InMemoryAssetsStyleHaveBeenChanged();
         }
     }
 }

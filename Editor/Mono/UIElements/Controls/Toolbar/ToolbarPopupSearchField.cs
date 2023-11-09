@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// The pop-up search field for the toolbar. The search field includes a menu button.
+    /// The pop-up search field for the toolbar. The search field includes a menu button. For more information, refer to [[wiki:UIE-uxml-element-ToolbarPopupSearchField|UXML element ToolbarPopupSearchField]].
     /// </summary>
     public class ToolbarPopupSearchField : ToolbarSearchField, IToolbarMenuElement
     {
