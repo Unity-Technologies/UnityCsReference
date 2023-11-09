@@ -219,6 +219,7 @@ namespace UnityEngine.UIElements
         {
             if (showMixedValue)
             {
+                value = default;
                 textElement.text = mixedValueString;
             }
 

@@ -11,7 +11,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A LayerMaskField editor.
+    /// A LayerMaskField editor. For more information, refer to [[wiki:UIE-uxml-element-LayerMaskField|UXML element LayerMaskField]].
     /// </summary>
     public class LayerMaskField : MaskField
     {

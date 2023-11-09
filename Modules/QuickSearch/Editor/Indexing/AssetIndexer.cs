@@ -282,9 +282,6 @@ namespace UnityEditor.Search
             if (!mainAsset)
                 return;
 
-            if (hasCustomIndexers)
-                IndexCustomProperties(path, documentIndex, mainAsset);
-
             if (settings.options.properties)
             {
                 IndexObject(documentIndex, mainAsset, settings.options.dependencies);
@@ -306,6 +303,9 @@ namespace UnityEditor.Search
                 if (importSettings)
                     IndexObject(documentIndex, importSettings, dependencies: settings.options.dependencies, recursive: true);
             }
+
+            if (hasCustomIndexers)
+                IndexCustomProperties(path, documentIndex, mainAsset);
 
             if (!wasLoaded)
             {

@@ -19,6 +19,7 @@ namespace UnityEditor
     {
         private static EditorTextSettings s_DefaultTextSettings;
         private static float s_CurrentEditorSharpness;
+        private static bool s_CurrentEditorSharpnessLoadedOrSet = false;
 
         const string k_Platform =
                             " - Linux";
@@ -31,10 +32,15 @@ namespace UnityEditor
         internal static void SetCurrentEditorSharpness(float sharpness)
         {
             s_CurrentEditorSharpness = sharpness;
+            s_CurrentEditorSharpnessLoadedOrSet = true;
         }
 
         internal override float GetEditorTextSharpness()
         {
+            if (!s_CurrentEditorSharpnessLoadedOrSet)
+            {
+                SetCurrentEditorSharpness(EditorPrefs.GetFloat($"EditorTextSharpness_{EditorResources.GetFont(FontDef.Style.Normal).name}", 0.0f));
+            }
             return s_CurrentEditorSharpness;
         }
 

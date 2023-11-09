@@ -526,11 +526,16 @@ namespace UnityEngine.UIElements
             return referencePixelsPerUnit / pixelsPerUnit;
         }
 
-        internal static int m_InMemoryAssetsVersion { get; private set; } = 0;
+        internal static int m_InMemoryAssetsHierarchyVersion { get; private set; } = 0;
+        internal static int m_InMemoryAssetsStyleVersion { get; private set; } = 0;
 
-        internal static void InMemoryAssetsHaveBeenChanged()
+        internal static void InMemoryAssetsHierarchyHaveBeenChanged()
         {
-            m_InMemoryAssetsVersion++;
+            m_InMemoryAssetsHierarchyVersion++;
+        }
+        internal static void InMemoryAssetsStyleHaveBeenChanged()
+        {
+            m_InMemoryAssetsStyleVersion++;
         }
 
     }
