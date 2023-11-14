@@ -68,7 +68,7 @@ namespace UnityEditor.Search
             }
 
             // Search field
-            m_SearchField = new SearchFieldElement(nameof(SearchFieldElement), viewModel);
+            m_SearchField = new SearchFieldElement(nameof(SearchFieldElement), viewModel, useSearchGlobalEventHandler:true);
             Add(m_SearchField);
 
             // Save query dropdown

@@ -446,6 +446,6 @@ namespace UnityEditor.Modules
 
     internal interface IEditorAnalyticsExtension
     {
-        void AddExtraBuildAnalyticsFields(IntPtr eventData);
+        void AddExtraBuildAnalyticsFields(IntPtr eventData, BuildOptions buildOptions);
     }
 }

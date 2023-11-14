@@ -238,6 +238,12 @@ namespace UnityEngine.UIElements
             {
                 var startDragArgs = StartDrag(m_Start);
 
+                if (startDragArgs.visualMode is DragVisualMode.Rejected)
+                {
+                    m_DragState = DragState.None;
+                    return;
+                }
+
                 if (!useDragEvents)
                 {
                     if (supportsDragEvents)

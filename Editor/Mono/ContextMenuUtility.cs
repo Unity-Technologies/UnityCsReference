@@ -198,6 +198,9 @@ namespace UnityEditor.Actions
 
         internal static void ShowActionMenu()
         {
+            if (Event.current == null)
+                return;
+
             var dropdownMenu = CreateActionMenu();
             if (dropdownMenu.MenuItems().Count == 0)
                 AddAction(dropdownMenu, "No Actions for this Context", null, false);

@@ -87,6 +87,12 @@ namespace UnityEditor
                     m_AllLayersMask |= val;
         }
 
+        public void UpdateMaskValues(int mask, int[] optionMaskValues)
+        {
+            m_OptionMaskValues = (int[])optionMaskValues.Clone();
+            m_SelectionMaskValues = new int[] { mask };
+        }
+
         public override Vector2 GetWindowSize()
         {
             var rowCount = m_OptionNames[0] == "Nothing" ? m_OptionNames.Length : m_OptionNames.Length + 2;
@@ -127,7 +133,9 @@ namespace UnityEditor
                 bool toggleVal = (m_SelectionMaskValues[0] & m_OptionMaskValues[i]) == m_OptionMaskValues[i];
                 if ((m_SelectionMaskValues[0] != 0 && i == 0) || m_SelectionMaskValues[0] != -1 && i == 1)
                     toggleVal = false;
-                
+
+               if((m_SelectionMaskValues[0] == m_AllLayersMask) && i == 1)
+                    toggleVal = true;
 
                 var guiRect = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight);
                 guiRect.width = GetWindowSize().x;

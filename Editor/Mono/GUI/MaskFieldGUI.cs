@@ -33,6 +33,12 @@ namespace UnityEditor
             // Which view should we send it to.
             private readonly GUIView m_SourceView;
 
+            // Current drop-down reference 
+            public MaskFieldDropDown m_DropDown;
+
+            // validation flag for masks that are changed externally
+            private bool m_Validate = false;
+
             public MaskCallbackInfo(int controlID)
             {
                 m_ControlID = controlID;
@@ -77,6 +83,31 @@ namespace UnityEditor
                 if (m_SourceView)
                     m_SourceView.SendEvent(EditorGUIUtility.CommandEvent(kMaskMenuChangedMessage));
             }
+
+            public void UpdateFlagChanges(int mask, int[] optionMaskValues)
+            {
+                var evt = Event.current;
+
+                if (evt.type == EventType.ExecuteCommand)
+                {
+                    m_Validate = true;
+                }
+                // This code  is responsible for verifying whether the incoming mask value differs from the one that is currently selected in the dropdown menu.
+                // When these values do not match, it serves as confirmation that the incoming value has been modified.
+                // Subsequently, we proceed to update the dropdown menu to reflect these changes.
+                else if (evt.type == EventType.Repaint && m_Validate)
+                {
+                    if (m_DropDown == null)
+                    {
+                        return;
+                    }
+
+                    if (mask != m_NewMask)
+                        m_DropDown.UpdateMaskValues(mask, optionMaskValues);
+
+                    m_Validate = false;
+                }
+            }
         }
 
         /// Make a field for a generic mask.
@@ -117,6 +148,10 @@ namespace UnityEditor
 
             GetMenuOptions(mask, flagNames, flagValues, out var buttonText, out var buttonTextMixed, out var optionNames, out var optionMaskValues, out _, enumType);
 
+            // This checks and update flags changes that are modified out of dropdown menu
+            if (MaskCallbackInfo.m_Instance != null)
+                MaskCallbackInfo.m_Instance.UpdateFlagChanges(mask, optionMaskValues);
+
             Event evt = Event.current;
             if (evt.type == EventType.Repaint)
             {
@@ -126,7 +161,8 @@ namespace UnityEditor
             else if ((evt.type == EventType.MouseDown && position.Contains(evt.mousePosition)) || evt.MainActionKeyForControl(controlID))
             {
                 MaskCallbackInfo.m_Instance = new MaskCallbackInfo(controlID);
-                PopupWindowWithoutFocus.Show(position, new MaskFieldDropDown(optionNames, flagValues, optionMaskValues, mask, MaskCallbackInfo.m_Instance.SetMaskValueDelegate));
+                MaskCallbackInfo.m_Instance.m_DropDown = new MaskFieldDropDown(optionNames, flagValues, optionMaskValues, mask, MaskCallbackInfo.m_Instance.SetMaskValueDelegate);
+                PopupWindowWithoutFocus.Show(position, MaskCallbackInfo.m_Instance.m_DropDown);
             }
 
             return mask;

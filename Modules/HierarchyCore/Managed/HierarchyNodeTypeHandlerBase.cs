@@ -80,32 +80,14 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Determines if a node type handler can accept a specified node as a parent.
+        /// Get the default value used to initialize a hierarchy node flags.
         /// </summary>
-        /// <param name="parent">The hierarchy parent node.</param>
-        /// <returns><see langword="true"/> if the node can be set as a parent, <see langword="false"/> otherwise.</returns>
-        public virtual bool AcceptParent(in HierarchyNode parent)
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="defaultFlags">The default hierarchy node flags.</param>
+        /// <returns>The default flags of the hierarchy node.</returns>
+        public virtual HierarchyNodeFlags GetDefaultNodeFlags(in HierarchyNode node, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
         {
-            return true;
-        }
-
-        /// <summary>
-        /// Determines if a node type handler can accept a specified node as a child.
-        /// </summary>
-        /// <param name="child">The hierarchy child node.</param>
-        /// <returns><see langword="true"/> if the node can be set as a child, <see langword="false"/> otherwise.</returns>
-        public virtual bool AcceptChild(in HierarchyNode child)
-        {
-            return true;
-        }
-
-        /// <summary>
-        /// Determine if the node type handler accept the naming action.
-        /// </summary>
-        /// <returns><see langword="true"/> if the node can be renamed, <see langword="false"/> otherwise.</returns>
-        public virtual bool CanSetName(in HierarchyNode node)
-        {
-            return true;
+            return defaultFlags;
         }
 
         /// <summary>
@@ -120,37 +102,6 @@ namespace Unity.Hierarchy
         /// <param name="cmdList">A hierarchy command list that can modify the hierarchy.</param>
         /// <returns><see langword="true"/> if more invocations are needed to complete integrating changes, and <see langword="false"/> if the handler is done integrating changes.</returns>
         protected abstract bool IntegrateChanges(HierarchyCommandList cmdList);
-
-        /// <summary>
-        /// Called when a node is renamed in the hierarchy.
-        /// </summary>
-        /// <returns><see langword="true"/> if the node is renamed successfully, <see langword="false"/> otherwise.</returns>
-        protected virtual bool OnSetName(in HierarchyNode node, string name)
-        {
-            return false;
-        }
-
-        /// <summary>
-        /// Called when a node is parented in the hierarchy.
-        /// </summary>
-        /// <param name="node">The node that is parented.</param>
-        /// <param name="parent">The new parent of the node.</param>
-        /// <returns><see langword="true"/> if the node is parented successfully, <see langword="false"/> otherwise.</returns>
-        protected virtual bool OnSetParent(in HierarchyNode node, in HierarchyNode parent)
-        {
-            return true;
-        }
-
-        /// <summary>
-        /// Called when the sorting index of a node is changed in the hierarchy.
-        /// </summary>
-        /// <param name="node">The node that is sorted.</param>
-        /// <param name="index">The new sorting index.</param>
-        /// <returns><see langword="true"/> if the sorting index was applied successfully, <see langword="false"/> otherwise.</returns>
-        protected virtual bool OnSetSortIndex(in HierarchyNode node, int index)
-        {
-            return true;
-        }
 
         /// <summary>
         /// Called when a new search query begins.
@@ -225,28 +176,13 @@ namespace Unity.Hierarchy
         static string InvokeGetNodeTypeName(IntPtr ptr) => GetHandlerFromPtr(ptr).GetNodeTypeName();
 
         [UsedByNativeCode, RequiredMember]
-        static bool InvokeAcceptParent(IntPtr ptr, in HierarchyNode node) => GetHandlerFromPtr(ptr).AcceptParent(in node);
-
-        [UsedByNativeCode, RequiredMember]
-        static bool InvokeAcceptChild(IntPtr ptr, in HierarchyNode node) => GetHandlerFromPtr(ptr).AcceptChild(in node);
-
-        [UsedByNativeCode, RequiredMember]
-        static bool InvokeCanSetName(IntPtr ptr, in HierarchyNode node) => GetHandlerFromPtr(ptr).CanSetName(in node);
+        static HierarchyNodeFlags InvokeGetDefaultNodeFlags(IntPtr ptr, in HierarchyNode node, HierarchyNodeFlags defaultFlags) => GetHandlerFromPtr(ptr).GetDefaultNodeFlags(in node, defaultFlags);
 
         [UsedByNativeCode, RequiredMember]
         static bool InvokeChangesPending(IntPtr ptr) => GetHandlerFromPtr(ptr).ChangesPending();
 
         [UsedByNativeCode, RequiredMember]
         static bool InvokeIntegrateChanges(IntPtr ptr, HierarchyCommandList cmdList) => GetHandlerFromPtr(ptr).IntegrateChanges(cmdList);
-
-        [UsedByNativeCode, RequiredMember]
-        static bool InvokeOnSetName(IntPtr ptr, in HierarchyNode node, string name) => GetHandlerFromPtr(ptr).OnSetName(in node, name);
-
-        [UsedByNativeCode, RequiredMember]
-        static bool InvokeOnSetParent(IntPtr ptr, in HierarchyNode node, in HierarchyNode parent) => GetHandlerFromPtr(ptr).OnSetParent(in node, in parent);
-
-        [UsedByNativeCode, RequiredMember]
-        static bool InvokeOnSetSortIndex(IntPtr ptr, in HierarchyNode node, int index) => GetHandlerFromPtr(ptr).OnSetSortIndex(in node, index);
 
         [UsedByNativeCode, RequiredMember]
         static bool InvokeSearchMatch(IntPtr ptr, in HierarchyNode node) => GetHandlerFromPtr(ptr).SearchMatch(in node);

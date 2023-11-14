@@ -230,10 +230,27 @@ namespace UnityEditor.ShortcutManagement
 
         bool DoShortcutEntriesConflict(ShortcutEntry shortcutEntry1, ShortcutEntry shortcutEntry2, IContextManager contextManager)
         {
-            return contextManager.DoContextsConflict(shortcutEntry1.context, shortcutEntry2.context) &&
-                string.Equals(shortcutEntry1.tag, shortcutEntry2.tag) &&
-                (shortcutEntry1.StartsWith(shortcutEntry2.combinations) ||
-                    shortcutEntry2.StartsWith(shortcutEntry1.combinations));
+            var contextConflict = contextManager.DoContextsConflict(shortcutEntry1.context, shortcutEntry2.context);
+            if (!contextConflict)
+                return false;
+
+            var tagConflict = string.Equals(shortcutEntry1.tag, shortcutEntry2.tag);
+            if (!tagConflict)
+                return false;
+
+            var mouseConflict = shortcutEntry1.StartsWith(shortcutEntry2.combinations, KeyCombination.k_MouseKeyCodes) ||
+                shortcutEntry2.StartsWith(shortcutEntry1.combinations, KeyCombination.k_MouseKeyCodes);
+
+            var shortcutsHaveDifferentType = (shortcutEntry1.type == ShortcutType.Action && shortcutEntry2.type == ShortcutType.Clutch) ||
+                (shortcutEntry1.type == ShortcutType.Clutch && shortcutEntry2.type == ShortcutType.Action);
+
+            if (shortcutsHaveDifferentType && mouseConflict)
+                return false;
+
+            var combinationsConflict = shortcutEntry1.StartsWith(shortcutEntry2.combinations) ||
+                shortcutEntry2.StartsWith(shortcutEntry1.combinations);
+
+            return combinationsConflict;
         }
 
         //////////////////////////////

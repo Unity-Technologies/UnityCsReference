@@ -75,11 +75,13 @@ namespace UnityEditor.Search
         private readonly UndoManager m_UndoManager;
         private readonly Label m_SearchPlaceholder;
         private readonly Label m_PressTabPlaceholder;
+        private readonly bool m_UseSearchGlobalEventHandler;
 
         const float k_PlaceholdersTouchThreshold = 2f;
 
         public ToolbarSearchField searchField { get; private set; }
         internal QueryBuilder queryBuilder => (m_SearchTextInput as SearchQueryBuilderView)?.builder;
+        internal string queryString => viewState.queryBuilderEnabled ? queryBuilder.BuildQuery() : searchField.value;
 
         List<VisualMessage> m_VisualMessages = new();
         IVisualElementScheduledItem m_UpdateQueryErrorScheduledItem;
@@ -119,11 +121,11 @@ namespace UnityEditor.Search
         public static readonly string searchFieldPlaceholderClassName = "search-field-placeholder";
         public static readonly string searchFieldMultilineClassName = "search-field-multiline";
 
-        public SearchFieldElement(string name, ISearchView viewModel)
+        public SearchFieldElement(string name, ISearchView viewModel, bool useSearchGlobalEventHandler)
             : base(name, viewModel)
         {
             this.name = name;
-
+            m_UseSearchGlobalEventHandler = useSearchGlobalEventHandler;
             m_SearchPlaceholder = new Label($"Search {viewState.title}");
             m_SearchPlaceholder.AddToClassList(searchFieldPlaceholderClassName);
             m_SearchPlaceholder.style.paddingLeft = 4f;
@@ -167,7 +169,7 @@ namespace UnityEditor.Search
 
             if (viewState.queryBuilderEnabled)
             {
-                var queryBuilderView = new SearchQueryBuilderView("SearchQueryBuilder", m_ViewModel, searchField);
+                var queryBuilderView = new SearchQueryBuilderView("SearchQueryBuilder", m_ViewModel, searchField, m_UseSearchGlobalEventHandler);
                 searchField.Insert(1, queryBuilderView);
                 queryBuilderView.RegisterCallback<ChangeEvent<string>>(OnQueryChanged);
                 m_SearchTextInput = queryBuilderView;
@@ -501,7 +503,7 @@ namespace UnityEditor.Search
             if (m_UpdateQueryErrorScheduledItem != null && m_UpdateQueryErrorScheduledItem.isActive)
                 m_UpdateQueryErrorScheduledItem.Pause();
 
-            if (!context.options.HasAny(SearchFlags.ShowErrorsWithResults) && m_ViewModel.results.Count > 0)
+            if (m_ViewModel.results == null || (!context.options.HasAny(SearchFlags.ShowErrorsWithResults) && m_ViewModel.results.Count > 0))
                 return;
 
             List<SearchQueryError> errors;

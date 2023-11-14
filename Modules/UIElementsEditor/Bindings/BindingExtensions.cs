@@ -598,7 +598,7 @@ namespace UnityEditor.UIElements.Bindings
                 onUpdateCallback = updateCB;
             }
 
-            public bool Update(SerializedObjectBindingContext context, SerializedProperty  currentProp)
+            public bool Update(SerializedObjectBindingContext context, SerializedProperty  currentProp, List<(object, SerializedProperty, Action<object, SerializedProperty>)> pendingCallbacks)
             {
                 if (currentProp.propertyType != originalPropType)
                 {
@@ -612,7 +612,9 @@ namespace UnityEditor.UIElements.Bindings
                 if (contentHash != newContentHash)
                 {
                     contentHash = newContentHash;
-                    onChangeCallback(cookie, currentProp);
+
+                    // We execute the change callbacks after updating the tracked properties as its possible the callback will make changes to the serialized object.
+                    pendingCallbacks.Add((cookie, currentProp.Copy(), onChangeCallback));
                 }
 
                 return true;
@@ -682,7 +684,7 @@ namespace UnityEditor.UIElements.Bindings
                 }
             }
 
-            public void EndUpdate(SerializedObjectBindingContext context)
+            public void EndUpdate(SerializedObjectBindingContext context, List<(object, SerializedProperty, Action<object, SerializedProperty>)> pendingCallbacks)
             {
                 // We must check the un-visited properties.
                 // This can happen when objects serialized with SerializedReference are present multiple times and we
@@ -702,7 +704,7 @@ namespace UnityEditor.UIElements.Bindings
                             {
                                 for (int i = 0; i < values.Count; ++i)
                                 {
-                                    values[i].Update(context, currentProperty);
+                                    values[i].Update(context, currentProperty, pendingCallbacks);
                                 }
                             }
                         }
@@ -710,8 +712,8 @@ namespace UnityEditor.UIElements.Bindings
                 }
                 unvisitedProperties.Clear();
             }
-			
-            public void Update(SerializedObjectBindingContext context, SerializedProperty currentProperty)
+
+            public void Update(SerializedObjectBindingContext context, SerializedProperty currentProperty, List<(object, SerializedProperty, Action<object, SerializedProperty>)> pendingCallbacks)
             {
                 var hash = currentProperty.hashCodeForPropertyPath;
 
@@ -720,7 +722,7 @@ namespace UnityEditor.UIElements.Bindings
                     unvisitedProperties.Remove(hash);
                     for (int i = 0; i < values.Count; ++i)
                     {
-                        values[i].Update(context, currentProperty);
+                        values[i].Update(context, currentProperty, pendingCallbacks);
                     }
                 }
             }
@@ -800,6 +802,7 @@ namespace UnityEditor.UIElements.Bindings
         }
 
         HashSet<long> visited = new HashSet<long>();
+        List<(object cookie, SerializedProperty p, Action<object, SerializedProperty> onChange)> m_PendingCallbacks = new();
         void UpdateTrackedProperties()
         {
             // Iterating over the entire object, as gathering valid property names hashes is faster than querying
@@ -836,11 +839,25 @@ namespace UnityEditor.UIElements.Bindings
                             break;
                     }
 
-                    m_ValueTracker.Update(this, iterator);
+                    m_ValueTracker.Update(this, iterator, m_PendingCallbacks);
                 }
-                m_ValueTracker.EndUpdate(this);
+                m_ValueTracker.EndUpdate(this, m_PendingCallbacks);
+            }
+            // We batch the change callbacks after updating the tracked properties as its possible
+            // the callback will make changes to the serialized object which breaks our iteration during Update.
+            try
+            {
+                foreach (var cb in m_PendingCallbacks)
+                {
+                    cb.onChange(cb.cookie, cb.p);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
             }
 
+            m_PendingCallbacks.Clear();
             visited.Clear();
         }
     }
@@ -1218,17 +1235,28 @@ namespace UnityEditor.UIElements.Bindings
         public object dataSource => this;
         public PropertyPath dataSourcePath => default;
 
-        public long GetViewHashCode()
+        private bool IsBindingContextUninitialized()
         {
             if (null == bindingContext)
-                return -1;
+                return true;
 
             if (null == bindingContext.serializedObject)
+                return true;
+            return false;
+        }
+
+        public long GetViewHashCode()
+        {
+            if (IsBindingContextUninitialized())
                 return -1;
 
             var element = boundElement as VisualElement;
             if (null != element)
                 bindingContext.UpdateIfNecessary(element);
+
+            // this can be set back to null on update
+            if (IsBindingContextUninitialized())
+                return -1;
 
             return bindingContext.serializedObject.objectVersion;
         }
@@ -2388,8 +2416,8 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
-            if(boundProperty.hasMultipleDifferentValues)            
-                lastFieldValueIndex = default;            
+            if(boundProperty.hasMultipleDifferentValues)
+                lastFieldValueIndex = default;
 
             if (lastFieldValueIndex >= 0 && lastFieldValueIndex < displayIndexToEnumIndex.Count
                 && boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])

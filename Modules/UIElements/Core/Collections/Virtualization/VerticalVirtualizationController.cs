@@ -44,7 +44,7 @@ namespace UnityEngine.UIElements
 
         public override int firstVisibleIndex
         {
-            get => Mathf.Min(serializedData.firstVisibleIndex, m_CollectionView.viewController.GetItemsCount() - 1);
+            get => Mathf.Min(serializedData.firstVisibleIndex, m_CollectionView.viewController != null ? m_CollectionView.viewController.GetItemsCount() - 1 : serializedData.firstVisibleIndex);
             protected set => serializedData.firstVisibleIndex = value;
         }
 
@@ -157,7 +157,7 @@ namespace UnityEngine.UIElements
             recycledItem.rootElement.style.display = DisplayStyle.Flex;
 
             var newId = m_CollectionView.viewController.GetIdForIndex(newIndex);
-            if (recycledItem.index == newIndex && recycledItem.id == newId) 
+            if (recycledItem.index == newIndex && recycledItem.id == newId)
                 return;
 
             var useAlternateUss = m_CollectionView.showAlternatingRowBackgrounds != AlternatingRowBackground.None && newIndex % 2 == 1;

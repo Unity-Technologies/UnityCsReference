@@ -524,7 +524,7 @@ namespace UnityEditor.Search
             using var _ = k_IndexPropertyStringComponentsMarker.Auto();
             if (string.IsNullOrEmpty(sv) || sv.Length > 64)
                 return false;
-            if (sv.Length > 4 && sv.Length < 32 && char.IsLetter(sv[0]) && sv.IndexOf(' ') == -1)
+            if (sv.Length >= minWordIndexationLength && sv.Length < 32)
                 IndexPropertyComponents(documentIndex, fieldName, sv);
             else
                 IndexProperty(documentIndex, fieldName, sv, saveKeyword: false, exact: true);

@@ -78,9 +78,11 @@ namespace Unity.Hierarchy
         [ExcludeFromDocs]
         public override int GetHashCode() => Node.GetHashCode();
 
-        #region Obsolete code to remove in 2024.1
-        [Obsolete("ChildCount has been renamed to ChildrenCount. (UnityUpgradable) -> ChildrenCount")]
-        public int ChildCount => m_ChildrenCount;
-        #endregion
+        /// <summary>
+        /// Helper method to access the node by reference without exposing the field internally.
+        /// </summary>
+        /// <param name="hierarchyFlattenedNode">The flat node containing the node we're interested in.</param>
+        /// <returns>A reference to the underlying node.</returns>
+        internal static ref readonly HierarchyNode GetNodeByRef(in HierarchyFlattenedNode hierarchyFlattenedNode) => ref hierarchyFlattenedNode.m_Node;
     }
 }

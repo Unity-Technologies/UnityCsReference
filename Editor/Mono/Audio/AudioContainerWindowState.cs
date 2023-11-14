@@ -132,7 +132,12 @@ sealed class AudioContainerWindowState
         }
 
         if (m_TrackedSource == audioSource && m_AudioContainer == newTarget)
+        {
             return;
+        }
+
+        var targetChanged = newTarget != m_AudioContainer;
+        var trackedSourceChanged = audioSource != m_TrackedSource;
 
         Reset();
 
@@ -140,17 +145,28 @@ sealed class AudioContainerWindowState
         m_AudioContainer = newTarget;
 
         if (m_AudioContainer != null)
+        {
             TargetPath = AssetDatabase.GetAssetPath(m_AudioContainer);
+        }
 
-        TargetChanged?.Invoke(this, EventArgs.Empty);
+        if (targetChanged)
+        {
+            TargetChanged?.Invoke(this, EventArgs.Empty);
+        }
 
-        if (m_TrackedSource == null)
-            return;
+        if (trackedSourceChanged)
+        {
+            m_ResourceTrackerElement.Unbind();
 
-        var trackedSourceSO = new SerializedObject(m_TrackedSource);
-        var trackedSourceResourceProperty = trackedSourceSO.FindProperty("m_Resource");
-        m_ResourceTrackerElement.TrackPropertyValue(trackedSourceResourceProperty, OnResourceChanged);
+            if (m_TrackedSource != null)
+            {
+                var trackedSourceSO = new SerializedObject(m_TrackedSource);
+                var trackedSourceResourceProperty = trackedSourceSO.FindProperty("m_Resource");
+                m_ResourceTrackerElement.TrackPropertyValue(trackedSourceResourceProperty, OnResourceChanged);
+            }
+        }
     }
+
     void OnResourceChanged(SerializedProperty property)
     {
         var container = property.objectReferenceValue as AudioRandomContainer;

@@ -275,6 +275,12 @@ namespace UnityEditor
             return new Scene();
         }
 
+        // Used by tests
+        internal void Internal_TriggerFilterSettingsChanged()
+        {
+            FilterSettingsChanged();
+        }
+
         void FilterSettingsChanged()
         {
             var filter = GetSearchFilter();
@@ -1080,12 +1086,18 @@ namespace UnityEditor
         void NotifySelectionChanged(bool exitGUI)
         {
             var currentObject = GetCurrentObject();
+            Internal_NotifySelectionChanged(currentObject, exitGUI);
+        }
+
+        // Used by tests
+        internal void Internal_NotifySelectionChanged(UnityObject selectedObject, bool exitGUI)
+        {
             if (m_ObjectSelectorReceiver != null)
             {
-                m_ObjectSelectorReceiver.OnSelectionChanged(currentObject);
+                m_ObjectSelectorReceiver.OnSelectionChanged(selectedObject);
             }
 
-            m_OnObjectSelectorUpdated?.Invoke(currentObject);
+            m_OnObjectSelectorUpdated?.Invoke(selectedObject);
 
             SendEvent(ObjectSelectorUpdatedCommand, exitGUI);
         }
@@ -1093,12 +1105,18 @@ namespace UnityEditor
         void NotifySelectorClosed(bool exitGUI)
         {
             var currentObject = GetCurrentObject();
+            Internal_NotifySelectorClosed(currentObject, exitGUI);
+        }
+
+        // Used by tests
+        internal void Internal_NotifySelectorClosed(UnityObject selectedObject, bool exitGUI)
+        {
             if (m_ObjectSelectorReceiver != null)
             {
-                m_ObjectSelectorReceiver.OnSelectionClosed(currentObject);
+                m_ObjectSelectorReceiver.OnSelectionClosed(selectedObject);
             }
 
-            m_OnObjectSelectorClosed?.Invoke(currentObject);
+            m_OnObjectSelectorClosed?.Invoke(selectedObject);
 
             SendEvent(ObjectSelectorClosedCommand, exitGUI);
             Undo.CollapseUndoOperations(m_ModalUndoGroup);
