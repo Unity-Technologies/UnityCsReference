@@ -195,7 +195,7 @@ namespace UnityEditor.Overlays
                 content.Add(m_Toggle = new Toggle(L10n.Tr("Enable Overlays")) { name = "overlay-toggle" });
                 m_Toggle.RegisterCallback<ChangeEvent<bool>>((evt) =>
                 {
-                    canvas.SetOverlaysEnabled(evt.newValue);
+                    canvas.overlaysEnabled = evt.newValue;
                 });
                 m_Toggle.SetValueWithoutNotify(canvas.overlaysEnabled);
             }

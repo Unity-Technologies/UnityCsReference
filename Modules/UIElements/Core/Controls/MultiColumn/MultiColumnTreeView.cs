@@ -16,10 +16,14 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BaseTreeView.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField, HideInInspector] private bool sortingEnabled;
+            [SerializeField, HideInInspector] bool sortingEnabled;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortingEnabled_UxmlAttributeFlags;
             [SerializeField] ColumnSortingMode sortingMode;
-            [SerializeReference, UxmlObjectReference] private Columns.UxmlSerializedData columns;
-            [SerializeReference, UxmlObjectReference] private SortColumnDescriptions.UxmlSerializedData sortColumnDescriptions;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortingMode_UxmlAttributeFlags;
+            [SerializeReference, UxmlObjectReference] Columns.UxmlSerializedData columns;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags columns_UxmlAttributeFlags;
+            [SerializeReference, UxmlObjectReference] SortColumnDescriptions.UxmlSerializedData sortColumnDescriptions;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortColumnDescriptions_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new MultiColumnTreeView();
@@ -30,17 +34,22 @@ namespace UnityEngine.UIElements
 
                 var e = (MultiColumnTreeView)obj;
 
-                var legacySortMode = sortingEnabled ? ColumnSortingMode.Custom : ColumnSortingMode.None;
-                e.sortingMode = sortingMode == ColumnSortingMode.None ? legacySortMode : sortingMode;
+                if (ShouldWriteAttributeValue(sortingEnabled_UxmlAttributeFlags))
+                {
+                    var mode = sortingEnabled ? ColumnSortingMode.Custom : ColumnSortingMode.None;
+                    if (ShouldWriteAttributeValue(sortingMode_UxmlAttributeFlags) && sortingMode != ColumnSortingMode.None)
+                        mode = sortingMode;
+                    e.sortingMode = mode;
+                }
 
-                if (sortColumnDescriptions != null)
+                if (ShouldWriteAttributeValue(sortColumnDescriptions_UxmlAttributeFlags) && sortColumnDescriptions != null)
                 {
                     var c = new SortColumnDescriptions();
                     sortColumnDescriptions.Deserialize(c);
                     e.sortColumnDescriptions = c;
                 }
 
-                if (columns != null)
+                if (ShouldWriteAttributeValue(columns_UxmlAttributeFlags) && columns != null)
                 {
                     var c = new Columns();
                     columns.Deserialize(c);

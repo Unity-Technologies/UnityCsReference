@@ -18,13 +18,13 @@ namespace Unity.Hierarchy
         /// </summary>
         None = 0,
         /// <summary>
+        /// The hierarchy node is expanded.
+        /// </summary>
+        Expanded = 1 << 0,
+        /// <summary>
         /// The hierarchy node is selected.
         /// </summary>
-        Selected = 1 << 0,
-        /// <summary>
-        /// The hierarchy node is collapsed.
-        /// </summary>
-        Collapsed = 1 << 1,
+        Selected = 1 << 1,
         /// <summary>
         /// The hierarchy node is cut.
         /// </summary>

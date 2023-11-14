@@ -13,35 +13,37 @@ namespace UnityEditor.Build.Profile.Elements
     /// </summary>
     internal class BuildProfileListLabel : VisualElement
     {
+        const string k_Uxml = "BuildProfile/UXML/BuildProfileLabelElement.uxml";
         readonly Image m_Icon;
         readonly Label m_Text;
+        readonly Label m_ActiveIndicator;
 
         internal BuildProfileListLabel()
         {
-            style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
-            m_Icon = new Image();
-            m_Text = new Label()
-            {
-                style =
-                {
-                    flexGrow = 1
-                }
-            };
+            var uxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
+            var stylesheet = EditorGUIUtility.LoadRequired(Util.k_StyleSheet) as StyleSheet;
+            styleSheets.Add(stylesheet);
+            uxml.CloneTree(this);
 
-            m_Text.AddToClassList("px-small");
-            m_Text.AddToClassList("lhs-sidebar-item-label");
-            m_Icon.AddToClassList("lhs-sidebar-item-icon");
-            AddToClassList("lhs-sidebar-item");
-            AddToClassList("mb-small");
-
-            Add(m_Icon);
-            Add(m_Text);
+            m_Icon = this.Q<Image>();
+            m_Text = this.Q<Label>("profile-list-label-name");
+            m_ActiveIndicator = this.Q<Label>("profile-list-label-active");
+            m_ActiveIndicator.text = TrText.active;
+            SetActiveIndicator(false);
         }
 
         internal void Set(string displayName, Texture2D icon)
         {
             m_Icon.image = icon;
             m_Text.text = displayName;
+        }
+
+        internal void SetActiveIndicator(bool active)
+        {
+            if (active)
+                m_ActiveIndicator.Show();
+            else
+                m_ActiveIndicator.Hide();
         }
     }
 }

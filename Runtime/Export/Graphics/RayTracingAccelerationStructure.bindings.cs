@@ -576,7 +576,7 @@ namespace UnityEngine.Rendering
             if (config.material == null)
                 throw new ArgumentNullException("config.material");
 
-            if (!config.material.enableInstancing)
+            if (!CheckMaterialEnablesInstancing(config.material))
                 throw new InvalidOperationException($"config.material ({config.material.name}) needs to enable GPU Instancing for use with AddInstances.");
 
             if (config.mesh == null)
@@ -608,7 +608,7 @@ namespace UnityEngine.Rendering
             if (config.material == null)
                 throw new ArgumentNullException("config.material");
 
-            if (!config.material.enableInstancing)
+            if (!CheckMaterialEnablesInstancing(config.material))
                 throw new InvalidOperationException($"config.material ({config.material.name}) needs to enable GPU Instancing for use with AddInstances.");
 
             if (config.mesh == null)
@@ -637,7 +637,7 @@ namespace UnityEngine.Rendering
             if (config.material == null)
                 throw new ArgumentNullException("config.material");
 
-            if (!config.material.enableInstancing)
+            if (!CheckMaterialEnablesInstancing(config.material))
                 throw new InvalidOperationException($"config.material ({config.material.name}) needs to enable GPU Instancing for use with AddInstances.");
 
             if (config.mesh == null)
@@ -666,7 +666,7 @@ namespace UnityEngine.Rendering
             if (config.material == null)
                 throw new ArgumentNullException("config.material");
 
-            if (!config.material.enableInstancing)
+            if (!CheckMaterialEnablesInstancing(config.material))
                 throw new InvalidOperationException($"config.material ({config.material.name}) needs to enable GPU Instancing for use with AddInstances.");
 
             if (config.mesh == null)
@@ -798,6 +798,8 @@ namespace UnityEngine.Rendering
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::CullInstances", HasExplicitThis = true)]
         extern private RayTracingInstanceCullingResults Internal_CullInstances(in RayTracingInstanceCullingConfig cullingConfig);
 
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::CheckMaterialEnablesInstancing")]
+        extern private static bool CheckMaterialEnablesInstancing(Material material);
 
         // Obsolete methods bellow. To be removed in the future.
         const string obsoleteBuildMsg1 = "Method Update is deprecated and it will be removed in Unity 2024.1. Use Build instead (UnityUpgradable) -> Build()";

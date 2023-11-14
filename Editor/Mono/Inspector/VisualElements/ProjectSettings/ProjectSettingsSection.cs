@@ -2,10 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Object = System.Object;
 
 namespace UnityEditor.UIElements.ProjectSettings
 {
@@ -14,17 +13,21 @@ namespace UnityEditor.UIElements.ProjectSettings
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-#pragma warning disable 649
+            #pragma warning disable 649
             [SerializeField] string label;
-#pragma warning restore 649
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
+            #pragma warning restore 649
             public override object CreateInstance() => new ProjectSettingsSection();
 
             public override void Deserialize(object obj)
             {
                 base.Deserialize(obj);
 
-                var e = (ProjectSettingsSection)obj;
-                e.label = label;
+                if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
+                {
+                    var e = (ProjectSettingsSection)obj;
+                    e.label = label;
+                }
             }
         }
 

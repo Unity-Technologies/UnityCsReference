@@ -4085,6 +4085,9 @@
     <Compile Include="..\..\Runtime\Export\RenderPipeline\RendererList.bindings.cs">
       <Link>Runtime\Export\RenderPipeline\RendererList.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderingLayerMask.cs">
+      <Link>Runtime\Export\RenderPipeline\RenderingLayerMask.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\ScopedRenderPass.cs">
       <Link>Runtime\Export\RenderPipeline\ScopedRenderPass.cs</Link>
     </Compile>

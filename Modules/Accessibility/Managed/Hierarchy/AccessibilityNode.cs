@@ -141,11 +141,26 @@ namespace UnityEngine.Accessibility
                 id = id,
                 isActive = isActive
             };
-            // TODO: A11Y-364 Properly handle unsuccessful native node creation
-            AccessibilityNodeManager.CreateNativeNodeWithData(nodeData);
+            CreateNativeNodeWithData(ref nodeData);
 
             m_Actions.listChanged += ActionsChanged;
             m_Children.listChanged += ChildrenChanged;
+        }
+
+        void CreateNativeNodeWithData(ref AccessibilityNodeData nodeData)
+        {
+            // Ignore unsupported platforms because AccessibilityNodeManager.CreateNativeNodeWithData returns false.
+            if (AccessibilityManager.isSupportedPlatform)
+            {
+                while (AccessibilityNodeManager.CreateNativeNodeWithData(nodeData) == false)
+                {
+                    Debug.LogWarning($"AccessibilityNode.CreateNativeNodeWithData: id '{nodeData.id}' is already used");
+
+                    nodeData.id++;
+                }
+            }
+
+            id = nodeData.id;
         }
 
         internal void AllocateNative()
@@ -171,8 +186,7 @@ namespace UnityEngine.Accessibility
                 implementsSelected = selected != null,
             };
 
-            // TODO: A11Y-364 Properly handle unsuccessful native node creation
-            AccessibilityNodeManager.CreateNativeNodeWithData(nodeData);
+            CreateNativeNodeWithData(ref nodeData);
 
             ActionsChanged();
             m_Actions.listChanged += ActionsChanged;
@@ -209,7 +223,7 @@ namespace UnityEngine.Accessibility
         /// <summary>
         /// The ID of this node.
         /// </summary>
-        public int id { get; }
+        public int id { get; private set; }
 
         /// <summary>
         /// A string value that succinctly describes this node.
@@ -280,7 +294,7 @@ namespace UnityEngine.Accessibility
         }
 
         /// <summary>
-        /// Whether this node is active in the hierarchy.
+        /// Whether this node is active in the hierarchy. The default value is @@true@@.
         /// </summary>
         /// <remarks>Non active nodes are ignored by the screen reader.</remarks>
         public bool isActive
@@ -440,8 +454,9 @@ namespace UnityEngine.Accessibility
         }
 
         /// <summary>
-        /// The <see cref="Rect"/> representing the position of the node in the UI. Can be set directly but it is recommended
-        /// that <see cref="CalculateFrame"/> is set instead so that the value can be recalculated when necessary.
+        /// The <see cref="Rect"/> represents the position in screen coordinates of the node in the UI. This can be set
+        /// directly but it is recommended that <see cref="frameGetter"/> is set instead, so that the value can be
+        /// recalculated when necessary.
         /// </summary>
         /// <remarks>If <see cref="AccessibilityHierarchy.RefreshNodeFrames"/> is called, the value of the
         /// <see cref="frame"/> is set to <see cref="Rect.zero"/> if <see cref="frameGetter"/> is not set.</remarks>
@@ -538,7 +553,7 @@ namespace UnityEngine.Accessibility
         public event Action<AccessibilityNode, bool> focusChanged;
 
         /// <summary>
-        /// Called when the user of the screen reader selects this node. 
+        /// Called when the user of the screen reader selects this node.
         /// </summary>
         public event Func<bool> selected;
 

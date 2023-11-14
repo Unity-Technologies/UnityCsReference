@@ -20,7 +20,7 @@ namespace UnityEditor.Build.Profile
     /// native bindings for mapping migrated settings to backing profile.
     /// </summary>
     [InitializeOnLoad]
-    [VisibleToOtherModules]
+    [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
     internal sealed class BuildProfileContext : ScriptableObject
     {
         const string k_BuildProfileProviderAssetPath = "Library/BuildProfileContext.asset";
@@ -43,18 +43,30 @@ namespace UnityEditor.Build.Profile
         /// shared setting behaviour that is not compatible with the new build profile workflow. From the end users
         /// perspective Classic Platform and Build Profiles are different concepts.
         /// </remarks>
+        [VisibleToOtherModules]
         internal BuildProfile activeProfile
         {
-            get => m_ActiveProfile;
+            get
+            {
+                // Active Build profile may be deleted from the project.
+                if (m_ActiveProfile != null)
+                    return m_ActiveProfile;
+
+                m_ActiveProfile = null;
+                return null;
+            }
+
             set
             {
                 if (m_ActiveProfile == value)
                     return;
 
+                var prev = m_ActiveProfile;
                 if (value == null || value.platformBuildProfile == null)
                 {
                     m_ActiveProfile = null;
                     Save();
+                    activeProfileChanged?.Invoke(prev, m_ActiveProfile);
                     return;
                 }
 
@@ -67,8 +79,22 @@ namespace UnityEditor.Build.Profile
 
                 m_ActiveProfile = value;
                 Save();
+                activeProfileChanged?.Invoke(prev, m_ActiveProfile);
             }
         }
+
+        /// <summary>
+        /// Callback invoked when the active build profile has been changed to a new value.
+        /// </summary>
+        /// <see cref="activeProfile"/>
+        /// <remarks>
+        /// Callback passes a value to the previously active Build Profile. A <i>null</i> value
+        /// indicates there's no active profile (set or unset).
+        /// <code>
+        /// activeProfileChanged += (BuildProfile prev, BuildProfile cur) => {}
+        /// </code>
+        /// </remarks>
+        public event Action<BuildProfile, BuildProfile> activeProfileChanged;
 
         /// <summary>
         /// Stores metadata required for Build Profile window and legacy APIs
@@ -182,6 +208,52 @@ namespace UnityEditor.Build.Profile
             return false;
         }
 
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static bool IsClassicPlatformProfile(BuildProfile profile)
+        {
+            var key = (profile.moduleName, profile.subtarget);
+            if (instance.m_BuildModuleNameToClassicPlatformProfile.TryGetValue(key, out var classicProfile))
+            {
+                return classicProfile == profile;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// List of missing platforms modules that are not installed, don't have a classic platform profile,
+        /// and can be shown in the Build Settings window.
+        /// </summary>
+        /// <see cref="BuildPlayerWindow.ActiveBuildTargetsGUI"/>
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal List<(string, StandaloneBuildSubtarget)> GetMissingKnownPlatformModules()
+        {
+            var result = new List<(string, StandaloneBuildSubtarget)>();
+            var keys = BuildProfileModuleUtil.FindAllViewablePlatforms();
+            for (var index = 0; index < keys.Count; index++)
+            {
+                var key = keys[index];
+
+                if (m_BuildModuleNameToClassicPlatformProfile.ContainsKey(key))
+                    continue;
+
+                // Installed flag, as calculated by BuildPlatform
+                if (BuildProfileModuleUtil.IsModuleInstalled(key.Item1, key.Item2))
+                    continue;
+
+                // Some build targets are only compatible with specific OS,
+                // from BuildPlayerWindow.ActiveBuildTargetsGUI()
+                var iBuildTarget = ModuleManager.GetIBuildTarget(key.Item1);
+                if (iBuildTarget != null
+                    && !(iBuildTarget.BuildPlatformProperties?.CanBuildOnCurrentHostPlatform ?? true))
+                    continue;
+
+                result.Add(key);
+            }
+
+            return result;
+        }
+
         void OnDisable()
         {
             Save();
@@ -276,7 +348,7 @@ namespace UnityEditor.Build.Profile
                 return profile;
             }
 
-            // Platform profiles are stored in the ProjectSettings folder and not managed by the AssetDatabase.
+            // Platform profiles are not managed by the AssetDatabase.
             // We will manually handle serialization and deserialization of these objects.
             var buildProfile = BuildProfile.CreateInstance(target, subTarget);
             buildProfile.hideFlags = HideFlags.DontSave;

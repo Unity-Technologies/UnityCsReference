@@ -63,12 +63,18 @@ namespace UnityEngine.UIElements
         public class UxmlSerializedData : UIElements.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private string primaryColumnName;
-            [SerializeField] private StretchMode stretchMode;
-            [SerializeField] private bool reorderable;
-            [SerializeField] private bool resizable;
-            [SerializeField] private bool resizePreview;
-            [SerializeReference, UxmlObjectReference] private List<Column.UxmlSerializedData> columns;
+            [SerializeField] string primaryColumnName;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags primaryColumnName_UxmlAttributeFlags;
+            [SerializeField] StretchMode stretchMode;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags stretchMode_UxmlAttributeFlags;
+            [SerializeField] bool reorderable;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderable_UxmlAttributeFlags;
+            [SerializeField] bool resizable;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags resizable_UxmlAttributeFlags;
+            [SerializeField] bool resizePreview;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags resizePreview_UxmlAttributeFlags;
+            [SerializeReference, UxmlObjectReference] List<Column.UxmlSerializedData> columns;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags columns_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new Columns();
@@ -76,13 +82,18 @@ namespace UnityEngine.UIElements
             public override void Deserialize(object obj)
             {
                 var e = (Columns)obj;
-                e.primaryColumnName = primaryColumnName;
-                e.stretchMode = stretchMode;
-                e.reorderable = reorderable;
-                e.resizable = resizable;
-                e.resizePreview = resizePreview;
+                if (ShouldWriteAttributeValue(primaryColumnName_UxmlAttributeFlags))
+                    e.primaryColumnName = primaryColumnName;
+                if (ShouldWriteAttributeValue(stretchMode_UxmlAttributeFlags))
+                    e.stretchMode = stretchMode;
+                if (ShouldWriteAttributeValue(reorderable_UxmlAttributeFlags))
+                    e.reorderable = reorderable;
+                if (ShouldWriteAttributeValue(resizable_UxmlAttributeFlags))
+                    e.resizable = resizable;
+                if (ShouldWriteAttributeValue(resizePreview_UxmlAttributeFlags))
+                    e.resizePreview = resizePreview;
 
-                if (columns != null)
+                if (ShouldWriteAttributeValue(columns_UxmlAttributeFlags) && columns != null)
                 {
                     foreach (var columnData in columns)
                     {

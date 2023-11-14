@@ -41,7 +41,8 @@ namespace UnityEditor.UIElements
     public static class EditorMenuExtensions
     {
         const int k_SearchFieldTextLimit = 1024;
-        const float k_MaxMenuWidth = 512.0f;
+        // Used for tests
+        internal const float k_MaxMenuWidth = 512.0f;
         internal const float k_SubmenuExpandDelay = 0.35f;
         internal const string k_SearchShortcutId = "Main Menu/Edit/Find";
 
@@ -374,7 +375,18 @@ namespace UnityEditor.UIElements
             search.textInputField.maxLength = k_SearchFieldTextLimit;
 
             search.AddToClassList(searchUssClassName);
-            search.style.maxWidth = k_MaxMenuWidth;
+
+            // Limit width to avoid stretching the menu too much
+            search.RegisterCallback<GeometryChangedEvent>((evt) =>
+            {
+                if (evt.newRect.width > k_MaxMenuWidth)
+                    search.style.width = k_MaxMenuWidth;
+            });
+            // Reset to default width when leaving the menu.
+            search.RegisterCallback<DetachFromPanelEvent>(_ =>
+                search.style.width = new StyleLength(StyleKeyword.Initial)
+            );
+
             search.RegisterValueChangedCallback(e =>
             {
                 string ClearHighlighting(string text)

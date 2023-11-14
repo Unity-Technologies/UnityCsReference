@@ -8,6 +8,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Profile
 {
+    [CustomEditor(typeof(BuildProfile))]
     internal class BuildProfileEditor : Editor
     {
         const string k_Uxml = "BuildProfile/UXML/BuildProfileEditor.uxml";
@@ -26,37 +27,34 @@ namespace UnityEditor.Build.Profile
             visualTree.CloneTree(root);
             root.styleSheets.Add(windowUss);
 
-            var noModuleFoundHelpbox = root.Q<HelpBox>("platform-warning-help-box");
+            var noModuleFoundHelpBox = root.Q<HelpBox>("platform-warning-help-box");
             var buildSettingsLabel = root.Q<Label>("build-settings-label");
             var platformSettingsBaseRoot = root.Q<VisualElement>("platform-settings-base-root");
             var buildDataLabel = root.Q<Label>("build-data-label");
-            var sharedSettingsInfoHelpbox = root.Q<HelpBox>("shared-settings-info-helpbox");
+            var sharedSettingsInfoHelpBox = root.Q<HelpBox>("shared-settings-info-helpbox");
 
             buildSettingsLabel.text = TrText.buildSettings;
             buildDataLabel.text = TrText.buildData;
-            sharedSettingsInfoHelpbox.text = TrText.sharedSettingsInfo;
+            sharedSettingsInfoHelpBox.text = TrText.sharedSettingsInfo;
 
-            if (BuildProfileModuleUtil.IsModuleInstalled(profile.buildTarget, profile.subtarget))
-            {
-                noModuleFoundHelpbox.style.display = DisplayStyle.None;
-                var platformProperties = serializedObject.FindProperty(k_PlatformSettingPropertyName);
-                var platformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.buildTarget);
-                if (platformExtension != null)
-                {
-                    var settings = platformExtension.CreateSettingsGUI(serializedObject, platformProperties);
-                    settings.AddToClassList(Util.k_PY_MediumUssClass);
-                    platformSettingsBaseRoot.Add(settings);
-                }
-            }
-            else
-            {
-                noModuleFoundHelpbox.text = string.Empty;
-                noModuleFoundHelpbox.Add(
-                    BuildProfileModuleUtil.CreateModuleNotInstalledElement(profile.buildTarget, profile.subtarget));
-                noModuleFoundHelpbox.style.display = DisplayStyle.Flex;
-            }
+            bool hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, profile.moduleName, profile.subtarget);
+            if (hasErrors)
+                return root;
 
+            ShowPlatformSettings(profile, platformSettingsBaseRoot);
             return root;
+        }
+
+        void ShowPlatformSettings(BuildProfile profile, VisualElement platformSettingsBaseRoot)
+        {
+            var platformProperties = serializedObject.FindProperty(k_PlatformSettingPropertyName);
+            var platformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.buildTarget);
+            if (platformExtension != null)
+            {
+                var settings = platformExtension.CreateSettingsGUI(serializedObject, platformProperties);
+                settings.AddToClassList(Util.k_PY_MediumUssClass);
+                platformSettingsBaseRoot.Add(settings);
+            }
         }
     }
 }

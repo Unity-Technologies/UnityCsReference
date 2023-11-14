@@ -172,6 +172,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
         // state for ray tracing shader dispatches
         public int m_RayTracingShaderInstanceID;
+        public bool m_RayTracingIndirectDispatch;
         public string m_RayTracingShaderName;
         public string m_RayTracingShaderPassName;
         public string m_RayTracingShaderRayGenShaderName;

@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -14,14 +14,17 @@ namespace UnityEditor.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<Object>.UxmlSerializedData
         {
-#pragma warning disable 649
+            #pragma warning disable 649
             [SerializeField] bool allowSceneObjects;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowSceneObjects_UxmlAttributeFlags;
             [UxmlAttribute("type"), UxmlTypeReference(typeof(Object))]
             [SerializeField] string objectType;
-
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags objectType_UxmlAttributeFlags;
             [SerializeField] string title;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags title_UxmlAttributeFlags;
             [SerializeField] string message;
-#pragma warning restore 649
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags message_UxmlAttributeFlags;
+            #pragma warning restore 649
             public override object CreateInstance() => new ObjectFieldWithPrompt();
 
             public override void Deserialize(object obj)
@@ -29,11 +32,14 @@ namespace UnityEditor.UIElements
                 base.Deserialize(obj);
 
                 var e = (ObjectFieldWithPrompt)obj;
-                e.allowSceneObjects = allowSceneObjects;
-                e.objectType = UxmlUtility.ParseType(objectType, typeof(Object));
-
-                e.title = title;
-                e.message = message;
+                if (ShouldWriteAttributeValue(allowSceneObjects_UxmlAttributeFlags))
+                    e.allowSceneObjects = allowSceneObjects;
+                if (ShouldWriteAttributeValue(objectType_UxmlAttributeFlags))
+                    e.objectType = UxmlUtility.ParseType(objectType, typeof(Object));
+                if (ShouldWriteAttributeValue(title_UxmlAttributeFlags))
+                    e.title = title;
+                if (ShouldWriteAttributeValue(message_UxmlAttributeFlags))
+                    e.message = message;
             }
         }
 

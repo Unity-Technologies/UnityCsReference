@@ -291,6 +291,7 @@ namespace Unity.UI.Builder
                     if (attributeDescription != null)
                     {
                         attributeDescription.SetSerializedValue(vea.serializedData, newValue);
+                        attributeDescription.SetSerializedValueAttributeFlags(vea.serializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
                         vea.SetAttribute(uxmlAttributeName, newValue);
                     }
                 }

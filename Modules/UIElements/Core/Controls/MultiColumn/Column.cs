@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Internal;
 
@@ -80,19 +79,32 @@ namespace UnityEngine.UIElements
         public class UxmlSerializedData : UIElements.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private string name;
-            [SerializeField] private string title;
-            [SerializeField] private bool visible;
-            [SerializeField] private Length width;
-            [SerializeField] private Length minWidth;
-            [SerializeField] private Length maxWidth;
-            [SerializeField] private bool stretchable;
-            [SerializeField] private bool sortable;
-            [SerializeField] private bool optional;
-            [SerializeField] private bool resizable;
-            [SerializeField] private VisualTreeAsset headerTemplate;
-            [SerializeField] private VisualTreeAsset cellTemplate;
-            [SerializeField] private string bindingPath;
+            [SerializeField] string name;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags name_UxmlAttributeFlags;
+            [SerializeField] string title;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags title_UxmlAttributeFlags;
+            [SerializeField] bool visible;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags visible_UxmlAttributeFlags;
+            [SerializeField] Length width;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags width_UxmlAttributeFlags;
+            [SerializeField] Length minWidth;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags minWidth_UxmlAttributeFlags;
+            [SerializeField] Length maxWidth;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maxWidth_UxmlAttributeFlags;
+            [SerializeField] bool stretchable;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags stretchable_UxmlAttributeFlags;
+            [SerializeField] bool sortable;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortable_UxmlAttributeFlags;
+            [SerializeField] bool optional;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags optional_UxmlAttributeFlags;
+            [SerializeField] bool resizable;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags resizable_UxmlAttributeFlags;
+            [SerializeField] VisualTreeAsset headerTemplate;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags headerTemplate_UxmlAttributeFlags;
+            [SerializeField] VisualTreeAsset cellTemplate;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags cellTemplate_UxmlAttributeFlags;
+            [SerializeField] string bindingPath;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindingPath_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new Column();
@@ -100,21 +112,31 @@ namespace UnityEngine.UIElements
             public override void Deserialize(object obj)
             {
                 var e = (Column)obj;
-                e.name = name;
-                e.title = title;
-                e.visible = visible;
-                e.width = width;
-                e.minWidth = minWidth;
-                e.maxWidth = maxWidth;
-                e.sortable = sortable;
-                e.stretchable = stretchable;
-                e.optional = optional;
-                e.resizable = resizable;
-                e.bindingPath = bindingPath;
-
-                if (headerTemplate != null)
+                if (ShouldWriteAttributeValue(name_UxmlAttributeFlags))
+                    e.name = name;
+                if (ShouldWriteAttributeValue(title_UxmlAttributeFlags))
+                    e.title = title;
+                if (ShouldWriteAttributeValue(visible_UxmlAttributeFlags))
+                    e.visible = visible;
+                if (ShouldWriteAttributeValue(width_UxmlAttributeFlags))
+                    e.width = width;
+                if (ShouldWriteAttributeValue(minWidth_UxmlAttributeFlags))
+                    e.minWidth = minWidth;
+                if (ShouldWriteAttributeValue(maxWidth_UxmlAttributeFlags))
+                    e.maxWidth = maxWidth;
+                if (ShouldWriteAttributeValue(sortable_UxmlAttributeFlags))
+                    e.sortable = sortable;
+                if (ShouldWriteAttributeValue(stretchable_UxmlAttributeFlags))
+                    e.stretchable = stretchable;
+                if (ShouldWriteAttributeValue(optional_UxmlAttributeFlags))
+                    e.optional = optional;
+                if (ShouldWriteAttributeValue(resizable_UxmlAttributeFlags))
+                    e.resizable = resizable;
+                if (ShouldWriteAttributeValue(bindingPath_UxmlAttributeFlags))
+                    e.bindingPath = bindingPath;
+                if (ShouldWriteAttributeValue(headerTemplate_UxmlAttributeFlags) && headerTemplate != null)
                     e.makeHeader = () => headerTemplate.Instantiate();
-                if (cellTemplate != null)
+                if (ShouldWriteAttributeValue(cellTemplate_UxmlAttributeFlags) && cellTemplate != null)
                     e.makeCell = () => cellTemplate.Instantiate();
             }
         }

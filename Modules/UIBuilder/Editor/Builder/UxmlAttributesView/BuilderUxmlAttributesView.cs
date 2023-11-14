@@ -266,7 +266,10 @@ namespace Unity.UI.Builder
                 var lengthProperty = stateProperty.FindPropertyRelative("m_Length");
                 var length = lengthProperty.intValue;
 
-                var buttonCount = group.Query<Button>().ToList().Count;
+                var valueFlagsField = m_CurrentElementSerializedObject.FindProperty(stateProperty.propertyPath + UxmlSerializedData.AttributeFlagSuffix);
+                valueFlagsField.intValue = (int)UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml;
+
+                var buttonCount = group.Query<Button>().Build().GetCount();
                 if (buttonCount != length && buttonCount < ToggleButtonGroupState.maxLength)
                 {
                     var value = group.value;
@@ -320,16 +323,19 @@ namespace Unity.UI.Builder
                     {
                         if (m_CurrentUxmlElement.serializedData == null)
                         {
-                            m_CurrentUxmlElement.serializedData = m_SerializedDataDescription.CreateSerializedData();
+                            m_CurrentUxmlElement.serializedData = m_SerializedDataDescription.CreateDefaultSerializedData();
                             m_CurrentUxmlElement.serializedData.uxmlAssetId = m_CurrentUxmlElement.id;
-                            m_SerializedDataDescription.SyncSerializedData(m_CurrentElement, m_CurrentUxmlElement.serializedData);
                         }
                         else
                         {
                             // We treat the serialized data as the source of truth.
                             // There are times when we may need to resync, such as when an undo/redo was performed.
+                            m_SerializedDataDescription.SyncDefaultValues(m_CurrentUxmlElement.serializedData, false);
                             CallDeserializeOnElement();
                         }
+
+                        // We need to sync the serialized data with the current element including the default values so they can be edited.
+                        m_SerializedDataDescription.SyncSerializedData(m_CurrentElement, m_CurrentUxmlElement.serializedData);
 
                         m_UxmlDocument.hideFlags = HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
 
@@ -1028,8 +1034,8 @@ namespace Unity.UI.Builder
 
             var undoGroup = GetCurrentUndoGroup();
             Undo.IncrementCurrentGroup();
-            CallDeserializeOnElement();
             SynchronizePath(propertyPath, true);
+            CallDeserializeOnElement();
             NotifyAttributesChanged();
             Undo.CollapseUndoOperations(undoGroup);
         }
@@ -1137,6 +1143,11 @@ namespace Unity.UI.Builder
             var fieldElement = GetRootFieldElement(propertyField);
             fieldElement.TrackPropertyValue(multipleProperty, p =>
             {
+                var multiplePropertyFlagsField = m_CurrentElementSerializedObject.FindProperty(p.propertyPath + UxmlSerializedData.AttributeFlagSuffix);
+                multiplePropertyFlagsField.intValue = (int)UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml;
+                var valueFlagsField = m_CurrentElementSerializedObject.FindProperty(valueProperty.propertyPath + UxmlSerializedData.AttributeFlagSuffix);
+                valueFlagsField.intValue = (int)UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml;
+
                 groupField.isMultipleSelection = p.boolValue;
                 groupElement.isMultipleSelection = p.boolValue;
                 valueProperty.structValue = groupField.value;
@@ -1148,6 +1159,11 @@ namespace Unity.UI.Builder
             });
             fieldElement.TrackPropertyValue(allowEmptyProperty, p =>
             {
+                var allowEmptyPropertyFlagsField = m_CurrentElementSerializedObject.FindProperty(p.propertyPath + UxmlSerializedData.AttributeFlagSuffix);
+                allowEmptyPropertyFlagsField.intValue = (int)UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml;
+                var valueFlagsField = m_CurrentElementSerializedObject.FindProperty(valueProperty.propertyPath + UxmlSerializedData.AttributeFlagSuffix);
+                valueFlagsField.intValue = (int)UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml;
+
                 groupField.allowEmptySelection = p.boolValue;
                 groupElement.allowEmptySelection = p.boolValue;
                 valueProperty.structValue = groupField.value;
@@ -1317,7 +1333,8 @@ namespace Unity.UI.Builder
 
                 result.attributeDescription.TryGetValueFromObject(result.attributeOwner, out result.attributeOwner);
 
-                currentUxmlSerializedData = result.attributeDescription.GetSerializedValue(currentUxmlSerializedData);
+                var parentUxmlSerializedData = currentUxmlSerializedData as UxmlSerializedData;
+                currentUxmlSerializedData = result.attributeDescription.GetSerializedValue(parentUxmlSerializedData);
                 var uxmlSerializedDataList = currentUxmlSerializedData as IList;
 
                 // If we are not syncing a list then its a single field but we still treat it as a list.
@@ -1327,7 +1344,7 @@ namespace Unity.UI.Builder
                     uxmlSerializedDataList = s_SingleUxmlSerializedData;
                 }
 
-                if (!SyncUxmlAssetsFromSerializedData(uxmlSerializedDataList, currentAttributesUxmlOwner, attributeObjectDescription, changeUxmlAssets))
+                if (!SyncUxmlAssetsFromSerializedData(uxmlSerializedDataList, parentUxmlSerializedData, currentAttributesUxmlOwner, attributeObjectDescription, changeUxmlAssets))
                 {
                     if (!changeUxmlAssets)
                     {
@@ -1352,7 +1369,7 @@ namespace Unity.UI.Builder
             return result;
         }
 
-        bool SyncUxmlAssetsFromSerializedData(IList uxmlSerializedData, UxmlAsset parentAsset,
+        bool SyncUxmlAssetsFromSerializedData(IList uxmlSerializedData, UxmlSerializedData parentUxmlSerialized, UxmlAsset parentAsset,
             UxmlSerializedUxmlObjectAttributeDescription attributeDescription, bool canMakeChanges)
         {
             bool contentsChanged = false;
@@ -1376,8 +1393,8 @@ namespace Unity.UI.Builder
                 }
 
                 // Find matching UxmlObjectAsset
-                if (!ExtractOrCreateUxmlSerializedDataUxmlAsset(currentSerializedData, parentAsset, attributeDescription,
-                    canMakeChanges, collectedUxmlAssets, out var foundUxmlAsset, j))
+                if (!ExtractOrCreateUxmlSerializedDataUxmlAsset(currentSerializedData, parentUxmlSerialized, parentAsset,
+                    attributeDescription, canMakeChanges, collectedUxmlAssets, out var foundUxmlAsset, j))
                 {
                     if (!canMakeChanges)
                         return false;
@@ -1407,8 +1424,8 @@ namespace Unity.UI.Builder
             return true;
         }
 
-        bool ExtractOrCreateUxmlSerializedDataUxmlAsset(UxmlSerializedData uxmlSerializedData, UxmlAsset parentAsset,
-            UxmlSerializedUxmlObjectAttributeDescription attributeDescription, bool canMakeChanges,
+        bool ExtractOrCreateUxmlSerializedDataUxmlAsset(UxmlSerializedData uxmlSerializedData, UxmlSerializedData parentUxmlSerialized,
+            UxmlAsset parentAsset, UxmlSerializedUxmlObjectAttributeDescription attributeDescription, bool canMakeChanges,
             List<UxmlObjectAsset> uxmlObjectAssets, out UxmlObjectAsset uxmlAsset, int expectedIndex)
         {
             // If the asset id is 0 then we do not currently have a UxmlAsset for this serialized data
@@ -1461,6 +1478,8 @@ namespace Unity.UI.Builder
 
             RecordDocumentUndoOnce();
 
+            attributeDescription.SetSerializedValueAttributeFlags(parentUxmlSerialized, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+
             // We could not find the asset so we need to create a new one.
             uxmlAsset = CreateUxmlObjectAsset(attributeDescription, uxmlSerializedData, parentAsset);
 
@@ -1478,11 +1497,14 @@ namespace Unity.UI.Builder
                 return;
 
             var description = UxmlSerializedDataRegistry.GetDescription(uxmlSerializedData.GetType().DeclaringType.FullName);
+            bool madeChanges = false;
             foreach (var attribute in description.serializedAttributes)
             {
                 if (attribute.isUxmlObject)
                 {
+                    madeChanges = true;
                     var attributeUxmlObjectDescription = attribute as UxmlSerializedUxmlObjectAttributeDescription;
+                    attribute.SetSerializedValueAttributeFlags(uxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
                     if (attribute.isList)
                     {
                         // Extract the serialized data list
@@ -1503,6 +1525,9 @@ namespace Unity.UI.Builder
                     var attributeValue = attribute.GetSerializedValue(uxmlSerializedData);
                     if (!UxmlAttributeComparison.ObjectEquals(attributeValue, attribute.defaultValue))
                     {
+                        madeChanges = true;
+                        attribute.SetSerializedValueAttributeFlags(uxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+
                         if (attributeValue == null || !UxmlAttributeConverter.TryConvertToString(attributeValue, m_UxmlDocument, out var stringValue))
                             stringValue = attributeValue?.ToString();
 
@@ -1513,6 +1538,9 @@ namespace Unity.UI.Builder
                     }
                 }
             }
+
+            if (madeChanges)
+                m_CurrentElementSerializedObject.UpdateIfRequiredOrScript();
         }
 
         UxmlObjectAsset CreateUxmlObjectAsset(UxmlSerializedUxmlObjectAttributeDescription attribute, UxmlSerializedData serializedData, UxmlAsset parentAsset)
@@ -1614,6 +1642,8 @@ namespace Unity.UI.Builder
                         }
                     }
 
+                    // Apply the attribute flags before we CallDeserializeOnElement 
+                    description.SetSerializedValueAttributeFlags(currentUxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
                     changesToProcess.Add((currentAttributeUxmlOwner, fieldElement, newValue, currentUxmlSerializedData));
                 }
             }
@@ -2014,7 +2044,7 @@ namespace Unity.UI.Builder
             {
                 var desc = attribute as UxmlSerializedAttributeDescription;
 
-                desc.SetSerializedValue(uxmlSerializedData, desc.defaultValueClone);
+                desc.SyncDefaultValue(uxmlSerializedData, true);
                 m_CurrentElementSerializedObject.UpdateIfRequiredOrScript();
                 CallDeserializeOnElement();
 
@@ -2288,14 +2318,14 @@ namespace Unity.UI.Builder
             return factories[0].GetTraits() as UxmlTraits;
         }
 
-        protected virtual void CallDeserializeOnElement()
+        public virtual void CallDeserializeOnElement()
         {
             if (currentFieldSource == AttributeFieldSource.UxmlTraits || uxmlSerializedData == null)
                 return;
 
             // We need to clear bindings before calling Init to avoid corrupting the data source.
             BuilderBindingUtility.ClearUxmlBindings(m_CurrentElement);
-            uxmlSerializedData.Deserialize(m_CurrentElement);
+            uxmlSerializedData.Deserialize(m_CurrentElement, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml | UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
         }
 
         internal void CallInitOnElement()
@@ -2371,7 +2401,7 @@ namespace Unity.UI.Builder
                 }
 
                 result.uxmlAsset.RemoveAttribute(result.attributeDescription.name);
-                result.attributeDescription.SetSerializedValue(result.serializedData, result.attributeDescription.defaultValue);
+                result.attributeDescription.SyncDefaultValue(result.serializedData, true);
                 CallDeserializeOnElement();
 
                 UnsetEnumValue(result.attributeDescription.name, removeBinding);
@@ -2399,7 +2429,7 @@ namespace Unity.UI.Builder
             else
             {
                 result.uxmlAsset.RemoveAttribute(result.attributeDescription.name);
-                result.attributeDescription.SetSerializedValue(result.serializedData, result.attributeDescription.defaultValue);
+                result.attributeDescription.SyncDefaultValue(result.serializedData, true);
                 CallDeserializeOnElement();
 
                 UnsetEnumValue(result.attributeDescription.name, removeBinding);
@@ -2452,7 +2482,7 @@ namespace Unity.UI.Builder
 
                     currentAttributesUxmlOwner.RemoveAttribute(attributeName);
                     var description = fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
-                    description.SetSerializedValue(currentSerializedData, description.defaultValue);
+                    description.SyncDefaultValue(currentSerializedData, true);
                     CallDeserializeOnElement();
                 }
 

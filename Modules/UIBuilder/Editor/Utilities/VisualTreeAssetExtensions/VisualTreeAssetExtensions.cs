@@ -34,7 +34,7 @@ namespace Unity.UI.Builder
             var newTreeAsset = VisualTreeAssetUtilities.CreateInstance();
 
             if (syncSerializedData)
-                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(vta));
+                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(vta), true);
             vta.DeepOverwrite(newTreeAsset);
 
             return newTreeAsset;

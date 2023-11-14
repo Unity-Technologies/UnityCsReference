@@ -8,7 +8,6 @@ namespace UnityEditor.PackageManager
     {
         Pending,
         Downloading,
-        Caching,
         Installing,
         Ready,
         Error

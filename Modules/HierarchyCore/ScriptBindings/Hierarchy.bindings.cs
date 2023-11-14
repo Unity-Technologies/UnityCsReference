@@ -36,6 +36,9 @@ namespace Unity.Hierarchy
         [FreeFunction("HierarchyBindings::Destroy")]
         static extern void Internal_Destroy(IntPtr ptr);
 
+        [FreeFunction("HierarchyBindings::BindScriptingObject", HasExplicitThis = true)]
+        extern void Internal_BindScriptingObject([Unmarshalled] Hierarchy self);
+
         /// <summary>
         /// Whether or not this object is valid and uses memory.
         /// </summary>
@@ -82,6 +85,7 @@ namespace Unity.Hierarchy
         public Hierarchy()
         {
             m_Ptr = Internal_Create();
+            Internal_BindScriptingObject(this);
         }
 
         ~Hierarchy()
@@ -191,29 +195,11 @@ namespace Unity.Hierarchy
         public extern int GetDepth(in HierarchyNode node);
 
         /// <summary>
-        /// Adds a new node that has <see cref="Root"/> as its parent to the hierarchy.
-        /// </summary>
-        /// <returns>A hierarchy node.</returns>
-        public HierarchyNode Add() => AddNode();
-
-        /// <summary>
         /// Adds a new node that has a specified parent node to the hierarchy.
         /// </summary>
         /// <param name="parent">The parent of the hierarchy node to add.</param>
         /// <returns>A hierarchy node.</returns>
-        public HierarchyNode Add(in HierarchyNode parent) => AddNodeWithParent(in parent);
-
-        /// <summary>
-        /// Adds multiple nodes that have <see cref="Root"/> as their parent to the hierarchy.
-        /// </summary>
-        /// <param name="count">The number of nodes to create.</param>
-        /// <returns>An array of hierarchy nodes.</returns>
-        public HierarchyNode[] Add(int count)
-        {
-            var nodes = new HierarchyNode[count];
-            AddNodeSpan(nodes);
-            return nodes;
-        }
+        public HierarchyNode Add(in HierarchyNode parent) => AddNode(in parent);
 
         /// <summary>
         /// Adds multiple new nodes that have a specified parent node to the hierarchy.
@@ -224,22 +210,16 @@ namespace Unity.Hierarchy
         public HierarchyNode[] Add(in HierarchyNode parent, int count)
         {
             var nodes = new HierarchyNode[count];
-            AddNodeSpanWithParent(in parent, nodes);
+            AddNodeSpan(in parent, nodes);
             return nodes;
         }
-
-        /// <summary>
-        /// Adds multiple nodes that have <see cref="Root"/> as their parent to the hierarchy.
-        /// </summary>
-        /// <param name="outNodes">The span of nodes to fill with new nodes.</param>
-        public void Add(Span<HierarchyNode> outNodes) => AddNodeSpan(outNodes);
 
         /// <summary>
         /// Adds multiple new nodes that have a specified parent node to the hierarchy.
         /// </summary>
         /// <param name="parent">The parent of the hierarchy nodes.</param>
         /// <param name="outNodes">The span of nodes to fill with new nodes.</param>
-        public void Add(in HierarchyNode parent, Span<HierarchyNode> outNodes) => AddNodeSpanWithParent(in parent, outNodes);
+        public void Add(in HierarchyNode parent, Span<HierarchyNode> outNodes) => AddNodeSpan(in parent, outNodes);
 
         /// <summary>
         /// Removes a node from the hierarchy.
@@ -311,7 +291,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>An enumerable of hierarchy node children.</returns>
-        public HierarchyNodeChildren EnumerateChildren(in HierarchyNode node) => new HierarchyNodeChildren(this, GetVersion(), EnumerateChildrenPtr(in node));
+        public HierarchyNodeChildren EnumerateChildren(in HierarchyNode node) => new HierarchyNodeChildren(this, EnumerateChildrenPtr(in node));
 
         /// <summary>
         /// Gets the number of child nodes that a hierarchy node has.
@@ -462,16 +442,10 @@ namespace Unity.Hierarchy
         extern HierarchyNodeType GetNodeTypeFromType(Type type);
 
         [NativeThrows, FreeFunction("HierarchyBindings::AddNode", HasExplicitThis = true)]
-        extern HierarchyNode AddNode();
-
-        [NativeThrows, FreeFunction("HierarchyBindings::AddNodeWithParent", HasExplicitThis = true)]
-        extern HierarchyNode AddNodeWithParent(in HierarchyNode parent);
+        extern HierarchyNode AddNode(in HierarchyNode parent);
 
         [NativeThrows, FreeFunction("HierarchyBindings::AddNodeSpan", HasExplicitThis = true)]
-        extern void AddNodeSpan(Span<HierarchyNode> outNodes);
-
-        [NativeThrows, FreeFunction("HierarchyBindings::AddNodeSpanWithParent", HasExplicitThis = true)]
-        extern void AddNodeSpanWithParent(in HierarchyNode parent, Span<HierarchyNode> nodes);
+        extern void AddNodeSpan(in HierarchyNode parent, Span<HierarchyNode> nodes);
 
         [NativeThrows, FreeFunction("HierarchyBindings::GetNodeChildrenSpan", HasExplicitThis = true)]
         extern int GetNodeChildrenSpan(in HierarchyNode node, Span<HierarchyNode> outChildren);

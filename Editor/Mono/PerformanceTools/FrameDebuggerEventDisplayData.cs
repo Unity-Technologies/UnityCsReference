@@ -775,6 +775,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
             m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Max. Recursion Depth", rayTracingMaxRecursionDepth).AppendLine();
             m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Dispatch Size", rayTracingDispatchSize).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Indirect Call", curEventData.m_RayTracingIndirectDispatch ? "Yes" : "No").AppendLine();
             m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Accel. Structure", rayTracingAccelerationStructure).AppendLine();
             m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Miss Shader Count", rayTracingMissShaderCount).AppendLine();
             m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Callable Shader Count", rayTracingCallableShaderCount).AppendLine();

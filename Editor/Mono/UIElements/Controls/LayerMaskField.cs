@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -21,8 +20,10 @@ namespace UnityEditor.UIElements
             #pragma warning disable 649
             [UxmlAttribute("value")]
             [SerializeField] LayerMask layerMask;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags layerMask_UxmlAttributeFlags;
             [UxmlAttribute("choices")]
-            [SerializeField, HideInInspector] private List<string> layerChoices;
+            [SerializeField, HideInInspector] List<string> layerChoices;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags layerChoices_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new LayerMaskField();
@@ -32,8 +33,10 @@ namespace UnityEditor.UIElements
                 base.Deserialize(obj);
 
                 var e = (LayerMaskField)obj;
-                e.SetValueWithoutNotify(layerMask.value);
-                e.choices = layerChoices;
+                if (ShouldWriteAttributeValue(layerMask_UxmlAttributeFlags))
+                    e.SetValueWithoutNotify(layerMask.value);
+                if (ShouldWriteAttributeValue(layerChoices_UxmlAttributeFlags))
+                    e.layerChoices = layerChoices;
             }
         }
 

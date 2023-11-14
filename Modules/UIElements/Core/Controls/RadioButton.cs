@@ -15,7 +15,8 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BaseBoolField.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField, MultilineTextField] private string text;
+            [SerializeField, MultilineTextField] string text;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new RadioButton();
@@ -24,8 +25,11 @@ namespace UnityEngine.UIElements
             {
                 base.Deserialize(obj);
 
-                var e = (RadioButton)obj;
-                e.text = text;
+                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
+                {
+                    var e = (RadioButton)obj;
+                    e.text = text;
+                }
             }
         }
 

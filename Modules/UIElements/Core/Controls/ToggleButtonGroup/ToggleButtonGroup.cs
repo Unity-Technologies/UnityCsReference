@@ -28,8 +28,10 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BaseField<ToggleButtonGroupState>.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private bool isMultipleSelection;
-            [SerializeField] private bool allowEmptySelection;
+            [SerializeField] bool isMultipleSelection;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isMultipleSelection_UxmlAttributeFlags;
+            [SerializeField] bool allowEmptySelection;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowEmptySelection_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new ToggleButtonGroup();
@@ -39,8 +41,10 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (ToggleButtonGroup)obj;
-                e.isMultipleSelection = isMultipleSelection;
-                e.allowEmptySelection = allowEmptySelection;
+                if (ShouldWriteAttributeValue(isMultipleSelection_UxmlAttributeFlags))
+                    e.isMultipleSelection = isMultipleSelection;
+                if (ShouldWriteAttributeValue(allowEmptySelection_UxmlAttributeFlags))
+                    e.allowEmptySelection = allowEmptySelection;
             }
         }
 

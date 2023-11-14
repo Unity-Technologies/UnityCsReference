@@ -154,6 +154,7 @@ namespace UnityEditor.DeviceSimulation
         public bool supportsRayTracing;
         public bool supportsRayTracingShaders;
         public bool supportsInlineRayTracing;
+        public bool supportsIndirectDispatchRays;
         public bool supportsSetConstantBuffer;
         public bool hasMipMaxLevel;
         public bool supportsMipStreaming;

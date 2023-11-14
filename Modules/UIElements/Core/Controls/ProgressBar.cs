@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
-using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -49,10 +48,14 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private float lowValue;
-            [SerializeField] private float highValue;
-            [SerializeField] private float value;
-            [SerializeField] private string title;
+            [SerializeField] float lowValue;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowValue_UxmlAttributeFlags;
+            [SerializeField] float highValue;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highValue_UxmlAttributeFlags;
+            [SerializeField] float value;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
+            [SerializeField] string title;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags title_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override void Deserialize(object obj)
@@ -60,10 +63,14 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (AbstractProgressBar)obj;
-                e.lowValue = lowValue;
-                e.highValue = highValue;
-                e.value = value;
-                e.title = title;
+                if (ShouldWriteAttributeValue(lowValue_UxmlAttributeFlags))
+                    e.lowValue = lowValue;
+                if (ShouldWriteAttributeValue(highValue_UxmlAttributeFlags))
+                    e.highValue = highValue;
+                if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
+                    e.value = value;
+                if (ShouldWriteAttributeValue(title_UxmlAttributeFlags))
+                    e.title = title;
             }
         }
 

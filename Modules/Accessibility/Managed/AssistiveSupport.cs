@@ -11,6 +11,11 @@ namespace UnityEngine.Accessibility
     /// Access point to assistive technology support APIs.
     /// </summary>
     /// <remarks>
+    /// The currently supported platforms are:
+    ///
+    ///- <see cref="RuntimePlatform.Android"/>
+    ///- <see cref="RuntimePlatform.IPhonePlayer"/>
+    ///
     /// This class contains static methods that allow users to support assistive technologies in the operating
     /// system (for example, the screen reader).
     /// </remarks>
@@ -75,21 +80,25 @@ namespace UnityEngine.Accessibility
 
         /// <summary>
         /// Event that is invoked on the main thread when the screen reader focus changes.
+        /// <para>For all the supported platforms, refer to <see cref="AssistiveSupport"/>.</para>
         /// </summary>
         public static event Action<AccessibilityNode> nodeFocusChanged;
 
         /// <summary>
         /// Event that is invoked on the main thread when the screen reader is enabled or disabled.
+        /// <para>For all the supported platforms, refer to <see cref="AssistiveSupport"/>.</para>
         /// </summary>
         public static event Action<bool> screenReaderStatusChanged;
 
         /// <summary>
         /// Whether the screen reader is enabled on the operating system.
+        /// <para>For all the supported platforms, refer to <see cref="AssistiveSupport"/>.</para>
         /// </summary>
         public static bool isScreenReaderEnabled { get; private set; }
 
         /// <summary>
         /// Service used to send accessibility notifications to the screen reader.
+        /// <para>For all the supported platforms, refer to <see cref="AssistiveSupport"/>.</para>
         /// </summary>
         public static IAccessibilityNotificationDispatcher notificationDispatcher { get; } = new NotificationDispatcher();
 
@@ -142,12 +151,19 @@ namespace UnityEngine.Accessibility
 
         /// <summary>
         /// The active AccessibilityHierarchy for the screen reader. May be @@null@@ if no hierarchy is active.
+        /// <para>You need an active accessibility hierarchy to present any content to the user through the screen reader.</para>
+        /// <para>If the screen reader is off, there is no active hierarchy. If the screen reader is turned off on the device 
+        /// while an active hierarchy is set, the active hierarchy is automatically set to @@null@@.</para>
+        /// <para>For all the supported platforms, refer to <see cref="AssistiveSupport"/>.</para>
         /// </summary>
         /// <remarks>
         /// Throws @@PlatformNotSupportedException@@ if the screen reader support is not implemented for the
-        /// platform and the code is not running in the Unity Editor. Currently supported platforms are:
-        /// <list type="bullet"><item><see cref="RuntimePlatform.Android"/></item>
-        /// <item><see cref="RuntimePlatform.IPhonePlayer"/></item></list>
+        /// platform and the code is not running in the Unity Editor.
+        /// </remarks>
+        /// <remarks>
+        /// When the active hierarchy is assigned, a notification is sent to the operating system that the screen changed 
+        /// considerably. The notification is sent by calling <see 
+        /// cref="IAccessibilityNotificationDispatcher.SendScreenChanged"/> (with a @@null@@ parameter).
         /// </remarks>
         public static AccessibilityHierarchy activeHierarchy
         {
@@ -189,7 +205,9 @@ namespace UnityEngine.Accessibility
 
         static void CheckPlatformSupported()
         {
-            if (!Application.isEditor && Application.platform is not (RuntimePlatform.Android or RuntimePlatform.IPhonePlayer))
+            // We accept Editor platform even though it is not actually supported yet in order to be able to debug
+            // Accessibility hierarchy using the Accessibility Hierarchy Viewer.
+            if (!Application.isEditor && !AccessibilityManager.isSupportedPlatform)
             {
                 throw new PlatformNotSupportedException($"This API is not supported for platform {Application.platform}");
             }

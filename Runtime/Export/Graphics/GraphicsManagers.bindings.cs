@@ -306,6 +306,21 @@ namespace UnityEngine
                     uniqueRenderPipelineAssets.Add(rpAsset);
             }
         }
+        
+        public static void GetRenderPipelineAssetsForPlatform<T>(string buildTargetGroupName, out HashSet<T> uniqueRenderPipelineAssets, out bool allLevelsAreOverridden)
+            where T : RenderPipelineAsset
+        {
+            allLevelsAreOverridden = true;
+            var scriptableObjects = InternalGetRenderPipelineAssetsForPlatform(buildTargetGroupName);
+            uniqueRenderPipelineAssets = new HashSet<T>(scriptableObjects.Length);
+            for (int i = 0; i < scriptableObjects.Length; ++i)
+            {
+                if (scriptableObjects[i] is T rpAsset)
+                    uniqueRenderPipelineAssets.Add(rpAsset);
+                else
+                    allLevelsAreOverridden = false;
+            }
+        }
 
         public static void GetAllRenderPipelineAssetsForPlatform(string buildTargetGroupName, ref List<RenderPipelineAsset> renderPipelineAssets)
         {

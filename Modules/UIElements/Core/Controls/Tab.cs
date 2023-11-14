@@ -26,10 +26,13 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField, MultilineTextField] private string label;
+            [SerializeField, MultilineTextField] string label;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
             [ImageFieldValueDecorator]
-            [SerializeField, UxmlAttribute("icon-image")] private Object iconImageReference;
-            [SerializeField] private bool closeable;
+            [SerializeField, UxmlAttribute("icon-image")] Object iconImageReference;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags iconImageReference_UxmlAttributeFlags;
+            [SerializeField] bool closeable;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags closeable_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new Tab();
@@ -39,9 +42,12 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (Tab) obj;
-                e.label = label;
-                e.iconImageReference = iconImageReference;
-                e.closeable = closeable;
+                if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
+                    e.label = label;
+                if (ShouldWriteAttributeValue(iconImageReference_UxmlAttributeFlags))
+                    e.iconImageReference = iconImageReference;
+                if (ShouldWriteAttributeValue(closeable_UxmlAttributeFlags))
+                    e.closeable = closeable;
             }
         }
 

@@ -72,15 +72,19 @@ namespace UnityEngine.UIElements
         public new abstract class UxmlSerializedData : BaseVerticalCollectionView.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private bool autoExpand;
+            [SerializeField] bool autoExpand;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags autoExpand_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override void Deserialize(object obj)
             {
                 base.Deserialize(obj);
 
-                var e = (BaseTreeView)obj;
-                e.autoExpand = autoExpand;
+                if (ShouldWriteAttributeValue(autoExpand_UxmlAttributeFlags))
+                {
+                    var e = (BaseTreeView)obj;
+                    e.autoExpand = autoExpand;
+                }
             }
         }
 

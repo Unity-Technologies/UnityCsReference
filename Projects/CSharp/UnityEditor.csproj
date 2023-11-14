@@ -1517,6 +1517,9 @@
     <Compile Include="..\..\Editor\Mono\GameObjectUtility.bindings.cs">
       <Link>Editor\Mono\GameObjectUtility.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GameObjectUtility.deprecated.cs">
+      <Link>Editor\Mono\GameObjectUtility.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GameView\GameView.cs">
       <Link>Editor\Mono\GameView\GameView.cs</Link>
     </Compile>
@@ -1564,6 +1567,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Graphics\RenderPipelineGlobalSettingsPostprocessor.cs">
       <Link>Editor\Mono\Graphics\RenderPipelineGlobalSettingsPostprocessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Graphics\RenderPipelineGraphicsSettingsEditorUtility.cs">
+      <Link>Editor\Mono\Graphics\RenderPipelineGraphicsSettingsEditorUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Graphics\ShaderCompilerData.cs">
       <Link>Editor\Mono\Graphics\ShaderCompilerData.cs</Link>
@@ -2191,9 +2197,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\NavMeshAgentInspector.cs">
       <Link>Editor\Mono\Inspector\NavMeshAgentInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\NavMeshEditorHelpers.cs">
-      <Link>Editor\Mono\Inspector\NavMeshEditorHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\NavMeshObstacleInspector.cs">
       <Link>Editor\Mono\Inspector\NavMeshObstacleInspector.cs</Link>
@@ -4064,8 +4067,14 @@
     <Compile Include="..\..\External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs">
       <Link>External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\AIEditor\Builder\NavMeshBuilderEditor.bindings.cs">
-      <Link>Modules\AIEditor\Builder\NavMeshBuilderEditor.bindings.cs</Link>
+    <Compile Include="..\..\Modules\AIEditor\Builder\NavMeshBuilderEditor.deprecated.cs">
+      <Link>Modules\AIEditor\Builder\NavMeshBuilderEditor.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AIEditor\Utilities\NavMeshEditorHelpers.bindings.cs">
+      <Link>Modules\AIEditor\Utilities\NavMeshEditorHelpers.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AIEditor\Utilities\NavMeshEditorHelpers.cs">
+      <Link>Modules\AIEditor\Utilities\NavMeshEditorHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AIEditor\Visualization\NavMeshVisualizationSettings.bindings.cs">
       <Link>Modules\AIEditor\Visualization\NavMeshVisualizationSettings.bindings.cs</Link>
@@ -4325,8 +4334,20 @@
     <Compile Include="..\..\Modules\BuildProfileEditor\BuildProfileWindow.cs">
       <Link>Modules\BuildProfileEditor\BuildProfileWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Elements\BuildProfileCard.cs">
+      <Link>Modules\BuildProfileEditor\Elements\BuildProfileCard.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\Elements\BuildProfileListLabel.cs">
       <Link>Modules\BuildProfileEditor\Elements\BuildProfileListLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Elements\DropdownButton.cs">
+      <Link>Modules\BuildProfileEditor\Elements\DropdownButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Handlers\BuildProfileDataSource.cs">
+      <Link>Modules\BuildProfileEditor\Handlers\BuildProfileDataSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\PlatformDiscoveryWindow.cs">
+      <Link>Modules\BuildProfileEditor\PlatformDiscoveryWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\TrText.cs">
       <Link>Modules\BuildProfileEditor\TrText.cs</Link>
@@ -10718,7 +10739,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_d9e4/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_dc19/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

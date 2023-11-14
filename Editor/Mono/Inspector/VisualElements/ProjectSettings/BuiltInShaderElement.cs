@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -20,17 +20,17 @@ namespace UnityEditor.UIElements.ProjectSettings
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-#pragma warning disable 649
-            [SerializeField, UxmlAttribute("shader-mode")]
-            string shaderMode;
-            [SerializeField, UxmlAttribute("custom-shader")]
-            string customShader;
+            #pragma warning disable 649
+            [SerializeField, UxmlAttribute("shader-mode")] string shaderMode;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags shaderMode_UxmlAttributeFlags;
+            [SerializeField, UxmlAttribute("custom-shader")] string customShader;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags customShader_UxmlAttributeFlags;
+            [SerializeField, UxmlAttribute("shader-mode-label")] string shaderModeLabel;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags shaderModeLabel_UxmlAttributeFlags;
+            [SerializeField, UxmlAttribute("custom-shader-label")] string customShaderLabel;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags customShaderLabel_UxmlAttributeFlags;
+            #pragma warning restore 649
 
-            [SerializeField, UxmlAttribute("shader-mode-label")]
-            string shaderModeLabel;
-            [SerializeField, UxmlAttribute("custom-shader-label")]
-            string customShaderLabel;
-#pragma warning restore 649
             public override object CreateInstance() => new BuiltInShaderElement();
 
             public override void Deserialize(object obj)
@@ -38,10 +38,14 @@ namespace UnityEditor.UIElements.ProjectSettings
                 base.Deserialize(obj);
 
                 var e = (BuiltInShaderElement)obj;
-                e.shaderMode = shaderMode;
-                e.customShader = customShader;
-                e.shaderModeLabel = shaderModeLabel;
-                e.customShaderLabel = customShaderLabel;
+                if (ShouldWriteAttributeValue(shaderMode_UxmlAttributeFlags))
+                    e.shaderMode = shaderMode;
+                if (ShouldWriteAttributeValue(customShader_UxmlAttributeFlags))
+                    e.customShader = customShader;
+                if (ShouldWriteAttributeValue(shaderModeLabel_UxmlAttributeFlags))
+                    e.shaderModeLabel = shaderModeLabel;
+                if (ShouldWriteAttributeValue(customShaderLabel_UxmlAttributeFlags))
+                    e.customShaderLabel = customShaderLabel;
             }
         }
 

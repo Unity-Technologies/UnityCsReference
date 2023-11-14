@@ -22,9 +22,12 @@ namespace UnityEditor.UIElements
         public new class UxmlSerializedData : BaseField<Color>.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private bool showEyeDropper;
-            [SerializeField] private bool showAlpha;
-            [SerializeField] private bool hdr;
+            [SerializeField] bool showEyeDropper;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showEyeDropper_UxmlAttributeFlags;
+            [SerializeField] bool showAlpha;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showAlpha_UxmlAttributeFlags;
+            [SerializeField] bool hdr;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hdr_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new ColorField();
@@ -34,9 +37,12 @@ namespace UnityEditor.UIElements
                 base.Deserialize(obj);
 
                 var e = (ColorField)obj;
-                e.showEyeDropper = showEyeDropper;
-                e.showAlpha = showAlpha;
-                e.hdr = hdr;
+                if (ShouldWriteAttributeValue(showEyeDropper_UxmlAttributeFlags))
+                    e.showEyeDropper = showEyeDropper;
+                if (ShouldWriteAttributeValue(showAlpha_UxmlAttributeFlags))
+                    e.showAlpha = showAlpha;
+                if (ShouldWriteAttributeValue(hdr_UxmlAttributeFlags))
+                    e.hdr = hdr;
             }
         }
 

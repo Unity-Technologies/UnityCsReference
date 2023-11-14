@@ -49,6 +49,12 @@ namespace UnityEngine.Accessibility
         static Queue<NotificationContext> s_AsyncNotificationContexts = new();
 
         /// <summary>
+        /// Indicates whether our Accessibility support is implemented for the current platform.
+        /// </summary>
+        public static bool isSupportedPlatform =>
+            Application.platform is RuntimePlatform.Android or RuntimePlatform.IPhonePlayer;
+
+        /// <summary>
         /// Event that is invoked on the main thread when the screen reader is
         /// enabled or disabled.
         /// </summary>

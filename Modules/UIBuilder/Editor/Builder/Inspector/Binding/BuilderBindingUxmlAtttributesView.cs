@@ -5,6 +5,7 @@
 using System;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEditorInternal;
 using UnityEngine.UIElements;
 using UIEHelpBox = UnityEngine.UIElements.HelpBox;
 
@@ -123,6 +124,8 @@ namespace Unity.UI.Builder
                 }
             }
 
+            var desc = UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName);
+            desc.SyncDefaultValues(vea.serializedData, false);
             var elementCopy = vea.Instantiate(new CreationContext(m_VisualTreeAssetCopy));
             elementCopy.SetVisualElementAsset(vea);
 
@@ -199,8 +202,9 @@ namespace Unity.UI.Builder
 
                     currentAttributesUxmlOwner.RemoveAttribute(attributeName);
                     var description = fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
-                    description.SetSerializedValue(currentSerializedData, description.defaultValue);
+                    description.SyncDefaultValue(currentSerializedData, true);
                     CallDeserializeOnElement();
+
                     UnsetEnumValue(attributeName, false);
                 }
             }
@@ -384,7 +388,7 @@ namespace Unity.UI.Builder
             Undo.CollapseUndoOperations(undoGroup);
 
             // Apply changes to the element
-            targetView.uxmlSerializedData.Deserialize(targetView.currentElement);
+            targetView.CallDeserializeOnElement(); 
             targetView.SendNotifyAttributesChanged();
         }
 

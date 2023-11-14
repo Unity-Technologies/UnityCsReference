@@ -3,10 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine.Internal;
 
 namespace Unity.Hierarchy
 {
@@ -16,17 +14,13 @@ namespace Unity.Hierarchy
     /// <remarks>
     /// If the hierarchy is modified, the collection is invalidated.
     /// </remarks>
-    public unsafe readonly struct HierarchyNodeChildren :
-        IEnumerable<HierarchyNode>,
-        IReadOnlyCollection<HierarchyNode>,
-        IReadOnlyList<HierarchyNode>
+    public unsafe readonly struct HierarchyNodeChildren
     {
         const int k_HierarchyNodeChildrenIsAllocBit = 1 << 31;
 
         readonly Hierarchy m_Hierarchy;
+        readonly HierarchyNode* m_Ptr;
         readonly int m_Version;
-        readonly IntPtr m_Ptr;
-        readonly HierarchyNode* m_NodePtr;
         readonly int m_Count;
 
         /// <summary>
@@ -36,7 +30,7 @@ namespace Unity.Hierarchy
         {
             get
             {
-                ThrowIfHierarchyChanged();
+                ThrowIfVersionChanged();
                 return m_Count;
             }
         }
@@ -46,38 +40,16 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="index">The children index.</param>
         /// <returns>The child hierarchy node.</returns>
-        public HierarchyNode this[int index]
+        public ref readonly HierarchyNode this[int index]
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                ThrowIfHierarchyChanged();
-
                 if (index < 0 || index >= m_Count)
                     throw new ArgumentOutOfRangeException(nameof(index));
 
-                return m_NodePtr[index];
-            }
-        }
-
-        internal HierarchyNodeChildren(Hierarchy hierarchy, int version, IntPtr ptr)
-        {
-            m_Hierarchy = hierarchy;
-            m_Version = version;
-            m_Ptr = ptr;
-
-            ref var alloc = ref UnsafeUtility.AsRef<HierarchyNodeChildrenAlloc>(m_Ptr.ToPointer());
-            if ((alloc.Reserved[0] & k_HierarchyNodeChildrenIsAllocBit) == k_HierarchyNodeChildrenIsAllocBit)
-            {
-                m_NodePtr = alloc.Ptr;
-                m_Count = alloc.Size;
-            }
-            else
-            {
-                m_NodePtr = (HierarchyNode*)ptr.ToPointer();
-                var i = 0;
-                while (i < HierarchyNodeChildrenFixed.Capacity && m_NodePtr[i].Id != 0)
-                    i++;
-                m_Count = i;
+                ThrowIfVersionChanged();
+                return ref m_Ptr[index];
             }
         }
 
@@ -87,55 +59,77 @@ namespace Unity.Hierarchy
         /// <returns>The enumerator.</returns>
         public Enumerator GetEnumerator() => new Enumerator(this);
 
+        internal HierarchyNodeChildren(Hierarchy hierarchy, IntPtr ptr)
+        {
+            if (hierarchy == null)
+                throw new ArgumentNullException(nameof(hierarchy));
+
+            if (ptr == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(ptr));
+
+            m_Hierarchy = hierarchy;
+            m_Version = hierarchy.Version;
+
+            ref var alloc = ref UnsafeUtility.AsRef<HierarchyNodeChildrenAlloc>(ptr.ToPointer());
+            if ((alloc.Reserved[0] & k_HierarchyNodeChildrenIsAllocBit) == k_HierarchyNodeChildrenIsAllocBit)
+            {
+                m_Ptr = alloc.Ptr;
+                m_Count = alloc.Size;
+            }
+            else
+            {
+                m_Ptr = (HierarchyNode*)ptr.ToPointer();
+                var i = 0;
+                while (i < HierarchyNodeChildrenFixed.Capacity && m_Ptr[i].Id != 0)
+                    i++;
+                m_Count = i;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void ThrowIfVersionChanged()
+        {
+            if (m_Version != m_Hierarchy.Version)
+                throw new InvalidOperationException("Hierarchy was modified.");
+        }
+
         /// <summary>
         /// An enumerator for an hierarchy node's children.
         /// </summary>
-        public struct Enumerator : IEnumerator<HierarchyNode>
+        public struct Enumerator
         {
-            readonly HierarchyNodeChildren m_Children;
+            readonly HierarchyNodeChildren m_Enumerable;
             int m_Index;
+
+            internal Enumerator(in HierarchyNodeChildren enumerable)
+            {
+                m_Enumerable = enumerable;
+                m_Index = -1;
+            }
 
             /// <summary>
             /// Get the current item being enumerated.
             /// </summary>
-            public HierarchyNode Current => m_Children[m_Index];
-
-            object IEnumerator.Current => Current;
-
-            internal Enumerator(in HierarchyNodeChildren children)
+            public ref readonly HierarchyNode Current
             {
-                m_Children = children;
-                m_Index = -1;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    m_Enumerable.ThrowIfVersionChanged();
+                    return ref m_Enumerable.m_Ptr[m_Index];
+                }
             }
-
-            [ExcludeFromDocs]
-            public void Dispose() { }
 
             /// <summary>
             /// Move to next iterable value.
             /// </summary>
             /// <returns><see langword="true"/> if Current item is valid, <see langword="false"/> otherwise.</returns>
-            public bool MoveNext() => ++m_Index < m_Children.Count;
-
-            /// <summary>
-            /// Reset iteration at the beginning.
-            /// </summary>
-            public void Reset() => m_Index = -1;
-
-            /// <summary>
-            /// Check if iteration is done.
-            /// </summary>
-            /// <returns><see langword="true"/> if iteration is done, <see langword="false"/> otherwise.</returns>
-            public bool Done() => m_Index >= m_Children.Count;
-        }
-
-        IEnumerator<HierarchyNode> IEnumerable<HierarchyNode>.GetEnumerator() => GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        void ThrowIfHierarchyChanged()
-        {
-            if (m_Version != m_Hierarchy.Version)
-                throw new InvalidOperationException("Hierarchy was modified.");
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MoveNext()
+            {
+                m_Enumerable.ThrowIfVersionChanged();
+                return ++m_Index < m_Enumerable.m_Count;
+            }
         }
     }
 }

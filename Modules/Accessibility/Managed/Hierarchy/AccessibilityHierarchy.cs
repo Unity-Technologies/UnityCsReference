@@ -11,6 +11,22 @@ namespace UnityEngine.Accessibility
     /// <summary>
     /// Represents the hierarchy data model that the screen reader uses for reading and navigating the UI.
     /// </summary>
+    /// <remarks>
+    /// A hierarchy must be set to active through <see cref="AssistiveSupport.activeHierarchy"/> when the screen 
+    /// reader is on for the screen reader to function. If a hierarchy is not set active, the screen reader cannot read and     
+    /// navigate through the UI. Once an active hierarchy is set, if the hierarchy is modified, the screen reader must
+    /// be notified by calling <see cref="AssistiveSupport.NotificationDispatcher.SendLayoutChanged"/> or
+    /// <see cref="AssistiveSupport.NotificationDispatcher.SendScreenChanged"/> (depending if the changes are only at 
+    /// the layout level, or a more considerable screen change). Modifications in the hierarchy consist of calls to:
+    ///
+    ///- <see cref="AccessibilityHierarchy.AddNode"/>
+    ///- <see cref="AccessibilityHierarchy.Clear"/>
+    ///- <see cref="AccessibilityHierarchy.InsertNode"/>
+    ///- <see cref="AccessibilityHierarchy.MoveNode"/>
+    ///- <see cref="AccessibilityHierarchy.RemoveNode"/>
+    ///- Modifications to node <see cref="AccessibilityNode.frame"/> values.
+    ///
+    /// </remarks>
     public class AccessibilityHierarchy
     {
         internal List<AccessibilityNode> m_RootNodes;
@@ -357,6 +373,10 @@ namespace UnityEngine.Accessibility
         /// <summary>
         /// Refreshes all the node frames (i.e. the screen elements' positions) for the hierarchy.
         /// </summary>
+        /// <remarks>
+        /// Calling this method sends a notification to the operating system that the layout has changed, by
+        /// calling <see cref="IAccessibilityNotificationDispatcher.SendLayoutChanged"/> (with a @@null@@ parameter).
+        /// </remarks>
         /// <seealso cref="AccessibilityNode.frame"/>
         /// <seealso cref="AccessibilityNode.frameGetter"/>
         public void RefreshNodeFrames()
@@ -475,7 +495,10 @@ namespace UnityEngine.Accessibility
             }
 
             // Create new instance of a node and increment the control for the ID so the next node created gets a new and valid value
-            return new AccessibilityNode(m_NextUniqueNodeId++, this);
+            var node = new AccessibilityNode(m_NextUniqueNodeId, this);
+
+            m_NextUniqueNodeId = node.id + 1;
+            return node;
         }
 
         /// <summary>

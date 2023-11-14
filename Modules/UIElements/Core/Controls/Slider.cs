@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Globalization;
 
 namespace UnityEngine.UIElements
 {
@@ -16,12 +15,18 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BaseSlider<float>.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private float lowValue;
-            [SerializeField] private float highValue;
-            [SerializeField] private float pageSize;
-            [SerializeField] private bool showInputField;
-            [SerializeField] private SliderDirection direction;
-            [SerializeField] private bool inverted;
+            [SerializeField] float lowValue;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowValue_UxmlAttributeFlags;
+            [SerializeField] float highValue;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highValue_UxmlAttributeFlags;
+            [SerializeField] float pageSize;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags pageSize_UxmlAttributeFlags;
+            [SerializeField] bool showInputField;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showInputField_UxmlAttributeFlags;
+            [SerializeField] SliderDirection direction;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags direction_UxmlAttributeFlags;
+            [SerializeField] bool inverted;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags inverted_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new Slider();
@@ -31,12 +36,18 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (Slider)obj;
-                e.lowValue = lowValue;
-                e.highValue = highValue;
-                e.direction = direction;
-                e.pageSize = pageSize;
-                e.showInputField = showInputField;
-                e.inverted = inverted;
+                if (ShouldWriteAttributeValue(lowValue_UxmlAttributeFlags))
+                    e.lowValue = lowValue;
+                if (ShouldWriteAttributeValue(highValue_UxmlAttributeFlags))
+                    e.highValue = highValue;
+                if (ShouldWriteAttributeValue(direction_UxmlAttributeFlags))
+                    e.direction = direction;
+                if (ShouldWriteAttributeValue(pageSize_UxmlAttributeFlags))
+                    e.pageSize = pageSize;
+                if (ShouldWriteAttributeValue(showInputField_UxmlAttributeFlags))
+                    e.showInputField = showInputField;
+                if (ShouldWriteAttributeValue(inverted_UxmlAttributeFlags))
+                    e.inverted = inverted;
             }
         }
 

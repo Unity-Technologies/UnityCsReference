@@ -30,7 +30,9 @@ namespace UnityEngine.UIElements
 
             var recycledItem = GetRecycledItem(pointerPosition);
             if (recycledItem == null)
-                return default;
+            {
+                return new StartDragArgs(string.Empty, DragVisualMode.Rejected);
+            }
 
             targetView.SetSelection(recycledItem.index);
 
@@ -150,6 +152,9 @@ namespace UnityEngine.UIElements
 
         protected internal override void OnDrop(Vector3 pointerPosition)
         {
+            if (m_Item == null)
+                return;
+
             // Stop dragging first, to allow the list to refresh properly dragged items.
             isDragging = false;
             m_Item.rootElement.ClearManualLayout();

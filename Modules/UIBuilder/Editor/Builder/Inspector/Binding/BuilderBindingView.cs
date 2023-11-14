@@ -269,25 +269,19 @@ namespace Unity.UI.Builder
             var uxmlBindingTypeName = m_UxmlBindingTypeNames[m_BindingTypeField.index];
             var description = UxmlSerializedDataRegistry.GetDescription(uxmlBindingTypeName);
 
-            // Set the property attribute default value to the property name. This will be restored afterwards.
-            var propertyAttribute = description.FindAttributeWithPropertyName(nameof(Binding.property));
-            var previousDefault = propertyAttribute.defaultValue;
-            propertyAttribute.defaultValue = bindingPropertyName;
-
-            // Set the binding mode attribute default value to ToTarget. This will be restored afterwards.
-            var bindingModeAttribute = description.FindAttributeWithPropertyName(nameof(DataBinding.bindingMode));
-            object previousBindingModeDefault = null;
-            if (bindingModeAttribute != null)
-            {
-                previousBindingModeDefault = bindingModeAttribute.defaultValue;
-                bindingModeAttribute.defaultValue = BindingMode.ToTarget;
-            }
-
             // Create UxmlSerializedData.
             var data = (Binding.UxmlSerializedData)description.CreateDefaultSerializedData();
 
-            // Restore the property attribute default value.
-            propertyAttribute.defaultValue = previousDefault;
+            var propertyAttribute = description.FindAttributeWithPropertyName(nameof(Binding.property));
+            propertyAttribute.SetSerializedValue(data, bindingPropertyName);
+            propertyAttribute.SetSerializedValueAttributeFlags(data, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+
+            var bindingModeAttribute = description.FindAttributeWithPropertyName(nameof(DataBinding.bindingMode));
+            if (bindingModeAttribute != null)
+            {
+                bindingModeAttribute.SetSerializedValue(data, BindingMode.ToTarget);
+                bindingModeAttribute.SetSerializedValueAttributeFlags(data, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+            }
 
             m_AttributesView.SetAttributesOwnerFromCopy(m_Inspector.document.visualTreeAsset, currentVisualElement);
 
@@ -309,7 +303,7 @@ namespace Unity.UI.Builder
             m_AttributesView.bindingSerializedPropertyPathRoot = uxmlObjectPropertyPath;
             m_AttributesView.bindingUxmlSerializedDataDescription = description;
 
-            // Restore the bindingMode attribute default value and update the uxml asset
+            // Update the uxml asset
             using (new BuilderUxmlAttributesView.DisableUndoScope(m_AttributesView))
             {
                 if (bindingModeAttribute != null)
@@ -317,7 +311,6 @@ namespace Unity.UI.Builder
                     // need to update the uxmlAsset with the binding mode change
                     var result = m_AttributesView.SynchronizePath(uxmlObjectPropertyPath, true);
                     result.uxmlAsset?.SetAttribute("binding-mode", BindingMode.ToTarget.ToString());
-                    bindingModeAttribute.defaultValue = previousBindingModeDefault;
                 }
             }
         }

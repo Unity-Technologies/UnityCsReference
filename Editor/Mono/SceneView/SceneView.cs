@@ -2805,7 +2805,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewSetOrtho(view, !view.orthographic);
+                    view.m_OrientationGizmo?.ViewSetOrtho(view, !view.orthographic);
             }
         }
 
@@ -2816,7 +2816,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewAxisDirection(view, 0, true);
+                    view.m_OrientationGizmo?.ViewAxisDirection(view, 0, true);
             }
         }
 
@@ -2827,7 +2827,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewAxisDirection(view, 0, view.orthographic);
+                    view.m_OrientationGizmo?.ViewAxisDirection(view, 0, view.orthographic);
             }
         }
 
@@ -2838,7 +2838,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewAxisDirection(view, 1, view.orthographic);
+                    view.m_OrientationGizmo?.ViewAxisDirection(view, 1, view.orthographic);
             }
         }
 
@@ -2849,7 +2849,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewAxisDirection(view, 1, true);
+                    view.m_OrientationGizmo?.ViewAxisDirection(view, 1, true);
             }
         }
 
@@ -2860,7 +2860,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewAxisDirection(view, 2, view.orthographic);
+                    view.m_OrientationGizmo?.ViewAxisDirection(view, 2, view.orthographic);
             }
         }
 
@@ -2871,7 +2871,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewAxisDirection(view, 2, true);
+                    view.m_OrientationGizmo?.ViewAxisDirection(view, 2, true);
             }
         }
 
@@ -2882,7 +2882,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewAxisDirection(view, 3, view.orthographic);
+                    view.m_OrientationGizmo?.ViewAxisDirection(view, 3, view.orthographic);
             }
         }
 
@@ -2893,7 +2893,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewAxisDirection(view, 3, true);
+                    view.m_OrientationGizmo?.ViewAxisDirection(view, 3, true);
             }
         }
 
@@ -2904,7 +2904,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewAxisDirection(view, 4, view.orthographic);
+                    view.m_OrientationGizmo?.ViewAxisDirection(view, 4, view.orthographic);
             }
         }
 
@@ -2915,7 +2915,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewAxisDirection(view, 4, true);
+                    view.m_OrientationGizmo?.ViewAxisDirection(view, 4, true);
             }
         }
 
@@ -2926,7 +2926,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewAxisDirection(view, 5, view.orthographic);
+                    view.m_OrientationGizmo?.ViewAxisDirection(view, 5, view.orthographic);
             }
         }
 
@@ -2937,7 +2937,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewAxisDirection(view, 5, true);
+                    view.m_OrientationGizmo?.ViewAxisDirection(view, 5, true);
             }
         }
 
@@ -2948,7 +2948,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo.ViewFromNiceAngle(view, false);
+                    view.m_OrientationGizmo?.ViewFromNiceAngle(view, false);
             }
         }
 
@@ -3077,7 +3077,7 @@ namespace UnityEditor
             set
             {
                 m_Ortho.value = value;
-                m_OrientationGizmo.UpdateGizmoLabel(this, m_Rotation.target * Vector3.forward, m_Ortho.target);
+                m_OrientationGizmo?.UpdateGizmoLabel(this, m_Rotation.target * Vector3.forward, m_Ortho.target);
             }
         }
 
@@ -3434,7 +3434,7 @@ namespace UnityEditor
             FixNegativeSize();
             m_Position.target = point;
             m_Rotation.target = direction;
-            m_OrientationGizmo.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
+            m_OrientationGizmo?.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         // Look directly at a specific point from a given direction.
@@ -3443,7 +3443,7 @@ namespace UnityEditor
             FixNegativeSize();
             m_Position.value = point;
             m_Rotation.value = direction;
-            m_OrientationGizmo.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
+            m_OrientationGizmo?.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         // Look at a specific point from a given direction with a given zoom level.
@@ -3453,7 +3453,7 @@ namespace UnityEditor
             m_Position.target = point;
             m_Rotation.target = direction;
             m_Size.target = ValidateSceneSize(Mathf.Abs(newSize));
-            m_OrientationGizmo.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
+            m_OrientationGizmo?.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         // Look directionally at a specific point from a given direction with a given zoom level.
@@ -3463,7 +3463,7 @@ namespace UnityEditor
             m_Position.value = point;
             m_Rotation.value = direction;
             size = Mathf.Abs(newSize);
-            m_OrientationGizmo.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
+            m_OrientationGizmo?.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         // Look at a specific point from a given direction with a given zoom level, enabling and disabling perspective
@@ -3494,7 +3494,7 @@ namespace UnityEditor
                 m_Ortho.target = ortho;
             }
 
-            m_OrientationGizmo.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
+            m_OrientationGizmo?.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         void DefaultHandles()

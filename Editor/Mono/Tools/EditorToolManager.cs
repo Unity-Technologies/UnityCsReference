@@ -174,13 +174,19 @@ namespace UnityEditor.EditorTools
                 ToolManager.ActiveToolWillChange();
 
                 var previous = instance.m_ActiveTool;
+                var meta = EditorToolUtility.GetMetaData(tool.GetType());
 
                 if (previous != null)
                 {
                     previous.Deactivate();
 
+                    var previousMeta = EditorToolUtility.GetMetaData(previous.GetType());
                     var previousEnum = EditorToolUtility.GetEnumWithEditorTool(previous, activeToolContext);
-                    if (previousEnum != Tool.View && previousEnum != Tool.None && (EditorToolUtility.IsBuiltinOverride(previous) || !EditorToolUtility.IsComponentTool(previous.GetType())))
+                    if (previousEnum != Tool.View
+                        && previousEnum != Tool.None
+                        && (EditorToolUtility.IsBuiltinOverride(previous) || !EditorToolUtility.IsComponentTool(previous.GetType()))
+                        // if the previous and current tools are from the same variant group, don't save the previous variant as previous tool
+                        && (meta.variantGroup == null || previousMeta.variantGroup != meta.variantGroup))
                     {
                         instance.m_PreviousTool = previousEnum;
 
@@ -201,8 +207,6 @@ namespace UnityEditor.EditorTools
 
                 Tools.SyncToolEnum();
                 Tools.InvalidateHandlePosition();
-
-                var meta = EditorToolUtility.GetMetaData(tool.GetType());
 
                 if(meta.variantGroup != null)
                     instance.variantPrefs.SetPreferredVariant(meta.variantGroup, meta.editor);

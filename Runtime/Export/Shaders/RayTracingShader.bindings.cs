@@ -64,9 +64,12 @@ namespace UnityEngine.Rendering
         [NativeMethod(Name = "RayTracingShaderScripting::SetTextureFromGlobal", HasExplicitThis = true, IsFreeFunction = true)]
         extern public void SetTextureFromGlobal(int nameID, int globalTextureNameID);
 
-        [NativeName("DispatchRays")]
+        [NativeMethod(Name = "RayTracingShaderScripting::Dispatch", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
         extern public void Dispatch(string rayGenFunctionName, int width, int height, int depth, Camera camera = null);
 
+        [NativeMethod(Name = "RayTracingShaderScripting::DispatchIndirect", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
+        extern public void DispatchIndirect(string rayGenFunctionName, [NotNull] GraphicsBuffer argsBuffer, uint argsOffset = 0, Camera camera = null);
+      
         public void SetBuffer(int nameID, GraphicsBuffer buffer)
         {
             SetGraphicsBuffer(nameID, buffer);

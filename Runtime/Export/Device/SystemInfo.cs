@@ -189,6 +189,7 @@ namespace UnityEngine.Device
         public static bool supportsRayTracingShaders => ShimManager.systemInfoShim.supportsRayTracingShaders;
         public static bool supportsRayTracing => ShimManager.systemInfoShim.supportsRayTracing;
         public static bool supportsInlineRayTracing => ShimManager.systemInfoShim.supportsInlineRayTracing;
+        public static bool supportsIndirectDispatchRays => ShimManager.systemInfoShim.supportsIndirectDispatchRays;
 
         public static bool supportsSetConstantBuffer => ShimManager.systemInfoShim.supportsSetConstantBuffer;
 

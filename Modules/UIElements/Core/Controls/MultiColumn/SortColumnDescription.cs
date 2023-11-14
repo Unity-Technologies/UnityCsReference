@@ -32,9 +32,12 @@ namespace UnityEngine.UIElements
         public class UxmlSerializedData : UIElements.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private string columnName;
-            [SerializeField] private int columnIndex;
-            [SerializeField] private SortDirection direction;
+            [SerializeField] string columnName;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags columnName_UxmlAttributeFlags;
+            [SerializeField] int columnIndex;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags columnIndex_UxmlAttributeFlags;
+            [SerializeField] SortDirection direction;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags direction_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new SortColumnDescription();
@@ -42,9 +45,12 @@ namespace UnityEngine.UIElements
             public override void Deserialize(object obj)
             {
                 var e = (SortColumnDescription)obj;
-                e.columnName = columnName;
-                e.columnIndex = columnIndex;
-                e.direction = direction;
+                if (ShouldWriteAttributeValue(columnName_UxmlAttributeFlags))
+                    e.columnName = columnName;
+                if (ShouldWriteAttributeValue(columnIndex_UxmlAttributeFlags))
+                    e.columnIndex = columnIndex;
+                if (ShouldWriteAttributeValue(direction_UxmlAttributeFlags))
+                    e.direction = direction;
             }
         }
 

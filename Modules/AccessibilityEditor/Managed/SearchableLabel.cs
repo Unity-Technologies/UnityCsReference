@@ -3,14 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using Unity.Properties;
-using UnityEditor;
-using UnityEditor.Accessibility;
 using UnityEngine;
-using UnityEngine.Accessibility;
 using UnityEngine.UIElements;
-using TreeView = UnityEngine.UIElements.TreeView;
 
 namespace UnityEditor.Accessibility
 {
@@ -19,9 +14,10 @@ namespace UnityEditor.Accessibility
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-#pragma warning disable 649
-            [SerializeField] private string text;
-#pragma warning restore 649
+            #pragma warning disable 649
+            [SerializeField] string text;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
+            #pragma warning restore 649
 
             public override object CreateInstance() => new SearchableLabel();
 
@@ -29,8 +25,11 @@ namespace UnityEditor.Accessibility
             {
                 base.Deserialize(obj);
 
-                var e = (SearchableLabel) obj;
-                e.text = text;
+                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
+                {
+                    var e = (SearchableLabel)obj;
+                    e.text = text;
+                }
             }
         }
 

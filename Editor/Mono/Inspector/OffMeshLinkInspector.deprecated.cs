@@ -63,14 +63,14 @@ namespace UnityEditor
         {
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = m_AreaIndex.hasMultipleDifferentValues;
-            var areaNames = GameObjectUtility.GetNavMeshAreaNames();
+            var areaNames = NavMesh.GetAreaNames();
             var currentAbsoluteIndex = m_AreaIndex.intValue;
             var areaIndex = -1;
 
             //Need to find the index as the list of names will compress out empty layers
             for (var i = 0; i < areaNames.Length; i++)
             {
-                if (GameObjectUtility.GetNavMeshAreaFromName(areaNames[i]) == currentAbsoluteIndex)
+                if (NavMesh.GetAreaFromName(areaNames[i]) == currentAbsoluteIndex)
                 {
                     areaIndex = i;
                     break;
@@ -82,7 +82,7 @@ namespace UnityEditor
 
             if (EditorGUI.EndChangeCheck())
             {
-                var newAreaIndex = GameObjectUtility.GetNavMeshAreaFromName(areaNames[area]);
+                var newAreaIndex = NavMesh.GetAreaFromName(areaNames[area]);
                 m_AreaIndex.intValue = newAreaIndex;
             }
         }

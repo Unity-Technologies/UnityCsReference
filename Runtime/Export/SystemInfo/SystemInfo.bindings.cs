@@ -608,6 +608,11 @@ namespace UnityEngine
             get { return SupportsInlineRayTracing(); }
         }
 
+        public static bool supportsIndirectDispatchRays
+        {
+            get { return SupportsIndirectDispatchRays(); }
+        }
+
         public static bool supportsSetConstantBuffer
         {
             get { return SupportsSetConstantBuffer(); }
@@ -955,6 +960,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsInlineRayTracing")]
         static extern bool SupportsInlineRayTracing();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsIndirectDispatchRays")]
+        static extern bool SupportsIndirectDispatchRays();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsSetConstantBuffer")]
         static extern bool SupportsSetConstantBuffer();

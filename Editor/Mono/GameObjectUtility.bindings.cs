@@ -7,7 +7,6 @@ using System.Linq;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -18,12 +17,6 @@ namespace UnityEditor
         public static extern StaticEditorFlags GetStaticEditorFlags(GameObject go);
         public static extern void SetStaticEditorFlags(GameObject go, StaticEditorFlags flags);
         public static extern bool AreStaticEditorFlagsSet(GameObject go, StaticEditorFlags flags);
-
-        public static extern int GetNavMeshArea(GameObject go);
-        public static extern void SetNavMeshArea(GameObject go, int areaIndex);
-
-        public static extern int GetNavMeshAreaFromName(string name);
-        public static extern string[] GetNavMeshAreaNames();
 
         internal static extern string GetFirstItemPathAfterGameObjectCreationMenuItems();
 
@@ -143,42 +136,6 @@ namespace UnityEditor
         }
 
         internal static extern bool IsPrefabInstanceHiddenForInContextEditing([NotNull] GameObject go);
-
-        [System.Obsolete("GetNavMeshArea instead.")]
-        public static int GetNavMeshLayer(GameObject go)
-        {
-            return GetNavMeshArea(go);
-        }
-
-        [System.Obsolete("SetNavMeshArea instead.")]
-        public static void SetNavMeshLayer(GameObject go, int areaIndex)
-        {
-            SetNavMeshArea(go, areaIndex);
-        }
-
-        [System.Obsolete("GetNavMeshAreaFromName instead.")]
-        public static int GetNavMeshLayerFromName(string name)
-        {
-            return GetNavMeshAreaFromName(name);
-        }
-
-        [System.Obsolete("GetNavMeshAreaNames instead.")]
-        public static string[] GetNavMeshLayerNames()
-        {
-            return GetNavMeshAreaNames();
-        }
-
-        [System.Obsolete("use AnimatorUtility.OptimizeTransformHierarchy instead.")]
-        static void OptimizeTransformHierarchy(GameObject go)
-        {
-            AnimatorUtility.OptimizeTransformHierarchy(go, null);
-        }
-
-        [System.Obsolete("use AnimatorUtility.DeoptimizeTransformHierarchy instead.")]
-        static void DeoptimizeTransformHierarchy(GameObject go)
-        {
-            AnimatorUtility.DeoptimizeTransformHierarchy(go);
-        }
 
         public static GameObject[] DuplicateGameObjects(GameObject[] gameObjects)
         {

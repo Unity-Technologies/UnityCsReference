@@ -32,30 +32,36 @@ namespace UnityEngine.UIElements
             #pragma warning disable 649
             [SerializeField, HideInInspector, UxmlAttribute("data-source-path")]
             [Tooltip(k_DataSourcePathTooltip)]
-            private string dataSourcePathString;
+            string dataSourcePathString;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourcePathString_UxmlAttributeFlags;
 
             [SerializeField, HideInInspector, DataSourceDrawer]
             [Tooltip(k_DataSourceTooltip)]
-            private Object dataSource;
+            Object dataSource;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSource_UxmlAttributeFlags;
 
             [UxmlAttribute("data-source-type")]
             [SerializeField, HideInInspector, DataSourceTypeDrawer(typeof(object))]
             [Tooltip(k_DataSourceTooltip)]
-            private string dataSourceTypeString;
+            string dataSourceTypeString;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceTypeString_UxmlAttributeFlags;
 
             [SerializeField, HideInInspector, BindingModeDrawer]
             [Tooltip(k_BindingModeTooltip)]
-            private BindingMode bindingMode;
+            BindingMode bindingMode;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindingMode_UxmlAttributeFlags;
 
             [UxmlAttribute("source-to-ui-converters")]
             [SerializeField, HideInInspector, ConverterDrawer(isConverterToSource = false)]
             [Tooltip(k_SourceToUiConvertersTooltip)]
-            private string sourceToUiConvertersString;
+            string sourceToUiConvertersString;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sourceToUiConvertersString_UxmlAttributeFlags;
 
             [UxmlAttribute("ui-to-source-converters")]
             [SerializeField, HideInInspector, ConverterDrawer(isConverterToSource = true)]
             [Tooltip(k_UiToSourceConvertersTooltip)]
-            private string uiToSourceConvertersString;
+            string uiToSourceConvertersString;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags uiToSourceConvertersString_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new DataBinding();
@@ -63,13 +69,20 @@ namespace UnityEngine.UIElements
             public override void Deserialize(object obj)
             {
                 base.Deserialize(obj);
+
                 var e = (DataBinding) obj;
-                e.dataSourcePathString = dataSourcePathString;
-                e.dataSource = dataSource ? dataSource : null;
-                e.dataSourceTypeString = dataSourceTypeString;
-                e.bindingMode = bindingMode;
-                e.uiToSourceConvertersString = uiToSourceConvertersString;
-                e.sourceToUiConvertersString = sourceToUiConvertersString;
+                if (ShouldWriteAttributeValue(dataSourcePathString_UxmlAttributeFlags))
+                    e.dataSourcePathString = dataSourcePathString;
+                if (ShouldWriteAttributeValue(dataSource_UxmlAttributeFlags))
+                    e.dataSource = dataSource;
+                if (ShouldWriteAttributeValue(dataSourceTypeString_UxmlAttributeFlags))
+                    e.dataSourceTypeString = dataSourceTypeString;
+                if (ShouldWriteAttributeValue(bindingMode_UxmlAttributeFlags))
+                    e.bindingMode = bindingMode;
+                if (ShouldWriteAttributeValue(uiToSourceConvertersString_UxmlAttributeFlags))
+                    e.uiToSourceConvertersString = uiToSourceConvertersString;
+                if (ShouldWriteAttributeValue(sourceToUiConvertersString_UxmlAttributeFlags))
+                    e.sourceToUiConvertersString = sourceToUiConvertersString;
             }
         }
     }

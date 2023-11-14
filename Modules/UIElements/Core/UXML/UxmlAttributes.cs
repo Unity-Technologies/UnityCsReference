@@ -235,7 +235,7 @@ namespace UnityEngine.UIElements
     /// Used for fields that are serialized but do not come from UXML data, such as <see cref="UxmlSerializedData.uxmlAssetId"/>.
     /// </summary>
     [AttributeUsage(AttributeTargets.Field, Inherited = false)]
-    internal class UxmlIgnoreAttribute : Attribute
+    public class UxmlIgnoreAttribute : Attribute
     {
     }
 

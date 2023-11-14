@@ -100,15 +100,21 @@ namespace UnityEngine.UIElements
         {
             #pragma warning disable 649
             [UxmlAttribute(obsoleteNames = new[] { "itemHeight, item-height" })]
-            [SerializeField, FixedItemHeightDecorator] private float fixedItemHeight;
-            [SerializeField] private CollectionVirtualizationMethod virtualizationMethod;
-            [SerializeField] private bool showBorder;
-            [SerializeField] private SelectionType selectionType;
-            [UxmlAttribute]
-            [SerializeField] private AlternatingRowBackground showAlternatingRowBackgrounds;
-            [SerializeField] private bool reorderable;
+            [SerializeField, FixedItemHeightDecorator] float fixedItemHeight;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fixedItemHeight_UxmlAttributeFlags;
+            [SerializeField] CollectionVirtualizationMethod virtualizationMethod;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags virtualizationMethod_UxmlAttributeFlags;
+            [SerializeField] bool showBorder;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showBorder_UxmlAttributeFlags;
+            [SerializeField] SelectionType selectionType;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectionType_UxmlAttributeFlags;
+            [SerializeField] AlternatingRowBackground showAlternatingRowBackgrounds;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showAlternatingRowBackgrounds_UxmlAttributeFlags;
+            [SerializeField] bool reorderable;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderable_UxmlAttributeFlags;
             [UxmlAttribute("horizontal-scrolling")]
-            [SerializeField] private bool horizontalScrollingEnabled;
+            [SerializeField] bool horizontalScrollingEnabled;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalScrollingEnabled_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override void Deserialize(object obj)
@@ -120,19 +126,20 @@ namespace UnityEngine.UIElements
                 // Clear the old controller so that the list refreshes
                 e.SetViewController(null);
 
-                // Avoid setting fixedItemHeight unless it's explicitly defined.
-                // Setting fixedItemHeight property will activate inline property mode.
-                if (e.fixedItemHeight != fixedItemHeight)
-                {
+                if (ShouldWriteAttributeValue(fixedItemHeight_UxmlAttributeFlags))
                     e.fixedItemHeight = fixedItemHeight;
-                }
-
-                e.virtualizationMethod = virtualizationMethod;
-                e.showBorder = showBorder;
-                e.selectionType = selectionType;
-                e.showAlternatingRowBackgrounds = showAlternatingRowBackgrounds;
-                e.reorderable = reorderable;
-                e.horizontalScrollingEnabled = horizontalScrollingEnabled;
+                if (ShouldWriteAttributeValue(virtualizationMethod_UxmlAttributeFlags))
+                    e.virtualizationMethod = virtualizationMethod;
+                if (ShouldWriteAttributeValue(showBorder_UxmlAttributeFlags))
+                    e.showBorder = showBorder;
+                if (ShouldWriteAttributeValue(selectionType_UxmlAttributeFlags))
+                    e.selectionType = selectionType;
+                if (ShouldWriteAttributeValue(showAlternatingRowBackgrounds_UxmlAttributeFlags))
+                    e.showAlternatingRowBackgrounds = showAlternatingRowBackgrounds;
+                if (ShouldWriteAttributeValue(reorderable_UxmlAttributeFlags))
+                    e.reorderable = reorderable;
+                if (ShouldWriteAttributeValue(horizontalScrollingEnabled_UxmlAttributeFlags))
+                    e.horizontalScrollingEnabled = horizontalScrollingEnabled;
             }
         }
 
@@ -1390,6 +1397,7 @@ namespace UnityEngine.UIElements
         private void DoSelect(Vector2 localPosition, int clickCount, bool actionKey, bool shiftKey)
         {
             var clickedIndex = virtualizationController.GetIndexFromPosition(localPosition);
+            var effectiveClickCount = (m_SelectedIndices.Count() > 0 && m_SelectedIndices.First() != clickedIndex) ? 1 : (clickCount > 2) ? 2 : clickCount;
             if (clickedIndex > viewController.itemsSource.Count - 1)
                 return;
 
@@ -1397,7 +1405,8 @@ namespace UnityEngine.UIElements
                 return;
 
             var clickedItemId = viewController.GetIdForIndex(clickedIndex);
-            switch (clickCount)
+
+            switch (effectiveClickCount)
             {
                 case 1:
                     if (selectionType == SelectionType.Multiple && actionKey)

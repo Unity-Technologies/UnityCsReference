@@ -32,6 +32,13 @@ namespace UnityEditor.UIElements
         bool? m_IsUnityObject;
         bool? m_IsList;
         bool? m_IsUxmlObject;
+        bool m_DefaultValueSet;
+        object m_DefaultValue;
+
+        /// <summary>
+        /// The <see cref="UxmlAttributeDescription"/> that this attribute is part of.
+        /// </summary>
+        public UxmlSerializedDataDescription dataDescription { get; set; }
 
         public new Type type { get; set; }
 
@@ -39,6 +46,11 @@ namespace UnityEditor.UIElements
         /// The FieldInfo for the UxmlSerializedData.
         /// </summary>
         public FieldInfo serializedField { get; set; }
+
+        /// <summary>
+        /// The FieldInfo for the UxmlSerializedData attribute flags.
+        /// </summary>
+        public FieldInfo serializedFieldAttributeFlags { get; set; }
 
         /// <summary>
         /// The field/property value for the VisualElement/UxmlObject.
@@ -76,7 +88,23 @@ namespace UnityEditor.UIElements
             }
         }
 
-        public object defaultValue { get; set; }
+        public object defaultValue
+        {
+            get
+            {
+                if (!m_DefaultValueSet)
+                {
+                    dataDescription.InitializeDefaultValues();
+                    Debug.AssertFormat(m_DefaultValueSet, "Expected default value to be set for {0} after calling InitializeDefaultValues.", name);
+                }
+                return m_DefaultValue;
+            }
+            set
+            {
+                m_DefaultValueSet = true;
+                m_DefaultValue = value;
+            }
+        }
 
         public object defaultValueClone => UxmlUtility.CloneObject(defaultValue);
 
@@ -174,15 +202,20 @@ namespace UnityEditor.UIElements
             }
         }
 
-        internal virtual object GetValueFromBagAsObject(IUxmlAttributes bag, CreationContext cc)
+        internal virtual bool TryGetValueFromBagAsObject(IUxmlAttributes bag, CreationContext cc, out object value)
         {
             if (!TryGetValueFromBagAsString(bag, cc, out var str))
-                return defaultValueClone;
+            {
+                value = null;
+                return false;
+            }
 
-            if (UxmlAttributeConverter.TryConvertFromString(type, str, cc, out var value))
-                return value;
+            if (UxmlAttributeConverter.TryConvertFromString(type, str, cc, out value))
+            {
+                return true;
+            }
 
-            return defaultValueClone;
+            return false;
         }
 
         /// <summary>
@@ -246,10 +279,30 @@ namespace UnityEditor.UIElements
                 }
 
                 SetSerializedValue(uxmlSerializedData, value);
+
+                // We dont set Ignore here because the field may be overridden with the default value.
+                if (!UxmlAttributeComparison.ObjectEquals(value, defaultValue))
+                    SetSerializedValueAttributeFlags(uxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
             }
             catch (Exception ex)
             {
                 Debug.LogException(new Exception($"Failed to sync {name} to {serializedField.Name}", ex));
+            }
+        }
+
+        public void SyncDefaultValue(object uxmlSerializedData, bool removeOverride)
+        {
+            try
+            {
+                if (removeOverride || GetSerializedValueAttributeFlags(uxmlSerializedData) == UxmlSerializedData.UxmlAttributeFlags.Ignore)
+                {
+                    SetSerializedValue(uxmlSerializedData, defaultValueClone);
+                    SetSerializedValueAttributeFlags(uxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(new Exception($"Failed to sync {serializedField.Name} default value", ex));
             }
         }
 
@@ -276,7 +329,8 @@ namespace UnityEditor.UIElements
             }
             catch (Exception e)
             {
-                Debug.LogException(e);
+                
+                Debug.LogException(new Exception($"Failed to extract {name} value from {dataDescription.uxmlFullName}", e));
                 value = default;
                 return false;
             }
@@ -341,6 +395,16 @@ namespace UnityEditor.UIElements
             }
         }
 
+        public void SetSerializedValueAttributeFlags(object uxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags value)
+        {
+            serializedFieldAttributeFlags.SetValue(uxmlSerializedData, value);
+        }
+
+        public UxmlSerializedData.UxmlAttributeFlags GetSerializedValueAttributeFlags(object uxmlSerializedData)
+        {
+            return (UxmlSerializedData.UxmlAttributeFlags)serializedFieldAttributeFlags.GetValue(uxmlSerializedData);
+        }
+
         public void UpdateSchemaRestriction()
         {
             if (type is { IsEnum: true })
@@ -389,13 +453,16 @@ namespace UnityEditor.UIElements
 
         public string rootName { get; set; }
 
-        internal override object GetValueFromBagAsObject(IUxmlAttributes bag, CreationContext cc)
+        internal override bool TryGetValueFromBagAsObject(IUxmlAttributes bag, CreationContext cc, out object value)
         {
             if (bag is UxmlAsset ua)
             {
                 var entry = cc.visualTreeAsset.GetUxmlObjectEntry(ua.id);
                 if (entry.uxmlObjectAssets == null)
-                    return defaultValueClone;
+                {
+                    value = null;
+                    return false;
+                }
 
                 // First we need to extract the element that contains the values for this field.
                 // Legacy fields, such as those found in MultiColumnListView and MultiColumnTreeView, do not have a root element.
@@ -486,22 +553,34 @@ namespace UnityEditor.UIElements
                                 }
                                 else
                                 {
-                                    return nestedData;
+                                    value = nestedData;
+                                    return true;
                                 }
                             }
                         }
                         if (list != null)
-                            return list;
+                        {
+                            value = list;
+                            return true;
+                        }
                     }
                 }
             }
 
-            return defaultValueClone;
+            value = null;
+            return false;
         }
     }
 
     internal static class UxmlSerializer
     {
+        /// <summary>
+        /// Extracts the attribute values from the bag and serializes them into the elements UxmlSerializedData.
+        /// </summary>
+        /// <param name="fullTypeName"></param>
+        /// <param name="bag"></param>
+        /// <param name="cc"></param>
+        /// <returns></returns>
         public static UxmlSerializedData Serialize(string fullTypeName, IUxmlAttributes bag, CreationContext cc)
         {
             var desc = UxmlSerializedDataRegistry.GetDescription(fullTypeName);
@@ -511,6 +590,13 @@ namespace UnityEditor.UIElements
             return Serialize(desc, bag, cc);
         }
 
+        /// <summary>
+        /// Extracts the attribute values from the bag and serializes them into the elements UxmlSerializedData.
+        /// </summary>
+        /// <param name="description"></param>
+        /// <param name="bag"></param>
+        /// <param name="cc"></param>
+        /// <returns></returns>
         public static UxmlSerializedData Serialize(UxmlSerializedDataDescription description, IUxmlAttributes bag, CreationContext cc)
         {
             var data = description.CreateSerializedData();
@@ -530,9 +616,17 @@ namespace UnityEditor.UIElements
             foreach (var attribute in description.serializedAttributes)
             {
                 if (handledAttributes.Contains(attribute.name))
+                {
+                    attribute.SetSerializedValueAttributeFlags(data, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
                     continue;
+                }
 
-                var value = attribute.GetValueFromBagAsObject(bag, cc);
+                if (!attribute.TryGetValueFromBagAsObject(bag, cc, out var value))
+                {
+                    attribute.SetSerializedValueAttributeFlags(data, UxmlSerializedData.UxmlAttributeFlags.Ignore);
+                    continue;
+                }
+
                 if (value is Type type)
                 {
                     // Validate that type can be assigned
@@ -551,6 +645,7 @@ namespace UnityEditor.UIElements
                 try
                 {
                     attribute.SetSerializedValue(data, value);
+                    attribute.SetSerializedValueAttributeFlags(data, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
                 }
                 catch (Exception e)
                 {
@@ -572,7 +667,7 @@ namespace UnityEditor.UIElements
             return data;
         }
 
-        public static void SyncVisualTreeAssetSerializedData(CreationContext cc)
+        public static void SyncVisualTreeAssetSerializedData(CreationContext cc, bool syncDefaultValues)
         {
             // Skip the Uxml root element
             var vta = cc.visualTreeAsset;
@@ -580,7 +675,7 @@ namespace UnityEditor.UIElements
             for (var i = 1; i < veaCount; i++)
             {
                 var vea = vta.visualElementAssets[i];
-                SyncVisualTreeElementSerializedData(vea, cc);
+                SyncVisualTreeElementSerializedData(vea, cc, syncDefaultValues);
             }
 
             var tplCount = vta.templateAssets?.Count ?? 0;
@@ -592,11 +687,16 @@ namespace UnityEditor.UIElements
             }
         }
 
-        public static void SyncVisualTreeElementSerializedData(VisualElementAsset vea, CreationContext cc)
+        public static void SyncVisualTreeElementSerializedData(VisualElementAsset vea, CreationContext cc, bool syncDefaultValues)
         {
             var desc = UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName);
             if (desc != null)
+            {
                 vea.serializedData = Serialize(desc, vea, cc);
+
+                if (syncDefaultValues)
+                    desc.SyncDefaultValues(vea.serializedData, false);
+            }
         }
 
         private static void CreateSerializedDataOverride(TemplateAsset rootTemplate, VisualTreeAsset vta, TemplateAsset templateAsset, CreationContext cc)

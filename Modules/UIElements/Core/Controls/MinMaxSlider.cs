@@ -23,8 +23,10 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BaseField<Vector2>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
         {
             #pragma warning disable 649
-            [SerializeField] private float lowLimit;
-            [SerializeField] private float highLimit;
+            [SerializeField] float lowLimit;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowLimit_UxmlAttributeFlags;
+            [SerializeField] float highLimit;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highLimit_UxmlAttributeFlags;
             #pragma warning restore 649
 
             void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
@@ -54,8 +56,10 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (MinMaxSlider)obj;
-                e.lowLimit = lowLimit;
-                e.highLimit = highLimit;
+                if (ShouldWriteAttributeValue(lowLimit_UxmlAttributeFlags))
+                    e.lowLimit = lowLimit;
+                if (ShouldWriteAttributeValue(highLimit_UxmlAttributeFlags))
+                    e.highLimit = highLimit;
             }
         }
 

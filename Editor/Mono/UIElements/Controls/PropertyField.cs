@@ -24,12 +24,13 @@ namespace UnityEditor.UIElements
         static readonly string buttonGroupNamePrefix = "unity-button-group-";
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private string bindingPath;
+            [SerializeField] string bindingPath;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindingPath_UxmlAttributeFlags;
             [SerializeField] internal string label;
-            [SerializeField, HideInInspector] private bool displayLabel;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new PropertyField();
@@ -39,16 +40,10 @@ namespace UnityEditor.UIElements
                 base.Deserialize(obj);
 
                 var e = (PropertyField)obj;
-                e.bindingPath = bindingPath;
-                e.label = (displayLabel || !string.IsNullOrEmpty(label)) ? label : null;
-            }
-
-            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
-            {
-                bag.TryGetAttributeValue("label", out label);
-                displayLabel = label != null;
-                handledAttributes.Add("display-label");
-                handledAttributes.Add("label");
+                if (ShouldWriteAttributeValue(bindingPath_UxmlAttributeFlags))
+                    e.bindingPath = bindingPath;
+                if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
+                    e.label = label;
             }
         }
 

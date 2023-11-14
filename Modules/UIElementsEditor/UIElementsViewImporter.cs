@@ -23,7 +23,7 @@ using StyleSheet = UnityEngine.UIElements.StyleSheet;
 namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
-    [ScriptedImporter(version: 14, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 15, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -439,7 +439,7 @@ namespace UnityEditor.UIElements
 
         void SyncVisualTreeAssetSerializedData(VisualTreeAsset vta)
         {
-            UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(vta));
+            UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(vta), false);
 
             // Setup dependencies
             if (m_Context != null)
