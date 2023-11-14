@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Unity.Properties;
 
@@ -30,7 +30,8 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private bool reorderable;
+            [SerializeField] bool reorderable;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderable_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new TabView();
@@ -39,8 +40,11 @@ namespace UnityEngine.UIElements
             {
                 base.Deserialize(obj);
 
-                var e = (TabView) obj;
-                e.reorderable = reorderable;
+                if (ShouldWriteAttributeValue(reorderable_UxmlAttributeFlags))
+                {
+                    var e = (TabView)obj;
+                    e.reorderable = reorderable;
+                }
             }
         }
 

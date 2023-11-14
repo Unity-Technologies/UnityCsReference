@@ -13,6 +13,7 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEditor.AI
 {
+    [Obsolete("UnityEditor NavMeshBuilder has been deprecated. Use UnityEngine.AI.NavMeshBuilder instead.")]
     [MovedFrom("UnityEditor")]
     [NativeHeader("Modules/AIEditor/Builder/NavMeshBuilderEditor.bindings.h")]
     [StaticAccessor("NavMeshBuilderEditorBindings", StaticAccessorType.DoubleColon)]
@@ -90,60 +91,42 @@ namespace UnityEditor.AI
             // TODO SL Restore SceneManager setup
         }
 
+        [Obsolete("Use NavMeshEditorHelpers.CollectSourcesInStage() instead. (UnityUpgradable) -> NavMeshEditorHelpers.CollectSourcesInStage(*)")]
         public static void CollectSourcesInStage(
             Bounds includedWorldBounds, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, bool generateLinksByDefault,
             List<NavMeshBuildMarkup> markups, bool includeOnlyMarkedObjects, Scene stageProxy, List<NavMeshBuildSource> results)
         {
-            if (markups == null)
-                throw new ArgumentNullException(nameof(markups));
-            if (results == null)
-                throw new ArgumentNullException(nameof(results));
-            if (!stageProxy.IsValid())
-                throw new ArgumentException("Stage cannot be deduced from invalid scene.", nameof(stageProxy));
-
-            // Ensure strictly positive extents
-            includedWorldBounds.extents = Vector3.Max(includedWorldBounds.extents, 0.001f * Vector3.one);
-            var resultsArray = CollectSourcesInStageInternal(
-                includedLayerMask, includedWorldBounds, null, true, geometry, defaultArea, generateLinksByDefault, markups.ToArray(), includeOnlyMarkedObjects, stageProxy);
-            results.Clear();
-            results.AddRange(resultsArray);
+            NavMeshEditorHelpers.CollectSourcesInStage(
+                includedWorldBounds, includedLayerMask, geometry, defaultArea, generateLinksByDefault,
+                markups, includeOnlyMarkedObjects, stageProxy, results);
         }
 
+        [Obsolete("Use NavMeshEditorHelpers.CollectSourcesInStage() instead. (UnityUpgradable) -> NavMeshEditorHelpers.CollectSourcesInStage(*)")]
         public static void CollectSourcesInStage(Bounds includedWorldBounds, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, List<NavMeshBuildMarkup> markups, Scene stageProxy, List<NavMeshBuildSource> results)
         {
-            CollectSourcesInStage(includedWorldBounds, includedLayerMask, geometry, defaultArea, generateLinksByDefault:false, markups, includeOnlyMarkedObjects:false, stageProxy, results);
+            NavMeshEditorHelpers.CollectSourcesInStage(
+                includedWorldBounds, includedLayerMask, geometry, defaultArea, generateLinksByDefault: false,
+                markups, includeOnlyMarkedObjects: false, stageProxy, results);
         }
 
+        [Obsolete("Use NavMeshEditorHelpers.CollectSourcesInStage() instead. (UnityUpgradable) -> NavMeshEditorHelpers.CollectSourcesInStage(*)")]
         public static void CollectSourcesInStage(
             Transform root, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, bool generateLinksByDefault,
             List<NavMeshBuildMarkup> markups, bool includeOnlyMarkedObjects, Scene stageProxy, List<NavMeshBuildSource> results)
         {
-            if (markups == null)
-                throw new ArgumentNullException(nameof(markups));
-            if (results == null)
-                throw new ArgumentNullException(nameof(results));
-            if (!stageProxy.IsValid())
-                throw new ArgumentException("Stage cannot be deduced from invalid scene.", nameof(stageProxy));
-
-            // root == null is a valid argument
-
-            var empty = new Bounds();
-            var resultsArray = CollectSourcesInStageInternal(
-                includedLayerMask, empty, root, false, geometry, defaultArea, generateLinksByDefault, markups.ToArray(), includeOnlyMarkedObjects, stageProxy);
-            results.Clear();
-            results.AddRange(resultsArray);
+            NavMeshEditorHelpers.CollectSourcesInStage(
+                root, includedLayerMask, geometry, defaultArea, generateLinksByDefault,
+                markups, includeOnlyMarkedObjects, stageProxy, results);
         }
 
+        [Obsolete("Use NavMeshEditorHelpers.CollectSourcesInStage() instead. (UnityUpgradable) -> NavMeshEditorHelpers.CollectSourcesInStage(*)")]
         public static void CollectSourcesInStage(
             Transform root, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea,
             List<NavMeshBuildMarkup> markups, Scene stageProxy, List<NavMeshBuildSource> results)
         {
-            CollectSourcesInStage(root, includedLayerMask, geometry, defaultArea, generateLinksByDefault:false, markups, includeOnlyMarkedObjects:false, stageProxy, results);
+            NavMeshEditorHelpers.CollectSourcesInStage(
+                root, includedLayerMask, geometry, defaultArea, generateLinksByDefault: false,
+                markups, includeOnlyMarkedObjects: false, stageProxy, results);
         }
-
-        [FreeFunction("NavMeshBuilderEditorBindings::CollectSourcesInStageInternal")]
-        static extern NavMeshBuildSource[] CollectSourcesInStageInternal(
-            int includedLayerMask, Bounds includedWorldBounds, Transform root, bool useBounds, NavMeshCollectGeometry geometry,
-            int defaultArea, bool generateLinksByDefault, NavMeshBuildMarkup[] markups, bool includeOnlyMarkedObjects, Scene stageProxy);
     }
 }

@@ -274,6 +274,14 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             if (hasStencil)
                 rtNames[rtNames.Length - 1] = FrameDebuggerStyles.EventToolbar.s_StencilLabel;
 
+            // Render Target Selection
+            // --------------------------------
+            // The UI Dropdown and FrameDebugger use different
+            // indices so we need to convert between the two:
+            //              Dropdown           Frame Debugger
+            // Depth   | Penultimate item   |       -1
+            // Stencil | Last item          |       -2
+
             // If we showed depth/stencil before then try to keep showing depth/stencil
             // otherwise try to keep showing color
             if (m_RTIndexLastSet == -1)
@@ -284,7 +292,18 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 m_RTIndex = 0;
 
             m_RTIndex = EditorGUILayout.Popup(m_RTIndex, rtNames, FrameDebuggerStyles.EventToolbar.s_PopupLeftStyle, GUILayout.Width(70));
-            GUI.enabled = !isBackBuffer && !isDepthOnlyRT;
+
+            int rtIndexToSet = m_RTIndex;
+            if (hasShowableDepth && rtIndexToSet == (showableRTCount - 1))
+                rtIndexToSet = -1;
+
+            if (hasStencil && rtIndexToSet == showableRTCount)
+                rtIndexToSet = showableRTCount > 1 ? -2 : -1;
+
+            // --------------------------------
+
+            bool isForcingRTSelection = isBackBuffer || isDepthOnlyRT;
+            GUI.enabled = !isForcingRTSelection;
 
             // color channels
             EditorGUILayout.Space(5f);
@@ -350,14 +369,9 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 m_RTWhiteLevel = Mathf.Clamp(whiteLevel, blackLevel, m_RTWhiteMaxLevel);
             }
 
-            int rtIndexToSet = m_RTIndex;
-            if (hasShowableDepth && rtIndexToSet == (showableRTCount - 1))
-                rtIndexToSet = -1;
-
-            if (hasStencil && rtIndexToSet == showableRTCount)
-                rtIndexToSet = -2;
-
-            if (EditorGUI.EndChangeCheck() || rtIndexToSet != m_RTIndexLastSet || forceUpdate)
+            if (EditorGUI.EndChangeCheck()
+                || (!isForcingRTSelection && (rtIndexToSet != m_RTIndexLastSet))
+                || forceUpdate)
             {
                 m_SelectedMask = Vector4.zero;
                 switch (channelToDisplay)
@@ -374,6 +388,11 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 m_FrameDebugger.RepaintAllNeededThings();
                 m_RTIndexLastSet = rtIndexToSet;
                 FrameDebuggerHelper.ReleaseTemporaryTexture(ref m_RenderTargetRenderTextureCopy);
+            }
+            else if (m_RTIndexLastSet == -2 && showableRTCount <= 1)
+            {
+                m_RTIndexLastSet = -1;
+                FrameDebuggerUtility.SetRenderTargetDisplayOptions(-1, m_SelectedMask, m_RTBlackLevel, m_RTWhiteLevel);
             }
 
             GUILayout.EndHorizontal();

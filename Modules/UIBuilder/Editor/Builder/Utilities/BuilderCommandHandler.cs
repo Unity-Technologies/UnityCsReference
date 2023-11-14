@@ -489,7 +489,7 @@ namespace Unity.UI.Builder
                 BuilderAssetUtilities.CopyAttributeOverridesToChildTemplateAssets(attributeOverrides, linkedVTACopy);
 
                 // Sync serialized data because attribute overrides have been updated
-                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(linkedVTACopy));
+                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(linkedVTACopy), false);
 
                 // Apply stylesheets to new element + inline rules
                 BuilderAssetUtilities.AddStyleSheetsFromTreeAsset(unpackedVEA, linkedInstancedVTA);

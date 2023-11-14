@@ -19,17 +19,17 @@ namespace UnityEngine.UIElements
         public class UxmlSerializedData : UIElements.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeReference, UxmlObjectReference] private List<SortColumnDescription.UxmlSerializedData> sortColumnDescriptions;
+            [SerializeReference, UxmlObjectReference] List<SortColumnDescription.UxmlSerializedData> sortColumnDescriptions;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortColumnDescriptions_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new SortColumnDescriptions();
 
             public override void Deserialize(object obj)
             {
-                var e = (SortColumnDescriptions)obj;
-
-                if (sortColumnDescriptions != null)
+                if (ShouldWriteAttributeValue(sortColumnDescriptions_UxmlAttributeFlags) && sortColumnDescriptions != null)
                 {
+                    var e = (SortColumnDescriptions)obj;
                     foreach (var scdData in sortColumnDescriptions)
                     {
                         var scd = (SortColumnDescription)scdData.CreateInstance();

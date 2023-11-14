@@ -175,29 +175,40 @@ namespace UnityEngine.UIElements
         public class UxmlSerializedData : UIElements.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField, HideInInspector] private string name;
-            [SerializeField] private string viewDataKey;
+            [SerializeField, HideInInspector] string name;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags name_UxmlAttributeFlags;
+            [SerializeField] string viewDataKey;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags viewDataKey_UxmlAttributeFlags;
             [UxmlAttribute(obsoleteNames = new[] { "pickingMode" })]
-            [SerializeField] private PickingMode pickingMode;
-            [SerializeField] private string tooltip;
-            [SerializeField] private UsageHints usageHints;
+            [SerializeField] PickingMode pickingMode;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags pickingMode_UxmlAttributeFlags;
+            [SerializeField] string tooltip;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tooltip_UxmlAttributeFlags;
+            [SerializeField] UsageHints usageHints;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags usageHints_UxmlAttributeFlags;
             [UxmlAttribute("tabindex")]
-            [SerializeField] private int tabIndex;
-            [SerializeField] private bool focusable;
+            [SerializeField] int tabIndex;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tabIndex_UxmlAttributeFlags;
+            [SerializeField] bool focusable;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags focusable_UxmlAttributeFlags;
 
             [Tooltip(DataBinding.k_DataSourceTooltip)]
-            [SerializeField, HideInInspector, DataSourceDrawer] private Object dataSource;
+            [SerializeField, HideInInspector, DataSourceDrawer] Object dataSource;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSource_UxmlAttributeFlags;
 
             // We use a string here because the PropertyPath struct is not serializable
             [UxmlAttribute("data-source-path")]
             [Tooltip(DataBinding.k_DataSourcePathTooltip)]
-            [SerializeField, HideInInspector] private string dataSourcePathString;
+            [SerializeField, HideInInspector] string dataSourcePathString;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourcePathString_UxmlAttributeFlags;
 
             [UxmlAttribute("data-source-type")]
             [Tooltip(DataBinding.k_DataSourceTooltip)]
-            [SerializeField, HideInInspector, DataSourceTypeDrawer(typeof(object))] private string dataSourceTypeString;
+            [SerializeField, HideInInspector, DataSourceTypeDrawer(typeof(object))] string dataSourceTypeString;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceTypeString_UxmlAttributeFlags;
 
             [SerializeReference, HideInInspector, UxmlObjectReference("Bindings")] List<Binding.UxmlSerializedData> bindings;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindings_UxmlAttributeFlags;
             #pragma warning restore 649
 
             internal bool HasBindingInternal(string property)
@@ -221,27 +232,39 @@ namespace UnityEngine.UIElements
             public override void Deserialize(object obj)
             {
                 var e = (VisualElement)obj;
-                e.name = name;
-                e.viewDataKey = viewDataKey;
-                e.pickingMode = pickingMode;
-                e.tooltip = tooltip;
-                e.usageHints = usageHints;
-                e.tabIndex = tabIndex;
-                e.focusable = focusable;
-                e.dataSource = dataSource ? dataSource : null;
+                if (ShouldWriteAttributeValue(name_UxmlAttributeFlags))
+                    e.name = name;
+                if (ShouldWriteAttributeValue(viewDataKey_UxmlAttributeFlags))
+                    e.viewDataKey = viewDataKey;
+                if (ShouldWriteAttributeValue(pickingMode_UxmlAttributeFlags))
+                    e.pickingMode = pickingMode;
+                if (ShouldWriteAttributeValue(tooltip_UxmlAttributeFlags))
+                    e.tooltip = tooltip;
+                if (ShouldWriteAttributeValue(usageHints_UxmlAttributeFlags))
+                    e.usageHints = usageHints;
+                if (ShouldWriteAttributeValue(tabIndex_UxmlAttributeFlags))
+                    e.tabIndex = tabIndex;
+                if (ShouldWriteAttributeValue(focusable_UxmlAttributeFlags))
+                    e.focusable = focusable;
+                if (ShouldWriteAttributeValue(dataSource_UxmlAttributeFlags))
+                    e.dataSource = dataSource ? dataSource : null;
+                if (ShouldWriteAttributeValue(dataSourcePathString_UxmlAttributeFlags))
+                    e.dataSourcePathString = dataSourcePathString;
+                if (ShouldWriteAttributeValue(dataSourceTypeString_UxmlAttributeFlags))
+                    e.dataSourceTypeString = dataSourceTypeString;
 
-                e.dataSourcePathString = dataSourcePathString;
-                e.dataSourceTypeString = dataSourceTypeString;
-
-                e.bindings.Clear();
-                if (bindings != null)
+                if (ShouldWriteAttributeValue(bindings_UxmlAttributeFlags))
                 {
-                    foreach (var bindingData in bindings)
+                    e.bindings.Clear();
+                    if (bindings != null)
                     {
-                        var binding = (Binding)bindingData.CreateInstance();
-                        bindingData.Deserialize(binding);
-                        e.SetBinding(binding.property, binding);
-                        e.bindings.Add(binding);
+                        foreach (var bindingData in bindings)
+                        {
+                            var binding = (Binding)bindingData.CreateInstance();
+                            bindingData.Deserialize(binding);
+                            e.SetBinding(binding.property, binding);
+                            e.bindings.Add(binding);
+                        }
                     }
                 }
             }

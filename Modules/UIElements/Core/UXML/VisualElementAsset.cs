@@ -108,6 +108,14 @@ namespace UnityEngine.UIElements
                 var fieldInfo = attDescription.serializedField;
                 var value = fieldInfo.GetValue(from);
                 fieldInfo.SetValue(to, value);
+
+                // Copy attribute flags
+                var fieldInfoFlags = attDescription.serializedFieldAttributeFlags;
+                if (fieldInfoFlags != null)
+                {
+                    var valueFlags = fieldInfoFlags.GetValue(from);
+                    fieldInfoFlags.SetValue(to, valueFlags);
+                }
             }
 
             // Override all properties

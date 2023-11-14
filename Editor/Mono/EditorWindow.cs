@@ -439,7 +439,7 @@ namespace UnityEditor
                     return null;
             }
         }
-        
+
         internal int GetNumTabs()
         {
             DockArea da = m_Parent as DockArea;
@@ -1389,7 +1389,7 @@ namespace UnityEditor
             if (!(args.context is OverlayShortcutContext context))
                 return;
             var canvas = context.editorWindow.overlayCanvas;
-            canvas.SetOverlaysEnabled(!canvas.overlaysEnabled);
+            canvas.overlaysEnabled = !canvas.overlaysEnabled;
         }
 
         [Shortcut("Overlays/Hide Overlay", typeof(OverlayShortcutContext))]

@@ -25,9 +25,11 @@ namespace UnityEditor.UIElements
         public new class UxmlSerializedData : BaseField<Object>.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private bool allowSceneObjects;
+            [SerializeField] bool allowSceneObjects;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowSceneObjects_UxmlAttributeFlags;
             [UxmlAttribute("type"), UxmlTypeReference(typeof(Object))]
-            [SerializeField] private string objectType;
+            [SerializeField] string objectType;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags objectType_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new ObjectField();
@@ -37,8 +39,10 @@ namespace UnityEditor.UIElements
                 base.Deserialize(obj);
 
                 var e = (ObjectField)obj;
-                e.allowSceneObjects = allowSceneObjects;
-                e.objectType = UxmlUtility.ParseType(objectType, typeof(Object));
+                if (ShouldWriteAttributeValue(allowSceneObjects_UxmlAttributeFlags))
+                    e.allowSceneObjects = allowSceneObjects;
+                if (ShouldWriteAttributeValue(objectType_UxmlAttributeFlags))
+                    e.objectType = UxmlUtility.ParseType(objectType, typeof(Object));
             }
         }
 

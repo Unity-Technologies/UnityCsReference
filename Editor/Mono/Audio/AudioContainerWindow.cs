@@ -27,17 +27,20 @@ sealed class AudioContainerWindow : EditorWindow
     internal readonly AudioContainerWindowState State = new();
 
     /// <summary>
-    /// Holds the added list elements in the list interaction callbacks
+    /// Holds the added list elements in the list interaction callbacks.
+    /// Only used locally in these methods, but it's a global member to avoid GC.
     /// </summary>
     readonly List<AudioContainerElement> m_AddedElements = new();
+
+    readonly string k_EmptyGuidString = Guid.Empty.ToString("N");
 
     VisualElement m_ContainerRootVisualElement;
     VisualElement m_Day0RootVisualElement;
 
     // Preview section
     Label m_AssetNameLabel;
-    Button m_PlayButton;
-    VisualElement m_PlayButtonImage;
+    Button m_PlayStopButton;
+    VisualElement m_PlayStopButtonImage;
     Button m_SkipButton;
     VisualElement m_SkipButtonImage;
 
@@ -94,7 +97,7 @@ sealed class AudioContainerWindow : EditorWindow
     bool m_IsInitializing;
     bool m_Day0ElementsInitialized;
     bool m_ContainerElementsInitialized;
-    private bool m_ClipFieldProgressBarsAreCleared = true;
+    bool m_ClipFieldProgressBarsAreCleared = true;
 
     /// <summary>
     /// Holds the previous state of the list elements for undo/delete housekeeping
@@ -116,8 +119,6 @@ sealed class AudioContainerWindow : EditorWindow
     void OnEnable()
     {
         Instance = this;
-
-        Undo.undoRedoPerformed += OnUndoRedoPerformed;
 
         State.TargetChanged += OnTargetChanged;
         State.TransportStateChanged += OnTransportStateChanged;
@@ -143,13 +144,14 @@ sealed class AudioContainerWindow : EditorWindow
         UnsubscribeFromClipListCallbacksAndEvents();
         UnsubscribeFromAutomaticTriggerCallbacksAndEvents();
 
-        Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+        EditorApplication.update -= OneTimeEditorApplicationUpdate;
 
         State.TargetChanged -= OnTargetChanged;
         State.TransportStateChanged -= OnTransportStateChanged;
         State.EditorPauseStateChanged -= EditorPauseStateChanged;
 
         State.OnDestroy();
+
         m_CachedElements.Clear();
         m_AddedElements.Clear();
     }
@@ -333,8 +335,8 @@ sealed class AudioContainerWindow : EditorWindow
     void InitializePreviewElements()
     {
         m_AssetNameLabel = UIToolkitUtilities.GetChildByName<Label>(m_ContainerRootVisualElement, "asset-name-label");
-        m_PlayButton = UIToolkitUtilities.GetChildByName<Button>(m_ContainerRootVisualElement, "play-button");
-        m_PlayButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(m_ContainerRootVisualElement, "play-button-image");
+        m_PlayStopButton = UIToolkitUtilities.GetChildByName<Button>(m_ContainerRootVisualElement, "play-button");
+        m_PlayStopButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(m_ContainerRootVisualElement, "play-button-image");
         m_SkipButton = UIToolkitUtilities.GetChildByName<Button>(m_ContainerRootVisualElement, "skip-button");
         m_SkipButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(m_ContainerRootVisualElement, "skip-button-image");
 
@@ -344,17 +346,17 @@ sealed class AudioContainerWindow : EditorWindow
 
     void SubscribeToPreviewCallbacksAndEvents()
     {
-        m_PlayButton.clicked += OnPlayStopButtonClicked;
+        m_PlayStopButton.clicked += OnPlayStopButtonClicked;
         m_SkipButton.clicked += OnSkipButtonClicked;
     }
 
     void UnsubscribeFromPreviewCallbacksAndEvents()
     {
-        if (m_PlayButton != null)
-            m_PlayButton.clicked -= OnPlayStopButtonClicked;
+        if (m_PlayStopButton != null)
+            m_PlayStopButton.clicked -= OnPlayStopButtonClicked;
 
-        if (m_PlayButton != null)
-            m_PlayButton.clicked -= OnSkipButtonClicked;
+        if (m_SkipButton != null)
+            m_SkipButton.clicked -= OnSkipButtonClicked;
     }
 
     void BindAndTrackPreviewProperties()
@@ -386,7 +388,7 @@ sealed class AudioContainerWindow : EditorWindow
     {
         var editorIsPaused = EditorApplication.isPaused;
 
-        m_PlayButton?.SetEnabled(State.IsReadyToPlay() && !editorIsPaused);
+        m_PlayStopButton?.SetEnabled(State.IsReadyToPlay() && !editorIsPaused);
         m_SkipButton?.SetEnabled(State.IsPlayingOrPaused() && State.AudioContainer.triggerMode == AudioRandomContainerTriggerMode.Automatic && !editorIsPaused);
 
         var image =
@@ -394,7 +396,7 @@ sealed class AudioContainerWindow : EditorWindow
                 ? UIToolkitUtilities.LoadIcon("Stop")
                 : UIToolkitUtilities.LoadIcon("Play");
 
-        m_PlayButtonImage.style.backgroundImage = new StyleBackground(image);
+        m_PlayStopButtonImage.style.backgroundImage = new StyleBackground(image);
     }
 
     void OnTransportStateChanged(object sender, EventArgs e)
@@ -435,7 +437,6 @@ sealed class AudioContainerWindow : EditorWindow
         volumeRandomizationMaxField.label = "";
         volumeRandomizationMaxField.formatString = "0.#";
         InsertUnitFieldForFloatField(volumeRandomizationMaxField, "dB");
-
     }
 
     void SubscribeToVolumeCallbacksAndEvents()
@@ -794,7 +795,7 @@ sealed class AudioContainerWindow : EditorWindow
 
         m_AddedElements.Clear();
 
-        var undoName = "Add AudioContainerElement";
+        var undoName = $"Add {nameof(AudioRandomContainer)} element";
 
         if (indicesArray.Length > 1)
         {
@@ -802,10 +803,8 @@ sealed class AudioContainerWindow : EditorWindow
         }
 
         Undo.SetCurrentGroupName(undoName);
-        SetTitle();
+
         m_AddedElements.Clear();
-        // Force a list rebuild when the list size has changed or it will not render correctly
-        EditorApplication.update += DoDelayedListRebuild;
     }
 
     void OnListItemsRemoved(IEnumerable<int> indices)
@@ -826,7 +825,7 @@ sealed class AudioContainerWindow : EditorWindow
 
         State.AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
 
-        var undoName = "Remove AudioContainerElement";
+        var undoName = $"Remove {nameof(AudioRandomContainer)} element";
 
         if (indicesArray.Length > 1)
         {
@@ -834,19 +833,17 @@ sealed class AudioContainerWindow : EditorWindow
         }
 
         Undo.SetCurrentGroupName(undoName);
-        SetTitle();
-        // Force a list rebuild when the list size has changed or it will not render correctly
-        EditorApplication.update += DoDelayedListRebuild;
     }
 
     void OnItemListIndexChanged(int oldIndex, int newIndex)
     {
+        Undo.SetCurrentGroupName($"Reorder {nameof(AudioRandomContainer)} list");
         State.AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
     }
 
     void OnAudioClipDrag(List<AudioClip> audioClips)
     {
-        var undoName = "Add AudioContainerElement";
+        var undoName = $"Add {nameof(AudioRandomContainer)} element";
 
         if (audioClips.Count > 1)
             undoName = $"{undoName}s";
@@ -875,17 +872,36 @@ sealed class AudioContainerWindow : EditorWindow
             Undo.RegisterCreatedObjectUndo(element, "Create AudioContainerElement");
 
         m_AddedElements.Clear();
-
-        SetTitle();
         Undo.SetCurrentGroupName(undoName);
-        // Force a list rebuild when the list size has changed or it will not render correctly
-        EditorApplication.update += DoDelayedListRebuild;
     }
 
     void OnAudioClipListChanged(SerializedProperty property)
     {
-        UpdateTransportButtonStates();
+        // Do manual fixup of orphaned subassets after a possible undo of item removal
+        // because the undo system does not play nice with RegisterCreatedObjectUndo.
+        if (m_CachedElements.Count < State.AudioContainer.elements.Length)
+        {
+            var elements = State.AudioContainer.elements;
+
+            foreach (var elm in elements)
+            {
+                AssetDatabase.TryGetGUIDAndLocalFileIdentifier(elm, out var guid, out var localId);
+
+                // An empty asset GUID means the subasset has lost the reference
+                // to the main asset after an undo of item removal, so re-add it manually.
+                if (guid.Equals(k_EmptyGuidString))
+                    AssetDatabase.AddObjectToAsset(elm, State.AudioContainer);
+            }
+        }
+
+        // Update the cached list of elements
         m_CachedElements = State.AudioContainer.elements.ToList();
+
+        // Force a list rebuild when the list has changed or it will not always render correctly
+        m_ClipsListView.Rebuild();
+
+        UpdateTransportButtonStates();
+        SetTitle();
     }
 
     void UpdateClipFieldProgressBars()
@@ -937,12 +953,6 @@ sealed class AudioContainerWindow : EditorWindow
             field.Progress = 0.0f;
 
         m_ClipFieldProgressBarsAreCleared = true;
-    }
-
-    void DoDelayedListRebuild()
-    {
-        m_ClipsListView.Rebuild();
-        EditorApplication.update -= DoDelayedListRebuild;
     }
 
     #endregion
@@ -1184,24 +1194,6 @@ sealed class AudioContainerWindow : EditorWindow
     #endregion
 
     #region GlobalEditorCallbackHandlers
-
-    void OnUndoRedoPerformed()
-    {
-        if (m_ContainerRootVisualElement == null
-            || m_ContainerRootVisualElement.style.display == DisplayStyle.None
-            || State.AudioContainer == null)
-            return;
-
-        if (m_CachedElements.Count != State.AudioContainer.elements.Length)
-        {
-            // Force a list rebuild when the list size has increased or it will not render correctly
-            // if (m_CachedElements.Count < State.AudioContainer.elements.Length)
-                m_ClipsListView.Rebuild();
-
-            SetTitle();
-            m_CachedElements = State.AudioContainer.elements.ToList();
-        }
-    }
 
     void OnWillSaveAssets(IEnumerable<string> paths)
     {

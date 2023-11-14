@@ -39,11 +39,15 @@ namespace UnityEngine.UIElements
         {
             #pragma warning disable 649
             [UxmlAttribute("low-value", "lowValue")]
-            [SerializeField] private float lowValue;
+            [SerializeField] float lowValue;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowValue_UxmlAttributeFlags;
             [UxmlAttribute("high-value", "highValue")]
-            [SerializeField] private float highValue;
-            [SerializeField] private SliderDirection direction;
-            [SerializeField] private float value;
+            [SerializeField] float highValue;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highValue_UxmlAttributeFlags;
+            [SerializeField] SliderDirection direction;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags direction_UxmlAttributeFlags;
+            [SerializeField] float value;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new Scroller();
@@ -53,10 +57,14 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (Scroller)obj;
-                e.slider.lowValue = lowValue;
-                e.slider.highValue = highValue;
-                e.direction = direction;
-                e.value = value;
+                if (ShouldWriteAttributeValue(lowValue_UxmlAttributeFlags))
+                    e.slider.lowValue = lowValue;
+                if (ShouldWriteAttributeValue(highValue_UxmlAttributeFlags))
+                    e.slider.highValue = highValue;
+                if (ShouldWriteAttributeValue(direction_UxmlAttributeFlags))
+                    e.direction = direction;
+                if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
+                    e.value = value;
             }
         }
 

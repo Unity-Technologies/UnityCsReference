@@ -3,8 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 namespace UnityEditor.AI
 {
@@ -184,6 +187,57 @@ namespace UnityEditor.AI
             GUI.Label(new Rect(slopeStartX + 20, slopeStartY - 15, 150, 20), UnityString.Format("{0}\u00b0", agentSlope));
 
             Handles.color = oldColor;
+        }
+
+        public static void CollectSourcesInStage(
+            Bounds includedWorldBounds, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, bool generateLinksByDefault,
+            List<NavMeshBuildMarkup> markups, bool includeOnlyMarkedObjects, Scene stageProxy, List<NavMeshBuildSource> results)
+        {
+            if (markups == null)
+                throw new ArgumentNullException(nameof(markups));
+            if (results == null)
+                throw new ArgumentNullException(nameof(results));
+            if (!stageProxy.IsValid())
+                throw new ArgumentException("Stage cannot be deduced from invalid scene.", nameof(stageProxy));
+
+            // Ensure strictly positive extents
+            includedWorldBounds.extents = Vector3.Max(includedWorldBounds.extents, 0.001f * Vector3.one);
+            var resultsArray = CollectSourcesInStageInternal(
+                includedLayerMask, includedWorldBounds, null, true, geometry, defaultArea, generateLinksByDefault, markups.ToArray(), includeOnlyMarkedObjects, stageProxy);
+            results.Clear();
+            results.AddRange(resultsArray);
+        }
+
+        public static void CollectSourcesInStage(Bounds includedWorldBounds, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, List<NavMeshBuildMarkup> markups, Scene stageProxy, List<NavMeshBuildSource> results)
+        {
+            CollectSourcesInStage(includedWorldBounds, includedLayerMask, geometry, defaultArea, generateLinksByDefault: false, markups, includeOnlyMarkedObjects: false, stageProxy, results);
+        }
+
+        public static void CollectSourcesInStage(
+            Transform root, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, bool generateLinksByDefault,
+            List<NavMeshBuildMarkup> markups, bool includeOnlyMarkedObjects, Scene stageProxy, List<NavMeshBuildSource> results)
+        {
+            if (markups == null)
+                throw new ArgumentNullException(nameof(markups));
+            if (results == null)
+                throw new ArgumentNullException(nameof(results));
+            if (!stageProxy.IsValid())
+                throw new ArgumentException("Stage cannot be deduced from invalid scene.", nameof(stageProxy));
+
+            // root == null is a valid argument
+
+            var empty = new Bounds();
+            var resultsArray = CollectSourcesInStageInternal(
+                includedLayerMask, empty, root, false, geometry, defaultArea, generateLinksByDefault, markups.ToArray(), includeOnlyMarkedObjects, stageProxy);
+            results.Clear();
+            results.AddRange(resultsArray);
+        }
+
+        public static void CollectSourcesInStage(
+            Transform root, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea,
+            List<NavMeshBuildMarkup> markups, Scene stageProxy, List<NavMeshBuildSource> results)
+        {
+            CollectSourcesInStage(root, includedLayerMask, geometry, defaultArea, generateLinksByDefault: false, markups, includeOnlyMarkedObjects: false, stageProxy, results);
         }
     }
 }

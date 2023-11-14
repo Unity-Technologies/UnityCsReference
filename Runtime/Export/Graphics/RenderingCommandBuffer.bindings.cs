@@ -508,6 +508,9 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_DispatchRays", HasExplicitThis = true, ThrowsException = true)]
         extern private void Internal_DispatchRays([NotNull] RayTracingShader rayTracingShader, string rayGenShaderName, UInt32 width, UInt32 height, UInt32 depth, Camera camera = null);
 
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_DispatchRaysIndirect", HasExplicitThis = true, ThrowsException = true)]
+        extern private void Internal_DispatchRaysIndirect([NotNull] RayTracingShader rayTracingShader, string rayGenShaderName, [NotNull] GraphicsBuffer argsBuffer, uint argsOffset = 0, Camera camera = null);
+
         [NativeMethod("AddGenerateMips")]
         extern private void Internal_GenerateMips(RenderTargetIdentifier rt);
 

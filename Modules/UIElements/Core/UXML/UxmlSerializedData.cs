@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace UnityEngine.UIElements
 {
@@ -19,8 +20,46 @@ namespace UnityEngine.UIElements
     [Serializable]
     public abstract class UxmlSerializedData
     {
+        internal const string AttributeFlagSuffix = "_UxmlAttributeFlags";
+        const UxmlAttributeFlags k_DefaultFlags = UxmlAttributeFlags.OverriddenInUxml;
+
+        /// <summary>
+        /// Used to indicate if a field is overridden in a UXML file.
+        /// </summary>
+        [Flags]
+        public enum UxmlAttributeFlags : byte
+        {
+            /// <summary>
+            /// The serialized field is ignored and not applied during <see cref="Deserialize(object)"/>.
+            /// </summary>
+            Ignore = 0,
+
+            /// <summary>
+            /// The serialized field is overridden in a UXML file and will be applied during <see cref="Deserialize(object)"/>.
+            /// </summary>
+            OverriddenInUxml = 1,
+
+            /// <summary>
+            /// The serialized field contains the default value, it will be applied when editing in the UI Builder.
+            /// </summary>
+            DefaultValue = 2,
+        }
+
         [SerializeField, UxmlIgnore, HideInInspector]
         internal int uxmlAssetId;
+
+        static UxmlAttributeFlags s_CurrentDeserializeFlags = k_DefaultFlags;
+
+        /// <summary>
+        /// Determines if an attribute should be applied during <see cref="Deserialize(object)"/>.
+        /// </summary>
+        /// <param name="attributeFlags"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool ShouldWriteAttributeValue(UxmlAttributeFlags attributeFlags)
+        {
+            return (attributeFlags & s_CurrentDeserializeFlags) != 0;
+        }
 
         /// <summary>
         /// Returns an instance of the declaring element.
@@ -36,6 +75,24 @@ namespace UnityEngine.UIElements
         /// </remarks>
         /// <param name="obj">The element to have the serialized data applied to.</param>
         public abstract void Deserialize(object obj);
+
+        /// <summary>
+        /// Deserializes using custom attribute flags.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="flags"></param>
+        internal void Deserialize(object obj, UxmlAttributeFlags flags)
+        {
+            try
+            {
+                s_CurrentDeserializeFlags = flags;
+                Deserialize(obj);
+            }
+            finally
+            {
+                s_CurrentDeserializeFlags = k_DefaultFlags;
+            }
+        }
     }
 
     abstract class UxmlSerializableAdapterBase

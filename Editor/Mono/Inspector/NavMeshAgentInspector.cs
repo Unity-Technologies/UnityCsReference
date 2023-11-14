@@ -93,7 +93,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_AutoRepath, Styles.AutoRepath);
 
             //Initially needed data
-            var areaNames = GameObjectUtility.GetNavMeshAreaNames();
+            var areaNames = NavMesh.GetAreaNames();
             var currentMask = m_WalkableMask.longValue;
             var compressedMask = 0;
 
@@ -106,7 +106,7 @@ namespace UnityEditor
                 //Need to find the index as the list of names will compress out empty areas
                 for (var i = 0; i < areaNames.Length; i++)
                 {
-                    var areaIndex = GameObjectUtility.GetNavMeshAreaFromName(areaNames[i]);
+                    var areaIndex = NavMesh.GetAreaFromName(areaNames[i]);
                     if (((1 << areaIndex) & currentMask) != 0)
                         compressedMask = compressedMask | (1 << i);
                 }
@@ -135,7 +135,7 @@ namespace UnityEditor
                         if (((areaMask >> i) & 1) != 0)
                         {
                             //Find out the 'real' layer from the name, then set it in the new mask
-                            newMask = newMask | (uint)(1 << GameObjectUtility.GetNavMeshAreaFromName(areaNames[i]));
+                            newMask = newMask | (uint)(1 << NavMesh.GetAreaFromName(areaNames[i]));
                         }
                     }
                     m_WalkableMask.longValue = newMask;

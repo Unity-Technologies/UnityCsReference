@@ -21,7 +21,8 @@ namespace UnityEditor.UIElements
             #pragma warning disable 649
             [TagFieldValueDecorator]
             [UxmlAttribute("value")]
-            [SerializeField] private string overrideValue;
+            [SerializeField] string overrideValue;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags overrideValue_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new TagField();
@@ -30,8 +31,11 @@ namespace UnityEditor.UIElements
             {
                 base.Deserialize(obj);
 
-                var e = (TagField)obj;
-                e.overrideValue = overrideValue;
+                if (ShouldWriteAttributeValue(overrideValue_UxmlAttributeFlags))
+                {
+                    var e = (TagField)obj;
+                    e.overrideValue = overrideValue;
+                }
             }
         }
 

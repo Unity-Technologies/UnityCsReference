@@ -34,7 +34,8 @@ namespace UnityEngine.UIElements
         {
             #pragma warning disable 649
             [ImageFieldValueDecorator]
-            [SerializeField, UxmlAttribute("icon-image")] private Object iconImageReference;
+            [SerializeField, UxmlAttribute("icon-image")] Object iconImageReference;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags iconImageReference_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new Button();
@@ -43,8 +44,11 @@ namespace UnityEngine.UIElements
             {
                 base.Deserialize(obj);
 
-                var e = (Button)obj;
-                e.iconImageReference = iconImageReference;
+                if (ShouldWriteAttributeValue(iconImageReference_UxmlAttributeFlags))
+                {
+                    var e = (Button)obj;
+                    e.iconImageReference = iconImageReference;
+                }
             }
         }
 

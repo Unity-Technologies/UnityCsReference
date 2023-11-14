@@ -24,24 +24,36 @@ namespace UnityEditor.Accessibility
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-#pragma warning disable 649
-            [SerializeField] private bool isRoot;
-            [SerializeField] private int id;
-            [SerializeField] private string label;
-            [SerializeField] private AccessibilityRole role;
-            [SerializeField] private bool isActive;
-#pragma warning restore 649
+            #pragma warning disable 649
+            [SerializeField] bool isRoot;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isRoot_UxmlAttributeFlags;
+            [SerializeField] int id;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags id_UxmlAttributeFlags;
+            [SerializeField] string label;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
+            [SerializeField] AccessibilityRole role;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags role_UxmlAttributeFlags;
+            [SerializeField] bool isActive;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isActive_UxmlAttributeFlags;
+            #pragma warning restore 649
+
             public override object CreateInstance() => new AccessibilityHierarchyTreeViewItem();
+
             public override void Deserialize(object obj)
             {
                 base.Deserialize(obj);
 
-                var item = (AccessibilityHierarchyTreeViewItem) obj;
-                item.isRoot = isRoot;
-                item.isActive = isActive;
-                item.id = id;
-                item.label = label;
-                item.role = role;
+                var e = (AccessibilityHierarchyTreeViewItem) obj;
+                if (ShouldWriteAttributeValue(isRoot_UxmlAttributeFlags))
+                    e.isRoot = isRoot;
+                if (ShouldWriteAttributeValue(isActive_UxmlAttributeFlags))
+                    e.isActive = isActive;
+                if (ShouldWriteAttributeValue(id_UxmlAttributeFlags))
+                    e.id = id;
+                if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
+                    e.label = label;
+                if (ShouldWriteAttributeValue(role_UxmlAttributeFlags))
+                    e.role = role;
             }
         }
 

@@ -89,6 +89,7 @@ namespace UnityEditor.UIElements
         {
             #pragma warning disable 649
             [SerializeField] private string placeholderText;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags placeholderText_UxmlAttributeFlags;
             #pragma warning restore 649
 
             [ExcludeFromDocs]
@@ -96,8 +97,11 @@ namespace UnityEditor.UIElements
             {
                 base.Deserialize(obj);
 
-                var e = (SearchFieldBase<TextInputType, T>)obj;
-                e.placeholderText = placeholderText;
+                if (ShouldWriteAttributeValue(placeholderText_UxmlAttributeFlags))
+                {
+                    var e = (SearchFieldBase<TextInputType, T>)obj;
+                    e.placeholderText = placeholderText;
+                }
             }
         }
 

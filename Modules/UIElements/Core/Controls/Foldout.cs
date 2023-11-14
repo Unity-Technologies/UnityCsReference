@@ -25,8 +25,10 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField, MultilineTextField] private string text;
-            [SerializeField] private bool value;
+            [SerializeField, MultilineTextField] string text;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
+            [SerializeField] bool value;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new Foldout();
@@ -36,8 +38,10 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (Foldout)obj;
-                e.text = text;
-                e.SetValueWithoutNotify(value);
+                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
+                    e.text = text;
+                if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
+                    e.SetValueWithoutNotify(value);
             }
         }
 

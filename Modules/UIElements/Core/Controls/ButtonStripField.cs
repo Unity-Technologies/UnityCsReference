@@ -26,7 +26,7 @@ namespace UnityEngine.UIElements
         const string k_ButtonRightClass = k_ButtonClass + "--right";
         const string k_ButtonAloneClass = k_ButtonClass + "--alone";
 
-        List<Button> m_Buttons = new List<Button>();
+        readonly List<Button> m_Buttons = new List<Button>();
 
         public void AddButton(string text, string name = "")
         {

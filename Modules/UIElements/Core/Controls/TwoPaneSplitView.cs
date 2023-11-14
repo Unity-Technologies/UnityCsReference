@@ -34,9 +34,12 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private int fixedPaneIndex;
-            [SerializeField] private float fixedPaneInitialDimension;
-            [SerializeField] private TwoPaneSplitViewOrientation orientation;
+            [SerializeField] int fixedPaneIndex;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fixedPaneIndex_UxmlAttributeFlags;
+            [SerializeField] float fixedPaneInitialDimension;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fixedPaneInitialDimension_UxmlAttributeFlags;
+            [SerializeField] TwoPaneSplitViewOrientation orientation;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags orientation_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new TwoPaneSplitView();
@@ -45,8 +48,13 @@ namespace UnityEngine.UIElements
             {
                 base.Deserialize(obj);
 
-                var e = (TwoPaneSplitView)obj;
-                e.Init(fixedPaneIndex, fixedPaneInitialDimension, orientation);
+                if (ShouldWriteAttributeValue(fixedPaneIndex_UxmlAttributeFlags) ||
+                    ShouldWriteAttributeValue(fixedPaneInitialDimension_UxmlAttributeFlags) ||
+                    ShouldWriteAttributeValue(orientation_UxmlAttributeFlags))
+                {
+                    var e = (TwoPaneSplitView)obj;
+                    e.Init(fixedPaneIndex, fixedPaneInitialDimension, orientation);
+                }
             }
         }
 

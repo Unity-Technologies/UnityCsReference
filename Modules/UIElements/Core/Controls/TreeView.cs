@@ -45,7 +45,8 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BaseTreeView.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private VisualTreeAsset itemTemplate;
+            [SerializeField] VisualTreeAsset itemTemplate;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags itemTemplate_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new TreeView();
@@ -54,8 +55,11 @@ namespace UnityEngine.UIElements
             {
                 base.Deserialize(obj);
 
-                var e = (TreeView) obj;
-                e.itemTemplate = itemTemplate;
+                if (ShouldWriteAttributeValue(itemTemplate_UxmlAttributeFlags))
+                {
+                    var e = (TreeView)obj;
+                    e.itemTemplate = itemTemplate;
+                }
             }
         }
 

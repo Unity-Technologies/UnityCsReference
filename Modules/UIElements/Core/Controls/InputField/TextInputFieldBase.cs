@@ -45,27 +45,43 @@ namespace UnityEngine.UIElements
         {
             #pragma warning disable 649
             [UxmlAttribute(obsoleteNames = new[] { "maxLength" })]
-            [SerializeField] private int maxLength;
+            [SerializeField] int maxLength;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maxLength_UxmlAttributeFlags;
             [UxmlAttribute("password")]
-            [SerializeField] private bool isPasswordField;
+            [SerializeField] bool isPasswordField;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isPasswordField_UxmlAttributeFlags;
             [UxmlAttribute("mask-character", obsoleteNames = new[] { "maskCharacter" })]
-            [SerializeField] private char maskChar;
-            [SerializeField] private string placeholderText;
-            [SerializeField] private bool hidePlaceholderOnFocus;
+            [SerializeField] char maskChar;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maskChar_UxmlAttributeFlags;
+            [SerializeField] string placeholderText;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags placeholderText_UxmlAttributeFlags;
+            [SerializeField] bool hidePlaceholderOnFocus;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hidePlaceholderOnFocus_UxmlAttributeFlags;
             [UxmlAttribute("readonly")]
-            [SerializeField] private bool isReadOnly;
-            [SerializeField] private bool isDelayed;
+            [SerializeField] bool isReadOnly;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isReadOnly_UxmlAttributeFlags;
+            [SerializeField] bool isDelayed;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isDelayed_UxmlAttributeFlags;
             [SerializeField] private protected ScrollerVisibility verticalScrollerVisibility;
-            [SerializeField] private bool selectAllOnMouseUp;
-            [SerializeField] private bool selectAllOnFocus;
+            [SerializeField, UxmlIgnore, HideInInspector] private protected UxmlAttributeFlags verticalScrollerVisibility_UxmlAttributeFlags;
+            [SerializeField] bool selectAllOnMouseUp;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectAllOnMouseUp_UxmlAttributeFlags;
+            [SerializeField] bool selectAllOnFocus;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectAllOnFocus_UxmlAttributeFlags;
             [UxmlAttribute("select-word-by-double-click")]
-            [SerializeField] private bool doubleClickSelectsWord;
+            [SerializeField] bool doubleClickSelectsWord;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags doubleClickSelectsWord_UxmlAttributeFlags;
             [UxmlAttribute("select-line-by-triple-click")]
-            [SerializeField] private bool tripleClickSelectsLine;
-            [SerializeField] private bool emojiFallbackSupport;
-            [SerializeField] private bool hideMobileInput;
-            [SerializeField] private TouchScreenKeyboardType keyboardType;
-            [SerializeField] private bool autoCorrection;
+            [SerializeField] bool tripleClickSelectsLine;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tripleClickSelectsLine_UxmlAttributeFlags;
+            [SerializeField] bool emojiFallbackSupport;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags emojiFallbackSupport_UxmlAttributeFlags;
+            [SerializeField] bool hideMobileInput;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hideMobileInput_UxmlAttributeFlags;
+            [SerializeField] TouchScreenKeyboardType keyboardType;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags keyboardType_UxmlAttributeFlags;
+            [SerializeField] bool autoCorrection;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags autoCorrection_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => throw new MissingMethodException();
@@ -75,22 +91,38 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (TextInputBaseField<TValueType>)obj;
-                e.maxLength = maxLength;
-                e.isPasswordField = isPasswordField;
-                e.maskChar = maskChar;
-                e.placeholderText = placeholderText;
-                e.hidePlaceholderOnFocus = hidePlaceholderOnFocus;
-                e.isReadOnly = isReadOnly;
-                e.isDelayed = isDelayed;
-                e.verticalScrollerVisibility = verticalScrollerVisibility;
-                e.textSelection.selectAllOnMouseUp = selectAllOnMouseUp;
-                e.textSelection.selectAllOnFocus = selectAllOnFocus;
-                e.doubleClickSelectsWord = doubleClickSelectsWord;
-                e.tripleClickSelectsLine = tripleClickSelectsLine;
-                e.emojiFallbackSupport = emojiFallbackSupport;
-                e.hideMobileInput = hideMobileInput;
-                e.keyboardType = keyboardType;
-                e.autoCorrection = autoCorrection;
+                if (ShouldWriteAttributeValue(maxLength_UxmlAttributeFlags))
+                    e.maxLength = maxLength;
+                if (ShouldWriteAttributeValue(isPasswordField_UxmlAttributeFlags))
+                    e.isPasswordField = isPasswordField;
+                if (ShouldWriteAttributeValue(maskChar_UxmlAttributeFlags))
+                    e.maskChar = maskChar;
+                if (ShouldWriteAttributeValue(placeholderText_UxmlAttributeFlags))
+                    e.placeholderText = placeholderText;
+                if (ShouldWriteAttributeValue(hidePlaceholderOnFocus_UxmlAttributeFlags))
+                    e.hidePlaceholderOnFocus = hidePlaceholderOnFocus;
+                if (ShouldWriteAttributeValue(isReadOnly_UxmlAttributeFlags))
+                    e.isReadOnly = isReadOnly;
+                if (ShouldWriteAttributeValue(isDelayed_UxmlAttributeFlags))
+                    e.isDelayed = isDelayed;
+                if (ShouldWriteAttributeValue(verticalScrollerVisibility_UxmlAttributeFlags))
+                    e.verticalScrollerVisibility = verticalScrollerVisibility;
+                if (ShouldWriteAttributeValue(selectAllOnMouseUp_UxmlAttributeFlags))
+                    e.textSelection.selectAllOnMouseUp = selectAllOnMouseUp;
+                if (ShouldWriteAttributeValue(selectAllOnFocus_UxmlAttributeFlags))
+                    e.textSelection.selectAllOnFocus = selectAllOnFocus;
+                if (ShouldWriteAttributeValue(doubleClickSelectsWord_UxmlAttributeFlags))
+                    e.doubleClickSelectsWord = doubleClickSelectsWord;
+                if (ShouldWriteAttributeValue(tripleClickSelectsLine_UxmlAttributeFlags))
+                    e.tripleClickSelectsLine = tripleClickSelectsLine;
+                if (ShouldWriteAttributeValue(emojiFallbackSupport_UxmlAttributeFlags))
+                    e.emojiFallbackSupport = emojiFallbackSupport;
+                if (ShouldWriteAttributeValue(hideMobileInput_UxmlAttributeFlags))
+                    e.hideMobileInput = hideMobileInput;
+                if (ShouldWriteAttributeValue(keyboardType_UxmlAttributeFlags))
+                    e.keyboardType = keyboardType;
+                if (ShouldWriteAttributeValue(autoCorrection_UxmlAttributeFlags))
+                    e.autoCorrection = autoCorrection;
             }
         }
 

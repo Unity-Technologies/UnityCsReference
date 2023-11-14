@@ -16,10 +16,11 @@ namespace UnityEditor.Overlays
 
     static class OverlayUtilities
     {
-        class OverlayEditorWindowAssociation
+        internal class OverlayEditorWindowAssociation
         {
             public Type overlay;
             public Type editorWindowType;
+            public string overlayId;
         }
 
         static OverlayEditorWindowAssociation[] s_Overlays;
@@ -51,7 +52,8 @@ namespace UnityEditor.Overlays
                         overlayWindows.Add(new OverlayEditorWindowAssociation
                         {
                             overlay = ovrls[i],
-                            editorWindowType = overlayAttribute.editorWindowType
+                            editorWindowType = overlayAttribute.editorWindowType,
+                            overlayId = overlayAttribute.id
                         });
                     }
 
@@ -81,18 +83,26 @@ namespace UnityEditor.Overlays
             return position;
         }
 
-        internal static List<Type> GetOverlaysForType(Type type)
+        static bool OverlayWindowTypeEquatesTo(Type windowType, Type overlayWindowType)
+        {
+            return overlayWindowType != null && overlayWindowType.IsAssignableFrom(windowType);
+        }
+
+        internal static List<Type> GetOverlaysForType(Type windowType, Func<OverlayEditorWindowAssociation, bool> filter = null)
         {
             List<Type> res;
 
-            if (s_OverlaysTypeAssociations.TryGetValue(type, out res))
+            if (s_OverlaysTypeAssociations.TryGetValue(windowType, out res))
                 return res;
 
-            s_OverlaysTypeAssociations.Add(type, res = new List<Type>());
+            s_OverlaysTypeAssociations.Add(windowType, res = new List<Type>());
 
             for (int i = 0, c = overlays.Length; i < c; i++)
             {
-                if (overlays[i].editorWindowType != null && overlays[i].editorWindowType.IsAssignableFrom(type))
+                var shouldAddOverlayType = filter == null ?
+                    OverlayWindowTypeEquatesTo(windowType, overlays[i].editorWindowType) :
+                    OverlayWindowTypeEquatesTo(windowType, overlays[i].editorWindowType) && filter(overlays[i]);
+                if (shouldAddOverlayType)
                     res.Add(overlays[i].overlay);
             }
 

@@ -33,14 +33,22 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField, MultilineTextField] private string text;
-            [SerializeField] private bool enableRichText;
-            [SerializeField] private bool emojiFallbackSupport;
-            [SerializeField] private bool parseEscapeSequences;
-            [SerializeField] private bool selectable;
-            [SerializeField] private bool selectWordByDoubleClick;
-            [SerializeField] private bool selectLineByTripleClick;
-            [SerializeField] private bool displayTooltipWhenElided;
+            [SerializeField, MultilineTextField] string text;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
+            [SerializeField] bool enableRichText;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags enableRichText_UxmlAttributeFlags;
+            [SerializeField] bool emojiFallbackSupport;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags emojiFallbackSupport_UxmlAttributeFlags;
+            [SerializeField] bool parseEscapeSequences;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags parseEscapeSequences_UxmlAttributeFlags;
+            [SerializeField] bool selectable;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectable_UxmlAttributeFlags;
+            [SerializeField] bool selectWordByDoubleClick;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectWordByDoubleClick_UxmlAttributeFlags;
+            [SerializeField] bool selectLineByTripleClick;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectLineByTripleClick_UxmlAttributeFlags;
+            [SerializeField] bool displayTooltipWhenElided;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags displayTooltipWhenElided_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new TextElement();
@@ -50,14 +58,22 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (TextElement)obj;
-                e.text = text;
-                e.enableRichText = enableRichText;
-                e.emojiFallbackSupport = emojiFallbackSupport;
-                e.parseEscapeSequences = parseEscapeSequences;
-                e.selectable = selectable;
-                e.selectWordByDoubleClick = selectWordByDoubleClick;
-                e.selectLineByTripleClick = selectLineByTripleClick;
-                e.displayTooltipWhenElided = displayTooltipWhenElided;
+                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
+                    e.text = text;
+                if (ShouldWriteAttributeValue(enableRichText_UxmlAttributeFlags))
+                    e.enableRichText = enableRichText;
+                if (ShouldWriteAttributeValue(emojiFallbackSupport_UxmlAttributeFlags))
+                    e.emojiFallbackSupport = emojiFallbackSupport;
+                if (ShouldWriteAttributeValue(parseEscapeSequences_UxmlAttributeFlags))
+                    e.parseEscapeSequences = parseEscapeSequences;
+                if (ShouldWriteAttributeValue(selectable_UxmlAttributeFlags))
+                    e.selectable = selectable;
+                if (ShouldWriteAttributeValue(selectWordByDoubleClick_UxmlAttributeFlags))
+                    e.selectWordByDoubleClick = selectWordByDoubleClick;
+                if (ShouldWriteAttributeValue(selectLineByTripleClick_UxmlAttributeFlags))
+                    e.selectLineByTripleClick = selectLineByTripleClick;
+                if (ShouldWriteAttributeValue(displayTooltipWhenElided_UxmlAttributeFlags))
+                    e.displayTooltipWhenElided = displayTooltipWhenElided;
             }
         }
 

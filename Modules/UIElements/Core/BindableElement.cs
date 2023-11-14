@@ -15,7 +15,8 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private string bindingPath;
+            [SerializeField] string bindingPath;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindingPath_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new BindableElement();
@@ -24,8 +25,11 @@ namespace UnityEngine.UIElements
             {
                 base.Deserialize(obj);
 
-                var e = (BindableElement)obj;
-                e.bindingPath = bindingPath;
+                if (ShouldWriteAttributeValue(bindingPath_UxmlAttributeFlags))
+                {
+                    var e = (BindableElement)obj;
+                    e.bindingPath = bindingPath;
+                }
             }
         }
 

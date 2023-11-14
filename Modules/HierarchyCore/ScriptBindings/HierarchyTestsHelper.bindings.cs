@@ -20,17 +20,11 @@ namespace Unity.Hierarchy
             Initialize = 1 << 0,
             Dispose = 1 << 1,
             GetNodeTypeName = 1 << 2,
-            ChangesPending = 1 << 3,
-            IntegrateChanges = 1 << 4,
-            AcceptParent = 1 << 5,
-            AcceptChild = 1 << 6,
-            CanSetName = 1 << 7,
-            OnSetName = 1 << 8,
-            OnSetParent = 1 << 9,
-            OnSetSortIndex = 1 << 10,
-            SearchMatch = 1 << 11,
-            SearchEnd = 1 << 12,
-            
+            GetDefaultNodeFlags = 1 << 3,
+            ChangesPending = 1 << 4,
+            IntegrateChanges = 1 << 5,
+            SearchMatch = 1 << 6,
+            SearchEnd = 1 << 7
         }
 
         [NativeType(Header = "Modules/HierarchyCore/HierarchyTestsHelper.h")]
@@ -50,7 +44,7 @@ namespace Unity.Hierarchy
             stack.Push(root);
 
             // Since we do not have NativeList, use the hierarchy count as the capacity
-            var buffer = new NativeArray<HierarchyNode>(hierarchy.Count, Allocator.Temp);
+            using var buffer = new NativeArray<HierarchyNode>(hierarchy.Count, Allocator.Temp);
             while (stack.Count > 0)
             {
                 var node = stack.Pop();
@@ -95,5 +89,11 @@ namespace Unity.Hierarchy
         internal static extern void SetCapabilitiesNativeHandler(Hierarchy hierarchy, string nodeTypeName, int cap);
         internal static extern int GetCapabilitiesScriptingHandler(Hierarchy hierarchy, string nodeTypeName);
         internal static extern int GetCapabilitiesNativeHandler(Hierarchy hierarchy, string nodeTypeName);
+
+        internal static extern object GetHierarchyScriptingObject(Hierarchy hierarchy);
+        internal static extern object GetHierarchyFlattenedScriptingObject(HierarchyFlattened hierarchyFlattened);
+        internal static extern object GetHierarchyViewModelScriptingObject(HierarchyViewModel viewModel);
+        internal static extern object GetHierarchyCommandListScriptingObject(HierarchyCommandList cmdList);
+
     }
 }

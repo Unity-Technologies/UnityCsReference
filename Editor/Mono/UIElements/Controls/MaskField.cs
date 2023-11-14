@@ -500,7 +500,8 @@ namespace UnityEditor.UIElements
         public new class UxmlSerializedData : BaseMaskField<int>.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private List<string> choices;
+            [SerializeField] List<string> choices;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags choices_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new MaskField();
@@ -509,11 +510,12 @@ namespace UnityEditor.UIElements
             {
                 base.Deserialize(obj);
 
-                var e = (MaskField)obj;
-
                 // Assigning null value throws.
-                if (choices != null)
+                if (ShouldWriteAttributeValue(choices_UxmlAttributeFlags) && choices != null)
+                {
+                    var e = (MaskField)obj;
                     e.choices = choices;
+                }
             }
         }
 

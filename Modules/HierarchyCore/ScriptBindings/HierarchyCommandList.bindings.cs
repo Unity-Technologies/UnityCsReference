@@ -34,6 +34,9 @@ namespace Unity.Hierarchy
         [FreeFunction("HierarchyCommandListBindings::Destroy")]
         static extern void Internal_Destroy(IntPtr ptr);
 
+        [FreeFunction("HierarchyCommandListBindings::BindScriptingObject", HasExplicitThis = true)]
+        extern void Internal_BindScriptingObject([Unmarshalled] HierarchyCommandList self);
+
         /// <summary>
         /// Determines if this object is valid and uses memory.
         /// </summary>
@@ -69,6 +72,7 @@ namespace Unity.Hierarchy
             m_Ptr = Internal_Create(hierarchy, initialCapacity);
             m_IsWrapper = false;
             m_Hierarchy = hierarchy;
+            Internal_BindScriptingObject(this);
         }
 
         ~HierarchyCommandList()
@@ -109,31 +113,12 @@ namespace Unity.Hierarchy
         public extern bool Reserve(int count);
 
         /// <summary>
-        /// Adds a new node that has <see cref="Hierarchy.Root"/> as its parent node to the hierarchy.
-        /// </summary>
-        /// <param name="node">The new node if the command succeeds.</param>
-        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        public bool Add(out HierarchyNode node) => AddNode(out node);
-
-        /// <summary>
         /// Adds a new node that has a specified parent node to the hierarchy.
         /// </summary>
         /// <param name="parent">The parent of the new node.</param>
         /// <param name="node">The new node if the command succeeds.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        public bool Add(in HierarchyNode parent, out HierarchyNode node) => AddNodeWithParent(in parent, out node);
-
-        /// <summary>
-        /// Adds multiple new nodes that have <see cref="Hierarchy.Root"/> as their parent to the hierarchy.
-        /// </summary>
-        /// <param name="count">The number of nodes to create.</param>
-        /// <param name="nodes">The new nodes if the command succeeds.</param>
-        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        public bool Add(int count, out HierarchyNode[] nodes)
-        {
-            nodes = new HierarchyNode[count];
-            return AddNodeSpan(nodes);
-        }
+        public bool Add(in HierarchyNode parent, out HierarchyNode node) => AddNode(in parent, out node);
 
         /// <summary>
         /// Adds multiple new nodes that have a specified parent node to the hierarchy.
@@ -145,15 +130,8 @@ namespace Unity.Hierarchy
         public bool Add(in HierarchyNode parent, int count, out HierarchyNode[] nodes)
         {
             nodes = new HierarchyNode[count];
-            return AddNodeSpanWithParent(in parent, nodes);
+            return AddNodeSpan(in parent, nodes);
         }
-
-        /// <summary>
-        /// Add multiple new nodes that have <see cref="Hierarchy.Root"/> as their parent to the hierarchy.
-        /// </summary>
-        /// <param name="outNodes">The span of nodes filled with new nodes if the command succeeds.</param>
-        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        public bool Add(Span<HierarchyNode> outNodes) => AddNodeSpan(outNodes);
 
         /// <summary>
         /// Adds multiple new nodes that have a specified parent node to the hierarchy.
@@ -161,7 +139,7 @@ namespace Unity.Hierarchy
         /// <param name="parent">The parent of the new nodes.</param>
         /// <param name="outNodes">The span of nodes filled with new nodes if the command succeeds.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        public bool Add(in HierarchyNode parent, Span<HierarchyNode> outNodes) => AddNodeSpanWithParent(in parent, outNodes);
+        public bool Add(in HierarchyNode parent, Span<HierarchyNode> outNodes) => AddNodeSpan(in parent, outNodes);
 
         /// <summary>
         /// Removes a node from the hierarchy.
@@ -279,16 +257,10 @@ namespace Unity.Hierarchy
         public extern bool ExecuteIncrementalTimed(double milliseconds);
 
         [NativeThrows, FreeFunction("HierarchyCommandListBindings::AddNode", HasExplicitThis = true)]
-        extern bool AddNode(out HierarchyNode node);
-
-        [NativeThrows, FreeFunction("HierarchyCommandListBindings::AddNodeWithParent", HasExplicitThis = true)]
-        extern bool AddNodeWithParent(in HierarchyNode parent, out HierarchyNode node);
+        extern bool AddNode(in HierarchyNode parent, out HierarchyNode node);
 
         [NativeThrows, FreeFunction("HierarchyCommandListBindings::AddNodeSpan", HasExplicitThis = true)]
-        extern bool AddNodeSpan(Span<HierarchyNode> outNodes);
-
-        [NativeThrows, FreeFunction("HierarchyCommandListBindings::AddNodeSpanWithParent", HasExplicitThis = true)]
-        extern bool AddNodeSpanWithParent(in HierarchyNode parent, Span<HierarchyNode> outNodes);
+        extern bool AddNodeSpan(in HierarchyNode parent, Span<HierarchyNode> outNodes);
 
         [NativeThrows, FreeFunction("HierarchyCommandListBindings::SetNodePropertyRaw", HasExplicitThis = true)]
         extern unsafe bool SetNodePropertyRaw(in HierarchyPropertyId property, in HierarchyNode node, void* ptr, int size);

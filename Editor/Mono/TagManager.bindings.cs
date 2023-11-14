@@ -93,7 +93,7 @@ namespace UnityEditor
 
         internal static void GetDefinedRenderingLayers(out string[] renderingLayerNames, out int[] renderingLayerValues)
         {
-            var definedLayerCount = GetDefinedLayerCount();
+            var definedLayerCount = GetDefinedRenderingLayerCount();
 
             renderingLayerNames = new string[definedLayerCount];
             renderingLayerValues = new int[definedLayerCount];

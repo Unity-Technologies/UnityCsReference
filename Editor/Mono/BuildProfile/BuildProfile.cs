@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -21,7 +20,7 @@ namespace UnityEditor.Build.Profile
         /// <summary>
         /// Build Target used to fetch module and build profile extension.
         /// </summary>
-        [SerializeField] BuildTarget m_BuildTarget;
+        [SerializeField] BuildTarget m_BuildTarget = BuildTarget.NoTarget;
         public BuildTarget buildTarget
         {
             get => m_BuildTarget;
@@ -56,6 +55,16 @@ namespace UnityEditor.Build.Profile
         {
             get => m_PlatformBuildProfile;
             internal set => m_PlatformBuildProfile = value;
+        }
+
+        void OnEnable()
+        {
+            // Check if the platform support module has been installed,
+            // and try to set an uninitialized platform settings.
+            if (platformBuildProfile == null)
+                TryCreatePlatformSettings();
+
+            onBuildProfileEnable?.Invoke(this);
         }
     }
 }

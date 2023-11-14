@@ -197,6 +197,7 @@ namespace Unity.UI.Builder
 
                     var attribute = desc.FindAttributeWithPropertyName("name");
                     attribute.SetSerializedValue(vea.serializedData, value);
+                    attribute.SetSerializedValueAttributeFlags(vea.serializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
                 }
             }
 

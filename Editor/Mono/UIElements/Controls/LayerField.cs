@@ -21,6 +21,7 @@ namespace UnityEditor.UIElements
             #pragma warning disable 649
             [UxmlAttribute("value")]
             [SerializeField, LayerDecorator] int layer;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags layer_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new LayerField();
@@ -29,8 +30,11 @@ namespace UnityEditor.UIElements
             {
                 base.Deserialize(obj);
 
-                var e = (LayerField)obj;
-                e.SetValueWithoutNotify(layer);
+                if (ShouldWriteAttributeValue(layer_UxmlAttributeFlags))
+                {
+                    var e = (LayerField)obj;
+                    e.SetValueWithoutNotify(layer);
+                }
             }
         }
 

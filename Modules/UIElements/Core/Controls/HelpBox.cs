@@ -85,8 +85,10 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField, MultilineTextField] private string text;
-            [SerializeField] private HelpBoxMessageType messageType;
+            [SerializeField, MultilineTextField] string text;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
+            [SerializeField] HelpBoxMessageType messageType;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags messageType_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new HelpBox();
@@ -96,8 +98,10 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (HelpBox)obj;
-                e.text = text;
-                e.messageType = messageType;
+                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
+                    e.text = text;
+                if (ShouldWriteAttributeValue(messageType_UxmlAttributeFlags))
+                    e.messageType = messageType;
             }
         }
 

@@ -199,6 +199,8 @@ namespace UnityEngine
 
         public virtual bool supportsInlineRayTracing => UnityEngine.SystemInfo.supportsInlineRayTracing;
 
+        public virtual bool supportsIndirectDispatchRays => UnityEngine.SystemInfo.supportsIndirectDispatchRays;
+
         public virtual bool supportsSetConstantBuffer => UnityEngine.SystemInfo.supportsSetConstantBuffer;
 
         public virtual int constantBufferOffsetAlignment => UnityEngine.SystemInfo.constantBufferOffsetAlignment;

@@ -231,6 +231,10 @@ namespace UnityEngine.AI
         [NativeName("GetAreaFromName")]
         public static extern int GetAreaFromName(string areaName);
 
+        [StaticAccessor("GetNavMeshProjectSettings()")]
+        [NativeName("GetAreaNames")]
+        public static extern string[] GetAreaNames();
+
         public static extern NavMeshTriangulation CalculateTriangulation();
 
         //*undocumented* DEPRECATED

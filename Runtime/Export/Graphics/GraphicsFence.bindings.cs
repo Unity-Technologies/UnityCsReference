@@ -50,8 +50,10 @@ namespace UnityEngine.Rendering
             {
                 Validate();
 
-                if (!SystemInfo.supportsGraphicsFence || (m_FenceType == GraphicsFenceType.AsyncQueueSynchronisation && !SystemInfo.supportsAsyncCompute))
+                if (!SystemInfo.supportsGraphicsFence)
                     throw new System.NotSupportedException("Cannot determine if this GraphicsFence has passed as this platform has not implemented GraphicsFences.");
+                else if (m_FenceType == GraphicsFenceType.AsyncQueueSynchronisation && !SystemInfo.supportsAsyncCompute)
+                    throw new System.NotSupportedException("Cannot determine if this AsyncQueueSynchronisation GraphicsFence has passed as this platform does not support async compute.");
 
                 if (!IsFencePending())
                     return true;

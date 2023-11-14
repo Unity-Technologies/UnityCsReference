@@ -22,7 +22,8 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : TextInputBaseField<string>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
         {
             #pragma warning disable 649
-            [SerializeField, MultilineDecorator] private bool multiline;
+            [SerializeField, MultilineDecorator] bool multiline;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags multiline_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new TextField();
@@ -32,9 +33,12 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 // rely on multiline to set verticalScrollerVisibility, see: https://jira.unity3d.com/browse/UIT-2027
+                // TODO: Check https://jira.unity3d.com/browse/UIT-2027
                 var e = (TextField)obj;
-                e.multiline = multiline;
-                e.verticalScrollerVisibility = verticalScrollerVisibility;
+                if (ShouldWriteAttributeValue(multiline_UxmlAttributeFlags))
+                    e.multiline = multiline;
+                if (ShouldWriteAttributeValue(verticalScrollerVisibility_UxmlAttributeFlags))
+                    e.verticalScrollerVisibility = verticalScrollerVisibility;
             }
 
             void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)

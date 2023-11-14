@@ -4,10 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.Serialization;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -23,6 +22,7 @@ namespace UnityEditor.UIElements
         private UxmlObjectAttribute m_UxmlObjectAttribute;
         private string m_UxmlName;
         private string m_UxmlFullName;
+        private bool m_IsDefaultValueInitialized;
 
         public Type serializedDataType => m_SerializedDataType;
         public bool isUxmlObject => m_UxmlObjectAttribute != null;
@@ -71,17 +71,7 @@ namespace UnityEditor.UIElements
         public UxmlSerializedData CreateDefaultSerializedData()
         {
             var data = CreateSerializedData();
-            foreach (var attribute in serializedAttributes)
-            {
-                try
-                {
-                    attribute.SetSerializedValue(data, attribute.defaultValueClone);
-                }
-                catch(Exception e)
-                {
-                    Debug.LogException(new Exception($"Could not set value for {attribute.serializedField.Name} with {attribute.defaultValueClone}", e));
-                }
-            }
+            SyncDefaultValues(data, true);
             return data;
         }
 
@@ -109,17 +99,7 @@ namespace UnityEditor.UIElements
                 m_UxmlObjectAttribute = dataType.DeclaringType.GetCustomAttribute<UxmlObjectAttribute>()
             };
 
-            object defaultObject = null;
-            try
-            {
-                defaultObject = uxmlDataDesc.CreateSerializedData().CreateInstance();
-            }
-            catch (Exception e)
-            {
-                Debug.LogException (new Exception($"Failed to create an instance of {dataType}", e));
-            }
-
-            uxmlDataDesc.GatherAttributesForType(dataType, defaultObject);
+            uxmlDataDesc.GatherAttributesForType(dataType);
             return uxmlDataDesc;
         }
 
@@ -136,7 +116,21 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private void GatherAttributesForType(Type t, object defaultObject)
+        /// <summary>
+        /// Applies the default values to the UxmlSerializedData for any attributes that are not overidden.
+        /// This can then be used with Deserialize to reset the state of an element.
+        /// </summary>
+        /// <param name="uxmlSerializedData"></param>
+        /// <param name="removeOverrides">Should overridden attributes also be set to default?</param>
+        public void SyncDefaultValues(object uxmlSerializedData, bool removeOverrides)
+        {
+            foreach (var attribute in m_SerializedAttributes)
+            {
+                attribute.SyncDefaultValue(uxmlSerializedData, removeOverrides);
+            }
+        }
+
+        private void GatherAttributesForType(Type t)
         {
             if (t == typeof(UxmlSerializedData))
                 return;
@@ -148,7 +142,10 @@ namespace UnityEditor.UIElements
 
                 var fieldInfo = attDescription.serializedField;
                 UxmlSerializedAttributeDescription uxmlAttributeDescription;
-                var elementType = defaultObject != null ? defaultObject.GetType() : fieldInfo.DeclaringType.DeclaringType;
+
+                var elementType = fieldInfo.DeclaringType.DeclaringType;
+                if (elementType.IsGenericTypeDefinition)
+                    elementType = elementType.MakeGenericType(fieldInfo.DeclaringType.GetGenericArguments());
 
                 if (fieldInfo.GetCustomAttribute<UxmlObjectReferenceAttribute>() is { } objectReferenceAttribute)
                 {
@@ -166,14 +163,19 @@ namespace UnityEditor.UIElements
                     uxmlAttributeDescription = new UxmlSerializedAttributeDescription();
                 }
 
+                if (attDescription.serializedFieldAttributeFlags == null)
+                {
+                    Debug.LogError($"Could not find UxmlAttributeFlags field for {attDescription.uxmlName} in {elementType.Name}.");
+                    continue;
+                }
+
+                uxmlAttributeDescription.dataDescription = this;
+                uxmlAttributeDescription.elementType = elementType;
                 uxmlAttributeDescription.name = attDescription.uxmlName;
                 uxmlAttributeDescription.type = attDescription.fieldType;
                 uxmlAttributeDescription.serializedField = attDescription.serializedField;
-                uxmlAttributeDescription.elementType = elementType;
+                uxmlAttributeDescription.serializedFieldAttributeFlags = attDescription.serializedFieldAttributeFlags;
                 uxmlAttributeDescription.obsoleteNames = attDescription.obsoleteNames;
-
-                if (TryGetDefaultValue(fieldInfo, defaultObject, out var defaultValue))
-                    uxmlAttributeDescription.defaultValue = defaultValue;
 
                 // When a UxmlObjectAttribute does not contain a name then we treat it as a legacy field,
                 // one that does not have an element for the field name, e.g MultiColumnListView.
@@ -187,6 +189,32 @@ namespace UnityEditor.UIElements
                 m_SerializedAttributes.Add(uxmlAttributeDescription);
                 m_UxmlNameToIndex.Add(attDescription.uxmlName, nextIndex);
                 m_PropertyNameToIndex.Add(attDescription.cSharpName, nextIndex);
+            }
+        }
+
+        public void InitializeDefaultValues()
+        {
+            if (m_IsDefaultValueInitialized)
+                return;
+            m_IsDefaultValueInitialized = true;
+
+            try
+            {
+                Assert.IsFalse(Application.isBuildingEditorResources, "Default values should not be initialized while building editor resources.");
+                var defaultObject = CreateSerializedData().CreateInstance();
+
+                foreach (var attribute in m_SerializedAttributes)
+                {
+                    if (TryGetDefaultValue(attribute.serializedField, defaultObject, out var defaultValue))
+                        attribute.defaultValue = defaultValue;
+                    else
+                        attribute.defaultValue = null;
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(new Exception($"Failed to create an instance of {m_SerializedDataType}. Can not extract default UXML attribute values.", e));
+                return;
             }
         }
 
@@ -207,13 +235,16 @@ namespace UnityEditor.UIElements
 
             var prop = defaultObject.GetType().GetProperty(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (prop != null)
+            {
                 value = prop.GetValue(defaultObject);
-
-            if (value == null)
+            }
+            else
             {
                 var field = defaultObject.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                if (field != null)
-                    value = field.GetValue(defaultObject);
+                if (field == null)
+                    return false;
+
+                value = field.GetValue(defaultObject);
             }
 
             if (value != null && fieldInfo.GetCustomAttribute<UxmlObjectReferenceAttribute>() != null)
@@ -222,7 +253,7 @@ namespace UnityEditor.UIElements
                 value = UxmlSerializer.SerializeObject(value);
             }
 
-            return value != null;
+            return true;
         }
 
         private static bool IsValidAttributeType(Type t)

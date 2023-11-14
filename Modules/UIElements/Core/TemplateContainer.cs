@@ -28,12 +28,12 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField]
-            private VisualTreeAsset template;
-            [SerializeField]
-            [FormerlySerializedAs("template")] // This allows reading template attribute as a string as well as VisualTreeAsset
-            [UxmlAttribute(UxmlTraits.k_TemplateAttributeName)]
-            private string templateId;
+            [SerializeField] VisualTreeAsset template;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags template_UxmlAttributeFlags;
+
+            // This allows reading template attribute as a string as well as VisualTreeAsset
+            [SerializeField, FormerlySerializedAs("template"), UxmlAttribute(UxmlTraits.k_TemplateAttributeName)] string templateId;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags templateId_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new TemplateContainer();
@@ -43,8 +43,10 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (TemplateContainer)obj;
-                e.templateSource = template;
-                e.templateId = templateId;
+                if (ShouldWriteAttributeValue(template_UxmlAttributeFlags))
+                    e.templateSource = template;
+                if (ShouldWriteAttributeValue(templateId_UxmlAttributeFlags))
+                    e.templateId = templateId;
             }
         }
 

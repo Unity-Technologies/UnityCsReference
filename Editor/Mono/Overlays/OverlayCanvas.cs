@@ -318,22 +318,25 @@ namespace UnityEditor.Overlays
 
         internal event Action overlayListChanged;
 
-        internal bool overlaysEnabled => m_Containers.All(x => x.style.display != DisplayStyle.None);
+        public bool overlaysEnabled
+        {
+            get => m_Containers.All(x => x.style.display != DisplayStyle.None);
+
+            set
+            {
+                m_OverlaysVisible = value;
+
+                if (value == overlaysEnabled)
+                    return;
+
+                foreach (var container in m_Containers)
+                    container.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
+
+                overlaysEnabledChanged?.Invoke(value);
+            }
+        }
 
         internal OverlayCanvas() { }
-
-        internal void SetOverlaysEnabled(bool visible)
-        {
-            m_OverlaysVisible = visible;
-
-            if (visible == overlaysEnabled)
-                return;
-
-            foreach (var container in m_Containers)
-                container.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
-
-            overlaysEnabledChanged?.Invoke(visible);
-        }
 
         VisualElement CreateRoot()
         {
@@ -402,7 +405,7 @@ namespace UnityEditor.Overlays
                 dockArea.style.height = evt.newRect.height;
             });
 
-            SetOverlaysEnabled(m_OverlaysVisible);
+            overlaysEnabled = m_OverlaysVisible;
 
             return ve;
         }
@@ -521,13 +524,16 @@ namespace UnityEditor.Overlays
 
         internal bool IsTransient(Overlay overlay) => m_TransientOverlays.Contains(overlay);
 
+        internal Func<OverlayUtilities.OverlayEditorWindowAssociation, bool> filterOverlays;
+
         internal void Initialize(EditorWindow window)
         {
             Profiler.BeginSample("OverlayCanvas.Initialize");
             containerWindow = window;
 
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
-            var overlayTypes = OverlayUtilities.GetOverlaysForType(window.GetType());
+
+            List<Type> overlayTypes = OverlayUtilities.GetOverlaysForType(window.GetType(), filterOverlays);
 
             // init all overlays
             foreach (var overlayType in overlayTypes)

@@ -5,7 +5,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Pool;
@@ -19,11 +21,7 @@ namespace Unity.Hierarchy
     [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyViewModel.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyViewModelBindings.h")]
     [RequiredByNativeCode(GenerateProxy = true), StructLayout(LayoutKind.Sequential)]
-    public sealed class HierarchyViewModel :
-        IDisposable,
-        IEnumerable<HierarchyNode>,
-        IReadOnlyCollection<HierarchyNode>,
-        IReadOnlyList<HierarchyNode>
+    public sealed class HierarchyViewModel : IDisposable
     {
         internal static class BindingsMarshaller
         {
@@ -34,12 +32,18 @@ namespace Unity.Hierarchy
         [RequiredByNativeCode] readonly bool m_IsWrapper;
         [RequiredByNativeCode] readonly HierarchyFlattened m_HierarchyFlattened;
         [RequiredByNativeCode] readonly Hierarchy m_Hierarchy;
+        [RequiredByNativeCode] readonly IntPtr m_NodesPtr;
+        [RequiredByNativeCode] readonly int m_NodesCount;
+        [RequiredByNativeCode] readonly int m_Version;
 
         [FreeFunction("HierarchyViewModelBindings::Create")]
-        static extern IntPtr Internal_Create(HierarchyFlattened hierarchyFlattened);
+        static extern IntPtr Internal_Create(HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags);
 
         [FreeFunction("HierarchyViewModelBindings::Destroy")]
         static extern void Internal_Destroy(IntPtr ptr);
+
+        [FreeFunction("HierarchyViewModelBindings::BindScriptingObject", HasExplicitThis = true)]
+        extern void Internal_BindScriptingObject([Unmarshalled] HierarchyViewModel self);
 
         /// <summary>
         /// Whether this object is valid and uses memory.
@@ -52,7 +56,7 @@ namespace Unity.Hierarchy
         /// <remarks>
         /// The total does not include the <see cref="Hierarchy.Root"/> node.
         /// </remarks>
-        public extern int Count { [NativeMethod("Count")] get; }
+        public int Count => m_NodesCount;
 
         /// <summary>
         /// Whether the hierarchy view model is currently updating.
@@ -79,6 +83,8 @@ namespace Unity.Hierarchy
         /// Accesses the <see cref="Hierarchy"/>.
         /// </summary>
         public Hierarchy Hierarchy => m_Hierarchy;
+
+        internal int Version => m_Version;
 
         internal extern float UpdateProgress
         {
@@ -107,12 +113,14 @@ namespace Unity.Hierarchy
         /// Creates a new HierarchyViewModel from a <see cref="HierarchyFlattened"/>.
         /// </summary>
         /// <param name="hierarchyFlattened">The flattened hierarchy that serves as the hierarchy model.</param>
-        public HierarchyViewModel(HierarchyFlattened hierarchyFlattened)
+        /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
+        public HierarchyViewModel(HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
         {
-            m_Ptr = Internal_Create(hierarchyFlattened);
+            m_Ptr = Internal_Create(hierarchyFlattened, defaultFlags);
             m_HierarchyFlattened = hierarchyFlattened;
             m_Hierarchy = hierarchyFlattened.Hierarchy;
             QueryParser = new DefaultHierarchySearchQueryParser();
+            Internal_BindScriptingObject(this);
         }
 
         ~HierarchyViewModel()
@@ -144,7 +152,20 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="index">The node index.</param>
         /// <returns>A hierarchy node.</returns>
-        public HierarchyNode this[int index] => ElementAt(index);
+        public ref readonly HierarchyNode this[int index]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (index < 0 || index >= m_NodesCount)
+                    throw new ArgumentOutOfRangeException(nameof(index));
+
+                unsafe
+                {
+                    return ref HierarchyFlattenedNode.GetNodeByRef(in m_HierarchyFlattened[((int*)m_NodesPtr)[index]]);
+                }
+            }
+        }
 
         /// <summary>
         /// Gets the zero-based index of a specified node.
@@ -505,48 +526,63 @@ namespace Unity.Hierarchy
         /// <summary>
         /// An enumerator of <see cref="HierarchyNode"/>. Enumerates and filters items at the same time.
         /// </summary>
-        public struct Enumerator : IEnumerator<HierarchyNode>
+        public unsafe struct Enumerator
         {
-            readonly HierarchyViewModel m_HierarchyViewModel;
+            readonly HierarchyFlattened m_HierarchyFlattened;
+            readonly HierarchyViewModel m_ViewModel;
+            readonly int* m_ViewModelNodesPtr;
+            readonly int m_Count;
+            readonly int m_Version;
             int m_Index;
 
-            /// <summary>
-            /// Gets the progress of an iteration as a percentage.
-            /// </summary>
-            public float Progress => m_HierarchyViewModel.Count == 0 ? 0 : (float)m_Index / m_HierarchyViewModel.Count;
+            internal Enumerator(HierarchyViewModel hierarchyViewModel)
+            {
+                m_Count = hierarchyViewModel.Count;
+                m_HierarchyFlattened = hierarchyViewModel.HierarchyFlattened;
+                m_ViewModel = hierarchyViewModel;
+                m_ViewModelNodesPtr = (int*)hierarchyViewModel.m_NodesPtr;
+                m_Version = hierarchyViewModel.m_Version;
+                m_Index = -1;
+            }
 
             /// <summary>
             /// Get the current item being enumerated.
             /// </summary>
-            public HierarchyNode Current => m_HierarchyViewModel[m_Index];
-
-            object IEnumerator.Current => Current;
-
-            internal Enumerator(HierarchyViewModel hierarchyViewModel)
+            public ref readonly HierarchyNode Current
             {
-                m_HierarchyViewModel = hierarchyViewModel;
-                m_Index = -1;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    ThrowIfVersionChanged();
+                    return ref HierarchyFlattenedNode.GetNodeByRef(in m_HierarchyFlattened[m_ViewModelNodesPtr[m_Index]]);
+                }
             }
-
-            [ExcludeFromDocs]
-            public void Dispose() { }
 
             /// <summary>
             /// Move to next iterable value.
             /// </summary>
             /// <returns>Returns true if Current item is valid</returns>
-            public bool MoveNext() => ++m_Index < m_HierarchyViewModel.Count;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MoveNext()
+            {
+                ThrowIfVersionChanged();
 
-            /// <summary>
-            /// Reset iteration at the beginning.
-            /// </summary>
-            public void Reset() => m_Index = -1;
+                int index = m_Index + 1;
+                if (index < m_Count)
+                {
+                    m_Index = index;
+                    return true;
+                }
 
-            /// <summary>
-            /// Check if iteration is done.
-            /// </summary>
-            /// <returns>Returns true if iteration is done.</returns>
-            public bool Done() => m_Index >= m_HierarchyViewModel.Count;
+                return false;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void ThrowIfVersionChanged()
+            {
+                if (m_Version != m_ViewModel.m_Version)
+                    throw new InvalidOperationException("HierarchyViewModel was modified.");
+            }
         }
 
         // Note: called from native to avoid passing Query as a parameter
@@ -558,13 +594,6 @@ namespace Unity.Hierarchy
             foreach (var handler in handlers)
                 handler.Internal_SearchBegin(Query);
         }
-
-        IEnumerator<HierarchyNode> IEnumerable<HierarchyNode>.GetEnumerator() => GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        [NativeThrows]
-        extern HierarchyNode ElementAt(int index);
 
         [NativeThrows, FreeFunction("HierarchyViewModelBindings::SetFlagsAll", HasExplicitThis = true)]
         extern void SetFlagsAll(HierarchyNodeFlags flags);
@@ -625,19 +654,5 @@ namespace Unity.Hierarchy
 
         [NativeThrows, FreeFunction("HierarchyViewModelBindings::GetIndicesWithoutFlagsSpan", HasExplicitThis = true)]
         extern int GetIndicesWithoutFlagsSpan(HierarchyNodeFlags flags, Span<int> outIndices);
-
-        #region Obsolete code to remove in 2024.1
-        [Obsolete("GetExpanded will be removed, please use DoesNotHaveFlags(in HierarchyNode node, HierarchyNodeFlags.Collapsed) instead.")]
-        public bool GetExpanded(in HierarchyNode node) => DoesNotHaveFlagsNode(in node, HierarchyNodeFlags.Collapsed);
-
-        [Obsolete("GetSelected will be removed, please use HasFlags(in HierarchyNode node, HierarchyNodeFlags.Selected) instead.")]
-        public bool GetSelected(in HierarchyNode node) => HasFlagsNode(in node, HierarchyNodeFlags.Selected);
-
-        [Obsolete("SetExpanded will be removed, please use ClearFlags(in HierarchyNode node, HierarchyNodeFlags.Collapsed) instead.")]
-        public void SetExpanded(in HierarchyNode node, bool expanded) => ClearFlagsNode(in node, HierarchyNodeFlags.Collapsed);
-
-        [Obsolete("SetSelected will be removed, please use SetFlags(in HierarchyNode node, HierarchyNodeFlags.Selected) instead.")]
-        public void SetSelected(in HierarchyNode node, bool selected) => SetFlagsNode(in node, HierarchyNodeFlags.Selected, selected);
-        #endregion
     }
 }

@@ -474,6 +474,11 @@ namespace UnityEngine.Rendering
             Internal_DispatchRays(rayTracingShader, rayGenName, width, height, depth, camera);
         }
 
+        public void DispatchRays(RayTracingShader rayTracingShader, string rayGenName, GraphicsBuffer argsBuffer, uint argsOffset, Camera camera = null)
+        {
+            Internal_DispatchRaysIndirect(rayTracingShader, rayGenName, argsBuffer, argsOffset, camera);
+        }
+
         public void GenerateMips(RenderTargetIdentifier rt)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
@@ -721,6 +726,8 @@ namespace UnityEngine.Rendering
                 throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
             if (material == null)
                 throw new ArgumentNullException("material");
+            if (!material.enableInstancing)
+                throw new InvalidOperationException("Material needs to enable instancing for use with DrawMeshInstanced.");
             if (matrices == null)
                 throw new ArgumentNullException("matrices");
             if (count < 0 || count > Mathf.Min(Graphics.kMaxDrawMeshInstanceCount, matrices.Length))

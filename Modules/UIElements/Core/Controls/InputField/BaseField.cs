@@ -42,8 +42,10 @@ namespace UnityEngine.UIElements
         public new abstract class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField, MultilineTextField] private string label;
-            [SerializeField] private TValueType value;
+            [SerializeField, MultilineTextField] string label;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
+            [SerializeField] TValueType value;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
             #pragma warning restore 649
 
             /// Used by <see cref="IUxmlSerializedDataCustomAttributeHandler"/> to set the value from legacy field values
@@ -54,8 +56,10 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (BaseField<TValueType>)obj;
-                e.label = label;
-                e.SetValueWithoutNotify(value);
+                if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
+                    e.label = label;
+                if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
+                    e.SetValueWithoutNotify(value);
             }
         }
 

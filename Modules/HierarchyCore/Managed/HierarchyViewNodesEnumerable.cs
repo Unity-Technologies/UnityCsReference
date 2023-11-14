@@ -2,16 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine.Internal;
+using System;
+using System.Runtime.CompilerServices;
 
 namespace Unity.Hierarchy
 {
     /// <summary>
     /// Represent an enumerable of <see cref="HierarchyNode"/> with specific <see cref="HierarchyNodeFlags"/>.
     /// </summary>
-    public readonly struct HierarchyViewNodesEnumerable : IEnumerable<HierarchyNode>
+    public readonly struct HierarchyViewNodesEnumerable
     {
         /// <summary>
         /// Delegate to filter <see cref="HierarchyNode"/> with specific <see cref="HierarchyNodeFlags"/>.
@@ -22,14 +21,14 @@ namespace Unity.Hierarchy
         internal delegate bool Predicate(in HierarchyNode node, HierarchyNodeFlags flags);
 
         readonly HierarchyViewModel m_HierarchyViewModel;
-        readonly HierarchyNodeFlags m_Flags;
         readonly Predicate m_Predicate;
+        readonly HierarchyNodeFlags m_Flags;
 
         internal HierarchyViewNodesEnumerable(HierarchyViewModel viewModel, HierarchyNodeFlags flags, Predicate predicate)
         {
-            m_HierarchyViewModel = viewModel;
+            m_HierarchyViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            m_Predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
             m_Flags = flags;
-            m_Predicate = predicate;
         }
 
         /// <summary>
@@ -41,39 +40,49 @@ namespace Unity.Hierarchy
         /// <summary>
         /// An enumerator of <see cref="HierarchyNode"/>.
         /// </summary>
-        public struct Enumerator : IEnumerator<HierarchyNode>
+        public struct Enumerator
         {
             readonly HierarchyFlattened m_HierarchyFlattened;
+            readonly HierarchyViewModel m_HierarchyViewModel;
+            readonly int m_Version;
             readonly HierarchyNode m_Root;
             readonly HierarchyNodeFlags m_Flags;
             readonly Predicate m_Predicate;
             int m_Index;
 
-            /// <summary>
-            /// Get the current item being enumerated.
-            /// </summary>
-            public HierarchyNode Current => m_HierarchyFlattened[m_Index].Node;
-
-            object IEnumerator.Current => Current;
-
             internal Enumerator(HierarchyViewNodesEnumerable enumerable)
             {
                 m_HierarchyFlattened = enumerable.m_HierarchyViewModel.HierarchyFlattened;
+                m_HierarchyViewModel = enumerable.m_HierarchyViewModel;
+                m_Version = m_HierarchyViewModel.Version;
                 m_Root = m_HierarchyFlattened.Hierarchy.Root;
                 m_Flags = enumerable.m_Flags;
                 m_Predicate = enumerable.m_Predicate;
                 m_Index = -1;
             }
 
-            [ExcludeFromDocs]
-            public void Dispose() { }
+            /// <summary>
+            /// Get the current item being enumerated.
+            /// </summary>
+            public ref readonly HierarchyNode Current
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    ThrowIfVersionChanged();
+                    return ref HierarchyFlattenedNode.GetNodeByRef(in m_HierarchyFlattened[m_Index]);
+                }
+            }
 
             /// <summary>
             /// Move to next iterable value.
             /// </summary>
             /// <returns><see langword="true"/> if Current item is valid, <see langword="false"/> otherwise.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool MoveNext()
             {
+                ThrowIfVersionChanged();
+
                 var count = m_HierarchyFlattened.Count;
                 for (;;)
                 {
@@ -89,19 +98,12 @@ namespace Unity.Hierarchy
                 }
             }
 
-            /// <summary>
-            /// Reset iteration at the beginning.
-            /// </summary>
-            public void Reset() => m_Index = -1;
-
-            /// <summary>
-            /// Check if iteration is done.
-            /// </summary>
-            /// <returns><see langword="true"/> if iteration is done, <see langword="false"/> otherwise.</returns>
-            public bool Done() => m_Index == m_HierarchyFlattened.Count;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void ThrowIfVersionChanged()
+            {
+                if (m_Version != m_HierarchyViewModel.Version)
+                    throw new InvalidOperationException("HierarchyViewModel was modified.");
+            }
         }
-
-        IEnumerator<HierarchyNode> IEnumerable<HierarchyNode>.GetEnumerator() => GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

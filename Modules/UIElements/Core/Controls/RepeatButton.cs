@@ -15,8 +15,10 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : TextElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private long delay;
-            [SerializeField] private long interval;
+            [SerializeField] long delay;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags delay_UxmlAttributeFlags;
+            [SerializeField] long interval;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags interval_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new RepeatButton();
@@ -24,9 +26,12 @@ namespace UnityEngine.UIElements
             public override void Deserialize(object obj)
             {
                 base.Deserialize(obj);
-
-                var e = (RepeatButton)obj;
-                e.SetAction(null, delay, interval);
+                    
+                if (ShouldWriteAttributeValue(delay_UxmlAttributeFlags) || ShouldWriteAttributeValue(interval_UxmlAttributeFlags))
+                {
+                    var e = (RepeatButton)obj;
+                    e.SetAction(null, delay, interval);
+                }
             }
         }
 

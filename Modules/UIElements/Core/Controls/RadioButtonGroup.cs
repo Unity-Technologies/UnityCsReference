@@ -21,7 +21,8 @@ namespace UnityEngine.UIElements
         {
             #pragma warning disable 649
             [UxmlAttribute("choices")]
-            [SerializeField] private List<string> choicesList;
+            [SerializeField] List<string> choicesList;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags choicesList_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new RadioButtonGroup();
@@ -30,8 +31,11 @@ namespace UnityEngine.UIElements
             {
                 base.Deserialize(obj);
 
-                var e = (RadioButtonGroup)obj;
-                e.choicesList = choicesList;
+                if (ShouldWriteAttributeValue(choicesList_UxmlAttributeFlags))
+                {
+                    var e = (RadioButtonGroup)obj;
+                    e.choicesList = choicesList;
+                }
             }
         }
 

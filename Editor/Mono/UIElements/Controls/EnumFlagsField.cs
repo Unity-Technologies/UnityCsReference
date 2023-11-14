@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -27,10 +26,13 @@ namespace UnityEditor.UIElements
         {
             #pragma warning disable 649
             [UxmlTypeReference(typeof(Enum))]
-            [SerializeField, UxmlAttribute("type")] private string typeAsString;
+            [SerializeField, UxmlAttribute("type")] string typeAsString;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags typeAsString_UxmlAttributeFlags;
             [EnumFlagsFieldValueDecorator]
-            [SerializeField, UxmlAttribute("value")] private string valueAsString;
-            [SerializeField] private bool includeObsoleteValues;
+            [SerializeField, UxmlAttribute("value")] string valueAsString;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags valueAsString_UxmlAttributeFlags;
+            [SerializeField] bool includeObsoleteValues;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags includeObsoleteValues_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new EnumFlagsField();
@@ -40,9 +42,12 @@ namespace UnityEditor.UIElements
                 base.Deserialize(obj);
 
                 var e = (EnumFlagsField)obj;
-                e.includeObsoleteValues = includeObsoleteValues;
-                e.typeAsString = typeAsString;
-                e.valueAsString = valueAsString;
+                if (ShouldWriteAttributeValue(includeObsoleteValues_UxmlAttributeFlags))
+                    e.includeObsoleteValues = includeObsoleteValues;
+                if (ShouldWriteAttributeValue(typeAsString_UxmlAttributeFlags))
+                    e.typeAsString = typeAsString;
+                if (ShouldWriteAttributeValue(valueAsString_UxmlAttributeFlags))
+                    e.valueAsString = valueAsString;
             }
         }
 

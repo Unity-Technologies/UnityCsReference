@@ -120,22 +120,35 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private ScrollViewMode mode;
-            [SerializeField] private NestedInteractionKind nestedInteractionKind;
+            [SerializeField] ScrollViewMode mode;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mode_UxmlAttributeFlags;
+            [SerializeField] NestedInteractionKind nestedInteractionKind;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags nestedInteractionKind_UxmlAttributeFlags;
             [UxmlAttribute("show-horizontal-scroller"), HideInInspector]
-            [SerializeField] private bool showHorizontal;
+            [SerializeField] bool showHorizontal;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showHorizontal_UxmlAttributeFlags;
             [UxmlAttribute("show-vertical-scroller"), HideInInspector]
-            [SerializeField] private bool showVertical;
-            [SerializeField] private ScrollerVisibility horizontalScrollerVisibility;
-            [SerializeField] private ScrollerVisibility verticalScrollerVisibility;
-            [SerializeField] private float horizontalPageSize;
-            [SerializeField] private float verticalPageSize;
-            [SerializeField] private float mouseWheelScrollSize;
+            [SerializeField] bool showVertical;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showVertical_UxmlAttributeFlags;
+            [SerializeField] ScrollerVisibility horizontalScrollerVisibility;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalScrollerVisibility_UxmlAttributeFlags;
+            [SerializeField] ScrollerVisibility verticalScrollerVisibility;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags verticalScrollerVisibility_UxmlAttributeFlags;
+            [SerializeField] float horizontalPageSize;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalPageSize_UxmlAttributeFlags;
+            [SerializeField] float verticalPageSize;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags verticalPageSize_UxmlAttributeFlags;
+            [SerializeField] float mouseWheelScrollSize;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mouseWheelScrollSize_UxmlAttributeFlags;
             [UxmlAttribute("touch-scroll-type")]
-            [SerializeField] private TouchScrollBehavior touchScrollBehavior;
-            [SerializeField] private float scrollDecelerationRate;
-            [SerializeField] private float elasticity;
-            [SerializeField] private long elasticAnimationIntervalMs;
+            [SerializeField] TouchScrollBehavior touchScrollBehavior;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags touchScrollBehavior_UxmlAttributeFlags;
+            [SerializeField] float scrollDecelerationRate;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags scrollDecelerationRate_UxmlAttributeFlags;
+            [SerializeField] float elasticity;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags elasticity_UxmlAttributeFlags;
+            [SerializeField] long elasticAnimationIntervalMs;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags elasticAnimationIntervalMs_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new ScrollView();
@@ -145,29 +158,38 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (ScrollView)obj;
-                e.mode = mode;
+                if (ShouldWriteAttributeValue(mode_UxmlAttributeFlags))
+                    e.mode = mode;
 
                 // Remove once showHorizontal and showVertical are fully deprecated.
                 #pragma warning disable 618
-                if (horizontalScrollerVisibility != default)
+                if (ShouldWriteAttributeValue(horizontalScrollerVisibility_UxmlAttributeFlags))
                     e.horizontalScrollerVisibility = horizontalScrollerVisibility;
-                else
+                else if (ShouldWriteAttributeValue(showHorizontal_UxmlAttributeFlags))
                     e.showHorizontal = showHorizontal;
 
-                if (verticalScrollerVisibility != default)
+                if (ShouldWriteAttributeValue(verticalScrollerVisibility_UxmlAttributeFlags))
                     e.verticalScrollerVisibility = verticalScrollerVisibility;
-                else
+                else if (ShouldWriteAttributeValue(showVertical_UxmlAttributeFlags))
                     e.showVertical = showVertical;
                 #pragma warning restore 618
 
-                e.nestedInteractionKind = nestedInteractionKind;
-                e.horizontalPageSize = horizontalPageSize;
-                e.verticalPageSize = verticalPageSize;
-                e.mouseWheelScrollSize = mouseWheelScrollSize;
-                e.scrollDecelerationRate = scrollDecelerationRate;
-                e.touchScrollBehavior = touchScrollBehavior;
-                e.elasticity = elasticity;
-                e.elasticAnimationIntervalMs = elasticAnimationIntervalMs;
+                if (ShouldWriteAttributeValue(nestedInteractionKind_UxmlAttributeFlags))
+                    e.nestedInteractionKind = nestedInteractionKind;
+                if (ShouldWriteAttributeValue(horizontalPageSize_UxmlAttributeFlags))
+                    e.horizontalPageSize = horizontalPageSize;
+                if (ShouldWriteAttributeValue(verticalPageSize_UxmlAttributeFlags))
+                    e.verticalPageSize = verticalPageSize;
+                if (ShouldWriteAttributeValue(mouseWheelScrollSize_UxmlAttributeFlags))
+                    e.mouseWheelScrollSize = mouseWheelScrollSize;
+                if (ShouldWriteAttributeValue(scrollDecelerationRate_UxmlAttributeFlags))
+                    e.scrollDecelerationRate = scrollDecelerationRate;
+                if (ShouldWriteAttributeValue(touchScrollBehavior_UxmlAttributeFlags))
+                    e.touchScrollBehavior = touchScrollBehavior;
+                if (ShouldWriteAttributeValue(elasticity_UxmlAttributeFlags))
+                    e.elasticity = elasticity;
+                if (ShouldWriteAttributeValue(elasticAnimationIntervalMs_UxmlAttributeFlags))
+                    e.elasticAnimationIntervalMs = elasticAnimationIntervalMs;
             }
         }
 

@@ -16,6 +16,7 @@ namespace UnityEngine.UIElements
         public readonly string uxmlName;
         public readonly string cSharpName;
         public readonly FieldInfo serializedField;
+        public readonly FieldInfo serializedFieldAttributeFlags;
         public readonly Type fieldType;
         public readonly string[] obsoleteNames;
 
@@ -24,6 +25,7 @@ namespace UnityEngine.UIElements
             this.uxmlName = uxmlName;
             this.cSharpName = cSharpName;
             this.serializedField = serializedField;
+            serializedFieldAttributeFlags = serializedField.DeclaringType.GetField(serializedField.Name + UxmlSerializedData.AttributeFlagSuffix, BindingFlags.Instance | BindingFlags.NonPublic);
 
             // Type are not serializable. They are serialized as string with a UxmlTypeReferenceAttribute.
             fieldType = serializedField.GetCustomAttribute<UxmlTypeReferenceAttribute>() != null ? typeof(Type) : serializedField.FieldType;

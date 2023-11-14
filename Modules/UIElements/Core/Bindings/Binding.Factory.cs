@@ -21,15 +21,19 @@ namespace UnityEngine.UIElements
         {
             #pragma warning disable 649
             [SerializeField, HideInInspector] internal string property;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags property_UxmlAttributeFlags;
             [Tooltip(k_UpdateTriggerTooltip)]
-            [SerializeField, HideInInspector] private BindingUpdateTrigger updateTrigger;
+            [SerializeField, HideInInspector] BindingUpdateTrigger updateTrigger;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags updateTrigger_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override void Deserialize(object obj)
             {
-                var binding = (Binding) obj;
-                binding.property = property;
-                binding.updateTrigger = updateTrigger;
+                var e = (Binding)obj;
+                if (ShouldWriteAttributeValue(property_UxmlAttributeFlags))
+                    e.property = property;
+                if (ShouldWriteAttributeValue(updateTrigger_UxmlAttributeFlags))
+                    e.updateTrigger = updateTrigger;
             }
         }
     }

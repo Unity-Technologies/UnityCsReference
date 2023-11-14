@@ -77,7 +77,8 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BaseListView.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private VisualTreeAsset itemTemplate;
+            [SerializeField] VisualTreeAsset itemTemplate;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags itemTemplate_UxmlAttributeFlags;
             #pragma warning restore 649
 
             public override object CreateInstance() => new ListView();
@@ -86,8 +87,11 @@ namespace UnityEngine.UIElements
             {
                 base.Deserialize(obj);
 
-                var e = (ListView) obj;
-                e.itemTemplate = itemTemplate;
+                if (ShouldWriteAttributeValue(itemTemplate_UxmlAttributeFlags))
+                {
+                    var e = (ListView)obj;
+                    e.itemTemplate = itemTemplate;
+                }
             }
         }
 
