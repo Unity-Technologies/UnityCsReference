@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using UnityEngine.UIElements;
 
@@ -9,7 +10,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDetailsLinks : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<PackageDetailsLinks> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new PackageDetailsLinks();
+        }
 
         private IApplicationProxy m_Application;
         private IPackageLinkFactory m_PackageLinkFactory;

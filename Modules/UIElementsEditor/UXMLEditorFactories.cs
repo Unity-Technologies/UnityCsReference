@@ -22,6 +22,7 @@ namespace UnityEditor.UIElements
 
             k_Registered = true;
 
+            #pragma warning disable CS0618 // Type or member is obsolete
             // Discover all factories thanks to the type cache!
             var types = TypeCache.GetTypesDerivedFrom<IUxmlFactory>();
             foreach (var type in types)
@@ -34,6 +35,7 @@ namespace UnityEditor.UIElements
                 var factory = (IUxmlFactory)Activator.CreateInstance(type);
                 RegisterFactory(factory);
             }
+            #pragma warning restore CS0618 // Type or member is obsolete
 
             foreach (var factoryList in factories.Values)
             {
@@ -46,6 +48,7 @@ namespace UnityEditor.UIElements
     }
 
     [InitializeOnLoad]
+    [Obsolete("UxmlObjectEditorFactories is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     internal class UxmlObjectEditorFactories : UxmlObjectFactoryRegistry
     {
         private static readonly bool k_Registered;

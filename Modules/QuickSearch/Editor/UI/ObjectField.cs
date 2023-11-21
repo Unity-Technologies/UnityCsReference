@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Internal;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -28,16 +29,25 @@ namespace UnityEditor.Search
             }
         }
 
-        internal new class UxmlFactory : UxmlFactory<ObjectField, UxmlTraits> {}
-
-        internal new class UxmlTraits : BaseField<Object>.UxmlTraits
+        [ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseField<Object>.UxmlSerializedData
         {
-            UxmlTypeAttributeDescription<Object> m_ObjectType = new UxmlTypeAttributeDescription<Object> { name = "type" };
+            #pragma warning disable 649
+            [SerializeField, UxmlTypeReference(typeof(Object))] string type;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags type_UxmlAttributeFlags;
+            #pragma warning restore 649
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            public override object CreateInstance() => new ObjectField();
+
+            public override void Deserialize(object obj)
             {
-                base.Init(ve, bag, cc);
-                ((ObjectField)ve).objectType = m_ObjectType.GetValueFromBag(bag, cc);
+                base.Deserialize(obj);
+
+                if (ShouldWriteAttributeValue(type_UxmlAttributeFlags))
+                {
+                    var e = (ObjectField)obj;
+                    e.objectType = UxmlUtility.ParseType(type, typeof(Object));
+                }
             }
         }
 

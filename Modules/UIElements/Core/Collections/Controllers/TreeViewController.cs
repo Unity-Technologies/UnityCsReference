@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 
 namespace UnityEngine.UIElements
 {
@@ -58,14 +57,6 @@ namespace UnityEngine.UIElements
         protected override void DestroyItem(VisualElement element)
         {
             treeView.destroyItem?.Invoke(element);
-        }
-
-        public override object GetItemForId(int id)
-        {
-            if (this is IDefaultTreeViewController defaultController)
-                return defaultController.GetItemDataForId(id);
-
-            return base.GetItemForId(id);
         }
     }
 }

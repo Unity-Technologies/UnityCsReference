@@ -185,7 +185,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static EditorCompilation.CompileStatus CompileScripts(EditorScriptCompilationOptions definesOptions, BuildTarget platform, int subtarget, string[] extraScriptingDefines = null)
         {
-            return EmitExceptionAsError(() => Instance.CompileScripts(definesOptions, BuildPipeline.GetBuildTargetGroup(platform), platform, subtarget, extraScriptingDefines),
+            return EmitExceptionAsError(() => Instance.CompileScripts(definesOptions, platform, subtarget, extraScriptingDefines),
                 EditorCompilation.CompileStatus.CompilationFailed);
         }
 
@@ -224,7 +224,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             try
             {
-                return Instance.TickCompilationPipeline(options, BuildPipeline.GetBuildTargetGroup(platform), platform, subtarget, extraScriptingDefines, allowBlocking);
+                return Instance.TickCompilationPipeline(options, platform, subtarget, extraScriptingDefines, allowBlocking);
             }
             catch (Exception e)
             {
@@ -240,9 +240,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.TargetAssemblyInfo[] GetCompatibleTargetAssemblyInfos(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines = null)
+        public static EditorCompilation.TargetAssemblyInfo[] GetCompatibleTargetAssemblyInfos(EditorScriptCompilationOptions definesOptions, BuildTarget platform, string[] extraScriptingDefines = null)
         {
-            var scriptAssemblySettings = Instance.CreateScriptAssemblySettings(platformGroup, platform, EditorUserBuildSettings.GetActiveSubtargetFor(platform), definesOptions, extraScriptingDefines);
+            var scriptAssemblySettings = Instance.CreateScriptAssemblySettings(platform, EditorUserBuildSettings.GetActiveSubtargetFor(platform), definesOptions, extraScriptingDefines);
             return Instance.GetTargetAssemblyInfos(scriptAssemblySettings);
         }
 

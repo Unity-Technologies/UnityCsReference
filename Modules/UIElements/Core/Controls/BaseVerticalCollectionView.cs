@@ -153,6 +153,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class defines the BaseVerticalCollectionView element properties that you can use in a UI document asset (UXML file).
         /// </remarks>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             private readonly UxmlEnumAttributeDescription<CollectionVirtualizationMethod> m_VirtualizationMethod = new UxmlEnumAttributeDescription<CollectionVirtualizationMethod> { name = "virtualization-method", defaultValue = CollectionVirtualizationMethod.FixedHeight };
@@ -297,7 +298,7 @@ namespace UnityEngine.UIElements
 
         internal bool RaiseCanStartDrag(ReusableCollectionItem item, IEnumerable<int> ids)
         {
-            return canStartDrag?.Invoke(new CanStartDragArgs(item?.rootElement, item?.id ?? TreeItem.invalidId, ids)) ?? true;
+            return canStartDrag?.Invoke(new CanStartDragArgs(item?.rootElement, item?.id ?? BaseTreeView.invalidId, ids)) ?? true;
         }
 
         /// <summary>
@@ -1035,6 +1036,7 @@ namespace UnityEngine.UIElements
                 if (m_ViewController == null)
                     return;
 
+                m_ViewController.PreRefresh();
                 RefreshSelection();
                 virtualizationController.Refresh(false);
                 PostRefresh();
@@ -1063,6 +1065,7 @@ namespace UnityEngine.UIElements
                 if (m_ViewController == null)
                     return;
 
+                m_ViewController.PreRefresh();
                 RefreshSelection();
                 virtualizationController.Refresh(true);
                 PostRefresh();

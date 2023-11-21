@@ -18,7 +18,7 @@ namespace UnityEngine.UIElements
     /// When using <see cref="VisualTreeAsset.Instantiate()"/>, a TemplateContainer instance is returned to you to represent the root of the hierarchy.
     /// When using UXML templates, a TemplateContainer is generated for the template instance and inserted into the hierarchy of the parent UXML file.
     /// </remarks>
-    [UxmlElement(UxmlFactory.k_ElementName), HideInInspector]
+    [UxmlElement("Instance"), HideInInspector]
     public class TemplateContainer : BindableElement
     {
         internal static readonly BindingId templateIdProperty = nameof(templateId);
@@ -32,7 +32,7 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags template_UxmlAttributeFlags;
 
             // This allows reading template attribute as a string as well as VisualTreeAsset
-            [SerializeField, FormerlySerializedAs("template"), UxmlAttribute(UxmlTraits.k_TemplateAttributeName)] string templateId;
+            [SerializeField, FormerlySerializedAs("template"), UxmlAttribute("template")] string templateId;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags templateId_UxmlAttributeFlags;
             #pragma warning restore 649
 
@@ -53,6 +53,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates and clones a <see cref="TemplateContainer"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<TemplateContainer, UxmlTraits>
         {
             internal const string k_ElementName = "Instance";
@@ -65,6 +66,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="TemplateContainer"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             internal const string k_TemplateAttributeName = "template";

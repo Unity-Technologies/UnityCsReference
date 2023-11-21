@@ -9,12 +9,12 @@ namespace UnityEngine
     public enum PhysicsMaterialCombine
     {
         Average = 0,
-        Minimum = 2,
-        Multiply = 1,
-        Maximum = 3
+        Multiply,
+        Minimum,
+        Maximum
     }
 
-    [NativeHeader("Modules/Physics/PhysicMaterial.h")]
+    [NativeHeader("Modules/Physics/PhysicsMaterial.h")]
     public class PhysicsMaterial : UnityEngine.Object
     {
         public PhysicsMaterial() { Internal_CreateDynamicsMaterial(this, "DynamicMaterial"); }

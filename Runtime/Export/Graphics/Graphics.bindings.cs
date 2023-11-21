@@ -648,8 +648,14 @@ namespace UnityEngine
         [FreeFunction("CopyTexture")] extern private static void CopyTexture_Slice_AllMips(Texture src, int srcElement, Texture dst, int dstElement);
         [FreeFunction("CopyTexture")] extern private static void CopyTexture_Slice(Texture src, int srcElement, int srcMip, Texture dst, int dstElement, int dstMip);
         [FreeFunction("CopyTextureRegion")] extern private static void CopyTexture_Region(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, Texture dst, int dstElement, int dstMip, int dstX, int dstY);
+        [FreeFunction("CopyTexture")] extern private static void CopyTexture_Full_Gfx(GraphicsTexture src, GraphicsTexture dst);
+        [FreeFunction("CopyTexture")] extern private static void CopyTexture_Slice_AllMips_Gfx(GraphicsTexture src, int srcElement, GraphicsTexture dst, int dstElement);
+        [FreeFunction("CopyTexture")] extern private static void CopyTexture_Slice_Gfx(GraphicsTexture src, int srcElement, int srcMip, GraphicsTexture dst, int dstElement, int dstMip);
+        [FreeFunction("CopyTextureRegion")] extern private static void CopyTexture_Region_Gfx(GraphicsTexture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, GraphicsTexture dst, int dstElement, int dstMip, int dstX, int dstY);
         [FreeFunction("ConvertTexture")] extern private static bool ConvertTexture_Full(Texture src, Texture dst);
         [FreeFunction("ConvertTexture")] extern private static bool ConvertTexture_Slice(Texture src, int srcElement, Texture dst, int dstElement);
+        [FreeFunction("ConvertTexture")] extern private static bool ConvertTexture_Full_Gfx(GraphicsTexture src, GraphicsTexture dst);
+        [FreeFunction("ConvertTexture")] extern private static bool ConvertTexture_Slice_Gfx(GraphicsTexture src, int srcElement, GraphicsTexture dst, int dstElement);
 
         [FreeFunction("GraphicsScripting::CopyBuffer", ThrowsException = true)] static extern void CopyBufferImpl([NotNull] GraphicsBuffer source, [NotNull] GraphicsBuffer dest);
 

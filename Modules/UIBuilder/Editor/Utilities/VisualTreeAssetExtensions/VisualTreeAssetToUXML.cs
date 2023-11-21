@@ -127,12 +127,12 @@ namespace Unity.UI.Builder
                         if (uxmlObjectAsset.fullTypeName != k_ColumnFullName)
                             continue;
 
-                        var templateAlias = uxmlObjectAsset.GetAttributeValue(Column.UxmlObjectTraits<Column>.k_HeaderTemplateAttributeName);
+                        var templateAlias = uxmlObjectAsset.GetAttributeValue(Column.k_HeaderTemplateAttributeName);
 
                         if (!string.IsNullOrEmpty(templateAlias) && !templateAliases.Contains(templateAlias))
                             templateAliases.Add(templateAlias);
 
-                        templateAlias = uxmlObjectAsset.GetAttributeValue(Column.UxmlObjectTraits<Column>.k_CellTemplateAttributeName);
+                        templateAlias = uxmlObjectAsset.GetAttributeValue(Column.k_CellTemplateAttributeName);
 
                         if (!string.IsNullOrEmpty(templateAlias) && !templateAliases.Contains(templateAlias))
                             templateAliases.Add(templateAlias);

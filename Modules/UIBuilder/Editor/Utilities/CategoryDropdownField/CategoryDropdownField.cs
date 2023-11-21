@@ -10,12 +10,10 @@ namespace Unity.UI.Builder
 {
     partial class CategoryDropdownField : BaseField<string>
     {
-        public new class UxmlFactory : UxmlFactory<CategoryDropdownField, UxmlTraits>
+        [Serializable]
+        public new class UxmlSerializedData : BaseField<string>.UxmlSerializedData
         {
-        }
-
-        public new class UxmlTraits : BaseField<string>.UxmlTraits
-        {
+            public override object CreateInstance() => new CategoryDropdownField();
         }
 
         // Base selectors coming from BasePopupField

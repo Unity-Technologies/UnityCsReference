@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -53,7 +52,11 @@ namespace Unity.UI.Builder
 
         private BuilderBindingsCacheSubscriber m_BindingsCacheSubscriber;
 
-        public new class UxmlFactory : UxmlFactory<BuilderCanvasStyleControls, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new BuilderCanvasStyleControls();
+        }
 
         public BuilderCanvasStyleControls()
         {

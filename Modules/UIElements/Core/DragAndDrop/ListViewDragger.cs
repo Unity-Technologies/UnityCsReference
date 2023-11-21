@@ -228,7 +228,7 @@ namespace UnityEngine.UIElements
         }
 
         void HandleAutoExpansion(Vector2 pointerPosition)
-        {   
+        {
             var recycledItem = GetRecycledItem(pointerPosition);
             if (recycledItem == null)
                 return;
@@ -419,13 +419,13 @@ namespace UnityEngine.UIElements
 
             GetPreviousAndNextItemsIgnoringDraggedItems(dragPosition.insertAtIndex, out var previousItemId, out var nextItemId);
 
-            if (previousItemId == TreeItem.invalidId)
+            if (previousItemId == BaseTreeView.invalidId)
                 return; // Above first row so keep targetItem
 
             var hoveringBetweenExpandedParentAndFirstChild = treeController.HasChildren(previousItemId) && treeView.IsExpanded(previousItemId);
             var previousItemDepth = treeController.GetIndentationDepth(previousItemId);
             var nextItemDepth = treeController.GetIndentationDepth(nextItemId);
-            var minDepth = nextItemId != TreeItem.invalidId ? nextItemDepth : 0;
+            var minDepth = nextItemId != BaseTreeView.invalidId ? nextItemDepth : 0;
             var maxDepth = treeController.GetIndentationDepth(previousItemId) + (hoveringBetweenExpandedParentAndFirstChild ? 1 : 0);
 
             // Change target item.

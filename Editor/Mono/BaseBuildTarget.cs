@@ -10,6 +10,12 @@ namespace UnityEditor;
 internal abstract class BaseBuildTarget : IBuildTarget
 {
     public virtual string DisplayName => TargetName;
+
+    // linux is the default, no need to explicitly specify it
+    public const string kRootSystemTypeWin = "win32";
+    public const string kRootSystemTypeMac = "macos";
+    public virtual string RootSystemType => "linux";
+
     public abstract RuntimePlatform RuntimePlatform { get; }
     public abstract string TargetName { get; }
     public abstract int GetLegacyId { get; }
@@ -20,6 +26,7 @@ internal abstract class BaseBuildTarget : IBuildTarget
     public virtual IIconPlatformProperties IconPlatformProperties => Properties as IIconPlatformProperties;
     public virtual IUIPlatformProperties UIPlatformProperties => Properties as IUIPlatformProperties;
     public virtual IAudioPlatformProperties AudioPlatformProperties => Properties as IAudioPlatformProperties;
+    public virtual IVRPlatformProperties VRPlatformProperties => Properties as IVRPlatformProperties;
 
     protected virtual IPlatformProperties Properties => null;
 

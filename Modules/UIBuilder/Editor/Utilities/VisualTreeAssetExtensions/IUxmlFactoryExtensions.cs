@@ -4,14 +4,12 @@
 
 using System;
 using System.Reflection;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
+    #pragma warning disable CS0618 // Type or member is obsolete
     internal static class IUXMLFactoryExtensions
     {
         internal static readonly string s_TraitsNotFoundMessage = "UI Builder: IUxmlFactory.m_Traits field has not been found! Update the reflection code!";
@@ -43,4 +41,5 @@ namespace Unity.UI.Builder
             return uxmlTypeProperty.GetValue(factory) as Type;
         }
     }
+    #pragma warning restore CS0618 // Type or member is obsolete
 }

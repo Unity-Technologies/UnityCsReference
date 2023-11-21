@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.GraphToolsFoundation.Editor
@@ -12,41 +13,25 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class ToggleIconButton : VisualElement, INotifyValueChanged<bool>
     {
-        /// <summary>
-        /// Instantiates a <see cref="ToggleIconButton"/> using data from a UXML file.
-        /// </summary>
-        /// <remarks>
-        /// This class is added to every <see cref="VisualElement"/> that is created from UXML.
-        /// </remarks>
-        public new class UxmlFactory : UxmlFactory<ToggleIconButton, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="ToggleIconButton"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a <see cref="ToggleIconButton"/> element that you can
-        /// use in a UXML asset.
-        /// </remarks>
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            UxmlBoolAttributeDescription m_Value;
+            #pragma warning disable 649
+            [SerializeField] bool value;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
+            #pragma warning restore 649
 
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                m_Value = new UxmlBoolAttributeDescription { name = "value" };
-            }
+            public override object CreateInstance() => new ToggleIconButton();
 
-            /// <summary>
-            /// Initialize <see cref="ToggleIconButton"/> properties using values from the attribute bag.
-            /// </summary>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            public override void Deserialize(object obj)
             {
-                base.Init(ve, bag, cc);
-                var value = m_Value.GetValueFromBag(bag, cc);
-                ((ToggleIconButton)ve).value = value;
+                base.Deserialize(obj);
+
+                if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
+                {
+                    var e = (ToggleIconButton)obj;
+                    e.value = value;
+                }
             }
         }
 

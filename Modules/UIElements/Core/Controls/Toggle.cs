@@ -50,11 +50,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="Toggle"/> using data from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Toggle, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="Toggle"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseFieldTraits<bool, UxmlBoolAttributeDescription>
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };

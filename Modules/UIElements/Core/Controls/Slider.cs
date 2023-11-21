@@ -54,11 +54,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="Slider"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Slider, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="Slider"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : UxmlTraits<UxmlFloatAttributeDescription>
         {
             UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value" };

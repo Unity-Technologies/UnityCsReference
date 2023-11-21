@@ -145,12 +145,14 @@ namespace Unity.UI.Builder
 
         static bool IsCustomBinding<T>(UxmlObjectAsset o)
         {
+            #pragma warning disable CS0618 // Type or member is obsolete
             if (UxmlObjectFactoryRegistry.factories.TryGetValue(o.fullTypeName, out var factories))
             {
                 var uxmlType = factories[0].GetUxmlType();
                 var type = typeof(T);
                 return type != uxmlType && type.IsAssignableFrom(uxmlType) && uxmlType.Assembly.GetName().Name != UxmlObjectFactoryRegistry.uieCoreModule;
             }
+            #pragma warning restore CS0618 // Type or member is obsolete
 
             return false;
         }

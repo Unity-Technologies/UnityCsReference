@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Hierarchy;
 
 namespace UnityEngine.UIElements
 {
@@ -59,8 +59,27 @@ namespace UnityEngine.UIElements
             if (items == base.itemsSource)
                 return;
 
-            treeDataController.SetRootItems(items);
-            RebuildTree();
+            if (m_Hierarchy.IsCreated)
+            {
+                ClearIdToNodeDictionary();
+                treeDataController.ClearNodeToDataDictionary();
+
+                // Recreate memory for the new dataset
+                hierarchy = new Hierarchy();
+            }
+
+            if (items != null)
+            {
+                treeDataController.ConvertTreeViewItemDataToHierarchy(items, (node) => CreateNode(node), (id, node) => UpdateIdToNodeDictionary(id, node));
+                UpdateHierarchy();
+
+                // We want to sync the expanded state(s) if there's a viewDataKey
+                if (IsViewDataKeyEnabled())
+                    OnViewDataReadyUpdateNodes();
+            }
+
+            // Required to set the CollectionViewController's items source.
+            SetHierarchyViewModelWithoutNotify(m_HierarchyViewModel);
             RaiseItemsSourceChanged();
         }
 
@@ -73,10 +92,47 @@ namespace UnityEngine.UIElements
         /// <param name="rebuildTree">Whether the tree data should be rebuilt right away. Call <see cref="TreeViewController.RebuildTree()"/> when <c>false</c>.</param>
         public virtual void AddItem(in TreeViewItemData<T> item, int parentId, int childIndex, bool rebuildTree = true)
         {
-            treeDataController.AddItem(item, parentId, childIndex);
+            HierarchyNode node;
 
-            if (rebuildTree)
-                RebuildTree();
+            if (parentId == BaseTreeView.invalidId)
+            {
+                node = CreateNode(HierarchyNode.Null);
+            }
+            else
+            {
+                var parentNode = GetHierarchyNodeById(parentId);
+                node = CreateNode(parentNode);
+                // Update our internal TreeViewItemData otherwise the content will be out of date when the user fetches it.
+                var treeItemData = treeDataController.GetTreeItemDataForNode(parentNode);
+                if (treeItemData.data != null)
+                    treeItemData.InsertChild(item, childIndex);
+            }
+
+            treeDataController.AddItem(item, node);
+            UpdateIdToNodeDictionary(item.id, node);
+            UpdateHierarchy();
+
+            // If the item being added contains children, we want to convert them into HierarchyNode(s). For example,
+            // users can drive their TreeView solely with the AddItem and TryRemoveItem APIs
+            if (item.children.GetCount() > 0)
+            {
+                var parentNode = GetHierarchyNodeById(item.id);
+
+                treeDataController.ConvertTreeViewItemDataToHierarchy(
+                    item.children,
+                    (itemNode) => CreateNode(itemNode == HierarchyNode.Null ? parentNode : itemNode),
+                    (id, newNode) =>
+                {
+                    UpdateIdToNodeDictionary(id, newNode);
+                    UpdateHierarchy();
+                });
+            }
+
+            if (baseTreeView.autoExpand)
+                ExpandAncestorNodes(node);
+
+            if (childIndex != -1)
+                UpdateSortOrder(m_Hierarchy.GetParent(node), node, childIndex);
         }
 
         /// <summary>
@@ -87,7 +143,7 @@ namespace UnityEngine.UIElements
         /// <returns>The tree item data.</returns>
         public virtual TreeViewItemData<T> GetTreeViewItemDataForId(int id)
         {
-            return treeDataController.GetTreeItemDataForId(id);
+            return treeDataController.GetTreeItemDataForNode(GetHierarchyNodeById(id));
         }
 
         /// <summary>
@@ -98,22 +154,44 @@ namespace UnityEngine.UIElements
         /// <returns>The tree item data.</returns>
         public virtual TreeViewItemData<T> GetTreeViewItemDataForIndex(int index)
         {
-            var itemId = GetIdForIndex(index);
-            return treeDataController.GetTreeItemDataForId(itemId);
+            var id = GetIdForIndex(index);
+            return treeDataController.GetTreeItemDataForNode(GetHierarchyNodeById(id));
         }
 
         /// <inheritdoc />
         public override bool TryRemoveItem(int id, bool rebuildTree = true)
         {
-            if (treeDataController.TryRemoveItem(id))
+            var node = GetHierarchyNodeById(id);
+            if (node != HierarchyNode.Null)
             {
-                if (rebuildTree)
-                    RebuildTree();
+                // Update our internal TreeViewDataItem reference by removing the child from the parent - if applicable.
+                var parentId = GetParentId(id);
+                if (parentId != BaseTreeView.invalidId)
+                {
+                    var treeItemData = treeDataController.GetTreeItemDataForNode(GetHierarchyNodeById(parentId));
+                    if (treeItemData.data != null)
+                        treeItemData.RemoveChild(id);
+                }
+
+                RemoveAllChildrenItemsFromCollections(node, (hierarchyNode, itemId) =>
+                {
+                    treeDataController.RemoveItem(hierarchyNode);
+                    UpdateIdToNodeDictionary(itemId, node, false);
+                });
+                treeDataController.RemoveItem(node);
+                UpdateIdToNodeDictionary(id, node, false);
+                m_Hierarchy.Remove(node);
+                UpdateHierarchy();
 
                 return true;
             }
 
             return false;
+        }
+
+        public override object GetItemForId(int id)
+        {
+            return treeDataController.GetTreeItemDataForNode(GetHierarchyNodeById(id)).data;
         }
 
         /// <summary>
@@ -124,7 +202,7 @@ namespace UnityEngine.UIElements
         /// <returns>The data.</returns>
         public T GetDataForId(int id)
         {
-            return treeDataController.GetDataForId(id);
+            return treeDataController.GetDataForNode(GetHierarchyNodeById(id));
         }
 
         /// <summary>
@@ -135,60 +213,13 @@ namespace UnityEngine.UIElements
         /// <returns>The data.</returns>
         public T GetDataForIndex(int index)
         {
-            return treeDataController.GetDataForId(GetIdForIndex(index));
+            return treeDataController.GetDataForNode(GetHierarchyNodeByIndex(index));
         }
 
         /// <inheritdoc />
         public override object GetItemForIndex(int index)
         {
-            return treeDataController.GetDataForId(GetIdForIndex(index));
-        }
-
-        /// <inheritdoc />
-        public override int GetParentId(int id)
-        {
-            return treeDataController.GetParentId(id);
-        }
-
-        /// <inheritdoc />
-        public override bool HasChildren(int id)
-        {
-            return treeDataController.HasChildren(id);
-        }
-
-        /// <inheritdoc />
-        public override IEnumerable<int> GetChildrenIds(int id)
-        {
-            return treeDataController.GetChildrenIds(id);
-        }
-
-        /// <inheritdoc />
-        public override void Move(int id, int newParentId, int childIndex = -1, bool rebuildTree = true)
-        {
-            if (id == newParentId)
-                return;
-
-            if (IsChildOf(newParentId, id))
-                return;
-
-            treeDataController.Move(id, newParentId, childIndex);
-
-            if (rebuildTree)
-            {
-                RebuildTree();
-                RaiseItemIndexChanged(id, newParentId);
-            }
-        }
-
-        bool IsChildOf(int childId, int id)
-        {
-            return treeDataController.IsChildOf(childId, id);
-        }
-
-        /// <inheritdoc />
-        public override IEnumerable<int> GetAllItemIds(IEnumerable<int> rootIds = null)
-        {
-            return treeDataController.GetAllItemIds(rootIds);
+            return treeDataController.GetDataForNode(GetHierarchyNodeByIndex(index));
         }
     }
 }

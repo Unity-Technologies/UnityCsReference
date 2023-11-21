@@ -6,12 +6,17 @@ using System.Globalization;
 using UnityEngine.UIElements;
 using System.Linq;
 using System.Collections.Generic;
+using System;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDetailsHeader : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<PackageDetailsHeader> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new PackageDetailsHeader();
+        }
 
         internal enum InfoBoxState
         {

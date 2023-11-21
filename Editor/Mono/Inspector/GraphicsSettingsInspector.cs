@@ -34,33 +34,21 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.");
         }
 
-        internal static GraphicsSettingsInspector s_Instance;
-        internal IEnumerable<GraphicsSettingsUtils.GlobalSettingsContainer> globalSettings => m_GlobalSettings;
+        internal IEnumerable<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> globalSettings => m_GlobalSettings;
 
         readonly VisibilityControllerBasedOnRenderPipeline m_VisibilityController = new();
         TabbedView m_TabbedView;
         VisualElement m_CurrentRoot;
-        List<GraphicsSettingsUtils.GlobalSettingsContainer> m_GlobalSettings;
-
-        internal Type GetRenderPipelineAssetTypeForSelectedTab()
-        {
-            var currentActiveTabIndex = m_TabbedView?.ActiveTabIndex ?? -1;
-            if(currentActiveTabIndex <= 0 || currentActiveTabIndex > m_GlobalSettings.Count)
-                return null;
-
-            return m_GlobalSettings[currentActiveTabIndex - 1].renderPipelineAssetType;
-        }
+        List<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> m_GlobalSettings;
 
         void OnEnable()
         {
-            s_Instance = this;
             m_VisibilityController.Initialize();
             Undo.undoRedoEvent += OnUndoRedoPerformed;
         }
 
         public void OnDisable()
         {
-            s_Instance = null;
             m_VisibilityController.Clear();
             m_VisibilityController.Dispose();
 
@@ -81,7 +69,7 @@ namespace UnityEditor
             Undo.undoRedoEvent -= OnUndoRedoPerformed;
         }
 
-        internal void CreateInspectorUI(VisualElement root, bool globalSettingsExist, List<GraphicsSettingsUtils.GlobalSettingsContainer> globalSettings)
+        internal void CreateInspectorUI(VisualElement root, bool globalSettingsExist, List<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> globalSettings)
         {
             m_CurrentRoot = root;
             m_GlobalSettings = globalSettings;
@@ -141,7 +129,7 @@ namespace UnityEditor
 
             ApplyPersistentView(m_CurrentRoot, persistantViewValues);
 
-            GraphicsSettingsUtils.LocalizeVisualTree(m_CurrentRoot);
+            GraphicsSettingsInspectorUtility.LocalizeVisualTree(m_CurrentRoot);
             m_CurrentRoot.Bind(serializedObject);
         }
 
@@ -170,19 +158,20 @@ namespace UnityEditor
             SetupTransparencySortMode(builtInTemplate);
 
             var builtInSettingsContainer = builtInTemplate.MandatoryQ<VisualElement>("Built-InSettingsContainer");
-            var builtInHelpBoxes = GraphicsSettingsUtils.CreateRPHelpBox(m_VisibilityController, null);
+            var builtInHelpBoxes = GraphicsSettingsInspectorUtility.CreateRPHelpBox(m_VisibilityController, null);
             builtInSettingsContainer.Insert(0, builtInHelpBoxes);
             builtInHelpBoxes.MandatoryQ<HelpBox>("CurrentPipelineWarningHelpBox").text = GraphicsSettingsData.builtInWarningText.text;
 
             var builtinActive = persistantViewValues == null || persistantViewValues.tabIndex <= 0;
-            GraphicsSettingsUtils.CreateNewTab(m_TabbedView, "Built-In", builtInSettingsContainer, builtinActive);
+            var tabButton = GraphicsSettingsInspectorUtility.CreateNewTab(m_TabbedView, "Built-In", builtInSettingsContainer, builtinActive);
+            tabButton.userData = null;
 
             //Add SRP tabs
             for (var i = 0; i < m_GlobalSettings.Count; i++)
             {
                 var globalSettingsContainer = m_GlobalSettings[i];
                 var globalSettingsElement = new VisualElement();
-                var rpHelpBoxes = GraphicsSettingsUtils.CreateRPHelpBox(m_VisibilityController, globalSettingsContainer.renderPipelineAssetType);
+                var rpHelpBoxes = GraphicsSettingsInspectorUtility.CreateRPHelpBox(m_VisibilityController, globalSettingsContainer.renderPipelineAssetType);
                 globalSettingsElement.Add(rpHelpBoxes);
 
                 globalSettingsElement.Bind(globalSettingsContainer.serializedObject);
@@ -194,7 +183,8 @@ namespace UnityEditor
                     ? persistantViewValues.tabIndex == i + 1
                     : GraphicsSettings.currentRenderPipelineAssetType == globalSettingsContainer.renderPipelineAssetType;
 
-                GraphicsSettingsUtils.CreateNewTab(m_TabbedView, globalSettingsContainer.name, globalSettingsElement, rpActive);
+                var srpTabButton = GraphicsSettingsInspectorUtility.CreateNewTab(m_TabbedView, globalSettingsContainer.name, globalSettingsElement, rpActive);
+                srpTabButton.userData = globalSettingsContainer.renderPipelineAssetType;
             }
         }
 
@@ -367,12 +357,14 @@ namespace UnityEditor
 
     internal class GraphicsSettingsProvider : SettingsProvider
     {
-        GraphicsSettingsInspector m_Inspector;
+        internal static readonly string s_GraphicsSettingsProviderPath = "Project/Graphics";
+        internal static readonly string s_GraphicsSettingsProviderAssetPath = "ProjectSettings/GraphicsSettings.asset";
+        internal GraphicsSettingsInspector inspector;
 
         [SettingsProvider]
         public static SettingsProvider CreateUserSettingsProvider()
         {
-            var graphicsSettingsProvider = new GraphicsSettingsProvider("Project/Graphics", SettingsScope.Project)
+            var graphicsSettingsProvider = new GraphicsSettingsProvider(s_GraphicsSettingsProviderPath, SettingsScope.Project)
             {
                 icon = EditorGUIUtility.FindTexture("UnityEngine/UI/GraphicRaycaster Icon")
             };
@@ -383,25 +375,25 @@ namespace UnityEditor
         {
             activateHandler = (text, root) =>
             {
-                var settingsObj = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/GraphicsSettings.asset");
+                var settingsObj = AssetDatabase.LoadAllAssetsAtPath(s_GraphicsSettingsProviderAssetPath);
                 if (settingsObj == null)
                     return;
 
-                m_Inspector = Editor.CreateEditor(settingsObj) as GraphicsSettingsInspector;
+                inspector = Editor.CreateEditor(settingsObj) as GraphicsSettingsInspector;
 
-                var globalSettingsExist = GraphicsSettingsUtils.GatherGlobalSettingsFromSerializedObject(m_Inspector.serializedObject, out var globalSettings);
-                var content = CreateGraphicsSettingsUI(globalSettingsExist, m_Inspector, root, globalSettings);
+                var globalSettingsExist = GraphicsSettingsInspectorUtility.GatherGlobalSettingsFromSerializedObject(inspector.serializedObject, out var globalSettings);
+                var content = CreateGraphicsSettingsUI(globalSettingsExist, inspector, root, globalSettings);
                 this.keywords = CreateKeywordsList(content);
             };
             deactivateHandler = (() =>
             {
-                if (m_Inspector != null)
-                    m_Inspector.OnDisable();
+                if (inspector != null)
+                    inspector.OnDisable();
             });
         }
 
 
-        internal static TemplateContainer CreateGraphicsSettingsUI(bool globalSettingsExist, GraphicsSettingsInspector inspector,  VisualElement root, List<GraphicsSettingsUtils.GlobalSettingsContainer> globalSettings)
+        internal static TemplateContainer CreateGraphicsSettingsUI(bool globalSettingsExist, GraphicsSettingsInspector inspector,  VisualElement root, List<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> globalSettings)
         {
             var visualTreeAsset =
                 EditorGUIUtility.Load(globalSettingsExist ? GraphicsSettingsInspector.GraphicsSettingsData.bodyTemplateSRP : GraphicsSettingsInspector.GraphicsSettingsData.bodyTemplateBuiltInOnly) as
@@ -417,7 +409,7 @@ namespace UnityEditor
             var keywordsList = new List<string>();
             keywordsList.AddRange(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorTierSettings.Styles>());
             keywordsList.AddRange(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorShaderPreload.Styles>());
-            keywordsList.AddRange(GetSearchKeywordsFromPath("ProjectSettings/GraphicsSettings.asset"));
+            keywordsList.AddRange(GetSearchKeywordsFromPath(s_GraphicsSettingsProviderAssetPath));
             keywordsList.AddRange(GetSearchKeywordsFromVisualElementTree(content));
             return keywordsList;
         }

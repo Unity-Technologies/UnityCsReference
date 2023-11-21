@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
+using UnityEditor.Inspector.GraphicsSettingsInspectors;
 using UnityEditor.Rendering.Settings;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.ProjectSettings;
@@ -22,23 +23,26 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
     {
         const string k_LineClass = "contextual-menu-button--handler";
         const string k_GraphicsSettingsClass = "project-settings-section__graphics-settings";
-        
+        const string k_GraphicsSettingsHighlightableClass = "graphics-settings__highlightable";
+
         internal class GraphicsSettingsDrawerInfo
         {
-            public SerializedProperty property  { get; private set; }
-            public HelpURLAttribute helpURLAttribute  { get; private set; }
-            public string category  { get; private set; }
-            public CategoryInfo parentCategory  { get; internal set; }
-            public string name  { get; private set; }
-            public Type serializedType  { get; private set; }
-            public bool disabled;
+            public SerializedProperty property { get; private set; }
+            public HelpURLAttribute helpURLAttribute { get; private set; }
+            public string category { get; private set; }
+            public CategoryInfo parentCategory { get; internal set; }
+            public string name { get; private set; }
+            public Type serializedType { get; private set; }
+            public bool hidden;
 
-            private GraphicsSettingsDrawerInfo() { }
+            private GraphicsSettingsDrawerInfo()
+            {
+            }
 
             public static GraphicsSettingsDrawerInfo ExtractFrom(SerializedProperty property)
             {
                 //boxedProperty can be null if we keep in the list a data blob for a type that have disappears
-                //this can happens if user remove a IRenderPipelibeGraphicsSettings from his project for instance
+                //this can happens if user remove a IRenderPipelineGraphicsSettings from his project for instance
                 Type type = property?.boxedValue?.GetType();
                 if (type == null || !typeof(IRenderPipelineGraphicsSettings).IsAssignableFrom(type))
                     return null;
@@ -58,6 +62,7 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
                     name = category.Substring(pos + 1);
                     category = category.Substring(0, pos);
                 }
+
                 name ??= ObjectNames.NicifyVariableName(type.Name);
                 category ??= name;
 
@@ -69,11 +74,11 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
                     parentCategory = null,
                     name = name,
                     serializedType = type,
-                    disabled = hidden
+                    hidden = hidden
                 };
             }
         }
-        
+
         //internal for tests
         internal class CategoryInfo : IEnumerable<GraphicsSettingsDrawerInfo>
         {
@@ -93,7 +98,9 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 
             public string category => first.category;
 
-            private CategoryInfo() {}
+            private CategoryInfo()
+            {
+            }
 
             public bool Contains(GraphicsSettingsDrawerInfo settingsInfo)
                 => settingsInfos.ContainsKey(settingsInfo.name);
@@ -106,7 +113,8 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 
             public static CategoryInfo ExtractFrom(GraphicsSettingsDrawerInfo property)
             {
-                var categoryInfo = new CategoryInfo() {
+                var categoryInfo = new CategoryInfo()
+                {
                     settingsInfos = new() { { property.name, property } }
                 };
                 property.parentCategory = categoryInfo;
@@ -124,7 +132,7 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
         internal static SortedDictionary<string, CategoryInfo> Categorize(SerializedProperty property)
         {
             SortedDictionary<string, CategoryInfo> categories = new();
-            
+
             var propertyIterator = property.Copy();
             var end = propertyIterator.GetEndProperty();
             propertyIterator.NextVisible(true);
@@ -154,6 +162,7 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 
                 propertyIterator.NextVisible(false);
             }
+
             return categories;
         }
 
@@ -165,12 +174,13 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
                 root.Add(button);
             }
         }
-        
-        void ShowContextualMenu(Rect rect, Type settingsType)
+
+        void ShowContextualMenu(VisualElement root, Rect rect, Type settingsType)
         {
-            var contextualMenu = DropdownUtility.CreateDropdown(true) as GenericDropdownMenu;
-            contextualMenu.AddItem("Reset", false, true, () => {
-                var renderPipelineType = RenderPipelineEditorUtility.GetPipelineTypeFromPipelineAssetType(GraphicsSettingsInspector.s_Instance.GetRenderPipelineAssetTypeForSelectedTab());
+            var contextualMenu = DropdownUtility.CreateDropdown(true);
+            contextualMenu.AddItem("Reset", false, true, () =>
+            {
+                var renderPipelineType = RenderPipelineEditorUtility.GetPipelineTypeFromPipelineAssetType(GraphicsSettingsInspectorUtility.GetRenderPipelineAssetTypeForSelectedTab(root));
                 RenderPipelineGraphicsSettingsManager.ResetRenderPipelineGraphicsSettings(settingsType, renderPipelineType);
             });
 
@@ -180,14 +190,14 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 
             DropdownUtility.ShowDropdown(contextualMenu, rect.position + Vector2.up * rect.size.y);
         }
-        
+
         void DrawContextualMenuButton(VisualElement root, Type serializedType)
         {
             var button = new Button(Background.FromTexture2D(EditorGUIUtility.LoadIcon("pane options")));
-            button.clicked += () => ShowContextualMenu(button.worldBound, serializedType);
+            button.clicked += () => ShowContextualMenu(root, button.worldBound, serializedType);
             root.Add(button);
         }
-        
+
         void DrawHeader(VisualElement root, CategoryInfo categoryInfo)
         {
             var line = new VisualElement();
@@ -220,18 +230,25 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 
             DrawHelpButton(line, settingsInfo.helpURLAttribute);
             DrawContextualMenuButton(line, settingsInfo.serializedType);
-            
+
             root.Add(line);
         }
-        
+
         void DrawContent(VisualElement root, GraphicsSettingsDrawerInfo settingsInfo)
         {
-            var graphicsSettings = new PropertyField(settingsInfo.property){ name = settingsInfo.name };
-            graphicsSettings.AddToClassList(ProjectSettingsSection.Styles.content);
-            graphicsSettings.AddToClassList(k_GraphicsSettingsClass);
+            var graphicsSettings = new PropertyField(settingsInfo.property)
+            {
+                name = settingsInfo.name,
+                classList =
+                {
+                    ProjectSettingsSection.Styles.content,
+                    k_GraphicsSettingsClass,
+                    k_GraphicsSettingsHighlightableClass,
+                }
+            };
             root.Add(graphicsSettings);
 
-            if (settingsInfo.disabled)
+            if (settingsInfo.hidden)
                 graphicsSettings.RegisterCallback<GeometryChangedEvent>(UpdatePropertyLabel);
         }
 
@@ -258,7 +275,7 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
             foreach (var categoryInfo in Categorize(graphicsSettings).Values)
             {
                 DrawHeader(root, categoryInfo);
-                foreach(var graphicSettingsInfo in categoryInfo)
+                foreach (var graphicSettingsInfo in categoryInfo)
                 {
                     if (categoryInfo.count > 1)
                         DrawSubheader(root, graphicSettingsInfo);

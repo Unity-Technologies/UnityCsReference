@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using JetBrains.Annotations;
+using System;
 using UnityEditor;
 using UnityEngine.UIElements;
 
@@ -39,25 +39,10 @@ namespace Unity.UI.Builder
         public PositionAnchorPoint rightPoint => m_RightPoint;
         public VisualElement square => m_Square;
 
-        [UsedImplicitly]
-        protected new class UxmlFactory : UxmlFactory<PositionAnchors, UxmlTraits> { }
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="PositionAnchors"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a PositionAnchors element that you can
-        /// use in a UXML asset.
-        /// </remarks>
-        protected new class UxmlTraits : VisualElement.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                focusable.defaultValue = true;
-            }
+            public override object CreateInstance() => new PositionAnchors();
         }
 
         public PositionAnchors()

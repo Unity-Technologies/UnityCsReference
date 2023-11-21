@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -11,7 +12,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class LoadingSpinner : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<LoadingSpinner> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new LoadingSpinner();
+        }
 
         public bool started { get; private set; }
 

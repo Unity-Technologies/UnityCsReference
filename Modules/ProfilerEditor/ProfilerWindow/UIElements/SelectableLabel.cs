@@ -13,14 +13,9 @@ namespace Unity.Profiling.Editor
             isReadOnly = true;
         }
 
-        internal new class UxmlFactory : UxmlFactory<SelectableLabel, UxmlTraits>
+        public new class UxmlSerializedData : TextField.UxmlSerializedData
         {
-            public override VisualElement Create(IUxmlAttributes bag, CreationContext cc)
-            {
-                var result = base.Create(bag, cc) as SelectableLabel;
-                result.isReadOnly = true;
-                return result;
-            }
+            public override object CreateInstance() => new SelectableLabel();
         }
     }
 }

@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base class that describes a <see cref="VisualElement"/> derived class for the parsing of UXML files and the generation of UXML schema definition.
     /// </summary>
+    [Obsolete("BaseUxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public abstract class BaseUxmlTraits
     {
         protected BaseUxmlTraits()
@@ -73,6 +74,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// UxmlTraits describes the UXML attributes and children elements of a class deriving from <see cref="VisualElement"/>. It is used by <see cref="UxmlFactory"/> to map UXML attributes to the C# class properties when reading UXML documents. It is also used to generate UXML schema definitions.
     /// </remarks>
+    [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public abstract class UxmlTraits : BaseUxmlTraits
     {
         /// <summary>
@@ -93,6 +95,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// UxmlTraits describes the UXML attributes and children elements of a class or structure. It is used by <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/> to map UXML attributes to the C# class/struct properties when reading UXML documents. It is also used to generate UXML schema definitions.
     /// </remarks>
+    [Obsolete("UxmlObjectTraits<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     internal abstract class UxmlObjectTraits<T> : BaseUxmlTraits
     {
         /// <summary>
@@ -110,6 +113,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base interface for UXML factories. While it is not strictly required, concrete factories should derive from the generic class <see cref="UxmlFactory{TCreatedType,TTraits}"/> or <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/>.
     /// </summary>
+    [Obsolete("IUxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public interface IBaseUxmlFactory
     {
         /// <summary>
@@ -183,6 +187,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for UXML factories. While it is not strictly required, concrete factories should derive from the generic class <see cref="UxmlFactory{TCreatedType,TTraits}"/>.
     /// </summary>
+    [Obsolete("IUxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public interface IUxmlFactory : IBaseUxmlFactory
     {
         /// <summary>
@@ -197,6 +202,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base interface for UxmlObject factories. While it is not strictly required, concrete factories should derive from the generic class <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/>.
     /// </summary>
+    [Obsolete("IBaseUxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     internal interface IBaseUxmlObjectFactory : IBaseUxmlFactory
     {
         // Intentionally left blank.
@@ -205,6 +211,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Typed interface for UxmlObject factories. While it is not strictly required, concrete factories should derive from the generic class <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/>.
     /// </summary>
+    [Obsolete("IUxmlObjectFactory<out T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     internal interface IUxmlObjectFactory<out T> : IBaseUxmlObjectFactory where T : new()
     {
         T CreateObject(IUxmlAttributes bag, CreationContext cc);
@@ -215,6 +222,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <typeparam name="TCreatedType">The type of the class that will be instantiated. It must have a parameterless constructor.</typeparam>
     /// <typeparam name="TTraits">The traits of the class that will be instantiated. It must derive from <see cref="BaseUxmlTraits"/></typeparam>
+    [Obsolete("BaseUxmlFactory<TCreatedType, TTraits> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public abstract class BaseUxmlFactory<TCreatedType, TTraits> where TCreatedType : new() where TTraits : BaseUxmlTraits, new()
     {
         // Make private once we get rid of PropertyControl
@@ -356,6 +364,7 @@ namespace UnityEngine.UIElements
     ///
     /// /T1/ The traits of the element that will be instantiated. It must derive from <see cref="UxmlTraits"/>.
     /// </remarks>
+    [Obsolete("UxmlFactory<TCreatedType, TTraits> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlFactory<TCreatedType, TTraits> : BaseUxmlFactory<TCreatedType, TTraits>, IUxmlFactory where TCreatedType : VisualElement, new() where TTraits : UxmlTraits, new()
     {
         /// <summary>
@@ -377,6 +386,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <typeparam name="TCreatedType">The type of the class that will be instantiated. It must have a parameterless constructor.</typeparam>
     /// <typeparam name="TTraits">The traits of the class that will be instantiated. It must derive from <see cref="UxmlObjectTraits{T}"/></typeparam>
+    [Obsolete("UxmlObjectFactory<TCreatedType, TTraits> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     internal class UxmlObjectFactory<TCreatedType, TTraits> : BaseUxmlFactory<TCreatedType, TTraits>, IUxmlObjectFactory<TCreatedType> where TCreatedType : new() where TTraits : UxmlObjectTraits<TCreatedType>, new()
     {
         /// <summary>
@@ -396,5 +406,6 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// UxmlFactory specialization for classes that derive from <see cref="VisualElement"/> and that shares its traits, <see cref="VisualElementTraits"/>.
     /// </summary>
+    [Obsolete("UxmlFactory<TCreatedType> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlFactory<TCreatedType> : UxmlFactory<TCreatedType, VisualElement.UxmlTraits> where TCreatedType : VisualElement, new() {}
 }

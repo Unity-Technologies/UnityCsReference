@@ -50,11 +50,13 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Instantiates a <see cref="PropertyField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<PropertyField, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="PropertyField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_PropertyPath;

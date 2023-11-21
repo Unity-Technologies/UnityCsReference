@@ -34,11 +34,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates an <see cref="Image"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Image, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="Image"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             /// <summary>

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Properties;
 using UnityEngine.Internal;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
@@ -17,6 +18,7 @@ namespace UnityEngine.UIElements
     public abstract class BaseTreeView : BaseVerticalCollectionView
     {
         internal static readonly BindingId autoExpandProperty = nameof(autoExpand);
+        internal static readonly int invalidId = -1;
 
         /// <summary>
         /// The USS class name for TreeView elements.
@@ -94,6 +96,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class defines the TreeView element properties that you can use in a UI document asset (UXML file).
         /// </remarks>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseVerticalCollectionView.UxmlTraits
         {
             private readonly UxmlBoolAttributeDescription m_AutoExpand = new UxmlBoolAttributeDescription { name = "auto-expand", defaultValue = false };
@@ -209,7 +212,6 @@ namespace UnityEngine.UIElements
                     return;
 
                 m_AutoExpand = value;
-                viewController?.RegenerateWrappers();
                 RefreshItems();
                 NotifyPropertyChanged(autoExpandProperty);
             }
@@ -353,7 +355,7 @@ namespace UnityEngine.UIElements
             base.OnViewDataReady();
             if (viewController != null)
             {
-                viewController.RebuildTree();
+                viewController.OnViewDataReadyUpdateNodes();
                 RefreshItems();
             }
         }
@@ -486,15 +488,18 @@ namespace UnityEngine.UIElements
             if (expand)
             {
                 var parentId = viewController.GetParentId(id);
+                var list = ListPool<int>.Get();
+                viewController.GetExpandedItemIds(list);
                 while (parentId != -1)
                 {
-                    if (!m_ExpandedItemIds.Contains(parentId))
+                    if (!list.Contains(parentId))
                     {
                         viewController.ExpandItem(parentId, false);
                     }
 
                     parentId = viewController.GetParentId(parentId);
                 }
+                ListPool<int>.Release(list);
             }
 
             return viewController.GetIndexForId(id);
@@ -542,10 +547,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="id">The TreeView item identifier.</param>
         /// <param name="collapseAllChildren">When true, all children will also get collapsed. This is false by default.</param>
-        public void CollapseItem(int id, bool collapseAllChildren = false)
+        /// <param name="refresh">Whether to refresh items or not. Set to false when doing multiple operations on the tree, to only do one RefreshItems once all operations are done. This is true by default.</param>
+        public void CollapseItem(int id, bool collapseAllChildren = false, bool refresh = true)
         {
-            viewController.CollapseItem(id, collapseAllChildren);
-            RefreshItems();
+            viewController.CollapseItem(id, collapseAllChildren, refresh);
         }
 
         /// <summary>
@@ -553,9 +558,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="id">The TreeView item identifier.</param>
         /// <param name="expandAllChildren">When true, all children will also get expanded. This is false by default.</param>
-        public void ExpandItem(int id, bool expandAllChildren = false)
+        /// <param name="refresh">Whether to refresh items or not. Set to false when doing multiple operations on the tree, to only do one RefreshItems once all operations are done. This is true by default.</param>
+        public void ExpandItem(int id, bool expandAllChildren = false, bool refresh = true)
         {
-            viewController.ExpandItem(id, expandAllChildren);
+            viewController.ExpandItem(id, expandAllChildren, refresh);
         }
 
         /// <summary>

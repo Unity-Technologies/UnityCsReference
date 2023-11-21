@@ -59,6 +59,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Instantiates a <see cref="ToolbarSearchField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<ToolbarSearchField, UxmlTraits> {}
 
         /// <summary>
@@ -68,6 +69,7 @@ namespace UnityEditor.UIElements
         /// This class defines the properties of a ToolbarSearchField element that you can
         /// use in a UXML asset.
         /// </remarks>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : SearchFieldBase<TextField, string>.UxmlTraits {}
 
         /// <summary>

@@ -11,7 +11,11 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class Sidebar : ScrollView
 {
-    protected new class UxmlFactory : UxmlFactory<Sidebar, UxmlTraits> {}
+    [Serializable]
+    public new class UxmlSerializedData : ScrollView.UxmlSerializedData
+    {
+        public override object CreateInstance() => new Sidebar();
+    }
 
     private IUpmRegistryClient m_UpmRegistryClient;
     private IProjectSettingsProxy m_SettingsProxy;

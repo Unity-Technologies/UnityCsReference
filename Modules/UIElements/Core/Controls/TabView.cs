@@ -51,6 +51,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="TabView"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<TabView, UxmlTraits> {}
 
         /// <summary>
@@ -59,6 +60,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class defines the properties of a TabView element that you can use in a UXML asset.
         /// </remarks>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             private readonly UxmlBoolAttributeDescription m_Reorderable = new UxmlBoolAttributeDescription { name = "reorderable", defaultValue = false };

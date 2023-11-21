@@ -9,7 +9,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A <see cref="Rect"/> field.
+    /// A <see cref="Rect"/> field. For more information, refer to [[wiki:UIE-uxm-element-RectField|UXML element RectField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class RectField : BaseCompositeField<Rect, FloatField, float>
@@ -59,11 +59,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="RectField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<RectField, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="RectField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseCompositeField<Rect, FloatField, float>.UxmlTraits
         {
             UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
@@ -120,7 +122,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// A <see cref="RectInt"/> field.
+    /// A <see cref="RectInt"/> field. For more information, refer to [[wiki:UIE-uxm-element-RectIntField|UXML element RectIntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class RectIntField : BaseCompositeField<RectInt, IntegerField, int>
@@ -170,11 +172,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="RectIntField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<RectIntField, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="RectIntField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseCompositeField<RectInt, IntegerField, int>.UxmlTraits
         {
             UxmlIntAttributeDescription m_XValue = new UxmlIntAttributeDescription { name = "x" };
@@ -275,11 +279,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="Vector2Field"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Vector2Field, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector2Field"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseCompositeField<Vector2, FloatField, float>.UxmlTraits
         {
             UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
@@ -380,11 +386,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="Vector3Field"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Vector3Field, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector3Field"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseCompositeField<Vector3, FloatField, float>.UxmlTraits
         {
             UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
@@ -490,11 +498,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="Vector4Field"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Vector4Field, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector4Field"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseCompositeField<Vector4, FloatField, float>.UxmlTraits
         {
             UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
@@ -595,11 +605,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="Vector2IntField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Vector2IntField, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector2IntField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseCompositeField<Vector2Int, IntegerField, int>.UxmlTraits
         {
             UxmlIntAttributeDescription m_XValue = new UxmlIntAttributeDescription { name = "x" };
@@ -700,11 +712,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="Vector3IntField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Vector3IntField, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector3IntField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseCompositeField<Vector3Int, IntegerField, int>.UxmlTraits
         {
             UxmlIntAttributeDescription m_XValue = new UxmlIntAttributeDescription { name = "x" };

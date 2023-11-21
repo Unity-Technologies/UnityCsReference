@@ -2,13 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class InProgressView : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<InProgressView> {}
+        [Serializable]
+        internal new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new InProgressView();
+        }
 
         private Label m_Title;
         private LoadingSpinner m_Spinner;

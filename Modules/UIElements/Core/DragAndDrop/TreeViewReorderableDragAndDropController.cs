@@ -46,7 +46,7 @@ namespace UnityEngine.UIElements
 
             // Get parents of id1.
             using var pool1 = ListPool<int>.Get(out var parentList1);
-            while (parentId1 != TreeItem.invalidId)
+            while (parentId1 != BaseTreeView.invalidId)
             {
                 parentList1.Add(parentId1);
                 parentId1 = m_TreeView.viewController.GetParentId(parentId1);
@@ -54,15 +54,15 @@ namespace UnityEngine.UIElements
 
             // Get parents of id2.
             using var pool2 = ListPool<int>.Get(out var parentList2);
-            while (parentId2 != TreeItem.invalidId)
+            while (parentId2 != BaseTreeView.invalidId)
             {
                 parentList2.Add(parentId2);
                 parentId2 = m_TreeView.viewController.GetParentId(parentId2);
             }
 
             // Add the root.
-            parentList1.Add(TreeItem.invalidId);
-            parentList2.Add(TreeItem.invalidId);
+            parentList1.Add(BaseTreeView.invalidId);
+            parentList2.Add(BaseTreeView.invalidId);
 
             // Look for the first common parent.
             for (var i = 0; i < parentList1.Count; i++)
@@ -140,7 +140,6 @@ namespace UnityEngine.UIElements
             }
 
             m_ExpandDropItemScheduledItem?.Pause();
-            m_TreeView.viewController.RebuildTree();
             m_TreeView.RefreshItems();
 
             for (var i = 0; i < m_DropData.draggedIds.Length; i++)
@@ -229,16 +228,20 @@ namespace UnityEngine.UIElements
             {
                 var hasChildren = m_TreeView.viewController.HasChildren(itemId);
                 var isExpanded = m_TreeView.IsExpanded(itemId);
-    
+
                 if (!hasChildren || isExpanded)
                     return;
 
+                var list = ListPool<int>.Get();
+                m_TreeView.viewController.GetExpandedItemIds(list);
+
                 // Store the expanded array prior to drag so we can revert it with a delay later
-                m_DropData.expandedIdsBeforeDrag ??= m_TreeView.expandedItemIds.ToArray();
+                m_DropData.expandedIdsBeforeDrag ??= list.ToArray();
                 m_DropData.expandItemBeginTimerMs = Panel.TimeSinceStartupMs();
                 m_DropData.lastItemId = 0;
 
                 m_TreeView.ExpandItem(itemId);
+                ListPool<int>.Release(list);
             }
         }
     }

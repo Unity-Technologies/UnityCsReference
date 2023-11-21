@@ -107,8 +107,7 @@ namespace UnityEditor.Search
 
         static CustomIndexers()
         {
-            // Wait next update to make sure all CustomObjectIndexerAttribute are loaded.
-            EditorApplication.delayCall += LoadCustomObjectIndexers;
+            LoadCustomObjectIndexers();
         }
 
         public static IList<CustomIndexerHandler> GetHandlers(Type type)
@@ -185,7 +184,10 @@ namespace UnityEditor.Search
 
             var globalIndexersHash = RefreshCustomIndexers();
             if (!AssetDatabaseAPI.IsAssetImportWorkerProcess())
-                EditorApplication.delayCall += () => AssetDatabaseAPI.RegisterCustomDependency(nameof(CustomObjectIndexerAttribute), globalIndexersHash);
+            {
+                AssetDatabaseAPI.RegisterCustomDependency(nameof(CustomObjectIndexerAttribute), globalIndexersHash);
+            }
+
             s_Initialized = true;
         }
 

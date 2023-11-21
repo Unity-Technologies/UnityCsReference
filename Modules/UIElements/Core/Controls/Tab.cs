@@ -54,6 +54,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates an <see cref="Tab"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Tab, UxmlTraits> {}
 
         /// <summary>
@@ -62,6 +63,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class defines the properties of a Tab element that you can use in a UXML file.
         /// </remarks>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             private readonly UxmlStringAttributeDescription m_Label = new() { name = "label" };

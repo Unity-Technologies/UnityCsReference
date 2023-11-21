@@ -64,6 +64,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class is added to every <see cref="VisualElement"/> created from UXML.
         /// </remarks>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<MultiColumnTreeView, UxmlTraits> {}
 
         /// <summary>
@@ -72,6 +73,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class defines the MultiColumnTreeView element properties that you can use in a UI document asset (UXML file).
         /// </remarks>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseTreeView.UxmlTraits
         {
             readonly UxmlEnumAttributeDescription<ColumnSortingMode> m_SortingMode = new() { name = "sorting-mode", obsoleteNames = new[] { "sorting-enabled" } };

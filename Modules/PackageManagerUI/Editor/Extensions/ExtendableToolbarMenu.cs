@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.UIElements;
@@ -12,7 +13,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class ExtendableToolbarMenu : ToolbarWindowMenu, IToolbarMenuElement, IMenu
     {
-        public new class UxmlFactory : UxmlFactory<ExtendableToolbarMenu, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : ToolbarWindowMenu.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ExtendableToolbarMenu();
+        }
 
         private bool m_NeedRefresh;
         private List<MenuDropdownItem> m_BuiltInItems;

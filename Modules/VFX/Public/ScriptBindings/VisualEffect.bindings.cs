@@ -175,6 +175,36 @@ namespace UnityEngine.VFX
 
         extern internal void RecreateData();
 
+
+        internal enum VFXCPUEffectMarkers
+        {
+            FullUpdate,
+            ProcessUpdate,
+            EvaluateExpressions,
+        }
+
+        [FreeFunction(Name = "VisualEffectBindings::GetGPUTaskMarkerName", HasExplicitThis = true, ThrowsException = true)]
+        [NativeConditional("ENABLE_PROFILER")]
+        extern private string GetGPUTaskMarkerName(int nameID, int taskIndex);
+        [FreeFunction(Name = "VisualEffectBindings::GetCPUEffectMarkerName", HasExplicitThis = true, ThrowsException = true)]
+        [NativeConditional("ENABLE_PROFILER")]
+        extern internal string GetCPUEffectMarkerName(int markerIndex);
+
+        [FreeFunction(Name = "VisualEffectBindings::GetCPUSystemMarkerName", HasExplicitThis = true, ThrowsException = true)]
+        [NativeConditional("ENABLE_PROFILER")]
+        extern private string GetCPUSystemMarkerName(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::RegisterForProfiling", HasExplicitThis = true, ThrowsException = false)]
+        [NativeConditional("ENABLE_PROFILER")]
+        extern internal void RegisterForProfiling();
+        [FreeFunction(Name = "VisualEffectBindings::UnregisterForProfiling", HasExplicitThis = true, ThrowsException = false)]
+        [NativeConditional("ENABLE_PROFILER")]
+        extern internal void UnregisterForProfiling();
+
+        [FreeFunction(Name = "VisualEffectBindings::IsRegisteredForProfiling", HasExplicitThis = true, ThrowsException = false)]
+        [NativeConditional("ENABLE_PROFILER")]
+        extern internal bool IsRegisteredForProfiling();
+
+
         [FreeFunction(Name = "VisualEffectBindings::ResetOverrideFromScript", HasExplicitThis = true)] extern public void ResetOverride(int nameID);
 
         // Values check
@@ -555,6 +585,21 @@ namespace UnityEngine.VFX
         public VFXParticleSystemInfo GetParticleSystemInfo(string name)
         {
             return GetParticleSystemInfo(Shader.PropertyToID(name));
+        }
+
+        internal string GetGPUTaskMarkerName(string systemName, int taskIndex)
+        {
+            return GetGPUTaskMarkerName(Shader.PropertyToID(systemName), taskIndex);
+        }
+
+        internal string GetCPUSystemMarkerName(string systemName)
+        {
+            return GetCPUSystemMarkerName(Shader.PropertyToID(systemName));
+        }
+
+        internal string GetCPUEffectMarkerName(VFXCPUEffectMarkers markerId)
+        {
+            return GetCPUEffectMarkerName((int)markerId);
         }
 
         public VFXSpawnerState GetSpawnSystemInfo(string name)

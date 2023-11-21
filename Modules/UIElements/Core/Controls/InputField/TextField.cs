@@ -9,7 +9,7 @@ using Unity.Properties;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A textfield is a rectangular area where the user can edit a string.
+    /// A TextField accepts and displays text input. For more information, refer to [[wiki:UIE-uxml-element-TextField|UXML element TextField]].
     /// </summary>
     public class TextField : TextInputBaseField<string>
     {
@@ -60,10 +60,12 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="TextField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<TextField, UxmlTraits> {}
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="TextField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : TextInputBaseField<string>.UxmlTraits
         {
             // Using a static attribute here because we want to override the behaviour of an

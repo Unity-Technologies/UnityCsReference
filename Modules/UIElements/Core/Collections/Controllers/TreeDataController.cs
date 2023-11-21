@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using Unity.Hierarchy;
 
 namespace UnityEngine.UIElements
 {
@@ -12,178 +14,108 @@ namespace UnityEngine.UIElements
     /// <typeparam name="T">The data type used in the tree.</typeparam>
     internal sealed class TreeDataController<T>
     {
-        TreeData<T> m_TreeData;
-
-        Stack<IEnumerator<int>> m_IteratorStack = new Stack<IEnumerator<int>>();
-
-        internal TreeData<T> treeData => m_TreeData;
-
-        /// <summary>
-        /// Sets the root items.
-        /// </summary>
-        /// <remarks>
-        /// Root items can include their children directly.
-        /// </remarks>
-        /// <param name="rootItems">The TreeView root items.</param>
-        public void SetRootItems(IList<TreeViewItemData<T>> rootItems)
-        {
-            m_TreeData = new TreeData<T>(rootItems);
-        }
+        Dictionary<HierarchyNode, TreeViewItemData<T>> m_NodeToItemDataDictionary = new();
+        Stack<IEnumerator<TreeViewItemData<T>>> m_ItemStack = new();
+        Stack<HierarchyNode> m_NodeStack = new();
 
         /// <summary>
         /// Adds an item to the tree.
         /// </summary>
         /// <param name="item">Item to add.</param>
-        /// <param name="parentId">The parent id for the item.</param>
-        /// <param name="childIndex">The child index in the parent's children list.</param>
-        public void AddItem(in TreeViewItemData<T> item, int parentId, int childIndex)
+        /// <param name="node">The node that the item will be associated to.</param>
+        public void AddItem(in TreeViewItemData<T> item, HierarchyNode node)
         {
-            m_TreeData.AddItem(item, parentId, childIndex);
+            m_NodeToItemDataDictionary.TryAdd(node, item);
         }
 
         /// <summary>
         /// Removes an item of the tree if it can find it.
         /// </summary>
-        /// <param name="id">The item id.</param>
-        /// <returns>If the item was removed from the tree.</returns>
-        public bool TryRemoveItem(int id)
+        /// <param name="node">The item node to be removed from the tree.</param>
+        public void RemoveItem(HierarchyNode node)
         {
-            return m_TreeData.TryRemove(id);
+            m_NodeToItemDataDictionary.Remove(node);
         }
 
         /// <summary>
         /// Gets tree item data for the specified TreeView item id.
         /// </summary>
-        /// <param name="id">The TreeView item id.</param>
+        /// <param name="node">The node representing a TreeView item.</param>
         /// <typeparam name="T">Type of the data inside TreeViewItemData.</typeparam>
         /// <returns>The tree item data.</returns>
-        public TreeViewItemData<T> GetTreeItemDataForId(int id)
+        public TreeViewItemData<T> GetTreeItemDataForNode(HierarchyNode node)
         {
-            return m_TreeData.GetDataForId(id);
+            if (m_NodeToItemDataDictionary.TryGetValue(node, out var item))
+                return item;
+
+            return default;
         }
 
         /// <summary>
-        /// Gets data for the specified TreeView item id.
+        /// Gets data for the specified node.
         /// </summary>
-        /// <param name="id">The TreeView item id.</param>
+        /// <param name="node">The node representing a TreeView item.</param>
         /// <typeparam name="T">Type of the data inside TreeViewItemData.</typeparam>
         /// <returns>The data.</returns>
-        public T GetDataForId(int id)
+        public T GetDataForNode(HierarchyNode node)
         {
-            return m_TreeData.GetDataForId(id).data;
+            if (m_NodeToItemDataDictionary.TryGetValue(node, out var item))
+                return item.data;
+
+            return default;
         }
 
-        /// <summary>
-        /// Gets the specified TreeView item's parent identifier.
-        /// </summary>
-        /// <param name="id">The item id.</param>
-        /// <returns>The item's parent identifier.</returns>
-        public int GetParentId(int id)
+        // The below are internal utilities to update the dictionary map between a HierarchyNode to an TreeViewItemData<T>.
+        // We should remove this once Hierarchy property supports managed types.
+        internal void ConvertTreeViewItemDataToHierarchy(IEnumerable<TreeViewItemData<T>> list, Func<HierarchyNode, HierarchyNode> createNode, Action<int, HierarchyNode> updateDictionary)
         {
-            return m_TreeData.GetParentId(id);
-        }
-
-        /// <summary>
-        /// Returns whether or not the item with the specified id has children.
-        /// </summary>
-        /// <param name="id">The item id.</param>
-        /// <returns>Whether or not the item has children.</returns>
-        public bool HasChildren(int id)
-        {
-            return m_TreeData.GetDataForId(id).hasChildren;
-        }
-
-        static IEnumerable<int> GetItemIds(IEnumerable<TreeViewItemData<T>> items)
-        {
-            if (items == null)
-                yield break;
-
-            foreach (var item in items)
-                yield return item.id;
-        }
-
-        /// <summary>
-        /// Gets all children ids from the item with the specified id.
-        /// </summary>
-        /// <param name="id">The item id.</param>
-        /// <returns>An enumerable of all children ids.</returns>
-        public IEnumerable<int> GetChildrenIds(int id)
-        {
-            var item = m_TreeData.GetDataForId(id);
-            return GetItemIds(item.children);
-        }
-
-        /// <summary>
-        /// Moves an item by id, to a new parent and child index.
-        /// </summary>
-        /// <param name="id">The id of the item to move.</param>
-        /// <param name="newParentId">The new parent id. -1 if moved at the root.</param>
-        /// <param name="childIndex">The child index to insert at under the parent. -1 will add as the last child.</param>
-        public void Move(int id, int newParentId, int childIndex = -1)
-        {
-            if (id == newParentId)
+            if (list == null)
                 return;
 
-            if (IsChildOf(newParentId, id))
-                return;
-
-            m_TreeData.Move(id, newParentId, childIndex);
-        }
-
-        /// <summary>
-        /// Returns whether or not the child id is somewhere in the hierarchy below the item with the specified id.
-        /// </summary>
-        /// <param name="childId">The child id to look for.</param>
-        /// <param name="id">The starting id in the tree.</param>
-        /// <returns>Whether or not the child item is found in the tree below the specified item.</returns>
-        public bool IsChildOf(int childId, int id)
-        {
-            return m_TreeData.HasAncestor(childId, id);
-        }
-
-        /// <summary>
-        /// Returns all item ids that can be found in the tree, optionally specifying root ids from where to start.
-        /// </summary>
-        /// <param name="rootIds">Root ids to start from. If null, will use the tree root ids.</param>
-        /// <returns>All items ids in the tree, starting from the specified ids.</returns>
-        public IEnumerable<int> GetAllItemIds(IEnumerable<int> rootIds = null)
-        {
-            m_IteratorStack.Clear();
-
-            if (rootIds == null)
-            {
-                if (m_TreeData.rootItemIds == null)
-                    yield break;
-
-                rootIds = m_TreeData.rootItemIds;
-            }
-
-            var currentIterator = rootIds.GetEnumerator();
+            m_ItemStack.Clear();
+            m_NodeStack.Clear();
+            var currentIterator = list.GetEnumerator();
+            HierarchyNode parentNode = HierarchyNode.Null;
 
             while (true)
             {
                 var hasNext = currentIterator.MoveNext();
                 if (!hasNext)
                 {
-                    if (m_IteratorStack.Count > 0)
+                    if (m_ItemStack.Count > 0)
                     {
-                        currentIterator = m_IteratorStack.Pop();
+                        parentNode = m_NodeStack.Pop();
+                        currentIterator = m_ItemStack.Pop();
                         continue;
                     }
 
-                    // We're at the end of the root items list.
                     break;
                 }
 
-                var currentItemId = currentIterator.Current;
-                yield return currentItemId;
+                var item = currentIterator.Current;
+                var node = createNode(parentNode);
+                UpdateNodeToDataDictionary(node, item);
+                updateDictionary(item.id, node);
 
-                if (HasChildren(currentItemId))
+                if (item.children != null && ((IList<TreeViewItemData<T>>)item.children).Count > 0)
                 {
-                    m_IteratorStack.Push(currentIterator);
-                    currentIterator = GetChildrenIds(currentItemId).GetEnumerator();
+                    // Push the parent node into the stack before updating it
+                    m_NodeStack.Push(parentNode);
+                    parentNode = node;
+                    m_ItemStack.Push(currentIterator);
+                    currentIterator = item.children.GetEnumerator();
                 }
             }
+        }
+
+        internal void UpdateNodeToDataDictionary(HierarchyNode node, TreeViewItemData<T> item)
+        {
+            m_NodeToItemDataDictionary.TryAdd(node, item);
+        }
+
+        internal void ClearNodeToDataDictionary()
+        {
+            m_NodeToItemDataDictionary.Clear();
         }
     }
 }

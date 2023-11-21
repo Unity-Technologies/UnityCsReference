@@ -75,6 +75,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <undoc/>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value", defaultValue = 0 };
@@ -306,6 +307,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <undoc/>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<ProgressBar, UxmlTraits> {}
     }
 }

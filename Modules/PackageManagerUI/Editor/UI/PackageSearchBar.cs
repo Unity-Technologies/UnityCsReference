@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
@@ -12,25 +11,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageSearchBar : VisualElement
     {
-        protected new class UxmlFactory : UxmlFactory<PackageSearchBar, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="PackageSearchBar"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a PackageSearchBar element that you can
-        /// use in a UXML asset.
-        /// </remarks>
-        [ExcludeFromCodeCoverage]
-        protected new class UxmlTraits : VisualElement.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                focusable.defaultValue = true;
-            }
+            public override object CreateInstance() => new PackageSearchBar();
         }
 
         private SearchFieldDelayArgs m_SearchFieldDelayArgs;

@@ -19,7 +19,11 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class PortContainer : VisualElement
     {
-        public new class UxmlFactory : UxmlFactory<PortContainer> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new PortContainer();
+        }
 
         public static readonly string ussClassName = "ge-port-container";
         public static readonly string portCountClassNamePrefix = ussClassName.WithUssModifier("port-count-");

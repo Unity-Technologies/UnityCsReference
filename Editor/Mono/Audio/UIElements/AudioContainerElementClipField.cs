@@ -5,18 +5,18 @@
 using System;
 using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Audio.UIElements;
 
 class AudioContainerElementClipField : ObjectField
 {
-    [Preserve]
-    public new class UxmlFactory : UxmlFactory<AudioContainerElementClipField, UxmlTraits> { }
+    [Serializable]
+    public new class UxmlSerializedData : ObjectField.UxmlSerializedData
+    {
+        public override object CreateInstance() => new AudioContainerElementClipField();
+    }
 
-    [Preserve]
-    public new class UxmlTraits : ObjectField.UxmlTraits { }
     public int AssetElementInstanceID { get; set; }
     public double Progress
     {

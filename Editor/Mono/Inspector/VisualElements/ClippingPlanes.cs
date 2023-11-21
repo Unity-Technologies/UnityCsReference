@@ -5,12 +5,17 @@
 using UnityEngine;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
+using System;
 
 namespace UnityEditor.Inspector
 {
     internal class ClippingPlanes : BaseCompositeField<Vector2, FloatField, float>
     {
-        public new class UxmlFactory : UxmlFactory<ClippingPlanes, UxmlTraits> { }
+        [Serializable]
+        public new class UxmlSerializedData : BaseCompositeField<Vector2, FloatField, float>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ClippingPlanes();
+        }
 
         const string k_CompositeInputStyle = "unity-composite-field__input";
         const string k_CompositeFieldStyle = "unity-composite-field__field";

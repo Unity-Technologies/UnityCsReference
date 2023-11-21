@@ -117,19 +117,19 @@ namespace UnityEditor.Experimental.GraphView
                 Rect layout = resizedTarget.layout;
                 if ((direction & ResizerDirection.Right) != 0)
                 {
-                    layout.width = Mathf.Min(m_MaxSize.x, Mathf.Max(m_MinSize.x, m_StartSize.x + mousePos.x - m_StartMouse.x));
+                    layout.width = Mathf.Clamp(m_StartSize.x + mousePos.x - m_StartMouse.x, m_MinSize.x, Mathf.Min(m_MaxSize.x, resizedBase.layout.xMax - layout.xMin));
                 }
                 else if ((direction & ResizerDirection.Left) != 0)
                 {
                     float delta = mousePos.x - m_StartMouse.x;
                     float previousLeft = layout.xMin;
 
-                    layout.xMin = Mathf.Clamp(delta + m_StartPosition.x, 0, m_StartSize.x - 1);
+                    layout.xMin = Mathf.Clamp(delta + m_StartPosition.x, 0, resizedTarget.layout.xMax - m_MinSize.x);
                     layout.width = resizedTarget.resolvedStyle.width + previousLeft - layout.xMin;
                 }
                 if ((direction & ResizerDirection.Bottom) != 0)
                 {
-                    layout.height = Mathf.Min(m_MaxSize.y, Mathf.Max(m_MinSize.y, m_StartSize.y + mousePos.y - m_StartMouse.y));
+                    layout.height = Mathf.Clamp(m_StartSize.y + mousePos.y - m_StartMouse.y, m_MinSize.y, resizedBase.layout.yMax - layout.yMin);
                 }
                 else if ((direction & ResizerDirection.Top) != 0)
                 {
@@ -149,14 +149,14 @@ namespace UnityEditor.Experimental.GraphView
             {
                 if ((direction & ResizerDirection.Right) != 0)
                 {
-                    resizedTarget.style.width = Mathf.Min(m_MaxSize.x, Mathf.Max(m_MinSize.x, m_StartSize.x + mousePos.x - m_StartMouse.x));
+                    resizedTarget.style.width = Mathf.Clamp(m_StartSize.x + mousePos.x - m_StartMouse.x, m_MinSize.x, Mathf.Min(m_MaxSize.x, resizedBase.layout.xMax - resizedTarget.layout.xMin));
                 }
                 else if ((direction & ResizerDirection.Left) != 0)
                 {
                     float delta = mousePos.x - m_StartMouse.x;
                     float previousLeft = resizedTarget.style.left.value.value;
 
-                    resizedTarget.style.left = Mathf.Clamp(delta + m_StartPosition.x, 0, m_StartSize.x - 1);
+                    resizedTarget.style.left = Mathf.Clamp(delta + m_StartPosition.x, 0, resizedTarget.layout.xMax - m_MinSize.x);
                     resizedTarget.style.width = resizedTarget.resolvedStyle.width + previousLeft - resizedTarget.style.left.value.value;
                 }
                 if ((direction & ResizerDirection.Bottom) != 0)

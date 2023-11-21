@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -13,6 +14,12 @@ namespace Unity.Profiling.Editor.UI
     // Contiguous values that exceed the threshold are grouped into a single block.
     class BlocksGraphView : GraphView
     {
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new BlocksGraphView();
+        }
+
         const string k_UssClass_HoverIndicator = "blocks-graph-view__hover-indicator";
 
         readonly VisualElement m_HoverIndicator;
@@ -173,8 +180,6 @@ namespace Unity.Profiling.Editor.UI
         {
             return Mathf.FloorToInt(localPosition.x / UnitWidth);
         }
-
-        public new class UxmlFactory : UxmlFactory<BlocksGraphView> {}
 
         public interface IDataSource
         {

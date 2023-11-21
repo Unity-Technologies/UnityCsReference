@@ -12,7 +12,11 @@ namespace Unity.UI.Builder
         static readonly string s_UssPath = BuilderConstants.UtilitiesPath + "/FontStyleStrip/FontStyleStrip.uss";
         static readonly string s_UssClassName = "unity-font-style-strip";
 
-        public new class UxmlFactory : UxmlFactory<FontStyleStrip, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : BaseField<string>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new FontStyleStrip();
+        }
 
         [Flags]
         enum FontStyleFlag

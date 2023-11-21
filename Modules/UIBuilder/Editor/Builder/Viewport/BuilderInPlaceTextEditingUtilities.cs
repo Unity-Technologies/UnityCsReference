@@ -303,7 +303,9 @@ namespace Unity.UI.Builder
 
                     if (VisualElementFactoryRegistry.TryGetValue(fullTypeName, out var factoryList))
                     {
+                        #pragma warning disable CS0618 // Type or member is obsolete
                         var traits = factoryList[0].GetTraits() as UxmlTraits;
+                        #pragma warning restore CS0618 // Type or member is obsolete
 
                         if (traits == null)
                         {

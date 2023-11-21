@@ -13,7 +13,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Base class implementing the shared functionality for editing bit mask values.
+    /// Base class implementing the shared functionality for editing bit mask values. For more information, refer to [[wiki:UIE-uxml-element-MaskField|UXML element MaskField]].
     /// </summary>
     public abstract class BaseMaskField<TChoice> : BasePopupField<TChoice, string>
     {
@@ -522,11 +522,13 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Instantiates a <see cref="MaskField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<MaskField, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="MaskField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BasePopupField<int, UxmlIntAttributeDescription>.UxmlTraits
         {
             UxmlStringAttributeDescription m_MaskChoices = new UxmlStringAttributeDescription { name = "choices" };

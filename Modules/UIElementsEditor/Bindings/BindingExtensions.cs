@@ -1416,8 +1416,11 @@ namespace UnityEditor.UIElements.Bindings
                         ve.RegisterCallback(m_OnFieldDetachedFromPanel);
 
                         // used to group undo operations (UUM-32599)
-                        ve.editingStarted += SetUndoGroup;
-                        ve.editingEnded += UnsetUndoGroup;
+                        if (ve is IEditableElement editableElement)
+                        {
+                            editableElement.editingStarted += SetUndoGroup;
+                            editableElement.editingEnded += UnsetUndoGroup;
+                        }
 
                         if (string.IsNullOrEmpty(ve.tooltip))
                         {

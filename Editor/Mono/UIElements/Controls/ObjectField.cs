@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Makes a field to receive any object type.
+    /// Makes a field to receive any object type. For more information, refer to [[wiki:UIE-uxml-element-ObjectField|UXML element ObjectField]].
     /// </summary>
     public class ObjectField : BaseField<Object>
     {
@@ -49,11 +49,13 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Instantiates an <see cref="ObjectField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<ObjectField, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="ObjectField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseField<Object>.UxmlTraits
         {
             UxmlBoolAttributeDescription m_AllowSceneObjects = new UxmlBoolAttributeDescription { name = "allow-scene-objects", defaultValue = true };
@@ -175,10 +177,7 @@ namespace UnityEditor.UIElements
                 m_ObjectLabel.AddToClassList(labelUssClassName);
                 m_ObjectField = objectField;
 
-                // While building editor resources ObjectField are instantiated to serialize default values in
-                // the Uxml asset. If EditorGUIUtility.ObjectContent is called during that time the editor will crash.
-                if (!Application.isBuildingEditorResources)
-                    Update();
+                Update();
 
                 Add(m_ObjectIcon);
                 Add(m_ObjectLabel);
@@ -186,6 +185,11 @@ namespace UnityEditor.UIElements
 
             public void Update()
             {
+                // While building editor resources ObjectField are instantiated to serialize default values in
+                // the Uxml asset. If EditorGUIUtility.ObjectContent is called during that time the editor will crash.
+                if (Application.isBuildingEditorResources)
+                    return;
+
                 var property = m_ObjectField.GetProperty(serializedPropertyKey) as SerializedProperty;
                 var content = EditorGUIUtility.ObjectContent(m_ObjectField.value, m_ObjectField.objectType, property);
                 m_ObjectIcon.image = content.image;

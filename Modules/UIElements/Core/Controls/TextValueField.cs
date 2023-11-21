@@ -248,7 +248,15 @@ namespace UnityEngine.UIElements
         internal override void RegisterEditingCallbacks()
         {
             base.RegisterEditingCallbacks();
-            labelElement.RegisterCallback<PointerUpEvent>(_ => editingStarted?.Invoke());
+            labelElement.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+            labelElement.RegisterCallback<PointerUpEvent>(EndEditing);
+        }
+
+        internal override void UnregisterEditingCallbacks()
+        {
+            base.UnregisterEditingCallbacks();
+            labelElement.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+            labelElement.RegisterCallback<PointerUpEvent>(EndEditing);
         }
 
         // Implements a control with a value of type T backed by a text.
@@ -335,6 +343,7 @@ namespace UnityEngine.UIElements
     /// Specifies the <see cref="TextValueField{TValueType}"/>'s <see cref="UxmlTraits"/>.
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Obsolete("TextValueFieldTraits<TValueType, TValueUxmlAttributeType> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class TextValueFieldTraits<TValueType, TValueUxmlAttributeType> : BaseFieldTraits<TValueType, TValueUxmlAttributeType>
         where TValueUxmlAttributeType : TypedUxmlAttributeDescription<TValueType>, new()
     {

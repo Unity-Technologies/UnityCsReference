@@ -38,11 +38,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="RepeatButton"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<RepeatButton, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="RepeatButton"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : TextElement.UxmlTraits
         {
             UxmlLongAttributeDescription m_Delay = new UxmlLongAttributeDescription { name = "delay" };

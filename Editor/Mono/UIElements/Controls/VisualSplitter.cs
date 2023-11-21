@@ -21,10 +21,6 @@ namespace UnityEditor.UIElements
             public override object CreateInstance() => new VisualSplitter();
         }
 
-        public new class UxmlFactory : UxmlFactory<VisualSplitter, UxmlTraits> {}
-
-        public new class UxmlTraits : VisualElement.UxmlTraits {}
-
         private class SplitManipulator : MouseManipulator
         {
             private int m_ActiveVisualElementIndex = -1;

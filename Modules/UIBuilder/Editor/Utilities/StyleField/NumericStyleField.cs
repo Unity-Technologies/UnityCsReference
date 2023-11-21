@@ -6,15 +6,16 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
     internal class NumericStyleField : StyleField<float>
     {
-        public new class UxmlFactory : UxmlFactory<NumericStyleField, UxmlTraits> {}
-
-        public new class UxmlTraits : StyleField<float>.UxmlTraits {}
+        [Serializable]
+        public new class UxmlSerializedData : StyleField<float>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new NumericStyleField();
+        }
 
         public float number
         {

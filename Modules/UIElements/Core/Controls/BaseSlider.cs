@@ -49,7 +49,7 @@ namespace UnityEngine.UIElements
         [SerializeField, DontCreateProperty]
         private TValueType m_LowValue;
 
-        [Obsolete($"Use the generic BaseSlider<TValueType>.UxmlTraits<TValueUxmlAttributeType> class", true)]
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseField<TValueType>.UxmlTraits {}
 
         /// <summary>
@@ -61,6 +61,7 @@ namespace UnityEngine.UIElements
         /// This class defines the properties of a BaseSlider element that you can
         /// use in a UXML asset.
         /// </remarks>
+        [Obsolete("UxmlTraits<TValueUxmlAttributeType> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public class UxmlTraits<TValueUxmlAttributeType> : BaseFieldTraits<TValueType, TValueUxmlAttributeType>
             where TValueUxmlAttributeType : TypedUxmlAttributeDescription<TValueType>, new()
         {
@@ -813,10 +814,18 @@ namespace UnityEngine.UIElements
 
         internal override void RegisterEditingCallbacks()
         {
-            labelElement.RegisterCallback<PointerDownEvent>(_ => editingStarted?.Invoke(), TrickleDown.TrickleDown);
-            dragContainer.RegisterCallback<PointerDownEvent>(_ => editingStarted?.Invoke(), TrickleDown.TrickleDown);
+            labelElement.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+            dragContainer.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
 
-            dragContainer.RegisterCallback<PointerUpEvent>(_ => editingEnded?.Invoke());
+            dragContainer.RegisterCallback<PointerUpEvent>(EndEditing);
+        }
+
+        internal override void UnregisterEditingCallbacks()
+        {
+            labelElement.UnregisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+            dragContainer.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+
+            dragContainer.RegisterCallback<PointerUpEvent>(EndEditing);
         }
     }
 }

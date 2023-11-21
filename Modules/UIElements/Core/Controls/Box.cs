@@ -20,6 +20,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="Box"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Box> {}
 
         /// <summary>

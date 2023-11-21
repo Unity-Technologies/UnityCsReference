@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using JetBrains.Annotations;
+using System;
 using UnityEditor;
 using UnityEngine.UIElements;
 
@@ -10,9 +10,11 @@ namespace Unity.UI.Builder
 {
     class LibraryFoldout : PersistedFoldout
     {
-        [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<LibraryFoldout, UxmlTraits> { }
-        public new class UxmlTraits : PersistedFoldout.UxmlTraits { }
+        [Serializable]
+        public new class UxmlSerializedData : PersistedFoldout.UxmlSerializedData
+        {
+            public override object CreateInstance() => new LibraryFoldout();
+        }
 
         public const string TagLabelName = "tag";
         const string k_TagPillClassName = "builder-library-foldout__tag-pill";

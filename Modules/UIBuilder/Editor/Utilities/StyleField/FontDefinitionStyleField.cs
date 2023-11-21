@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using JetBrains.Annotations;
+using System;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
@@ -12,8 +13,11 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class FontDefinitionStyleField : MultiTypeField
     {
-        [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<FontDefinitionStyleField, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : MultiTypeField.UxmlSerializedData
+        {
+            public override object CreateInstance() => new FontDefinitionStyleField();
+        }
 
         const string k_UssPath = BuilderConstants.UtilitiesPath + "/StyleField/FontDefinitionStyleField.uss";
 

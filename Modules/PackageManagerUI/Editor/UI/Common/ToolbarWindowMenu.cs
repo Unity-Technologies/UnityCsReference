@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -13,8 +14,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string textUssClassName = newUssClassName + "__text";
         private static readonly string arrowUssClassName = newUssClassName + "__arrow";
 
-        internal new class UxmlFactory : UxmlFactory<ToolbarWindowMenu, UxmlTraits> {}
-        internal new class UxmlTraits : TextElement.UxmlTraits {}
+        [Serializable]
+        public new class UxmlSerializedData : Button.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ToolbarWindowMenu();
+        }
 
         public override string text
         {

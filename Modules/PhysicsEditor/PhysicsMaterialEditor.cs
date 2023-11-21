@@ -28,11 +28,11 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            m_DynamicFriction = serializedObject.FindProperty("dynamicFriction");
-            m_StaticFriction = serializedObject.FindProperty("staticFriction");
-            m_Bounciness = serializedObject.FindProperty("bounciness");
-            m_FrictionCombine = serializedObject.FindProperty("frictionCombine");
-            m_BounceCombine = serializedObject.FindProperty("bounceCombine");
+            m_DynamicFriction = serializedObject.FindProperty("m_DynamicFriction");
+            m_StaticFriction = serializedObject.FindProperty("m_StaticFriction");
+            m_Bounciness = serializedObject.FindProperty("m_Bounciness");
+            m_FrictionCombine = serializedObject.FindProperty("m_FrictionCombine");
+            m_BounceCombine = serializedObject.FindProperty("m_BounceCombine");
         }
 
         public override void OnInspectorGUI()

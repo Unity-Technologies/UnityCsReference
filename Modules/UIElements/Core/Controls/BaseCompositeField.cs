@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Internal;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -31,6 +32,11 @@ namespace UnityEngine.UIElements
                 this.read = read;
                 this.write = write;
             }
+        }
+
+        [ExcludeFromDocs, Serializable]
+        public new abstract class UxmlSerializedData : BaseField<TValueType>.UxmlSerializedData
+        {
         }
 
         private VisualElement GetSpacer()

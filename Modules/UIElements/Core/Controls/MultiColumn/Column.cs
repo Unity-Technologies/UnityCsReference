@@ -75,6 +75,9 @@ namespace UnityEngine.UIElements
     [UxmlObject]
     public class Column
     {
+        internal const string k_HeaderTemplateAttributeName = "header-template";
+        internal const string k_CellTemplateAttributeName = "cell-template";
+
         [ExcludeFromDocs, Serializable]
         public class UxmlSerializedData : UIElements.UxmlSerializedData
         {
@@ -144,20 +147,20 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="Column"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlObjectFactory<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         internal class UxmlObjectFactory<T> : UxmlObjectFactory<T, UxmlObjectTraits<T>> where T : Column, new() {}
         /// <summary>
         /// Instantiates a <see cref="Column"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlObjectFactory<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         internal class UxmlObjectFactory : UxmlObjectFactory<Column> {}
 
         /// <summary>
         /// Defines <see cref="UxmlObjectTraits{T}"/> for the <see cref="Column"/>.
         /// </summary>
+        [Obsolete("UxmlObjectTraits<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]/// 
         internal class UxmlObjectTraits<T> : UnityEngine.UIElements.UxmlObjectTraits<T> where T : Column
         {
-            internal const string k_HeaderTemplateAttributeName = "header-template";
-            internal const string k_CellTemplateAttributeName = "cell-template";
-
             UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription { name = "name" };
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "title" };
             UxmlBoolAttributeDescription m_Visible = new UxmlBoolAttributeDescription { name = "visible", defaultValue = true };

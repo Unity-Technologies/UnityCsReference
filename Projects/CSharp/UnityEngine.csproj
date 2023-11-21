@@ -1931,9 +1931,6 @@
     <Compile Include="..\..\Modules\UIElements\Core\Controls\TreeViewHelpers.cs">
       <Link>Modules\UIElements\Core\Controls\TreeViewHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Controls\TreeViewItem.cs">
-      <Link>Modules\UIElements\Core\Controls\TreeViewItem.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\TreeViewItemData.cs">
       <Link>Modules\UIElements\Core\Controls\TreeViewItemData.cs</Link>
     </Compile>

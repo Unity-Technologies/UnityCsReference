@@ -398,18 +398,34 @@ namespace UnityEngine.Accessibility
         /// <returns>Returns true if a node is found and false otherwise.</returns>
         public bool TryGetNodeAt(float horizontalPosition, float verticalPosition, out AccessibilityNode node)
         {
-            node = null;
-
             var position = new Vector2(horizontalPosition, verticalPosition);
-            foreach (var currentNode in m_Nodes.Values)
+
+            AccessibilityNode FindNodeContainingPoint(IList<AccessibilityNode> nodes, Vector2 pos)
             {
-                if (currentNode.frame.Contains(position))
+                // Perform BFS (Breadth First Search) PostOrder Traversal in reverse order to find the last (at the top) node containing the specified point.
+                for (var i = nodes.Count - 1; i >= 0; --i)
                 {
-                    node = currentNode;
-                    return true;
+                    var curNode = nodes[i];
+
+                    // If the node is disabled then ignore it and its children as they are also considered disabled.
+                    // Unlike the disabled state, a node can be inactive while its children are active. This is why we
+                    // still seek for children of a node regardless of its active state.
+                    if (curNode.state.HasFlag(AccessibilityState.Disabled))
+                        continue;
+
+                    var childNodeContainingPoint = FindNodeContainingPoint(curNode.childList, pos);
+
+                    if (childNodeContainingPoint != null)
+                        return childNodeContainingPoint;
+
+                    // Ignore inactive node
+                    if (curNode.isActive && curNode.frame.Contains(pos))
+                        return curNode;
                 }
+                return null;
             }
-            return false;
+            node = FindNodeContainingPoint(m_RootNodes, position);
+            return node != null;
         }
 
         /// <summary>

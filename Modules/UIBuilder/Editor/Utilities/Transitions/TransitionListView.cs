@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -53,9 +54,11 @@ namespace Unity.UI.Builder
 
         const string k_AddButtonText = "Add Transition";
 
-        public new class UxmlFactory : UxmlFactory<TransitionsListView, UxmlTraits> {}
-
-        public new class UxmlTraits : VisualElement.UxmlTraits {}
+        [Serializable]
+        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new TransitionsListView();
+        }
 
         public override VisualElement contentContainer { get; }
 

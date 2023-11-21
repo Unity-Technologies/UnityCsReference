@@ -26,10 +26,12 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="FloatField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<FloatField, UxmlTraits> {}
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="FloatField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : TextValueFieldTraits<float, UxmlFloatAttributeDescription> {}
 
         /// <summary>

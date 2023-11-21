@@ -23,7 +23,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string k_RemoveRegistry = L10n.Tr("Remove registry");
         private string k_RegistrySelectionChange = L10n.Tr("Registry Selection Change");
 
-        internal new class UxmlFactory : UxmlFactory<ScopedRegistriesSettings> {}
+        [Serializable]
+        internal new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ScopedRegistriesSettings();
+        }
 
         private Dictionary<string, Label> m_RegistryLabels = new Dictionary<string, Label>();
         internal IReadOnlyDictionary<string, Label> registryLabels => m_RegistryLabels;

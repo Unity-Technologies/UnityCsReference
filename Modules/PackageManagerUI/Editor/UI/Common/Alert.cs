@@ -10,7 +10,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class Alert : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<Alert> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new Alert();
+        }
 
         private IResourceLoader m_ResourceLoader;
         private IUnityConnectProxy m_UnityConnectProxy;

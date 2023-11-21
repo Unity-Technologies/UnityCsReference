@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Linq;
+using Unity.Hierarchy;
 using UnityEngine.Assertions;
 
 namespace UnityEngine.UIElements
@@ -59,6 +60,15 @@ namespace UnityEngine.UIElements
         protected void SetItemsSourceWithoutNotify(IList source)
         {
             m_ItemsSource = source;
+        }
+
+        /// <summary>
+        /// Set the <see cref="itemsSource"/> without raising the <see cref="itemsSourceChanged"/> event.
+        /// </summary>
+        /// <param name="source">The new source.</param>
+        private protected void SetHierarchyViewModelWithoutNotify(HierarchyViewModel source)
+        {
+            m_ItemsSource = new ReadOnlyHierarchyViewModelList(source);
         }
 
         /// <summary>
@@ -182,6 +192,8 @@ namespace UnityEngine.UIElements
         {
             DestroyItem(reusableItem.bindableElement);
         }
+
+        internal virtual void PreRefresh() {}
 
         /// <summary>
         /// Creates a VisualElement to use in the virtualization of the collection view.

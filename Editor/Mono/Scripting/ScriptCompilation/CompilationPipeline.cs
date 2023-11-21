@@ -347,12 +347,11 @@ namespace UnityEditor.Compilation
         //Danger danger: this method is used by BurstAotCompiler.cs
         internal static ScriptAssembly[] GetScriptAssemblies(IEditorCompilation editorCompilation, EditorScriptCompilationOptions options, string[] extraScriptingDefines = null)
         {
-            var group = EditorUserBuildSettings.activeBuildTargetGroup;
             var target = EditorUserBuildSettings.activeBuildTarget;
             var buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) != 0;
 
-            var unityAssemblies = InternalEditorUtility.GetUnityAssemblies(buildingForEditor, @group, target);
-            var precompiledAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(options, @group, target, extraScriptingDefines);
+            var unityAssemblies = InternalEditorUtility.GetUnityAssemblies(buildingForEditor, target);
+            var precompiledAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(options, target, extraScriptingDefines);
             return editorCompilation.GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, null);
         }
 
@@ -425,7 +424,6 @@ namespace UnityEditor.Compilation
                 var scriptAssemblySettings = new ScriptAssemblySettings()
                 {
                     BuildTarget = EditorUserBuildSettings.activeBuildTarget,
-                    BuildTargetGroup = EditorUserBuildSettings.activeBuildTargetGroup,
                     CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor
                 };
 
@@ -465,7 +463,6 @@ namespace UnityEditor.Compilation
         {
             return precompiledAssemblyProvider.GetPrecompiledAssemblies(
                 EditorScriptCompilationOptions.BuildingForEditor|EditorScriptCompilationOptions.BuildingWithAsserts,
-                EditorUserBuildSettings.activeBuildTargetGroup,
                 EditorUserBuildSettings.activeBuildTarget)
                 .Where(x => (x.Flags & sc.AssemblyFlags.UserAssembly) == sc.AssemblyFlags.UserAssembly)
                 .Select(x => AssetPath.GetFileName(x.Path))
@@ -496,10 +493,10 @@ namespace UnityEditor.Compilation
 
         internal static string[] GetPrecompiledAssemblyPaths(PrecompiledAssemblySources precompiledAssemblySources, PrecompiledAssemblyProviderBase precompiledAssemblyProvider)
         {
-            return GetPrecompiledAssemblyPaths(precompiledAssemblySources, precompiledAssemblyProvider, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
+            return GetPrecompiledAssemblyPaths(precompiledAssemblySources, precompiledAssemblyProvider, EditorUserBuildSettings.activeBuildTarget);
         }
 
-        internal static string[] GetPrecompiledAssemblyPaths(PrecompiledAssemblySources precompiledAssemblySources, PrecompiledAssemblyProviderBase precompiledAssemblyProvider, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
+        internal static string[] GetPrecompiledAssemblyPaths(PrecompiledAssemblySources precompiledAssemblySources, PrecompiledAssemblyProviderBase precompiledAssemblyProvider, BuildTarget buildTarget)
         {
             HashSet<string> assemblyNames = new HashSet<string>();
             sc.AssemblyFlags flags = sc.AssemblyFlags.None;
@@ -522,7 +519,6 @@ namespace UnityEditor.Compilation
 
             var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(
                 EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
-                buildTargetGroup,
                 buildTarget)
                 .Concat(precompiledAssemblyProvider.GetUnityAssemblies(true, buildTarget));
 
@@ -542,7 +538,6 @@ namespace UnityEditor.Compilation
         {
             var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(
                 EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
-                EditorUserBuildSettings.activeBuildTargetGroup,
                 EditorUserBuildSettings.activeBuildTarget,
                 extraScriptingDefines);
 

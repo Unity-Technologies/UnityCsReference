@@ -16,6 +16,7 @@ namespace UnityEditor.UIElements.Samples
             var treeView = container.Q<TreeView>();
 
             #region sample
+            /// <sample>
             // Create some list of data, here simply numbers in a few foldouts
             var items = new List<TreeViewItemData<string>>(110);
             for (var i = 0; i < 10; i++)
@@ -55,6 +56,7 @@ namespace UnityEditor.UIElements.Samples
 
             // Callback invoked when the user changes the selection inside the TreeView
             treeView.selectedIndicesChanged += Debug.Log;
+            /// </sample>
             #endregion
         }
     }

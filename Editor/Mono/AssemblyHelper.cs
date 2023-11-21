@@ -39,13 +39,12 @@ namespace UnityEditor
         public static string[] GetDefaultAssemblySearchPaths()
         {
             // Add the path to all available precompiled assemblies
-            var group = EditorUserBuildSettings.activeBuildTargetGroup;
             var target = EditorUserBuildSettings.activeBuildTarget;
             var precompiledAssemblyPaths = InternalEditorUtility.GetPrecompiledAssemblyPaths();
 
             HashSet<string> searchPaths = new HashSet<string>(precompiledAssemblyPaths);
 
-            var precompiledAssemblies = InternalEditorUtility.GetUnityAssemblies(true, group, target);
+            var precompiledAssemblies = InternalEditorUtility.GetUnityAssemblies(true, target);
             foreach (var asm in precompiledAssemblies)
                 searchPaths.Add(Path.GetDirectoryName(asm.Path));
 

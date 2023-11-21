@@ -15,6 +15,11 @@ namespace Unity.UI.Builder
 {
     abstract class MultiTypeField : BaseField<Object>
     {
+        [Serializable]
+        public new abstract class UxmlSerializedData : BaseField<Object>.UxmlSerializedData
+        {
+        }
+
         static readonly string k_UssPath = BuilderConstants.UtilitiesPath + "/MultiTypeField/MultiTypeField.uss";
         static readonly string k_UxmlPath = BuilderConstants.UtilitiesPath + "/MultiTypeField/MultiTypeField.uxml";
         static readonly string acceptDropVariantUssClassName = "unity-object-field-display--accept-drop";

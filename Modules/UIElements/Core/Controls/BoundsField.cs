@@ -9,7 +9,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A <see cref="Bounds"/> editor field.
+    /// A <see cref="Bounds"/> editor field. For more information, refer to [[wiki:UIE-uxml-element-BoundsField|UXML element BoundsField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class BoundsField : BaseField<Bounds>
@@ -52,11 +52,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="BoundsField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<BoundsField, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BoundsField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseField<Bounds>.UxmlTraits
         {
             UxmlFloatAttributeDescription m_CenterXValue = new UxmlFloatAttributeDescription { name = "cx" };

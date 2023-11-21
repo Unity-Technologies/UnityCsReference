@@ -107,12 +107,14 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("No Override", "Do not modify texture import compression settings."),
                 EditorGUIUtility.TrTextContent("Force Fast Compressor", "Use a faster but lower quality texture compression mode for all compressed textures. Turn off Crunch compression."),
                 EditorGUIUtility.TrTextContent("Force Uncompressed", "Do not compress textures."),
+                EditorGUIUtility.TrTextContent("Force No Crunch", "Disable crunch compression on textures.")
             };
             public readonly int[] textureCompressionValues =
             {
                 (int)OverrideTextureCompression.NoOverride,
                 (int)OverrideTextureCompression.ForceFastCompressor,
                 (int)OverrideTextureCompression.ForceUncompressed,
+                (int)OverrideTextureCompression.ForceNoCrunchCompression
             };
 
             public readonly GUIContent textureCompression = EditorGUIUtility.TrTextContent("Texture Compression", "Texture compression override for local development. Fast or Uncompressed can speed up asset imports and platform switches.");
@@ -381,8 +383,7 @@ namespace UnityEditor
 
             // Switch build target
             BuildTarget selectedTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
-            NamedBuildTarget selectedNamedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
-            GUI.enabled = BuildPipeline.IsBuildTargetSupported(selectedNamedBuildTarget.ToBuildTargetGroup(), selectedTarget);
+            GUI.enabled = BuildPipeline.IsBuildPlatformSupported(selectedTarget);
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Player Settings..."), GUILayout.Width(Styles.kButtonWidth)))
             {
                 SettingsService.OpenProjectSettings("Project/Player");
@@ -801,7 +802,7 @@ namespace UnityEditor
 
             bool canInstallInBuildFolder = false;
 
-            if (BuildPipeline.IsBuildTargetSupported(namedBuildTarget.ToBuildTargetGroup(), buildTarget))
+            if (BuildPipeline.IsBuildPlatformSupported(buildTarget))
             {
                 bool shouldDrawProfilerToggles = buildWindowExtension != null ? buildWindowExtension.ShouldDrawProfilerCheckbox() : true;
 
@@ -1107,7 +1108,7 @@ namespace UnityEditor
             }
             else
             {
-                GUI.enabled = BuildPipeline.IsBuildTargetSupported(platform.namedBuildTarget.ToBuildTargetGroup(), selectedTarget);
+                GUI.enabled = BuildPipeline.IsBuildPlatformSupported(selectedTarget);
                 if (GUILayout.Button(styles.switchPlatform, GUILayout.Width(Styles.kButtonWidth)))
                 {
                     ApplyAssetImportOverridesToSettingsAsset();

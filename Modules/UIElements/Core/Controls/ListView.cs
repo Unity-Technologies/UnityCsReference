@@ -101,6 +101,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class is added to every <see cref="VisualElement"/> created from UXML.
         /// </remarks>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<ListView, UxmlTraits> {}
 
         /// <summary>
@@ -109,6 +110,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class defines the ListView element properties that you can use in a UI document asset (UXML file).
         /// </remarks>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseListView.UxmlTraits
         {
             UxmlAssetAttributeDescription<VisualTreeAsset> m_ItemTemplate = new UxmlAssetAttributeDescription<VisualTreeAsset> { name = "item-template" };

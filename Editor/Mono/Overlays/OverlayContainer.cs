@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -18,35 +19,41 @@ namespace UnityEditor.Overlays
 
     class OverlayContainer : VisualElement
     {
-        public new class UxmlFactory : UxmlFactory<OverlayContainer, UxmlTraits> { }
-
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            readonly UxmlBoolAttributeDescription m_IsHorizontal = new UxmlBoolAttributeDescription
-                {name = "horizontal", defaultValue = false};
+            #pragma warning disable 649
+            [SerializeField] bool horizontal;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontal_UxmlAttributeFlags;
+            [SerializeField] string supportedOverlayLayout;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags supportedOverlayLayout_UxmlAttributeFlags;
+            #pragma warning restore 649
 
-            readonly UxmlStringAttributeDescription m_SupportedLayout = new UxmlStringAttributeDescription
-                {name = "supported-overlay-layout", defaultValue = ""};
+            public override object CreateInstance() => new OverlayContainer();
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            public override void Deserialize(object obj)
             {
-                base.Init(ve, bag, cc);
+                base.Deserialize(obj);
 
-                var container = ((OverlayContainer) ve);
-                container.isHorizontal = m_IsHorizontal.GetValueFromBag(bag, cc);
+                var e = (OverlayContainer)obj;
+                if (ShouldWriteAttributeValue(horizontal_UxmlAttributeFlags))
+                    e.isHorizontal = horizontal;
 
-                container.m_SupportedOverlayLayouts = Layout.Panel;
-                foreach (var layout in m_SupportedLayout.GetValueFromBag(bag, cc).Split(' '))
+                e.m_SupportedOverlayLayouts = Layout.Panel;
+                if (ShouldWriteAttributeValue(supportedOverlayLayout_UxmlAttributeFlags))
                 {
-                    switch (layout.ToLower())
+                    foreach (var layout in supportedOverlayLayout.Split(' '))
                     {
-                        case "horizontal":
-                            container.m_SupportedOverlayLayouts |= Layout.HorizontalToolbar;
-                            break;
+                        switch (layout.ToLower())
+                        {
+                            case "horizontal":
+                                e.m_SupportedOverlayLayouts |= Layout.HorizontalToolbar;
+                                break;
 
-                        case "vertical":
-                            container.m_SupportedOverlayLayouts |= Layout.VerticalToolbar;
-                            break;
+                            case "vertical":
+                                e.m_SupportedOverlayLayouts |= Layout.VerticalToolbar;
+                                break;
+                        }
                     }
                 }
             }
@@ -302,8 +309,11 @@ namespace UnityEditor.Overlays
 
     class ToolbarOverlayContainer : OverlayContainer
     {
-        public new class UxmlFactory : UxmlFactory<ToolbarOverlayContainer, UxmlTraits> { }
-        public new class UxmlTraits : OverlayContainer.UxmlTraits { }
+        [Serializable]
+        public new class UxmlSerializedData : OverlayContainer.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ToolbarOverlayContainer();
+        }
 
         const string k_ToolbarClassName = "overlay-toolbar-area";
 

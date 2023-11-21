@@ -124,7 +124,7 @@ namespace UnityEditor
                         throw new BuildMethodException();
                 }
 
-                if (!BuildPipeline.IsBuildTargetSupported(options.targetGroup, options.target))
+                if (!BuildPipeline.IsBuildPlatformSupported(options.target))
                     throw new BuildMethodException("Build target is not supported.");
 
                 string module = ModuleManager.GetTargetStringFrom(options.target);

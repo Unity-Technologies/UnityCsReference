@@ -9,7 +9,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A <see cref="BoundsInt"/> field.
+    /// A <see cref="BoundsInt"/> field. For more information, refer to [[wiki:UIE-uxml-element-BoundsIntField|UXML element BoundsIntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class BoundsIntField : BaseField<BoundsInt>
@@ -52,11 +52,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="BoundsIntField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<BoundsIntField, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BoundsIntField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseField<BoundsInt>.UxmlTraits
         {
             UxmlIntAttributeDescription m_PositionXValue = new UxmlIntAttributeDescription { name = "px" };

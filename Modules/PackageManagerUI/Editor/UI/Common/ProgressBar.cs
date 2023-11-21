@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -9,7 +10,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class ProgressBar : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<ProgressBar> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ProgressBar();
+        }
 
         private IResourceLoader m_ResourceLoader;
 

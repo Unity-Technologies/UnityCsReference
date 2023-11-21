@@ -814,7 +814,7 @@ namespace UnityEditorInternal
             drawArgs.threadRect = threadRect;
 
             // cull text that would otherwise draw over the bottom scrollbar
-            drawArgs.threadRect.yMax = Mathf.Min(drawArgs.threadRect.yMax, m_TimeArea.shownArea.height - m_TimeArea.hSliderHeight);
+            drawArgs.threadRect.yMax = Mathf.Min(drawArgs.threadRect.yMax, m_TimeArea.shownArea.height);
             drawArgs.shownAreaRect = m_TimeArea.shownArea;
             drawArgs.selectedEntryIndex = hasSelection ? m_SelectedEntry.sampleIndex : RawFrameDataView.invalidSampleIndex;
             drawArgs.mousedOverEntryIndex = RawFrameDataView.invalidSampleIndex;

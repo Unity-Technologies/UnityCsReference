@@ -65,6 +65,32 @@ namespace UnityEngine.Rendering
             return true;
         }
 
+        internal int IndexOf(Type settingsType)
+        {
+            if (settingsList == null)
+                return -1;
+
+            return settingsMap.TryGetValue(settingsType, out var index) ? index : -1;
+        }
+
+        internal void CleanNullSettings()
+        {
+            if (settingsList == null)
+                return;
+
+            var initialCount = settingsList.Count;
+            for (int i = 0; i < settingsList.Count; i++)
+            {
+                if (settingsList[i] == null)
+                {
+                    settingsList.RemoveAt(i);
+                    --i;
+                }
+            }
+            if(initialCount != settingsList.Count)
+                MarkDirty();
+        }
+
         protected internal bool TryGet(Type type, out IRenderPipelineGraphicsSettings settings)
         {
             settings = null;

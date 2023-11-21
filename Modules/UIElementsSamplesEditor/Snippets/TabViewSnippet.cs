@@ -12,6 +12,7 @@ namespace UnityEditor.UIElements.Samples
         internal override void Apply(VisualElement container)
         {
             #region sample
+            /// <sample>
             // Create a TabView with Tabs that only contains a label.
             var csharpTabViewWithLabels = new TabView() { style = { marginTop = 15 } }; // marginTop not required, only for demonstration purposes.
             var tabOne = new Tab("One");
@@ -83,6 +84,7 @@ namespace UnityEditor.UIElements.Samples
             customStyledTabTwo.Add(new Label("Custom styled tabs: This is some content for the second Tab."));
             csharpCustomStyledTabView.Add(customStyledTabTwo);
             container.Add(csharpCustomStyledTabView);
+            /// </sample>
             #endregion
         }
     }

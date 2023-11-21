@@ -34,12 +34,11 @@ namespace UnityEngine.UIElements
             m_ColumnController = new MultiColumnController(columns, sortDescriptions, sortedColumns);
         }
 
-        private protected override void HierarchyChanged()
+        internal override void PreRefresh()
         {
-            if (m_ColumnController.SortIfNeeded())
-            {
-                view.RefreshItems();
-            }
+            base.PreRefresh();
+
+            m_ColumnController.SortIfNeeded();
         }
 
         internal override void InvokeMakeItem(ReusableCollectionItem reusableItem)

@@ -11,10 +11,11 @@ namespace UnityEditor.UIElements
 {
     internal class UnityEventItem : VisualElement
     {
-        /// <summary>
-        /// Instantiates a <see cref="UnityEventItem"/> using the data read from a UXML file.
-        /// </summary>
-        public new class UxmlFactory : UxmlFactory<UnityEventItem, UxmlTraits> { }
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new UnityEventItem();
+        }
 
         // uss names
         internal const string kUssClassName = "unity-event";

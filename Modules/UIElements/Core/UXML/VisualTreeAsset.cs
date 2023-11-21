@@ -454,6 +454,7 @@ namespace UnityEngine.UIElements
         }
 
         // Obsolete - Used by UxmlTraits system
+        #pragma warning disable CS0618 // Type or member is obsolete
         internal List<T> GetUxmlObjects<T>(IUxmlAttributes asset, CreationContext cc) where T : new()
         {
             if (asset is UxmlAsset ua)
@@ -485,6 +486,7 @@ namespace UnityEngine.UIElements
 
             return null;
         }
+        #pragma warning restore CS0618 // Type or member is obsolete
 
         [SerializeField]
         List<AssetEntry> m_AssetEntries = new List<AssetEntry>();
@@ -551,6 +553,7 @@ namespace UnityEngine.UIElements
             return default;
         }
 
+        #pragma warning disable CS0618 // Type or member is obsolete
         internal IBaseUxmlObjectFactory GetUxmlObjectFactory(UxmlObjectAsset uxmlObjectAsset)
         {
             if (!UxmlObjectFactoryRegistry.factories.TryGetValue(uxmlObjectAsset.fullTypeName, out var factories))
@@ -578,6 +581,7 @@ namespace UnityEngine.UIElements
 
             return factory;
         }
+        #pragma warning restore CS0618 // Type or member is obsolete
 
         [SerializeField] private List<SlotDefinition> m_Slots = new List<SlotDefinition>();
 
@@ -973,6 +977,7 @@ namespace UnityEngine.UIElements
         }
 
 
+        #pragma warning disable CS0618 // Type or member is obsolete
         internal static VisualElement Create(VisualElementAsset asset, CreationContext ctx)
         {
             VisualElement CreateError()
@@ -1031,6 +1036,7 @@ namespace UnityEngine.UIElements
 
             return ve;
         }
+        #pragma warning restore CS0618 // Type or member is obsolete
 
         static void AssignClassListFromAssetToElement(VisualElementAsset asset, VisualElement element)
         {

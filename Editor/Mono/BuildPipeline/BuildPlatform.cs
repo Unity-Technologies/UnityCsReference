@@ -181,7 +181,7 @@ namespace UnityEditor.Build
             List<BuildPlatform> platforms = new List<BuildPlatform>();
             foreach (BuildPlatform bp in buildPlatforms)
                 if (bp.namedBuildTarget == NamedBuildTarget.Standalone ||
-                    (bp.installed && BuildPipeline.IsBuildTargetSupported(bp.namedBuildTarget.ToBuildTargetGroup(), bp.defaultTarget)))
+                    (bp.installed && BuildPipeline.IsBuildPlatformSupported(bp.defaultTarget)))
                     platforms.Add(bp);
 
             return platforms;

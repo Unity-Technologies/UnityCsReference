@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Color = UnityEngine.Color;
@@ -42,9 +43,11 @@ namespace UnityEditor.Audio.UIElements
             public float[] LabelOffsets() { return new float[] { -6, -6, -6, -6, -3.5f }; }
         }
 
-        public new class UxmlFactory : UxmlFactory<Tickmarks, UxmlTraits> { }
-
-        public new class UxmlTraits : VisualElement.UxmlTraits { }
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new Tickmarks();
+        }
 
         public Tickmarks() : base()
         {

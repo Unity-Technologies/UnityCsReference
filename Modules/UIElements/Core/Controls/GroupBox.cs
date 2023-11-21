@@ -42,11 +42,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="GroupBox"/> using data from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<GroupBox, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="GroupBox"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };

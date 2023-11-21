@@ -19,10 +19,10 @@ namespace Unity.UI.Builder
         static readonly string s_VisualInputName = "unity-visual-input";
         static readonly string s_SliderName = "unity-slider";
 
-        public new class UxmlFactory : UxmlFactory<PercentSlider, UxmlTraits> { }
-
-        public new class UxmlTraits : BaseField<float>.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : BaseField<float>.UxmlSerializedData
         {
+            public override object CreateInstance() => new PercentSlider();
         }
 
         SliderInt m_Slider;
