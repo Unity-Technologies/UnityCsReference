@@ -9,7 +9,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A <see cref="Bounds"/> editor field.
+    /// A <see cref="Bounds"/> editor field. For more information, refer to [[wiki:UIE-uxml-element-BoundsField|UXML element BoundsField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class BoundsField : BaseField<Bounds>

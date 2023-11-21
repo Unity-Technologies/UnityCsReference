@@ -13,6 +13,7 @@ namespace UnityEditor.UIElements.Samples
         internal override void Apply(VisualElement container)
         {
             #region sample
+            /// <sample>
             // Get a reference to the slider from UXML and assign it its value.
             var uxmlSlider = container.Q<SliderInt>("the-uxml-slider");
             uxmlSlider.value = 42;
@@ -29,6 +30,7 @@ namespace UnityEditor.UIElements.Samples
             {
                 csharpSlider.value = evt.newValue;
             });
+            /// </sample>
             #endregion
         }
     }

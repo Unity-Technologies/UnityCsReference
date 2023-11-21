@@ -8,7 +8,7 @@ using System.Globalization;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Makes a text field for entering unsigned long integers.
+    /// Makes a text field for entering unsigned long integers. For more information, refer to [[wiki:UIE-uxml-element-UnsignedLongField|UXML element UnsignedLongField]].
     /// </summary>
     public class UnsignedLongField : TextValueField<ulong>
     {

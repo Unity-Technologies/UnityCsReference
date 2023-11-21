@@ -266,7 +266,7 @@ namespace UnityEditor
         [Obsolete("Use EditorApplication.playModeStateChanged and/or EditorApplication.pauseStateChanged")]
         public static CallbackFunction playmodeStateChanged;
 
-        // Global key up/down event that was not handled by anyone
+        // Global key up/down or mouse up/down/drag events that were not handled by anyone
         internal static CallbackFunction globalEventHandler;
 
         // Returns true when the pressed keys are defined in the Trigger
