@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -10,23 +10,27 @@ namespace Unity.UI.Builder
 {
     internal class PersistedFoldout : BindableElement, INotifyValueChanged<bool>
     {
-        public new class UxmlFactory : UxmlFactory<PersistedFoldout, UxmlTraits> { }
-
-        public new class UxmlTraits : BindableElement.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
-            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
-            UxmlBoolAttributeDescription m_Value = new UxmlBoolAttributeDescription { name = "value" };
+            #pragma warning disable 649
+            [SerializeField] string text;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
+            [SerializeField] bool value;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
+            #pragma warning restore 649
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+            public override object CreateInstance() => new PersistedFoldout();
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            public override void Deserialize(object obj)
             {
-                base.Init(ve, bag, cc);
-                ((PersistedFoldout)ve).text = m_Text.GetValueFromBag(bag, cc);
-                ((PersistedFoldout)ve).value = m_Value.GetValueFromBag(bag, cc);
+                base.Deserialize(obj);
+
+                var e = (PersistedFoldout)obj;
+                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
+                    e.text = text;
+                if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
+                    e.value = value;
             }
         }
 

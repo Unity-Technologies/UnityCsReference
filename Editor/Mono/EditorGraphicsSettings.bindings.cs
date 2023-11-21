@@ -81,13 +81,9 @@ namespace UnityEditor.Rendering
                 var rpAsset = RenderPipelineManager.s_CurrentPipelineAsset;
                 if (rpAsset != null && rpAsset.pipelineType == renderPipelineType)
                     RenderPipelineManager.RecreateCurrentPipeline(rpAsset);
-
-                if (EditorWindow.HasOpenInstances<ProjectSettingsWindow>())
-                {
-                    var window = EditorWindow.GetWindow<ProjectSettingsWindow>(null, false);
-                    window.m_Parent.Reload(window);
-                }
             }
+
+            GraphicsSettingsInspectorUtility.ReloadGraphicsSettingsEditorIfNeeded();
         }
 
         public static void SetRenderPipelineGlobalSettingsAsset<T>(RenderPipelineGlobalSettings newSettings)
@@ -134,12 +130,9 @@ namespace UnityEditor.Rendering
             where T : RenderPipelineAsset
         {
             foreach(var info in RenderPipelineGraphicsSettingsManager.FetchRenderPipelineGraphicsSettingInfos(typeof(T)))
-            {
-                if (!info.isDeprecated)
-                    yield return info.type;
-            }
+                yield return info.type;
         }
-        
+
         public static void PopulateRenderPipelineGraphicsSettings(RenderPipelineGlobalSettings settings)
         {
             RenderPipelineGraphicsSettingsManager.PopulateRenderPipelineGraphicsSettings(settings);

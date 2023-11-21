@@ -20,6 +20,7 @@ namespace UnityEditor
             ManageLicense,
             Welcome,
             Tutorial,
+            Logout
         }
 
         [NativeMethod("StaticShow")]

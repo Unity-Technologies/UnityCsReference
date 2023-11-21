@@ -10,8 +10,9 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
 {
     internal class GraphicsSettingsInspectorShaderPreload : GraphicsSettingsElement
     {
-        public new class UxmlFactory : UxmlFactory<GraphicsSettingsInspectorShaderPreload, UxmlTraits>
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            public override object CreateInstance() => new GraphicsSettingsInspectorShaderPreload();
         }
 
         internal class Styles

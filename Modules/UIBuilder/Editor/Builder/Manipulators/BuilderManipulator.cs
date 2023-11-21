@@ -6,12 +6,17 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
     class BuilderManipulator : BuilderTracker
     {
+        [Serializable]
+        public new class UxmlSerializedData : BuilderTracker.UxmlSerializedData
+        {
+            public override object CreateInstance() => new BuilderManipulator();
+        }
+
         protected static readonly string s_WidthStyleName = "width";
         protected static readonly string s_HeightStyleName = "height";
         protected static readonly string s_LeftStyleName = "left";

@@ -73,7 +73,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var precompileAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(
                 options,
-                BuildPipeline.GetBuildTargetGroup(buildTarget),
                 buildTarget,
                 extraScriptingDefines);
             if (precompileAssemblies != null)

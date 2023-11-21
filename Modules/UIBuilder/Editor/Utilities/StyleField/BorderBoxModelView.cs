@@ -2,11 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using JetBrains.Annotations;
+using System;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -61,9 +61,12 @@ namespace Unity.UI.Builder
         private VisualElement m_ContentTop = new VisualElement();
         private VisualElement m_ContentBottom = new VisualElement();
         private VisualElement m_CenterSpacer = new VisualElement();
-        
-        [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<BorderBoxModelView, UxmlTraits> { }
+
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new BorderBoxModelView();
+        }
 
         public BorderBoxModelView()
         {

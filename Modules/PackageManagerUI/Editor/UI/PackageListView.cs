@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -11,7 +12,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageListView : ListView, IPackageListView
     {
-        internal new class UxmlFactory : UxmlFactory<PackageListView> {}
+        [Serializable]
+        public new class UxmlSerializedData : ListView.UxmlSerializedData
+        {
+            public override object CreateInstance() => new PackageListView();
+        }
 
         private IPackageDatabase m_PackageDatabase;
         private IPageManager m_PageManager;

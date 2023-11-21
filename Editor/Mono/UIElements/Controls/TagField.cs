@@ -11,7 +11,7 @@ using UnityEditorInternal;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A <see cref="TagField"/> editor.
+    /// A <see cref="TagField"/> editor. For more information, refer to [[wiki:UIE-uxml-element-TagField|UXML element TagField]].
     /// </summary>
     public class TagField : PopupField<string>
     {
@@ -42,10 +42,12 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Instantiates a <see cref="TagField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<TagField, UxmlTraits> {}
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="TagField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : PopupField<string>.UxmlTraits
         {
             UxmlStringAttributeDescription m_Value = new UxmlStringAttributeDescription { name = "value" };
@@ -151,16 +153,16 @@ namespace UnityEditor.UIElements
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
         /// <summary>
-        /// Initializes and returns an instance of CurveField.
+        /// Initializes and returns an instance of TagField.
         /// </summary>
         public TagField()
             : this(null) {}
 
         /// <summary>
-        /// Initializes and returns an instance of CurveField.
+        /// Initializes and returns an instance of TagField.
         /// </summary>
         /// <param name="label">The text to use as a label for the field.</param>
-        /// <param name="defaultValue">The initial tag value this field should use.</param>
+        /// <param name="defaultValue">The initial tag value this field uses.</param>
         public TagField(string label, string defaultValue = null)
             : base(label)
         {

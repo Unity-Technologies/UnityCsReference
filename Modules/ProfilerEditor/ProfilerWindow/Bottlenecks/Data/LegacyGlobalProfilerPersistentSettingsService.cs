@@ -25,7 +25,7 @@ namespace Unity.Profiling.Editor
 
         public bool IsBottleneckViewVisible
         {
-            get => EditorPrefs.GetBool(k_PersistentSettingKey_BottlenecksViewVisible, false);
+            get => EditorPrefs.GetBool(k_PersistentSettingKey_BottlenecksViewVisible, true);
             set => EditorPrefs.SetBool(k_PersistentSettingKey_BottlenecksViewVisible, value);
         }
 

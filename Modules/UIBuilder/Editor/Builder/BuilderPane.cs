@@ -3,11 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -22,29 +20,25 @@ namespace Unity.UI.Builder
         VisualElement m_Toolbar;
         ToolbarMenu m_EllipsisMenu;
 
-        public new class UxmlFactory : UxmlFactory<BuilderPane, UxmlTraits> {}
-
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                focusable.defaultValue = true;
-            }
+            #pragma warning disable 649
+            [SerializeField] string title;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags title_UxmlAttributeFlags;
+            #pragma warning restore 649
 
-            UxmlStringAttributeDescription m_Title = new UxmlStringAttributeDescription { name = "title" };
+            public override object CreateInstance() => new BuilderPane();
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            public override void Deserialize(object obj)
             {
-                get { yield break; }
-            }
+                base.Deserialize(obj);
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                ((BuilderPane)ve).title = m_Title.GetValueFromBag(bag, cc);
+                if (ShouldWriteAttributeValue(title_UxmlAttributeFlags))
+                {
+                    var e = (BuilderPane)obj;
+                    e.title = title;
+                }
             }
         }
 

@@ -13,16 +13,25 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class EditableLabel : VisualElement
     {
-        public new class UxmlFactory : UxmlFactory<EditableLabel, UxmlTraits> {}
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            UxmlBoolAttributeDescription m_Multiline = new UxmlBoolAttributeDescription { name = "multiline" };
+            #pragma warning disable 649
+            [SerializeField] bool multiline;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags multiline_UxmlAttributeFlags;
+            #pragma warning restore 649
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            public override object CreateInstance() => new EditableLabel();
+
+            public override void Deserialize(object obj)
             {
-                EditableLabel field = ((EditableLabel)ve);
-                field.multiline = m_Multiline.GetValueFromBag(bag, cc);
-                base.Init(ve, bag, cc);
+                base.Deserialize(obj);
+
+                if (ShouldWriteAttributeValue(multiline_UxmlAttributeFlags))
+                {
+                    var e = (EditableLabel)obj;
+                    e.multiline = multiline;
+                }
             }
         }
 
@@ -46,6 +55,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public bool multiline
         {
             set => m_TextField.multiline = value;
+            get => m_TextField.multiline;
         }
 
         /// <summary>

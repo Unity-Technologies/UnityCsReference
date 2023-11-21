@@ -28,9 +28,11 @@ namespace Unity.UI.Builder
             StylePropertyId.TransitionDelay.UssName(),
         };
 
-        public new class UxmlFactory : UxmlFactory<FoldoutTransitionField, UxmlTraits> {}
-        public new class UxmlTraits : FoldoutField.UxmlTraits {}
-
+        [Serializable]
+        public new class UxmlSerializedData : FoldoutField.UxmlSerializedData
+        {
+            public override object CreateInstance() => new FoldoutTransitionField();
+        }
 
         TransitionChangeType m_Overrides;
 

@@ -11,6 +11,7 @@ using Unity.Profiling;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 using TreeViewItem = UnityEngine.UIElements.TreeViewItemData<UnityEngine.UIElements.VisualElement>;
@@ -705,10 +706,13 @@ namespace Unity.UI.Builder
         {
             if (m_TreeView != null)
             {
-                m_RegisteredState.expandedIndices = m_TreeView.expandedItemIds.Select(id => m_TreeView.viewController.GetIndexForId(id)).Where(index => index != -1).ToList();
+                var list = ListPool<int>.Get();
+                m_TreeView.viewController.GetExpandedItemIds(list);
+                m_RegisteredState.expandedIndices = list.Select(id => m_TreeView.viewController.GetIndexForId(id)).Where(index => index != -1).ToList();
                 m_RegisteredState.expandedIndices.Sort();
                 m_RegisteredState.selectedIndices = m_TreeView.selectedIndices.ToList();
                 m_RegisteredState.scrollOffset = m_TreeView.serializedVirtualizationData.scrollOffset;
+                ListPool<int>.Release(list);
             }
         }
 
@@ -721,7 +725,7 @@ namespace Unity.UI.Builder
             foreach (var index in m_RegisteredState.expandedIndices)
             {
                 var id = m_TreeView.viewController.GetIdForIndex(index);
-                if (id != TreeItem.invalidId)
+                if (id != BaseTreeView.invalidId)
                     m_TreeView.ExpandItem(id);
             }
 

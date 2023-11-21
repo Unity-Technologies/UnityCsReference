@@ -4,18 +4,17 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Audio.UIElements;
 
 class AudioRandomRangeSliderTracker : VisualElement
 {
-    [Preserve]
-    public new class UxmlFactory : UxmlFactory<AudioRandomRangeSliderTracker, UxmlTraits> { }
-
-    [Preserve]
-    public new class UxmlTraits : VisualElement.UxmlTraits { }
+    [Serializable]
+    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+    {
+        public override object CreateInstance() => new AudioRandomRangeSliderTracker();
+    }
 
     Slider m_ParentSlider;
     float m_PreviousWidth;

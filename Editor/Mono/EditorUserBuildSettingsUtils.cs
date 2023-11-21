@@ -108,7 +108,7 @@ namespace UnityEditor
             }
 
             if (buildPlatform is BuildPlatformWithSubtarget)
-                return EditorUserBuildSettings.SwitchActiveBuildTargetAndSubtarget(buildPlatform.namedBuildTarget.ToBuildTargetGroup(), target, ((BuildPlatformWithSubtarget)buildPlatform).subtarget);
+                return EditorUserBuildSettings.SwitchActiveBuildTargetAndSubtarget(target, ((BuildPlatformWithSubtarget)buildPlatform).subtarget);
 
             return EditorUserBuildSettings.SwitchActiveBuildTarget(buildPlatform.namedBuildTarget.ToBuildTargetGroup(), target);
         }

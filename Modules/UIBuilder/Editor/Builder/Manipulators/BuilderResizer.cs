@@ -24,7 +24,11 @@ namespace Unity.UI.Builder
         // Used in tests
         public Dictionary<string, VisualElement> handleElements => m_HandleElements;
 
-        public new class UxmlFactory : UxmlFactory<BuilderResizer, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : BuilderTransformer.UxmlSerializedData
+        {
+            public override object CreateInstance() => new BuilderResizer();
+        }
 
         public BuilderResizer()
         {

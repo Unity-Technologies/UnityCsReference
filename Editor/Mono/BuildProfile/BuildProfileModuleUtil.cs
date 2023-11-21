@@ -165,7 +165,6 @@ namespace UnityEditor.Build.Profile
         public static void SwitchLegacyActiveFromBuildProfile(BuildProfile profile)
         {
             EditorUserBuildSettings.SwitchActiveBuildTargetAndSubtarget(
-                BuildPipeline.GetBuildTargetGroup(profile.buildTarget),
                 profile.buildTarget,
                 (int)profile.subtarget);
         }

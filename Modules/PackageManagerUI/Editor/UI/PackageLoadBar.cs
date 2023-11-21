@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -10,7 +11,11 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal const int k_FixedHeight = 30;
 
-        internal new class UxmlFactory : UxmlFactory<PackageLoadBar> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new PackageLoadBar();
+        }
 
         public enum AssetsToLoad
         {

@@ -23,7 +23,7 @@ using StyleSheet = UnityEngine.UIElements.StyleSheet;
 namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
-    [ScriptedImporter(version: 15, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 16, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -262,6 +262,7 @@ namespace UnityEditor.UIElements
         const string k_GenericPathAttr = UxmlGenericAttributeNames.k_PathAttributeName;
         const string k_GenericSrcAttr = UxmlGenericAttributeNames.k_SrcAttributeName;
 
+        #pragma warning disable CS0618 // Type or member is obsolete
         const StringComparison k_Comparison = StringComparison.InvariantCulture;
         public const string k_RootNode = UxmlRootElementFactory.k_ElementName;
         const string k_TemplateNode = UxmlTemplateFactory.k_ElementName;
@@ -273,6 +274,7 @@ namespace UnityEditor.UIElements
         const string k_SlotUsageAttr = "slot";
         const string k_AttributeOverridesNode = UxmlAttributeOverridesFactory.k_ElementName;
         const string k_AttributeOverridesElementNameAttr = UxmlAttributeOverridesTraits.k_ElementNameAttributeName;
+        #pragma warning restore CS0618 // Type or member is obsolete
 
         static UxmlAssetAttributeCache s_UxmlAssetAttributeCache = new();
 
@@ -927,11 +929,13 @@ namespace UnityEditor.UIElements
                 return new UxmlObjectAsset(fullName, true);
             }
 
+            #pragma warning disable CS0618 // Type or member is obsolete
             // Check for "legacy" UxmlObject
             if (UxmlObjectFactoryRegistry.factories.ContainsKey(fullName))
             {
                 return new UxmlObjectAsset(fullName, false);
             }
+            #pragma warning restore CS0618 // Type or member is obsolete
 
             if (elt.Name.LocalName == k_TemplateInstanceNode && elementNamespaceName == typeof(TemplateContainer).Namespace)
             {

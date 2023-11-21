@@ -31,7 +31,11 @@ namespace Unity.UI.Builder
         VisualElement m_CustomBackgroundElement;
         VisualElement m_CheckerboardBackgroundElement;
 
-        public new class UxmlFactory : UxmlFactory<BuilderCanvas, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new BuilderCanvas();
+        }
 
         public VisualElement header => m_Header;
         public override VisualElement contentContainer => m_Container == null ? this : m_Container;

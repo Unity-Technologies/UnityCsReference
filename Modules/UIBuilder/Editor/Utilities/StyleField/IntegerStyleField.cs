@@ -5,8 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -16,9 +14,11 @@ namespace Unity.UI.Builder
     {
         static readonly string k_DraggerFieldUssClassName = "unity-style-field__dragger-field";
 
-        public new class UxmlFactory : UxmlFactory<IntegerStyleField, UxmlTraits> {}
-
-        public new class UxmlTraits : StyleField<int>.UxmlTraits {}
+        [Serializable]
+        public new class UxmlSerializedData : StyleField<int>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new IntegerStyleField();
+        }
 
         public int number
         {

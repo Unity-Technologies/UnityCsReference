@@ -9,7 +9,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Makes a text field for entering an integer.
+    /// Makes a text field for entering an integer. For more information, refer to [[wiki:UIE-uxml-element-LongField|UXML element LongField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class IntegerField : TextValueField<int>
@@ -26,10 +26,12 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates an <see cref="IntegerField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<IntegerField, UxmlTraits> {}
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="IntegerField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : TextValueFieldTraits<int, UxmlIntAttributeDescription> {}
 
         /// <summary>

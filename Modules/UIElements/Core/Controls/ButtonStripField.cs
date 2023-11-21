@@ -15,7 +15,9 @@ namespace UnityEngine.UIElements
             public override object CreateInstance() => new ButtonStripField();
         }
 
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<ButtonStripField, UxmlTraits> {}
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseField<int>.UxmlTraits {}
 
         public const string className = "unity-button-strip-field";

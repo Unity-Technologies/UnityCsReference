@@ -11,7 +11,7 @@ using UnityEngine.UIElements.Experimental;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Element that draws IMGUI content.
+    /// Element that draws IMGUI content. For more information, refer to [[wiki:UIE-uxml-element-IMGUIContainer|UXML element IMGUIContainer]].
     /// </summary>
     public class IMGUIContainer : VisualElement, IDisposable
     {
@@ -27,11 +27,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates an <see cref="IMGUIContainer"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<IMGUIContainer, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="IMGUIContainer"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             /// <summary>

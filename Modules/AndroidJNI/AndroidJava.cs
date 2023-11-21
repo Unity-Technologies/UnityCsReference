@@ -596,7 +596,7 @@ namespace UnityEngine
 
         ~AndroidJavaObject()
         {
-            Dispose(true);
+            Dispose(false);
         }
 
         protected virtual void Dispose(bool disposing)

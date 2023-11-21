@@ -24,6 +24,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Instantiates a <see cref="ToolbarPopupSearchField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<ToolbarPopupSearchField, UxmlTraits> {}
 
         /// <summary>
@@ -33,6 +34,7 @@ namespace UnityEditor.UIElements
         /// This class defines the properties of a ToolbarPopupSearchField element that you can
         /// use in a UXML asset.
         /// </remarks>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : ToolbarSearchField.UxmlTraits {}
 
         /// <summary>

@@ -10,7 +10,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDetails : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<PackageDetails> {}
+        [SerializeField]
+        internal new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new PackageDetails();
+        }
 
         private IResourceLoader m_ResourceLoader;
         private IExtensionManager m_ExtensionManager;

@@ -69,8 +69,10 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
 
     internal class GraphicsSettingsInspectorTierSettings : GraphicsSettingsElement
     {
-        public new class UxmlFactory : UxmlFactory<GraphicsSettingsInspectorTierSettings, UxmlTraits>
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            public override object CreateInstance() => new GraphicsSettingsInspectorTierSettings();
         }
 
         internal class Styles

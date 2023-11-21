@@ -13,6 +13,7 @@ namespace UnityEditor.UIElements.Samples
         internal override void Apply(VisualElement container)
         {
             #region sample
+            /// <sample>
             // Get a reference to the field from UXML and assign a value to it.
             var uxmlField = container.Q<LongField>("the-uxml-field");
             uxmlField.value = 42;
@@ -29,6 +30,7 @@ namespace UnityEditor.UIElements.Samples
             {
                 csharpField.value = evt.newValue;
             });
+            /// </sample>
             #endregion
         }
     }

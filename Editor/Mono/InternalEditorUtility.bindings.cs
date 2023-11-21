@@ -891,7 +891,7 @@ namespace UnityEditorInternal
         extern public static int DetermineDepthOrder(Transform lhs, Transform rhs);
 
 
-        internal static PrecompiledAssembly[] GetUnityAssemblies(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target)
+        internal static PrecompiledAssembly[] GetUnityAssemblies(bool buildingForEditor, BuildTarget target)
         {
             return GetUnityAssembliesInternal(buildingForEditor, target);
         }

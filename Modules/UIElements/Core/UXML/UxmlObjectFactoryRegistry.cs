@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    [Obsolete("UxmlObjectFactoryRegistry is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     internal class UxmlObjectFactoryRegistry
     {
         internal const string uieCoreModule = "UnityEngine.UIElementsModule";

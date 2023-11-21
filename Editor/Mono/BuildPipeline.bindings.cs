@@ -622,11 +622,12 @@ namespace UnityEditor
         [FreeFunction("BuildPlayerLicenseCheck", IsThreadSafe = true)]
         internal static extern bool LicenseCheck(BuildTarget target);
 
+        // TODO: remove, superseded by IsBuildPlatformSupported()
         [FreeFunction]
         public static extern bool IsBuildTargetSupported(BuildTargetGroup buildTargetGroup, BuildTarget target);
 
         [FreeFunction]
-        internal static extern string GetBuildTargetAdvancedLicenseName(BuildTarget target);
+        internal static extern bool IsBuildPlatformSupported(BuildTarget target);
 
         public static string GetPlaybackEngineDirectory(BuildTarget target, BuildOptions options)
         {
@@ -647,19 +648,33 @@ namespace UnityEditor
         [FreeFunction(IsThreadSafe = true)]
         public static extern string GetPlaybackEngineDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, bool assertUnsupportedPlatforms);
 
-        [FreeFunction(IsThreadSafe = true)]
-        internal static extern string GetPlaybackEngineExtensionDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options);
-
-        internal static extern void SetPlaybackEngineDirectory(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options, string playbackEngineDirectory);
-
-        [FreeFunction(IsThreadSafe = true)]
-        internal static extern string GetBuildToolsDirectory(BuildTarget target);
+        internal static string GetBuildToolsDirectory(BuildTarget target)
+        {
+            return Path.Combine(GetPlaybackEngineDirectory(target, BuildOptions.None, false), "Tools");
+        }
 
         [FreeFunction]
         internal static extern string GetMonoRuntimeLibDirectory(BuildTarget target);
 
-        [FreeFunction]
-        internal static extern string CompatibilityProfileToClassLibFolder(ApiCompatibilityLevel compatibilityLevel);
+        [RequiredByNativeCode]
+        internal static string CompatibilityProfileToClassLibFolder(ApiCompatibilityLevel compatibilityLevel)
+        {
+            var target = EditorUserBuildSettings.activeBuildTarget;
+            var suffix = BuildTargetDiscovery.GetPlatformProfileSuffix(target);
+
+            switch (compatibilityLevel)
+            {
+                case ApiCompatibilityLevel.NET_Unity_4_8:
+                    return "unityjit-" + suffix;
+
+                case ApiCompatibilityLevel.NET_Standard:
+                    return "unityaot-" + suffix;
+
+                default:
+                    Debug.LogError($"Unknown API compatibility level: {compatibilityLevel}.");
+                    return "unityjit";
+            }
+        }
 
         internal static string GetBuildTargetGroupName(BuildTarget target)
         {
@@ -668,9 +683,6 @@ namespace UnityEditor
 
         [FreeFunction]
         internal static extern string GetBuildTargetGroupName(BuildTargetGroup buildTargetGroup);
-
-        [FreeFunction]
-        internal static extern bool SupportsReflectionEmit(BuildTarget target);
 
         [RequiredByNativeCode]
         public static PlayerConnectionInitiateMode GetPlayerConnectionInitiateMode(BuildTarget targetPlatform, BuildOptions buildOptions)

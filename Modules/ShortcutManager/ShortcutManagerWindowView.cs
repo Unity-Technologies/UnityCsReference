@@ -1609,8 +1609,13 @@ namespace UnityEditor.ShortcutManagement
 
     internal class ShortcutSearchField : SearchFieldBase<ShortcutTextField, List<KeyCombination>>
     {
+        [Serializable]
+        public new class UxmlSerializedData : SearchFieldBase<ShortcutTextField, List<KeyCombination>>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ShortcutSearchField();
+        }
+
         public new static readonly string ussClassName = "unity-shortcut-search-field";
-        public new class UxmlFactory : UxmlFactory<ShortcutSearchField> {}
 
         public event Action<List<KeyCombination>> OnWorkingValueChanged;
 
@@ -1639,7 +1644,11 @@ namespace UnityEditor.ShortcutManagement
 
     internal class ShortcutPopupSearchField : ShortcutSearchField, IToolbarMenuElement
     {
-        public new class UxmlFactory : UxmlFactory<ShortcutPopupSearchField> {}
+        [Serializable]
+        public new class UxmlSerializedData : ShortcutSearchField.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ShortcutPopupSearchField();
+        }
 
         public DropdownMenu menu { get; }
 

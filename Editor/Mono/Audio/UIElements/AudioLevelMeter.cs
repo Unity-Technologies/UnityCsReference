@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Color = UnityEngine.Color;
@@ -10,9 +11,11 @@ namespace UnityEditor.Audio.UIElements
 {
     internal class AudioLevelMeter : VisualElement
     {
-        public new class UxmlFactory : UxmlFactory<AudioLevelMeter, UxmlTraits> { }
-
-        public new class UxmlTraits : VisualElement.UxmlTraits { }
+        [Serializable]
+        internal new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new AudioLevelMeter();
+        }
 
         private float m_Value = -80.0f; // Value of the meter in dBFS.
 

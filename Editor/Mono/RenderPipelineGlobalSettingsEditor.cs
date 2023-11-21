@@ -14,7 +14,6 @@ namespace UnityEditor.Rendering
     {
         static class Strings
         {
-            public const string k_ProjectSettingsGraphicsPath = "Project/Graphics";
             public static readonly string k_WarningAttributeMessage = $"{nameof(RenderPipelineGlobalSettings)} should be used with {nameof(SupportedOnRenderPipelineAttribute)}";
             public static readonly string k_WarningEditionMessage = $"{nameof(RenderPipelineGlobalSettings)} should be edited from Project Settings > Graphics";
             public const string k_OpenGraphicsSettingsPanel = "Open Project Settings > Graphics ...";
@@ -30,7 +29,7 @@ namespace UnityEditor.Rendering
 
             root.Add(new HelpBox(Strings.k_WarningEditionMessage, HelpBoxMessageType.Warning));
             var button = new Button() { text = Strings.k_OpenGraphicsSettingsPanel };
-            button.clicked += () => SettingsService.OpenProjectSettings(Strings.k_ProjectSettingsGraphicsPath);
+            button.clicked += () => SettingsService.OpenProjectSettings(GraphicsSettingsProvider.s_GraphicsSettingsProviderPath);
             root.Add(button);
 
             if (Unsupported.IsDeveloperMode())

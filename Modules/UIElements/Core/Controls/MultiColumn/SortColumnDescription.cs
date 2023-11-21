@@ -57,15 +57,18 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="SortColumnDescription"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlObjectFactory<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         internal class UxmlObjectFactory<T> : UxmlObjectFactory<T, UxmlObjectTraits<T>> where T : SortColumnDescription, new() {}
         /// <summary>
         /// Instantiates a <see cref="SortColumnDescription"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlObjectFactory<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         internal class UxmlObjectFactory : UxmlObjectFactory<SortColumnDescription> {}
 
         /// <summary>
         /// Defines <see cref="UxmlObjectTraits{T}"/> for the <see cref="SortColumnDescription"/>.
         /// </summary>
+        [Obsolete("UxmlObjectTraits<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         internal class UxmlObjectTraits<T> : UnityEngine.UIElements.UxmlObjectTraits<T> where T : SortColumnDescription
         {
             readonly UxmlStringAttributeDescription m_ColumnName = new UxmlStringAttributeDescription { name = "column-name" };

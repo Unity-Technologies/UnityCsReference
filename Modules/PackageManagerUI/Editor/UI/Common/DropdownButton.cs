@@ -12,7 +12,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class DropdownButton : VisualElement, ITextElement, IToolbarMenuElement
     {
-        internal new class UxmlFactory : UxmlFactory<DropdownButton> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new DropdownButton();
+        }
 
         private const string k_HasSeparateDropdownClass = "separate-dropdown";
         private const string k_HasIconClass = "has-icon";

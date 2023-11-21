@@ -20,9 +20,11 @@ namespace Unity.UI.Builder
         List<string> m_Units = new List<string>() { StyleFieldConstants.UnitPixel };
         static readonly string s_DefaultUnit = StyleFieldConstants.UnitPixel;
 
-        public new class UxmlFactory : UxmlFactory<DimensionStyleField, UxmlTraits> {}
-
-        public new class UxmlTraits : StyleField<float>.UxmlTraits {}
+        [Serializable]
+        public new class UxmlSerializedData : StyleField<float>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new DimensionStyleField();
+        }
 
         static public string defaultUnit => s_DefaultUnit;
 

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
 
@@ -9,7 +10,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class SignInBar : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<SignInBar> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new SignInBar();
+        }
 
         private static readonly string k_Message = L10n.Tr("Sign in to manage Asset Store packages");
         private static readonly string k_ButtonText = L10n.Tr("Sign in");

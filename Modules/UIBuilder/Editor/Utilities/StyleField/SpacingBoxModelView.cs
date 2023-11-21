@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
-using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine.UIElements;
 
@@ -51,8 +51,11 @@ namespace Unity.UI.Builder
 
         private BuilderInspector m_Inspector;
 
-        [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<SpacingBoxModelView, UxmlTraits> { }
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new SpacingBoxModelView();
+        }
 
         public SpacingBoxModelView()
         {

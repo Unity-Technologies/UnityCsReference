@@ -41,11 +41,13 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Instantiates a <see cref="LayerField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<LayerField, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="LayerField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : PopupField<int>.UxmlTraits
         {
             UxmlIntAttributeDescription m_Value = new UxmlIntAttributeDescription { name = "value" };

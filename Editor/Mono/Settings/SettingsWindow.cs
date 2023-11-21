@@ -86,7 +86,7 @@ namespace UnityEditor
 
         internal SettingsProvider GetCurrentProvider()
         {
-            return m_TreeView.currentProvider;
+            return m_TreeView?.currentProvider;
         }
 
         public void AddItemsToMenu(GenericMenu menu)

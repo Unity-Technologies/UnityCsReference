@@ -102,6 +102,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class defines the list view element properties that you can use in a UI document asset (UXML file).
         /// </remarks>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseVerticalCollectionView.UxmlTraits
         {
             private readonly UxmlBoolAttributeDescription m_ShowFoldoutHeader = new UxmlBoolAttributeDescription { name = "show-foldout-header", defaultValue = false };

@@ -7,7 +7,7 @@ using System;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Element that can be bound to a property.
+    /// Element that can be bound to a property. For more information, refer to [[wiki:UIE-uxml-element-BindableElement|UXML element BindableElement]].
     /// </summary>
     public class BindableElement : VisualElement, IBindable
     {
@@ -36,11 +36,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="BindableElement"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<BindableElement, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BindableElement"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_PropertyPath;

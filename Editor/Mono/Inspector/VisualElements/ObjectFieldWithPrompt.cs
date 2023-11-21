@@ -43,29 +43,6 @@ namespace UnityEditor.UIElements
             }
         }
 
-        public new class UxmlFactory : UxmlFactory<ObjectFieldWithPrompt, UxmlTraits>
-        {
-        }
-
-        public new class UxmlTraits : BaseField<Object>.UxmlTraits
-        {
-            UxmlBoolAttributeDescription m_AllowSceneObjects = new() { name = "allow-scene-objects", defaultValue = true };
-            UxmlTypeAttributeDescription<Object> m_ObjectType = new() { name = "type", defaultValue = typeof(Object) };
-            UxmlStringAttributeDescription m_Title = new() { name = "title" };
-            UxmlStringAttributeDescription m_Message = new() { name = "message" };
-            
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                ((ObjectFieldWithPrompt)ve).allowSceneObjects = m_AllowSceneObjects.GetValueFromBag(bag, cc);
-                ((ObjectFieldWithPrompt)ve).objectType = m_ObjectType.GetValueFromBag(bag, cc);
-
-                ((ObjectFieldWithPrompt)ve).title = m_Title.GetValueFromBag(bag, cc);
-                ((ObjectFieldWithPrompt)ve).message = m_Message.GetValueFromBag(bag, cc);
-            }
-        }
-
         string m_Title;
 
         public string title

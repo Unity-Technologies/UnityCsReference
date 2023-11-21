@@ -2,16 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using JetBrains.Annotations;
-using UnityEngine.UIElements;
+using System;
 using UnityEditor;
+using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
     class PositionStyleField : DimensionStyleField
     {
-        [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<PositionStyleField, UxmlTraits> { }
+        [Serializable]
+        public new class UxmlSerializedData : DimensionStyleField.UxmlSerializedData
+        {
+            public override object CreateInstance() => new PositionStyleField();
+        }
 
         static readonly string k_FieldClassName = "unity-position-style-field";
         static readonly string k_UssPathNoExt = BuilderConstants.UtilitiesPath + "/StyleField/PositionSection";

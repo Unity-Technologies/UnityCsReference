@@ -253,7 +253,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             return PrecompiledAssemblyProvider.GetPrecompiledAssemblies(
                 EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
-                EditorUserBuildSettings.activeBuildTargetGroup,
                 EditorUserBuildSettings.activeBuildTarget);
         }
 
@@ -707,13 +706,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public CompileStatus CompileScripts(
             EditorScriptCompilationOptions editorScriptCompilationOptions,
-            BuildTargetGroup platformGroup,
             BuildTarget platform,
             int subtarget,
             string[] extraScriptingDefines
         )
         {
-            var scriptAssemblySettings = CreateScriptAssemblySettings(platformGroup, platform, subtarget, editorScriptCompilationOptions, extraScriptingDefines);
+            var scriptAssemblySettings = CreateScriptAssemblySettings(platform, subtarget, editorScriptCompilationOptions, extraScriptingDefines);
 
             CompileStatus compilationResult;
             using (new ProfilerMarker("Initiating Script Compilation").Auto())
@@ -915,22 +913,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return allScripts != null && allScripts.Count > 0;
         }
 
-        public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options)
+        public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTarget buildTarget, EditorScriptCompilationOptions options)
         {
-            return CreateScriptAssemblySettings(buildTargetGroup, buildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget), options, new string[] { });
+            return CreateScriptAssemblySettings(buildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget), options, new string[] { });
         }
 
-        public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, int subtarget, EditorScriptCompilationOptions options)
+        public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTarget buildTarget, int subtarget, EditorScriptCompilationOptions options)
         {
-            return CreateScriptAssemblySettings(buildTargetGroup, buildTarget, subtarget, options, new string[] { });
+            return CreateScriptAssemblySettings(buildTarget, subtarget, options, new string[] { });
         }
 
-        public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options, string[] extraScriptingDefines)
+        public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTarget buildTarget, EditorScriptCompilationOptions options, string[] extraScriptingDefines)
         {
-            return CreateScriptAssemblySettings(buildTargetGroup, buildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget), options, extraScriptingDefines);
+            return CreateScriptAssemblySettings(buildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget), options, extraScriptingDefines);
         }
 
-        public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, int subtarget, EditorScriptCompilationOptions options, string[] extraScriptingDefines)
+        public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTarget buildTarget, int subtarget, EditorScriptCompilationOptions options, string[] extraScriptingDefines)
         {
             var predefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
             var namedBuildTarget = NamedBuildTarget.FromActiveSettings(buildTarget);
@@ -971,7 +969,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var settings = new ScriptAssemblySettings
             {
                 BuildTarget = buildTarget,
-                BuildTargetGroup = buildTargetGroup,
                 Subtarget = subtarget,
                 OutputDirectory = GetCompileScriptsOutputDirectory(),
                 CompilationOptions = options,
@@ -989,7 +986,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         ScriptAssemblySettings CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions options)
         {
-            return CreateScriptAssemblySettings(EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget, options);
+            return CreateScriptAssemblySettings(EditorUserBuildSettings.activeBuildTarget, options);
         }
         //only used in for tests to peek in.
         public CompilerMessage[] GetCompileMessages() => _currentEditorCompilationCompilerMessages;
@@ -1052,7 +1049,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return _currentBeeScriptCompilationState != null;
         }
 
-        public CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, int subtarget, string[] extraScriptingDefines, bool allowBlocking)
+        public CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTarget platform, int subtarget, string[] extraScriptingDefines, bool allowBlocking)
         {
             // Return CompileStatus.Compiling if any compile task is still compiling.
             // This ensures that the compile tasks finish compiling before any
@@ -1072,14 +1069,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 CompileStatus compileStatus;
                 try
                 {
-                    compileStatus = CompileScripts(options, platformGroup, platform, subtarget, extraScriptingDefines);
+                    compileStatus = CompileScripts(options, platform, subtarget, extraScriptingDefines);
                 }
                 finally
                 {
                     Profiler.EndSample();
                 }
                 if (allowBlocking)
-                    return TickCompilationPipeline(options, platformGroup, platform, subtarget, extraScriptingDefines, allowBlocking);
+                    return TickCompilationPipeline(options, platform, subtarget, extraScriptingDefines, allowBlocking);
 
                 return compileStatus;
             }
@@ -1459,7 +1456,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, string[] defines)
         {
             var precompiledAssemblies = PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(
-                options, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget, defines);
+                options, EditorUserBuildSettings.activeBuildTarget, defines);
             return GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, defines);
         }
 
@@ -1654,7 +1651,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 var precompiledAssemblies =
                     PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(settings.CompilationOptions,
-                        settings.BuildTargetGroup, settings.BuildTarget, settings.ExtraGeneralDefines);
+                        settings.BuildTarget, settings.ExtraGeneralDefines);
 
                 UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_VersionMetaDatas, settings);
 
@@ -1837,7 +1834,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var customReferences = EditorBuildRules.GetCompiledCustomAssembliesReferences(scriptAssembly, customTargetAssemblies, GetCompileScriptsOutputDirectory());
 
-            var precompiledAssemblies = PrecompiledAssemblyProvider.GetPrecompiledAssemblies(options, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
+            var precompiledAssemblies = PrecompiledAssemblyProvider.GetPrecompiledAssemblies(options, EditorUserBuildSettings.activeBuildTarget);
             // todo split implicit/explicit precompiled references
             var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, TargetAssemblyType.Custom, options, EditorCompatibility.CompatibleWithEditor, precompiledAssemblies, null, null);
             var additionalReferences = MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.CompilerOptions.ApiCompatibilityLevel);

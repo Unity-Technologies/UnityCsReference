@@ -20,5 +20,10 @@ namespace UnityEditor.Rendering
                 if (fieldInfo.GetValue(resource) is T fieldValue)
                     callback(fieldValue);
         }
+
+        public static void RemoveRenderPipelineGraphicsSettingsWithMissingScript()
+        {
+            EditorGraphicsSettings.ForEachPipelineSettings((settings) => settings.CleanNullSettings());
+        }
     }
 }

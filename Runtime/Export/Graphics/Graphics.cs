@@ -360,6 +360,26 @@ namespace UnityEngine
             CopyTexture_Region(src, srcElement, srcMip, srcX, srcY, srcWidth, srcHeight, dst, dstElement, dstMip, dstX, dstY);
         }
 
+        public static void CopyTexture(GraphicsTexture src, GraphicsTexture dst)
+        {
+            CopyTexture_Full_Gfx(src, dst);
+        }
+
+        public static void CopyTexture(GraphicsTexture src, int srcElement, GraphicsTexture dst, int dstElement)
+        {
+            CopyTexture_Slice_AllMips_Gfx(src, srcElement, dst, dstElement);
+        }
+
+        public static void CopyTexture(GraphicsTexture src, int srcElement, int srcMip, GraphicsTexture dst, int dstElement, int dstMip)
+        {
+            CopyTexture_Slice_Gfx(src, srcElement, srcMip, dst, dstElement, dstMip);
+        }
+
+        public static void CopyTexture(GraphicsTexture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, GraphicsTexture dst, int dstElement, int dstMip, int dstX, int dstY)
+        {
+            CopyTexture_Region_Gfx(src, srcElement, srcMip, srcX, srcY, srcWidth, srcHeight, dst, dstElement, dstMip, dstX, dstY);
+        }
+
         public static bool ConvertTexture(Texture src, Texture dst)
         {
             return ConvertTexture_Full(src, dst);
@@ -368,6 +388,16 @@ namespace UnityEngine
         public static bool ConvertTexture(Texture src, int srcElement, Texture dst, int dstElement)
         {
             return ConvertTexture_Slice(src, srcElement, dst, dstElement);
+        }
+
+        public static bool ConvertTexture(GraphicsTexture src, GraphicsTexture dst)
+        {
+            return ConvertTexture_Full_Gfx(src, dst);
+        }
+
+        public static bool ConvertTexture(GraphicsTexture src, int srcElement, GraphicsTexture dst, int dstElement)
+        {
+            return ConvertTexture_Slice_Gfx(src, srcElement, dst, dstElement);
         }
 
         public static GraphicsFence CreateAsyncGraphicsFence([uei.DefaultValue("SynchronisationStage.PixelProcessing")] SynchronisationStage stage)

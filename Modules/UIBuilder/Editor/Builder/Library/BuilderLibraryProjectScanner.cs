@@ -24,6 +24,7 @@ namespace Unity.UI.Builder
 {
     class BuilderLibraryProjectScanner
     {
+        #pragma warning disable CS0618 // Type or member is obsolete
         class FactoryProcessingHelper
         {
             public class AttributeRecord
@@ -477,6 +478,7 @@ namespace Unity.UI.Builder
                     categoryStack.Last().AddChild(newItem);
             }
         }
+        #pragma warning restore CS0618 // Type or member is obsolete
 
         internal void FindAssets()
         {

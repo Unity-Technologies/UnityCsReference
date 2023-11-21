@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements.StyleSheets;
+using System;
 
 namespace Unity.UI.Builder
 {
@@ -39,8 +40,17 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class TextShadowStyleField : BaseField<BuilderTextShadow>
     {
-        [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<TextShadowStyleField, UxmlTraits> {}
+        public class TextShadowStyleFieldConverter : UxmlAttributeConverter<BuilderTextShadow>
+        {
+            public override BuilderTextShadow FromString(string value) => throw new NotImplementedException();
+            public override string ToString(BuilderTextShadow value) => throw new NotImplementedException();
+        }
+
+        [Serializable]
+        public new class UxmlSerializedData : BaseField<BuilderTextShadow>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new TextShadowStyleField();
+        }
 
         static readonly string s_FieldClassName = "unity-text-shadow-style-field";
         static readonly string s_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/TextShadowStyleField.uxml";

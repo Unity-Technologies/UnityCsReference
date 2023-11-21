@@ -144,8 +144,11 @@ namespace Unity.UI.Builder
             }
         }
 
-        [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<TransformOriginSelector, UxmlTraits> { }
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new TransformOriginSelector();
+        }
 
         public TransformOriginSelector()
         {

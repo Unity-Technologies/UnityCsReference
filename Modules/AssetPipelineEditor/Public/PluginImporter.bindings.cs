@@ -182,6 +182,9 @@ namespace UnityEditor
             return GetCompatibleWithEditor("", "");
         }
 
+        public bool GetCompatibleWithEditor(string buildTarget)
+            => GetCompatibleWithEditor("", buildTarget);
+
         extern public bool GetCompatibleWithEditor(string buildTargetGroup, string buildTarget);
 
         public extern bool isPreloaded

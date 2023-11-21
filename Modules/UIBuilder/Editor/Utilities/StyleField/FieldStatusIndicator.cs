@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -13,17 +14,25 @@ namespace Unity.UI.Builder
     /// </summary>
     class FieldStatusIndicator : VisualElement
     {
-        public new class UxmlFactory : UxmlFactory<FieldStatusIndicator, UxmlTraits> { }
-
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            readonly UxmlStringAttributeDescription m_TargetFieldName = new UxmlStringAttributeDescription { name = "field-name" };
+            #pragma warning disable 649
+            [SerializeField, UxmlAttribute("field-name")] string targetFieldName;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags targetFieldName_UxmlAttributeFlags;
+            #pragma warning restore 649
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            public override object CreateInstance() => new FieldStatusIndicator();
+
+            public override void Deserialize(object obj)
             {
-                base.Init(ve, bag, cc);
+                base.Deserialize(obj);
 
-                (ve as FieldStatusIndicator).targetFieldName = m_TargetFieldName.GetValueFromBag(bag, cc);
+                if (ShouldWriteAttributeValue(targetFieldName_UxmlAttributeFlags))
+                {
+                    var e = (FieldStatusIndicator)obj;
+                    e.targetFieldName = targetFieldName;
+                }
             }
         }
 

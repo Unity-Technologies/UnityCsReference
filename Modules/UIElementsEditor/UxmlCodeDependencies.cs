@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
@@ -17,6 +16,7 @@ namespace UnityEditor.UIElements
     // 2. The "version" is Hash128 created by sequentially combining attribute name and object type.
     // 3. The UXML importer declares a dependency using the name as previously described
     // All names are preceded by a prefix, which is left as a parameter here to make testing easier
+    #pragma warning disable CS0618 // Type or member is obsolete
     class UxmlCodeDependencies
     {
         const string k_DefaultDependencyPrefix = "UxmlFactory/";
@@ -94,4 +94,5 @@ namespace UnityEditor.UIElements
             return m_Set.Contains(dependencyKeyName);
         }
     }
+    #pragma warning restore CS0618 // Type or member is obsolete
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -13,7 +14,11 @@ namespace Unity.UI.Builder
     // https://unity3d.atlassian.net/browse/UIT-456
     internal class UnityUIBuilderSelectionMarker : VisualElement
     {
-        public new class UxmlFactory : UxmlFactory<UnityUIBuilderSelectionMarker, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new UnityUIBuilderSelectionMarker();
+        }
 
         public UnityUIBuilderSelectionMarker() {}
 

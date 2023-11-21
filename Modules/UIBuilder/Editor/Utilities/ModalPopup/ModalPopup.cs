@@ -2,8 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
+using System;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -16,21 +17,25 @@ namespace Unity.UI.Builder
         Label m_Title;
         VisualElement m_Container;
 
-        public new class UxmlFactory : UxmlFactory<ModalPopup, UxmlTraits> {}
-
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            UxmlStringAttributeDescription m_Title = new UxmlStringAttributeDescription { name = "title" };
+            #pragma warning disable 649
+            [SerializeField] string title;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags title_UxmlAttributeFlags;
+            #pragma warning restore 649
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+            public override object CreateInstance() => new ModalPopup();
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            public override void Deserialize(object obj)
             {
-                base.Init(ve, bag, cc);
-                ((ModalPopup)ve).title = m_Title.GetValueFromBag(bag, cc);
+                base.Deserialize(obj);
+
+                if (ShouldWriteAttributeValue(title_UxmlAttributeFlags))
+                {
+                    var e = (ModalPopup)obj;
+                    e.title = title;
+                }
             }
         }
 

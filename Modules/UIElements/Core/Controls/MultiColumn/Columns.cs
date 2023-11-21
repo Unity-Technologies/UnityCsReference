@@ -108,16 +108,19 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="Columns"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlObjectFactory<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         internal class UxmlObjectFactory<T> : UxmlObjectFactory<T, UxmlObjectTraits<T>> where T : Columns, new() {}
 
         /// <summary>
         /// Instantiates a <see cref="Columns"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlObjectFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         internal class UxmlObjectFactory : UxmlObjectFactory<Columns> {}
 
         /// <summary>
         /// Defines <see cref="UxmlObjectTraits{T}"/> for the <see cref="Columns"/>.
         /// </summary>
+        [Obsolete("UxmlObjectTraits<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         internal class UxmlObjectTraits<T> : UnityEngine.UIElements.UxmlObjectTraits<T> where T : Columns
         {
             readonly UxmlStringAttributeDescription m_PrimaryColumnName = new UxmlStringAttributeDescription { name = "primary-column-name" };

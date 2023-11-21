@@ -21,6 +21,9 @@ namespace UnityEditor
         // use of this property.
         string TargetName { get; }
 
+        // This property is used as a suffix for il2cpp profiles. Should a more suited place for it exist, move it
+        string RootSystemType { get; }
+
         // This function allows to retrieve BuildPlatformProperties derived from IPlatformProperties as quick access
         IBuildPlatformProperties BuildPlatformProperties { get; }
 
@@ -38,6 +41,9 @@ namespace UnityEditor
 
         // This function allows to retrieve AudioPlatformProperties derived from IPlatformProperties as quick access
         IAudioPlatformProperties AudioPlatformProperties { get; }
+
+        // This function allows to retrieve AudioPlatformProperties derived from IPlatformProperties as quick access
+        IVRPlatformProperties VRPlatformProperties { get; }
 
         // This function allows to retrieve properties of a give type, derived from IPlatformProperties
         // if they are available.

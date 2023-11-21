@@ -7,11 +7,13 @@ using UnityEngine.Bindings;
 using UnityEditor.Build;
 using System.Runtime.InteropServices;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
     [StaticAccessor("BuildTargetDiscovery::GetInstance()", StaticAccessorType.Dot)]
     [NativeHeader("Editor/Src/BuildPipeline/BuildTargetDiscovery.h")]
+    [RequiredByNativeCode]
     internal static class BuildTargetDiscovery
     {
         [Flags]
@@ -27,7 +29,7 @@ namespace UnityEditor
             CompressedGPUSkinningDisabled   = (1 << 6),
             UseForsythOptimizedMeshData     = (1 << 7),
             DisableEnlighten                = (1 << 8),
-            ReflectionEmitDisabled          = (1 << 9),
+            // unused in 2023LTS: ReflectionEmitDisabled          = (1 << 9),
             OSFontsDisabled                 = (1 << 10),
             NoDefaultUnityFonts             = (1 << 11),
             // removed in 2019.3: SupportsFacebook = (1 << 12),
@@ -43,17 +45,9 @@ namespace UnityEditor
             ConfigurableDefaultTextureCompressionFormat = (1 << 22)
         }
 
-        public enum RootSystemType
-        {
-            Linux   = 0,
-            Windows = 1,
-            OSX     = 2
-        }
-
         [StructLayout(LayoutKind.Sequential)]
         public struct DiscoveredTargetInfo
         {
-            public string path;
             public string moduleName;
             public string dirName;
             public string platformDefine;
@@ -88,9 +82,14 @@ namespace UnityEditor
 
         public static extern string GetModuleNameForBuildTargetGroup(BuildTargetGroup group);
 
-        public static extern RootSystemType GetPlatformRootSystemType(BuildTarget platform);
-
-        public static extern string GetPlatformProfileSuffix(BuildTarget platform);
+        public static string GetPlatformProfileSuffix(BuildTarget buildTarget)
+        {
+            if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out var iBuildTarget))
+            {
+                return iBuildTarget.RootSystemType;
+            }
+            return "";
+        }
 
         public static bool BuildTargetSupportsRenderer(BuildPlatform platform, GraphicsDeviceType type)
         {
@@ -135,5 +134,46 @@ namespace UnityEditor
             BuildTarget.StandaloneWindows64,  
             BuildTarget.StandaloneLinux64,  
         };
+
+        [RequiredByNativeCode]
+        internal static bool DoesBuildTargetSupportStereoInstancingRendering(BuildTarget buildTarget)
+        {
+            if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out var iBuildTarget))
+            {
+                return iBuildTarget.VRPlatformProperties?.SupportStereoInstancingRendering ?? false;
+            }
+            return false;
+        }
+
+        [RequiredByNativeCode]
+        internal static bool DoesBuildTargetSupportStereoMultiviewRendering(BuildTarget buildTarget)
+        {
+            if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out var iBuildTarget))
+            {
+                return iBuildTarget.VRPlatformProperties?.SupportStereoMultiviewRendering ?? false;
+            }
+            return false;
+        }
+
+        [RequiredByNativeCode]
+        internal static bool DoesBuildTargetSupportStereo360Capture(BuildTarget buildTarget)
+        {
+            if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out var iBuildTarget))
+            {
+                return iBuildTarget.VRPlatformProperties?.SupportStereo360Capture ?? false;
+            }
+            return false;
+        }
+
+        [RequiredByNativeCode]
+        internal static bool DoesBuildTargetSupportSinglePassStereoRendering(BuildTarget buildTarget)
+        {
+            if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out var iBuildTarget))
+            {
+                return iBuildTarget.VRPlatformProperties?.SupportSinglePassStereoRendering ?? false;
+            }
+            return false;
+        }
+
     }
 }

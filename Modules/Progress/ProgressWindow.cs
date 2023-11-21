@@ -37,6 +37,7 @@ namespace UnityEditor
         Dictionary<int, List<int>> m_MissingParents;
         HashSet<int> m_ContainedItems;
         HashSet<int> m_ItemsNeedingExpansion;
+        Dictionary<int, bool> m_RemovedItemsExpandedState;
 
         // For testing only
         internal TreeView treeView => m_TreeView;
@@ -142,6 +143,7 @@ namespace UnityEditor
             m_MissingParents = new Dictionary<int, List<int>>();
             m_ContainedItems = new HashSet<int>();
             m_ItemsNeedingExpansion = new HashSet<int>();
+            m_RemovedItemsExpandedState = new Dictionary<int, bool>();
             OperationsAdded(Progress.EnumerateItems().ToArray());
 
             Progress.added += OperationsAdded;
@@ -354,6 +356,9 @@ namespace UnityEditor
 
         TreeViewItemData<Progress.Item> GetExistingTreeViewItemFromId(int itemId)
         {
+            if (m_TreeView.viewController is DefaultTreeViewController<Progress.Item> treeViewController)
+                return treeViewController.GetTreeViewItemDataForId(itemId);
+
             var progressItem = m_TreeView.GetItemDataForId<Progress.Item>(itemId);
             var treeViewItem = new TreeViewItemData<Progress.Item>(itemId, progressItem);
 
@@ -391,10 +396,27 @@ namespace UnityEditor
                 m_TreeView.viewController.ExpandItem(treeViewItem.data.parentId, true);
                 m_ItemsNeedingExpansion.Remove(treeViewItem.data.parentId);
             }
+
+            // We want to restore the previous state of the progress item if applicable. For instance, removing and
+            // re-adding the item should remain expanded if this was previously expanded
+            if (m_RemovedItemsExpandedState.TryGetValue(treeViewItem.id, out var isExpanded) && isExpanded)
+            {
+                m_TreeView.ExpandItem(treeViewItem.id);
+                m_RemovedItemsExpandedState.Remove(treeViewItem.id);
+            }
         }
 
         void RemoveTreeViewItem(int progressId)
         {
+            // If we are removing a previously expanded item, we just get rid of it, otherwise we store the last expanded state.
+            if (m_RemovedItemsExpandedState.ContainsKey(progressId))
+            {
+                m_RemovedItemsExpandedState.Remove(progressId);
+            }
+            else
+            {
+                m_RemovedItemsExpandedState.Add(progressId, m_TreeView.IsExpanded(progressId));
+            }
             m_TreeView.viewController.TryRemoveItem(progressId);
             m_ContainedItems.Remove(progressId);
         }

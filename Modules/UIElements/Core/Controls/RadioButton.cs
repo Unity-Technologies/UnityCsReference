@@ -36,11 +36,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="RadioButton"/> using data from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<RadioButton, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="RadioButton"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseFieldTraits<bool, UxmlBoolAttributeDescription>
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };

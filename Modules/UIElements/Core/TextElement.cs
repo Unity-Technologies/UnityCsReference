@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
     /// Base class for a <see cref="VisualElement"/> that displays text.
     /// </summary>
     /// <summary>
-    /// Use this as the super class if you are declaring a custom VisualElement that displays text. For example, <see cref="Button"/> or <see cref="Label"/> use this as their base class.
+    /// Use this as the super class if you are declaring a custom VisualElement that displays text. For example, <see cref="Button"/> or <see cref="Label"/> use this as their base class. For more information, refer to [[wiki:UIE-uxml-element-TextElement|UXML element TextElement]].
     /// </summary>
     public partial class TextElement : BindableElement, ITextElement, INotifyValueChanged<string>
     {
@@ -80,10 +80,12 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="TextElement"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<TextElement, UxmlTraits> {}
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="TextElement"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };

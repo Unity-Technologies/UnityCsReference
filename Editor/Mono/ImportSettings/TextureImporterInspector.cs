@@ -218,9 +218,9 @@ namespace UnityEditor
             public readonly GUIContent cookieType = EditorGUIUtility.TrTextContent("Light Type");
             public readonly GUIContent[] cookieOptions =
             {
-                EditorGUIUtility.TrTextContent("Spotlight"),
-                EditorGUIUtility.TrTextContent("Directional"),
-                EditorGUIUtility.TrTextContent("Point"),
+                EditorGUIUtility.TrTextContent("Spot Light"),
+                EditorGUIUtility.TrTextContent("Directional Light"),
+                EditorGUIUtility.TrTextContent("Point Light"),
             };
             public readonly GUIContent generateFromBump = EditorGUIUtility.TrTextContent("Create from Grayscale", "The grayscale of the image is used as a heightmap for generating the normal map.");
             public readonly GUIContent bumpiness = EditorGUIUtility.TrTextContent("Bumpiness");

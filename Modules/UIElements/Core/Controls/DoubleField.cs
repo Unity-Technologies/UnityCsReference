@@ -26,10 +26,12 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="DoubleField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<DoubleField, UxmlTraits> {}
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="DoubleField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : TextValueFieldTraits<double, UxmlDoubleAttributeDescription> {}
 
         /// <summary>

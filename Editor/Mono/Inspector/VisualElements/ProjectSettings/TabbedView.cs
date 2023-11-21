@@ -2,7 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -10,11 +11,12 @@ namespace UnityEditor.UIElements.ProjectSettings
 {
     internal class TabbedView : VisualElement
     {
-        public new class UxmlFactory : UxmlFactory<TabbedView, UxmlTraits>
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            public override object CreateInstance() => new TabbedView();
         }
 
-        const string k_styleName = "TabbedView";
         const string s_UssClassName = "unity-tabbed-view";
         const string s_ContentContainerClassName = "unity-tabbed-view__content-container";
         const string s_TabsContainerClassName = "unity-tabbed-view__tabs-container";
@@ -48,11 +50,14 @@ namespace UnityEditor.UIElements.ProjectSettings
 
         public void AddTab(TabButton tabButton, bool activate)
         {
-            if (m_Tabs.Count == 0)
-                SetStyleForLeftmost(tabButton);
-            if (m_Tabs.Count > 0)
+            switch (m_Tabs.Count)
             {
-                SetStyleForRightmost(tabButton);
+                case 0:
+                    SetStyleForLeftmost(tabButton);
+                    break;
+                case > 0:
+                    SetStyleForRightmost(tabButton);
+                    break;
             }
 
             m_Tabs.Add(tabButton);
@@ -64,9 +69,7 @@ namespace UnityEditor.UIElements.ProjectSettings
             tabButton.OnSelect += Activate;
 
             if (activate)
-            {
                 Activate(tabButton);
-            }
         }
 
         public void RemoveTab(TabButton tabButton)
@@ -195,9 +198,18 @@ namespace UnityEditor.UIElements.ProjectSettings
             if(index >= m_Tabs.Count || index < 0)
                 return;
 
+            Activate(m_Tabs[index]);
+        }
+
+        public void Activate(TabButton button)
+        {
             if (m_ActiveTab != null)
+            {
                 DeselectTab(m_ActiveTab);
-            SelectTab(m_Tabs[index]);
+            }
+
+            m_ActiveTab = button;
+            SelectTab(m_ActiveTab);
         }
 
         void SelectTab(TabButton tabButton)
@@ -216,17 +228,6 @@ namespace UnityEditor.UIElements.ProjectSettings
             if (target != null)
                 Remove(target);
             tabButton.Deselect();
-        }
-
-        public void Activate(TabButton button)
-        {
-            if (m_ActiveTab != null)
-            {
-                DeselectTab(m_ActiveTab);
-            }
-
-            m_ActiveTab = button;
-            SelectTab(m_ActiveTab);
         }
     }
 }

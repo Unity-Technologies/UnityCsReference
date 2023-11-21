@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-using UnityEditor;
-using UnityEngine;
+using System;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -16,7 +14,11 @@ namespace Unity.UI.Builder
         Label m_HeaderLabel;
         BuilderCanvasStyleControls m_CanvasStyleControls;
 
-        public new class UxmlFactory : UxmlFactory<BuilderSelectionIndicator, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : BuilderTracker.UxmlSerializedData
+        {
+            public override object CreateInstance() => new BuilderSelectionIndicator();
+        }
 
         public BuilderCanvasStyleControls canvasStyleControls => m_CanvasStyleControls;
 

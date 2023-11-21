@@ -8,7 +8,7 @@ using System.Globalization;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Makes a text field for entering unsigned long integers.
+    /// Makes a text field for entering unsigned long integers. For more information, refer to [[wiki:UIE-uxml-element-UnsignedLongField|UXML element UnsignedLongField]].
     /// </summary>
     public class UnsignedLongField : TextValueField<ulong>
     {
@@ -24,10 +24,12 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="UnsignedLongField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<UnsignedLongField, UxmlTraits> {}
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="UnsignedLongField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : TextValueFieldTraits<ulong, UxmlUnsignedLongAttributeDescription> {}
 
         /// <summary>

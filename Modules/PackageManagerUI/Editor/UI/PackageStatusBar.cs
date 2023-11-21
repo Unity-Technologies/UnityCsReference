@@ -10,7 +10,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageStatusBar : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<PackageStatusBar> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new PackageStatusBar();
+        }
 
         internal static readonly string k_OfflineErrorMessage = L10n.Tr("You seem to be offline");
 

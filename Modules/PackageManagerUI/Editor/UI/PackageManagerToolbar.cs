@@ -6,12 +6,17 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using System.Linq;
 using UnityEngine;
+using System;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageManagerToolbar : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new PackageManagerToolbar();
+        }
 
         private IResourceLoader m_ResourceLoader;
         internal IApplicationProxy m_Application;

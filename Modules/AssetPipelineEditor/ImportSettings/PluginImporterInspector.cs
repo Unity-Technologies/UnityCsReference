@@ -356,7 +356,7 @@ namespace UnityEditor
             // This gives correct initialization in case when plugin is imported for the first time, and only "Any Platform" is selected
             if (m_CompatibleWithAnyPlatform < Compatibility.Compatible)
             {
-                ResetCompatability(ref m_CompatibleWithEditor, (imp => imp.GetCompatibleWithEditor("", "")));
+                ResetCompatability(ref m_CompatibleWithEditor, (imp => imp.GetCompatibleWithEditor("")));
 
                 foreach (BuildTarget platform in GetValidBuildTargets())
                 {

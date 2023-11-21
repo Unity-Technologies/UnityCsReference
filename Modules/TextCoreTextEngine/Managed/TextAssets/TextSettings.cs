@@ -330,6 +330,9 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal FontAsset GetCachedFontAsset(Font font, Shader shader)
         {
+            if (font == null || shader == null)
+                return null;
+
             if (m_FontLookup == null)
             {
                 m_FontLookup = new Dictionary<int, FontAsset>();

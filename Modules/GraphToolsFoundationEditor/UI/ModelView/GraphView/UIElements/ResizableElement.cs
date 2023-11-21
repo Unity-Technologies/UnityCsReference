@@ -21,7 +21,11 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class ResizableElement : VisualElement
     {
-        public new class UxmlFactory : UxmlFactory<ResizableElement> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ResizableElement();
+        }
 
         public static readonly string ussClassName = "ge-resizable-element";
 

@@ -3,15 +3,20 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Internal;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Experimental.GraphView
 {
     public abstract class GraphElement : VisualElement, ISelectable
     {
+        [ExcludeFromDocs, Serializable]
+        public new abstract class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+        }
+
         public Color elementTypeColor { get; set; }
 
         int m_Layer;

@@ -40,7 +40,11 @@ namespace Unity.UI.Builder
         private const string k_NotificationEntryVTAPath =
             BuilderConstants.UIBuilderPackagePath + "/BuilderNotificationEntry.uxml";
 
-        public new class UxmlFactory : UxmlFactory<BuilderNotifications, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new BuilderNotifications();
+        }
 
         public BuilderNotifications()
         {

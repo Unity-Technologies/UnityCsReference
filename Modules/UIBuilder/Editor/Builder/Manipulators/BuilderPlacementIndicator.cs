@@ -2,8 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-using UnityEditor;
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -21,7 +20,11 @@ namespace Unity.UI.Builder
         public int indexWithinParent { get; private set; }
         public VisualElement documentRootElement { get; set; }
 
-        public new class UxmlFactory : UxmlFactory<BuilderPlacementIndicator, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new BuilderPlacementIndicator();
+        }
 
         public BuilderPlacementIndicator()
         {

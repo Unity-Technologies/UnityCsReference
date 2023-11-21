@@ -30,6 +30,7 @@ namespace Unity.UI.Builder
         static readonly string s_UxmlButtonUssClassName = "unity-builder-uxml-object-button";
         public static readonly string builderSerializedPropertyFieldName = "unity-builder-serialized-property-field";
         static readonly string s_TempSerializedRootPath = nameof(TempSerializedData.serializedData) + ".";
+        static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
 
         // Used in tests.
         // ReSharper disable MemberCanBePrivate.Global
@@ -1200,6 +1201,13 @@ namespace Unity.UI.Builder
                 fieldElement.GetFieldStatusIndicator().populateMenuItems =
                     (menu) => BuildAttributeFieldContextualMenu(menu, styleRow);
             }
+
+            if (fieldElement is IEditableElement editableElement)
+            {
+                // used to group undo operations (UUM-32599)
+                editableElement.editingStarted += () => SetUndoGroup(fieldElement);
+                editableElement.editingEnded += () => UnsetUndoGroup(fieldElement);
+            }
         }
 
         void OnTooltipEvent(TooltipEvent e, PropertyField propertyField, UxmlSerializedAttributeDescription attribute)
@@ -1664,15 +1672,15 @@ namespace Unity.UI.Builder
             {
                 if (change.newValue == null || !UxmlAttributeConverter.TryConvertToString(change.newValue, m_UxmlDocument, out var stringValue))
                     stringValue = change.newValue?.ToString();
-                
+
                 PostAttributeValueChange(change.fieldElement, stringValue, change.uxmlOwner);
 
                 // Use the undo group of the field if it has one, otherwise use the current undo group
-                var fieldUndoGroup = change.fieldElement.Q<BindableElement>()?.GetProperty(SerializedObjectBindingBase.UndoGroupPropertyKey);
+                var fieldUndoGroup = change.fieldElement.Q<BindableElement>()?.GetProperty(UndoGroupPropertyKey);
                 if (fieldUndoGroup != null)
                     undoGroup = (int)fieldUndoGroup;
             }
-            
+
             // Update the serialized object to reflect the changes made by PostAttributeValueChange.
             m_CurrentElementSerializedObject.UpdateIfRequiredOrScript();
 
@@ -2287,6 +2295,7 @@ namespace Unity.UI.Builder
             Undo.CollapseUndoOperations(undoGroup);
         }
 
+        #pragma warning disable CS0618 // Type or member is obsolete
         private UxmlTraits GetCurrentElementTraits()
         {
             string uxmlTypeName = null;
@@ -2317,6 +2326,7 @@ namespace Unity.UI.Builder
 
             return factories[0].GetTraits() as UxmlTraits;
         }
+        #pragma warning restore CS0618 // Type or member is obsolete
 
         public virtual void CallDeserializeOnElement()
         {
@@ -2680,6 +2690,18 @@ namespace Unity.UI.Builder
                 // Call Init();
                 CallInitOnElement();
             }
+        }
+
+        void SetUndoGroup(VisualElement field)
+        {
+            Undo.IncrementCurrentGroup();
+            field?.SetProperty(UndoGroupPropertyKey, Undo.GetCurrentGroup());
+        }
+
+        void UnsetUndoGroup(VisualElement field)
+        {
+            Undo.IncrementCurrentGroup();
+            field?.SetProperty(UndoGroupPropertyKey, null);
         }
 
         static string GetUndoMessage(SerializedProperty prop)

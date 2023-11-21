@@ -11,6 +11,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal abstract class BaseTabView<T> : VisualElement, ITabView<T> where T : BaseTabElement
     {
+        [Serializable]
+        public new abstract class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+        }
+
         protected VisualElement m_HeaderContainer;
         protected VisualElement m_TabHeaderContainer;
         protected VisualElement m_BodyContainer;

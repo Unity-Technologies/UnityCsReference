@@ -50,6 +50,7 @@ namespace UnityEditor.UIElements
                 }
             }
 
+            #pragma warning disable CS0618 // Type or member is obsolete
             if (UxmlObjectFactoryRegistry.factories.TryGetValue(m_CurrentTypeName, out var uxmlObjectFactories))
             {
                 foreach (var factory in uxmlObjectFactories)
@@ -61,6 +62,7 @@ namespace UnityEditor.UIElements
                     CacheEnumerable(factory.uxmlAttributesDescription, m_Cache);
                 }
             }
+            #pragma warning restore CS0618 // Type or member is obsolete
             else if (VisualElementFactoryRegistry.factories.TryGetValue(m_CurrentTypeName, out var uxmlFactories))
             {
                 foreach (var factory in uxmlFactories)

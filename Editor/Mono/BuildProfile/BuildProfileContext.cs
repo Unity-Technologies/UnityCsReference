@@ -25,6 +25,7 @@ namespace UnityEditor.Build.Profile
     {
         const string k_BuildProfileProviderAssetPath = "Library/BuildProfileContext.asset";
         const string k_BuildProfilePath = "Library/BuildProfiles";
+        const string k_SharedProfilePath = $"{k_BuildProfilePath}/SharedProfile.asset";
         static BuildProfileContext s_Instance;
 
         [SerializeField]
@@ -122,6 +123,15 @@ namespace UnityEditor.Build.Profile
             private set;
         }
 
+        /// <summary>
+        /// A hidden build profile for syncing shared settings for backwards compatibility.
+        /// </summary>
+        internal BuildProfile sharedProfile
+        {
+            get;
+            private set;
+        }
+
         static BuildProfileContext()
         {
             // Asset operations such as asset loading should be avoided in InitializeOnLoad methods.
@@ -149,24 +159,24 @@ namespace UnityEditor.Build.Profile
             }
         }
 
-        [RequiredByNativeCode, UsedImplicitly]
+        [RequiredByNativeCode]
         internal static BuildProfile GetActiveOrClassicBuildProfile(
-            BuildTarget target, StandaloneBuildSubtarget subTarget = StandaloneBuildSubtarget.Default)
+            BuildTarget target, StandaloneBuildSubtarget subTarget = StandaloneBuildSubtarget.Default, string sharedSetting = null)
         {
-            if (ShouldReturnActiveProfile(target, subTarget))
+            if (ShouldReturnActiveProfile(target, subTarget, sharedSetting))
                 return instance.activeProfile;
 
             // For backwards compatibility, getter will look for
             // the classic platform build profile for the target platform
             // when no suitable active profile is found.
-            return instance.GetForClassicPlatform(target, subTarget);
+            return IsSharedProfile(target) ? instance.sharedProfile : instance.GetForClassicPlatform(target, subTarget);
         }
 
-        [RequiredByNativeCode, UsedImplicitly]
+        [RequiredByNativeCode]
         internal static BuildProfile GetClassicProfileAndResetActive(
-            BuildTarget target, StandaloneBuildSubtarget subTarget = StandaloneBuildSubtarget.Default)
+            BuildTarget target, StandaloneBuildSubtarget subTarget = StandaloneBuildSubtarget.Default, string sharedSetting = null)
         {
-            if (ShouldReturnActiveProfile(target, subTarget))
+            if (ShouldReturnActiveProfile(target, subTarget, sharedSetting))
             {
                 // When invoking a legacy setter, we unset the active profile to prevent
                 // inconsistencies with legacy APIs. That is, all legacy APIs need to write to
@@ -177,7 +187,7 @@ namespace UnityEditor.Build.Profile
                 instance.activeProfile = null;
             }
 
-            return instance.GetForClassicPlatform(target, subTarget);
+            return IsSharedProfile(target) ? instance.sharedProfile : instance.GetForClassicPlatform(target, subTarget);
         }
 
         internal static bool TryGetActiveOrClassicPlatformSettingsBase<T>(
@@ -263,6 +273,9 @@ namespace UnityEditor.Build.Profile
             {
                 SaveBuildProfileInProject(kvp.Value);
             }
+
+            if (sharedProfile != null)
+                SaveBuildProfileInProject(sharedProfile);
         }
 
         BuildProfile GetForClassicPlatform(BuildTarget target, StandaloneBuildSubtarget subTarget)
@@ -304,6 +317,18 @@ namespace UnityEditor.Build.Profile
                 m_BuildModuleNameToClassicPlatformProfile.Add((profileObj.moduleName, profileObj.subtarget), profileObj);
                 classicPlatformProfiles.Add(profileObj);
             }
+
+            if (!File.Exists(k_SharedProfilePath))
+                return;
+
+            var sharedProfile = InternalEditorUtility.LoadSerializedFileAndForget(k_SharedProfilePath);
+            if (sharedProfile == null || sharedProfile.Length == 0 || sharedProfile[0] is not BuildProfile sharedProfileObj)
+            {
+                Debug.LogWarning($"Failed to load shared profile from {k_SharedProfilePath}.");
+                return;
+            }
+
+            instance.sharedProfile = sharedProfileObj;
         }
 
         /// <summary>
@@ -338,6 +363,8 @@ namespace UnityEditor.Build.Profile
                     GetOrCreateClassicPlatformBuildProfile(platform.defaultTarget, StandaloneBuildSubtarget.Default);
                 }
             }
+
+            GetOrCreateSharedBuildProfile();
         }
 
         BuildProfile GetOrCreateClassicPlatformBuildProfile(BuildTarget target, StandaloneBuildSubtarget subTarget)
@@ -377,6 +404,31 @@ namespace UnityEditor.Build.Profile
             return buildProfile;
         }
 
+        BuildProfile GetOrCreateSharedBuildProfile()
+        {
+            if (sharedProfile != null)
+                return sharedProfile;
+
+            // Shared profile is stored in the Library folder is not managed by the AssetDatabase.
+            // We will manually handle serialization and deserialization of it.
+            var buildProfile = ScriptableObject.CreateInstance<BuildProfile>();
+            buildProfile.buildTarget = BuildTarget.NoTarget;
+            buildProfile.subtarget = StandaloneBuildSubtarget.Default;
+            buildProfile.moduleName = string.Empty;
+            buildProfile.platformBuildProfile = new SharedPlatformSettings();
+            buildProfile.hideFlags = HideFlags.DontSave;
+
+            sharedProfile = buildProfile;
+
+            // Only copy after setting shared profile, so EditorUserBuildSettings can access the shared profile
+            // when copying the settings.
+            EditorUserBuildSettings.CopyToBuildProfile(buildProfile);
+
+            SaveBuildProfileInProject(buildProfile);
+
+            return buildProfile;
+        }
+
         static (string, StandaloneBuildSubtarget) GetKey(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget)
         {
             if (buildTarget == BuildTarget.NoTarget)
@@ -394,7 +446,7 @@ namespace UnityEditor.Build.Profile
                 Directory.CreateDirectory(k_BuildProfilePath);
             }
 
-            string path = GetFilePathForBuildProfile((profile.moduleName, profile.subtarget));
+            string path = IsSharedProfile(profile.buildTarget) ? k_SharedProfilePath : GetFilePathForBuildProfile((profile.moduleName, profile.subtarget));
             InternalEditorUtility.SaveToSerializedFileAndForget(new []{ profile }, path, allowTextSerialization: true);
         }
 
@@ -426,9 +478,18 @@ namespace UnityEditor.Build.Profile
             }
         }
 
-        [RequiredByNativeCode]
+        [RequiredByNativeCode, UsedImplicitly]
         static void SetClassicProfileRawPlatformSetting(string settingName, string settingValue, BuildTarget target, StandaloneBuildSubtarget subtarget)
         {
+            // If it is a shared setting, we will reset active to its classic counterpart if the specified shared
+            // setting is enabled in the active profile, and set the value in the shared profile.
+            if (IsSharedProfile(target))
+            {
+                var profile = GetClassicProfileAndResetActive(target, subtarget, settingName);
+                profile?.platformBuildProfile.SetRawPlatformSetting(settingName, settingValue);
+                return;
+            }
+
             // If the setting doesn't exist in classic platform, return
             BuildProfile classicProfile = instance.GetForClassicPlatform(target, subtarget);
             if (classicProfile == null || classicProfile.platformBuildProfile == null)
@@ -450,9 +511,17 @@ namespace UnityEditor.Build.Profile
             }
         }
 
-        [RequiredByNativeCode]
+        [RequiredByNativeCode, UsedImplicitly]
         static string GetActiveOrClassicProfileRawPlatformSetting(string settingName, BuildTarget target, StandaloneBuildSubtarget subtarget)
         {
+            // If it is a shared setting, we will return the value from the active profile if the specified shared setting
+            // is enabled in the active profile; Otherwise, we will return the value from the shared profile.
+            if (IsSharedProfile(target))
+            {
+                var profile = GetActiveOrClassicBuildProfile(target, subtarget, settingName);
+                return profile?.platformBuildProfile.GetRawPlatformSetting(settingName) ?? string.Empty;
+            }
+
             if (TryGetActiveOrClassicPlatformSettingsBase(target, subtarget, out BuildProfilePlatformSettingsBase platformProfile))
             {
                 string value = platformProfile.GetRawPlatformSetting(settingName);
@@ -462,8 +531,11 @@ namespace UnityEditor.Build.Profile
             return string.Empty;
         }
 
-        static bool ShouldReturnActiveProfile(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget)
+        static bool ShouldReturnActiveProfile(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget, string sharedSetting = null)
         {
+            if (!string.IsNullOrEmpty(sharedSetting))
+                return IsSharedSettingEnabledInActiveProfile(sharedSetting);
+
             var activeProfile = instance.m_ActiveProfile;
             if (activeProfile == null || buildTarget == BuildTarget.NoTarget || subtarget != activeProfile.subtarget)
                 return false;
@@ -472,10 +544,22 @@ namespace UnityEditor.Build.Profile
             return targetModuleName == activeProfile.moduleName;
         }
 
+        static bool IsSharedSettingEnabledInActiveProfile(string settingName)
+        {
+            var activeProfile = instance.activeProfile;
+            if (activeProfile == null)
+                return false;
+
+            var platformSettingsBase = activeProfile.platformBuildProfile;
+            return platformSettingsBase.IsSharedSettingEnabled(settingName);
+        }
+
         static string GetFilePathForBuildProfile((string moduleName, StandaloneBuildSubtarget subtarget) key) =>
             $"{k_BuildProfilePath}/PlatformProfile.{key.moduleName}.{key.subtarget}.asset";
 
         static void Save() => InternalEditorUtility.SaveToSerializedFileAndForget(new[] { instance },
             k_BuildProfileProviderAssetPath, true);
+
+        static bool IsSharedProfile(BuildTarget target) => target == BuildTarget.NoTarget;
     }
 }

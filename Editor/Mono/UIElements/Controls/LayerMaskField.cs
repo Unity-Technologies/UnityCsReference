@@ -54,11 +54,13 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Instantiates a <see cref="LayerMaskField"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<LayerMaskField, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="LayerMaskField"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BasePopupField<int, UxmlIntAttributeDescription>.UxmlTraits
         {
             readonly UxmlIntAttributeDescription m_MaskValue = new UxmlIntAttributeDescription { name = "value" };

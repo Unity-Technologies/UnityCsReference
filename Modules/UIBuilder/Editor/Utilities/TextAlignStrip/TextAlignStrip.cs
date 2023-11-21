@@ -17,7 +17,11 @@ namespace Unity.UI.Builder
         static readonly string[] s_HorizontalChoices = { "left", "center", "right" };
         static readonly string[] s_VerticalChoices = { "upper", "middle", "lower" };
 
-        public new class UxmlFactory : UxmlFactory<TextAlignStrip, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : BaseField<string>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new TextAlignStrip();
+        }
 
         VisualElement m_ButtonStripContainer;
         ToggleButtonGroup m_HorizontalButtonGroup;
@@ -64,6 +68,9 @@ namespace Unity.UI.Builder
         public override void SetValueWithoutNotify(string newValue)
         {
             base.SetValueWithoutNotify(newValue);
+
+            if (string.IsNullOrEmpty(newValue))
+                return;
 
             var values = newValue.Split('-');
 

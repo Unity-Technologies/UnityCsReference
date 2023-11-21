@@ -12,6 +12,7 @@ namespace UnityEditor.UIElements
 {
     internal class MinMaxGradientField : BaseField<ParticleSystem.MinMaxGradient>
     {
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         protected new class UxmlFactory : UxmlFactory<MinMaxGradientField, UxmlTraits> { }
 
         public new static readonly string ussClassName = "unity-min-max-gradient-field";
@@ -29,6 +30,7 @@ namespace UnityEditor.UIElements
         /// This class defines the properties of a MinMaxGradientField element that you can
         /// use in a UXML asset.
         /// </remarks>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         protected new class UxmlTraits : BaseField<ParticleSystem.MinMaxGradient>.UxmlTraits {}
 
         public readonly string[] stringModes = new[]

@@ -129,6 +129,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for <see cref="TextInputFieldBase"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseFieldTraits<string, UxmlStringAttributeDescription>
         {
             UxmlIntAttributeDescription m_MaxLength = new UxmlIntAttributeDescription { name = "max-length", obsoleteNames = new[] { "maxLength" }, defaultValue = kMaxLengthNone };

@@ -12,24 +12,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageListScrollView : ScrollView, IPackageListView
     {
-        protected new class UxmlFactory : UxmlFactory<PackageListScrollView, UxmlTraits> { }
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="PackageListScrollView"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a PackageListScrollView element that you can
-        /// use in a UXML asset.
-        /// </remarks>
-        protected new class UxmlTraits : ScrollView.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : ScrollView.UxmlSerializedData
         {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                focusable.defaultValue = true;
-            }
+            public override object CreateInstance() => new PackageListScrollView();
         }
 
         private Dictionary<string, PackageItem> m_PackageItemsLookup;

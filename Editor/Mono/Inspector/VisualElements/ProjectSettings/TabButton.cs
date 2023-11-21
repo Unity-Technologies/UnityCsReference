@@ -2,29 +2,35 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.ProjectSettings
 {
     internal class TabButton : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<TabButton, UxmlTraits>
+        [Serializable]
+        internal new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-        }
+            #pragma warning disable 649
+            [SerializeField] string text;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
+            [SerializeField] string target;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags target_UxmlAttributeFlags;
+            #pragma warning restore 649
 
-        internal new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            readonly UxmlStringAttributeDescription m_Text = new() { name = "text" };
-            readonly UxmlStringAttributeDescription m_Target = new() { name = "target" };
+            public override object CreateInstance() => new TabButton();
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            public override void Deserialize(object obj)
             {
-                base.Init(ve, bag, cc);
-                var item = ve as TabButton;
+                base.Deserialize(obj);
 
-                item.m_Label.text = m_Text.GetValueFromBag(bag, cc);
-                item.TargetId = m_Target.GetValueFromBag(bag, cc);
+                var e = (TabButton)obj;
+                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
+                    e.m_Label.text = text;
+                if (ShouldWriteAttributeValue(target_UxmlAttributeFlags))
+                    e.TargetId = target;
             }
         }
 

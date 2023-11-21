@@ -4,8 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor;
-using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -30,16 +29,22 @@ namespace Unity.UI.Builder
 
         static readonly string s_DefaultKeyword = StyleFieldConstants.KeywordInitial;
 
-        public new class UxmlTraits : BaseField<string>.UxmlTraits {
-            UxmlBoolAttributeDescription m_ShowOptions = new UxmlBoolAttributeDescription { name = "show-options", defaultValue = true };
+        [Serializable]
+        public new abstract class UxmlSerializedData : BaseField<string>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] bool showOptions;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showOptions_UxmlAttributeFlags;
+            #pragma warning restore 649
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            public override void Deserialize(object obj)
             {
-                base.Init(ve, bag, cc);
-                var field = (StyleField<T>)ve;
-                if (field != null)
+                base.Deserialize(obj);
+
+                if (ShouldWriteAttributeValue(showOptions_UxmlAttributeFlags))
                 {
-                    field.showOptions = m_ShowOptions.GetValueFromBag(bag, cc);
+                    var e = (StyleField<T>)obj;
+                    e.showOptions = showOptions;
                 }
             }
         }

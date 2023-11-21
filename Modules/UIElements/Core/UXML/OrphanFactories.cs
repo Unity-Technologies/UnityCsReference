@@ -20,6 +20,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// This factory does not generate VisualElements. UIElements uses it to generate schemas.
     /// </remarks>
+    [Obsolete("UxmlRootElementFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlRootElementFactory : UxmlFactory<VisualElement, UxmlRootElementTraits>
     {
         internal const string k_ElementName = "UXML";
@@ -61,6 +62,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Defines <see cref="UxmlTraits"/> for the UXML root element.
     /// </summary>
+    [Obsolete("UxmlRootElementTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlRootElementTraits : UxmlTraits
     {
         protected UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription
@@ -87,6 +89,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// This factory does not generate VisualElements. UIElements uses it to generate schemas.
     /// </remarks>
+    [Obsolete("UxmlStyleFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlStyleFactory : UxmlFactory<VisualElement, UxmlStyleTraits>
     {
         internal const string k_ElementName = "Style";
@@ -119,6 +122,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Defines <see cref="UxmlTraits"/> for the Style tag.
     /// </summary>
+    [Obsolete("UxmlStyleTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlStyleTraits : UxmlTraits
     {
         UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription { name = UxmlGenericAttributeNames.k_NameAttributeName };
@@ -138,6 +142,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// This factory does not generate VisualElements. UIElements uses it to generate schemas.
     /// </remarks>
+    [Obsolete("UxmlTemplateFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlTemplateFactory : UxmlFactory<VisualElement, UxmlTemplateTraits>
     {
         internal const string k_ElementName = "Template";
@@ -170,6 +175,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Defines <see cref="UxmlTraits"/> for the Template tag.
     /// </summary>
+    [Obsolete("UxmlTemplateTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlTemplateTraits : UxmlTraits
     {
         UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription { name = UxmlGenericAttributeNames.k_NameAttributeName, use = UxmlAttributeDescription.Use.Required };
@@ -189,6 +195,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// This factory does not generate VisualElements. UIElements uses it to generate schemas.
     /// </remarks>
+    [Obsolete("UxmlAttributeOverridesFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlAttributeOverridesFactory : UxmlFactory<VisualElement, UxmlAttributeOverridesTraits>
     {
         internal const string k_ElementName = "AttributeOverrides";
@@ -218,6 +225,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Defines <see cref="UxmlTraits"/> for the AttributeOverrides tag.
     /// </summary>
+    [Obsolete("UxmlAttributeOverridesTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlAttributeOverridesTraits : UxmlTraits
     {
         internal const string k_ElementNameAttributeName = "element-name";

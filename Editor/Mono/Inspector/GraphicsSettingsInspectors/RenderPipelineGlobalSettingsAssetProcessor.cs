@@ -4,6 +4,7 @@
 
 ﻿using System;
 using UnityEditor.Inspector.GraphicsSettingsInspectors;
+using UnityEditor.Rendering;
 
 namespace UnityEditor.Mono.Inspector.GraphicsSettingsInspectors
 {
@@ -11,16 +12,19 @@ namespace UnityEditor.Mono.Inspector.GraphicsSettingsInspectors
     {
         public static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions option)
         {
-            if (GraphicsSettingsInspector.s_Instance == null)
+            if (!EditorWindow.HasOpenInstances<ProjectSettingsWindow>())
                 return AssetDeleteResult.DidNotDelete;
 
-            var globalSettings = GraphicsSettingsInspector.s_Instance.globalSettings;
-            foreach (var globalSetting in globalSettings)
+            var settingsWindow = EditorWindow.GetWindow<ProjectSettingsWindow>(null, false);
+            if (settingsWindow.GetCurrentProvider() is not GraphicsSettingsProvider currentProvider)
+                return AssetDeleteResult.DidNotDelete;
+
+            foreach (var globalSetting in currentProvider.inspector.globalSettings)
             {
                 if (string.Compare(globalSetting.path, assetPath, StringComparison.InvariantCultureIgnoreCase) != 0)
                     continue;
 
-                GraphicsSettingsUtils.ReloadGraphicsSettingsEditor();
+                settingsWindow.m_Parent.Reload(settingsWindow);;
                 return AssetDeleteResult.DidNotDelete;
             }
 

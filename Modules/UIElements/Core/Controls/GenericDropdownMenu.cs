@@ -635,6 +635,7 @@ namespace UnityEngine.UIElements
         void OnKeyDown(KeyDownEvent evt)
         {
             onKey?.Invoke(evt.character, evt.keyCode, evt.modifiers);
+            evt.StopPropagation();
         }
 
         void OnFocusOut(FocusOutEvent evt)
@@ -678,7 +679,7 @@ namespace UnityEngine.UIElements
             {
                 m_Current.children[newIndex].element.pseudoStates |= PseudoStates.Hover;
                 var elementToSelect = m_Current.children[newIndex].element.parent;
-                
+
                 if (elementToSelect != null)
                 {
                     m_ListView.ScrollTo(elementToSelect);
@@ -944,7 +945,7 @@ namespace UnityEngine.UIElements
 
             if (isChecked)
                 item.pseudoStates |= PseudoStates.Checked;
-            
+
             var leftAppendix = children[0];
             leftAppendix.AddToClassList(appendixUssClassName);
 
@@ -1000,7 +1001,7 @@ namespace UnityEngine.UIElements
         {
             if (m_Current.children.Count == 0 && m_Current.headerActions.Count == 0)
                 return;
-            
+
             m_Title.text = m_Current.name;
             var items = m_Current.children;
 

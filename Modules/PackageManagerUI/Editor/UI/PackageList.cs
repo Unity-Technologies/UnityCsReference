@@ -11,24 +11,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageList : VisualElement
     {
-        protected new class UxmlFactory : UxmlFactory<PackageList, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="PackageList"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a PackageList element that you can
-        /// use in a UXML asset.
-        /// </remarks>
-        protected new class UxmlTraits : VisualElement.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                focusable.defaultValue = true;
-            }
+            public override object CreateInstance() => new PackageList();
         }
 
         private IResourceLoader m_ResourceLoader;

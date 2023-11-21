@@ -54,6 +54,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class is added to every <see cref="VisualElement"/> that is created from UXML.
         /// </remarks>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<ToggleButtonGroup, UxmlTraits> {}
 
         /// <summary>
@@ -62,6 +63,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class defines the properties of a ToggleButtonGroup element that you can use in a UXML asset.
         /// </remarks>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BaseField<ToggleButtonGroupState>.UxmlTraits
         {
             private UxmlBoolAttributeDescription m_IsMultipleSelection = new() { name = "is-multiple-selection" };

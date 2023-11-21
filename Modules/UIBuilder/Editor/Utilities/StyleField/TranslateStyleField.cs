@@ -2,13 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using JetBrains.Annotations;
-using UnityEngine.UIElements;
+using System;
 using UnityEditor;
-using UnityEngine;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
-
 
 namespace Unity.UI.Builder
 {
@@ -82,8 +81,17 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class TranslateStyleField : BaseField<BuilderTranslate>
     {
-        [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<TranslateStyleField, UxmlTraits> { }
+        public class BuilderTranslateConverter : UxmlAttributeConverter<BuilderTranslate>
+        {
+            public override BuilderTranslate FromString(string value) => throw new NotImplementedException();
+            public override string ToString(BuilderTranslate value) => throw new NotImplementedException();
+        }
+
+        [Serializable]
+        public new class UxmlSerializedData : BaseField<BuilderTranslate>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new TranslateStyleField();
+        }
 
         static readonly string s_FieldClassName = "unity-translate-style-field";
         static readonly string s_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/TranslateStyleField.uxml";

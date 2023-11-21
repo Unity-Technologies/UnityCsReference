@@ -153,11 +153,13 @@ namespace Unity.Profiling.Editor
         /// <summary>
         /// Instantiates a <see cref="BackgroundPattern"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<BackgroundPattern, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BackgroundPattern"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             UxmlFloatAttributeDescription m_Scale = new UxmlFloatAttributeDescription { name = "scale", defaultValue = 1f };

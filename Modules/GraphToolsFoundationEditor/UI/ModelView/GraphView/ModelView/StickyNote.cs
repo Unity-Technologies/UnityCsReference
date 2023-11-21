@@ -14,7 +14,11 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class StickyNote : GraphElement
     {
-        public new class UxmlFactory : UxmlFactory<StickyNote> {}
+        [Serializable]
+        public new class UxmlSerializedData : GraphElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new StickyNote();
+        }
 
         public static readonly Vector2 defaultSize = new Vector2(200, 160);
 

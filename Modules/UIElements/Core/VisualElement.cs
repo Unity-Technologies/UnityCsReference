@@ -273,11 +273,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="VisualElement"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public class UxmlFactory : UxmlFactory<VisualElement, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="VisualElement"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public class UxmlTraits : UIElements.UxmlTraits
         {
             protected UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription { name = UxmlGenericAttributeNames.k_NameAttributeName };
@@ -396,9 +398,6 @@ namespace UnityEngine.UIElements
         private Dictionary<PropertyName, object> m_PropertyBag;
         internal VisualElementFlags m_Flags;
 
-        internal Action editingStarted { get; set; }
-        internal Action editingEnded { get; set; }
-
         // Used for view data persistence (ie. scroll position or tree view expanded states)
         private string m_ViewDataKey;
         /// <summary>
@@ -490,8 +489,12 @@ namespace UnityEngine.UIElements
         }
 
         private bool m_DisablePlayModeTint = false;
+
+        /// <summary>
+        /// Play-mode tint is applied by default unless this is set to true. It's applied hierarchically to this <see cref="VisualElement"/> and to all its children that exist on an editor panel.
+        /// </summary>
         [CreateProperty]
-        internal bool disablePlayModeTint
+        public bool disablePlayModeTint
         {
             get
             {

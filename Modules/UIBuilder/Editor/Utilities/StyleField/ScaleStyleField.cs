@@ -2,14 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using JetBrains.Annotations;
 using System;
 using System.Globalization;
-using JetBrains.Annotations;
-using UnityEngine.UIElements;
 using UnityEditor;
-using UnityEngine;
-using UnityEngine.UIElements.StyleSheets;
 using UnityEditor.UIElements;
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -71,8 +70,17 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class ScaleStyleField : BaseField<BuilderScale>
     {
-        [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<ScaleStyleField, UxmlTraits> { }
+        public class BuilderScaleConverter : UxmlAttributeConverter<BuilderScale>
+        {
+            public override BuilderScale FromString(string value) => throw new NotImplementedException();
+            public override string ToString(BuilderScale value) => throw new NotImplementedException();
+        }
+
+        [Serializable]
+        public new class UxmlSerializedData : BaseField<BuilderScale>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ScaleStyleField();
+        }
 
         static readonly string s_FieldClassName = "unity-scale-style-field";
         static readonly string s_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/ScaleStyleField.uxml";

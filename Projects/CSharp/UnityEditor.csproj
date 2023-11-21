@@ -707,6 +707,9 @@
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfile.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfile.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileCLI.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfileCLI.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileContext.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfileContext.cs</Link>
     </Compile>
@@ -718,6 +721,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfilePlatformSettingsBase.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfilePlatformSettingsBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\SharedPlatformSettings.cs">
+      <Link>Editor\Mono\BuildProfile\SharedPlatformSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildTarget.cs">
       <Link>Editor\Mono\BuildTarget.cs</Link>
@@ -994,6 +1000,18 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\EditorUserBuildSettings.deprecated.cs">
       <Link>Editor\Mono\EditorUserBuildSettings.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorUserBuildSettingsEmbeddedCommon.bindings.cs">
+      <Link>Editor\Mono\EditorUserBuildSettingsEmbeddedCommon.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorUserBuildSettingsEmbeddedLinux.deprecated.cs">
+      <Link>Editor\Mono\EditorUserBuildSettingsEmbeddedLinux.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorUserBuildSettingsQNX.bindings.cs">
+      <Link>Editor\Mono\EditorUserBuildSettingsQNX.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorUserBuildSettingsQNX.deprecated.cs">
+      <Link>Editor\Mono\EditorUserBuildSettingsQNX.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\EditorUserBuildSettingsUtils.cs">
       <Link>Editor\Mono\EditorUserBuildSettingsUtils.cs</Link>
@@ -1724,6 +1742,9 @@
     <Compile Include="..\..\Editor\Mono\IUIPlatformProperties.cs">
       <Link>Editor\Mono\IUIPlatformProperties.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\IVRPlatformProperties.cs">
+      <Link>Editor\Mono\IVRPlatformProperties.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\IconSelector.cs">
       <Link>Editor\Mono\IconSelector.cs</Link>
     </Compile>
@@ -1765,6 +1786,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\ImportSettings\TextureImporterInspector.cs">
       <Link>Editor\Mono\ImportSettings\TextureImporterInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\InSceneAssetUtility.bindings.cs">
+      <Link>Editor\Mono\InSceneAssetUtility.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\InspectorUtility.cs">
       <Link>Editor\Mono\InspectorUtility.cs</Link>
@@ -2102,8 +2126,8 @@
     <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorTierSettings.cs">
       <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorTierSettings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsUtils.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsUtils.cs</Link>
+    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorUtility.cs">
+      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\RenderPipelineGlobalSettingsAssetProcessor.cs">
       <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\RenderPipelineGlobalSettingsAssetProcessor.cs</Link>

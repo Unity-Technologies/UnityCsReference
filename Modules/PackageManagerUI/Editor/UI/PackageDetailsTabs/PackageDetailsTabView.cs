@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UIElements;
@@ -10,7 +11,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDetailsTabView : BaseTabView<PackageDetailsTabElement>
     {
-        internal new class UxmlFactory : UxmlFactory<PackageDetailsTabView> { }
+        [Serializable]
+        public new class UxmlSerializedData : BaseTabView<PackageDetailsTabElement>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new PackageDetailsTabView();
+        }
 
         private Label m_EntitlementsErrorLabel;
 

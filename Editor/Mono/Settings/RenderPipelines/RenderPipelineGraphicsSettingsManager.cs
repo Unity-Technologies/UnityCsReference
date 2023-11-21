@@ -20,7 +20,7 @@ namespace UnityEditor.Rendering.Settings
         public struct RenderPipelineGraphicsSettingsInfo
         {
             public Type type;
-            public bool isDeprecated;
+            public bool isSupported;
         }
 
         internal static void PopulateRenderPipelineGraphicsSettings(RenderPipelineGlobalSettings settings)
@@ -28,16 +28,26 @@ namespace UnityEditor.Rendering.Settings
             if (settings == null)
                 return;
 
-            if (!GraphicsSettingsUtils.ExtractSupportedOnRenderPipelineAttribute(settings.GetType(), out var globalSettingsSupportedOn, out var message))
+            if (!GraphicsSettingsInspectorUtility.TryExtractSupportedOnRenderPipelineAttribute(settings.GetType(), out var globalSettingsSupportedOn, out var message))
                 throw new InvalidOperationException(message);
 
             var globalSettingsRenderPipelineAssetType = globalSettingsSupportedOn.renderPipelineTypes[0];
 
             bool assetModified = false;
 
-            foreach (var info in FetchRenderPipelineGraphicsSettingInfos(globalSettingsRenderPipelineAssetType))
+            List<IRenderPipelineGraphicsSettings> createdSettingsObjects = new();
+
+            foreach (var info in FetchRenderPipelineGraphicsSettingInfos(globalSettingsRenderPipelineAssetType, true))
             {
-                assetModified |= UpdateRenderPipelineGlobalSettings(info, settings);
+                UpdateRenderPipelineGlobalSettings(info, settings, out var modified, out var createdSetting);
+                assetModified |= modified;
+                if (createdSetting != null)
+                    createdSettingsObjects.Add(createdSetting);
+            }
+
+            foreach (var created in createdSettingsObjects)
+            {
+                created.Reset();
             }
 
             if (assetModified)
@@ -47,60 +57,49 @@ namespace UnityEditor.Rendering.Settings
             }
         }
 
-        public static IEnumerable<RenderPipelineGraphicsSettingsInfo> FetchRenderPipelineGraphicsSettingInfos(Type globalSettingsRenderPipelineAssetType)
+        internal static IEnumerable<RenderPipelineGraphicsSettingsInfo> FetchRenderPipelineGraphicsSettingInfos(Type globalSettingsRenderPipelineAssetType, bool includeUnsupported = false)
         {
-            var graphicsSettingsTypes = TypeCache.GetTypesDerivedFrom(typeof(IRenderPipelineGraphicsSettings));
-
-            foreach (var renderPipelineGraphicsSettingsType in graphicsSettingsTypes)
+            foreach (var renderPipelineGraphicsSettingsType in TypeCache.GetTypesDerivedFrom(typeof(IRenderPipelineGraphicsSettings)))
             {
-                if (renderPipelineGraphicsSettingsType.IsAbstract || renderPipelineGraphicsSettingsType.IsGenericType || renderPipelineGraphicsSettingsType.IsInterface)
+                if (!IsSettingsValid(renderPipelineGraphicsSettingsType))
                     continue;
 
-                if (!SupportedOnRenderPipelineAttribute.IsTypeSupportedOnRenderPipeline(renderPipelineGraphicsSettingsType, globalSettingsRenderPipelineAssetType))
+                // The Setting has been completely deprecated or not supported on render pipeline anymore
+                if (!IsSettingsSupported(renderPipelineGraphicsSettingsType, globalSettingsRenderPipelineAssetType, includeUnsupported, out var isSupported))
                     continue;
-
-                if (renderPipelineGraphicsSettingsType.GetCustomAttribute<SerializableAttribute>() == null)
-                {
-                    Debug.LogWarning($"{nameof(SerializableAttribute)} must be added to {renderPipelineGraphicsSettingsType}, the setting will be skipped");
-                    continue;
-                }
-
-                if (renderPipelineGraphicsSettingsType.GetCustomAttribute<SupportedOnRenderPipelineAttribute>() == null)
-                {
-                    Debug.LogWarning($"{nameof(SupportedOnRenderPipelineAttribute)} must be added to {renderPipelineGraphicsSettingsType}, the setting will be skipped");
-                    continue;
-                }
 
                 yield return new RenderPipelineGraphicsSettingsInfo()
                 {
                     type = renderPipelineGraphicsSettingsType,
-                    isDeprecated = renderPipelineGraphicsSettingsType.GetCustomAttribute<ObsoleteAttribute>()?.IsError ?? false
+                    isSupported = isSupported
                 };
             }
         }
 
-        static bool UpdateRenderPipelineGlobalSettings(RenderPipelineGraphicsSettingsInfo renderPipelineGraphicsSettingsType, RenderPipelineGlobalSettings asset)
+        static void UpdateRenderPipelineGlobalSettings(
+            RenderPipelineGraphicsSettingsInfo renderPipelineGraphicsSettingsType,
+            RenderPipelineGlobalSettings asset,
+            out bool assetModified,
+            out IRenderPipelineGraphicsSettings createdSetting)
         {
-            bool assetModified = false;
+            assetModified = false;
+            createdSetting = null;
 
-            IRenderPipelineGraphicsSettings renderPipelineGraphicsSettings;
-
-            bool hasSettings = asset.TryGet(renderPipelineGraphicsSettingsType.type, out renderPipelineGraphicsSettings);
-
-            if (renderPipelineGraphicsSettingsType.isDeprecated)
+            var hasSettings = asset.TryGet(renderPipelineGraphicsSettingsType.type, out var renderPipelineGraphicsSettings);
+            if (!renderPipelineGraphicsSettingsType.isSupported)
             {
-                if (hasSettings)
-                {
-                    asset.Remove(renderPipelineGraphicsSettings);
-                    assetModified = true;
-                }
+                if (!hasSettings)
+                    return;
 
-                return assetModified;
+                asset.Remove(renderPipelineGraphicsSettings);
+                assetModified = true;
+                return;
             }
 
             if (!hasSettings && TryCreateInstance(renderPipelineGraphicsSettingsType.type, true, out renderPipelineGraphicsSettings))
             {
                 assetModified = true;
+                createdSetting = renderPipelineGraphicsSettings;
                 asset.Add(renderPipelineGraphicsSettings);
             }
 
@@ -109,8 +108,6 @@ namespace UnityEditor.Rendering.Settings
                 var reloadingStatus = RenderPipelineResourcesEditorUtils.TryReloadContainedNullFields(resource);
                 assetModified |= reloadingStatus == RenderPipelineResourcesEditorUtils.ResultStatus.ResourceReloaded;
             }
-
-            return assetModified;
         }
 
         static bool TryCreateInstance<T>(Type type, bool nonPublic, out T instance)
@@ -129,6 +126,32 @@ namespace UnityEditor.Rendering.Settings
             return false;
         }
 
+        static bool IsSettingsSupported(Type renderPipelineGraphicsSettingsType, Type globalSettingsRenderPipelineAssetType, bool includeUnsupported, out bool isSupported)
+        {
+            isSupported = !(renderPipelineGraphicsSettingsType.GetCustomAttribute<ObsoleteAttribute>()?.IsError ?? false);
+            isSupported &= SupportedOnRenderPipelineAttribute.IsTypeSupportedOnRenderPipeline(renderPipelineGraphicsSettingsType, globalSettingsRenderPipelineAssetType);
+            return includeUnsupported || isSupported;
+        }
+
+        static bool IsSettingsValid(Type renderPipelineGraphicsSettingsType)
+        {
+            if (renderPipelineGraphicsSettingsType.IsAbstract || renderPipelineGraphicsSettingsType.IsGenericType || renderPipelineGraphicsSettingsType.IsInterface)
+                return false;
+
+            if (renderPipelineGraphicsSettingsType.GetCustomAttribute<SerializableAttribute>() == null)
+            {
+                Debug.LogWarning($"{nameof(SerializableAttribute)} must be added to {renderPipelineGraphicsSettingsType}, the setting will be skipped");
+                return false;
+            }
+
+            if (renderPipelineGraphicsSettingsType.GetCustomAttribute<SupportedOnRenderPipelineAttribute>() == null)
+            {
+                Debug.LogWarning($"{nameof(SupportedOnRenderPipelineAttribute)} must be added to {renderPipelineGraphicsSettingsType}, the setting will be skipped");
+                return false;
+            }
+
+            return true;
+        }
         internal static void ResetRenderPipelineGraphicsSettings(Type graphicsSettingsType, Type renderPipelineType)
         {
             if (graphicsSettingsType == null || renderPipelineType == null)
@@ -141,6 +164,8 @@ namespace UnityEditor.Rendering.Settings
             if (!TryCreateInstance(graphicsSettingsType, true, out srpGraphicSetting))
                 return;
 
+            srpGraphicSetting.Reset();
+
             var serializedGlobalSettings = new SerializedObject(renderPipelineGlobalSettings);
             var settingsIterator = serializedGlobalSettings.FindProperty(serializationPathToCollection);
             settingsIterator.NextVisible(true); //enter the collection
@@ -149,7 +174,7 @@ namespace UnityEditor.Rendering.Settings
 
             if (srpGraphicSetting is IRenderPipelineResources resource)
                 RenderPipelineResourcesEditorUtils.TryReloadContainedNullFields(resource);
-            
+
             using (var notifier = new Notifier.Scope(settingsIterator))
             {
                 settingsIterator.boxedValue = srpGraphicSetting;

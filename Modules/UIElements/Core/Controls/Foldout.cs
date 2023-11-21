@@ -51,6 +51,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class is added to every <see cref="VisualElement"/> created from UXML.
         /// </remarks>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Foldout, UxmlTraits> {}
 
         /// <summary>
@@ -59,6 +60,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class defines the Foldout element properties that you can use in a UXML asset.
         /// </remarks>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };

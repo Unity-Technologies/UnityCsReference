@@ -9,6 +9,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEditor.Build;
+using UnityEditor.Build.Profile;
 using UnityEngine;
 
 namespace UnityEditor
@@ -31,6 +32,7 @@ namespace UnityEditor
             NoOverride = 0,
             ForceUncompressed = 1,
             ForceFastCompressor = 2,
+            ForceNoCrunchCompression = 3,
         }
 
         [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
@@ -347,72 +349,11 @@ namespace UnityEditor
         Lz4 = 1,
     }
 
-
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
-    public enum QNXOsVersion
-    {
-        [System.Obsolete("Neutrino RTOS 7.0 has been removed in 2023.2")]
-        Neutrino70 = 0,
-
-        [UnityEngine.InspectorName("Neutrino RTOS 7.1")]
-        Neutrino71 = 1,
-    }
-
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
-    public enum EmbeddedArchitecture
-    {
-        [UnityEngine.InspectorName("Arm64")]
-        Arm64 = 0,
-
-        [System.Obsolete("Arm32 has been removed in 2023.2")]
-        Arm32 = 1,
-
-        [UnityEngine.InspectorName("X64")]
-        X64 = 2,
-
-        [System.Obsolete("X86 has been removed in 2023.2")]
-        X86 = 3,
-    }
-
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
-    public enum QNXArchitecture
-    {
-        [UnityEngine.InspectorName("Arm64")]
-        Arm64 = EmbeddedArchitecture.Arm64,
-
-        [System.Obsolete("Arm32 has been removed in 2023.2")]
-        Arm32 = EmbeddedArchitecture.Arm32,
-
-        [UnityEngine.InspectorName("X64")]
-        X64 = EmbeddedArchitecture.X64,
-
-        [System.Obsolete("X86 has been removed in 2023.2")]
-        X86 = EmbeddedArchitecture.X86,
-    }
-
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
-    public enum EmbeddedLinuxArchitecture
-    {
-        [UnityEngine.InspectorName("Arm64")]
-        Arm64 = EmbeddedArchitecture.Arm64,
-
-        [System.Obsolete("Arm32 has been removed in 2023.2")]
-        Arm32 = EmbeddedArchitecture.Arm32,
-
-        [UnityEngine.InspectorName("X64")]
-        X64 = EmbeddedArchitecture.X64,
-
-        [System.Obsolete("X86 has been removed in 2023.2")]
-        X86 = EmbeddedArchitecture.X86,
-    }
-
     [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     [StaticAccessor("GetEditorUserBuildSettings()", StaticAccessorType.Dot)]
     public partial class EditorUserBuildSettings : Object
     {
         internal const string kSettingArchitecture = "Architecture";
-        private const string kSettingWaitForManagedDebugger = "WaitForManagedDebugger";
-        private const string kSettingManagedDebuggerFixedPort = "ManagedDebuggerFixedPort";
         private EditorUserBuildSettings() {}
 
         internal static extern AppleBuildAndRunType appleBuildAndRunType { get; set; }
@@ -429,40 +370,6 @@ namespace UnityEditor
 
         [NativeMethod("GetActiveSubTargetFor")]
         internal static extern int GetActiveSubtargetFor(BuildTarget target);
-
-        // QNX OS Version
-        public static extern QNXOsVersion selectedQnxOsVersion
-        {
-            [NativeMethod("GetSelectedQNXOsVersion")]
-            get;
-            [NativeMethod("SetSelectedQNXOsVersion")]
-            set;
-        }
-
-        // QNX Architecture
-        public static extern QNXArchitecture selectedQnxArchitecture
-        {
-            [NativeMethod("GetSelectedQNXArchitecture")]
-            get;
-            [NativeMethod("SetSelectedQNXArchitecture")]
-            set;
-        }
-
-        // Embedded Linux Architecture
-        public static extern EmbeddedLinuxArchitecture selectedEmbeddedLinuxArchitecture
-        {
-            [NativeMethod("GetSelectedEmbeddedLinuxArchitecture")]
-            get;
-            [NativeMethod("SetSelectedEmbeddedLinuxArchitecture")]
-            set;
-        }
-
-        // Embedded Linux && QNX remote device information
-        public static extern bool remoteDeviceInfo { get; set; }
-        public static extern string remoteDeviceAddress { get; set; }
-        public static extern string remoteDeviceUsername { get; set; }
-        public static extern string remoteDeviceExports { get; set; }
-        public static extern string pathOnRemoteDevice { get; set; }
 
         public static BuildTarget selectedStandaloneTarget
         {
@@ -777,7 +684,29 @@ namespace UnityEditor
         }
 
         // WDP password is not to be saved with other settings and only stored in memory until Editor is closed
-        public static string windowsDevicePortalPassword { get; set; }
+        public static string windowsDevicePortalPassword
+        {
+            get
+            {
+                var profile = BuildProfileContext.GetActiveOrClassicBuildProfile(BuildTarget.NoTarget, StandaloneBuildSubtarget.Default, SharedPlatformSettings.k_SettingWindowsDevicePortalPassword);
+                if (profile != null)
+                {
+                    var settings = profile.platformBuildProfile;
+                    return settings.GetSharedSetting(SharedPlatformSettings.k_SettingWindowsDevicePortalPassword);
+                }
+                return null;
+            }
+
+            set
+            {
+                var profile = BuildProfileContext.GetClassicProfileAndResetActive(BuildTarget.NoTarget, StandaloneBuildSubtarget.Default, SharedPlatformSettings.k_SettingWindowsDevicePortalPassword);
+                if (profile != null)
+                {
+                    var sharedPlatformSettings = profile.platformBuildProfile as SharedPlatformSettings;
+                    sharedPlatformSettings.windowsDevicePortalPassword = value;
+                }
+            }
+        }
 
         // *undocumented*
         public static extern WSABuildAndRunDeployTarget wsaBuildAndRunDeployTarget
@@ -806,14 +735,14 @@ namespace UnityEditor
         internal static extern BuildTargetGroup activeBuildTargetGroup { get; }
 
         [NativeMethod("SwitchActiveBuildTargetSync")]
-        internal static extern bool SwitchActiveBuildTargetAndSubtarget(BuildTargetGroup targetGroup, BuildTarget target, int subtarget);
+        internal static extern bool SwitchActiveBuildTargetAndSubtarget(BuildTarget target, int subtarget);
         public static bool SwitchActiveBuildTarget(BuildTargetGroup targetGroup, BuildTarget target)
-            => SwitchActiveBuildTargetAndSubtarget(targetGroup, target, EditorUserBuildSettings.GetActiveSubtargetFor(target));
+            => SwitchActiveBuildTargetAndSubtarget(target, EditorUserBuildSettings.GetActiveSubtargetFor(target));
 
         [NativeMethod("SwitchActiveBuildTargetAsync")]
-        internal static extern bool SwitchActiveBuildTargetAndSubtargetAsync(BuildTargetGroup targetGroup, BuildTarget target, int subtarget);
+        internal static extern bool SwitchActiveBuildTargetAndSubtargetAsync(BuildTarget target, int subtarget);
         public static bool SwitchActiveBuildTargetAsync(BuildTargetGroup targetGroup, BuildTarget target)
-            => SwitchActiveBuildTargetAndSubtargetAsync(targetGroup, target, EditorUserBuildSettings.GetActiveSubtargetFor(target));
+            => SwitchActiveBuildTargetAndSubtargetAsync(target, EditorUserBuildSettings.GetActiveSubtargetFor(target));
 
         public static bool SwitchActiveBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget target) =>
             BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget).SetActive(target);
@@ -822,9 +751,9 @@ namespace UnityEditor
         // validating if support for it is installed. However it does not do things like script recompile
         // or domain reload -- generally only useful for asset import testing.
         [NativeMethod("SwitchActiveBuildTargetSyncNoCheck")]
-        internal static extern bool SwitchActiveBuildTargetAndSubtargetNoCheck(BuildTargetGroup targetGroup, BuildTarget target, int subtarget);
-        internal static bool SwitchActiveBuildTargetNoCheck(BuildTargetGroup targetGroup, BuildTarget target)
-            => SwitchActiveBuildTargetAndSubtargetNoCheck(targetGroup, target, EditorUserBuildSettings.GetActiveSubtargetFor(target));
+        internal static extern bool SwitchActiveBuildTargetAndSubtargetNoCheck(BuildTarget target, int subtarget);
+        internal static bool SwitchActiveBuildTargetNoCheck(BuildTarget target)
+            => SwitchActiveBuildTargetAndSubtargetNoCheck(target, EditorUserBuildSettings.GetActiveSubtargetFor(target));
 
         // DEFINE directives for the compiler.
         public static extern string[] activeScriptCompilationDefines
@@ -1092,12 +1021,12 @@ namespace UnityEditor
         {
             get
             {
-                return GetPlatformSettings("Editor", kSettingWaitForManagedDebugger) == "true";
+                return GetPlatformSettings("Editor", BuildProfilePlatformSettingsBase.k_SettingWaitForManagedDebugger) == "true";
             }
 
             set
             {
-                SetPlatformSettings("Editor", kSettingWaitForManagedDebugger, value.ToString().ToLower());
+                SetPlatformSettings("Editor", BuildProfilePlatformSettingsBase.k_SettingWaitForManagedDebugger, value.ToString().ToLower());
             }
         }
 
@@ -1105,7 +1034,7 @@ namespace UnityEditor
         {
             get
             {
-                if (Int32.TryParse(GetPlatformSettings("Editor", kSettingManagedDebuggerFixedPort), out int value)) {
+                if (Int32.TryParse(GetPlatformSettings("Editor", BuildProfilePlatformSettingsBase.k_SettingManagedDebuggerFixedPort), out int value)) {
                     if (0 < value && value <= 65535)
                     {
                         return value;
@@ -1116,7 +1045,7 @@ namespace UnityEditor
 
             set
             {
-                SetPlatformSettings("Editor", kSettingManagedDebuggerFixedPort, value.ToString().ToLower());
+                SetPlatformSettings("Editor", BuildProfilePlatformSettingsBase.k_SettingManagedDebuggerFixedPort, value.ToString().ToLower());
             }
         }
 

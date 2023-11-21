@@ -4,17 +4,17 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
     internal class FoldoutNumberField : FoldoutField
     {
-        public new class UxmlFactory : UxmlFactory<FoldoutNumberField, UxmlTraits> {}
-
-        public new class UxmlTraits : FoldoutField.UxmlTraits {}
+        [Serializable]
+        public new class UxmlSerializedData : FoldoutField.UxmlSerializedData
+        {
+            public override object CreateInstance() => new FoldoutNumberField();
+        }
 
         TextField m_TextField;
         IntegerField m_DraggerIntegerField;

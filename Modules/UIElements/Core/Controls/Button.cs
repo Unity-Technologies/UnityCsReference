@@ -58,6 +58,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class is added to every <see cref="VisualElement"/> that is created from UXML.
         /// </remarks>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Button, UxmlTraits> {}
 
         /// <summary>
@@ -67,6 +68,7 @@ namespace UnityEngine.UIElements
         /// This class defines the properties of a Button element that you can
         /// use in a UXML asset.
         /// </remarks>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : TextElement.UxmlTraits
         {
             private readonly UxmlImageAttributeDescription m_IconImage = new() { name = "icon-image" };

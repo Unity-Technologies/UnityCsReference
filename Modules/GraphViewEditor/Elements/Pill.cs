@@ -2,16 +2,44 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Internal;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Experimental.GraphView
 {
     public class Pill : VisualElement
     {
+        [ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] bool highlighted;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highlighted_UxmlAttributeFlags;
+            [SerializeField] string text;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new Pill();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (Pill)obj;
+                if (ShouldWriteAttributeValue(highlighted_UxmlAttributeFlags))
+                    e.highlighted = highlighted;
+                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
+                    e.text = text;
+            }
+        }
+
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Pill, UxmlTraits> {}
 
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             UxmlBoolAttributeDescription m_Highlighted = new UxmlBoolAttributeDescription { name = "highlighted" };

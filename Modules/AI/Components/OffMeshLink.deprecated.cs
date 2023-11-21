@@ -23,6 +23,7 @@ namespace UnityEngine.AI
     // Link allowing movement outside the planar navigation mesh.
     [MovedFrom("UnityEngine")]
     [Obsolete("The OffMeshLink component is no longer supported and will be removed. Use NavMeshLink instead.")]
+    [HelpURL("https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/OffMeshLink.html")]
     public sealed class OffMeshLink : Behaviour
     {
         // Is link active.

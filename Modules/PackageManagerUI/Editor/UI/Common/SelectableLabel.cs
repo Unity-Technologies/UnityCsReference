@@ -2,38 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class SelectableLabel : Label
     {
-        protected new class UxmlFactory : UxmlFactory<SelectableLabel, UxmlTraits>
+        [Serializable]
+        internal new class UxmlSerializedData : Label.UxmlSerializedData
         {
-            public override VisualElement Create(IUxmlAttributes bag, CreationContext cc)
-            {
-                var result = base.Create(bag, cc) as SelectableLabel;
-                result.SetAsSelectableAndElided();
-                return result;
-            }
-        }
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="SelectableLabel"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a SelectableLabel element that you can
-        /// use in a UXML asset.
-        /// </remarks>
-        protected new class UxmlTraits : Label.UxmlTraits
-        {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                focusable.defaultValue = true;
-            }
+            public override object CreateInstance() => new SelectableLabel();
         }
 
         public SelectableLabel()

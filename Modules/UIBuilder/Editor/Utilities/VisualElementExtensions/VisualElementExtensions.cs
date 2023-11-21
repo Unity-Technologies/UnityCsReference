@@ -81,6 +81,7 @@ namespace Unity.UI.Builder
             if (!VisualElementFactoryRegistry.TryGetValue(uxmlQualifiedName, out var factoryList))
                 return attributeList;
 
+            #pragma warning disable CS0618 // Type or member is obsolete
             foreach (IUxmlFactory f in factoryList)
             {
                 // For user created types, they may return null for uxmlAttributeDescription, so we need to check in order not to crash.
@@ -97,6 +98,7 @@ namespace Unity.UI.Builder
                     }
                 }
             }
+            #pragma warning restore CS0618 // Type or member is obsolete
 
             return attributeList;
         }
@@ -111,11 +113,13 @@ namespace Unity.UI.Builder
             var factoryType = asm.GetType(factoryTypeName);
             if (factoryType != null)
             {
+                #pragma warning disable CS0618 // Type or member is obsolete
                 var factoryTypeInstance = (IUxmlFactory)Activator.CreateInstance(factoryType);
                 if (factoryTypeInstance != null)
                 {
                     uxmlQualifiedName = factoryTypeInstance.uxmlQualifiedName;
                 }
+                #pragma warning restore CS0618 // Type or member is obsolete
             }
 
             return uxmlQualifiedName;

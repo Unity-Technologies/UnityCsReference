@@ -4,15 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using UnityEditor.Build;
-using UnityEditor.Build.Reporting;
 using UnityEditor.Compilation;
-using UnityEditor.Scripting.ScriptCompilation;
-using UnityEditor.UnityLinker;
-using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
@@ -41,6 +33,7 @@ namespace UnityEditor.UIElements
 
             asset.ExtractUsedUxmlQualifiedNames(s_UsedTypesInsideAsset);
 
+            #pragma warning disable CS0618 // Type or member is obsolete
             foreach (var qualifiedName in s_UsedTypesInsideAsset)
             {
                 if (VisualElementFactoryRegistry.TryGetValue(qualifiedName, out List<IUxmlFactory> factoryList))
@@ -56,6 +49,7 @@ namespace UnityEditor.UIElements
                     }
                 }
             }
+            #pragma warning restore CS0618 // Type or member is obsolete
 
             return s_FactoryTypesUsedInAsset;
         }

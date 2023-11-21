@@ -2,16 +2,20 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using JetBrains.Annotations;
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace Unity.UI.Builder
 {
     class CheckerboardBackground : VisualElement
     {
-        [UsedImplicitly]
-        protected new class UxmlFactory : UxmlFactory<CheckerboardBackground, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new CheckerboardBackground();
+        }
 
         static readonly CustomStyleProperty<int> k_CellSizeProperty = new CustomStyleProperty<int>("--cell-size");
         static readonly CustomStyleProperty<Color> k_OddCellColorProperty = new CustomStyleProperty<Color>("--odd-cell-color");
@@ -30,24 +34,6 @@ namespace Unity.UI.Builder
 
         // test access
         internal Texture2D texture => m_Texture;
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="CheckerboardBackground"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a CheckerboardBackground element that you can
-        /// use in a UXML asset.
-        /// </remarks>
-        protected new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                m_PickingMode.defaultValue = PickingMode.Ignore;
-            }
-        }
 
         public CheckerboardBackground()
         {

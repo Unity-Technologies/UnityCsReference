@@ -8,7 +8,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Makes a field for editing an <see cref="Hash128"/>.
+    /// Makes a field for editing an <see cref="Hash128"/>. For more information, refer to [[wiki:UIE-uxml-element-Hash128Field|UXML element Hash128Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class Hash128Field : TextInputBaseField<Hash128>
@@ -26,11 +26,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="Hash128Field"/> using the data read from a UXML file.
         /// </summary>
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlFactory : UxmlFactory<Hash128Field, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="Hash128Field"/>.
         /// </summary>
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
         public new class UxmlTraits : TextValueFieldTraits<Hash128, UxmlHash128AttributeDescription> {}
 
         /// <summary>

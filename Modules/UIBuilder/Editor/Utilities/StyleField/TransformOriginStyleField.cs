@@ -82,8 +82,14 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class TransformOriginStyleField : BaseField<BuilderTransformOrigin>
     {
-        [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<TransformOriginStyleField, UxmlTraits> { }
+        // Intentionally inheriting from BindableElement instead of BaseField<BuilderTransformOrigin> to avoid
+        // having to implement a converter for BuilderTransformOrigin.
+        // This type is not used in UXML so the converter is not needed.
+        [Serializable]
+        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new TransformOriginStyleField();
+        }
 
         static readonly string s_FieldClassName = "unity-transform-origin-style-field";
         static readonly string s_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/TransformOriginStyleField.uxml";

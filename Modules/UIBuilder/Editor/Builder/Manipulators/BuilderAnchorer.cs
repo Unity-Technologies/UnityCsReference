@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine.UIElements;
@@ -15,7 +16,11 @@ namespace Unity.UI.Builder
 
         Dictionary<string, VisualElement> m_HandleElements;
 
-        public new class UxmlFactory : UxmlFactory<BuilderAnchorer, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : BuilderManipulator.UxmlSerializedData
+        {
+            public override object CreateInstance() => new BuilderAnchorer();
+        }
 
         public BuilderAnchorer()
         {

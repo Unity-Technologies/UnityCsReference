@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -10,24 +11,10 @@ namespace Unity.UI.Builder
     {
         BaseOverlayPainter m_Painter;
 
-        protected new class UxmlFactory : UxmlFactory<OverlayPainterHelperElement, UxmlTraits> { }
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="OverlayPainterHelperElement"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a OverlayPainterHelperElement element that you can
-        /// use in a UXML asset.
-        /// </remarks>
-        protected new class UxmlTraits : ImmediateModeElement.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : ImmediateModeElement.UxmlSerializedData
         {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                m_PickingMode.defaultValue = PickingMode.Ignore;
-            }
+            public override object CreateInstance() => new OverlayPainterHelperElement();
         }
 
         public BaseOverlayPainter painter { set { m_Painter = value; } }

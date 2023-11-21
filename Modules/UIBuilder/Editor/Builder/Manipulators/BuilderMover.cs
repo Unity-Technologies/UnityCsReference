@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -16,7 +17,11 @@ namespace Unity.UI.Builder
 
         public BuilderParentTracker parentTracker { get; set; }
 
-        public new class UxmlFactory : UxmlFactory<BuilderMover, UxmlTraits> {}
+        [Serializable]
+        public new class UxmlSerializedData : BuilderTransformer.UxmlSerializedData
+        {
+            public override object CreateInstance() => new BuilderMover();
+        }
 
         public BuilderMover()
         {

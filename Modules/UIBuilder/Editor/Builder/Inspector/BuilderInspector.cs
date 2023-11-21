@@ -1389,6 +1389,7 @@ namespace Unity.UI.Builder
                 or BuilderSelectionType.ElementInTemplateInstance or BuilderSelectionType.ElementInControlInstance;
         }
 
+        #pragma warning disable CS0618 // Type or member is obsolete
         private UnityEngine.UIElements.UxmlTraits GetCurrentElementTraits()
         {
             var currentVisualElementTypeName = currentVisualElement.GetType().ToString();
@@ -1408,6 +1409,7 @@ namespace Unity.UI.Builder
             var traits = factoryList[0].GetTraits() as UxmlTraits;
             return traits;
         }
+        #pragma warning restore CS0618 // Type or member is obsolete
 
         internal void CallInitOnElement()
         {

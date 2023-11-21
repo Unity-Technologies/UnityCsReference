@@ -21,6 +21,7 @@ namespace UnityEditor.UIElements
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class UxmlNamespacePrefixAttribute : Attribute
     {
+        #pragma warning disable CS0618 // Type or member is obsolete
         /// <summary>
         /// The namespace name.
         /// </summary>
@@ -1079,5 +1080,6 @@ namespace UnityEditor.UIElements
             schemaInfo.schema.Items.Add(simpleType);
             return xqn;
         }
+        #pragma warning restore CS0618 // Type or member is obsolete
     }
 }

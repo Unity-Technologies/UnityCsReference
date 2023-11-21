@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements.StyleSheets;
-
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -72,8 +72,17 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class RotateStyleField : BaseField<BuilderRotate>
     {
-        [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<RotateStyleField, UxmlTraits> { }
+        public class BuilderRotateConverter : UxmlAttributeConverter<BuilderRotate>
+        {
+            public override BuilderRotate FromString(string value) => throw new NotImplementedException();
+            public override string ToString(BuilderRotate value) => throw new NotImplementedException();
+        }
+
+        [Serializable]
+        public new class UxmlSerializedData : BaseField<BuilderRotate>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new RotateStyleField();
+        }
 
         static readonly string s_FieldClassName = "unity-rotate-style-field";
         static readonly string s_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/RotateStyleField.uxml";

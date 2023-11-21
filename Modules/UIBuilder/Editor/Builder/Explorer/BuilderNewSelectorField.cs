@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -27,9 +25,11 @@ namespace Unity.UI.Builder
         static readonly string s_OptionsPopupContainerName = "unity-options-popup-container";
         internal static readonly string s_TextFieldUssClassName = "unity-new-selector-field__text-field";
 
-        public new class UxmlTraits : VisualElement.UxmlTraits { }
-
-        public new class UxmlFactory : UxmlFactory<BuilderNewSelectorField, UxmlTraits> { }
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new BuilderNewSelectorField();
+        }
 
         TextField m_TextField;
         ToolbarMenu m_OptionsPopup;
