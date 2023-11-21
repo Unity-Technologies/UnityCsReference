@@ -41,6 +41,8 @@ namespace UnityEditor.Profiling
 
         public override void OnGUI(string searchContext)
         {
+            using var _ = new SettingsWindow.GUIScope();
+
             EditorGUIUtility.labelWidth = 300;
             ProfilerUserSettings.frameCount = EditorGUILayout.IntSlider(Content.k_FrameCountText, ProfilerUserSettings.frameCount, ProfilerUserSettings.kMinFrameCount, ProfilerUserSettings.kMaxFrameCount);
             if (ProfilerUserSettings.frameCount > 600)

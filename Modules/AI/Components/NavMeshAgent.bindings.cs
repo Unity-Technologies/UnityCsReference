@@ -32,6 +32,7 @@ namespace UnityEngine.AI
     [MovedFrom("UnityEngine")]
     [NativeHeader("Modules/AI/Components/NavMeshAgent.bindings.h")]
     [NativeHeader("Modules/AI/NavMesh/NavMesh.bindings.h")]
+    [HelpURL("https://docs.unity3d.com/Packages/com.unity.ai.navigation@1.1/manual/NavMeshAgent.html")]
     public sealed class NavMeshAgent : Behaviour
     {
         // Sets or updates the destination. This triggers calculation for a new path.

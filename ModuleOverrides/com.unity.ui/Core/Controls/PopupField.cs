@@ -189,6 +189,7 @@ namespace UnityEngine.UIElements
 
         private void ChangeValueFromMenu(T menuItem)
         {
+			showMixedValue = false;
             value = menuItem;
         }
     }

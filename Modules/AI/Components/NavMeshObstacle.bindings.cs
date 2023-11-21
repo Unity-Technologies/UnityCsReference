@@ -20,6 +20,7 @@ namespace UnityEngine.AI
     // Navigation mesh obstacle.
     [MovedFrom("UnityEngine")]
     [NativeHeader("Modules/AI/Components/NavMeshObstacle.bindings.h")]
+    [HelpURL("https://docs.unity3d.com/Packages/com.unity.ai.navigation@1.1/manual/NavMeshObstacle.html")]
     public sealed class NavMeshObstacle : Behaviour
     {
         // Obstacle height.
