@@ -813,10 +813,18 @@ namespace UnityEngine.UIElements
 
         internal override void RegisterEditingCallbacks()
         {
-            labelElement.RegisterCallback<PointerDownEvent>(_ => editingStarted?.Invoke(), TrickleDown.TrickleDown);
-            dragContainer.RegisterCallback<PointerDownEvent>(_ => editingStarted?.Invoke(), TrickleDown.TrickleDown);
+            labelElement.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+            dragContainer.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
 
-            dragContainer.RegisterCallback<PointerUpEvent>(_ => editingEnded?.Invoke());
+            dragContainer.RegisterCallback<PointerUpEvent>(EndEditing);
+        }
+
+        internal override void UnregisterEditingCallbacks()
+        {
+            labelElement.UnregisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+            dragContainer.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+
+            dragContainer.RegisterCallback<PointerUpEvent>(EndEditing);
         }
     }
 }

@@ -359,9 +359,6 @@ namespace UnityEngine.UIElements
         private Dictionary<PropertyName, object> m_PropertyBag;
         internal VisualElementFlags m_Flags;
 
-        internal Action editingStarted { get; set; }
-        internal Action editingEnded { get; set; }
-
         // Used for view data persistence (ie. scroll position or tree view expanded states)
         private string m_ViewDataKey;
         /// <summary>

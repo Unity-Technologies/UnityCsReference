@@ -10,7 +10,6 @@ using System.Text.RegularExpressions;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEditor.UIElements.Bindings;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -31,6 +30,7 @@ namespace Unity.UI.Builder
         public static readonly string builderSerializedPropertyFieldName = "unity-builder-serialized-property-field";
 
         static readonly string s_TempSerializedRootPath = nameof(TempSerializedData.serializedData) + ".";
+        static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
 
         VisualTreeAsset m_UxmlDocument;
         VisualElement m_CurrentElement;
@@ -917,6 +917,13 @@ namespace Unity.UI.Builder
                 fieldElement.GetFieldStatusIndicator().populateMenuItems =
                     (menu) => BuildAttributeFieldContextualMenu(menu, styleRow);
             }
+
+            if (fieldElement is IEditableElement editableElement)
+            {
+                // used to group undo operations (UUM-32599)
+                editableElement.editingStarted += () => SetUndoGroup(fieldElement);
+                editableElement.editingEnded += () => UnsetUndoGroup(fieldElement);
+            }
         }
 
         void OnTooltipEvent(TooltipEvent e, PropertyField propertyField, UxmlSerializedAttributeDescription attribute)
@@ -1210,7 +1217,7 @@ namespace Unity.UI.Builder
             PostAttributeValueChange(fieldElement, stringValue, currentAttributeUxmlOwner);
 
             // Use the undo group of the field if it has one, otherwise use the current undo group
-            var fieldUndoGroup = (int?)fieldElement.Q<BindableElement>()?.GetProperty(SerializedObjectBindingBase.UndoGroupPropertyKey);
+            var fieldUndoGroup = (int?)fieldElement.Q<BindableElement>()?.GetProperty(UndoGroupPropertyKey);
             Undo.CollapseUndoOperations(fieldUndoGroup ?? undoGroup);
         }
 
@@ -2042,6 +2049,18 @@ namespace Unity.UI.Builder
             var styleRow = GetLinkedStyleRow(field);
             if (styleRow != null)
                 UpdateFieldStatus(field);
+        }
+
+        void SetUndoGroup(VisualElement field)
+        {
+            Undo.IncrementCurrentGroup();
+            field?.SetProperty(UndoGroupPropertyKey, Undo.GetCurrentGroup());
+        }
+
+        void UnsetUndoGroup(VisualElement field)
+        {
+            Undo.IncrementCurrentGroup();
+            field?.SetProperty(UndoGroupPropertyKey, null);
         }
 
         static string GetUndoMessage(SerializedProperty prop)

@@ -8,60 +8,50 @@ using UnityEngine;
 
 namespace UnityEditor.AI
 {
-    [InitializeOnLoad]
-    internal static class CheckNavigationPackage
-    {
-        const string k_NavigationPackageId = "com.unity.ai.navigation";
-        const string k_NavigationComponentMenuRoot = "Component/Navigation";
-
-        static string s_NavigationPackagePath = $"Packages/{k_NavigationPackageId}/package.json";
-
-        static CheckNavigationPackage()
-        {
-            if (!IsInstalled())
-                EditorApplication.CallDelayed(HideNavComponents);
-        }
-
-        static void HideNavComponents()
-        {
-            // Look for existing navigation menus, if none then nothing to do
-            var navMenuItems = Menu.GetMenuItems(k_NavigationComponentMenuRoot, false, false);
-            if (navMenuItems != null && navMenuItems.Length > 0)
-            {
-                // Remove trunk registered components entries
-                Menu.RemoveMenuItem($"{k_NavigationComponentMenuRoot}/Nav Mesh Agent");
-                Menu.RemoveMenuItem($"{k_NavigationComponentMenuRoot}/Nav Mesh Obstacle");
-                Menu.RemoveMenuItem($"{k_NavigationComponentMenuRoot}/Off Mesh Link");
-            }
-
-            // Register for the next menu modifications as we need to ensure components entries are not added again...
-            Menu.menuChanged += OnMenuChanged;
-        }
-
-        static void OnMenuChanged()
-        {
-            // Unregister from the menu modifications callback as we don't want to be notified until we actually try to remove the components
-            Menu.menuChanged -= OnMenuChanged;
-
-            EditorApplication.CallDelayed(HideNavComponents);
-        }
-
-        internal static bool IsInstalled()
-        {
-            var packagePath = Path.GetFullPath(s_NavigationPackagePath);
-            return !String.IsNullOrEmpty(packagePath) && File.Exists(packagePath);
-        }
-    }
-
     public static partial class NavMeshEditorHelpers
     {
+        const string k_OpenAgentSettings = "NavMeshAgentInspector-OpenAgentSettings";
+
+        internal static readonly bool isPackageInstalled;
+
         internal static event Action<int> agentTypeSettingsClicked;
         internal static event Action areaSettingsClicked;
 
+        static NavMeshEditorHelpers()
+        {
+            var packagePath = Path.GetFullPath("Packages/com.unity.ai.navigation/package.json");
+            isPackageInstalled = File.Exists(packagePath);
+
+            // open the agent settings if the package was just installed via the dialog box in OpenAgentSettings()
+            // there will have just been a domain reload, so a session state var is the only way to know the installation occurred from that user action
+            // use a delay call to ensure SessionState API is called on the main thread, regardless of which thread NavMeshEditorHelpers is called on the first time
+            EditorApplication.delayCall += () =>
+            {
+                if (SessionState.GetBool(k_OpenAgentSettings, false))
+                {
+                    SessionState.SetBool(k_OpenAgentSettings, false);
+                    OpenAgentSettings(-1);
+                }
+            };
+        }
+
         public static void OpenAgentSettings(int agentTypeID)
         {
-            if (!CheckNavigationPackage.IsInstalled())
-                Debug.LogWarning("Unable to open Agent settings because the Navigation window is not available. Please install the AI Navigation package to add that window.");
+            if (!isPackageInstalled)
+            {
+                if (EditorUtility.DisplayDialog(
+                        L10n.Tr("AI Navigation Package Not Installed"),
+                        L10n.Tr("Agent types cannot be configured, because the AI Navigation package is not installed. Would you like to install it?"),
+                        L10n.Tr("Install"),
+                        L10n.Tr("Cancel")
+                    ))
+                {
+                    PackageManager.Client.Add("com.unity.ai.navigation");
+                    SessionState.SetBool(k_OpenAgentSettings, true);
+                }
+                else
+                    Debug.LogWarning(L10n.Tr("Unable to open Agent settings because the Navigation window is not available. Please install the AI Navigation package to add that window."));
+            }
 
             if (agentTypeSettingsClicked != null)
                 agentTypeSettingsClicked(agentTypeID);
@@ -69,11 +59,19 @@ namespace UnityEditor.AI
 
         public static void OpenAreaSettings()
         {
-            if (!CheckNavigationPackage.IsInstalled())
-                Debug.LogWarning("Unable to open Area settings because the Navigation window is not available. Please install the AI Navigation package to add that window.");
+            if (!isPackageInstalled)
+                Debug.LogWarning(L10n.Tr("Unable to open Area settings because the Navigation window is not available. Please install the AI Navigation package to add that window."));
 
             if (areaSettingsClicked != null)
                 areaSettingsClicked();
+        }
+
+        internal static void DisplayInstallPackageButtonIfNeeded()
+        {
+            if (isPackageInstalled)
+                return;
+            if (GUILayout.Button(Content.InstallPackage))
+                PackageManager.Client.Add("com.unity.ai.navigation");
         }
 
         public static void DrawAgentDiagram(Rect rect, float agentRadius, float agentHeight, float agentClimb, float agentSlope)
@@ -184,6 +182,14 @@ namespace UnityEditor.AI
             GUI.Label(new Rect(slopeStartX + 20, slopeStartY - 15, 150, 20), UnityString.Format("{0}\u00b0", agentSlope));
 
             Handles.color = oldColor;
+        }
+
+        static class Content
+        {
+            public static readonly GUIContent InstallPackage = EditorGUIUtility.TrTextContent(
+                "Install AI Navigation Package",
+                "Install the AI Navigation package in order to access all navigation components and workflows."
+            );
         }
     }
 }

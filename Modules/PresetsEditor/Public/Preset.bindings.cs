@@ -14,6 +14,7 @@ namespace UnityEditor.Presets
     [NativeType(Header = "Modules/PresetsEditor/Public/Preset.h")]
     [NativeHeader("Modules/PresetsEditor/Public/PresetManager.h")]
     [UsedByNativeCode]
+    [HelpURL("https://docs.unity3d.com/2023.2/Documentation/Manual/Presets.html")]
     [ExcludeFromPreset]
     public sealed class Preset : Object
     {
