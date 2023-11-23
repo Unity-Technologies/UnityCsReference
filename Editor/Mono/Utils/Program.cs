@@ -47,6 +47,7 @@ namespace UnityEditor.Utils
             _process.StartInfo.RedirectStandardInput = true;
             _process.StartInfo.RedirectStandardError = true;
             _process.StartInfo.RedirectStandardOutput = true;
+            _process.StartInfo.StandardInputEncoding = new UTF8Encoding(false);
             _process.StartInfo.UseShellExecute = false;
 
             _process.Start();
