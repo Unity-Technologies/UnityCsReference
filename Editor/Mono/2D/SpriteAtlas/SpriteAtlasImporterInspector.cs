@@ -76,6 +76,11 @@ namespace UnityEditor.U2D
             public readonly GUIContent RGBIcon = EditorGUIUtility.IconContent("PreTextureRGB");
             public readonly GUIContent trashIcon = EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete currently selected settings.");
 
+            public static string unappliedSettingTitle = L10n.Tr("Unapplied import settings");
+            public static string unappliedSettingSingleAsset = L10n.Tr("Unapplied import settings for \'{0}\'");
+
+            public static string applyButton = L10n.Tr("Apply");
+            public static string cancelButton = L10n.Tr("Cancel");
             public readonly int packableElementHash = "PackableElement".GetHashCode();
             public readonly int packableSelectorHash = "PackableSelector".GetHashCode();
 
@@ -153,6 +158,7 @@ namespace UnityEditor.U2D
         private List<string> m_PlatformSettingsOptions;
         private int m_SelectedPlatformSettings = 0;
 
+        private int m_ContentHash = 0;
         private List<BuildPlatform> m_ValidPlatforms;
         private Dictionary<string, List<TextureImporterPlatformSettings>> m_TempPlatformSettings;
 
@@ -180,19 +186,19 @@ namespace UnityEditor.U2D
 
         bool IsTargetVariant()
         {
-            return spriteAtlasAsset.isVariant;
+            return spriteAtlasAsset ? spriteAtlasAsset.isVariant : false;
         }
 
         bool IsTargetMaster()
         {
-            return !spriteAtlasAsset.isVariant;
+            return spriteAtlasAsset ? !spriteAtlasAsset.isVariant : true;
         }
 
         internal override string targetTitle
         {
             get
             {
-                return Path.GetFileNameWithoutExtension(m_AssetPath) + " (Sprite Atlas)";
+                return spriteAtlasAsset ? ( Path.GetFileNameWithoutExtension(m_AssetPath) + " (Sprite Atlas)" ) : "SpriteAtlasImporter Settings";
             }
         }
 
@@ -212,6 +218,24 @@ namespace UnityEditor.U2D
                 return GetSerializedAssetObject();
             }
         }
+
+        internal static int SpriteAtlasAssetHash(SerializedObject obj)
+        {            
+            int hashCode = 0;
+            unchecked
+            {
+                hashCode = (int)2166136261 ^ (int) obj.FindProperty("m_MasterAtlas").objectReferenceInstanceIDValue.GetHashCode();
+                hashCode = hashCode * 16777619 ^ (int) obj.FindProperty("m_ImporterData").hashCodeForPropertyPathWithoutArrayIndex;
+                hashCode = hashCode * 16777619 ^ (int)obj.FindProperty("m_IsVariant").boolValue.GetHashCode();
+            }
+            return hashCode;
+        }
+
+        internal int GetInspectorHash()
+        {
+            return ( serializedAssetObject != null ) ? ( SpriteAtlasAssetHash(serializedAssetObject) * 16777619 ) : 0;
+        }
+
         private SerializedObject GetSerializedAssetObject()
         {
             if (m_SerializedAssetObject == null)
@@ -220,6 +244,7 @@ namespace UnityEditor.U2D
                 {
                     m_SerializedAssetObject = new SerializedObject(spriteAtlasAsset, m_Context);
                     m_SerializedAssetObject.inspectorMode = inspectorMode;
+                    m_ContentHash = GetInspectorHash();
                     m_EnabledProperty = m_SerializedAssetObject.FindProperty("m_Enabled");
                 }
                 catch (System.ArgumentException e)
@@ -232,12 +257,21 @@ namespace UnityEditor.U2D
             return m_SerializedAssetObject;
         }
 
+        void StateChange(PlayModeStateChange state)
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                ShowUnappliedAssetsPopup();
+            }
+}
+
         void OnEnable()
         {
             m_AssetPath = LoadSourceAsset();
             if (spriteAtlasAsset == null)
                 return;
 
+            EditorApplication.playModeStateChanged += StateChange;
             m_FilterMode = serializedAssetObject.FindProperty("m_ImporterData.textureSettings.filterMode");
             m_AnisoLevel = serializedAssetObject.FindProperty("m_ImporterData.textureSettings.anisoLevel");
             m_GenerateMipMaps = serializedAssetObject.FindProperty("m_ImporterData.textureSettings.generateMipMaps");
@@ -377,6 +411,21 @@ namespace UnityEditor.U2D
             }
         }
 
+        bool ShowUnappliedAssetsPopup()
+        {
+            var dialogText = string.Format(Styles.unappliedSettingSingleAsset, m_AssetPath);
+
+            if (HasModified())
+            {
+                var userChoice = EditorUtility.DisplayDialog(Styles.unappliedSettingTitle, dialogText, Styles.applyButton, Styles.cancelButton);
+                if (userChoice)
+                {
+                    ApplyAndImport();
+                }
+            }
+            return true;
+        }
+
         protected void Apply()
         {
             if (HasModified())
@@ -422,7 +471,7 @@ namespace UnityEditor.U2D
 
         public bool HasModified()
         {
-            return m_HasChanged;
+            return m_HasChanged || m_ContentHash != GetInspectorHash();
         }
 
         private void ValidateMasterAtlas()

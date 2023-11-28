@@ -220,6 +220,7 @@ namespace UnityEditor.UIElements
         {
             if (showMixedValue)
             {
+                value = default;
                 textElement.text = mixedValueString;
             }
 

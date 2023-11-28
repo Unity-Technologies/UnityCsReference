@@ -137,7 +137,7 @@ namespace UnityEditor
                 return "Folder";
             else if (obj.GetType() == typeof(Object))
                 return System.IO.Path.GetExtension(pathLower) + " File";
-            return ObjectNames.GetClassName(obj);
+            return obj.GetType().Name;
         }
 
         [Obsolete("Please use NicifyVariableName instead")]

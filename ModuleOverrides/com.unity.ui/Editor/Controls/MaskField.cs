@@ -12,7 +12,7 @@ using UnityEngine.Profiling;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Base class implementing the shared functionality for editing bit mask values.
+    /// Base class implementing the shared functionality for editing bit mask values. For more information, refer to [[wiki:UIE-uxml-element-MaskField|UXML element MaskField]].
     /// </summary>
     public abstract class BaseMaskField<TChoice> : BasePopupField<TChoice, string>
     {

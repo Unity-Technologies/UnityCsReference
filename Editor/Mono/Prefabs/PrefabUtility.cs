@@ -418,6 +418,34 @@ namespace UnityEditor
             );
         }
 
+        internal static void ApplyPrefabInstances(GameObject[] instanceRoots, InteractionMode action)
+        {
+            if (instanceRoots == null)
+                throw new ArgumentNullException(nameof(instanceRoots));
+
+            foreach (var instanceRoot in instanceRoots)
+            {
+                ThrowExceptionIfNotValidPrefabInstanceObject(instanceRoot, true);
+            }
+
+            // Apply sequentially but import after all input have been saved to disk
+            AssetDatabase.StartAssetEditing();
+            try
+            {
+                foreach (var instanceRoot in instanceRoots)
+                {
+                    ApplyPrefabInstance(instanceRoot, action);
+                }
+            }
+            finally
+            {
+                AssetDatabase.StopAssetEditing();
+            }
+
+            if (action == InteractionMode.UserAction)
+                Undo.FlushTrackedObjects(); // Needs to be called after StopAssetEditing() to fix UUM-6917
+        }
+
         private static void MapObjectReferencePropertyToSourceIfApplicable(SerializedProperty property, string assetPath)
         {
             var referencedObject = property.objectReferenceValue;

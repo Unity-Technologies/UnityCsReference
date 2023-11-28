@@ -137,6 +137,11 @@ namespace UnityEditor.UIElements.Bindings
                         // We intentionally re-register this event on the container per element and
                         // never unregister.
                         container.RegisterCallback<GeometryChangedEvent>(UpdatePrefabOverrideBarStyleEvent);
+                        element.RegisterCallback<DetachFromPanelEvent>(_ =>
+                        {
+                            element.RemoveFromClassList(BindingExtensions.prefabOverrideUssClassName);
+                            prefabOverrideBar.RemoveFromHierarchy();
+                        });
                     }
                 }
             }
@@ -196,6 +201,17 @@ namespace UnityEditor.UIElements.Bindings
             var barContainer = container.Q(BindingExtensions.prefabOverrideBarContainerName);
             if (barContainer == null)
                 return;
+
+            for (var i = 0; i < barContainer.childCount; i++)
+            {
+                var element = barContainer[i].userData as VisualElement;
+                if (element == null || FindPrefabOverrideBarCompatibleParent(element) != null) continue;
+
+                element.RemoveFromClassList(BindingExtensions.prefabOverrideUssClassName);
+                var prefabOverridePropertyBar = element.GetProperty(BindingExtensions.prefabOverrideBarName) as VisualElement;
+                prefabOverridePropertyBar?.RemoveFromHierarchy();
+                return;
+            }
 
             foreach (var bar in barContainer.Children())
                 UpdatePrefabOverrideBarStyle(bar);

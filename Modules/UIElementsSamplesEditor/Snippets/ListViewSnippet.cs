@@ -13,6 +13,7 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
+            #region sample
             /// <sample>
             // Create some list of data, here simply numbers in interval [1, 1000]
             const int itemCount = 1000;
@@ -42,6 +43,7 @@ namespace UnityEditor.UIElements.Samples
             // Callback invoked when the user changes the selection inside the ListView
             listView.onSelectionChange += Debug.Log;
             /// </sample>
+            #endregion
         }
     }
 }

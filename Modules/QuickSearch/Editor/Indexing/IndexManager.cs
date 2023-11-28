@@ -993,7 +993,7 @@ namespace UnityEditor.Search
                             var settings = m_IndexSettingsAssets[index].settings;
                             var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(settings.options.GetHashCode());
                             AssetDatabaseAPI.RegisterCustomDependency(indexImporterType.GUID.ToString("N"), Hash128.Parse(Guid.NewGuid().ToString("N")));
-                            SearchDatabase.ImportAsset(m_IndexSettingsFilePaths[index]);
+                            SearchDatabase.ImportAsset(m_IndexSettingsFilePaths[index], true);
                         });
                         menu.ShowAsContext();
                     }

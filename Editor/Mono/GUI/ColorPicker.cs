@@ -1253,6 +1253,7 @@ namespace UnityEditor
             Vector2 p = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
             win.position = new Rect(p.x - kDummyWindowSize / 2, p.y - kDummyWindowSize / 2, kDummyWindowSize, kDummyWindowSize);
             instance.wantsMouseMove = true;
+            instance.Focus();
             instance.SetEyeDropperOpen(true);
             instance.StealMouseCapture();
             instance.m_IsOpened = true;

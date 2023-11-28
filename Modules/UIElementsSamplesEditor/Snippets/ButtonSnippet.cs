@@ -13,6 +13,7 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
+            #region sample
             /// <sample>
             // Action to perform when button is pressed.
             // Toggles the text on all buttons in 'container'.
@@ -33,6 +34,7 @@ namespace UnityEditor.UIElements.Samples
             csharpButton.AddToClassList("some-styled-button");
             container.Add(csharpButton);
             /// </sample>
+            #endregion
         }
     }
 }

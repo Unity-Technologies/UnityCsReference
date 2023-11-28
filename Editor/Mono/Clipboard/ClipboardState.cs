@@ -167,6 +167,33 @@ namespace UnityEditor
                 m_HasInteger = ClipboardParser.ParseInteger(m_RawContents, out m_ValueInteger);
         }
 
+        internal bool? m_HasLong;
+        internal long m_ValueLong;
+
+        internal void FetchLong()
+        {
+            if (!m_HasLong.HasValue)
+                m_HasLong = ClipboardParser.ParseLong(m_RawContents, out m_ValueLong);
+        }
+
+        internal bool? m_HasUlong;
+        internal ulong m_ValueUlong;
+
+        internal void FetchUlong()
+        {
+            if (!m_HasUlong.HasValue)
+                m_HasUlong = ClipboardParser.ParseUlong(m_RawContents, out m_ValueUlong);
+        }
+
+        internal bool? m_HasUint;
+        internal uint m_ValueUint;
+
+        internal void FetchUint()
+        {
+            if (!m_HasUint.HasValue)
+                m_HasUint = ClipboardParser.ParseUint(m_RawContents, out m_ValueUint);
+        }
+
         internal bool? m_HasFloat;
         internal float m_ValueFloat;
         internal void FetchFloat()

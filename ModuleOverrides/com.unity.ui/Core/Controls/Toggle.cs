@@ -20,6 +20,8 @@ namespace UnityEngine.UIElements
     ///
     /// To bind the Toggle's state to a boolean variable, set the`binding-path` property in a UI Document (.uxml file), or
     /// the C# `bindingPath` to the variable name.
+    /// 
+    /// For more information, refer to [[wiki:UIE-uxml-element-toggle|UXML element Toggle]].
     /// </remarks>
     public class Toggle : BaseBoolField
     {

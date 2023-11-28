@@ -12,8 +12,9 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
+            #region sample
             /// <sample>
-            // Get a reference to the field from UXML and assign it its value.
+            // Get a reference to the field from UXML and assign a value to it.
             var uxmlField = container.Q<CurveField>("the-uxml-field");
             uxmlField.value = new AnimationCurve(new Keyframe[]
                 { new Keyframe(0, 0), new Keyframe(5, 8), new Keyframe(10, 4) });
@@ -31,6 +32,7 @@ namespace UnityEditor.UIElements.Samples
                 csharpField.value = evt.newValue;
             });
             /// </sample>
+            #endregion
         }
     }
 }

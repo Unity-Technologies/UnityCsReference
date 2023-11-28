@@ -7,7 +7,7 @@ using System;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A button that executes an action repeatedly while it is pressed.
+    /// A button that executes an action repeatedly while it is pressed. For more information, refer to [[wiki:UIE-uxml-element-RepeatButton|UXML element RepeatButton]].
     /// </summary>
     public class RepeatButton : TextElement
     {

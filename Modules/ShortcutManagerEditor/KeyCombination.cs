@@ -97,10 +97,18 @@ namespace UnityEditor.ShortcutManagement
                 if ((eventModifiers & (EventModifiers.Command | EventModifiers.Control)) != 0)
                     modifiers |= ShortcutModifiers.Action;
             }
-            else if (Application.platform == RuntimePlatform.OSXEditor && (eventModifiers & EventModifiers.Command) != 0)
-                modifiers |= ShortcutModifiers.Action;
-            else if ((eventModifiers & EventModifiers.Control) != 0)
-                modifiers |= Application.platform == RuntimePlatform.OSXEditor ? ShortcutModifiers.Control : ShortcutModifiers.Action;
+            else
+            {
+                if (Application.platform == RuntimePlatform.OSXEditor)
+                {
+                    if ((eventModifiers & EventModifiers.Command) != 0)
+                        modifiers |= ShortcutModifiers.Action;
+                    if ((eventModifiers & EventModifiers.Control) != 0)
+                        modifiers |= ShortcutModifiers.Control;
+                }
+                else if ((eventModifiers & EventModifiers.Control) != 0)
+                    modifiers |= ShortcutModifiers.Action;
+            }
 
             return modifiers;
         }

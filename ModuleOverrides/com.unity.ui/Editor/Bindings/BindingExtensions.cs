@@ -2066,6 +2066,9 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
+            if(boundProperty.hasMultipleDifferentValues)            
+                lastFieldValueIndex = default;            
+
             if (lastFieldValueIndex >= 0 && lastFieldValueIndex < displayIndexToEnumIndex.Count
                 && boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])
             {

@@ -43,6 +43,8 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <remarks>
     /// The default is <see cref="ScrollViewMode.Vertical"/>.
+    /// 
+    /// For more information, refer to [[wiki:UIE-uxml-element-ScrollView|UXML element ScrollView]].
     /// </remarks>
     public enum ScrollViewMode
     {

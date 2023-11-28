@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A control that allows the user to pick a choice from a list of options.
+    /// A control that allows the user to pick a choice from a list of options. For more information, refer to [[wiki:UIE-uxml-element-dropdown|UXML element Dropdown]].
     /// </summary>
     public class DropdownField : BaseField<string>
     {

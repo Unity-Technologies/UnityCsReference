@@ -12,7 +12,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A SerializedProperty wrapper VisualElement that, on Bind(), will generate the correct field elements with the correct bindingPaths.
+    /// A SerializedProperty wrapper VisualElement that, on Bind(), will generate the correct field elements with the correct binding paths. For more information, refer to [[wiki:UIE-uxml-element-PropertyField|UXML element PropertyField]].
     /// </summary>
     public class PropertyField : VisualElement, IBindable
     {

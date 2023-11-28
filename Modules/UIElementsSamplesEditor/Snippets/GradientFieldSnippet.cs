@@ -12,6 +12,7 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
+            #region sample
             /// <sample>
             var initialValue = new Gradient();
             initialValue.colorKeys = new GradientColorKey[]
@@ -38,6 +39,7 @@ namespace UnityEditor.UIElements.Samples
                 csharpField.value = evt.newValue;
             });
             /// </sample>
+            #endregion
         }
     }
 }

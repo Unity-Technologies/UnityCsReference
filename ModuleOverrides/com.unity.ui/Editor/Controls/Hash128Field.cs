@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Makes a field for editing an <see cref="Hash128"/>.
+    /// Makes a field for editing an <see cref="Hash128"/>. For more information, refer to [[wiki:UIE-uxml-element-Hash128Field|UXML element Hash128Field]].
     /// </summary>
     public class Hash128Field : TextInputBaseField<Hash128>
     {

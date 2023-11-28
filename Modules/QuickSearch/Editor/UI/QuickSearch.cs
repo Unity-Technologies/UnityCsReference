@@ -369,7 +369,7 @@ namespace UnityEditor.Search
 
         public void SetSelection(params int[] selection)
         {
-            SetSelection(true, selection);
+            SetSelection(true, selection, false);
         }
 
         void ISearchView.SetColumns(IEnumerable<SearchColumn> columns)
@@ -399,7 +399,7 @@ namespace UnityEditor.Search
             return initialProviders.Concat(providers).Distinct();
         }
 
-        private void SetSelection(bool trackSelection, int[] selection)
+        private void SetSelection(bool trackSelection, int[] selection, bool forceChange = false)
         {
             if (!multiselect && selection.Length > 1)
                 selection = new int[] { selection[selection.Length - 1] };
@@ -417,7 +417,7 @@ namespace UnityEditor.Search
                 lastIndexAdded = idx;
             }
 
-            if (lastIndexAdded != k_ResetSelectionIndex)
+            if (lastIndexAdded != k_ResetSelectionIndex || forceChange)
             {
                 m_SearchItemSelection = null;
                 if (trackSelection)
@@ -882,7 +882,7 @@ namespace UnityEditor.Search
             m_FilteredItems.AddItems(items);
             if (!string.IsNullOrEmpty(context.filterId))
                 m_FilteredItems.AddGroup(context.providers.First());
-            SetSelection(trackSelection: false, m_Selection.ToArray());
+            SetSelection(trackSelection: false, m_Selection.ToArray(), false);
         }
 
         private void RefreshViews(RefreshFlags additionalFlags = RefreshFlags.None)
@@ -1843,14 +1843,24 @@ namespace UnityEditor.Search
             evt.intPayload1 = m_FilteredItems.GetGroupById(groupId)?.count ?? 0;
             SearchAnalytics.SendEvent(evt);
 
+            var selectedItems = m_Selection.Count > 0 ? selection.ToArray() : Array.Empty<SearchItem>();
+            var newSelectedIndices = new int[selectedItems.Length];
+
             var oldGroupId = m_FilteredItems.currentGroup;
             m_FilteredItems.currentGroup = groupId;
-
+            m_ViewState.group = groupId;
             viewState.groupChanged?.Invoke(context, groupId, oldGroupId);
             m_ResultView?.OnGroupChanged(oldGroupId, groupId);
 
             if (syncSearch && groupId != null)
                 NotifySyncSearch(m_FilteredItems.currentGroup, UnityEditor.SearchService.SearchService.SyncSearchEvent.SyncSearch);
+
+            for (var i = 0; i < selectedItems.Length; ++i)
+            {
+                var selectedItem = selectedItems[i];
+                newSelectedIndices[i] = m_FilteredItems.IndexOf(selectedItem);
+            }
+            SetSelection(trackSelection: true, newSelectedIndices, forceChange: true);
 
             RefreshViews(RefreshFlags.GroupChanged);
         }

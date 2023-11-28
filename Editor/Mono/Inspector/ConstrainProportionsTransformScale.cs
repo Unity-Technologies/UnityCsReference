@@ -289,5 +289,15 @@ namespace UnityEditor
             // If user has pasted a scale property via a context menu, we might need to enforce proportions.
             s_IsPropertyPaste = propertyPath.StartsWith("m_LocalScale");
         }
+
+        internal static bool CanUseMathExpressions(SerializedProperty property)
+        {
+            // Constrain proportions multi-selection change relies on activeObject and precise numbers,
+            // so we cannot use math expressions that provides different results on different objects UUM-21958
+            var targetObjects = property.serializedObject.targetObjects;
+
+            return !(targetObjects.Length > 1 && property.propertyPath.StartsWith("m_LocalScale") &&
+                     Selection.DoAllGOsHaveConstrainProportionsEnabled(targetObjects));
+        }
     }
 }
