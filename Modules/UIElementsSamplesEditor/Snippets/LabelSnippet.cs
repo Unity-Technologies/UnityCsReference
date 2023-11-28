@@ -12,6 +12,7 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
+            #region sample
             /// <sample>
             // Get a reference to the label from UXML and update its text.
             var uxmlLabel = container.Q<Label>("the-uxml-label");
@@ -22,6 +23,7 @@ namespace UnityEditor.UIElements.Samples
             csharpLabel.AddToClassList("some-styled-label");
             container.Add(csharpLabel);
             /// </sample>
+            #endregion
         }
     }
 }

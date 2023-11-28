@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A min/max slider containing a representation of a range.
+    /// A min/max slider containing a representation of a range. For more information, refer to [[wiki:UIE-uxml-element-MinMaxSlider|UXML element MinMaxSlider]].
     /// </summary>
     public class MinMaxSlider : BaseField<Vector2>
     {

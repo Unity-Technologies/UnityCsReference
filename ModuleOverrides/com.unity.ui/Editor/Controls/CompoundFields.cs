@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A <see cref="Rect"/> editor field.
+    /// A <see cref="Rect"/> field. For more information, refer to [[wiki:UIE-uxm-element-RectField|UXML element RectField]].
     /// </summary>
     public class RectField : BaseCompositeField<Rect, FloatField, float>
     {
@@ -89,7 +89,7 @@ namespace UnityEditor.UIElements
     }
 
     /// <summary>
-    /// A <see cref="RectInt"/> editor field.
+    /// A <see cref="RectInt"/> field. For more information, refer to [[wiki:UIE-uxm-element-RectIntField|UXML element RectIntField]].
     /// </summary>
     public class RectIntField : BaseCompositeField<RectInt, IntegerField, int>
     {
@@ -168,7 +168,7 @@ namespace UnityEditor.UIElements
     }
 
     /// <summary>
-    /// A <see cref="Vector2"/> editor field.
+    /// A <see cref="Vector2"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector2Field|UXML element Vector2Field]].
     /// </summary>
     public class Vector2Field : BaseCompositeField<Vector2, FloatField, float>
     {
@@ -242,7 +242,7 @@ namespace UnityEditor.UIElements
     }
 
     /// <summary>
-    /// A <see cref="Vector3"/> editor field.
+    /// A <see cref="Vector3"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector3Field|UXML element Vector3Field]].
     /// </summary>
     public class Vector3Field : BaseCompositeField<Vector3, FloatField, float>
     {
@@ -319,7 +319,7 @@ namespace UnityEditor.UIElements
 
 
     /// <summary>
-    /// A <see cref="Vector4"/> editor field.
+    /// A <see cref="Vector4"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector4Field|UXML element Vector4Field]].
     /// </summary>
     public class Vector4Field : BaseCompositeField<Vector4, FloatField, float>
     {
@@ -397,7 +397,7 @@ namespace UnityEditor.UIElements
 
 
     /// <summary>
-    /// A <see cref="Vector2Int"/> editor field.
+    /// A <see cref="Vector2Int"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector2IntField|UXML element Vector2IntField]].
     /// </summary>
     public class Vector2IntField : BaseCompositeField<Vector2Int, IntegerField, int>
     {
@@ -471,7 +471,7 @@ namespace UnityEditor.UIElements
     }
 
     /// <summary>
-    /// A <see cref="Vector3Int"/> editor field.
+    /// A <see cref="Vector3Int"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector3IntField|UXML element Vector3IntField]].
     /// </summary>
     public class Vector3IntField : BaseCompositeField<Vector3Int, IntegerField, int>
     {

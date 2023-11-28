@@ -1313,6 +1313,9 @@ namespace UnityEngine.UIElements
                         elementPanel.SendEvent(e, DispatchMode.Immediate);
                     }
                 }
+
+                // Disable the started animations which have possibly started in the DetachFromPanelEvent callback.
+                UnregisterRunningAnimations();
             }
         }
 

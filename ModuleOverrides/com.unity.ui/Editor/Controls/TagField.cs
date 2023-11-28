@@ -11,7 +11,7 @@ using UnityEditorInternal;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A <see cref="TagField"/> editor.
+    /// A <see cref="TagField"/> editor. For more information, refer to [[wiki:UIE-uxml-element-TagField|UXML element TagField]].
     /// </summary>
     public class TagField : PopupField<string>
     {
@@ -115,16 +115,16 @@ namespace UnityEditor.UIElements
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
         /// <summary>
-        /// Initializes and returns an instance of CurveField.
+        /// Initializes and returns an instance of TagField.
         /// </summary>
         public TagField()
             : this(null) {}
 
         /// <summary>
-        /// Initializes and returns an instance of CurveField.
+        /// Initializes and returns an instance of TagField.
         /// </summary>
         /// <param name="label">The text to use as a label for the field.</param>
-        /// <param name="defaultValue">The initial tag value this field should use.</param>
+        /// <param name="defaultValue">The initial tag value this field uses.</param>
         public TagField(string label, string defaultValue = null)
             : base(label)
         {

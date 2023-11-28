@@ -12,6 +12,7 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
+            #region sample
             /// <sample>
             // You can provide the list of choices by code, or by comma separated values in UXML
             // <DropdownField .... choices="Option 1,Option 2,Option 3" .... />
@@ -36,6 +37,7 @@ namespace UnityEditor.UIElements.Samples
                 csharpField.value = evt.newValue;
             });
             /// </sample>
+            #endregion
         }
     }
 }

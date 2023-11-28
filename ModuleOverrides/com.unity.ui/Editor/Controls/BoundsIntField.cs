@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A <see cref="BoundsInt"/> editor field.
+    /// A <see cref="BoundsInt"/> field. For more information, refer to [[wiki:UIE-uxml-element-BoundsIntField|UXML element BoundsIntField]].
     /// </summary>
     public class BoundsIntField : BaseField<BoundsInt>
     {

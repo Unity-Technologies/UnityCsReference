@@ -1178,7 +1178,7 @@ namespace UnityEditor
                         {
                             if (editor.IsEditingControl(id))
                             {
-                                if (style == EditorStyles.toolbarSearchField || style == EditorStyles.searchField)
+                                if (style == EditorStyles.toolbarSearchField || style == EditorStyles.searchField || style.name.Contains("SearchText"))
                                 {
                                     s_OriginalText = "";
                                 }
@@ -3772,7 +3772,7 @@ namespace UnityEditor
                     }
                     if (instance.m_ControlID == controlID)
                     {
-                        GUI.changed = selected != instance.m_SelectedIndex;
+                        GUI.changed = showMixedValue || selected != instance.m_SelectedIndex;
                         selected = instance.m_SelectedIndex;
                         instance = null;
                         evt.Use();
@@ -7229,6 +7229,7 @@ namespace UnityEditor
             // Should we inline? All one-line vars as well as Vector2, Vector3, Rect and Bounds properties are inlined.
             if (!HasVisibleChildFields(property))
             {
+                bool canUseExpression = ConstrainProportionsTransformScale.CanUseMathExpressions(property);
                 switch (type)
                 {
                     case SerializedPropertyType.Integer:
@@ -7244,7 +7245,8 @@ namespace UnityEditor
                                 {
                                     var values = property.allLongValues;
                                     for (var i = 0; i < values.Length; ++i)
-                                        val.expression.Evaluate(ref values[i], i, values.Length);
+                                        if(canUseExpression)
+                                            val.expression.Evaluate(ref values[i], i, values.Length);
                                     property.allLongValues = values;
                                 }
                             }
@@ -7276,8 +7278,7 @@ namespace UnityEditor
                                     var values = property.allDoubleValues;
                                     for (var i = 0; i < values.Length; ++i)
                                     {
-                                        val.expression.Evaluate(ref values[i], i, values.Length);
-                                        if (isFloat)
+                                        if (isFloat && canUseExpression && val.expression.Evaluate(ref values[i], i, values.Length))
                                             values[i] = MathUtils.ClampToFloat(values[i]);
                                     }
                                     property.allDoubleValues = values;

@@ -369,8 +369,9 @@ namespace UnityEditor.Search.Providers
             if (obj is GameObject go)
             {
                 // Index any prefab reference
-                AddReference(go, PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go), refs);
-
+                if (PrefabUtility.IsAnyPrefabInstanceRoot(go))
+                    AddReference(go, PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go), refs);
+                
                 if (PrefabUtility.IsPrefabAssetMissing(go))
                 {
                     god.missingPrefab = true;
@@ -409,7 +410,9 @@ namespace UnityEditor.Search.Providers
                     while (next)
                     {
                         AddPropertyReferences(obj, p, ref god, refs);
-                        next = p.NextVisible(p.hasVisibleChildren);
+
+                        // NOTE: Property iteration on managedReference does not handle cycle (ObjectReference does). Do not dig in managedReference for now.
+                        next = p.NextVisible(p.propertyType != SerializedPropertyType.ManagedReference && p.hasVisibleChildren);
                     }
                 }
             }

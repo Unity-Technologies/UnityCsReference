@@ -536,7 +536,7 @@ namespace UnityEngine.UIElements.UIR
         public void UIEOnChildAdded(VisualElement ve)
         {
             VisualElement parent = ve.hierarchy.parent;
-            int index = parent != null ? parent.IndexOf(ve) : 0;
+            int index = parent != null ? parent.hierarchy.IndexOf(ve) : 0;
 
             if (m_BlockDirtyRegistration)
                 throw new InvalidOperationException("VisualElements cannot be added to an active visual tree during generateVisualContent callback execution nor during visual tree rendering");

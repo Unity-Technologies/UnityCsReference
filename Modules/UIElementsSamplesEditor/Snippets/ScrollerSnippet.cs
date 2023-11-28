@@ -12,6 +12,7 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
+            #region sample
             /// <sample>
             // Get a reference to the scroller from UXML and assign it its value.
             var uxmlField = container.Q<Scroller>("the-uxml-scroller");
@@ -31,6 +32,7 @@ namespace UnityEditor.UIElements.Samples
                 csharpField.value = evt.newValue;
             });
             /// </sample>
+            #endregion
         }
     }
 }

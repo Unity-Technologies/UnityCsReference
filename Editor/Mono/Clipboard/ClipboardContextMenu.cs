@@ -151,10 +151,64 @@ namespace UnityEditor
                         Clipboard.GetSerializedProperty);
                     break;
                 case SerializedPropertyType.Integer:
-                    SetupAction(property, menu, evt,
-                        p => Clipboard.integerValue = p.intValue,
-                        p => Clipboard.hasInteger,
-                        p => p.intValue = Clipboard.integerValue);
+                    {
+                        switch (property.type)
+                        {
+                            case "long":
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.longValue = p.longValue,
+                                            p => Clipboard.hasLong,
+                                            p => p.longValue = Clipboard.longValue);
+                                break;
+
+                            case "ulong":
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.uLongValue = (System.UInt64)p.longValue,
+                                            p => Clipboard.hasUlong,
+                                            p => p.longValue = (System.Int64)Clipboard.uLongValue);
+                                break;
+
+                            case "uint":
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.uIntValue = (System.UInt32)p.intValue,
+                                            p => Clipboard.hasUint,
+                                            p => p.intValue = (System.Int32)Clipboard.uIntValue);
+                                break;
+
+                            case "ushort":
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.uIntValue = (System.UInt16)p.intValue,
+                                            p => Clipboard.hasUint,
+                                            p => p.intValue = (System.UInt16)Clipboard.uIntValue);
+                                break;
+
+                            case "short":
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.integerValue = (System.Int16)p.intValue,
+                                            p => Clipboard.hasInteger,
+                                            p => p.intValue = (System.UInt16)Clipboard.integerValue);
+                                break;
+                            case "byte":
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.uIntValue = (System.Byte)p.intValue,
+                                            p => Clipboard.hasUint,
+                                            p => p.intValue = (System.Byte)Clipboard.uIntValue);
+                                break;
+                            case "sbyte":
+                                SetupAction(property, menu, evt,
+                                            p => Clipboard.integerValue = (System.Byte)p.intValue,
+                                            p => Clipboard.hasInteger,
+                                            p => p.intValue = (System.Byte)Clipboard.integerValue);
+                                break;
+
+                            default:
+                                SetupAction(property, menu, evt,
+                                    p => Clipboard.integerValue = p.intValue,
+                                    p => Clipboard.hasInteger,
+                                    p => p.intValue = Clipboard.integerValue);
+                                break;
+                        }                        
+                    }
                     break;
                 case SerializedPropertyType.Float:
                     SetupAction(property, menu, evt,

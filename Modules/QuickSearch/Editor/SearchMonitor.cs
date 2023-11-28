@@ -263,6 +263,7 @@ namespace UnityEditor.Search
             EditorSceneManager.sceneClosed += scene => InvalidateCurrentScene();
             PrefabStage.prefabStageOpened += _ => InvalidateCurrentScene();
             PrefabStage.prefabStageClosing += _ => InvalidateCurrentScene();
+            EditorApplication.playModeStateChanged += _ => InvalidateCurrentScene();
 
             s_DelayedInvalidate = Delayer.Debounce(_ => InvalidateDocuments());
 

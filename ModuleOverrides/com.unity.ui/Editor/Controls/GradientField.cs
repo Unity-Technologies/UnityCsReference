@@ -11,7 +11,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Makes a field for editing an <see cref="Gradient"/>.
+    /// Makes a field for editing an <see cref="Gradient"/>. For more information, refer to [[wiki:UIE-uxml-element-GradientField|UXML element GradientField]].
     /// </summary>
     public class GradientField : BaseField<Gradient>
     {

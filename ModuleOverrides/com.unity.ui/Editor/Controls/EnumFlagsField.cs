@@ -12,6 +12,13 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a dropdown for switching between enum flag values that are marked with the Flags attribute.
     /// </summary>
+    /// <remarks>
+    /// An option for the value 0 with name "Nothing" and an option for the value ~0 (that is, all bits set) with the
+    /// name "Everything" are always displayed at the top of the menu. The names for the values 0 and ~0 can be
+    /// overriden by defining these values in the enum type.
+    /// 
+    /// For more information, refer to [[wiki:UIE-uxml-element-EnumFlagsField|UXML element EnumFlagsField]].
+    /// </remarks>
     public class EnumFlagsField : BaseMaskField<Enum>
     {
         /// <summary>

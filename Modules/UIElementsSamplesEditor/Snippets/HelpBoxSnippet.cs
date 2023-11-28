@@ -10,6 +10,7 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
+            #region sample
             /// <sample>
             // Get a reference to the help box from UXML and update its text.
             var uxmlHelpBox = container.Q<HelpBox>("the-uxml-help-box");
@@ -20,6 +21,7 @@ namespace UnityEditor.UIElements.Samples
             csharpHelpBox.AddToClassList("some-styled-help-box");
             container.Add(csharpHelpBox);
             /// </sample>
+            #endregion
         }
     }
 }

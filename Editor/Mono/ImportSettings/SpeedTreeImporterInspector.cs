@@ -97,6 +97,14 @@ namespace UnityEditor
         {
             bool applied = base.OnApplyRevertGUI();
 
+            bool hasModified = HasModified();
+            if (tabs == null) // Hitting apply, we lose the tabs object within base.OnApplyRevertGUI()
+            {
+                if(hasModified)
+                    Apply();
+                return applied;
+            }
+
             bool doMatsHaveDifferentShaders = (tabs[0] as SpeedTreeImporterModelEditor).doMaterialsHaveDifferentShader;
 
             if (HasRemappedMaterials() || doMatsHaveDifferentShaders)
@@ -104,7 +112,6 @@ namespace UnityEditor
                 // Force material upgrade when a custom render pipeline is active so that render pipeline-specific material
                 // modifications may be applied.
                 bool upgrade = upgradeMaterials || (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null);
-                bool hasModified = HasModified();
                 if (GUILayout.Button(GetGenButtonText(hasModified, upgrade)))
                 {
                     // Apply the changes and generate the materials before importing so that asset previews are up-to-date.

@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Makes a text field for entering an integer.
+    /// Makes a text field for entering an integer. For more information, refer to [[wiki:UIE-uxml-element-LongField|UXML element LongField]].
     /// </summary>
     public class IntegerField : TextValueField<int>
     {

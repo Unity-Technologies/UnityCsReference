@@ -78,6 +78,8 @@ namespace UnityEngine.UIElements
     /// To enable horizontal scrolling when the displayed element is wider than the visible area, set the
     ///     <c>horizontal-scrolling-enabled</c> property in UXML or the <see cref="ListView.horizontalScrollingEnabled"/>
     ///     to <c>true</c>.
+    ///     
+    /// For more information, refer to [[wiki:UIE-uxml-element-ListView|ListView]].
     /// </remarks>
     /// <example>
     /// <code>
