@@ -132,7 +132,6 @@ namespace UnityEngine.UIElements.UIR
         Shader m_DefaultShader, m_DefaultWorldSpaceShader;
         Material m_DefaultMat, m_DefaultWorldSpaceMat;
         bool m_BlockDirtyRegistration;
-        int m_CustomMaterialCommands = 0; // TODO: Get rid of this
         ChainBuilderStats m_Stats;
         uint m_StatsElementsAdded, m_StatsElementsRemoved;
 
@@ -150,6 +149,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly ProfilerMarker k_MarkerColorsProcessing = new("RenderChain.UpdateColors");
         static readonly ProfilerMarker k_MarkerTransformProcessing = new("RenderChain.UpdateTransforms");
         static readonly ProfilerMarker k_MarkerVisualsProcessing = new("RenderChain.UpdateVisuals");
+        static readonly ProfilerMarker k_MarkerSerialize = new("RenderChain.Serialize");
 
 
         public RenderChain(BaseVisualElementPanel panel) : this(panel, new UIRenderDevice(panel.vertexBudget), panel.atlas, new VectorImageManager(panel.atlas))
@@ -416,56 +416,87 @@ namespace UnityEngine.UIElements.UIR
             vectorImageManager?.Commit();
             shaderInfoAllocator.IssuePendingStorageChanges();
 
+            Material standardMaterial = GetStandardMaterial();
+            panel.InvokeUpdateMaterial(standardMaterial);
+
             device?.OnFrameRenderingBegin();
+
+            if (drawInCameras)
+                SerializeCommandsForCameras();
 
             k_MarkerProcess.End();
         }
 
+        void SerializeCommandsForCameras()
+        {
+            if (m_FirstCommand == null)
+                return;
+
+            Exception immediateException = null;
+            //TODO: Reactivate this guard check once InspectorWindow is fixed to stop adding VEs during OnGUI
+            //m_BlockDirtyRegistration = true;
+            device.EvaluateChain(m_FirstCommand, m_DefaultMat, m_DefaultMat, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
+                panel.scaledPixelsPerPoint, ref immediateException);
+
+            //m_BlockDirtyRegistration = false;
+
+            // Assign the command lists to the UIRenderer components.
+            // Note that the device may be null at this point (e.g., EvaluateChain may had to
+            // dispose of the RenderChain when evaluating an immediate element that closed a window).
+            List<CommandList> frameCommandLists = device?.currentFrameCommandLists;
+            if (drawInCameras && frameCommandLists != null)
+            {
+                var worldMat = GetStandardWorldSpaceMaterial();
+                for (int cmdListIndex = 0; cmdListIndex < device.currentFrameCommandListCount; ++cmdListIndex)
+                {
+                    var cmdList = frameCommandLists[cmdListIndex];
+                    var renderer = cmdList.m_Owner?.uiRenderer;
+                    if (renderer != null)
+                    {
+                        var commandLists = device.commandLists;
+                        renderer.commandLists = commandLists;
+
+                        int safeFrameIndex = (int)device.frameIndex % commandLists.Length;
+                        renderer.SetNativeData(safeFrameIndex, cmdListIndex, worldMat);
+                    }
+                }
+            }
+
+            Debug.Assert(immediateException == null); // Not supported for cameras
+
+            k_MarkerSerialize.End();
+        }
+
         public void Render()
         {
-            Material standardMaterial = GetStandardMaterial();
-            panel.InvokeUpdateMaterial(standardMaterial);
+            Debug.Assert(!drawInCameras);
+
+            PanelClearSettings clearSettings = panel.clearSettings;
+            if (clearSettings.clearColor || clearSettings.clearDepthStencil)
+            {
+                // Case 1277149: Clear color must be pre-multiplied like when we render.
+                Color clearColor = clearSettings.color;
+                clearColor = clearColor.RGBMultiplied(clearColor.a);
+
+                GL.Clear(clearSettings.clearDepthStencil, // Clearing may impact MVP
+                    clearSettings.clearColor, clearColor, UIRUtility.k_ClearZ);
+            }
 
             Exception immediateException = null;
             if (m_FirstCommand != null)
             {
-                if (!drawInCameras)
-                {
-                    var viewport = panel.visualTree.layout;
-                    standardMaterial?.SetPass(0);
+                var viewport = panel.visualTree.layout;
+                m_DefaultMat.SetPass(0);
 
-                    var projection = ProjectionUtils.Ortho(viewport.xMin, viewport.xMax, viewport.yMax, viewport.yMin, -0.001f, 1.001f);
-                    GL.LoadProjectionMatrix(projection);
-                    GL.modelview = Matrix4x4.identity;
-                }
+                var projection = ProjectionUtils.Ortho(viewport.xMin, viewport.xMax, viewport.yMax, viewport.yMin, -0.001f, 1.001f);
+                GL.LoadProjectionMatrix(projection);
+                GL.modelview = Matrix4x4.identity;
 
                 //TODO: Reactivate this guard check once InspectorWindow is fixed to stop adding VEs during OnGUI
                 //m_BlockDirtyRegistration = true;
-                device.EvaluateChain(m_FirstCommand, standardMaterial, standardMaterial, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
+                device.EvaluateChain(m_FirstCommand, m_DefaultMat, m_DefaultMat, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
                     panel.scaledPixelsPerPoint, ref immediateException);
                 //m_BlockDirtyRegistration = false;
-
-                // Assign the command lists to the UIRenderer components.
-                // Note that the device may be null at this point (e.g., EvaluateChain may had to
-                // dispose of the RenderChain when evaluating an immediate element that closed a window).
-                var frameCommandLists = device?.currentFrameCommandLists;
-                if (drawInCameras && frameCommandLists != null)
-                {
-                    var worldMat = GetStandardWorldSpaceMaterial();
-                    for (int cmdListIndex = 0; cmdListIndex < device.currentFrameCommandListCount; ++cmdListIndex)
-                    {
-                        var cmdList = frameCommandLists[cmdListIndex];
-                        var renderer = cmdList.m_Owner?.uiRenderer;
-                        if (renderer != null)
-                        {
-                            var commandLists = device.commandLists;
-                            renderer.commandLists = commandLists;
-
-                            int safeFrameIndex = (int)device.frameIndex % commandLists.Length;
-                            renderer.SetNativeData(safeFrameIndex, cmdListIndex, worldMat);
-                        }
-                    }
-                }
             }
 
             if (immediateException != null)
@@ -709,8 +740,6 @@ namespace UnityEngine.UIElements.UIR
 
         internal void FreeCommand(RenderChainCommand cmd)
         {
-            if (cmd.state.material != null)
-                m_CustomMaterialCommands--;
             cmd.Reset();
             m_CommandPool.Return(cmd);
         }
@@ -719,8 +748,6 @@ namespace UnityEngine.UIElements.UIR
         {
             if (command.prev == null)
                 m_FirstCommand = command;
-            if (command.state.material != null)
-                m_CustomMaterialCommands++;
         }
 
         internal void OnRenderCommandsRemoved(RenderChainCommand firstCommand, RenderChainCommand lastCommand)

@@ -49,8 +49,6 @@ namespace UnityEditor
         internal extern static bool isDebuggerActive { get; set; }
         public extern static bool devOptions { get; set; }
         public extern static int dirtyCount { get; }
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated.", true)]
-        public static PhysicsVisualizationSettings.FilterWorkflow filterWorkflow { get; set; }
         public extern static bool showCollisionGeometry { get; set; }
         public extern static bool enableMouseSelect { get; set; }
         public extern static bool useSceneCam { get; set; }
@@ -153,65 +151,9 @@ namespace UnityEditor
             showContactImpulse = selected;
             useContactFiltering = !selected;
         }
-
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static bool GetShowStaticColliders(FilterWorkflow filterWorkFlow) { return false; }
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowStaticColliders(FilterWorkflow filterWorkflow, bool show) {}
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static bool GetShowTriggers(FilterWorkflow filterWorkflow) { return false; }
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowTriggers(FilterWorkflow filterWorkflow, bool show) {}
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static bool GetShowRigidbodies(FilterWorkflow filterWorkflow) { return false; }
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowRigidbodies(FilterWorkflow filterWorkflow, bool show) {}
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static bool GetShowKinematicBodies(FilterWorkflow filterWorkflow) { return false; }
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowKinematicBodies(FilterWorkflow filterWorkflow, bool show) {}
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static bool GetShowSleepingBodies(FilterWorkflow filterWorkflow) { return false; }
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowSleepingBodies(FilterWorkflow filterWorkflow, bool show) {}
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static bool GetShowCollisionLayer(FilterWorkflow filterWorkflow, int layer) { return false; }
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowCollisionLayer(FilterWorkflow filterWorkflow, int layer, bool show) {}
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static int GetShowCollisionLayerMask(FilterWorkflow filterWorkflow) { return 0; }
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowCollisionLayerMask(FilterWorkflow filterWorkflow, int mask) {}
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static bool GetShowBoxColliders(FilterWorkflow filterWorkflow) { return false; }
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowBoxColliders(FilterWorkflow filterWorkflow, bool show) {}
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static bool GetShowSphereColliders(FilterWorkflow filterWorkflow) { return false; }
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowSphereColliders(FilterWorkflow filterWorkflow, bool show) {}
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static bool GetShowCapsuleColliders(FilterWorkflow filterWorkflow) { return false; }
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowCapsuleColliders(FilterWorkflow filterWorkflow, bool show) {}
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static bool GetShowMeshColliders(FilterWorkflow filterWorkflow, MeshColliderType colliderType) { return false; }
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowMeshColliders(FilterWorkflow filterWorkflow, MeshColliderType colliderType, bool show) {}
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static bool GetShowTerrainColliders(FilterWorkflow filterWorkflow) { return false; }
-
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowTerrainColliders(FilterWorkflow filterWorkflow, bool show) {}
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static int GetShowPhysicsSceneMask(FilterWorkflow filterWorkflow) { return 0; }
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowPhysicsSceneMask(FilterWorkflow filterWorkflow, int mask) {}
-        [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
-        public static void SetShowForAllFilters(FilterWorkflow filterWorkflow, bool selected) {}
     }
 
-    [NativeHeader("Modules/Physics/PhysicsDebugDraw.h")]
+    [NativeHeader("Modules/PhysicsEditor/PhysicsDebugDraw.h")]
     internal static class PhysicsDebugDraw
     {
         [FreeFunction("PhysicsDebugDraw::GetPooledQueries")]

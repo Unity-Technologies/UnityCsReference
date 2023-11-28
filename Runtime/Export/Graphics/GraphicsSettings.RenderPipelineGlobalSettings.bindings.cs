@@ -10,6 +10,13 @@ namespace UnityEngine.Rendering
 {
     public sealed partial class GraphicsSettings
     {
+        static internal event Action<IRenderPipelineGraphicsSettings, string> OnIRenderPipelineGraphicsSettingsChange;
+        static internal void CallOnIRenderPipelineGraphicsSettingsChange(IRenderPipelineGraphicsSettings instance, string propertyName)
+        {
+            if (instance != null && !string.IsNullOrEmpty(propertyName))
+                OnIRenderPipelineGraphicsSettingsChange?.Invoke(instance, propertyName);
+        }
+
         internal static PropertyHelper<IRenderPipelineGraphicsSettings> s_PropertyHelper = new();
 
         public static void Subscribe<TChild>(Action<TChild, string> callback)

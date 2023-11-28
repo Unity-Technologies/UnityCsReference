@@ -166,6 +166,28 @@ namespace UnityEditor
             set => EditorGUIUtility.systemCopyBuffer = $"LayerMask({value.value})";
         }
 
+        public static bool hasRenderingLayerMask
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchRenderingLayerMask();
+                return m_State.m_HasRenderingLayerMask.Value;
+            }
+        }
+
+        public static RenderingLayerMask renderingLayerMaskValue
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchRenderingLayerMask();
+                return m_State.m_ValueRenderingLayerMask;
+            }
+            set => EditorGUIUtility.systemCopyBuffer = $"RenderingLayerMask({value.value})";
+        }
+
+
         public static bool hasBool
         {
             get

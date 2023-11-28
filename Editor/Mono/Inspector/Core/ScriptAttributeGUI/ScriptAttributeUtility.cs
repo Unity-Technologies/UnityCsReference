@@ -40,6 +40,7 @@ namespace UnityEditor
         private static PropertyHandlerCache s_CurrentCache = null;
 
         static readonly Lazy<Dictionary<Type, CustomPropertyDrawerContainer[]>> k_DrawerTypeForType = new(BuildDrawerTypeForTypeDictionary);
+        static readonly Dictionary<Type, Type> k_DrawerStaticTypesCache = new();
         static readonly Dictionary<Type, Type[]> k_SupportedRenderPipelinesForSerializedObject = new();
 
         static readonly Comparer<CustomPropertyDrawerContainer> k_RenderPipelineTypeComparer
@@ -51,20 +52,26 @@ namespace UnityEditor
                 return string.Compare(firstRenderPipelineByFullName1?.FullName, firstRenderPipelineByFullName2?.FullName, StringComparison.Ordinal);
             });
 
+
         static Type[] s_CurrentRenderPipelineAssetTypeArray;
 
         static Type[] currentRenderPipelineAssetTypeArray
         {
             get
             {
-                if (s_CurrentRenderPipelineAssetTypeArray != null)
+                if (s_CurrentRenderPipelineAssetTypeArray != null && s_CurrentRenderPipelineAssetTypeArray[0] == GraphicsSettings.currentRenderPipelineAssetType)
                     return s_CurrentRenderPipelineAssetTypeArray;
 
                 s_CurrentRenderPipelineAssetTypeArray = new[] { GraphicsSettings.currentRenderPipelineAssetType };
-                RenderPipelineManager.activeRenderPipelineAssetChanged += (_, __)
-                    => s_CurrentRenderPipelineAssetTypeArray = new[] { GraphicsSettings.currentRenderPipelineAssetType };
                 return s_CurrentRenderPipelineAssetTypeArray;
             }
+        }
+
+
+        static void ResetCachedTypesAndAsset()
+        {
+            k_DrawerStaticTypesCache.Clear();
+            ClearGlobalCache();
         }
 
         internal static PropertyHandlerCache propertyHandlerCache
@@ -109,6 +116,9 @@ namespace UnityEditor
         // Build a dictionary when k_DrawerTypeForType is first accessed
         static Dictionary<Type, CustomPropertyDrawerContainer[]> BuildDrawerTypeForTypeDictionary()
         {
+            RenderPipelineManager.activeRenderPipelineDisposed += ResetCachedTypesAndAsset;
+            RenderPipelineManager.activeRenderPipelineCreated += ResetCachedTypesAndAsset;
+
             var tempDictionary = new Dictionary<Type, List<CustomPropertyDrawerContainer>>();
             foreach (var drawerType in TypeCache.GetTypesDerivedFrom<GUIDrawer>())
             {
@@ -132,53 +142,174 @@ namespace UnityEditor
             return dictionaryWithArrays;
         }
 
-        static bool IsAppropriateDrawer(Type currentType, Type propertyType, CustomPropertyDrawerContainer customPropertyDrawerContainer, bool skipCheckEditorForChildClasses)
-        {
-            if (currentType == propertyType)
-                return true;
-
-            // Check for drawers with editorForChildClasses set to true and special case for managed references.
-            // The custom property drawers for those are defined with 'useForChildren=false'
-            // (otherwise the dynamic type is not taking into account in the custom property
-            // drawer resolution) so even if 's_DrawerTypeForType' is built (based on static types)
-            // we have to check base types for custom property drawers manually.
-            // Managed references with no drawers should properly try to fallback
-            return (customPropertyDrawerContainer.editorForChildClasses || skipCheckEditorForChildClasses);
-        }
-
         /// <summary>
-        /// Builds the drawer cache and checks for the drawer cache for a statically
-        /// defined drawer for a given type.
-        /// NOTE: The world 'statically' in this context means that what is being
-        /// looked up is only what is in the cache, which might not play well with
-        /// Managed References types (where the dynamic type matters).
+        /// We build our CustomPropertyDrawerContainer cache the first time we access it.
+        /// It used solely to have a quick access to drawer types and their information.
+        /// We have a separate cache to map Type -> Drawer. It will work with managed references too as we map real type to the drawers.
+        /// This cache resets each type we create or dispose a Render Pipeline as SupportedOn can exist on some drawers.
         /// </summary>
-        /// <param name="type">Find a drawer for provided Type</param>
+        /// <param name="propertyType">Find a drawer for provided Type</param>
         /// <param name="renderPipelineAssetTypes">This can be either GraphicsSettings.currentRenderPipelineAssetType or type from SupportedOnRenderPipeline attribute for serializedObject</param>
-        /// <param name="isPropertyTypeIsManagedReference">Specify if it's known that we deal with ManagedReference property</param>
+        /// <param name="isPropertyTypeAManagedReference">Specify if it's known that we deal with ManagedReference property</param>
         /// <returns></returns>
-        internal static Type GetDrawerTypeForType(Type type, Type[] renderPipelineAssetTypes, bool isPropertyTypeIsManagedReference = false)
+        internal static Type GetDrawerTypeForType(Type propertyType, Type[] renderPipelineAssetTypes, bool isPropertyTypeAManagedReference = false)
         {
+            //We map specific types to drawers and it will work with managed references too.
+            if (k_DrawerStaticTypesCache.TryGetValue(propertyType, out var drawerTypeForType))
+                return drawerTypeForType;
+
             var currentRenderPipelineAssetType = GraphicsSettings.currentRenderPipelineAssetType;
-            for (var currentType = type; currentType != null; currentType = currentType.BaseType)
+            Type[] allInterfaces = null;
+            bool[] checkedInterfaces = null;
+            for (var inspectedType = propertyType; inspectedType != null; inspectedType = inspectedType.BaseType)
             {
-                if (k_DrawerTypeForType.Value.TryGetValue(currentType, out var drawerTypes))
+                //In the first case we don't need to check for some properties as we know that we deal not with a Base class
+                //We check only if we have direct drawer and prepare to check interfaces in the next step if they exist
+                var requestedPropertyType = inspectedType == propertyType;
+
+                //Check for class drawers. For generics it would be 2 checks. One for generic type and one for generic definition.
+                //For example, for A <bool> we will check first for A<bool> and then for A<T>.
+                if (TryGetDrawerTypeForTypeFromCache(requestedPropertyType, renderPipelineAssetTypes, isPropertyTypeAManagedReference, inspectedType, currentRenderPipelineAssetType, out var drawerType))
                 {
-                    var result = TryFindDrawers(renderPipelineAssetTypes, drawerTypes, currentRenderPipelineAssetType, out var customPropertyDrawerContainer);
-                    if (result && IsAppropriateDrawer(currentType, type, customPropertyDrawerContainer, isPropertyTypeIsManagedReference))
-                        return customPropertyDrawerContainer.drawerType;
+                    k_DrawerStaticTypesCache.Add(propertyType, drawerType);
+                    return drawerType;
                 }
 
-                // check for base generic versions of the drawers
-                if (currentType.IsGenericType && k_DrawerTypeForType.Value.TryGetValue(currentType.GetGenericTypeDefinition(), out var genericDrawerTypes))
+                if (requestedPropertyType)
                 {
-                    var result = TryFindDrawers(renderPipelineAssetTypes, genericDrawerTypes, currentRenderPipelineAssetType, out var customPropertyDrawerContainer);
-                    if (result && IsAppropriateDrawer(currentType, type, customPropertyDrawerContainer, isPropertyTypeIsManagedReference))
-                        return customPropertyDrawerContainer.drawerType;
+                    //Gather all interfaces for requested property type
+                    allInterfaces = inspectedType.GetInterfaces();
+                    checkedInterfaces = new bool[allInterfaces.Length];
+
+                    // Calculate inheritance level for each interface
+                    var interfaceLevels = new Dictionary<Type, int>();
+                    foreach (var interfaceType in allInterfaces)
+                        CalculateInheritanceLevel(interfaceType, 0, interfaceLevels);
+
+                    // Sort interfaces by inheritance level and then by name
+                    Array.Sort(allInterfaces, (x, y) =>
+                    {
+                        var levelComparison = interfaceLevels[x].CompareTo(interfaceLevels[y]);
+                        return levelComparison != 0 ? levelComparison : string.CompareOrdinal(x.Name, y.Name);
+                    });
+                }
+                else if (allInterfaces.Length != 0)
+                {
+                    // Get all interfaces for the current inspected type
+                    var baseTypeInterfaces = inspectedType.GetInterfaces();
+                    for (int i = 0; i < allInterfaces.Length; i++)
+                    {
+                        // Skipped already checked interfaces
+                        if (checkedInterfaces[i])
+                            continue;
+
+                        // Exclude interfaces that are implemented by the base type
+                        var interfaceType = allInterfaces[i];
+                        if (baseTypeInterfaces.ContainsByEquals(interfaceType))
+                            continue;
+
+                        // Check if there's an appropriate drawer for the interface
+                        checkedInterfaces[i] = true;
+                        if (TryGetDrawerTypeForTypeFromCache(requestedPropertyType, renderPipelineAssetTypes, isPropertyTypeAManagedReference, interfaceType, currentRenderPipelineAssetType, out drawerType))
+                        {
+                            k_DrawerStaticTypesCache.Add(propertyType, drawerType);
+                            return drawerType;
+                        }
+                    }
                 }
             }
 
             return null;
+        }
+
+        static int CalculateInheritanceLevel(Type interfaceType, int currentLevel, Dictionary<Type, int> processedInterfaces)
+        {
+            // Get parent interfaces
+            var parentInterfaces = interfaceType.GetInterfaces();
+
+            // Base case: if there are no parent interfaces, return current inheritance level
+            if (parentInterfaces.Length == 0)
+                return AddOrReplaceInterfaceLevel(currentLevel);
+
+            // Recursive case: return the minimum inheritance level minus 1 of the parent interfaces
+            var minParentLevel = int.MaxValue;
+            for (var i = 0; i < parentInterfaces.Length; i++)
+            {
+                var parentLevel = CalculateInheritanceLevel(parentInterfaces[i], currentLevel + 1, processedInterfaces);
+                if (parentLevel < minParentLevel)
+                    minParentLevel = parentLevel;
+            }
+
+            return AddOrReplaceInterfaceLevel(minParentLevel - 1);
+
+            //Local method just to simplify code
+            int AddOrReplaceInterfaceLevel(int newLevel)
+            {
+                // Check if the interface has already been processed and update its inheritance level if necessary
+                if (processedInterfaces.TryGetValue(interfaceType, out var level))
+                {
+                    // If the interface has already been processed and the new inheritance level is greater than the current one, update it
+                    if (level >= newLevel)
+                        return level;
+
+                    processedInterfaces[interfaceType] = newLevel;
+                    return newLevel;
+                }
+                processedInterfaces.Add(interfaceType, newLevel);
+                return newLevel;
+            }
+        }
+
+        static bool TryGetDrawerTypeForTypeFromCache(bool requestedPropertyType, Type[] renderPipelineAssetTypes, bool isPropertyTypeIsManagedReference, Type currentType, Type currentRenderPipelineAssetType,
+            out Type drawerType)
+        {
+            drawerType = null;
+            // check for exact type
+            if (TryExtractDrawerTypeForTypeFromCache(requestedPropertyType, renderPipelineAssetTypes, isPropertyTypeIsManagedReference, currentType, currentRenderPipelineAssetType, out drawerType))
+                return true;
+
+            // check for base generic versions of the drawers
+            if (!currentType.IsGenericType)
+                return false;
+
+            var genericDefinition = currentType.GetGenericTypeDefinition();
+            return TryExtractDrawerTypeForTypeFromCache(requestedPropertyType, renderPipelineAssetTypes, isPropertyTypeIsManagedReference, genericDefinition, currentRenderPipelineAssetType, out drawerType);
+        }
+
+        static bool TryExtractDrawerTypeForTypeFromCache(bool requestedPropertyType, Type[] renderPipelineAssetTypes, bool isPropertyTypeIsManagedReference, Type currentType, Type currentRenderPipelineAssetType,
+            out Type drawerType)
+        {
+            drawerType = null;
+            // Extract drawers for the current type from the cache
+            if (!k_DrawerTypeForType.Value.TryGetValue(currentType, out var drawerTypes))
+                return false;
+
+            // Check if there's an appropriate drawer for the current type and render pipeline. This is where we check for SupportedOnRenderPipelineAttribute
+            var result = TryFindDrawers(renderPipelineAssetTypes, drawerTypes, currentRenderPipelineAssetType, out var customPropertyDrawerContainer);
+            if (!IsAppropriateDrawerFound())
+                return false;
+
+            drawerType = customPropertyDrawerContainer.drawerType;
+            return true;
+
+            //Extracted just to simplify a condition
+            bool IsAppropriateDrawerFound()
+            {
+                if (!result)
+                    return false;
+
+                //When we check for requested property type we don't need to check for editorForChildClasses and managed reference type
+                if (requestedPropertyType)
+                    return true;
+
+                // Check for drawers with editorForChildClasses set to true and special case for managed references.
+                // The custom property drawers for those are defined with 'useForChildren=false'
+                // (otherwise the dynamic type is not taking into account in the custom property
+                // drawer resolution) so even if 's_DrawerTypeForType' is built (based on static types)
+                // we have to check base types for custom property drawers manually.
+                // Managed references with no drawers should properly try to fallback
+                return (customPropertyDrawerContainer.editorForChildClasses || isPropertyTypeIsManagedReference);
+            }
         }
 
         static bool TryFindDrawers(Type[] renderPipelineAssetTypes, CustomPropertyDrawerContainer[] drawerTypes, Type currentRenderPipelineAssetType,
@@ -207,7 +338,6 @@ namespace UnityEditor
                     switch (supportedMode)
                     {
                         case SupportedOnRenderPipelineAttribute.SupportedMode.Supported:
-
                             if (supportedOnRenderPipelineDrawer == null || renderPipelineAssetType == currentRenderPipelineAssetType)
                                 supportedOnRenderPipelineDrawer = drawerContainer;
                             break;
@@ -244,6 +374,7 @@ namespace UnityEditor
         /// <returns>The custom property drawer type or 'null' if not found.</returns>
         internal static Type GetDrawerTypeForPropertyAndType(SerializedProperty property, Type type)
         {
+            //Try to gather SupportedOn from Serialized Object and rely on this instead of GraphicsSettings.currentRenderPipelineAssetType if exist
             var serializedObject = property.serializedObject;
             var serializedObjectType = serializedObject.targetObject.GetType();
             if (!k_SupportedRenderPipelinesForSerializedObject.TryGetValue(serializedObjectType, out var supportedOnRenderPipelineTypes))
@@ -253,7 +384,10 @@ namespace UnityEditor
                 k_SupportedRenderPipelinesForSerializedObject.Add(serializedObjectType, supportedOnRenderPipelineTypes);
             }
 
+            //Choose to use SupportedOn from SO if exist or current RenderPipelineAsset.
+            //If our SO has SupportedOn it will indicate to our system that this SO used specifically with defined Render Pipeline Asset types
             var renderPipelineAssetTypes = supportedOnRenderPipelineTypes ?? (GraphicsSettings.isScriptableRenderPipelineEnabled ? currentRenderPipelineAssetTypeArray : null);
+
             return GetDrawerTypeForType(type, renderPipelineAssetTypes, property.propertyType == SerializedPropertyType.ManagedReference);
         }
 

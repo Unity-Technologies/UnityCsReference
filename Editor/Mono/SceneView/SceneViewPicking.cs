@@ -25,14 +25,14 @@ namespace UnityEditor
         static bool s_RetainHashes = false;
         static int s_PreviousTopmostHash = 0;
         static int s_PreviousPrefixHash = 0;
-        static List<PickingObject> s_ActiveObjectFilter = new List<PickingObject>(1);
+        static readonly List<PickingObject> s_ActiveObjectFilter = new List<PickingObject>(1);
 
         static SceneViewPicking()
         {
             Selection.selectionChanged += ResetHashes;
         }
 
-        private static void ResetHashes()
+        static void ResetHashes()
         {
             if (!s_RetainHashes)
             {
@@ -144,37 +144,36 @@ namespace UnityEditor
             return enumerator.Current;
         }
 
-        // Use picking system to get us ordered list of all visually overlapping gameobjects in screen position from top to bottom
-        public static IEnumerable<PickingObject> GetAllOverlapping(Vector2 position)
+        // Get an ordered list of all visually overlapping GameObjects at the screen position from top to bottom
+        internal static IEnumerable<PickingObject> GetAllOverlapping(Vector2 position)
         {
-            var allOverlapping = new List<PickingObject>();
-            var ignoreList = new List<PickingObject>();
+            var overlapping = new List<PickingObject>();
+            var ignore = new List<PickingObject>();
 
             while (true)
             {
-                PickingObject res = HandleUtility.PickObject(position, false, ignoreList, null);
+                PickingObject res = HandleUtility.PickObject(position, false, ignore, null);
 
                 if (res.target == null)
                     break;
 
                 if (res.TryGetGameObject(out var go) && SceneVisibilityManager.instance.IsPickingDisabled(go))
                 {
-                    ignoreList.Add(res);
+                    ignore.Add(res);
                     continue;
                 }
 
                 // Prevent infinite loop if object cannot be ignored (this needs to be fixed so print an error)
-                if (allOverlapping.Count > 0 && res == allOverlapping.Last())
+                if (overlapping.Count > 0 && res == overlapping.Last())
                 {
                     Debug.LogError($"GetAllOverlapping failed, could not ignore game object '{res}' when picking");
                     break;
                 }
 
-                allOverlapping.Add(res);
-                ignoreList.Add(res);
+                overlapping.Add(res);
+                ignore.Add(res);
 
                 yield return res;
-
             }
         }
 

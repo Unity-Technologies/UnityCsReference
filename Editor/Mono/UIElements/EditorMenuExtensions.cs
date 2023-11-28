@@ -36,6 +36,7 @@ namespace UnityEditor.UIElements
         public DropdownMenuSearch search { get; set; } = DropdownMenuSearch.Auto;
         public DropdownMenuLayout layout { get; set; } = DropdownMenuLayout.Long;
         public string title { get; set; } = null;
+        public Action onDetachedFromMenuContainerCallback { get; set; } = null;
     }
 
     public static class EditorMenuExtensions
@@ -885,6 +886,7 @@ namespace UnityEditor.UIElements
             menu.root.name = desc.title;
             menu.allowBackButton = !desc.expansion;
             menu.autoClose = desc.autoClose;
+            menu.m_OnDetachedFromMenuContainer = desc.onDetachedFromMenuContainerCallback;
         }
 
         internal static void DoDisplayGenericDropdownMenu(this GenericDropdownMenu menu, Vector2 position, DropdownMenuDescriptor desc)

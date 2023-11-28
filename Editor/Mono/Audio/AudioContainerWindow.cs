@@ -248,6 +248,7 @@ sealed class AudioContainerWindow : EditorWindow
 
                 m_Day0RootVisualElement.style.display = DisplayStyle.None;
                 m_ContainerRootVisualElement.style.display = DisplayStyle.Flex;
+                m_ClipsListView.Rebuild(); // Force a list rebuild when the list has changed or it will not always render correctly due to a UI toolkit bug.
             }
         }
         finally

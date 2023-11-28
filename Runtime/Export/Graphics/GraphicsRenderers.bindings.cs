@@ -83,6 +83,7 @@ namespace UnityEngine
 
         extern public bool              forceRenderingOff { get; set; }
         extern internal bool            allowGPUDrivenRendering { get; set; }
+        extern internal bool            smallMeshCulling { get; set; }
 
         [NativeName("GetIsStaticShadowCaster")] extern private bool GetIsStaticShadowCaster();
         [NativeName("SetIsStaticShadowCaster")] extern private void SetIsStaticShadowCaster(bool value);
@@ -105,7 +106,7 @@ namespace UnityEngine
         extern internal int    sortingGroupID    { get; set; }
         extern internal int    sortingGroupOrder { get; set; }
         extern internal UInt32 sortingGroupKey   { get; }
-        
+
         extern public bool isLOD0 {[NativeName("IsLOD0")] get; }
 
         internal extern byte stagePriority { get; set; }

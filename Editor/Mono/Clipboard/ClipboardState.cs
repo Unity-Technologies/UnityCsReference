@@ -50,6 +50,14 @@ namespace UnityEditor
                 m_HasLayerMask = ClipboardParser.ParseLayerMask(m_RawContents, out m_ValueLayerMask);
         }
 
+        internal bool? m_HasRenderingLayerMask;
+        internal RenderingLayerMask m_ValueRenderingLayerMask;
+        internal void FetchRenderingLayerMask()
+        {
+            if (!m_HasRenderingLayerMask.HasValue)
+                m_HasRenderingLayerMask = ClipboardParser.ParseRenderingLayerMask(m_RawContents, out m_ValueRenderingLayerMask);
+        }
+
         internal bool? m_HasVector3;
         internal Vector3 m_ValueVector3;
         internal void FetchVector3()

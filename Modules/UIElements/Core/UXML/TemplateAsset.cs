@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
 using UnityEngine.Pool;
@@ -29,12 +28,13 @@ namespace UnityEngine.UIElements
             public string m_AttributeName;
             public string m_Value;
         }
+
         [SerializeField]
-        private List<AttributeOverride> m_AttributeOverrides;
+        List<AttributeOverride> m_AttributeOverrides = new List<AttributeOverride>();
         public List<AttributeOverride> attributeOverrides
         {
-            get { return m_AttributeOverrides == null ? (m_AttributeOverrides = new List<AttributeOverride>()) : m_AttributeOverrides; }
-            set { m_AttributeOverrides = value; }
+            get => m_AttributeOverrides;
+            set => m_AttributeOverrides = value;
         }
 
         public bool hasAttributeOverride => m_AttributeOverrides is {Count: > 0};
@@ -47,10 +47,11 @@ namespace UnityEngine.UIElements
             public UxmlSerializedData m_SerializedData;
         }
 
-        [SerializeField] private List<UxmlSerializedDataOverride> m_SerializedDataOverride;
+        [SerializeField]
+        List<UxmlSerializedDataOverride> m_SerializedDataOverride = new List<UxmlSerializedDataOverride>();
         public List<UxmlSerializedDataOverride> serializedDataOverrides
         {
-            get => m_SerializedDataOverride ??= new List<UxmlSerializedDataOverride>();
+            get => m_SerializedDataOverride;
             set => m_SerializedDataOverride = value;
         }
 
@@ -76,18 +77,17 @@ namespace UnityEngine.UIElements
             using var traitsOverridesHandle = ListPool<CreationContext.AttributeOverrideRange>.Get(out var traitsOverrideRanges);
             using var dataOverridesHandle = ListPool<CreationContext.SerializedDataOverrideRange>.Get(out var serializedDataOverrideRanges);
 
-            // Populate traits attribute overrides. This will be used in two contexts:
-            // 1- When an element does not use the Uxml Serialization feature and relies on the Uxml Factory/Traits system.
-            // 2- When an element is using the Uxml Serialization, we'll use these overrides to partially override the UxmlSerializedData.
+            // Populate traits attribute overrides.
+            // This will be used when an element does not use the Uxml Serialization feature and relies on the Uxml Factory/Traits system.
             if (null != cc.attributeOverrides)
                 traitsOverrideRanges.AddRange(cc.attributeOverrides);
-            if (null != attributeOverrides)
+            if (attributeOverrides.Count > 0)
                 traitsOverrideRanges.Add(new CreationContext.AttributeOverrideRange(cc.visualTreeAsset, attributeOverrides));
 
             // Populate the serialized data overrides.
             if (null != cc.serializedDataOverrides)
                 serializedDataOverrideRanges.AddRange(cc.serializedDataOverrides);
-            if (null != serializedDataOverrides)
+            if (serializedDataOverrides.Count > 0)
                 serializedDataOverrideRanges.Add(new CreationContext.SerializedDataOverrideRange(cc.visualTreeAsset, serializedDataOverrides));
 
             tc.templateSource.CloneTree(tc, new CreationContext(cc.slotInsertionPoints, traitsOverrideRanges, serializedDataOverrideRanges, null, null));

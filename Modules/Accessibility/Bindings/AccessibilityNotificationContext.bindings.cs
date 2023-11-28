@@ -48,6 +48,18 @@ namespace UnityEngine.Accessibility
         /// A notification that the operating system sends when an assistive
         /// technology removes focus from an accessibility node.
         ElementUnfocused = 8,
+
+        /// A notification that the operating system sends when the user
+        /// changes the font scale in the system settings.
+        FontScaleChanged = 9,
+
+        /// A notification that the operating system sends when the bold
+        /// text setting changes.
+        BoldTextStatusChanged = 10,
+
+        /// A notification that the operating system sends when the closed
+        /// captioning setting changes.
+        ClosedCaptioningStatusChanged = 11,
     }
 
     /// <summary>

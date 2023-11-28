@@ -83,7 +83,7 @@ Are you sure you want to proceed?",
                 return;
 
             if (RecreateGlobalSettingsNeed(importedAssets, rpAsset))
-                RenderPipelineManager.RecreateCurrentPipeline(RenderPipelineManager.s_CurrentPipelineAsset);
+                RenderPipelineManager.RecreateCurrentPipeline(RenderPipelineManager.currentPipelineAsset);
         }
     }
 }

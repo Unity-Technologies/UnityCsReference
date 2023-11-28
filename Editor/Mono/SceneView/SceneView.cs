@@ -450,7 +450,7 @@ namespace UnityEditor
 
         private bool m_WasFocused = false;
 
-        private static int[] s_CachedParentRenderersFromSelection, s_CachedChildRenderersFromSelection;
+        internal static int[] s_CachedParentRenderersForOutlining, s_CachedChildRenderersForOutlining;
 
         [Serializable]
         public class SceneViewState
@@ -2249,7 +2249,7 @@ namespace UnityEditor
                 {
                     if (s_SelectionCacheDirty)
                     {
-                        HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersFromSelection, out s_CachedChildRenderersFromSelection);
+                        HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersForOutlining, out s_CachedChildRenderersForOutlining);
                         s_SelectionCacheDirty = false;
                     }
 
@@ -2257,7 +2257,7 @@ namespace UnityEditor
                     if (AnnotationUtility.showSelectionOutline) selectionOutlineWireFlags |= OutlineDrawMode.SelectionOutline;
                     if (AnnotationUtility.showSelectionWire) selectionOutlineWireFlags |= OutlineDrawMode.SelectionWire;
                     if (selectionOutlineWireFlags != 0)
-                        Handles.DrawOutlineOrWireframeInternal(kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, 1 - alphaMultiplier, s_CachedParentRenderersFromSelection, s_CachedChildRenderersFromSelection, selectionOutlineWireFlags);
+                        Handles.DrawOutlineOrWireframeInternal(kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, 1 - alphaMultiplier, s_CachedParentRenderersForOutlining, s_CachedChildRenderersForOutlining, selectionOutlineWireFlags);
                 }
 
                 DrawRenderModeOverlay(groupSpaceCameraRect);
@@ -2363,11 +2363,11 @@ namespace UnityEditor
             {
                 if (s_SelectionCacheDirty)
                 {
-                    HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersFromSelection, out s_CachedChildRenderersFromSelection);
+                    HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersForOutlining, out s_CachedChildRenderersForOutlining);
                     s_SelectionCacheDirty = false;
                 }
 
-                Handles.DrawOutlineOrWireframeInternal(kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, 1 - alphaMultiplier, s_CachedParentRenderersFromSelection, s_CachedChildRenderersFromSelection, selectionDrawModeMask);
+                Handles.DrawOutlineOrWireframeInternal(kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, 1 - alphaMultiplier, s_CachedParentRenderersForOutlining, s_CachedChildRenderersForOutlining, selectionDrawModeMask);
                 Handles.Internal_FinishDrawingCamera(m_Camera, drawGizmos);
             }
 
@@ -2699,7 +2699,7 @@ namespace UnityEditor
                 m_StageHandling.EndOnGUI();
         }
 
-        [Shortcut("Scene View/Show Action Menu", typeof(SceneView), KeyCode.Mouse1)]
+        [Shortcut("Scene View/Show Scene View Context Menu", typeof(SceneView), KeyCode.Mouse1)]
         static void OpenActionMenu(ShortcutArguments args)
         {
             // The mouseOverWindow check is necessary for MacOS because right-clicking does not

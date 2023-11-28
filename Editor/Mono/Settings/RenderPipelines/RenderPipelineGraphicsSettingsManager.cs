@@ -158,7 +158,7 @@ namespace UnityEditor.Rendering.Settings
                 return;
 
             var renderPipelineGlobalSettings = EditorGraphicsSettings.GetRenderPipelineGlobalSettingsAsset(renderPipelineType);
-            if (!renderPipelineGlobalSettings.TryGet(graphicsSettingsType, out var srpGraphicSetting))
+            if (renderPipelineGlobalSettings == null || !renderPipelineGlobalSettings.TryGet(graphicsSettingsType, out var srpGraphicSetting))
                 return;
 
             if (!TryCreateInstance(graphicsSettingsType, true, out srpGraphicSetting))

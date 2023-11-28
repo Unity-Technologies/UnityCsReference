@@ -344,17 +344,36 @@ namespace UnityEditor
                 activeSceneName = Path.GetFileNameWithoutExtension(SceneManager.GetActiveScene().path);
             }
 
-            var desc = new ApplicationTitleDescriptor(
-                isTemporaryProject ? PlayerSettings.productName : Path.GetFileName(Path.GetDirectoryName(Application.dataPath)),
-                (Unsupported.IsSourceBuild() || Unsupported.IsDeveloperMode()) ? InternalEditorUtility.GetUnityDisplayVersion() : Application.unityVersion,
-                activeSceneName,
-                BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)),
-                Coverage.enabled
-            );
+            ApplicationTitleDescriptor desc;
+            if (PreferencesProvider.useProjectPathInTitle)
+            {
+                desc = new ApplicationTitleDescriptor(
+                   Path.GetFullPath(Path.Combine(Application.dataPath, "..")),
+                   (Unsupported.IsSourceBuild() || Unsupported.IsDeveloperMode()) ? InternalEditorUtility.GetUnityDisplayVersion() : Application.unityVersion,
+                   activeSceneName,
+                   BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)),
+                   Coverage.enabled
+                );                
+            }
+            else
+            {
+                desc = new ApplicationTitleDescriptor(
+                   GetDefaultProjectName(),
+                   (Unsupported.IsSourceBuild() || Unsupported.IsDeveloperMode()) ? InternalEditorUtility.GetUnityDisplayVersion() : Application.unityVersion,
+                   activeSceneName,
+                   BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)),
+                   Coverage.enabled
+                );
+            }
 
             desc.title = GetDefaultMainWindowTitle(desc);
 
             return desc;
+        }
+
+        internal static string GetDefaultProjectName()
+        {
+            return isTemporaryProject ? PlayerSettings.productName : Path.GetFileName(Path.GetDirectoryName(Application.dataPath));
         }
 
         [RequiredByNativeCode]

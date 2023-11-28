@@ -253,9 +253,7 @@ namespace UnityEditor
 
         static void SetPickingEnabled(bool enabled)
         {
-            HandleUtility.pickClosestGameObjectDelegate = enabled
-                ? PhysicsVisualizationSettings.PickClosestGameObject
-                : (HandleUtility.PickClosestGameObjectFunc)null;
+            HandleUtility.pickClosestGameObjectDelegate = enabled ? PhysicsVisualizationSettings.PickClosestGameObject : null;
         }
 
         void OnBecameVisible()

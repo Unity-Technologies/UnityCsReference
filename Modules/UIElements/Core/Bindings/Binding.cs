@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Properties;
+
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -80,6 +82,7 @@ namespace UnityEngine.UIElements
         /// When set to <see cref="BindingUpdateTrigger.EveryUpdate"/>, the binding instance updates in every update, regardless of the
         /// data source version.
         /// </summary>
+        [CreateProperty]
         public BindingUpdateTrigger updateTrigger
         {
             get => m_UpdateTrigger;

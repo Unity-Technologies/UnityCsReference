@@ -535,7 +535,13 @@ namespace UnityEngine.UIElements
             {
                 renderedText = newValue;
                 m_Text = newValue;
-                IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+
+                //No need to dirty the layout if the element's size is not affected by the text change
+                if (computedStyle.height.IsAuto() || computedStyle.height.IsNone() || (computedStyle.width.IsAuto() || computedStyle.width.IsNone())  )
+                    IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+                else
+                    IncrementVersion(VersionChangeType.Repaint);
+  
 
                 if (!string.IsNullOrEmpty(viewDataKey))
                     SaveViewData();

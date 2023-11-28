@@ -12,9 +12,6 @@ namespace Unity.UI.Builder
         public static void SetAttributeOverride(
             this TemplateAsset ta, string elementName, string attributeName, string value)
         {
-            if (ta.attributeOverrides == null)
-                ta.attributeOverrides = new List<TemplateAsset.AttributeOverride>();
-
             // See if the override already exists.
             for (int i = 0; i < ta.attributeOverrides.Count; ++i)
             {
@@ -43,9 +40,6 @@ namespace Unity.UI.Builder
         public static void RemoveAttributeOverride(
             this TemplateAsset ta, string elementName, string attributeName)
         {
-            if (ta.attributeOverrides == null)
-                return;
-
             // See if the override already exists.
             for (int i = 0; i < ta.attributeOverrides.Count; ++i)
             {

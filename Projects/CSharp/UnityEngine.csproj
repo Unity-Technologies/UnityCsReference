@@ -74,6 +74,12 @@
     <Compile Include="..\..\Modules\Accessibility\Bindings\AccessibilityNotificationContext.bindings.cs">
       <Link>Modules\Accessibility\Bindings\AccessibilityNotificationContext.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Bindings\AccessibilitySettings.bindings.cs">
+      <Link>Modules\Accessibility\Bindings\AccessibilitySettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Managed\AccessibilitySettings.cs">
+      <Link>Modules\Accessibility\Managed\AccessibilitySettings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Accessibility\Managed\AssistiveSupport.cs">
       <Link>Modules\Accessibility\Managed\AssistiveSupport.cs</Link>
     </Compile>
@@ -949,6 +955,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs">
       <Link>Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\AssemblyInfo.cs">
+      <Link>Modules\Physics\AssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics\Managed\Collision.cs">
       <Link>Modules\Physics\Managed\Collision.cs</Link>
@@ -3815,6 +3824,9 @@
     <Compile Include="..\..\Runtime\Export\Graphics\Texture.deprecated.cs">
       <Link>Runtime\Export\Graphics\Texture.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\Watermark.bindings.cs">
+      <Link>Runtime\Export\Graphics\Watermark.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Handheld\Handheld.bindings.cs">
       <Link>Runtime\Export\Handheld\Handheld.bindings.cs</Link>
     </Compile>
@@ -4082,8 +4094,8 @@
     <Compile Include="..\..\Runtime\Export\RenderPipeline\RendererList.bindings.cs">
       <Link>Runtime\Export\RenderPipeline\RendererList.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderingLayerMask.cs">
-      <Link>Runtime\Export\RenderPipeline\RenderingLayerMask.cs</Link>
+    <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderingLayerMask.bindings.cs">
+      <Link>Runtime\Export\RenderPipeline\RenderingLayerMask.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\ScopedRenderPass.cs">
       <Link>Runtime\Export\RenderPipeline\ScopedRenderPass.cs</Link>
@@ -4171,6 +4183,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\ApiRestrictions.bindings.cs">
       <Link>Runtime\Export\Scripting\ApiRestrictions.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\AsyncInstantiateOperation.bindings.cs">
+      <Link>Runtime\Export\Scripting\AsyncInstantiateOperation.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\AsyncOperation.bindings.cs">
       <Link>Runtime\Export\Scripting\AsyncOperation.bindings.cs</Link>

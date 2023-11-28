@@ -539,11 +539,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageInfo?.source == PackageSource.BuiltIn)
                 return RegistryType.UnityRegistry;
 
-            if (string.IsNullOrEmpty(packageInfo?.registry?.url))
-                return RegistryType.None;
-
-            if (packageInfo.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore)
+            if (packageInfo?.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore)
                 return RegistryType.AssetStore;
+
+            // Details from the UPM Core team:
+            // We need to check "versions" because RegistryInfo is never null.
+            // It is always populated with the registry info from which the search was performed (usually the main Unity Registry).
+            // The most accurate way to determine that a package's registry is neither "UnityRegistry" nor "MyRegistries"
+            // is by verifying that there are no versions found in the "versions" list.
+            if (packageInfo?.versions == null || packageInfo.versions.all.Length == 0)
+                return RegistryType.None;
 
             if (m_RegistryUrls.TryGetValue(packageInfo.registry.url, out var result))
                 return result;

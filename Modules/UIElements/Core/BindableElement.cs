@@ -11,11 +11,14 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class BindableElement : VisualElement, IBindable
     {
+        internal const string k_BindingPathTooltip = "Default method to define a path to a serialized property. Most often used for Editor extensions and inspectors.";
+
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] string bindingPath;
+            [Tooltip(k_BindingPathTooltip)]
+            [SerializeField, BindingPathDrawer] string bindingPath;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindingPath_UxmlAttributeFlags;
             #pragma warning restore 649
 

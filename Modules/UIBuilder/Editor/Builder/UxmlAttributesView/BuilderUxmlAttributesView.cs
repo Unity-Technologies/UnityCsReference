@@ -1631,10 +1631,6 @@ namespace Unity.UI.Builder
                     var currentUxmlSerializedData = result.serializedData as UxmlSerializedData;
                     var newValue = description.GetSerializedValue(currentUxmlSerializedData);
 
-                    // We choose to disregard callbacks when the value remains unchanged,
-                    // which can occur during an Undo/Redo when the bound fields are updated.
-                    // To do this we compare the value on the attribute owner to its serialized value,
-                    // if they match then we consider them to have not changed.
                     if (result.attributeOwner != null)
                     {
                         description.TryGetValueFromObject(result.attributeOwner, out var previousValue);
@@ -1643,6 +1639,18 @@ namespace Unity.UI.Builder
                         if (!description.isUxmlObject && previousValue == null && !typeof(Object).IsAssignableFrom(description.type) && description.type.GetConstructor(Type.EmptyTypes) != null)
                             previousValue = Activator.CreateInstance(description.type);
 
+                        if (newValue is VisualTreeAsset vta && inspector.document.WillCauseCircularDependency(vta))
+                        {
+                            description.SetSerializedValue(currentUxmlSerializedData, previousValue);
+                            BuilderDialogsUtility.DisplayDialog(BuilderConstants.InvalidWouldCauseCircularDependencyMessage,
+                                BuilderConstants.InvalidWouldCauseCircularDependencyMessageDescription, BuilderConstants.DialogOkOption);
+                            return;
+                        }
+
+                        // We choose to disregard callbacks when the value remains unchanged,
+                        // which can occur during an Undo/Redo when the bound fields are updated.
+                        // To do this we compare the value on the attribute owner to its serialized value,
+                        // if they match then we consider them to have not changed.
                         if (UxmlAttributeComparison.ObjectEquals(previousValue, newValue))
                         {
                             Undo.RevertAllDownToGroup(revertGroup);

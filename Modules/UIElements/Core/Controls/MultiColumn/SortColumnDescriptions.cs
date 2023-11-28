@@ -77,6 +77,8 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private readonly IList<SortColumnDescription> m_Descriptions = new List<SortColumnDescription>();
 
+        private IList<SortColumnDescription> sortColumnDescriptions => m_Descriptions;
+
         /// <summary>
         /// Event sent when the descriptions changed.
         /// </summary>

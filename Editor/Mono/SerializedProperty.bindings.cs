@@ -84,6 +84,9 @@ namespace UnityEditor
 
         // Hash128 value
         Hash128 = 25,
+
+        // Rendering Layer Mask property
+        RenderingLayerMask = 26
     }
 
     // This enum exposes extra detail, because SerializedPropertyType classifies all numeric types as Integer or Float
@@ -336,6 +339,7 @@ namespace UnityEditor
                     case SerializedPropertyType.Color: return colorValue;
                     case SerializedPropertyType.ObjectReference: return objectReferenceValue;
                     case SerializedPropertyType.LayerMask: return (LayerMask)intValue;
+                    case SerializedPropertyType.RenderingLayerMask: return (RenderingLayerMask)uintValue;
                     case SerializedPropertyType.Vector2: return vector2Value;
                     case SerializedPropertyType.Vector3: return vector3Value;
                     case SerializedPropertyType.Vector4: return vector4Value;
@@ -409,6 +413,18 @@ namespace UnityEditor
                             catch (InvalidCastException)
                             {
                                 intValue = Convert.ToInt32(value);
+                            }
+                            break;
+                        }
+                        case SerializedPropertyType.RenderingLayerMask:
+                        {
+                            try
+                            {
+                                uintValue = ((RenderingLayerMask)value).value;
+                            }
+                            catch (InvalidCastException)
+                            {
+                                uintValue = Convert.ToUInt32(value);
                             }
                             break;
                         }

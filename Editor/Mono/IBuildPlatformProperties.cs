@@ -12,7 +12,7 @@ internal interface IBuildPlatformProperties : IPlatformProperties
 
     // The BuildEventsHandlerPostProcess.OnPostprocessBuild method uses this method to report permissions for a build target.
     // This method replaces the BuildEventsHandlerPostProcess.ReportBuildTargetPermissions private method.
-    public void ReportBuildTargetPermissions() {}
+    public void ReportBuildTargetPermissions(BuildOptions buildOptions) {}
 
     // The BuildPlayerWindow.BuildPlayerAndRun method uses this method to set the build location for those build targets
     // that require special handling.  Only the stand-alone Windows build targets implement this method.

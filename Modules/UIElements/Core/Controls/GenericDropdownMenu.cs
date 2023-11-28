@@ -147,6 +147,7 @@ namespace UnityEngine.UIElements
         internal Action<MenuItem, GenericDropdownMenu> m_SubmenuOverride;
         internal Action<bool, bool> m_OnBeforePerformAction;
         internal Action m_OnBack;
+        internal Action m_OnDetachedFromMenuContainer;
 
         internal event Action onRebuild;
         internal event Action<char, KeyCode, EventModifiers> onKey;
@@ -345,6 +346,8 @@ namespace UnityEngine.UIElements
             m_ListView.EnableInClassList(clickUssClassName, false);
             m_ListView.RemoveFromHierarchy();
             s_ListPool.Release(m_ListView);
+
+            m_OnDetachedFromMenuContainer?.Invoke();
 
             if (m_Current.parent != null)
                 return;
@@ -932,7 +935,7 @@ namespace UnityEngine.UIElements
             return item;
         }
 
-        VisualElement BuildItem(string name, bool isChecked, bool isEnabled, bool isSubmenu, object data, Texture2D icon, string tooltip)
+        internal static VisualElement BuildItem(string name, bool isChecked, bool isEnabled, bool isSubmenu, object data, Texture2D icon, string tooltip)
         {
             var item = s_ItemPool.Get();
             item.RegisterCallback<PointerDownEvent>(e => item.parent.parent.parent.EnableInClassList(clickUssClassName, true));

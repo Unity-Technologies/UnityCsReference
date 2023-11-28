@@ -192,6 +192,8 @@ namespace UnityEngine
             return gameObject.GetComponents<T>();
         }
 
+        public extern int GetComponentIndex();
+
         public bool CompareTag(string tag)
         {
             return gameObject.CompareTag(tag);

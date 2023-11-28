@@ -132,6 +132,12 @@ namespace UnityEditor
                         p => Clipboard.hasLayerMask,
                         p => p.intValue = Clipboard.layerMaskValue);
                     break;
+                case SerializedPropertyType.RenderingLayerMask:
+                    SetupAction(property, menu, evt,
+                        p => Clipboard.renderingLayerMaskValue = p.uintValue,
+                        p => Clipboard.hasRenderingLayerMask,
+                        p => p.uintValue = Clipboard.renderingLayerMaskValue);
+                    break;
                 case SerializedPropertyType.Enum:
                     SetupAction(property, menu, evt,
                         Clipboard.SetEnumProperty,
@@ -220,7 +226,7 @@ namespace UnityEditor
                                     p => Clipboard.hasInteger,
                                     p => p.intValue = Clipboard.integerValue);
                                 break;
-                        }                        
+                        }
                     }
                     break;
                 case SerializedPropertyType.Float:

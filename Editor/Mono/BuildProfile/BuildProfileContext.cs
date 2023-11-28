@@ -183,11 +183,20 @@ namespace UnityEditor.Build.Profile
                 // the classic platform build profile directly. When doing this, the next getter
                 // MUST return the classic platform build profile containing the newly set value.
                 // The active build profile should be updated directly.
-                Debug.LogWarning($"[BuildProfile] Active build profile ({AssetDatabase.GetAssetPath(instance.activeProfile)}) is set when calling a legacy setter for the same platform. For backwards compatibility, the active build profile has been unset.");
-                instance.activeProfile = null;
+                ResetActiveProfile();
             }
 
             return IsSharedProfile(target) ? instance.sharedProfile : instance.GetForClassicPlatform(target, subTarget);
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
+        internal static void ResetActiveProfile()
+        {
+            if (instance.activeProfile is null)
+                return;
+
+            Debug.LogWarning($"[BuildProfile] Active build profile ({AssetDatabase.GetAssetPath(instance.activeProfile)}) is set when calling a global platform API.");
+            instance.activeProfile = null;
         }
 
         internal static bool TryGetActiveOrClassicPlatformSettingsBase<T>(

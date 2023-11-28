@@ -142,7 +142,7 @@ namespace UnityEditor
 
         internal static AnalyticsResult SendEventBuildTargetPermissions(object parameters)
         {
-            return EditorAnalytics.SendEvent("buildTargetPermissions", parameters, SendEventOptions.kAppendBuildGuid | SendEventOptions.kAppendBuildTarget);
+            return EditorAnalytics.SendEventWithVersion("buildTargetPermissions", parameters, 2, SendEventOptions.kAppendBuildGuid | SendEventOptions.kAppendBuildTarget);
         }
 
         internal static AnalyticsResult SendCollabUserAction(object parameters)

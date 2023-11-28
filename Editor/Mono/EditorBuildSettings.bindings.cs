@@ -5,25 +5,27 @@
 using System;
 using System.Linq;
 using UnityEngine.Scripting;
-using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 using System.Runtime.InteropServices;
+using JetBrains.Annotations;
 using Object = UnityEngine.Object;
+using UnityEditor.Build.Profile;
 using UnityEngine;
 
 namespace UnityEditor
 {
+    [Serializable]
     [NativeHeader("Editor/Src/EditorBuildSettings.h")]
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
     public class EditorBuildSettingsScene : IComparable
     {
-        [NativeName("enabled")]
+        [NativeName("enabled"), SerializeField]
         bool m_enabled;
-        [NativeName("path")]
+        [NativeName("path"), SerializeField]
         string m_path;
-        [NativeName("guid")]
+        [NativeName("guid"), SerializeField]
         GUID m_guid;
         public EditorBuildSettingsScene() {}
         public EditorBuildSettingsScene(string path, bool enabled)
@@ -57,8 +59,16 @@ namespace UnityEditor
             }
             throw new ArgumentException("object is not a EditorBuildSettingsScene");
         }
-    }
 
+        [RequiredByNativeCode, UsedImplicitly]
+        private static void DeconstructArrayElement(EditorBuildSettingsScene[] arr, int index, out bool enabled, out string path, out GUID guid)
+        {
+            var item = arr[index];
+            enabled = item.enabled;
+            path = item.path;
+            guid = item.guid;
+        }
+    }
 
     [NativeHeader("Editor/Src/EditorBuildSettings.h")]
     public partial class EditorBuildSettings : UnityEngine.Object
@@ -66,7 +76,7 @@ namespace UnityEditor
         private EditorBuildSettings() {}
         public static event Action sceneListChanged;
         [RequiredByNativeCode]
-        private static void SceneListChanged()
+        internal static void SceneListChanged()
         {
             if (sceneListChanged != null)
                 sceneListChanged();
@@ -74,12 +84,36 @@ namespace UnityEditor
 
         public static EditorBuildSettingsScene[] scenes
         {
-            get => GetEditorBuildSettingsScenes();
+            get
+            {
+                if (EditorUserBuildSettings.IsBuildProfileWorkflowEnabled()
+                    && BuildProfileContext.instance.activeProfile is not null)
+                {
+                    return BuildProfileContext.instance.activeProfile.scenes;
+                }
+
+                return GetEditorBuildSettingsScenes();
+            }
             set => SetEditorBuildSettingsScenes(value);
+        }
+
+        [RequiredByNativeCode]
+        static EditorBuildSettingsScene[] GetActiveBuildProfileSceneList()
+        {
+            if (BuildProfileContext.instance.activeProfile is null)
+                return null;
+
+            return BuildProfileContext.instance.activeProfile.scenes;
         }
 
         static extern EditorBuildSettingsScene[] GetEditorBuildSettingsScenes();
         static extern void SetEditorBuildSettingsScenes(EditorBuildSettingsScene[] scenes);
+
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static extern void SetEditorBuildSettingsSceneIgnoreProfile(EditorBuildSettingsScene[] scenes);
+
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static extern EditorBuildSettingsScene[] GetEditorBuildSettingsSceneIgnoreProfile();
 
         enum ConfigObjectResult
         {

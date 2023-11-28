@@ -476,6 +476,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
                         // We need to do a blit for when MSAA is enabled or when trying to show depth.
                         // The ObjectPreview doesn't currently support RenderTextures with only depth...
+                        int volumeDepth = FrameDebuggerHelper.GetVolumeDepth(ref texture);
                         int msaaVal = FrameDebuggerHelper.GetMSAAValue(ref texture);
                         bool isDepthTex = FrameDebuggerHelper.IsADepthTexture(ref texture);
                         if (msaaVal > 1 || isDepthTex)
@@ -486,6 +487,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                                 ref data.m_TextureCopy,
                                 texture.width,
                                 texture.height,
+                                volumeDepth,
                                 Vector4.one,
                                 new Vector4(0f, 1f, 0f, 0f),
                                 false,
