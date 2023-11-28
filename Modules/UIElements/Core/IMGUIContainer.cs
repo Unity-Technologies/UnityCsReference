@@ -11,7 +11,7 @@ using UnityEngine.UIElements.Experimental;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Element that draws IMGUI content.
+    /// Element that draws IMGUI content. For more information, refer to [[wiki:UIE-uxml-element-IMGUIContainer|UXML element IMGUIContainer]].
     /// </summary>
     public class IMGUIContainer : VisualElement, IDisposable
     {

@@ -7,15 +7,18 @@ using System;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Element that can be bound to a property.
+    /// Element that can be bound to a property. For more information, refer to [[wiki:UIE-uxml-element-BindableElement|UXML element BindableElement]].
     /// </summary>
     public class BindableElement : VisualElement, IBindable
     {
+        internal const string k_BindingPathTooltip = "Default method to define a path to a serialized property. Most often used for Editor extensions and inspectors.";
+
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField] private string bindingPath;
+            [Tooltip(k_BindingPathTooltip)]
+            [SerializeField, BindingPathDrawer] private string bindingPath;
             #pragma warning restore 649
 
             public override object CreateInstance() => new BindableElement();

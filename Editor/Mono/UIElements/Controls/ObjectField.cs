@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Makes a field to receive any object type.
+    /// Makes a field to receive any object type. For more information, refer to [[wiki:UIE-uxml-element-ObjectField|UXML element ObjectField]].
     /// </summary>
     public class ObjectField : BaseField<Object>
     {

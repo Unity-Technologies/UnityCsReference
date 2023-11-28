@@ -348,7 +348,7 @@ namespace UnityEditor
             Place(go, parent);
         }
 
-        [MenuItem("GameObject/Light/Spotlight", priority = 3)]
+        [MenuItem("GameObject/Light/Spot Light", priority = 3)]
         static void CreateSpotLight(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;

@@ -278,6 +278,7 @@ namespace UnityEngine
         extern public Vector3 worldCenterOfMass { get; }
         extern public bool automaticInertiaTensor { get; set; }
         extern public Vector3 inertiaTensor { get; set; }
+        extern internal Matrix4x4 worldInertiaTensorMatrix { get; }
         extern public Quaternion inertiaTensorRotation { get; set; }
         extern public void ResetCenterOfMass();
         extern public void ResetInertiaTensor();

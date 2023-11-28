@@ -9,7 +9,7 @@ using Unity.Properties;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A textfield is a rectangular area where the user can edit a string.
+    /// A TextField accepts and displays text input. For more information, refer to [[wiki:UIE-uxml-element-TextField|UXML element TextField]].
     /// </summary>
     public class TextField : TextInputBaseField<string>
     {

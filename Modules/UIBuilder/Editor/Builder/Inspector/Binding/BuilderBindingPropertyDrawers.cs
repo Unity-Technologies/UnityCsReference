@@ -41,6 +41,18 @@ namespace Unity.UI.Builder
         }
     }
 
+    [CustomPropertyDrawer(typeof(BindingPathDrawerAttribute))]
+    class BuilderBindingPathPropertyDrawer : PropertyDrawer
+    {
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            var field = new TextField("Editor Binding Path");
+            field.bindingPath = property.propertyPath;
+            field.AddToClassList(TextField.alignedFieldUssClassName);
+            return field;
+        }
+    }
+
     [CustomPropertyDrawer(typeof(DataSourceTypeDrawerAttribute))]
     class BuilderDataSourceTypePropertyDrawer : UxmlTypeReferencePropertyDrawer
     {

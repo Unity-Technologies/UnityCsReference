@@ -1229,6 +1229,9 @@ namespace Unity.UI.Builder
             {
                 foldout.UpdateFromChildFields();
 
+                // disable initially so we can check if we have any overridden fields, otherwise it'll think of the header as an overriden field (UUM-53358)
+                foldout.header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, false);
+
                 var hasOverriddenField = BuilderInspectorUtilities.HasOverriddenField(foldout);
                 foldout.header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, hasOverriddenField);
             }

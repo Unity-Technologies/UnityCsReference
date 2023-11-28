@@ -2699,7 +2699,7 @@ namespace UnityEditor
                 m_StageHandling.EndOnGUI();
         }
 
-        [Shortcut("Scene View/Show Action Menu", typeof(SceneView), KeyCode.Mouse1)]
+        [Shortcut("Scene View/Show Scene View Context Menu", typeof(SceneView), KeyCode.Mouse1)]
         static void OpenActionMenu(ShortcutArguments args)
         {
             // The mouseOverWindow check is necessary for MacOS because right-clicking does not

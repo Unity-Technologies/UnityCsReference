@@ -8,7 +8,7 @@ using System.Globalization;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Makes a text field for entering an unsigned integer.
+    /// Makes a text field for entering an unsigned integer. For more information, refer to [[wiki:UIE-uxml-element-UnsignedIntegerField|UXML element UnsignedIntegerField]].
     /// </summary>
     public class UnsignedIntegerField : TextValueField<uint>
     {

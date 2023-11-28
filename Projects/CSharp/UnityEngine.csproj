@@ -947,6 +947,9 @@
     <Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs">
       <Link>Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Physics\AssemblyInfo.cs">
+      <Link>Modules\Physics\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Physics\Managed\Dynamics.cs">
       <Link>Modules\Physics\Managed\Dynamics.cs</Link>
     </Compile>

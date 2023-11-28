@@ -9,7 +9,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A <see cref="Rect"/> field.
+    /// A <see cref="Rect"/> field. For more information, refer to [[wiki:UIE-uxm-element-RectField|UXML element RectField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class RectField : BaseCompositeField<Rect, FloatField, float>
@@ -120,7 +120,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// A <see cref="RectInt"/> field.
+    /// A <see cref="RectInt"/> field. For more information, refer to [[wiki:UIE-uxm-element-RectIntField|UXML element RectIntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class RectIntField : BaseCompositeField<RectInt, IntegerField, int>
