@@ -781,7 +781,8 @@ namespace UnityEngine.UIElements.UIR
                     st.constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
                 if (shaderInfo != null)
                     st.constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
-                Utility.SetPropertyBlock(st.constantProps);
+                if (!drawsInCameras)
+                    Utility.SetPropertyBlock(st.constantProps);
             }
 
             while (head != null)
@@ -962,7 +963,6 @@ namespace UnityEngine.UIElements.UIR
                             st.constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
                         if (shaderInfo != null)
                             st.constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
-                        Utility.SetPropertyBlock(st.constantProps);
                     }
 
                     if (head.type != CommandType.Draw)

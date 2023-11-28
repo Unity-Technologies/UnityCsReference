@@ -701,8 +701,8 @@ namespace Unity.UI.Builder
         public static readonly string ExtractInlineStylesNoUSSDialogExistingUSSOption = "Add to Existing USS";
         public static readonly string DeleteLastElementDialogTitle = "UI Builder - Deleting last element";
         public static readonly string DeleteLastElementDialogMessage = "You are about to delete the last element. Since USS files are attached to root elements, with no elements in the document, no USS files can be attached. Any existing USS files attached will be removed. You can always undo this operation and get everything back. Continue?";
-        public static readonly string InvalidWouldCauseCircularDependencyMessage = "Invalid operation.";
-        public static readonly string InvalidWouldCauseCircularDependencyMessageDescription = "Can not add as TemplateContainer, as would create a circular dependency.";
+        public static readonly string InvalidWouldCauseCircularDependencyMessage = "Template not set.";
+        public static readonly string InvalidWouldCauseCircularDependencyMessageDescription = "To avoid a circular dependency, choose a different UXML file.";
 
         //
         // Messages

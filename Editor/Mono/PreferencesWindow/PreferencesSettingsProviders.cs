@@ -89,6 +89,7 @@ namespace UnityEditor
             public static readonly GUIContent enableHelperBar = EditorGUIUtility.TrTextContent("Enable Helper Bar", "Enables Helper Bar in the status bar at the bottom of the main Unity Editor window.");
             public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
             public static readonly GUIContent showSecondaryWindowsInTaskbar = EditorGUIUtility.TrTextContent("Show All Windows in Taskbar");
+            public static readonly GUIContent useProjectPathInTitle = EditorGUIUtility.TrTextContent("Use Project Path in Window Title", "If enabled the Project's name is replaced in the main window title with the Project's path on disk.");
         }
 
         class ExternalProperties
@@ -261,6 +262,23 @@ namespace UnityEditor
             prefWinExtensions = ModuleManager.GetPreferenceWindowExtensions();
             ReadPreferences();
         }
+
+        internal static bool useProjectPathInTitle
+        {
+            get
+            {
+                return EditorPrefs.GetBool("UseProjectPathInTitle", false);
+            }
+            set
+            {
+                if(value != EditorPrefs.GetBool("UseProjectPathInTitle", false))
+                {
+                    EditorPrefs.SetBool("UseProjectPathInTitle", value);
+                    EditorApplication.UpdateMainWindowTitle();
+                }
+            }
+        }
+
 
         [SettingsProvider]
         internal static SettingsProvider CreateGeneralProvider()
@@ -577,6 +595,8 @@ namespace UnityEditor
             m_GraphSnapping = EditorGUILayout.Toggle(GeneralProperties.enableSnapping, m_GraphSnapping);
 
             GameView.openWindowOnEnteringPlayMode = EditorGUILayout.Toggle(GeneralProperties.enterPlayModeSettingsFocusGameView, GameView.openWindowOnEnteringPlayMode);
+
+            useProjectPathInTitle = EditorGUILayout.Toggle(GeneralProperties.useProjectPathInTitle, useProjectPathInTitle);
 
             DrawInteractionModeOptions();
 

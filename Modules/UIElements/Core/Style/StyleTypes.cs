@@ -9,9 +9,20 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
-    internal interface IStyleValue<T>
+    /// <summary>
+    /// Base interface for the style properties.
+    /// </summary>
+    /// <typeparam name="T">The value type of the style property.</typeparam>
+    public interface IStyleValue<T>
     {
+        /// <summary>
+        /// The style value.
+        /// </summary>
         T value { get; set; }
+
+        /// <summary>
+        /// The style keyword.
+        /// </summary>
         StyleKeyword keyword { get; set; }
     }
 

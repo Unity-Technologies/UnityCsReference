@@ -72,6 +72,12 @@ namespace UnityEditor.UIElements.Bindings
             return p.intValue;
         }
 
+        public static uint GetRenderingLayerMaskPropertyValue(SerializedProperty p)
+        {
+            return p.uintValue;
+        }
+
+
         public static Vector2 GetVector2PropertyValue(SerializedProperty p)
         {
             return p.vector2Value;
@@ -233,6 +239,11 @@ namespace UnityEditor.UIElements.Bindings
         public static void SetLayerMaskPropertyValue(SerializedProperty p, int v)
         {
             p.intValue = v;
+        }
+
+        public static void SetRenderingLayerMaskPropertyValue(SerializedProperty p, uint v)
+        {
+            p.uintValue = v;
         }
 
         public static void SetVector2PropertyValue(SerializedProperty p, Vector2 v)

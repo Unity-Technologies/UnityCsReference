@@ -64,8 +64,8 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator]
         public static IEnumerable<SearchItem> ProjectName(SearchExpressionContext c)
         {
-            var desc = TaskEvaluatorManager.EvaluateMainThread(() => EditorApplication.GetApplicationTitleDescriptor());
-            yield return SearchExpression.CreateItem(desc.projectName ?? string.Empty, c.ResolveAlias("ProjectName"));
+            var desc = TaskEvaluatorManager.EvaluateMainThread(() => EditorApplication.GetDefaultProjectName());
+            yield return SearchExpression.CreateItem(desc ?? string.Empty, c.ResolveAlias("ProjectName"));
         }
 
         [Description("Returns the name of the currently opened scene."), Category("Env")]

@@ -802,7 +802,7 @@ namespace UnityEditor.UIElements
                 var newLength = lengthProperty.intValue;
                 var dataValue = dataProperty.ulongValue;
 
-                // Empty state is initialized with max length instead of zero, but we don't want to spawn all buttons here. 
+                // Empty state is initialized with max length instead of zero, but we don't want to spawn all buttons here.
                 if (dataValue == 0 && newLength == ToggleButtonGroupState.maxLength)
                 {
                     newLength = 0;
@@ -926,6 +926,8 @@ namespace UnityEditor.UIElements
                 }
                 case SerializedPropertyType.LayerMask:
                     return ConfigureField<LayerMaskField, int>(originalField as LayerMaskField, property, () => new LayerMaskField());
+                case SerializedPropertyType.RenderingLayerMask:
+                    return ConfigureField<RenderingLayerMaskField, uint>(originalField as RenderingLayerMaskField, property, () => new RenderingLayerMaskField());
 
                 case SerializedPropertyType.Enum:
                 {

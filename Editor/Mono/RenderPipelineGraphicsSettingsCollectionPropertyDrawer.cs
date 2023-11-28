@@ -32,12 +32,10 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
             public string category { get; private set; }
             public CategoryInfo parentCategory { get; internal set; }
             public string name { get; private set; }
-            public Type serializedType { get; private set; }
-            public bool hidden;
+            public bool onlyForDevMode { get; private set; }
+            public IRenderPipelineGraphicsSettings target => property?.boxedValue as IRenderPipelineGraphicsSettings;
 
-            private GraphicsSettingsDrawerInfo()
-            {
-            }
+            private GraphicsSettingsDrawerInfo() { }
 
             public static GraphicsSettingsDrawerInfo ExtractFrom(SerializedProperty property)
             {
@@ -66,6 +64,7 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
                 name ??= ObjectNames.NicifyVariableName(type.Name);
                 category ??= name;
 
+
                 return new GraphicsSettingsDrawerInfo()
                 {
                     property = property.Copy(),
@@ -73,8 +72,7 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
                     category = category,
                     parentCategory = null,
                     name = name,
-                    serializedType = type,
-                    hidden = hidden
+                    onlyForDevMode = hidden
                 };
             }
         }
@@ -174,27 +172,18 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
                 root.Add(button);
             }
         }
-
-        void ShowContextualMenu(VisualElement root, Rect rect, Type settingsType)
+        
+        void ShowContextualMenu(Rect rect, IRenderPipelineGraphicsSettings target)
         {
             var contextualMenu = DropdownUtility.CreateDropdown(true);
-            contextualMenu.AddItem("Reset", false, true, () =>
-            {
-                var renderPipelineType = RenderPipelineEditorUtility.GetPipelineTypeFromPipelineAssetType(GraphicsSettingsInspectorUtility.GetRenderPipelineAssetTypeForSelectedTab(root));
-                RenderPipelineGraphicsSettingsManager.ResetRenderPipelineGraphicsSettings(settingsType, renderPipelineType);
-            });
-
-            //If we want to add custom menu item support, it should goes here.
-            //But MenuItem are drawn in ImGUI and have hardcoded path for UnityObject (retrieval, MenuCommand.context)
-            //Let's wait to have a UITK way to handle menu before adding this feature (if requested)
-
+            RenderPipelineGraphicsSettingsContextMenuManager.PopulateContextMenu(target, ref contextualMenu);
             DropdownUtility.ShowDropdown(contextualMenu, rect.position + Vector2.up * rect.size.y);
         }
-
-        void DrawContextualMenuButton(VisualElement root, Type serializedType)
+        
+        void DrawContextualMenuButton(VisualElement root, GraphicsSettingsDrawerInfo drawerInfo)
         {
             var button = new Button(Background.FromTexture2D(EditorGUIUtility.LoadIcon("pane options")));
-            button.clicked += () => ShowContextualMenu(root, button.worldBound, serializedType);
+            button.clicked += () => ShowContextualMenu(button.worldBound, drawerInfo.target);
             root.Add(button);
         }
 
@@ -215,7 +204,7 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 
             var onlySettings = categoryInfo.first;
             DrawHelpButton(line, onlySettings.helpURLAttribute);
-            DrawContextualMenuButton(line, onlySettings.serializedType);
+            DrawContextualMenuButton(line, onlySettings);
         }
 
         void DrawSubheader(VisualElement root, GraphicsSettingsDrawerInfo settingsInfo)
@@ -229,8 +218,8 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
             line.Add(label);
 
             DrawHelpButton(line, settingsInfo.helpURLAttribute);
-            DrawContextualMenuButton(line, settingsInfo.serializedType);
-
+            DrawContextualMenuButton(line, settingsInfo);
+            
             root.Add(line);
         }
 
@@ -248,7 +237,7 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
             };
             root.Add(graphicsSettings);
 
-            if (settingsInfo.hidden)
+            if (settingsInfo.onlyForDevMode)
                 graphicsSettings.RegisterCallback<GeometryChangedEvent>(UpdatePropertyLabel);
         }
 
@@ -259,7 +248,7 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
                 .ForEach(l =>
                 {
                     l.enableRichText = true;
-                    l.text = $"{l.text} <b>(Hidden)</b>";
+                    l.text = $"{l.text} <b>(DevMode Only)</b>";
                     l.tooltip = "Field is only visible in developer mode";
                 });
 

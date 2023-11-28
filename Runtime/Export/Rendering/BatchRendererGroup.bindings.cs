@@ -172,7 +172,9 @@ namespace UnityEngine.Rendering
         HasMotion = 1 << 1, // Draw command contains at least one instance that requires per-object motion vectors
         IsLightMapped = 1 << 2, // Draw command contains lightmapped objects, which has implications for setting some lighting constants
         HasSortingPosition = 1 << 3, // Draw command instances have explicit world space float3 sorting positions to be used for depth sorting
-        LODCrossFade = 1 << 4, // Draw command instances have a 8-bit SNORM crossfade dither factor in the highest bits of their visible instance index
+        LODCrossFadeKeyword = 1 << 4, // Draw command instances have LOD_FADE_CROSSFADE keyword enabled
+        LODCrossFadeValuePacked = 1 << 5, // Draw command instances have a 8-bit SNORM crossfade dither factor in the highest bits of their visible instance index
+        LODCrossFade = LODCrossFadeKeyword | LODCrossFadeValuePacked,
     }
 
     // Match with CullLightmappedShadowCasters in C++ side
@@ -388,10 +390,10 @@ namespace UnityEngine.Rendering
             get => m_allDepthSorted != 0;
             set => m_allDepthSorted = (byte)(value ? 1 : 0);
         }
-        
+
         [FreeFunction("BatchFilterSettings::DefaultCullingMask", IsThreadSafe = true)]
         private extern static ulong DefaultCullingMask();
-        
+
         public ulong sceneCullingMask
         {
             get => (m_isSceneCullingMaskSet != 0) ? m_sceneCullingMask : DefaultCullingMask();
@@ -525,6 +527,7 @@ namespace UnityEngine.Rendering
     {
         // One-element NativeArray to make it writable from C#
         public NativeArray<BatchCullingOutputDrawCommands> drawCommands;
+        public NativeArray<IntPtr> customCullingResult;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -549,6 +552,7 @@ namespace UnityEngine.Rendering
         public BatchCullingOutputDrawCommands* drawCommands;
         public uint brgId;
         public IntPtr occlusionBuffer;
+        public IntPtr customCullingResult;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -588,6 +592,13 @@ namespace UnityEngine.Rendering
         }
     }
 
+    public struct BatchRendererGroupCreateInfo
+    {
+        public BatchRendererGroup.OnPerformCulling cullingCallback;
+        public BatchRendererGroup.OnFinishedCulling finishedCullingCallback;
+        public IntPtr userContext;
+    };
+
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Math/Matrix4x4.h")]
     [NativeHeader("Runtime/Camera/BatchRendererGroup.h")]
@@ -596,13 +607,22 @@ namespace UnityEngine.Rendering
     {
         IntPtr m_GroupHandle = IntPtr.Zero;
         OnPerformCulling m_PerformCulling;
+        OnFinishedCulling m_FinishedCulling;
 
         unsafe public delegate JobHandle OnPerformCulling(BatchRendererGroup rendererGroup, BatchCullingContext cullingContext, BatchCullingOutput cullingOutput, IntPtr userContext);
+        unsafe public delegate void OnFinishedCulling(IntPtr customCullingResult);
 
         public unsafe BatchRendererGroup(OnPerformCulling cullingCallback, IntPtr userContext)
         {
             m_PerformCulling = cullingCallback;
             m_GroupHandle = Create(this, (void*)userContext);
+        }
+
+        public unsafe BatchRendererGroup(BatchRendererGroupCreateInfo info)
+        {
+            m_PerformCulling = info.cullingCallback;
+            m_GroupHandle = Create(this, (void*)info.userContext);
+            m_FinishedCulling = info.finishedCullingCallback;
         }
 
         public void Dispose()
@@ -679,6 +699,7 @@ namespace UnityEngine.Rendering
                 BatchCullingOutput cullingOutput = new BatchCullingOutput
                 {
                     drawCommands = drawCommands,
+                    customCullingResult = new NativeArray<IntPtr>(1, Allocator.Temp)
                 };
                 context.cullingJobsFence = group.m_PerformCulling(
                     group, new BatchCullingContext(
@@ -699,6 +720,7 @@ namespace UnityEngine.Rendering
                     cullingOutput,
                     userContext
                 );
+                context.customCullingResult = cullingOutput.customCullingResult[0];
             }
             finally
             {
@@ -708,6 +730,19 @@ namespace UnityEngine.Rendering
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(cullingPlanes));
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(cullingSplits));
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(drawCommands));
+            }
+        }
+
+        [RequiredByNativeCode]
+        static void InvokeOnFinishedCulling(BatchRendererGroup group, IntPtr customCullingResult)
+        {
+            try
+            {
+                if(group.m_FinishedCulling != null) group.m_FinishedCulling(customCullingResult);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
             }
         }
 

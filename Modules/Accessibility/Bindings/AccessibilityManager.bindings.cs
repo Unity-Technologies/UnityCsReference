@@ -26,6 +26,9 @@ namespace UnityEngine.Accessibility
             public bool wasAnnouncementSuccessful { get; set; }
             public AccessibilityNode currentNode { get; set; }
             public AccessibilityNode nextNode { get; set; }
+            public float fontScale { get; set; }
+            public bool isBoldTextEnabled { get; set; }
+            public bool isClosedCaptioningEnabled { get; set; }
 
             public AccessibilityNotificationContext nativeContext { get; set; }
 
@@ -43,6 +46,10 @@ namespace UnityEngine.Accessibility
                 currentNode = node;
                 AssistiveSupport.activeHierarchy?.TryGetNode(nativeNotification.nextNodeId, out node);
                 nextNode = node;
+
+                fontScale = 1;
+                isBoldTextEnabled = false;
+                isClosedCaptioningEnabled = false;
             }
         }
 
@@ -127,13 +134,28 @@ namespace UnityEngine.Accessibility
                     }
                     case AccessibilityNotification.ElementFocused:
                     {
-                        context.currentNode.NotifyFocusChanged(true);
+                        context.currentNode.InvokeFocusChanged(true);
                         nodeFocusChanged?.Invoke(context.currentNode);
                         break;
                     }
                     case AccessibilityNotification.ElementUnfocused:
                     {
-                        context.currentNode.NotifyFocusChanged(false);
+                        context.currentNode.InvokeFocusChanged(false);
+                        break;
+                    }
+                    case AccessibilityNotification.FontScaleChanged:
+                    {
+                        AccessibilitySettings.InvokeFontScaleChanged(context.fontScale);
+                        break;
+                    }
+                    case AccessibilityNotification.BoldTextStatusChanged:
+                    {
+                        AccessibilitySettings.InvokeBoldTextStatusChanged(context.isBoldTextEnabled);
+                        break;
+                    }
+                    case AccessibilityNotification.ClosedCaptioningStatusChanged:
+                    {
+                        AccessibilitySettings.InvokeClosedCaptionStatusChanged(context.isClosedCaptioningEnabled);
                         break;
                     }
                 }

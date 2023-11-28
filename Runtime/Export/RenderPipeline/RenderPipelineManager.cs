@@ -12,15 +12,15 @@ namespace UnityEngine.Rendering
 {
     public static partial class RenderPipelineManager
     {
-        private static bool s_CleanUpPipeline = false;
-        internal static RenderPipelineAsset s_CurrentPipelineAsset;
         static List<Camera> s_Cameras = new List<Camera>();
-
-        private static string s_CurrentPipelineType = k_BuiltinPipelineName;
+        private static bool s_CleanUpPipeline = false;
+        
         const string k_BuiltinPipelineName = "Built-in Pipeline";
-
+        private static string s_CurrentPipelineType = k_BuiltinPipelineName;
+        private static RenderPipelineAsset s_CurrentPipelineAsset;
         private static RenderPipeline s_CurrentPipeline = null;
-
+        
+        internal static RenderPipelineAsset currentPipelineAsset => s_CurrentPipelineAsset;
         public static RenderPipeline currentPipeline
         {
             get => s_CurrentPipeline;

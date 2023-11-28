@@ -15,33 +15,26 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("Unity.UIElements")]
     internal static class UIElementsRuntimeUtilityNative
     {
-        internal static Action UpdateRuntimePanelsCallback;
-        internal static Action RepaintOverlayPanelsCallback;
-        internal static Action RepaintOffscreenPanelsCallback;
-        internal static Action RepaintWorldPanelsCallback;
+        internal static Action UpdatePanelsCallback;
+        internal static Action<bool> RepaintPanelsCallback;
+        internal static Action RenderBatchModeOffscreenPanelsCallback;
 
         [RequiredByNativeCode]
-        public static void UpdateRuntimePanels()
+        public static void UpdatePanels()
         {
-            UpdateRuntimePanelsCallback?.Invoke();
+            UpdatePanelsCallback?.Invoke();
         }
 
         [RequiredByNativeCode]
-        public static void RepaintOverlayPanels()
+        public static void RepaintPanels(bool onlyOffscreen)
         {
-            RepaintOverlayPanelsCallback?.Invoke();
+            RepaintPanelsCallback?.Invoke(onlyOffscreen);
         }
 
         [RequiredByNativeCode]
-        public static void RepaintOffscreenPanels()
+        public static void RenderBatchModeOffscreenPanels()
         {
-            RepaintOffscreenPanelsCallback?.Invoke();
-        }
-
-        [RequiredByNativeCode]
-        public static void RepaintWorldPanels()
-        {
-            RepaintWorldPanelsCallback?.Invoke();
+            RenderBatchModeOffscreenPanelsCallback?.Invoke();
         }
 
         public extern static void RegisterPlayerloopCallback();

@@ -309,7 +309,7 @@ namespace Unity.UI.Builder
 
         public bool WillCauseCircularDependency(VisualTreeAsset vtaCheck)
         {
-            if (string.IsNullOrEmpty(activeOpenUXMLFile.uxmlPath))
+            if (string.IsNullOrEmpty(activeOpenUXMLFile.uxmlPath) || vtaCheck == null)
             {
                 // Active document is a new file, so it won't cause a circular dependency
                 return false;
@@ -318,7 +318,7 @@ namespace Unity.UI.Builder
             // Perform check on current active document
             var activeVTA = activeOpenUXMLFile.visualTreeAsset;
 
-            if (activeVTA.TemplateExists(vtaCheck))
+            if (activeVTA.name == vtaCheck.name || activeVTA.TemplateExists(vtaCheck))
                 return true;
 
             // Crawl up hierarchy if there are open subdocuments

@@ -691,7 +691,7 @@ namespace UnityEngine.Accessibility
             return m_Hierarchy != null && AssistiveSupport.activeHierarchy == m_Hierarchy;
         }
 
-        internal void FocusChanged(bool isNodeFocused)
+        internal void NotifyFocusChanged(bool isNodeFocused)
         {
             AccessibilityManager.QueueNotification(new AccessibilityManager.NotificationContext
             {
@@ -700,21 +700,21 @@ namespace UnityEngine.Accessibility
             });
         }
 
-        internal void NotifyFocusChanged(bool isNodeFocused)
+        internal void InvokeFocusChanged(bool isNodeFocused)
         {
             focusChanged?.Invoke(this, isNodeFocused);
         }
 
-        internal bool Selected()
+        internal bool InvokeSelected()
         {
             return selected?.Invoke() ?? false;
         }
-        internal void Incremented()
+        internal void InvokeIncremented()
         {
             incremented?.Invoke();
         }
 
-        internal void Decremented()
+        internal void InvokeDecremented()
         {
             decremented?.Invoke();
         }

@@ -76,6 +76,10 @@ namespace UnityEditor
                         propertyValue = $"{property.layerMaskBits}";
                         break;
 
+                    case SerializedPropertyType.RenderingLayerMask:
+                        propertyValue = $"{property.layerMaskBits}";
+                        break;
+
                     case SerializedPropertyType.Enum:
                         propertyValue = $"{property.enumValueIndex}";
                         break;

@@ -329,7 +329,7 @@ namespace UnityEngine.UIElements
 
             m_View.dragger.enabled = header.sortedColumnReadonly.Count == 0;
 
-            if (sortingMode != ColumnSortingMode.Default)
+            if (sortingMode != ColumnSortingMode.Default || m_View.itemsSource == null)
             {
                 return false;
             }
@@ -403,7 +403,7 @@ namespace UnityEngine.UIElements
                         parentIdB = treeViewController.GetParentId(parentIdB);
                     }
 
-                    // We were looking at a node and one of its parent, so compare the original depths. 
+                    // We were looking at a node and one of its parent, so compare the original depths.
                     if (idA == idB)
                     {
                         return originalDepthA.CompareTo(originalDepthB);
@@ -418,7 +418,7 @@ namespace UnityEngine.UIElements
             var result = 0;
             foreach (var sortedColumn in header.sortedColumns)
             {
-                result = sortedColumn.column.comparison.Invoke(a, b);
+                result = sortedColumn.column.comparison?.Invoke(a, b) ?? 0;
                 if (result != 0)
                 {
                     if (sortedColumn.direction == SortDirection.Descending)

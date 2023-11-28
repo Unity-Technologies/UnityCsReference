@@ -727,6 +727,7 @@ namespace UnityEditor.Search
                 case SerializedPropertyType.Character:
                 case SerializedPropertyType.ArraySize:
                 case SerializedPropertyType.LayerMask:
+                case SerializedPropertyType.RenderingLayerMask:
                 case SerializedPropertyType.Float:
                     return "Number";
 

@@ -12,6 +12,7 @@ namespace UnityEditor.Build.Profile
     [Serializable]
     internal sealed class SharedPlatformSettings: BuildProfilePlatformSettingsBase
     {
+        internal const string k_SettingSymlinkSources = "symlinkSources";
         internal const string k_SettingWindowsDevicePortalAddress = "windowsDevicePortalAddress";
         internal const string k_SettingWindowsDevicePortalUsername = "windowsDevicePortalUsername";
         internal const string k_SettingWindowsDevicePortalPassword = "windowsDevicePortalPassword";
@@ -21,6 +22,7 @@ namespace UnityEditor.Build.Profile
         [SerializeField] string m_WindowsDevicePortalUsername = string.Empty;
         string m_WindowsDevicePortalPassword = string.Empty;
         [SerializeField] bool m_ForceInstallation = false;
+        [SerializeField] bool m_SymlinkSources = false;
 
         internal protected override bool development
         {
@@ -217,6 +219,19 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        public bool symlinkSources
+        {
+            get => m_SymlinkSources;
+            set
+            {
+                if (m_SymlinkSources != value)
+                {
+                    m_SymlinkSources = value;
+                    SyncSharedSettings(k_SettingSymlinkSources);
+                }
+            }
+        }
+
         public override string GetSharedSetting(string name)
         {
             return name switch
@@ -287,6 +302,9 @@ namespace UnityEditor.Build.Profile
                         break;
                     case k_ForceInstallation:
                         platformSettingsBase.SetSharedSetting(k_ForceInstallation, forceInstallation.ToString().ToLower());
+                        break;
+                    case k_SettingSymlinkSources:
+                        platformSettingsBase.SetSharedSetting(k_SettingSymlinkSources, symlinkSources.ToString().ToLower());
                         break;
                 }
             }

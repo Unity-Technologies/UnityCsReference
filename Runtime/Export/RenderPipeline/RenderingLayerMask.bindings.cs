@@ -6,7 +6,7 @@
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
-namespace UnityEngine.Rendering
+namespace UnityEngine
 {
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [NativeHeader("Runtime/Graphics/RenderingLayerMask.h")]
@@ -14,26 +14,39 @@ namespace UnityEngine.Rendering
     [NativeClass("RenderingLayerMask", "struct RenderingLayerMask;")]
     public struct RenderingLayerMask
     {
-        [NativeName("m_Bits")] uint m_Mask;
+        [NativeName("m_Bits")] uint m_Bits;
 
         public static implicit operator uint(RenderingLayerMask mask)
         {
-            return mask.m_Mask;
+            return mask.m_Bits;
         }
 
         // implicitly converts an integer to a LayerMask
         public static implicit operator RenderingLayerMask(uint intVal)
         {
             RenderingLayerMask mask;
-            mask.m_Mask = intVal;
+            mask.m_Bits = intVal;
+            return mask;
+        }
+
+        public static implicit operator int(RenderingLayerMask mask)
+        {
+            return unchecked((int) mask.m_Bits);
+        }
+
+        // implicitly converts an integer to a LayerMask
+        public static implicit operator RenderingLayerMask(int intVal)
+        {
+            RenderingLayerMask mask;
+            mask.m_Bits = unchecked((uint) intVal);
             return mask;
         }
 
         // Converts a layer mask value to an integer value.
         public uint value
         {
-            get => m_Mask;
-            set => m_Mask = value;
+            get => m_Bits;
+            set => m_Bits = value;
         }
 
         // Given a layer number, returns the name of the layer as defined in either a Builtin or a User Layer in the [[wiki:class-TagManager|Tag Manager]]

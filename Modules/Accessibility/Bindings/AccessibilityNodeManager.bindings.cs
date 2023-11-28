@@ -128,7 +128,7 @@ namespace UnityEngine.Accessibility
 
             if (service.TryGetNode(id, out var node))
             {
-                node.FocusChanged(isNodeFocused);
+                node.NotifyFocusChanged(isNodeFocused);
             }
         }
 
@@ -148,7 +148,7 @@ namespace UnityEngine.Accessibility
 
             if (service.TryGetNode(id, out var node))
             {
-                return node.Selected();
+                return node.InvokeSelected();
             }
 
             return false;
@@ -168,7 +168,7 @@ namespace UnityEngine.Accessibility
 
             if (service.TryGetNode(id, out var node))
             {
-                node.Incremented();
+                node.InvokeIncremented();
             }
         }
 
@@ -186,7 +186,7 @@ namespace UnityEngine.Accessibility
 
             if (service.TryGetNode(id, out var node))
             {
-                node.Decremented();
+                node.InvokeDecremented();
             }
         }
     }

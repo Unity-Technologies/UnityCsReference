@@ -45,45 +45,27 @@ namespace UnityEditor
         [InitializeOnLoadMethod]
         static void RegisterShortcutContext() => EditorApplication.delayCall += () =>
         {
-            ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewRectSelection());
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewPickingShortcutContext());
         };
 
-        class SceneViewRectSelection : IShortcutToolContext
-        {
-            public SceneView window => EditorWindow.focusedWindow as SceneView;
-
-            public bool active => IsActive;
-
-            public static bool IsActive
-            {
-                get
-                {
-                    if (!(EditorWindow.focusedWindow is SceneView view))
-                        return false;
-
-                    return view.sceneViewMotion.viewportsUnderMouse && Tools.current != Tool.View;
-                }
-            }
-        }
-
-        [ClutchShortcut(k_RectSelectionNormal, typeof(SceneViewRectSelection), KeyCode.Mouse0)]
+        [ClutchShortcut(k_RectSelectionNormal, typeof(SceneViewPickingShortcutContext), KeyCode.Mouse0)]
         static void OnNormalRectSelection(ShortcutArguments args)
         {
-            var context = args.context as SceneViewRectSelection;
+            var context = args.context as SceneViewPickingShortcutContext;
             context.window?.rectSelection.OnRectSelection(args, SelectionType.Normal, context.window);
         }
 
-        [ClutchShortcut(k_RectSelectionAdditive, typeof(SceneViewRectSelection), KeyCode.Mouse0, ShortcutModifiers.Shift)]
+        [ClutchShortcut(k_RectSelectionAdditive, typeof(SceneViewPickingShortcutContext), KeyCode.Mouse0, ShortcutModifiers.Shift)]
         static void OnAdditiveRectSelection(ShortcutArguments args)
         {
-            var context = args.context as SceneViewRectSelection;
+            var context = args.context as SceneViewPickingShortcutContext;
             context.window?.rectSelection.OnRectSelection(args, SelectionType.Additive, context.window);
         }
 
-        [ClutchShortcut(k_RectSelectionSubtractive, typeof(SceneViewRectSelection), KeyCode.Mouse0, ShortcutModifiers.Action)]
+        [ClutchShortcut(k_RectSelectionSubtractive, typeof(SceneViewPickingShortcutContext), KeyCode.Mouse0, ShortcutModifiers.Action)]
         static void OnSubtractiveRectSelection(ShortcutArguments args)
         {
-            var context = args.context as SceneViewRectSelection;
+            var context = args.context as SceneViewPickingShortcutContext;
             context.window?.rectSelection.OnRectSelection(args, SelectionType.Subtractive, context.window);
         }
 
@@ -102,30 +84,30 @@ namespace UnityEditor
             }
         }
 
-        [Shortcut(k_PickingNormal, typeof(SceneViewRectSelection), KeyCode.Mouse0)]
+        [Shortcut(k_PickingNormal, typeof(SceneViewPickingShortcutContext), KeyCode.Mouse0)]
         static void OnNormalPicking(ShortcutArguments args)
         {
-            var context = args.context as SceneViewRectSelection;
+            var context = args.context as SceneViewPickingShortcutContext;
             context.window?.rectSelection.DelayPicking(context.window, SelectionType.Normal);
         }
 
-        [Shortcut(k_PickingAdditive, typeof(SceneViewRectSelection), KeyCode.Mouse0, ShortcutModifiers.Shift)]
+        [Shortcut(k_PickingAdditive, typeof(SceneViewPickingShortcutContext), KeyCode.Mouse0, ShortcutModifiers.Shift)]
         static void OnAdditivePicking(ShortcutArguments args)
         {
-            var context = args.context as SceneViewRectSelection;
+            var context = args.context as SceneViewPickingShortcutContext;
             context.window?.rectSelection.DelayPicking(context.window, SelectionType.Additive);
         }
 
-        [Shortcut(k_PickingSubtractive, typeof(SceneViewRectSelection), KeyCode.Mouse0, ShortcutModifiers.Action)]
+        [Shortcut(k_PickingSubtractive, typeof(SceneViewPickingShortcutContext), KeyCode.Mouse0, ShortcutModifiers.Action)]
         static void OnSubtractivePicking(ShortcutArguments args)
         {
-            var context = args.context as SceneViewRectSelection;
+            var context = args.context as SceneViewPickingShortcutContext;
             context.window?.rectSelection.DelayPicking(context.window, SelectionType.Subtractive);
         }
 
         // Delaying the picking to a command event is necessary because some HandleUtility methods
         // need to be called in an OnGUI.
-        public void DelayPicking(SceneView sceneview, SelectionType selectionType)
+        void DelayPicking(SceneView sceneview, SelectionType selectionType)
         {
             if (sceneview == null)
                 return;
@@ -144,6 +126,7 @@ namespace UnityEditor
                 var hovered = HandleUtility.PickObject(mousePos, false);
 
                 var handledIt = false;
+
                 // shift-click deselects only if the active GO is exactly what we clicked on
                 if (selectionType != SelectionType.Subtractive && Selection.activeObject == hovered.target)
                 {
@@ -364,12 +347,13 @@ namespace UnityEditor
             UpdateSelection(existingSelection, objs, type, isRectSelection);
         }
 
-        void UpdateSelection(Object[] existingSelection, Object[] newObjects, SelectionType type, bool isRectSelection)
+        static void UpdateSelection(Object[] existingSelection, Object[] newObjects, SelectionType type, bool isRectSelection)
         {
             if (existingSelection == null || newObjects == null)
                 return;
 
             Object[] newSelection;
+
             switch (type)
             {
                 case SelectionType.Additive:
@@ -377,10 +361,7 @@ namespace UnityEditor
                     {
                         newSelection = new Object[existingSelection.Length + newObjects.Length];
                         Array.Copy(existingSelection, newSelection, existingSelection.Length);
-
-                        for (int i = 0; i < newObjects.Length; i++)
-                            newSelection[existingSelection.Length + i] = newObjects[i];
-
+                        Array.Copy(newObjects, 0, newSelection, existingSelection.Length, newObjects.Length);
                         Object active = isRectSelection ? newSelection[0] : newObjects[0];
                         Selection.SetSelectionWithActiveObject(newSelection, active);
                     }
@@ -389,6 +370,7 @@ namespace UnityEditor
                         Selection.objects = existingSelection;
                     }
                     break;
+
                 case SelectionType.Subtractive:
                     Dictionary<Object, bool> set = new Dictionary<Object, bool>(existingSelection.Length);
                     foreach (Object g in existingSelection)
@@ -402,6 +384,7 @@ namespace UnityEditor
                     set.Keys.CopyTo(newSelection, 0);
                     Selection.objects = newSelection;
                     break;
+
                 case SelectionType.Normal:
                 default:
                     Selection.objects = newObjects;

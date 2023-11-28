@@ -274,6 +274,13 @@ namespace UnityEditor
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
             }
+
+            [NativeProperty("webWasm2023", TargetType.Field)]
+            public extern static bool wasm2023
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+            }
         }
     }
 }

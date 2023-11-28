@@ -26,6 +26,7 @@ namespace Unity.SerializationLogic
             "BoundsInt",
             "Vector3Int",
             "Vector2Int",
+            "RenderingLayerMask"
         };
 
         private const string Gradient = "UnityEngine.Gradient";

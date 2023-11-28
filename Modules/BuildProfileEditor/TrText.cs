@@ -26,6 +26,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string sharedSettingsInfo =
             L10n.Tr("Platform builds use the shared scene list. To change the scene list or other settings independently, create a Build Profile for this platform.");
         public static readonly string activate = L10n.Tr("Switch Profile");
+        public static readonly string sceneList = L10n.Tr("Scene List");
 
         // Platform Discovery Window
         public static readonly string platformDiscoveryTitle = L10n.Tr("Platform Browser");

@@ -367,13 +367,22 @@ namespace UnityEditor.Modules
         /// When editing a build profile asset, this method is invoked to render the UI for
         /// viewing and/or editing the platform specific settings. <see cref="BuildProfilePlatformSettingsBase"/>.
         /// </summary>
+        /// <param name="serializedObject">
+        /// Target Build Profile serialized object .
+        /// </param>
         /// <param name="rootProperty">
         /// Property instance for <see cref="BuildProfile.platformBuildProfile"/>.
+        /// </param>
+        /// <param name="state">
+        /// Workflow state for the Build Profile window.
         /// </param>
         /// <returns>
         /// Root visual element for the platform specific settings UI.
         /// </returns>
-        VisualElement CreateSettingsGUI(SerializedObject serializedObject, SerializedProperty rootProperty);
+        VisualElement CreateSettingsGUI(
+            SerializedObject serializedObject,
+            SerializedProperty rootProperty,
+            BuildProfileWorkflowState state);
 
         /// <summary>
         /// Copy settings to the platform settings base we are passing. This is used, for example, when creating

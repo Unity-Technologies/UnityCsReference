@@ -692,6 +692,10 @@ namespace UnityEngine.UIElements
             UpdateAnimations();
             UpdateBindings();
         }
+
+        Action m_RenderAction;
+        internal void SetRenderAction(Action action) => m_RenderAction = action;
+        public virtual void Render() => m_RenderAction?.Invoke();
     }
 
     // Strategy to initialize the editor updater
@@ -722,6 +726,7 @@ namespace UnityEngine.UIElements
 
         ProfilerMarker m_MarkerBeforeUpdate;
         ProfilerMarker m_MarkerUpdate;
+        ProfilerMarker m_MarkerRender;
         ProfilerMarker m_MarkerLayout;
         ProfilerMarker m_MarkerBindings;
         ProfilerMarker m_MarkerDataBinding;
@@ -863,27 +868,15 @@ namespace UnityEngine.UIElements
 
         void CreateMarkers()
         {
-            if (!string.IsNullOrEmpty(m_PanelName))
-            {
-                m_MarkerBeforeUpdate = new ProfilerMarker($"Panel.BeforeUpdate.{m_PanelName}");
-                m_MarkerUpdate = new ProfilerMarker($"Panel.Update.{m_PanelName}");
-                m_MarkerLayout = new ProfilerMarker($"Panel.Layout.{m_PanelName}");
-                m_MarkerBindings = new ProfilerMarker($"Panel.Bindings.{m_PanelName}");
-                m_MarkerDataBinding = new ProfilerMarker($"Panel.DataBinding.{m_PanelName}");
-                m_MarkerAnimations = new ProfilerMarker($"Panel.Animations.{m_PanelName}");
-                m_MarkerPanelChangeReceiver = new ProfilerMarker($"Panel.PanelChangeReceiver.{m_PanelName}");
-            }
-            else
-            {
-                m_MarkerBeforeUpdate = new ProfilerMarker($"Panel.BeforeUpdate");
-                m_MarkerUpdate = new ProfilerMarker("Panel.Update");
-                m_MarkerLayout = new ProfilerMarker("Panel.Layout");
-                m_MarkerBindings = new ProfilerMarker("Panel.Bindings");
-                m_MarkerDataBinding = new ProfilerMarker($"Panel.DataBinding");
-                m_MarkerAnimations = new ProfilerMarker("Panel.Animations");
-
-                m_MarkerPanelChangeReceiver = new ProfilerMarker("Panel.PanelChangeReceiver");
-            }
+            string appendName = string.IsNullOrEmpty(m_PanelName) ? "" : $".{m_PanelName}";
+            m_MarkerBeforeUpdate = new ProfilerMarker($"Panel.BeforeUpdate{appendName}");
+            m_MarkerUpdate = new ProfilerMarker($"Panel.Update{appendName}");
+            m_MarkerRender = new ProfilerMarker($"Panel.Render{appendName}");
+            m_MarkerLayout = new ProfilerMarker($"Panel.Layout{appendName}");
+            m_MarkerBindings = new ProfilerMarker($"Panel.Bindings{appendName}");
+            m_MarkerDataBinding = new ProfilerMarker($"Panel.DataBinding{appendName}");
+            m_MarkerAnimations = new ProfilerMarker($"Panel.Animations{appendName}");
+            m_MarkerPanelChangeReceiver = new ProfilerMarker($"Panel.PanelChangeReceiver{appendName}");
         }
 
         internal static TimeMsFunction TimeSinceStartup { private get; set; }
@@ -1209,6 +1202,13 @@ namespace UnityEngine.UIElements
             panelDebug?.Refresh();
         }
 
+        public override void Render()
+        {
+            m_MarkerRender.Begin();
+            base.Render();
+            m_MarkerRender.End();
+        }
+
         // Updaters can request an panel invalidation when some callbacks aren't coming from UIElements internally
         internal override void RequestUpdateAfterExternalEvent(IVisualTreeUpdater updater)
         {
@@ -1365,11 +1365,11 @@ namespace UnityEngine.UIElements
             return display >= 0 && display < Display.displays.Length ? Display.displays[display].renderingWidth : Screen.width;
         }
 
-        public override void Repaint(Event e)
+        public override void Render()
         {
             if (drawsInCameras)
             {
-                base.Repaint(e);
+                Debug.LogError("Panel.Render() must not be called on a panel that draws in cameras.");
                 return;
             }
 
@@ -1383,7 +1383,7 @@ namespace UnityEngine.UIElements
                 int width = rt != null ? rt.width : screenRenderingWidth;
                 int height = rt != null ? rt.height : screenRenderingHeight;
                 GL.Viewport(new Rect(0, 0, width, height));
-                base.Repaint(e);
+                base.Render();
                 return;
             }
 
@@ -1394,7 +1394,7 @@ namespace UnityEngine.UIElements
             RenderTexture.active = targetTexture;
 
             GL.Viewport(new Rect(0, 0, targetTexture.width, targetTexture.height));
-            base.Repaint(e);
+            base.Render();
 
             Camera.SetupCurrent(oldCam);
             RenderTexture.active = oldRT;

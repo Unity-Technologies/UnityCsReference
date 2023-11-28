@@ -336,7 +336,7 @@ namespace Unity.UI.Builder
             }
 
             var templateAsset = root as TemplateAsset;
-            if (templateAsset != null && templateAsset.attributeOverrides != null && templateAsset.attributeOverrides.Count > 0)
+            if (templateAsset != null && templateAsset.attributeOverrides.Count > 0)
             {
                 if (!hasChildTags)
                 {

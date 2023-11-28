@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -55,6 +56,27 @@ namespace UnityEditor.Build.Profile
 
             target.Hide();
             return false;
+        }
+
+        internal static void ApplyActionState(this VisualElement elem, ActionState state)
+        {
+            switch (state)
+            {
+                case ActionState.Hidden:
+                    elem.Hide();
+                    elem.SetEnabled(false);
+                    break;
+                case ActionState.Disabled:
+                    elem.Show();
+                    elem.SetEnabled(false);
+                    break;
+                case ActionState.Enabled:
+                    elem.Show();
+                    elem.SetEnabled(true);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(state), state, nameof(elem));
+            }
         }
 
         internal static void Hide(this VisualElement elem) => elem.style.display = DisplayStyle.None;

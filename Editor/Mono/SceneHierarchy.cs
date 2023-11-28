@@ -21,6 +21,13 @@ namespace UnityEditor
     [Serializable]
     internal class SceneHierarchy
     {
+        string kContextMenuItemCut { get { return "Cut " + Menu.GetHotkey("Edit/Cut"); } }
+        string kContextMenuItemCopy { get { return "Copy " + Menu.GetHotkey("Edit/Copy"); } }
+        string kContextMenuItemPaste { get { return "Paste " + Menu.GetHotkey("Edit/Paste"); } }
+        string kContextMenuItemDuplicate { get { return "Duplicate " + Menu.GetHotkey("Edit/Duplicate"); } }
+        string kContextMenuItemDelete { get { return "Delete " + Menu.GetHotkey("Edit/Delete"); } }
+        string kContextMenuItemPasteAsChildKeepLocalTransform { get { return "Paste as Child (Keep Local Transform) " + Menu.GetHotkey("Edit/Paste as Child (Keep Local Transform)"); } }
+
         static class Styles
         {
             const string kCustomSorting = "CustomSorting";
@@ -883,6 +890,8 @@ namespace UnityEditor
             {
                 string path = menuItem.path;
 
+                string hotkey = Menu.GetHotkey(menuItem.path);
+
                 UnityEngine.Object[] tempContext = context;
                 if (!includeCreateEmptyChild && path.ToLower() == "GameObject/Create Empty Child".ToLower())
                     continue;
@@ -890,7 +899,7 @@ namespace UnityEditor
                 if (!useCreateEmptyParentMenuItem && path.ToLower() == "GameObject/Create Empty Parent".ToLower())
                 {
                     if (GOCreationCommands.ValidateCreateEmptyParent())
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Create Empty Parent"), false, GOCreationCommands.CreateEmptyParent);
+                        menu.AddItem(EditorGUIUtility.TrTextContent("Create Empty Parent " + hotkey), false, GOCreationCommands.CreateEmptyParent);
                     continue;
                 }
 
@@ -903,6 +912,9 @@ namespace UnityEditor
                 // cut away "GameObject/"
                 if (!includeGameObjectInPath)
                     menupath = path.Substring(11);
+
+                if (!string.IsNullOrEmpty(hotkey))
+                    menupath += " " + hotkey;
 
                 MenuUtils.ExtractOnlyEnabledMenuItem(menuItem,
                     menu,
@@ -1141,16 +1153,16 @@ namespace UnityEditor
             // For Sub Scenes GameObjects, have menu items for cut, paste and delete.
             // Not copy or duplicate, since multiple of the same Sub Scene is not supported anyway.
 
-            menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, ClipboardUtility.CutGO);
+            menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemCut), false, ClipboardUtility.CutGO);
             if (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, PasteGO);
+                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemPaste), false, PasteGO);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(kContextMenuItemPaste));
 
             if (ClipboardUtility.CanPasteAsChild())
             {
                 menu.AddItem(EditorGUIUtility.TrTextContent("Paste as Child (Keep World Transform)"), false, () => ClipboardUtility.PasteGOAsChild(true));
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste as Child (Keep Local Transform)"), false, () => ClipboardUtility.PasteGOAsChild(false));
+                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemPasteAsChildKeepLocalTransform), false, () => ClipboardUtility.PasteGOAsChild(false));
             }
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste as Child"));
@@ -1301,21 +1313,21 @@ namespace UnityEditor
                                             || !IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects.parent);
 
             if (itemIsSelected && allowCutCopyAndDuplicate)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, ClipboardUtility.CutGO);
+                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemCut), false, ClipboardUtility.CutGO);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Cut"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(kContextMenuItemCut));
             if (itemIsSelected && allowCutCopyAndDuplicate)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, ClipboardUtility.CopyGO);
+                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemCopy), false, ClipboardUtility.CopyGO);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Copy"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(kContextMenuItemCopy));
             if (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, PasteGO);
+                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemPaste), false, PasteGO);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(kContextMenuItemPaste));
             if (ClipboardUtility.CanPasteAsChild())
             {
                 menu.AddItem(EditorGUIUtility.TrTextContent("Paste as Child (Keep World Transform)"), false, () => ClipboardUtility.PasteGOAsChild(true));
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste as Child (Keep Local Transform)"), false, () => ClipboardUtility.PasteGOAsChild(false));
+                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemPasteAsChildKeepLocalTransform), false, () => ClipboardUtility.PasteGOAsChild(false));
             }
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste as Child"));
@@ -1328,14 +1340,14 @@ namespace UnityEditor
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename"));
 
             if (itemIsSelected && allowCutCopyAndDuplicate)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, DuplicateGO);
+                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemDuplicate), false, DuplicateGO);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Duplicate"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(kContextMenuItemDuplicate));
 
             if (m_CustomParentForNewGameObjects != null && IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects) || !itemIsSelected)
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(kContextMenuItemDelete));
             else
-                menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, DeleteGO);
+                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemDelete), false, DeleteGO);
 
 
             menu.AddSeparator("");

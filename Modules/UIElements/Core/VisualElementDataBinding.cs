@@ -420,6 +420,56 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        /// <summary>
+        /// Returns the last <see cref="BindingResult"/> of a binding object from the data source to the UI.
+        /// </summary>
+        /// <param name="bindingId">The ID of the binding object.</param>
+        /// <param name="result">The result of the last binding operation to the UI.</param>
+        /// <returns><see langword="true"/> if the binding object has been updated; <see langword="false"/> otherwise.</returns>
+        public bool TryGetLastBindingToUIResult(in BindingId bindingId, out BindingResult result)
+        {
+            if (elementPanel == null)
+            {
+                result = default;
+                return false;
+            }
+
+            var bindingManager = elementPanel.dataBindingManager;
+            if (bindingManager.TryGetBindingData(this, in bindingId, out var bindingData) &&
+                bindingManager.TryGetLastUIBindingResult(bindingData, out result))
+            {
+                return true;
+            }
+
+            result = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the last <see cref="BindingResult"/> of a binding object from the UI to the data source.
+        /// </summary>
+        /// <param name="bindingId">The ID of the binding object.</param>
+        /// <param name="result">The result of the last binding operation to the data source.</param>
+        /// <returns><see langword="true"/> if the binding object has been updated; <see langword="false"/> otherwise.</returns>
+        public bool TryGetLastBindingToSourceResult(in BindingId bindingId, out BindingResult result)
+        {
+            if (elementPanel == null)
+            {
+                result = default;
+                return false;
+            }
+
+            var bindingManager = elementPanel.dataBindingManager;
+            if (bindingManager.TryGetBindingData(this, in bindingId, out var bindingData) &&
+                bindingManager.TryGetLastSourceBindingResult(bindingData, out result))
+            {
+                return true;
+            }
+
+            result = default;
+            return false;
+        }
+
         void RegisterBinding(BindingId bindingId, Binding binding)
         {
             AddBindingRequest(bindingId, binding);

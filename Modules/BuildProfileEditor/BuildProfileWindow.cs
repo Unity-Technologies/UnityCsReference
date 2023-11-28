@@ -31,7 +31,10 @@ namespace UnityEditor.Build.Profile
         internal const string buildProfileInspectorVisualElement = "build-profile-editor-inspector";
         internal const string buildProfilesVisualElement = "custom-build-profiles";
 
-        internal Editor buildProfileEditor;
+        internal BuildProfileEditor buildProfileEditor;
+        BuildProfileWorkflowState m_WindowState;
+
+        bool m_ShouldAskForBuildLocation = true;
         int m_ActiveProfileListIndex;
 
         BuildProfileDataSource m_BuildProfileDataSource;
@@ -48,6 +51,8 @@ namespace UnityEditor.Build.Profile
         ListView m_BuildProfilesListView;
         VisualElement m_WelcomeMessageElement;
 
+        VisualElement m_InspectorHeader;
+
         /// <summary>
         /// Build Profile inspector for the selected classic platform or profile,
         /// repainted on <see cref="m_BuildProfileClassicPlatformListView"/> selection change.
@@ -59,10 +64,12 @@ namespace UnityEditor.Build.Profile
         Label m_SelectedProfilePlatformLabel;
         BuildProfile m_SelectedBuildProfile;
 
+        VisualElement m_AdditionalActionsDropdown;
         DropdownButton m_BuildButton;
         Button m_BuildAndRunButton;
         Button m_ActivateButton;
         Button m_TempOpenLegacyBuildSettingsButton;
+        Button m_ClassicSceneListButton;
 
         [UsedImplicitly, RequiredByNativeCode]
         public static void ShowBuildProfileWindow()
@@ -73,6 +80,7 @@ namespace UnityEditor.Build.Profile
 
         public void CreateGUI()
         {
+            m_WindowState = new BuildProfileWorkflowState(OnWorkflowStateChanged);
             var windowUxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
             var windowUss = EditorGUIUtility.LoadRequired(Util.k_StyleSheet) as StyleSheet;
             rootVisualElement.styleSheets.Add(windowUss);
@@ -82,6 +90,7 @@ namespace UnityEditor.Build.Profile
             var unityDevOpsButton = rootVisualElement.Q<ToolbarButton>("learn-more-unity-dev-ops-button");
 
             // Capture static visual element reference.
+            m_AdditionalActionsDropdown = rootVisualElement.Q<VisualElement>("additional-actions-dropdown-button");
             m_BuildButton = CreateBuildDropdownButton();
             rootVisualElement.Q<VisualElement>("build-dropdown-button").Add(m_BuildButton);
             m_BuildProfileInspectorElement = rootVisualElement.Q<ScrollView>(buildProfileInspectorVisualElement);
@@ -94,6 +103,8 @@ namespace UnityEditor.Build.Profile
             m_ActivateButton = rootVisualElement.Q<Button>("activate-button");
             m_TempOpenLegacyBuildSettingsButton = rootVisualElement.Q<Button>("temp-open-legacy-window-button");
             m_WelcomeMessageElement = rootVisualElement.Q<VisualElement>("fallback-no-custom-build-profiles");
+            m_ClassicSceneListButton = rootVisualElement.Q<Button>("classic-scenes-in-build-button");
+            m_InspectorHeader = rootVisualElement.Q<VisualElement>("build-profile-editor-header");
 
             // Apply localized text to static elements.
             rootVisualElement.Q<Label>("platforms-label").text = TrText.platforms;
@@ -104,6 +115,7 @@ namespace UnityEditor.Build.Profile
             listViewAddProfileButton.text = TrText.addBuildProfile;
             m_ActivateButton.text = TrText.activate;
             m_BuildAndRunButton.text = TrText.buildAndRun;
+            m_ClassicSceneListButton.text = TrText.sceneList;
 
             // Build dynamic visual elements.
             CreateBuildProfileListView(m_BuildProfileClassicPlatformListView, m_BuildProfileDataSource.classicPlatforms, false);
@@ -126,6 +138,7 @@ namespace UnityEditor.Build.Profile
                 OnBuildButtonClicked(BuildOptions.AutoRunPlayer | BuildOptions.StrictMode);
             };
             m_ActivateButton.clicked += OnActivateButtonClicked;
+            m_ClassicSceneListButton.clicked += OnClassicSceneListSelected;
             addBuildProfileButton.clicked += PlatformDiscoveryWindow.ShowWindow;
             listViewAddProfileButton.clicked += PlatformDiscoveryWindow.ShowWindow;
             unityDevOpsButton.clicked += () =>
@@ -171,7 +184,7 @@ namespace UnityEditor.Build.Profile
             m_MissingClassicPlatformListView.selectionChanged += OnMissingClassicPlatformSelected;
         }
 
-        void OnEnable()
+        public void OnEnable()
         {
             m_BuildProfileDataSource = new BuildProfileDataSource(this);
         }
@@ -204,6 +217,99 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Build Profile Workflow state change callback. Invoked when <see cref="m_WindowState"/> is refreshed
+        /// by this class or changes are attempted by an embedded <see cref="BuildProfileEditor"/>.
+        /// </summary>
+        /// <param name="next"></param>
+        void OnWorkflowStateChanged(BuildProfileWorkflowState next)
+        {
+            if (next == m_WindowState && buildProfileEditor is not null)
+            {
+                // When refreshing the window state, if there's a build profile selected
+                // then the corresponding editor state should be considered.
+                next = buildProfileEditor.editorState;
+            }
+
+            ReduceWindowState(m_WindowState, next);
+        }
+
+        void ReduceWindowState(BuildProfileWorkflowState parent, BuildProfileWorkflowState child)
+        {
+            // For conflict resolution between the parent window and a child state being applied:
+            // - false booleans take precedence
+            // - ActionState values take priority in decreasing order: Hidden > Disabled > Enabled
+            m_ShouldAskForBuildLocation = parent.askForBuildLocation && child.askForBuildLocation;
+            m_ActivateButton.ApplyActionState(BuildProfileWorkflowState.CalculateActionState(
+                parent.activateAction, child.activateAction));
+            m_BuildButton.ApplyActionState(BuildProfileWorkflowState.CalculateActionState(
+                parent.buildAction, child.buildAction));
+            m_BuildAndRunButton.ApplyActionState(BuildProfileWorkflowState.CalculateActionState(
+                parent.buildAndRunAction, child.buildAndRunAction));
+
+            m_BuildAndRunButton.text = child.buildAndRunButtonDisplayName;
+            m_BuildButton.SetText(child.buildButtonDisplayName);
+
+            // Additional actions are always directly applied to the parent window state.
+            parent.additionalActions = child.additionalActions;
+            RepaintAdditionActionsDropdown();
+        }
+
+        void RepaintAdditionActionsDropdown()
+        {
+            if (m_WindowState.buildAction == ActionState.Hidden || m_WindowState.additionalActions.Count == 0)
+            {
+                m_AdditionalActionsDropdown.Hide();
+                return;
+            }
+
+            // Dropdown button default text matches the first enabled action in the list,
+            // otherwise defaults to the first action.
+            var actions = m_WindowState.additionalActions;
+            GenericMenu menu = null;
+            int firstEnabledIndex = -1;
+            if (actions.Count > 1)
+            {
+                menu = new GenericMenu();
+                for (int i = 0; i < actions.Count; i++)
+                {
+                    var action = actions[i];
+                    if (action.state != ActionState.Enabled)
+                        continue;
+
+                    if(firstEnabledIndex < 0)
+                        firstEnabledIndex = i;
+                    else
+                        menu.AddItem(new GUIContent(action.displayName), false, () => action.callback());
+                }
+            }
+
+            firstEnabledIndex = Math.Max(firstEnabledIndex, 0);
+            var dropdown = new DropdownButton(
+                actions[firstEnabledIndex].displayName, actions[firstEnabledIndex].callback, menu);
+            if (actions[firstEnabledIndex].state != ActionState.Enabled)
+                dropdown.SetEnabled(false);
+
+            m_AdditionalActionsDropdown.Clear();
+            m_AdditionalActionsDropdown.Add(dropdown);
+            m_AdditionalActionsDropdown.Show();
+        }
+
+        /// <summary>
+        /// Show classic platform UI for globally shared settings.
+        /// </summary>
+        void OnClassicSceneListSelected()
+        {
+            m_BuildProfileClassicPlatformListView.ClearSelection();
+            m_BuildProfilesListView.ClearSelection();
+
+            DestroyImmediate(buildProfileEditor);
+            buildProfileEditor = ScriptableObject.CreateInstance<BuildProfileEditor>();
+            m_BuildProfileInspectorElement.Clear();
+            m_BuildProfileInspectorElement.Add(buildProfileEditor.CreateLegacyGUI());
+            m_InspectorHeader.Hide();
+        }
+
+        /// <summary>
         /// Handle selection of build profile item, creates embedded inspector and clears
         /// adjacent list views.
         /// </summary>
@@ -223,6 +329,7 @@ namespace UnityEditor.Build.Profile
                 return;
             }
 
+            m_InspectorHeader.Show();
             m_MissingClassicPlatformListView.ClearSelection();
 
             // Selected profile could be a custom or classic platform.
@@ -248,7 +355,8 @@ namespace UnityEditor.Build.Profile
 
             // Rebuild the BuildProfile inspector, targeting the newly selected BuildProfile.
             DestroyImmediate(buildProfileEditor);
-            buildProfileEditor = Editor.CreateEditor(profile, typeof(BuildProfileEditor));
+            buildProfileEditor = (BuildProfileEditor) Editor.CreateEditor(profile, typeof(BuildProfileEditor));
+            buildProfileEditor.parentState = m_WindowState;
             m_BuildProfileInspectorElement.Clear();
             m_BuildProfileInspectorElement.Add(buildProfileEditor.CreateInspectorGUI());
 
@@ -288,6 +396,7 @@ namespace UnityEditor.Build.Profile
             {
                 messageType = HelpBoxMessageType.Warning
             };
+            warningHelpBox.AddToClassList("mx-medium");
             Util.UpdatePlatformRequirementsWarningHelpBox(warningHelpBox, moduleName, subtarget);
             m_BuildProfileInspectorElement.Add(warningHelpBox);
 
@@ -327,31 +436,32 @@ namespace UnityEditor.Build.Profile
                 return;
             }
 
-            BuildProfileModuleUtil.CallInternalBuildMethods(true, optionFlags);
+            BuildProfileModuleUtil.CallInternalBuildMethods(m_ShouldAskForBuildLocation, optionFlags);
         }
 
         void UpdateFormButtonState(BuildProfile profile)
         {
             if (profile is null)
             {
-                m_ActivateButton.Hide();
-                m_BuildButton.Hide();
-                m_BuildAndRunButton.Hide();
+                m_WindowState.activateAction = ActionState.Hidden;
+                m_WindowState.buildAction = ActionState.Hidden;
+                m_WindowState.buildAndRunAction = ActionState.Hidden;
+                m_WindowState.Refresh();
             }
             else if (IsActiveBuildProfileOrPlatform((profile)))
             {
-                m_ActivateButton.Hide();
-                m_BuildButton.Show();
-                m_BuildAndRunButton.Show();
+                m_WindowState.activateAction = ActionState.Hidden;
+                m_WindowState.buildAction = ActionState.Enabled;
+                m_WindowState.buildAndRunAction = ActionState.Enabled;
+                m_WindowState.Refresh();
             }
             else
             {
-                if (profile.platformBuildProfile != null)
-                    m_ActivateButton.Show();
-                else
-                    m_ActivateButton.Hide();
-                m_BuildButton.Hide();
-                m_BuildAndRunButton.Hide();
+                m_WindowState.activateAction = (profile.platformBuildProfile != null)
+                    ? ActionState.Enabled : ActionState.Hidden;
+                m_WindowState.buildAction = ActionState.Hidden;
+                m_WindowState.buildAndRunAction = ActionState.Hidden;
+                m_WindowState.Refresh();
             }
         }
 

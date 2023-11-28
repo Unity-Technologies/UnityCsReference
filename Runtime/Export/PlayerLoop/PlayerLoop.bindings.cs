@@ -80,6 +80,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct UpdateContentLoading{ }
         [RequiredByNativeCode]
+        public struct UpdateAsyncInstantiate{ }
+        [RequiredByNativeCode]        
         public struct RendererNotifyInvisible {}
         [RequiredByNativeCode]
         public struct PlayerCleanupCachedData {}
@@ -234,7 +236,7 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct PlayerUpdateCanvases {}
         [RequiredByNativeCode]
-        internal struct UIElementsRepaintWorldPanels {}
+        internal struct UIElementsRepaintPanels {}
         [RequiredByNativeCode]
         public struct UpdateAudio {}
         [RequiredByNativeCode]
@@ -274,7 +276,7 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct PlayerEmitCanvasGeometry {}
         [RequiredByNativeCode]
-        internal struct PlayerRenderUIEBatchModeOffscreen {}
+        internal struct UIElementsRenderBatchModeOffscreen {}
         [RequiredByNativeCode]
         public struct FinishFrameRendering {}
         [RequiredByNativeCode]

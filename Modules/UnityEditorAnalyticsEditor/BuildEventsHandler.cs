@@ -28,13 +28,6 @@ namespace UnityEditor
             public string[] package_ids;
         }
 
-        [Serializable]
-        internal struct AndroidBuildPermissions
-        {
-            public string[] features;
-            public string[] permissions;
-        }
-
         private static bool s_EventSent = false;
         private static int s_NumOfSceneViews = 0;
         private static int s_NumOf2dSceneViews = 0;
@@ -47,7 +40,7 @@ namespace UnityEditor
 
             if (BuildTargetDiscovery.TryGetBuildTarget(EditorUserBuildSettings.activeBuildTarget, out var iBuildTarget))
             {
-                iBuildTarget.BuildPlatformProperties?.ReportBuildTargetPermissions();
+                iBuildTarget.BuildPlatformProperties?.ReportBuildTargetPermissions(report.summary.options);
             }
         }
 

@@ -66,7 +66,7 @@ namespace UnityEditor
             this.resolver = resolver;
             this.resolverWithWorldPos = null;
         }
-        
+
         public RenderPickingResult(int renderedPickingIndexCount, HandleUtility.ResolvePickingWithWorldPositionCallback resolver)
         {
             if (renderedPickingIndexCount < 0)
@@ -1106,6 +1106,14 @@ namespace UnityEditor
             return gameObject;
         }
 
+        public static void PickAllObjects(Vector2 position, List<UnityObject> results)
+        {
+            results.Clear();
+            var overlapping = SceneViewPicking.GetAllOverlapping(position);
+            foreach (var obj in overlapping)
+                results.Add(obj.target);
+        }
+
         static GameObject[] s_PickingGameObjectIgnore = new GameObject[16];
         static GameObject[] s_PickingGameObjectFilter = new GameObject[16];
 
@@ -1894,11 +1902,10 @@ namespace UnityEditor
             childRendererIDs = tempChildRendererIDs.ToArray();
         }
 
-        internal static void FilterInstanceIDs(GameObject[] gameObjects, out int[] parentInstanceIDs, out int[] childInstanceIDs)
+        internal static void FilterInstanceIDs(IEnumerable<GameObject> gameObjects, out int[] parentInstanceIDs, out int[] childInstanceIDs)
         {
-            if (gameObjects == null)
+            if (gameObjects.Count() == 0)
             {
-                Debug.LogWarning("The GameObject array is null. Handles.DrawOutline will not be rendered.");
                 parentInstanceIDs = new int[0];
                 childInstanceIDs = new int[0];
                 return;
@@ -1968,7 +1975,7 @@ namespace UnityEditor
         {
             Internal_Repaint();
         }
-        
+
         public delegate UnityObject ResolvePickingCallback(int localPickingIndex);
         public delegate UnityObject ResolvePickingWithWorldPositionCallback(int localPickingIndex, Vector3 worldPos, float depth);
         public delegate RenderPickingResult RenderPickingCallback(in RenderPickingArgs args);
@@ -2019,7 +2026,7 @@ namespace UnityEditor
         static readonly HashSet<GameObject> s_PickingExcludeSet = new HashSet<GameObject>();
 
         private static bool s_InPickingRendering = false;
-        
+
         // Returns true if any of the resolver function uses depth or reconstructed world space position.
         [RequiredByNativeCode]
         static bool DoRenderPicking(int pickingIndex)
@@ -2080,7 +2087,7 @@ namespace UnityEditor
             {
                 s_InPickingRendering = false;
             }
-            
+
             return needDepth;
         }
 

@@ -171,7 +171,7 @@ namespace UnityEngine.UIElements
                             continue;
                         }
 
-                        if (source is INotifyBindablePropertyChanged && !bindingData.binding.isDirty)
+                        if (bindingData.binding.updateTrigger == BindingUpdateTrigger.OnSourceChanged && source is INotifyBindablePropertyChanged && !bindingData.binding.isDirty)
                         {
                             var changedPaths = bindingManager.GetChangedDetectedFromSource(source);
                             if (null == changedPaths || changedPaths.Count == 0)

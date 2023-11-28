@@ -8,40 +8,12 @@ using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
-    internal static class UIElementsRuntimeUtility
+    static class UIElementsRuntimeUtility
     {
-        private static event Action s_onRepaintOverlayPanels;
-        internal static event Action onRepaintOverlayPanels
-        {
-            add
-            {
-                if (s_onRepaintOverlayPanels == null)
-                {
-                    RegisterPlayerloopCallback();
-                }
-
-                s_onRepaintOverlayPanels += value;
-            }
-
-            remove
-            {
-                s_onRepaintOverlayPanels -= value;
-
-                if (s_onRepaintOverlayPanels == null)
-                {
-                    UnregisterPlayerloopCallback();
-                }
-            }
-        }
-
         public static event Action<BaseRuntimePanel> onCreatePanel;
 
         static UIElementsRuntimeUtility()
         {
-            // We no longer need it
-            UIElementsRuntimeUtilityNative.RepaintOverlayPanelsCallback = () => {};  //RepaintOverlayPanels;
-            UIElementsRuntimeUtilityNative.RepaintOffscreenPanelsCallback = RepaintOffscreenPanels;
-
             Canvas.externBeginRenderOverlays = BeginRenderOverlays;
             Canvas.externRenderOverlaysBefore = (displayIndex, sortOrder) => RenderOverlaysBeforePriority(displayIndex, sortOrder);
             Canvas.externEndRenderOverlays = EndRenderOverlays;
@@ -123,28 +95,13 @@ namespace UnityEngine.UIElements
         internal static readonly string s_RepaintProfilerMarkerName = "UIElementsRuntimeUtility.DoDispatch(Repaint Event)";
         private static readonly ProfilerMarker s_RepaintProfilerMarker = new ProfilerMarker(s_RepaintProfilerMarkerName);
 
-        public static void RepaintOverlayPanels()
-        {
-            foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
-            {
-                if (!panel.drawsInCameras)
-                {
-                    RepaintOverlayPanel(panel);
-                }
-            }
-
-            // Call the package override of RepaintOverlayPanels, when available
-            if (s_onRepaintOverlayPanels != null)
-                s_onRepaintOverlayPanels();
-        }
-
-        public static void RepaintOffscreenPanels()
+        public static void RenderBatchModeOffscreenPanels()
         {
             foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
             {
                 if (!panel.drawsInCameras && panel.targetTexture != null)
                 {
-                    RepaintOverlayPanel(panel);
+                    RenderPanel(panel);
                 }
             }
         }
@@ -162,6 +119,24 @@ namespace UnityEngine.UIElements
             RenderTexture.active = oldRT;
         }
 
+        public static void RenderPanel(BaseRuntimePanel panel)
+        {
+            // Panel must NOT have drawsInCameras set. Such panels are drawn by the render nodes.
+            Debug.Assert(!panel.drawsInCameras);
+
+            var oldCam = Camera.current;
+            var oldRT = RenderTexture.active;
+
+            panel.Render();
+            (panel.panelDebug?.debuggerOverlayPanel as Panel)?.Render();
+
+            if (!panel.drawsInCameras)
+            {
+                Camera.SetupCurrent(oldCam);
+                RenderTexture.active = oldRT;
+            }
+        }
+
         private static int currentOverlayIndex = -1;
         internal static void BeginRenderOverlays(int displayIndex)
         {
@@ -177,14 +152,14 @@ namespace UnityEngine.UIElements
 
             for (; currentOverlayIndex < runTimePanels.Count; ++currentOverlayIndex)
             {
-                if (runTimePanels[currentOverlayIndex] is BaseRuntimePanel p)
+                if (runTimePanels[currentOverlayIndex] is BaseRuntimePanel p && !p.drawsInCameras)
                 {
                     if (p.sortingPriority >= maxPriority)
                         return;
 
                     if (p.targetDisplay == displayIndex)
                     {
-                        RepaintOverlayPanel(p);
+                        RenderPanel(p);
                     }
                 }
             }
@@ -196,11 +171,11 @@ namespace UnityEngine.UIElements
             currentOverlayIndex = -1;
         }
 
-        public static void RepaintWorldPanels()
+        public static void RepaintPanels(bool onlyOffscreen)
         {
             foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
             {
-                if (panel.drawsInCameras)
+                if (!onlyOffscreen || panel.targetTexture != null)
                     panel.Repaint(null);
             }
         }
@@ -225,7 +200,7 @@ namespace UnityEngine.UIElements
         internal static DefaultEventSystem defaultEventSystem =>
             s_DefaultEventSystem ?? (s_DefaultEventSystem = new DefaultEventSystem());
 
-        public static void UpdateRuntimePanels()
+        public static void UpdatePanels()
         {
             RemoveUnusedPanels();
 
@@ -269,16 +244,18 @@ namespace UnityEngine.UIElements
         public static void RegisterPlayerloopCallback()
         {
             UIElementsRuntimeUtilityNative.RegisterPlayerloopCallback();
-            UIElementsRuntimeUtilityNative.UpdateRuntimePanelsCallback = UpdateRuntimePanels;
-            UIElementsRuntimeUtilityNative.RepaintWorldPanelsCallback = RepaintWorldPanels;
+            UIElementsRuntimeUtilityNative.UpdatePanelsCallback = UpdatePanels;
+            UIElementsRuntimeUtilityNative.RepaintPanelsCallback = RepaintPanels;
+            UIElementsRuntimeUtilityNative.RenderBatchModeOffscreenPanelsCallback = RenderBatchModeOffscreenPanels;
             defaultEventSystem.isInputReady = true;
         }
 
         public static void UnregisterPlayerloopCallback()
         {
             UIElementsRuntimeUtilityNative.UnregisterPlayerloopCallback();
-            UIElementsRuntimeUtilityNative.UpdateRuntimePanelsCallback = null;
-            UIElementsRuntimeUtilityNative.RepaintWorldPanelsCallback = null;
+            UIElementsRuntimeUtilityNative.UpdatePanelsCallback = null;
+            UIElementsRuntimeUtilityNative.RepaintPanelsCallback = null;
+            UIElementsRuntimeUtilityNative.RenderBatchModeOffscreenPanelsCallback = null;
             defaultEventSystem.isInputReady = false;
         }
 

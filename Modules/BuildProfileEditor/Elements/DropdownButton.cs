@@ -27,6 +27,11 @@ namespace UnityEditor.Build.Profile.Elements
             Add(new IMGUIContainer(RenderIMGUI));
         }
 
+        public void SetText(string text)
+        {
+            m_BuildButton.text = text;
+        }
+
         void RenderIMGUI()
         {
             Rect buildRect = GUILayoutUtility.GetRect(m_BuildButton, BuildProfileModuleUtil.dropDownToggleButton, GUILayout.Width(k_ButtonWidth));
@@ -34,7 +39,7 @@ namespace UnityEditor.Build.Profile.Elements
             buildRectPopupButton.x += buildRect.width - 16;
             buildRectPopupButton.width = 16;
 
-            if (EditorGUI.DropdownButton(buildRectPopupButton, GUIContent.none, FocusType.Passive,
+            if (m_Menu != null && EditorGUI.DropdownButton(buildRectPopupButton, GUIContent.none, FocusType.Passive,
                     GUIStyle.none))
             {
                 m_Menu.DropDown(buildRect);

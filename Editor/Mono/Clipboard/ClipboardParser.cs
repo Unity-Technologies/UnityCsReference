@@ -59,6 +59,24 @@ namespace UnityEditor
             return false;
         }
 
+        public static bool ParseRenderingLayerMask(string text, out RenderingLayerMask res)
+        {
+            res = 0;
+            if (string.IsNullOrEmpty(text))
+                return false;
+
+            var match = Regex.Match(text, @"^RenderingLayerMask\(([0-9]+)\)");
+            if (match.Success && match.Groups.Count > 1)
+            {
+                if (uint.TryParse(match.Groups[1].Value, out var id))
+                {
+                    res = id;
+                    return true;
+                }
+            }
+            return false;
+        }
+
         static float[] ParseFloats(string text, string prefix, int count)
         {
             if (string.IsNullOrEmpty(text))
@@ -377,6 +395,8 @@ namespace UnityEditor
                 case SerializedPropertyType.LayerMask:
                 case SerializedPropertyType.Character:
                     res["val"] = GetIntegerValue(p); break;
+                case SerializedPropertyType.RenderingLayerMask:
+                    res["val"] = p.uintValue; break;
                 case SerializedPropertyType.Boolean: res["val"] = p.boolValue; break;
                 case SerializedPropertyType.Float: res["val"] = p.floatValue; break;
                 case SerializedPropertyType.String: res["val"] = p.stringValue; break;
@@ -456,6 +476,9 @@ namespace UnityEditor
                             prop.longValue = Convert.ToInt64(oval);
                         else
                             prop.intValue = Convert.ToInt32(oval);
+                        break;
+                    case SerializedPropertyType.RenderingLayerMask:
+                        prop.uintValue = Convert.ToUInt32(oval);
                         break;
                     case SerializedPropertyType.Boolean:
                         prop.boolValue = Convert.ToBoolean(oval);

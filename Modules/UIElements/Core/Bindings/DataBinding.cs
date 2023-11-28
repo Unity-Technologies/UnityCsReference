@@ -72,6 +72,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Using a local source does not prevent children of the target from using the hierarchy source.
         /// </remarks>
+        [CreateProperty]
         public object dataSource { get; set; }
 
         /// <summary>
@@ -104,6 +105,7 @@ namespace UnityEngine.UIElements
         /// Controls how this binding should be updated.
         /// The default value is <see cref="BindingMode.TwoWay"/>.
         /// </summary>
+        [CreateProperty]
         public BindingMode bindingMode
         {
             get => m_BindingMode;
@@ -120,6 +122,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns the <see cref="ConverterGroup"/> used when trying to convert data from the data source to a UI property.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public ConverterGroup sourceToUiConverters
         {
             get
@@ -131,6 +134,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns the <see cref="ConverterGroup"/> used when trying to convert data from a UI property back to the data source.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public ConverterGroup uiToSourceConverters
         {
             get

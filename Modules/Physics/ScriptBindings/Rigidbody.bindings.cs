@@ -60,6 +60,7 @@ namespace UnityEngine
         extern public bool automaticInertiaTensor { get; set; }
         extern public Quaternion inertiaTensorRotation { get; set; }
         extern public Vector3 inertiaTensor { get; set; }
+        extern internal Matrix4x4 worldInertiaTensorMatrix { get; }
         extern public bool detectCollisions { get; set; }
         extern public Vector3 position { get; set; }
         extern public Quaternion rotation { get; set; }

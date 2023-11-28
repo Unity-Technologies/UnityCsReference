@@ -462,9 +462,17 @@ namespace UnityEngine.UIElements
                 RenderTexture.active = null;
 
                 using (s_RepaintProfilerMarker.Auto())
+                {
                     panel.Repaint(s_EventInstance);
+                    panel.Render();
+                }
 
-                (panel.panelDebug?.debuggerOverlayPanel as Panel)?.Repaint(s_EventInstance);
+                if (panel.panelDebug?.debuggerOverlayPanel is Panel panelDebug)
+                {
+                    panelDebug.Repaint(s_EventInstance);
+                    panelDebug.Render();
+                }
+
                 // TODO get rid of this when we wrap every GUIView inside IMGUIContainers
                 // here we pretend to use the repaint event
                 // in order to suspend to suspend OnGUI() processing on the native side

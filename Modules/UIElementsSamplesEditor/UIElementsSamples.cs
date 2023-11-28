@@ -96,6 +96,8 @@ namespace UnityEditor.UIElements.Samples
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Object Field", ObjectFieldSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("List View", ListViewSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Tree View", TreeViewSnippet.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Multi-Column List View", MultiColumnListViewSnippet.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Multi-Column Tree View", MultiColumnTreeViewSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Tab View", TabViewSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Numeric Fields", MakeNumericFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
                 {

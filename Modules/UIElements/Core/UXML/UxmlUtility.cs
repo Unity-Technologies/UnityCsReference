@@ -50,6 +50,11 @@ namespace UnityEngine.UIElements
             return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
         }
 
+        public static uint ParseUint(string value, uint defaultValue = default)
+        {
+            return uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+        }
+
         public static float TryParseFloatAttribute(string attributeName, IUxmlAttributes bag, ref int foundAttributeCounter)
         {
             if (bag.TryGetAttributeValue(attributeName, out var value))

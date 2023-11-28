@@ -39,6 +39,7 @@ namespace UnityEditor.ShortcutManagement
             { KeyCode.End, "END" },
             { KeyCode.Tab, "TAB" },
             { KeyCode.Space, "SPACE"},
+            { KeyCode.Backspace, "BACKSPACE"},
 
             // UUM-40161
             // Even though ShortcutManager doesn't allow enter key bindings,

@@ -18,7 +18,7 @@ namespace UnityEditor.UIElements.Samples
             #region sample
             /// <sample>
             // Create some list of data, here simply numbers in a few foldouts
-            var items = new List<TreeViewItemData<string>>(110);
+            var items = new List<TreeViewItemData<string>>(10);
             for (var i = 0; i < 10; i++)
             {
                 var itemIndex = i * 10 + i;
@@ -52,10 +52,16 @@ namespace UnityEditor.UIElements.Samples
             treeView.Rebuild();
 
             // Callback invoked when the user double clicks an item
-            treeView.itemsChosen += Debug.Log;
+            treeView.itemsChosen += (selectedItems) =>
+            {
+                Debug.Log("Items chosen: " + string.Join(", ", selectedItems));
+            };
 
             // Callback invoked when the user changes the selection inside the TreeView
-            treeView.selectedIndicesChanged += Debug.Log;
+            treeView.selectedIndicesChanged += (selectedItems) =>
+            {
+                Debug.Log("Items selected: " + string.Join(", ", selectedItems));
+            };
             /// </sample>
             #endregion
         }

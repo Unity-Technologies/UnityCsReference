@@ -115,9 +115,13 @@ namespace UnityEngine.TextCore.Text
                     if (temp.atlasPopulationMode == AtlasPopulationMode.Dynamic || temp.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
                     {
                         if (!isMainThread)
-                            return null;
+                        {
+                            if (!temp.m_MissingUnicodesFromFontFile.Contains(unicode))
+                                return null;
+                        }
+                            
 
-                        if (temp.TryAddCharacterInternal(unicode, out character))
+                        else if (temp.TryAddCharacterInternal(unicode, out character))
                         {
                             isAlternativeTypeface = true;
                             return character;

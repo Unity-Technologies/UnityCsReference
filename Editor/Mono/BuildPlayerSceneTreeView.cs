@@ -54,6 +54,7 @@ namespace UnityEditor
             UpdateName();
         }
     }
+
     internal class BuildPlayerSceneTreeView : TreeView
     {
         public BuildPlayerSceneTreeView(TreeViewState state) : base(state)
@@ -77,7 +78,7 @@ namespace UnityEditor
             var root = new TreeViewItem(-1, -1);
             root.children = new List<TreeViewItem>();
 
-            List<EditorBuildSettingsScene> scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
+            List<EditorBuildSettingsScene> scenes = new List<EditorBuildSettingsScene>(GetScenes());
             foreach (var sc in scenes)
             {
                 var item = new BuildPlayerSceneTreeViewItem(sc);
@@ -145,7 +146,7 @@ namespace UnityEditor
                             sceneItem.active = newState;
                         }
 
-                        EditorBuildSettings.scenes = GetSceneList();
+                        SetScenes(GetSceneList());
                     }
 
                     base.RowGUI(args);
@@ -202,7 +203,7 @@ namespace UnityEditor
                         }
                     }
                     rootItem.children = result;
-                    EditorBuildSettings.scenes = GetSceneList();
+                    SetScenes(GetSceneList());
                     ReloadAndSelect(draggedIDs);
                     Repaint();
                 }
@@ -212,7 +213,7 @@ namespace UnityEditor
                 visualMode = DragAndDropVisualMode.Copy;
                 if (args.performDrop)
                 {
-                    var scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
+                    var scenes = new List<EditorBuildSettingsScene>(GetScenes());
                     var scenesToAdd = new List<EditorBuildSettingsScene>();
                     var selection = new List<int>();
 
@@ -240,7 +241,7 @@ namespace UnityEditor
 
                     int newIndex = FindDropAtIndex(args);
                     scenes.InsertRange(newIndex, scenesToAdd);
-                    EditorBuildSettings.scenes = scenes.ToArray();
+                    SetScenes(scenes.ToArray());
                     ReloadAndSelect(selection);
                     Repaint();
                 }
@@ -311,10 +312,13 @@ namespace UnityEditor
             {
                 rootItem.children.Remove(FindItem(nodeID, rootItem));
             }
-            EditorBuildSettings.scenes = GetSceneList();
+            SetScenes(GetSceneList());
             Reload();
             Repaint();
         }
+
+        protected virtual EditorBuildSettingsScene[] GetScenes() => EditorBuildSettings.scenes;
+        protected virtual void SetScenes(EditorBuildSettingsScene[] scenes) => EditorBuildSettings.scenes = scenes;
 
         public EditorBuildSettingsScene[] GetSceneList()
         {

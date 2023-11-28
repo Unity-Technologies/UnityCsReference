@@ -108,13 +108,24 @@ namespace UnityEditor.UIElements
                 if (type == typeof(VisualTreeAsset))
                 {
                     result = AssetDatabase.GetAssetPath(obj);
-                    if (visualTreeAsset != null && !string.IsNullOrEmpty(result) && !visualTreeAsset.TemplateExists(obj.name))
-                        visualTreeAsset.RegisterTemplate(obj.name, result);
+                    if (visualTreeAsset != null && !string.IsNullOrEmpty(result) && !visualTreeAsset.TemplateExists(obj.name) && visualTreeAsset.name != obj.name)
+                    {
+                        var resolvedAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(result);
+                        if (resolvedAsset)
+                        {
+                            visualTreeAsset.RegisterTemplate(obj.name, resolvedAsset);
+                        }
+                    }
                 }
 
                 result = URIHelpers.MakeAssetUri(obj);
                 if (visualTreeAsset != null && !string.IsNullOrEmpty(result) && !visualTreeAsset.AssetEntryExists(result, type))
                     visualTreeAsset.RegisterAssetEntry(result, type, obj);
+
+                // attributes referencing a template use the VTA name instead of the path
+                // the path is used in the template's own attributes
+                if (type == typeof(VisualTreeAsset) && obj != null && obj.name != null)
+                    result = obj.name;
 
                 return true;
             }
@@ -414,6 +425,12 @@ namespace UnityEditor.UIElements
     {
         public override LayerMask FromString(string value) => UxmlUtility.ParseInt(value);
         public override string ToString(LayerMask lm) => lm.value.ToString();
+    }
+
+    internal class RenderingLayerMaskConverter : UxmlAttributeConverter<RenderingLayerMask>
+    {
+        public override RenderingLayerMask FromString(string value) => UxmlUtility.ParseUint(value);
+        public override string ToString(RenderingLayerMask lm) => lm.value.ToString();
     }
 
     internal class BoundsAttributeConverter : UxmlAttributeConverter<Bounds>
@@ -750,7 +767,7 @@ namespace UnityEditor.UIElements
 
                 if (!success)
                     throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient's color key could not be parsed correctly.");
-                    
+
                 gradientColorKeys.Add(new GradientColorKey(color, time));
             }
 

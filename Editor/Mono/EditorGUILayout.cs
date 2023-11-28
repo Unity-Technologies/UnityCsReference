@@ -1647,6 +1647,24 @@ sealed partial class EditorGUILayout
         EditorGUI.LayerMaskField(r, property, label);
     }
 
+    internal static uint RenderingLayerMaskField(uint layers, GUIContent label, params GUILayoutOption[] options)
+    {
+        Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, options);
+        return EditorGUI.RenderingLayerMaskField(r, layers, label);
+    }
+
+    internal static RenderingLayerMask RenderingLayerMaskField(RenderingLayerMask layers, GUIContent label, params GUILayoutOption[] options)
+    {
+        var rect = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, options);
+        return EditorGUI.RenderingLayerMaskField(rect, layers, label);
+    }
+
+    internal static void RenderingLayerMaskField(SerializedProperty property, GUIContent label, params GUILayoutOption[] options)
+    {
+        Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, options);
+        EditorGUI.RenderingLayerMaskField(r, property, label);
+    }
+
     public static void HelpBox(string message, MessageType type)
     {
         HelpBox(EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(type)), true);

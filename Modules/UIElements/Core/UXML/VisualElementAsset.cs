@@ -96,117 +96,26 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void DeserializeOverride(UxmlSerializedData target, UxmlSerializedData overridenData, List<string> uxmlPropertyNames = null)
-        {
-            Assert.AreEqual(target.GetType(), overridenData.GetType());
-
-            var desc = UxmlDescriptionRegistry.GetDescription(target.GetType());
-
-            void ApplyOverride(UxmlTypeDescription description, int index, UxmlSerializedData from, UxmlSerializedData to)
-            {
-                var attDescription = description.attributeDescriptions[index];
-                var fieldInfo = attDescription.serializedField;
-                var value = fieldInfo.GetValue(from);
-                fieldInfo.SetValue(to, value);
-
-                // Copy attribute flags
-                var fieldInfoFlags = attDescription.serializedFieldAttributeFlags;
-                if (fieldInfoFlags != null)
-                {
-                    var valueFlags = fieldInfoFlags.GetValue(from);
-                    fieldInfoFlags.SetValue(to, valueFlags);
-                }
-            }
-
-            // Override all properties
-            if (null == uxmlPropertyNames)
-            {
-                for (var index = 0; index < desc.attributeDescriptions.Count; ++index)
-                    ApplyOverride(desc, index, overridenData, target);
-            }
-            else
-            {
-                // Override specified properties
-                foreach (var uxmlName in uxmlPropertyNames)
-                {
-                    if (desc.uxmlNameToIndex.TryGetValue(uxmlName, out var index))
-                    {
-                        ApplyOverride(desc, index, overridenData, target);
-                    }
-                    else
-                    {
-                        // Try to map to an obsolete name
-                        for (var i = 0; i < desc.attributeDescriptions.Count; ++i)
-                        {
-                            var attributeDescription = desc.attributeDescriptions[i];
-                            var obsoleteNames = attributeDescription.obsoleteNames;
-                            var matchedObsoleteName = false;
-                            for (var j = 0; j < obsoleteNames.Length; ++j)
-                            {
-                                if (obsoleteNames[j] != uxmlName)
-                                    continue;
-
-                                ApplyOverride(desc, i, overridenData, target);
-                                matchedObsoleteName = true;
-                                break;
-                            }
-
-                            if (matchedObsoleteName)
-                                break;
-                        }
-                    }
-                }
-            }
-        }
-
         internal virtual VisualElement Instantiate(CreationContext cc)
         {
             var ve = (VisualElement) serializedData.CreateInstance();
-            var data = serializedData;
+            serializedData.Deserialize(ve);
 
             if (cc.hasOverrides)
             {
-                // If there are overrides, we need to merge them into a single UxmlSerializedData that we can then call
-                // Deserialize on. We'll create a new instance of the serialized data and transfer the data of the current
-                // UxmlAsset in it. Then, going bottom-up, we'll overwrite properties of this data with the overrides.
-                data = (UxmlSerializedData) Activator.CreateInstance(serializedData.GetType());
-                DeserializeOverride(data, serializedData);
-
-                // To partially override the UxmlSerializedData, we need to look at the traits overrides to figure out which properties
-                // were overridden. That system works on the name of the element, which we extract here.
-                var desc = UxmlDescriptionRegistry.GetDescription(serializedData.GetType());
-                var elementName = (string)desc.attributeDescriptions[desc.uxmlNameToIndex["name"]].serializedField.GetValue(serializedData);
-
-                Assert.AreEqual(cc.attributeOverrides.Count, cc.serializedDataOverrides.Count);
-
                 // Applying the overrides in reverse order. This means that the deepest overrides, the ones from nested VisualTreeAssets,
                 // will be applied first and might be overridden by parent VisualTreeAssets.
                 for (var i = cc.serializedDataOverrides.Count - 1; i >= 0; --i)
                 {
-                    var attributeOverrideRange = cc.attributeOverrides[i];
-                    var serializedDataOverrideRange = cc.serializedDataOverrides[i];
-
-                    using var propertyNamesPooledHandle = ListPool<string>.Get(out var propertyNames);
-
-                    for (var j = 0; j < attributeOverrideRange.attributeOverrides.Count; ++j)
+                    foreach (var attributeOverride in cc.serializedDataOverrides[i].attributeOverrides)
                     {
-                        var attributeOverride = attributeOverrideRange.attributeOverrides[j];
-                        if (attributeOverride.m_ElementName == elementName)
-                            propertyNames.Add(attributeOverride.m_AttributeName);
-                    }
-
-                    for (var j = 0; j < serializedDataOverrideRange.attributeOverrides.Count; ++j)
-                    {
-                        var attributeOverride = serializedDataOverrideRange.attributeOverrides[j];
                         if (attributeOverride.m_ElementId == id)
                         {
-                            DeserializeOverride(data, attributeOverride.m_SerializedData, propertyNames);
+                            attributeOverride.m_SerializedData.Deserialize(ve);
                         }
                     }
                 }
             }
-
-            data.Deserialize(ve);
 
             if (hasStylesheetPaths)
             {

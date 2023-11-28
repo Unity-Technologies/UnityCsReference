@@ -322,6 +322,9 @@ namespace UnityEditor.UIElements.Bindings
                 case SerializedPropertyType.LayerMask:
                     DefaultBind(element, prop, SerializedPropertyHelper.GetLayerMaskPropertyValue, SerializedPropertyHelper.SetLayerMaskPropertyValue, SerializedPropertyHelper.ValueEquals);
                     break;
+                case SerializedPropertyType.RenderingLayerMask:
+                    DefaultBind(element, prop, SerializedPropertyHelper.GetRenderingLayerMaskPropertyValue, SerializedPropertyHelper.SetRenderingLayerMaskPropertyValue, SerializedPropertyHelper.ValueEquals);
+                    break;
                 case SerializedPropertyType.Enum:
                     CreateEnumBindingObject(element, prop);
                     break;

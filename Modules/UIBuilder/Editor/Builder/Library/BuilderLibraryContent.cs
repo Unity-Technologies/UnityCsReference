@@ -278,6 +278,8 @@ namespace Unity.UI.Builder
                 CreateItem("Scroll View", "ScrollView", typeof(ScrollView), () => new ScrollView()),
                 CreateItem("List View", "ListView", typeof(ListView), () => new ListView()),
                 CreateItem("Tree View", "TreeView", typeof(TreeView), () => new TreeView()),
+                CreateItem("Multi-Column List View", "MultiColumnListView", typeof(MultiColumnListView), () => new MultiColumnListView()),
+                CreateItem("Multi-Column Tree View", "MultiColumnTreeView", typeof(MultiColumnTreeView), () => new MultiColumnTreeView()),
                 CreateItem("Group Box", nameof(GroupBox), typeof(GroupBox), () => new GroupBox()),
             };
             containersItem.AddChildren(containersItemList);

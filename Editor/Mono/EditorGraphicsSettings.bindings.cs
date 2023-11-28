@@ -78,7 +78,7 @@ namespace UnityEditor.Rendering
 
             if (globalSettingsAssetChanged)
             {
-                var rpAsset = RenderPipelineManager.s_CurrentPipelineAsset;
+                var rpAsset = RenderPipelineManager.currentPipelineAsset;
                 if (rpAsset != null && rpAsset.pipelineType == renderPipelineType)
                     RenderPipelineManager.RecreateCurrentPipeline(rpAsset);
             }

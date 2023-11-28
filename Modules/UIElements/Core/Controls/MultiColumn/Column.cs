@@ -138,9 +138,15 @@ namespace UnityEngine.UIElements
                 if (ShouldWriteAttributeValue(bindingPath_UxmlAttributeFlags))
                     e.bindingPath = bindingPath;
                 if (ShouldWriteAttributeValue(headerTemplate_UxmlAttributeFlags) && headerTemplate != null)
+                {
+                    e.headerTemplate = headerTemplate;
                     e.makeHeader = () => headerTemplate.Instantiate();
+                }
                 if (ShouldWriteAttributeValue(cellTemplate_UxmlAttributeFlags) && cellTemplate != null)
+                {
+                    e.cellTemplate = cellTemplate;
                     e.makeCell = () => cellTemplate.Instantiate();
+                }
             }
         }
 
@@ -297,6 +303,8 @@ namespace UnityEngine.UIElements
         bool m_Resizable = true;
 
         // Header content template
+        VisualTreeAsset m_HeaderTemplate;
+        VisualTreeAsset m_CellTemplate;
         Func<VisualElement> m_MakeHeader;
         Action<VisualElement> m_BindHeader;
         Action<VisualElement> m_UnbindHeader;
@@ -541,6 +549,36 @@ namespace UnityEngine.UIElements
         /// Path of the target property to be bound.
         /// </summary>
         public string bindingPath { get; set; }
+
+        /// <summary>
+        /// The VisualElement that is the template for the header of the column.
+        /// </summary>
+        public VisualTreeAsset headerTemplate
+        {
+            get => m_HeaderTemplate;
+            set
+            {
+                if (m_HeaderTemplate == value)
+                    return;
+                m_HeaderTemplate = value;
+                NotifyChange(ColumnDataType.HeaderTemplate);
+            }
+        }
+
+        /// <summary>
+        /// The VisualElement that is the template for each cell of the column.
+        /// </summary>
+        public VisualTreeAsset cellTemplate
+        {
+            get => m_CellTemplate;
+            set
+            {
+                if (m_CellTemplate == value)
+                    return;
+                m_CellTemplate = value;
+                NotifyChange(ColumnDataType.CellTemplate);
+            }
+        }
 
         /// <summary>
         /// Callback for constructing the visual representation of the column in the header.

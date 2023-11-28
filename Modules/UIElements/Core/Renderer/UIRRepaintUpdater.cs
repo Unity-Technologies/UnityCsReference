@@ -70,21 +70,18 @@ namespace UnityEngine.UIElements
 
             renderChain.ProcessChanges();
 
-            PanelClearSettings clearSettings = panel.clearSettings;
-            if (clearSettings.clearColor || clearSettings.clearDepthStencil)
-            {
-                // Case 1277149: Clear color must be pre-multiplied like when we render.
-                Color clearColor = clearSettings.color;
-                clearColor = clearColor.RGBMultiplied(clearColor.a);
-
-                GL.Clear(clearSettings.clearDepthStencil, // Clearing may impact MVP
-                    clearSettings.clearColor, clearColor, UIRUtility.k_ClearZ);
-            }
-
             // Apply these debug values every frame because the render chain may have been recreated.
             renderChain.drawStats = drawStats;
             renderChain.device.breakBatches = breakBatches;
+        }
 
+        void Render()
+        {
+            // Since the calls to Update and Render can be disjoint, this check seems reasonable.
+            if (renderChain == null)
+                return;
+
+            Debug.Assert(!renderChain.drawInCameras);
             renderChain.Render();
         }
 
@@ -127,6 +124,7 @@ namespace UnityEngine.UIElements
                 return;
 
             attachedPanel = panel;
+            attachedPanel.SetRenderAction(Render);
             attachedPanel.isFlatChanged += OnPanelIsFlatChanged;
             attachedPanel.atlasChanged += OnPanelAtlasChanged;
             attachedPanel.standardShaderChanged += OnPanelStandardShaderChanged;
@@ -152,6 +150,7 @@ namespace UnityEngine.UIElements
             attachedPanel.standardShaderChanged -= OnPanelStandardShaderChanged;
             attachedPanel.standardWorldSpaceShaderChanged -= OnPanelStandardWorldSpaceShaderChanged;
             attachedPanel.hierarchyChanged -= OnPanelHierarchyChanged;
+            attachedPanel.SetRenderAction(null);
             attachedPanel = null;
         }
 

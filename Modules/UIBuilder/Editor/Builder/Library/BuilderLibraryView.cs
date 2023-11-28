@@ -17,7 +17,7 @@ namespace Unity.UI.Builder
 
         protected BuilderPaneWindow m_PaneWindow;
         protected BuilderLibraryDragger m_Dragger;
-        
+
         public abstract VisualElement primaryFocusable { get; }
 
         public virtual void SetupView(BuilderLibraryDragger dragger, BuilderTooltipPreview tooltipPreview,
@@ -69,7 +69,7 @@ namespace Unity.UI.Builder
             if (m_PaneWindow.document.WillCauseCircularDependency(item.sourceAsset))
             {
                 BuilderDialogsUtility.DisplayDialog(BuilderConstants.InvalidWouldCauseCircularDependencyMessage,
-                    BuilderConstants.InvalidWouldCauseCircularDependencyMessageDescription, null);
+                    BuilderConstants.InvalidWouldCauseCircularDependencyMessageDescription, BuilderConstants.DialogOkOption);
                 return;
             }
 
@@ -97,8 +97,8 @@ namespace Unity.UI.Builder
                 BuilderAssetUtilities.AddElementToAsset(
                     m_PaneWindow.document, newElement, item.makeElementAssetCallback);
 
-            m_Selection.NotifyOfHierarchyChange(); 
-            m_Selection.Select(null, newElement); 
+            m_Selection.NotifyOfHierarchyChange();
+            m_Selection.Select(null, newElement);
         }
 
         void OnItemMouseEnter(MouseEnterEvent evt)

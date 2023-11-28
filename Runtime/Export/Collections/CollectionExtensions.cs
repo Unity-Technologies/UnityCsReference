@@ -126,5 +126,27 @@ namespace Unity.Collections
 
             return "[" + string.Join(",", collection.Select(t => t == null ? "null" : serializeElement.Invoke(t))) + "]";
         }
+
+        /// <summary>
+        /// Check if element is in collection. This method replace Linq implementation to reduce GC allocations.
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <param name="element">Element to find</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>True if element found and False if not</returns>
+        /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
+        internal static bool ContainsByEquals<T>([DisallowNull] this IEnumerable<T> collection, T element)
+        {
+            if (collection == null)
+                throw new ArgumentNullException($"{nameof(collection)} must not be null.");
+
+            foreach (var e in collection)
+            {
+                if (e.Equals(element))
+                    return true;
+            }
+
+            return false;
+        }
     }
 }

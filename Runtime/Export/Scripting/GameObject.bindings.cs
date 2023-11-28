@@ -123,7 +123,7 @@ namespace UnityEngine
             return GetComponentsInChildren(type, includeInactive);
         }
 
-        public Component[] GetComponentsInChildren(Type type, [uei.DefaultValue("false")]  bool includeInactive)
+        public Component[] GetComponentsInChildren(Type type, [uei.DefaultValue("false")] bool includeInactive)
         {
             return (Component[])GetComponentsInternal(type, false, true, includeInactive, false, null);
         }
@@ -155,7 +155,7 @@ namespace UnityEngine
             return GetComponentsInParent(type, includeInactive);
         }
 
-        public Component[] GetComponentsInParent(Type type, [uei.DefaultValue("false")]  bool includeInactive)
+        public Component[] GetComponentsInParent(Type type, [uei.DefaultValue("false")] bool includeInactive)
         {
             return (Component[])GetComponentsInternal(type, false, true, includeInactive, true, null);
         }
@@ -241,6 +241,27 @@ namespace UnityEngine
         {
             return AddComponent(typeof(T)) as T;
         }
+
+        public extern int GetComponentCount();
+
+        [NativeName("QueryComponentAtIndex<Unity::Component>")]
+        internal extern Component QueryComponentAtIndex(int index);
+
+        public Component GetComponentAtIndex(int index)
+        {
+            if (index < 0 || index >= GetComponentCount()) throw new ArgumentOutOfRangeException(nameof(index), "Valid range is 0 to GetComponentCount() - 1.");
+            return QueryComponentAtIndex(index);
+        }
+
+        public T GetComponentAtIndex<T>(int index) where T : Component
+        {
+            T component = (T)GetComponentAtIndex(index);
+            if(component == null) throw new InvalidCastException();
+            return component;
+        }
+
+        public extern int GetComponentIndex(Component component);
+
 
         public extern Transform transform
         {
