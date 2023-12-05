@@ -28,6 +28,7 @@ namespace UnityEditor
             Rendering = 2,
             Contacts = 3,
             Queries = 4,
+            Internal = 5,
         }
 
         [SerializeField] Vector2 m_MainScrollPos = Vector2.zero;
@@ -156,6 +157,8 @@ namespace UnityEditor
             public static readonly GUIContent showAll               = EditorGUIUtility.TrTextContent("Show All");
             public static readonly GUIContent showNone              = EditorGUIUtility.TrTextContent("Show None");
             public static readonly GUIContent resetButton           = EditorGUIUtility.TrTextContent("Reset", "Reset visualization settings and locked objects");
+            public static readonly GUIContent connectSDKVisualDebugger = EditorGUIUtility.TrTextContent("Connect SDK Debugger","Only available with SDK debug builds.");
+            public static readonly GUIContent disconnectSDKVisualDebugger = EditorGUIUtility.TrTextContent("Disconnect SDK Debugger", "Only available with SDK debug builds.");
             #endregion
 
             #region Info tables
@@ -184,10 +187,15 @@ namespace UnityEditor
             #endregion
 
             public static readonly GUIStyle tabBarStyle             = GUI.skin.button;
-            public static readonly string[] tabs                    = new string[] { "Info", "Filtering", "Rendering", "Contacts", "Queries" };
+            public static readonly string[] tabs;
 
             static Style()
             {
+                if(Unsupported.IsDeveloperMode())
+                    tabs = new string[] { "Info", "Filtering", "Rendering", "Contacts", "Queries", "Internal" };
+                else
+                    tabs = new string[] { "Info", "Filtering", "Rendering", "Contacts", "Queries" };
+
                 tabBarStyle.margin = new RectOffset(0, 0, 1, 0);
             }
         }
@@ -433,6 +441,12 @@ namespace UnityEditor
                     break;
                 case Tabs.Queries:
                     DrawQueriesTab();
+                    break;
+                case Tabs.Internal:
+                    DrawInternalTab();
+                    break;
+                default: //default to info tab
+                    DrawInfoTab();
                     break;
             }
 

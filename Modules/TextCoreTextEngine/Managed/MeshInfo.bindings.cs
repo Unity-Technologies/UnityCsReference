@@ -13,7 +13,7 @@ namespace UnityEngine.TextCore.Text
     /// Copy of MeshInfo, where we pass only the parameters necessary for rendering on the Native side
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Modules/TextCoreTextEngine/MeshInfo.h")]
+    [NativeHeader("Modules/TextCoreTextEngine/Native/MeshInfo.h")]
     [UsedByNativeCode("MeshInfo")]
     [VisibleToOtherModules("UnityEngine.IMGUIModule")]
     internal struct MeshInfoBindings

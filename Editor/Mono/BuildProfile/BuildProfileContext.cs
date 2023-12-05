@@ -227,6 +227,12 @@ namespace UnityEditor.Build.Profile
             return false;
         }
 
+        internal BuildProfile GetForClassicPlatform(BuildTarget target, StandaloneBuildSubtarget subTarget)
+        {
+            var key = GetKey(target, subTarget);
+            return m_BuildModuleNameToClassicPlatformProfile.GetValueOrDefault(key);
+        }
+
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal static bool IsClassicPlatformProfile(BuildProfile profile)
         {
@@ -285,12 +291,6 @@ namespace UnityEditor.Build.Profile
 
             if (sharedProfile != null)
                 SaveBuildProfileInProject(sharedProfile);
-        }
-
-        BuildProfile GetForClassicPlatform(BuildTarget target, StandaloneBuildSubtarget subTarget)
-        {
-            var key = GetKey(target, subTarget);
-            return m_BuildModuleNameToClassicPlatformProfile.GetValueOrDefault(key);
         }
 
         void OnEnable()

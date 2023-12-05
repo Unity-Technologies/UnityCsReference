@@ -8,8 +8,8 @@ namespace UnityEditor.Connect
 {
     static class ServicesConstants
     {
-        public const int ExploreServicesTopMenuPriority = int.MinValue;
-        public const int GeneralSettingsServicesTopMenuPriority = int.MinValue + 1;
+        public const int ExploreServicesTopMenuPriority = int.MinValue + 20;
+        public const int GeneralSettingsServicesTopMenuPriority = int.MinValue + 21;
 
             public static readonly string ExploreServicesPackageManagerPageId = ExtensionPage.GetIdFromName(EditorGameServiceExtension.k_ServicesExtensionPageName);
     }

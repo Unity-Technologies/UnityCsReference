@@ -169,6 +169,8 @@ namespace UnityEngine.UIElements
                     return computedStyle.unitySliceTop;
                 case StylePropertyId.UnityTextAlign:
                     return computedStyle.unityTextAlign;
+                case StylePropertyId.UnityTextGenerator:
+                    return computedStyle.unityTextGenerator;
                 case StylePropertyId.UnityTextOutlineColor:
                     return computedStyle.unityTextOutlineColor;
                 case StylePropertyId.UnityTextOutlineWidth:
@@ -343,6 +345,8 @@ namespace UnityEngine.UIElements
                     return typeof(int);
                 case StylePropertyId.UnityTextAlign:
                     return typeof(TextAnchor);
+                case StylePropertyId.UnityTextGenerator:
+                    return typeof(TextGeneratorType);
                 case StylePropertyId.UnityTextOutlineColor:
                     return typeof(Color);
                 case StylePropertyId.UnityTextOutlineWidth:
@@ -541,6 +545,8 @@ namespace UnityEngine.UIElements
                     return style.unitySliceTop;
                 case StylePropertyId.UnityTextAlign:
                     return style.unityTextAlign;
+                case StylePropertyId.UnityTextGenerator:
+                    return style.unityTextGenerator;
                 case StylePropertyId.UnityTextOutlineColor:
                     return style.unityTextOutlineColor;
                 case StylePropertyId.UnityTextOutlineWidth:
@@ -788,6 +794,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityTextAlign:
                     style.unityTextAlign = (StyleEnum<TextAnchor>)value;
+                    break;
+                case StylePropertyId.UnityTextGenerator:
+                    style.unityTextGenerator = (StyleEnum<TextGeneratorType>)value;
                     break;
                 case StylePropertyId.UnityTextOutlineColor:
                     style.unityTextOutlineColor = (StyleColor)value;
@@ -1042,6 +1051,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityTextAlign:
                     style.unityTextAlign = keyword;
                     break;
+                case StylePropertyId.UnityTextGenerator:
+                    style.unityTextGenerator = keyword;
+                    break;
                 case StylePropertyId.UnityTextOutlineColor:
                     style.unityTextOutlineColor = keyword;
                     break;
@@ -1295,6 +1307,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityTextAlign:
                     return new()
                     {};
+                case StylePropertyId.UnityTextGenerator:
+                    return new()
+                    {};
                 case StylePropertyId.UnityTextOutlineColor:
                     return new()
                     {};
@@ -1473,6 +1488,8 @@ namespace UnityEngine.UIElements
                     return (StyleInt)(int)value;
                 case StylePropertyId.UnityTextAlign:
                     return (StyleEnum<TextAnchor>)(TextAnchor)value;
+                case StylePropertyId.UnityTextGenerator:
+                    return (StyleEnum<TextGeneratorType>)(TextGeneratorType)value;
                 case StylePropertyId.UnityTextOutlineColor:
                     return (StyleColor)(Color)value;
                 case StylePropertyId.UnityTextOutlineWidth:
@@ -1647,6 +1664,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleInt);
                 case StylePropertyId.UnityTextAlign:
                     return typeof(StyleEnum<TextAnchor>);
+                case StylePropertyId.UnityTextGenerator:
+                    return typeof(StyleEnum<TextGeneratorType>);
                 case StylePropertyId.UnityTextOutlineColor:
                     return typeof(StyleColor);
                 case StylePropertyId.UnityTextOutlineWidth:
@@ -1756,6 +1775,8 @@ namespace UnityEngine.UIElements
                     return true;
                 case StylePropertyId.UnityTextAlign:
                     return true;
+                case StylePropertyId.UnityTextGenerator:
+                    return true;
                 case StylePropertyId.UnityTextOutlineColor:
                     return true;
                 case StylePropertyId.UnityTextOutlineWidth:
@@ -1773,7 +1794,7 @@ namespace UnityEngine.UIElements
 
         public static StylePropertyId[] GetInheritedProperties()
         {
-            return new[]{StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
+            return new[]{StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextGenerator, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
         }
 
         public static bool IsDiscreteTypeProperty(StylePropertyId id)

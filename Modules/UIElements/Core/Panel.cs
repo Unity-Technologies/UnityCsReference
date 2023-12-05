@@ -303,7 +303,7 @@ namespace UnityEngine.UIElements
     /// This interface is exclusively available in development builds and the Editor, as it serves as a debug feature that complements the profiling of an application.
     /// </summary>
     /// <remarks>
-    /// <see cref="PanelSettings.panelChangeReceiver"/>
+    /// Related To <see cref="PanelSettings.SetPanelChangeReceiver"/>
     /// </remarks>
     public interface IDebugPanelChangeReceiver
     {
@@ -313,7 +313,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// The number of times the callback is called, the value returned, and the order in which they are returned are subject to change between each minor release of Unity, as this is considered internal.
-        /// <see cref="PanelSettings.panelChangeReceiver"/>
+        /// Related to <see cref="PanelSettings.SetPanelChangeReceiver"/>
         /// </remarks>
         /// <param name="element"> The element that changed.</param>
         /// <param name="changeType">A string that contains the comma-separated value of what has changed.</param>

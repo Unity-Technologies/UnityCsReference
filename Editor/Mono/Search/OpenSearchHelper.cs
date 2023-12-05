@@ -15,7 +15,7 @@ namespace UnityEditor.SearchService
             public static GUIContent gotoSearch = EditorGUIUtility.TrIconContent("SearchJump Icon");
         }
 
-        const string k_SearchAllShortcutName = "Main Menu/Edit/Search All...";
+        const string k_SearchAllShortcutName = "Main Menu/Edit/Search/Search All...";
         const string k_OpenSearchInContextCommand = "OpenQuickSearchInContext";
 
         static ShortcutBinding s_ShortcutBinding = ShortcutBinding.empty;

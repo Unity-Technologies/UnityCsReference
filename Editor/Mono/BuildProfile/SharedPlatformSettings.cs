@@ -12,17 +12,33 @@ namespace UnityEditor.Build.Profile
     [Serializable]
     internal sealed class SharedPlatformSettings: BuildProfilePlatformSettingsBase
     {
-        internal const string k_SettingSymlinkSources = "symlinkSources";
         internal const string k_SettingWindowsDevicePortalAddress = "windowsDevicePortalAddress";
         internal const string k_SettingWindowsDevicePortalUsername = "windowsDevicePortalUsername";
         internal const string k_SettingWindowsDevicePortalPassword = "windowsDevicePortalPassword";
-        internal const string k_ForceInstallation = "forceInstallation";
+        internal const string k_SettingForceInstallation = "forceInstallation";
+        internal const string k_SettingiOSXcodeBuildConfig = "iOSXcodeBuildConfig";
+        internal const string k_SettingSymlinkSources = "symlinkSources";
+        internal const string k_SettingPreferredXcode = "preferredXcode";
+        internal const string k_SettingSymlinkTrampoline = "symlinkTrampoline";
+        internal const string k_SettingRemoteDeviceInfo = "remoteDeviceInfo";
+        internal const string k_SettingRemoteDeviceAddress = "remoteDeviceAddress";
+        internal const string k_SettingRemoteDeviceUsername = "remoteDeviceUsername";
+        internal const string k_SettingRemoteDeviceExports = "remoteDeviceExports";
+        internal const string k_SettingPathOnRemoteDevice = "pathOnRemoteDevice";
 
         [SerializeField] string m_WindowsDevicePortalAddress = string.Empty;
         [SerializeField] string m_WindowsDevicePortalUsername = string.Empty;
         string m_WindowsDevicePortalPassword = string.Empty;
         [SerializeField] bool m_ForceInstallation = false;
+        [SerializeField] XcodeBuildConfig m_iOSXcodeBuildConfig = XcodeBuildConfig.Release;
         [SerializeField] bool m_SymlinkSources = false;
+        [SerializeField] string m_PreferredXcode = string.Empty;
+        [SerializeField] bool m_SymlinkTrampoline = false;
+        [SerializeField] bool m_RemoteDeviceInfo = false;
+        [SerializeField] string m_RemoteDeviceAddress = string.Empty;
+        [SerializeField] string m_RemoteDeviceUsername = string.Empty;
+        [SerializeField] string m_RemoteDeviceExports = string.Empty;
+        [SerializeField] string m_PathOnRemoteDevice = string.Empty;
 
         internal protected override bool development
         {
@@ -214,7 +230,20 @@ namespace UnityEditor.Build.Profile
                 if (m_ForceInstallation != value)
                 {
                     m_ForceInstallation = value;
-                    SyncSharedSettings(k_ForceInstallation);
+                    SyncSharedSettings(k_SettingForceInstallation);
+                }
+            }
+        }
+
+        public XcodeBuildConfig iOSXcodeBuildConfig
+        {
+            get => m_iOSXcodeBuildConfig;
+            set
+            {
+                if (m_iOSXcodeBuildConfig != value)
+                {
+                    m_iOSXcodeBuildConfig = value;
+                    SyncSharedSettings(k_SettingiOSXcodeBuildConfig);
                 }
             }
         }
@@ -228,6 +257,97 @@ namespace UnityEditor.Build.Profile
                 {
                     m_SymlinkSources = value;
                     SyncSharedSettings(k_SettingSymlinkSources);
+                }
+            }
+        }
+
+        public string preferredXcode
+        {
+            get => m_PreferredXcode;
+            set
+            {
+                if (m_PreferredXcode != value)
+                {
+                    m_PreferredXcode = value;
+                    SyncSharedSettings(k_SettingPreferredXcode);
+                }
+            }
+        }
+
+        public bool symlinkTrampoline
+        {
+            get => m_SymlinkTrampoline;
+            set
+            {
+                if (m_SymlinkTrampoline != value)
+                {
+                    m_SymlinkTrampoline = value;
+                    SyncSharedSettings(k_SettingSymlinkTrampoline);
+                }
+            }
+        }
+
+        public bool remoteDeviceInfo
+        {
+            get => m_RemoteDeviceInfo;
+            set
+            {
+                if (m_RemoteDeviceInfo != value)
+                {
+                    m_RemoteDeviceInfo = value;
+                    SyncSharedSettings(k_SettingRemoteDeviceInfo);
+                }
+            }
+        }
+
+        public string remoteDeviceAddress
+        {
+            get => m_RemoteDeviceAddress;
+            set
+            {
+                if (m_RemoteDeviceAddress != value)
+                {
+                    m_RemoteDeviceAddress = value;
+                    SyncSharedSettings(k_SettingRemoteDeviceAddress);
+                }
+            }
+        }
+
+        public string remoteDeviceUsername
+        {
+            get => m_RemoteDeviceUsername;
+            set
+            {
+                if (m_RemoteDeviceUsername != value)
+                {
+                    m_RemoteDeviceUsername = value;
+                    SyncSharedSettings(k_SettingRemoteDeviceUsername);
+                }
+            }
+        }
+
+        public string remoteDeviceExports
+        {
+            get => m_RemoteDeviceExports;
+            set
+            {
+                if (m_RemoteDeviceExports != value)
+                {
+                    m_RemoteDeviceExports = value;
+                    SyncSharedSettings(k_SettingRemoteDeviceExports);
+                }
+            }
+        }
+
+        public string pathOnRemoteDevice
+        {
+            get => m_PathOnRemoteDevice;
+            set
+            {
+                if (m_PathOnRemoteDevice != value)
+                {
+                    m_PathOnRemoteDevice = value;
+                    SyncSharedSettings(k_SettingPathOnRemoteDevice);
                 }
             }
         }
@@ -300,11 +420,35 @@ namespace UnityEditor.Build.Profile
                     case k_SettingWindowsDevicePortalPassword:
                         platformSettingsBase.SetSharedSetting(k_SettingWindowsDevicePortalPassword, windowsDevicePortalPassword);
                         break;
-                    case k_ForceInstallation:
-                        platformSettingsBase.SetSharedSetting(k_ForceInstallation, forceInstallation.ToString().ToLower());
+                    case k_SettingForceInstallation:
+                        platformSettingsBase.SetSharedSetting(k_SettingForceInstallation, forceInstallation.ToString().ToLower());
+                        break;
+                    case k_SettingiOSXcodeBuildConfig:
+                        platformSettingsBase.SetSharedSetting(k_SettingiOSXcodeBuildConfig, iOSXcodeBuildConfig.ToString());
                         break;
                     case k_SettingSymlinkSources:
                         platformSettingsBase.SetSharedSetting(k_SettingSymlinkSources, symlinkSources.ToString().ToLower());
+                        break;
+                    case k_SettingPreferredXcode:
+                        platformSettingsBase.SetSharedSetting(k_SettingPreferredXcode, preferredXcode);
+                        break;
+                    case k_SettingSymlinkTrampoline:
+                        platformSettingsBase.SetSharedSetting(k_SettingSymlinkTrampoline, symlinkTrampoline.ToString().ToLower());
+                        break;
+                    case k_SettingRemoteDeviceInfo:
+                        platformSettingsBase.SetSharedSetting(k_SettingRemoteDeviceInfo, remoteDeviceInfo.ToString().ToLower());
+                        break;
+                    case k_SettingRemoteDeviceAddress:
+                        platformSettingsBase.SetSharedSetting(k_SettingRemoteDeviceAddress, remoteDeviceAddress);
+                        break;
+                    case k_SettingRemoteDeviceUsername:
+                        platformSettingsBase.SetSharedSetting(k_SettingRemoteDeviceUsername, remoteDeviceUsername);
+                        break;
+                    case k_SettingRemoteDeviceExports:
+                        platformSettingsBase.SetSharedSetting(k_SettingRemoteDeviceExports, remoteDeviceExports);
+                        break;
+                    case k_SettingPathOnRemoteDevice:
+                        platformSettingsBase.SetSharedSetting(k_SettingPathOnRemoteDevice, pathOnRemoteDevice);
                         break;
                 }
             }

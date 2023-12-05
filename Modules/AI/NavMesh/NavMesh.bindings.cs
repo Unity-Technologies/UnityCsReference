@@ -179,6 +179,12 @@ namespace UnityEngine.AI
         public delegate void OnNavMeshPreUpdate();
         public static OnNavMeshPreUpdate onPreUpdate;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void ClearPreUpdateListeners()
+        {
+            onPreUpdate = null;
+        }
+
         [RequiredByNativeCode]
         static void Internal_CallOnNavMeshPreUpdate()
         {

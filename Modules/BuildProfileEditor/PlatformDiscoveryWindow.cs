@@ -30,6 +30,8 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         HelpBox m_CardWarningHelpBox;
 
+        internal static string customBuildProfilePath => k_AssetFolderPath;
+
         public static void ShowWindow()
         {
             var window = GetWindow<PlatformDiscoveryWindow>(true, TrText.platformDiscoveryTitle, true);

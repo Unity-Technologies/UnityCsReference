@@ -51,7 +51,7 @@ namespace UnityEditor.Search
         {
             try
             {
-                var searchShortcut = ShortcutManagement.ShortcutManager.instance.GetShortcutBinding("Main Menu/Edit/Search All...");
+                var searchShortcut = ShortcutManagement.ShortcutManager.instance.GetShortcutBinding("Main Menu/Edit/Search/Search All...");
                 return L10n.Tr($"Global Search ({searchShortcut})");
             }
             catch

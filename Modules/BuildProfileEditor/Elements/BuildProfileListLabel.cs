@@ -13,10 +13,10 @@ namespace UnityEditor.Build.Profile.Elements
     /// </summary>
     internal class BuildProfileListLabel : VisualElement
     {
-        const string k_Uxml = "BuildProfile/UXML/BuildProfileLabelElement.uxml";
         readonly Image m_Icon;
-        readonly Label m_Text;
-        readonly Label m_ActiveIndicator;
+        protected virtual string k_Uxml => "BuildProfile/UXML/BuildProfileLabelElement.uxml";
+        protected readonly Label m_Text;
+        protected readonly Label m_ActiveIndicator;
 
         internal BuildProfileListLabel()
         {

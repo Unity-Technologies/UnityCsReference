@@ -85,6 +85,7 @@ namespace UnityEngine.UIElements
         public float unitySliceScale => ve.computedStyle.unitySliceScale;
         public int unitySliceTop => ve.computedStyle.unitySliceTop;
         public TextAnchor unityTextAlign => ve.computedStyle.unityTextAlign;
+        public TextGeneratorType unityTextGenerator => ve.computedStyle.unityTextGenerator;
         public Color unityTextOutlineColor => ve.computedStyle.unityTextOutlineColor;
         public float unityTextOutlineWidth => ve.computedStyle.unityTextOutlineWidth;
         public TextOverflowPosition unityTextOverflowPosition => ve.computedStyle.unityTextOverflowPosition;
@@ -166,6 +167,7 @@ namespace UnityEngine.UIElements
         float IResolvedStyle.unitySliceScale => resolvedStyle.unitySliceScale;
         int IResolvedStyle.unitySliceTop => resolvedStyle.unitySliceTop;
         TextAnchor IResolvedStyle.unityTextAlign => resolvedStyle.unityTextAlign;
+        TextGeneratorType IResolvedStyle.unityTextGenerator => resolvedStyle.unityTextGenerator;
         Color IResolvedStyle.unityTextOutlineColor => resolvedStyle.unityTextOutlineColor;
         float IResolvedStyle.unityTextOutlineWidth => resolvedStyle.unityTextOutlineWidth;
         TextOverflowPosition IResolvedStyle.unityTextOverflowPosition => resolvedStyle.unityTextOverflowPosition;

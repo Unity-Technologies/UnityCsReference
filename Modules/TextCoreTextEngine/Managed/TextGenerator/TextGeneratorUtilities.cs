@@ -1723,6 +1723,50 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static UnityEngine.TextCore.HorizontalAlignment GetHorizontalAlignment(TextAnchor anchor)
+        {
+            switch (anchor)
+            {
+                case TextAnchor.LowerLeft:
+                case TextAnchor.MiddleLeft:
+                case TextAnchor.UpperLeft:
+                    return UnityEngine.TextCore.HorizontalAlignment.Left;
+                case TextAnchor.LowerCenter:
+                case TextAnchor.MiddleCenter:
+                case TextAnchor.UpperCenter:
+                    return UnityEngine.TextCore.HorizontalAlignment.Center;
+                case TextAnchor.LowerRight:
+                case TextAnchor.MiddleRight:
+                case TextAnchor.UpperRight:
+                    return UnityEngine.TextCore.HorizontalAlignment.Right;
+                default:
+                    return UnityEngine.TextCore.HorizontalAlignment.Left;
+            }
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static UnityEngine.TextCore.VerticalAlignment GetVerticalAlignment(TextAnchor anchor)
+        {
+            switch (anchor)
+            {
+                case TextAnchor.LowerLeft:
+                case TextAnchor.LowerCenter:
+                case TextAnchor.LowerRight:
+                    return UnityEngine.TextCore.VerticalAlignment.Bottom;
+                case TextAnchor.MiddleLeft:
+                case TextAnchor.MiddleCenter:
+                case TextAnchor.MiddleRight:
+                    return UnityEngine.TextCore.VerticalAlignment.Middle;
+                case TextAnchor.UpperLeft:
+                case TextAnchor.UpperCenter:
+                case TextAnchor.UpperRight:
+                    return UnityEngine.TextCore.VerticalAlignment.Top;
+                default:
+                    return UnityEngine.TextCore.VerticalAlignment.Top;
+            }
+        }
+
         public static uint ConvertToUTF32(uint highSurrogate, uint lowSurrogate)
         {
             return ((highSurrogate - CodePoint.HIGH_SURROGATE_START) * 0x400) + ((lowSurrogate - CodePoint.LOW_SURROGATE_START) + CodePoint.UNICODE_PLANE01_START);

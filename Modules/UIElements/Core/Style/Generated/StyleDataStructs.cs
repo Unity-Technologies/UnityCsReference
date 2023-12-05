@@ -31,6 +31,7 @@ namespace UnityEngine.UIElements
         public FontStyle unityFontStyleAndWeight;
         public Length unityParagraphSpacing;
         public TextAnchor unityTextAlign;
+        public TextGeneratorType unityTextGenerator;
         public Color unityTextOutlineColor;
         public float unityTextOutlineWidth;
         public Visibility visibility;
@@ -58,6 +59,7 @@ namespace UnityEngine.UIElements
                 lhs.unityFontStyleAndWeight == rhs.unityFontStyleAndWeight &&
                 lhs.unityParagraphSpacing == rhs.unityParagraphSpacing &&
                 lhs.unityTextAlign == rhs.unityTextAlign &&
+                lhs.unityTextGenerator == rhs.unityTextGenerator &&
                 lhs.unityTextOutlineColor == rhs.unityTextOutlineColor &&
                 lhs.unityTextOutlineWidth == rhs.unityTextOutlineWidth &&
                 lhs.visibility == rhs.visibility &&
@@ -96,6 +98,7 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ (int)unityFontStyleAndWeight;
                 hashCode = (hashCode * 397) ^ unityParagraphSpacing.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)unityTextAlign;
+                hashCode = (hashCode * 397) ^ (int)unityTextGenerator;
                 hashCode = (hashCode * 397) ^ unityTextOutlineColor.GetHashCode();
                 hashCode = (hashCode * 397) ^ unityTextOutlineWidth.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)visibility;

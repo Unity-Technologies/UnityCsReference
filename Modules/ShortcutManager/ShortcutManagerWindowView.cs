@@ -115,6 +115,7 @@ namespace UnityEditor.ShortcutManagement
         {
             //TODO: Read from a uxml
             var shortcutNameCell = new TextElement();
+            var shortcutTypeCell = new TextElement();
             var contextContainer = new VisualElement();
             var contextType = new TextElement();
             var tag = new TextElement();
@@ -149,6 +150,7 @@ namespace UnityEditor.ShortcutManagement
             rowElement.AddToClassList("shortcut-row");
             rowElement.Add(shortcutNameCell);
             rowElement.Add(contextContainer);
+            rowElement.Add(shortcutTypeCell);
             rowElement.Add(bindingContainer);
 
             rowElement.RegisterCallback<MouseDownEvent>(OnMouseDownCategoryTable);
@@ -182,13 +184,21 @@ namespace UnityEditor.ShortcutManagement
             var contextElement = shortcutElementTemplate[1];
             var contextType = (TextElement)contextElement.Children().ElementAt(0);
             var tag = (TextElement)contextElement.Children().ElementAt(1);
-            var bindingContainer = shortcutElementTemplate[2];
+            var shortcutTypeElement = (TextElement)shortcutElementTemplate[2];
+            var bindingContainer = shortcutElementTemplate[3];
             var bindingTextElement = bindingContainer.Q<TextElement>();
             var bindingField = bindingContainer.Q<ShortcutTextField>();
             var warningIcon = shortcutElementTemplate.Q(null, "warning-icon");
 
             nameElement.text = m_ViewController.GetShortcutPathList()[index];
             nameElement.tooltip = nameElement.text;
+
+            var shortcutTypeElementTooltip = L10n.Tr("An action shortcut triggers once when the binding for the shortcut is activated. " +
+                "A clutch shortcut triggers twice: once when the binding for the shortcut is pressed and again when the binding is released. " +
+                "A menu shortcut is associated with a menu item.");
+            shortcutTypeElement.text = shortcutEntry.type.ToString();
+            shortcutTypeElement.tooltip = shortcutTypeElementTooltip;
+
             contextType.text = shortcutEntry.context != ContextManager.globalContextType
                 ? ObjectNames.NicifyVariableName(shortcutEntry.context.Name) : string.Empty;
             tag.text = shortcutEntry.tag;
@@ -623,6 +633,7 @@ namespace UnityEditor.ShortcutManagement
             m_Root.Q<TextElement>("categoryTableHeaderName").text = L10n.Tr("Category");
             m_Root.Q<TextElement>("shortcutsTableHeaderName").text = L10n.Tr("Command");
             m_Root.Q<TextElement>("shortcutsTableHeaderContext").text = L10n.Tr("Context");
+            m_Root.Q<TextElement>("shortcutsTableHeaderType").text = L10n.Tr("Type");
             m_Root.Q<TextElement>("shortcutsTableHeaderBindings").text = L10n.Tr("Shortcut");
             m_Root.Q<TextElement>("searchLabel").text = L10n.Tr("Search:");
         }

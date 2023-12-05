@@ -329,4 +329,36 @@ namespace UnityEditor.UIElements
             return imageField;
         }
     }
+
+    [CustomPropertyDrawer(typeof(AdvanceTextGeneratorDecoratorAttribute))]
+    class AdvanceTextGeneratorDecoratorAttributePropertyDrawer : PropertyDrawer
+    {
+        private Toggle textNativeField;
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            textNativeField = new Toggle("Enable Advanced Text");
+            textNativeField.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            textNativeField.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            textNativeField.BindProperty(property);
+            textNativeField.AddToClassList(TextField.alignedFieldUssClassName);
+            return textNativeField;
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            var target = (VisualElement)evt.currentTarget;
+            EnableDisplay(UIToolkitProjectSettings.enableAdvancedText);
+            UIToolkitProjectSettings.onEnableAdvancedTextChanged += EnableDisplay;
+        }
+
+        private void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            UIToolkitProjectSettings.onEnableAdvancedTextChanged -= EnableDisplay;
+        }
+
+        private void EnableDisplay(bool enable)
+        {
+            textNativeField.parent.parent.parent.style.display = enable ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+    }
 }

@@ -70,6 +70,10 @@ namespace UnityEditor.Modules
         {
         }
 
+        public virtual void OnDisable()
+        {
+        }
+
         public virtual bool ShouldDrawDevelopmentPlayerCheckbox() => true;
         public virtual bool ShouldDrawProfilerCheckbox() => true;
         public virtual bool ShouldDrawScriptDebuggingCheckbox() => true;
@@ -83,18 +87,24 @@ namespace UnityEditor.Modules
         public VisualElement CreateSettingsGUI(
             SerializedObject serializedObject, SerializedProperty rootProperty, BuildProfileWorkflowState workflowState)
         {
+            var platformWarningsGUI = CreatePlatformBuildWarningsGUI(serializedObject, rootProperty);
             // TO-DO: Add 2f margin to the top of the common settings GUI. (PLAT-7268)
             // Setup common settings before creating the platform settings GUI so
             // that they can be use in the them.
             var commonSettingsGUI = CreateCommonSettingsGUI(serializedObject, rootProperty);
 
             var settingsGUI = new VisualElement();
+            if (platformWarningsGUI != null)
+                settingsGUI.Add(platformWarningsGUI);
             settingsGUI.Add(CreatePlatformSettingsGUI(serializedObject, rootProperty, workflowState));
+            if (m_IsClassicProfile)
+                settingsGUI.Add(CreateMultiplayerSettingsGUI());
             settingsGUI.Add(commonSettingsGUI);
             return settingsGUI;
         }
 
-        public virtual VisualElement CreatePlatformSettingsGUI(SerializedObject serializedObject, SerializedProperty rootProperty, BuildProfileWorkflowState workflowState)
+        public virtual VisualElement CreatePlatformSettingsGUI(
+            SerializedObject serializedObject, SerializedProperty rootProperty, BuildProfileWorkflowState workflowState)
         {
             // Default implementation will render all platform settings defined in
             // BuildProfilePlatformSettingsBase as a PropertyField. Enumerators are
@@ -104,9 +114,21 @@ namespace UnityEditor.Modules
             return field;
         }
 
+        public virtual VisualElement CreatePlatformBuildWarningsGUI(SerializedObject serializedObject, SerializedProperty rootProperty)
+        {
+            return null;
+        }
+
         public SerializedProperty FindPlatformSettingsPropertyAssert(SerializedProperty rootProperty, string name)
         {
             SerializedProperty property = rootProperty.FindPropertyRelative(name);
+            Debug.Assert(property != null);
+            return property;
+        }
+
+        public SerializedProperty FindSerializedObjectPropertyAssert(SerializedObject serializedObject, string name)
+        {
+            SerializedProperty property = serializedObject.FindProperty(name);
             Debug.Assert(property != null);
             return property;
         }
@@ -142,6 +164,18 @@ namespace UnityEditor.Modules
                     serializedObject.UpdateIfRequiredOrScript();
                     ShowCommonBuildOptions();
                     serializedObject.ApplyModifiedProperties();
+                    EditorGUIUtility.labelWidth = oldLabelWidth;
+                });
+        }
+
+        VisualElement CreateMultiplayerSettingsGUI()
+        {
+            return new IMGUIContainer(
+                () =>
+                {
+                    var oldLabelWidth = EditorGUIUtility.labelWidth;
+                    EditorGUIUtility.labelWidth = labelWidth;
+                    BuildPlayerWindow.DrawMultiplayerBuildOption(m_NamedBuildTarget);
                     EditorGUIUtility.labelWidth = oldLabelWidth;
                 });
         }
@@ -233,6 +267,9 @@ namespace UnityEditor.Modules
             {
                 m_SharedSettings.installInBuildFolder = m_InstallInBuildFolder.boolValue;
             }
+
+            if (Unsupported.IsSourceBuild())
+                ShowInternalPlatformBuildOptions();
         }
 
         /// <summary>
@@ -395,6 +432,67 @@ namespace UnityEditor.Modules
             {
                 m_SharedSettings.explicitArrayBoundsChecks = m_ExplicitArrayBoundsChecks.boolValue;
             }
+        }
+
+        /// <summary>
+        /// Show internal platform build options for source-built editor.
+        /// </summary>
+        public virtual void ShowInternalPlatformBuildOptions()
+        {
+        }
+        
+        /// Helper method for rendering an IMGUI popup over an enum
+        /// serialized property.
+        /// </summary>
+        protected bool ShowIMGUIPopupOption<T>
+        (
+            GUIContent label,
+            T[] options,
+            GUIContent[] optionString,
+            SerializedProperty currentSetting
+        ) where T : Enum
+        {
+            using var vertical = new EditorGUILayout.VerticalScope();
+            using var prop = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, currentSetting);
+
+            // Find the index of the currently set value relative to the GUI layout
+            var selectedIndex = Array.FindIndex(options,
+                match => match.Equals((T)(object)currentSetting.intValue));
+            selectedIndex = selectedIndex < 0 ? 0 : selectedIndex;
+
+            EditorGUI.BeginChangeCheck();
+            var newIndex = EditorGUILayout.Popup(label, selectedIndex, optionString);
+            if (EditorGUI.EndChangeCheck())
+            {
+                currentSetting.intValue = (int)(object)options[newIndex];
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Helper method for rendering an IMGUI popup for GUIContent
+        /// option values
+        /// </summary>
+        protected int ShowIMGUIPopupOptionForGUIContents
+        (
+            GUIContent label,
+            GUIContent[] optionValues,
+            GUIContent[] displayNames,
+            SerializedProperty property
+        )
+        {
+            EditorGUI.BeginChangeCheck();
+            using var verticalScope = new EditorGUILayout.VerticalScope();
+            using var propertyScope = new EditorGUI.PropertyScope(verticalScope.rect, GUIContent.none, property);
+            int selectedIndex = Math.Max(0, Array.FindIndex(optionValues, item => item.text == property.stringValue));
+            selectedIndex = EditorGUILayout.Popup(label, selectedIndex, displayNames);
+            if (EditorGUI.EndChangeCheck())
+            {
+                property.stringValue = optionValues[selectedIndex].text;
+            }
+            return selectedIndex;
         }
     }
 }

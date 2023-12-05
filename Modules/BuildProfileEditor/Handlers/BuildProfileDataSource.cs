@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 namespace UnityEditor.Build.Profile.Handlers
@@ -15,11 +16,14 @@ namespace UnityEditor.Build.Profile.Handlers
 
         BuildProfileWindow m_Window;
 
+        List<BuildProfile> m_DuplicatedProfiles;
+
         internal BuildProfileDataSource(BuildProfileWindow window)
         {
             this.m_Window = window;
             classicPlatforms = BuildProfileContext.instance.classicPlatformProfiles;
             customBuildProfiles = FindAllBuildProfiles();
+            m_DuplicatedProfiles = new List<BuildProfile>();
 
             BuildProfile.AddOnBuildProfileEnable(OnBuildProfileCreated);
         }
@@ -50,6 +54,106 @@ namespace UnityEditor.Build.Profile.Handlers
             }
 
             return changed;
+        }
+
+        /// <summary>
+        /// Helper function that takes a list of profiles and duplicates them
+        /// </summary>
+        internal List<BuildProfile> DuplicateProfiles(List<BuildProfile> profilesToDuplicate, bool isClassic)
+        {
+            m_DuplicatedProfiles.Clear();
+            var profilesCount = profilesToDuplicate.Count;
+            for (int i = 0; i < profilesCount; ++i)
+            {
+                var profile = profilesToDuplicate[i];
+                var duplicatedProfile = BuildProfileDataSource.DuplicateAsset(profile, isClassic);
+                if (duplicatedProfile != null)
+                    m_DuplicatedProfiles.Add(duplicatedProfile);
+            }
+
+            // When duplicating an asset it will be created with the BaseName(Clone) in its name.
+            // At the time the proper name is set, OnEnable will be already called and the build
+            // profile will not be added in proper order, so we need to sort in here
+            SortCustomBuildProfiles();
+            return m_DuplicatedProfiles;
+        }
+
+        /// <summary>
+        /// Clone build profile and create new build profile asset based on it. The
+        /// build profile will be added to the custom build profile list on enable
+        /// </summary>
+        internal static BuildProfile DuplicateAsset(BuildProfile buildProfile, bool isClassic)
+        {
+            if (buildProfile == null)
+                return null;
+
+            string path = isClassic ? GetDuplicatedBuilProfilePathForClassic(buildProfile) : AssetDatabase.GetAssetPath(buildProfile);
+            if (string.IsNullOrEmpty(path))
+                return null;
+
+            BuildProfile duplicatedProfile = UnityEngine.Object.Instantiate(buildProfile);
+            string uniqueFilePath = AssetDatabase.GenerateUniqueAssetPath(path);
+            AssetDatabase.CreateAsset(duplicatedProfile, uniqueFilePath);
+            return duplicatedProfile;
+        }
+
+
+        /// <summary>
+        /// Delete build profile asset and remove from the list of
+        /// custom build profiles
+        /// </summary>
+        internal void DeleteAsset(BuildProfile buildProfile)
+        {
+            if (buildProfile == null || !customBuildProfiles.Contains(buildProfile))
+                return;
+
+            customBuildProfiles.Remove(buildProfile);
+
+            string assetPath = AssetDatabase.GetAssetPath(buildProfile);
+            if (!string.IsNullOrEmpty(assetPath))
+            {
+                AssetDatabase.DeleteAsset(assetPath);
+            }
+        }
+
+        /// <summary>
+        /// Rename build profile asset and remove build profile from custom
+        /// build profile list. The build profile will be re-added when it
+        /// gets enabled after renaming.
+        /// </summary>
+        internal void RenameAsset(BuildProfile buildProfile, string newName)
+        {
+            if (buildProfile?.name == newName || string.IsNullOrEmpty(newName))
+                return;
+
+            var originalPath = AssetDatabase.GetAssetPath(buildProfile);
+            var newPath = ReplaceFileNameInPath(originalPath, newName);
+            var uniqueAssetPath = AssetDatabase.GenerateUniqueAssetPath(newPath);
+            var finalName = Path.GetFileNameWithoutExtension(uniqueAssetPath);
+
+            if (!string.IsNullOrEmpty(originalPath))
+            {
+                // Remove and rebuild list views before renaming to avoid
+                // list view 'SerializedObject of SerializedProperty has been
+                // Disposed' error
+                customBuildProfiles.Remove(buildProfile);
+                m_Window.RebuildProfileListViews();
+                AssetDatabase.RenameAsset(originalPath, finalName);
+            }
+        }
+
+        /// <summary>
+        /// Sort custom build profiles by name. Called by the Build Project Window after
+        /// all selected build profiles gets duplicated
+        /// </summary>
+        void SortCustomBuildProfiles()
+        {
+            List<BuildProfile> sortedProfiles = new List<BuildProfile>(customBuildProfiles);
+            sortedProfiles.Sort((lhs, rhs) => EditorUtility.NaturalCompare(lhs.name, rhs.name));
+            for (int i = 0; i < sortedProfiles.Count; i++)
+            {
+                customBuildProfiles[i] = sortedProfiles[i];
+            }
         }
 
         /// <summary>
@@ -126,6 +230,19 @@ namespace UnityEditor.Build.Profile.Handlers
 
             result.Sort((lhs, rhs) => EditorUtility.NaturalCompare(lhs.name, rhs.name));
             return result;
+        }
+
+        static string ReplaceFileNameInPath(string originalPath, string newName)
+        {
+            string directory = Path.GetDirectoryName(originalPath);
+            string extension = Path.GetExtension(originalPath);
+            return Path.Combine(directory, $"{newName}{extension}");
+        }
+
+        static string GetDuplicatedBuilProfilePathForClassic(BuildProfile buildProfile)
+        {
+            string name = BuildProfileModuleUtil.GetClassicPlatformDisplayName(buildProfile.moduleName, buildProfile.subtarget);
+            return Path.Combine(PlatformDiscoveryWindow.customBuildProfilePath, $"{name}.asset");
         }
     }
 }

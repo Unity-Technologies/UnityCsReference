@@ -262,10 +262,10 @@ namespace UnityEngine.UIElements
 
                     for (int vDst = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 4, j += 6)
                     {
-                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo, vSrc + 0, pos, isDynamicColor);
-                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo, vSrc + 1, pos, isDynamicColor);
-                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo, vSrc + 2, pos, isDynamicColor);
-                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo, vSrc + 3, pos, isDynamicColor);
+                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.vertexData[vSrc + 0], pos, isDynamicColor);
+                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.vertexData[vSrc + 1], pos, isDynamicColor);
+                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.vertexData[vSrc + 2], pos, isDynamicColor);
+                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.vertexData[vSrc + 3], pos, isDynamicColor);
 
                         indices[j + 0] = (ushort)(vDst + 0);
                         indices[j + 1] = (ushort)(vDst + 1);

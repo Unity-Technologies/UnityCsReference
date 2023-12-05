@@ -10,6 +10,18 @@ namespace UnityEngine
     public partial class Rigidbody
     {
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Please use Rigidbody.linearDamping instead. (UnityUpgradable) -> linearDamping")]
+        public float drag { get => linearDamping; set => linearDamping = value; }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Please use Rigidbody.angularDamping instead. (UnityUpgradable) -> angularDamping")]
+        public float angularDrag { get => angularDamping; set => angularDamping = value; }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Please use Rigidbody.linearVelocity instead. (UnityUpgradable) -> linearVelocity")]
+        public Vector3 velocity { get => linearVelocity; set => linearVelocity = value; }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("The sleepVelocity is no longer supported. Use sleepThreshold. Note that sleepThreshold is energy but not velocity.", true)]
         public float sleepVelocity { get { return 0; } set { } }
 
@@ -26,11 +38,11 @@ namespace UnityEngine
         public bool useConeFriction { get { return false; } set { } }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("Please use Rigidbody.solverIterations instead. (UnityUpgradable) -> solverIterations")]
+        [Obsolete("Please use Rigidbody.solverIterations instead. (UnityUpgradable) -> solverIterations", true)]
         public int solverIterationCount { get { return solverIterations; } set { solverIterations = value; } }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("Please use Rigidbody.solverVelocityIterations instead. (UnityUpgradable) -> solverVelocityIterations")]
+        [Obsolete("Please use Rigidbody.solverVelocityIterations instead. (UnityUpgradable) -> solverVelocityIterations", true)]
         public int solverVelocityIterationCount { get { return solverVelocityIterations; } set { solverVelocityIterations = value; } }
     }
 }

@@ -160,6 +160,11 @@ namespace UnityEditor
             GetWindow<BuildPlayerWindow>(false, "Build Settings");
         }
 
+        internal static void DrawMultiplayerBuildOption(NamedBuildTarget namedBuildTarget)
+        {
+            drawingMultiplayerBuildOptions?.Invoke(namedBuildTarget);
+        }
+
         static bool BuildLocationIsValid(string path)
         {
             return path.Length > 0 && Directory.Exists(FileUtil.DeleteLastPathNameComponent(path));

@@ -26,7 +26,7 @@ namespace UnityEditor
         string kContextMenuItemPaste { get { return "Paste " + Menu.GetHotkey("Edit/Paste"); } }
         string kContextMenuItemDuplicate { get { return "Duplicate " + Menu.GetHotkey("Edit/Duplicate"); } }
         string kContextMenuItemDelete { get { return "Delete " + Menu.GetHotkey("Edit/Delete"); } }
-        string kContextMenuItemPasteAsChildKeepLocalTransform { get { return "Paste as Child (Keep Local Transform) " + Menu.GetHotkey("Edit/Paste as Child (Keep Local Transform)"); } }
+        string kContextMenuItemPasteAsChildKeepLocalTransform { get { return "Paste Special/Paste as Child (Keep Local Transform) " + Menu.GetHotkey("Edit/Paste Special/Paste as Child (Keep Local Transform)"); } }
 
         static class Styles
         {
@@ -1161,11 +1161,11 @@ namespace UnityEditor
 
             if (ClipboardUtility.CanPasteAsChild())
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste as Child (Keep World Transform)"), false, () => ClipboardUtility.PasteGOAsChild(true));
                 menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemPasteAsChildKeepLocalTransform), false, () => ClipboardUtility.PasteGOAsChild(false));
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste as Child (Keep World Transform)"), false, () => ClipboardUtility.PasteGOAsChild(true));
             }
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste as Child"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste Special"));
 
             menu.AddSeparator("");
 
@@ -1326,13 +1326,11 @@ namespace UnityEditor
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent(kContextMenuItemPaste));
             if (ClipboardUtility.CanPasteAsChild())
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste as Child (Keep World Transform)"), false, () => ClipboardUtility.PasteGOAsChild(true));
                 menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemPasteAsChildKeepLocalTransform), false, () => ClipboardUtility.PasteGOAsChild(false));
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste Special/Paste as Child (Keep World Transform)"), false, () => ClipboardUtility.PasteGOAsChild(true));
             }
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste as Child"));
-
-            menu.AddSeparator("");
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste Special"));
 
             if (itemIsSelected && !hasSearchFilter && m_TreeViewState.selectedIDs.Count == 1 && !GetIsNotEditable())
                 menu.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, RenameGO);
@@ -1351,6 +1349,19 @@ namespace UnityEditor
 
 
             menu.AddSeparator("");
+
+            menu.AddItem(EditorGUIUtility.TrTextContent("Select All"), false, SelectAll);
+
+            if (itemIsSelected)
+            {
+                menu.AddItem(EditorGUIUtility.TrTextContent("Deselect All"), false, DeselectAll);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Invert Selection"), false, InvertSelection);
+            }
+            else
+            {
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Deselect All"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Invert Selection"));
+            }
 
             if (IsSelectChildrenAvailable())
                 menu.AddItem(EditorGUIUtility.TrTextContent("Select Children"), false, SelectChildren);

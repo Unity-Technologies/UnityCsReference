@@ -31,6 +31,28 @@ namespace UnityEngine
         LowerRight = 8
     }
 
+    /// <summary>
+    /// Defines the types of text generators to use.
+    /// </summary>
+    /// <remarks>
+    /// This enum is used to switch between Unity's standard and advanced text generators.
+    /// </remarks>
+    public enum TextGeneratorType
+    {
+        /// <summary>
+        /// The standard text generator, which is the default option.
+        /// </summary>
+        Standard = 0,
+
+        /// <summary>
+        /// Supports comprehensive Unicode and text shaping for various languages and scripts, including right-to-left (RTL) languages.
+        /// </summary>
+        /// <remarks>
+        /// Note that the advanced generator is in development and may not support all features of the standard generator.
+        /// </remarks>
+        Advanced = 1,
+    }
+
     public enum HorizontalWrapMode
     {
         Wrap = 0,

@@ -346,6 +346,13 @@ namespace UnityEngine.UIElements
         /// </remarks>
         StyleEnum<TextAnchor> unityTextAlign { get; set; }
         /// <summary>
+        /// Switches between Unity's standard and advanced text generator
+        /// </summary>
+        /// <remarks>
+        /// The advanced text generator supports comprehensive Unicode and text shaping for various languages and scripts, including RTL languages. However, it's currently in development and may not have full feature parity with the standard generator. This property is inherited by default and affects text rendering capabilities.
+        /// </remarks>
+        StyleEnum<TextGeneratorType> unityTextGenerator { get; set; }
+        /// <summary>
         /// Outline color of the text.
         /// </summary>
         StyleColor unityTextOutlineColor { get; set; }

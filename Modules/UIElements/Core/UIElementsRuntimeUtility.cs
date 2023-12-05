@@ -95,7 +95,7 @@ namespace UnityEngine.UIElements
         internal static readonly string s_RepaintProfilerMarkerName = "UIElementsRuntimeUtility.DoDispatch(Repaint Event)";
         private static readonly ProfilerMarker s_RepaintProfilerMarker = new ProfilerMarker(s_RepaintProfilerMarkerName);
 
-        public static void RenderBatchModeOffscreenPanels()
+        public static void RenderOffscreenPanels()
         {
             foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
             {
@@ -152,15 +152,13 @@ namespace UnityEngine.UIElements
 
             for (; currentOverlayIndex < runTimePanels.Count; ++currentOverlayIndex)
             {
-                if (runTimePanels[currentOverlayIndex] is BaseRuntimePanel p && !p.drawsInCameras)
+                if (runTimePanels[currentOverlayIndex] is BaseRuntimePanel p)
                 {
                     if (p.sortingPriority >= maxPriority)
                         return;
 
-                    if (p.targetDisplay == displayIndex)
-                    {
+                    if (p.targetDisplay == displayIndex && !p.drawsInCameras && p.targetTexture == null)
                         RenderPanel(p);
-                    }
                 }
             }
         }
@@ -246,7 +244,7 @@ namespace UnityEngine.UIElements
             UIElementsRuntimeUtilityNative.RegisterPlayerloopCallback();
             UIElementsRuntimeUtilityNative.UpdatePanelsCallback = UpdatePanels;
             UIElementsRuntimeUtilityNative.RepaintPanelsCallback = RepaintPanels;
-            UIElementsRuntimeUtilityNative.RenderBatchModeOffscreenPanelsCallback = RenderBatchModeOffscreenPanels;
+            UIElementsRuntimeUtilityNative.RenderOffscreenPanelsCallback = RenderOffscreenPanels;
             defaultEventSystem.isInputReady = true;
         }
 
@@ -255,7 +253,7 @@ namespace UnityEngine.UIElements
             UIElementsRuntimeUtilityNative.UnregisterPlayerloopCallback();
             UIElementsRuntimeUtilityNative.UpdatePanelsCallback = null;
             UIElementsRuntimeUtilityNative.RepaintPanelsCallback = null;
-            UIElementsRuntimeUtilityNative.RenderBatchModeOffscreenPanelsCallback = null;
+            UIElementsRuntimeUtilityNative.RenderOffscreenPanelsCallback = null;
             defaultEventSystem.isInputReady = false;
         }
 

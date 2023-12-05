@@ -13,6 +13,7 @@ namespace UnityEditor.UIElements
         const string k_EnableAbsolutePositionPlacementToggleName = "enable-absolute-position-placement";
         const string k_EnableEventDebugger = "enable-event-debugger";
         const string k_EnableLayoutDebugger = "enable-layout-debugger";
+        const string k_EnableTextAdvanced = "enable-text-advanced";
 
         private VisualElement m_HelpVisualTree;
         private VisualTreeAsset m_UIToolkitTemplate;
@@ -98,6 +99,13 @@ namespace UnityEditor.UIElements
             layoutDebuggerToggle.RegisterValueChangedCallback(e =>
             {
                 UIToolkitProjectSettings.enableLayoutDebugger = e.newValue;
+            });
+
+            var enableTextAdvancedToggle = rootElement.Q<Toggle>(k_EnableTextAdvanced);
+            enableTextAdvancedToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableAdvancedText);
+            enableTextAdvancedToggle.RegisterValueChangedCallback(e =>
+            {
+                UIToolkitProjectSettings.enableAdvancedText = e.newValue;
             });
 
             base.OnActivate(searchContext, rootElement);

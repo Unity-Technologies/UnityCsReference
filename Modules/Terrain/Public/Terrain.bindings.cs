@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Scripting;
+using System.Runtime.InteropServices;
 
 namespace UnityEngine
 {
@@ -264,12 +265,150 @@ namespace UnityEngine
             [NativeMethod("HasSpeedTreeWind")]
             get;
         }
+
+        [NativeProperty("SpeedTreeWindAsset")]
+        extern public SpeedTreeWindAsset windAsset
+        {
+            [NativeMethod("GetSpeedTreeWind")]
+            get;
+            [NativeMethod("SetSpeedTreeWind")]
+            set;
+        }
     }
 
-    // This class has no public scripting API. It is only here so that adding UnityEngine.SpeedTreeWindAsset to
-    // link.xml will actually whitelist it from being stripped, which requires the class name to exist in managed land (case 773309)
-    internal sealed partial class SpeedTreeWindAsset : Object
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct SpeedTreeWindConfig9
     {
-        private SpeedTreeWindAsset() {}
+        public float strengthResponse;
+        public float directionResponse;
+
+        public float gustFrequency;
+        public float gustStrengthMin;
+        public float gustStrengthMax;
+        public float gustDurationMin;
+        public float gustDurationMax;
+        public float gustRiseScalar;
+        public float gustFallScalar;
+
+        // branch stretch limits + shared height start
+        public float branch1StretchLimit;
+        public float branch2StretchLimit;
+
+        // BranchWindLevel: Shared
+        public float       sharedHeightStart;
+        public fixed float bendShared[20];
+        public fixed float oscillationShared[20];
+        public fixed float speedShared[20];
+        public fixed float turbulenceShared[20];
+        public fixed float flexibilityShared[20];
+        public float independenceShared;
+
+        // BranchWindLevel: Branch1
+        //BranchWindLevel m_sBranch1;
+        public fixed float bendBranch1[20];
+        public fixed float oscillationBranch1[20];
+        public fixed float speedBranch1[20];
+        public fixed float turbulenceBranch1[20];
+        public fixed float flexibilityBranch1[20];
+        public float independenceBranch1;
+
+        //BranchWindLevel m_sBranch2;
+        public fixed float bendBranch2[20];
+        public fixed float oscillationBranch2[20];
+        public fixed float speedBranch2[20];
+        public fixed float turbulenceBranch2[20];
+        public fixed float flexibilityBranch2[20];
+        public float independenceBranch2;
+
+        //RippleGroup m_sRipple;
+        public fixed float planarRipple[20];
+        public fixed float directionalRipple[20];
+        public fixed float speedRipple[20];
+        public fixed float flexibilityRipple[20];
+        public float independenceRipple;
+        public float shimmerRipple;
+
+        public float treeExtentX;
+        public float treeExtentY;
+        public float treeExtentZ;
+
+        public float windIndependence;
+        public int doShared;
+        public int doBranch1;
+        public int doBranch2;
+        public int doRipple;
+        public int doShimmer;
+        public int lodFade;
+        public int pad;
+
+        public SpeedTreeWindConfig9()
+        {
+            // defaults from SpeedTree SDK example headers
+            strengthResponse    = 5.0f;
+            directionResponse   = 2.5f;
+            gustFrequency       = 0.0f;
+            gustStrengthMin     = 0.5f;
+            gustStrengthMax     = 1.0f;
+            gustDurationMin     = 1.0f;
+            gustDurationMax     = 4.0f;
+            gustRiseScalar      = 1.0f;
+            gustFallScalar      = 1.0f;
+
+            branch1StretchLimit = 1.0f;
+            branch2StretchLimit = 1.0f;
+            sharedHeightStart   = 0.0f;
+            independenceShared  = 0.0f;
+            independenceBranch1 = 0.0f;
+            independenceBranch2 = 0.0f;
+            independenceRipple  = 0.0f;
+            shimmerRipple       = 0.0f;
+            windIndependence    = 0.0f;
+            treeExtentX         = 0.0f;
+            treeExtentY         = 0.0f;
+            treeExtentZ         = 0.0f;
+
+            doShared            = 0 /*false */;
+            doBranch1           = 0 /*false */;
+            doBranch2           = 0 /*false */;
+            doRipple            = 0 /*false */;
+            doShimmer           = 0 /*false */;
+            lodFade             = 0 /*false */;
+            pad                 = 0;
+        }
+
+        public readonly bool IsWindEnabled => (doShared != 0 || doBranch1 != 0 || doBranch2 != 0 || doRipple != 0);
+
+        static public byte[] Serialize(SpeedTreeWindConfig9 config)
+        {
+            int size = Marshal.SizeOf(config);
+            byte[] data = new byte[size];
+            GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
+            try
+            {
+                IntPtr ptr = handle.AddrOfPinnedObject();
+                Marshal.StructureToPtr(config, ptr, false);
+            }
+            finally
+            {
+                handle.Free();
+            }
+            return data;
+        }
+    };
+
+    [NativeHeader("Modules/Terrain/Public/SpeedTreeWind.h")]
+    [ExcludeFromPreset] // ?
+    public partial class SpeedTreeWindAsset : Object
+    {
+        extern public int Version { get; set; }
+
+        internal SpeedTreeWindAsset(int version, SpeedTreeWindConfig9 config)
+        {
+            Internal_Create(this, version, SpeedTreeWindConfig9.Serialize(config));
+        }
+
+        [NativeThrows]
+        static extern void Internal_Create([Writable] SpeedTreeWindAsset notSelf, int version, byte[] data);
     }
 }

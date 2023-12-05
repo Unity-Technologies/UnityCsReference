@@ -10,6 +10,7 @@ using UnityEngine.Internal;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.UIR;
+using System.Runtime.CompilerServices;
 
 namespace UnityEngine.UIElements
 {
@@ -104,7 +105,25 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Right to left language direction.
         /// </summary>
-        RTL
+        RTL,
+    }
+
+    internal static class LanguageDirectionExtensions
+    {
+
+        internal static TextCore.LanguageDirection toTextCore(this LanguageDirection dir)
+        {
+            switch (dir)
+            {
+                case LanguageDirection.Inherit:
+                case LanguageDirection.LTR:
+                    return TextCore.LanguageDirection.LTR;
+                case LanguageDirection.RTL:
+                    return TextCore.LanguageDirection.RTL;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(dir), dir, "impossible to convert value");
+            }
+        }
     }
 
     internal static class VisualElementListPool
@@ -177,6 +196,9 @@ namespace UnityEngine.UIElements
             #pragma warning disable 649
             [SerializeField, HideInInspector] string name;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags name_UxmlAttributeFlags;
+            [UxmlAttribute("enabled")]
+            [SerializeField, Tooltip("Sets the element to disabled which will not accept input. Utilizes the :disabled pseudo state.")] bool enabledSelf;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags enabledSelf_UxmlAttributeFlags;
             [SerializeField] string viewDataKey;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags viewDataKey_UxmlAttributeFlags;
             [UxmlAttribute(obsoleteNames = new[] { "pickingMode" })]
@@ -191,6 +213,8 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tabIndex_UxmlAttributeFlags;
             [SerializeField] bool focusable;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags focusable_UxmlAttributeFlags;
+            [SerializeField] LanguageDirection languageDirection;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags languageDirection_UxmlAttributeFlags;
 
             [Tooltip(DataBinding.k_DataSourceTooltip)]
             [SerializeField, HideInInspector, DataSourceDrawer] Object dataSource;
@@ -232,8 +256,11 @@ namespace UnityEngine.UIElements
             public override void Deserialize(object obj)
             {
                 var e = (VisualElement)obj;
+
                 if (ShouldWriteAttributeValue(name_UxmlAttributeFlags))
                     e.name = name;
+                if (ShouldWriteAttributeValue(enabledSelf_UxmlAttributeFlags))
+                    e.enabledSelf = enabledSelf;
                 if (ShouldWriteAttributeValue(viewDataKey_UxmlAttributeFlags))
                     e.viewDataKey = viewDataKey;
                 if (ShouldWriteAttributeValue(pickingMode_UxmlAttributeFlags))
@@ -252,6 +279,8 @@ namespace UnityEngine.UIElements
                     e.dataSourcePathString = dataSourcePathString;
                 if (ShouldWriteAttributeValue(dataSourceTypeString_UxmlAttributeFlags))
                     e.dataSourceTypeString = dataSourceTypeString;
+                if (ShouldWriteAttributeValue(languageDirection_UxmlAttributeFlags))
+                    e.languageDirection = languageDirection;
 
                 if (ShouldWriteAttributeValue(bindings_UxmlAttributeFlags))
                 {
@@ -283,6 +312,7 @@ namespace UnityEngine.UIElements
         public class UxmlTraits : UIElements.UxmlTraits
         {
             protected UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription { name = UxmlGenericAttributeNames.k_NameAttributeName };
+            private UxmlBoolAttributeDescription m_EnabledSelf = new UxmlBoolAttributeDescription { name = "enabled", defaultValue = true };
             UxmlStringAttributeDescription m_ViewDataKey = new UxmlStringAttributeDescription { name = "view-data-key" };
             protected UxmlEnumAttributeDescription<PickingMode> m_PickingMode = new UxmlEnumAttributeDescription<PickingMode> { name = "picking-mode", obsoleteNames = new[] { "pickingMode" }};
             UxmlStringAttributeDescription m_Tooltip = new UxmlStringAttributeDescription { name = "tooltip" };
@@ -334,6 +364,7 @@ namespace UnityEngine.UIElements
                 }
 
                 ve.name = m_Name.GetValueFromBag(bag, cc);
+                ve.enabledSelf = m_EnabledSelf.GetValueFromBag(bag, cc);
                 ve.viewDataKey = m_ViewDataKey.GetValueFromBag(bag, cc);
                 ve.pickingMode = m_PickingMode.GetValueFromBag(bag, cc);
                 ve.usageHints = m_UsageHints.GetValueFromBag(bag, cc);
@@ -1425,7 +1456,7 @@ namespace UnityEngine.UIElements
 
             m_ClassList = s_EmptyClassList;
             m_Flags = VisualElementFlags.Init;
-            SetEnabled(true);
+            enabledSelf = true;
 
             focusable = false;
 
@@ -1740,17 +1771,18 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This flag isn't changed if the VisualElement is disabled implicitly by one of its parents. To verify this, use enabledInHierarchy.
         /// </remarks>
-        [CreateProperty(ReadOnly = true)]
+        [CreateProperty]
         public bool enabledSelf
         {
             get => m_EnabledSelf;
-            private set
+            set
             {
-                if (m_EnabledSelf != value)
-                {
-                    m_EnabledSelf = value;
-                    NotifyPropertyChanged(enabledSelfProperty);
-                }
+                if (m_EnabledSelf == value)
+                    return;
+
+                m_EnabledSelf = value;
+                NotifyPropertyChanged(enabledSelfProperty);
+                PropagateEnabledToChildren(value);
             }
         }
 
@@ -1764,10 +1796,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public void SetEnabled(bool value)
         {
-            if (enabledSelf == value) return;
-
             enabledSelf = value;
-            PropagateEnabledToChildren(value);
         }
 
         void PropagateEnabledToChildren(bool value)

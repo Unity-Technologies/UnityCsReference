@@ -104,6 +104,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-slice-scale", StylePropertyId.UnitySliceScale},
             {"-unity-slice-top", StylePropertyId.UnitySliceTop},
             {"-unity-text-align", StylePropertyId.UnityTextAlign},
+            {"-unity-text-generator", StylePropertyId.UnityTextGenerator},
             {"-unity-text-outline", StylePropertyId.UnityTextOutline},
             {"-unity-text-outline-color", StylePropertyId.UnityTextOutlineColor},
             {"-unity-text-outline-width", StylePropertyId.UnityTextOutlineWidth},
@@ -200,6 +201,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {StylePropertyId.UnitySliceScale, "-unity-slice-scale"},
             {StylePropertyId.UnitySliceTop, "-unity-slice-top"},
             {StylePropertyId.UnityTextAlign, "-unity-text-align"},
+            {StylePropertyId.UnityTextGenerator, "-unity-text-generator"},
             {StylePropertyId.UnityTextOutline, "-unity-text-outline"},
             {StylePropertyId.UnityTextOutlineColor, "-unity-text-outline-color"},
             {StylePropertyId.UnityTextOutlineWidth, "-unity-text-outline-width"},
@@ -296,6 +298,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-slice-scale", "unitySliceScale"},
             {"-unity-slice-top", "unitySliceTop"},
             {"-unity-text-align", "unityTextAlign"},
+            {"-unity-text-generator", "unityTextGenerator"},
             {"-unity-text-outline", "unityTextOutline"},
             {"-unity-text-outline-color", "unityTextOutlineColor"},
             {"-unity-text-outline-width", "unityTextOutlineWidth"},
@@ -392,6 +395,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"unitySliceScale", "-unity-slice-scale"},
             {"unitySliceTop", "-unity-slice-top"},
             {"unityTextAlign", "-unity-text-align"},
+            {"unityTextGenerator", "-unity-text-generator"},
             {"unityTextOutline", "-unity-text-outline"},
             {"unityTextOutlineColor", "-unity-text-outline-color"},
             {"unityTextOutlineWidth", "-unity-text-outline-width"},
@@ -942,6 +946,20 @@ namespace UnityEngine.UIElements.StyleSheets
                     if (string.Equals(value, "lower-right", StringComparison.OrdinalIgnoreCase))
                     {
                         intValue = (int)TextAnchor.LowerRight;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.TextGeneratorType:
+                    if (string.Equals(value, "advanced", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextGeneratorType.Advanced;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "standard", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextGeneratorType.Standard;
                         return true;
                     }
 

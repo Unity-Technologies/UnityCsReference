@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections;
@@ -22,6 +23,7 @@ namespace UnityEngine.UIElements.UIR
         UITKTextJobSystem textJobSystem { get; set; }
         public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes);
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font);
+        public void DrawNativeText(NativeTextInfo textInfo, Vector2 pos);
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams);
         public void DrawBorder(MeshGenerator.BorderParams borderParams);
         public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale);
@@ -593,7 +595,7 @@ namespace UnityEngine.UIElements.UIR
             DrawTextInfo(vertices, indices, materials, renderModes);
         }
 
-        TextInfo m_TextInfo = new TextInfo(VertexDataLayout.VBO);
+        TextCore.Text.TextInfo m_TextInfo = new TextCore.Text.TextInfo(VertexDataLayout.VBO);
         TextCore.Text.TextGenerationSettings m_Settings = new TextCore.Text.TextGenerationSettings()
         {
             screenRect = Rect.zero,
@@ -620,31 +622,64 @@ namespace UnityEngine.UIElements.UIR
 
             TextCore.Text.TextGenerator.GenerateText(m_Settings, m_TextInfo);
 
-            for (int i = 0, meshInfoCount = m_TextInfo.meshInfo.Length; i < meshInfoCount; i++)
+            DrawTextBase(m_TextInfo, new NativeTextInfo(), pos, false);
+        }
+
+        public void DrawNativeText(NativeTextInfo textInfo, Vector2 pos)
+        {
+            DrawTextBase(null, textInfo, pos, true);
+        }
+
+        void DrawTextBase(TextCore.Text.TextInfo textInfo, NativeTextInfo nativeTextInfo, Vector2 pos, bool isNative)
+        {
+            int vSrc = 0;
+            for (int i = 0, meshInfoCount = isNative ? nativeTextInfo.fontAssetIds.Length : textInfo.meshInfo.Length; i < meshInfoCount; i++)
             {
-                var meshInfo = m_TextInfo.meshInfo[i];
-                Debug.Assert((meshInfo.vertexCount & 0b11) == 0); // Quads only
+                MeshInfo meshInfo = new();
+                FontAsset fa = null;
+                int remainingVertexCount;
+                if (!isNative)
+                {
+                    meshInfo = textInfo.meshInfo[i];
+                    Debug.Assert((meshInfo.vertexCount & 0b11) == 0); // Quads only
+                    remainingVertexCount = meshInfo.vertexCount;
+                }
+                else
+                {
+                    int glyphAmount = nativeTextInfo.fontAssetLastGlyphIndex[i] - (i > 0 ? nativeTextInfo.fontAssetLastGlyphIndex[i - 1] : 0);
+                    remainingVertexCount = glyphAmount * 4;
+                    fa = nativeTextInfo.fontAssets[i];
+                }
+
                 int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
 
-                int remainingVertexCount = meshInfo.vertexCount;
-                int vSrc = 0;
                 while (remainingVertexCount > 0)
                 {
                     int vertexCount = Mathf.Min(remainingVertexCount, verticesPerAlloc);
                     int quadCount = vertexCount >> 2;
                     int indexCount = quadCount * 6;
 
-                    m_Materials.Add(meshInfo.material);
-                    m_RenderModes.Add(meshInfo.glyphRenderMode);
+                    m_Materials.Add(isNative ? fa.material : meshInfo.material);
+                    m_RenderModes.Add(isNative ? fa.atlasRenderMode : meshInfo.glyphRenderMode);
 
                     m_MeshGenerationContext.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 
-                    for (int vDst = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 4, j += 6)
+                    for (int vDst = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 1, j += 6)
                     {
-                        vertices[vDst + 0] = ConvertTextVertexToUIRVertex(meshInfo, vSrc + 0, pos);
-                        vertices[vDst + 1] = ConvertTextVertexToUIRVertex(meshInfo, vSrc + 1, pos);
-                        vertices[vDst + 2] = ConvertTextVertexToUIRVertex(meshInfo, vSrc + 2, pos);
-                        vertices[vDst + 3] = ConvertTextVertexToUIRVertex(meshInfo, vSrc + 3, pos);
+                        if (isNative)
+                        {
+                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(nativeTextInfo.textElementInfos[vSrc].bottomLeft, pos);
+                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(nativeTextInfo.textElementInfos[vSrc].topLeft, pos);
+                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(nativeTextInfo.textElementInfos[vSrc].topRight, pos);
+                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(nativeTextInfo.textElementInfos[vSrc].bottomRight, pos);
+                        }
+                        else
+                        {
+                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(meshInfo.vertexData[vDst + 0], pos);
+                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(meshInfo.vertexData[vDst + 1], pos);
+                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(meshInfo.vertexData[vDst + 2], pos);
+                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(meshInfo.vertexData[vDst + 3], pos);
+                        }
 
                         indices[j + 0] = (ushort)(vDst + 0);
                         indices[j + 1] = (ushort)(vDst + 1);
@@ -659,7 +694,6 @@ namespace UnityEngine.UIElements.UIR
 
                     remainingVertexCount -= vertexCount;
                 }
-
                 Debug.Assert(remainingVertexCount == 0);
             }
 
@@ -723,16 +757,16 @@ namespace UnityEngine.UIElements.UIR
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vertex ConvertTextVertexToUIRVertex(MeshInfo info, int index, Vector2 posOffset, bool isDynamicColor = false)
+        internal static Vertex ConvertTextVertexToUIRVertex(TextCoreVertex vertex, Vector2 posOffset, bool isDynamicColor = false)
         {
             float dilate = 0.0f;
             // If Bold, dilate the shape (this value is hardcoded, should be set from the font actual bold weight)
-            if (info.vertexData[index].uv2.y < 0.0f) dilate = 1.0f;
+            if (vertex.uv2.y < 0.0f) dilate = 1.0f;
             return new Vertex
             {
-                position = new Vector3(info.vertexData[index].position.x + posOffset.x, info.vertexData[index].position.y + posOffset.y, UIRUtility.k_MeshPosZ),
-                uv = new Vector2(info.vertexData[index].uv0.x, info.vertexData[index].uv0.y),
-                tint = info.vertexData[index].color,
+                position = new Vector3(vertex.position.x + posOffset.x, vertex.position.y + posOffset.y, UIRUtility.k_MeshPosZ),
+                uv = new Vector2(vertex.uv0.x, vertex.uv0.y),
+                tint = vertex.color,
                 // TODO: Don't set the flags here. The mesh conversion should perform these changes
                 flags = new Color32(0, (byte)(dilate * 255), 0, isDynamicColor ? (byte)1 : (byte)0)
             };

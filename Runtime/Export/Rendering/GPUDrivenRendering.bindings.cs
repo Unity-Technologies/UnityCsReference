@@ -513,6 +513,7 @@ namespace UnityEngine.Rendering
         public bool movedCurrentFrame => (data & 1 << 18) != 0;
         public bool hasTree => (data & 1 << 19) != 0;
         public bool smallMeshCulling => (data & 1 << 20) != 0;
+        public bool supportsIndirect => (data & 1 << 21) != 0;
 
         public GPUDrivenPackedRendererData()
         {
@@ -520,7 +521,7 @@ namespace UnityEngine.Rendering
         }
 
         public GPUDrivenPackedRendererData(bool receiveShadows, bool staticShadowCaster, byte lodMask, ShadowCastingMode shadowCastingMode, LightProbeUsage lightProbeUsage,
-            MotionVectorGenerationMode motionVecGenMode, bool isPartOfStaticBatch, bool movedCurrentFrame, bool hasTree, bool smallMeshCulling)
+            MotionVectorGenerationMode motionVecGenMode, bool isPartOfStaticBatch, bool movedCurrentFrame, bool hasTree, bool smallMeshCulling, bool supportsIndirect)
         {
             data = receiveShadows ? 1u : 0u;
             data |= staticShadowCaster ? 1u << 1 : 0u;
@@ -532,6 +533,7 @@ namespace UnityEngine.Rendering
             data |= movedCurrentFrame ? 1u << 18 : 0u;
             data |= hasTree ? 1u << 19 : 0u;
             data |= smallMeshCulling ? 1u << 20 : 0u;
+            data |= supportsIndirect ? 1u << 21 : 0u;
         }
     }
 

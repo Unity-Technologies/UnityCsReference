@@ -42,6 +42,11 @@ namespace UnityEditor.Multiplayer.Internal
             add => BuildPlayerWindow.drawingMultiplayerBuildOptions += value;
             remove => BuildPlayerWindow.drawingMultiplayerBuildOptions -= value;
         }
+        public static event Action<VisualElement> creatingPlayModeButtons
+        {
+            add => UnityEditor.Toolbars.PlayModeButtons.onPlayModeButtonsCreated += value;
+            remove => UnityEditor.Toolbars.PlayModeButtons.onPlayModeButtonsCreated -= value;
+        }
 
         [EditorHeaderItem(typeof(UnityEngine.Object))]
         private static bool MultiplayerRoleHeaderItem(Rect rect, UnityEngine.Object[] objects)

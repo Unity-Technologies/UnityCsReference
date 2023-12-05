@@ -97,8 +97,8 @@ namespace UnityEditor
             private void DrawRigidbodyInfo(Rigidbody body)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.FloatField(Style.infoSpeed                  , body.velocity.magnitude);
-                EditorGUILayout.Vector3Field(Style.infoVel                  , body.velocity);
+                EditorGUILayout.FloatField(Style.infoSpeed                  , body.linearVelocity.magnitude);
+                EditorGUILayout.Vector3Field(Style.infoVel                  , body.linearVelocity);
                 EditorGUILayout.Vector3Field(Style.infoAngVel               , body.angularVelocity);
                 EditorGUILayout.Vector3Field(Style.infoInertiaTensor        , body.inertiaTensor);
                 EditorGUILayout.Vector3Field(Style.infoInertiaTensorRotation, body.inertiaTensorRotation.eulerAngles);
@@ -116,8 +116,8 @@ namespace UnityEditor
             private void DrawArticulationBodyInfo(ArticulationBody body)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.FloatField(Style.infoSpeed                  , body.velocity.magnitude);
-                EditorGUILayout.Vector3Field(Style.infoVel                  , body.velocity);
+                EditorGUILayout.FloatField(Style.infoSpeed                  , body.linearVelocity.magnitude);
+                EditorGUILayout.Vector3Field(Style.infoVel                  , body.linearVelocity);
                 EditorGUILayout.Vector3Field(Style.infoAngVel               , body.angularVelocity);
                 EditorGUILayout.Vector3Field(Style.infoInertiaTensor        , body.inertiaTensor);
                 EditorGUILayout.Vector3Field(Style.infoInertiaTensorRotation, body.inertiaTensorRotation.eulerAngles);

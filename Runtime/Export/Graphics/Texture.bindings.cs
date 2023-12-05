@@ -163,6 +163,13 @@ namespace UnityEngine
         [FreeFunction("GetTextureStreamingManager().SetStreamingTextureMaterialDebugProperties")]
         extern public static void SetStreamingTextureMaterialDebugProperties();
 
+        [FreeFunction("GetTextureStreamingManager().SetStreamingTextureMaterialDebugPropertiesWithSlot")]
+        extern private static void SetStreamingTextureMaterialDebugPropertiesWithSlot(int materialTextureSlot);
+        public static void SetStreamingTextureMaterialDebugProperties(int materialTextureSlot)
+        {
+            SetStreamingTextureMaterialDebugPropertiesWithSlot(materialTextureSlot);
+        }
+
         extern public static bool streamingTextureForceLoadAll
         {
             [FreeFunction(Name = "GetTextureStreamingManager().GetForceLoadAll")]
@@ -269,7 +276,7 @@ namespace UnityEngine
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         extern private IntPtr GetWritableImageData(int frame);
-        extern private ulong GetRawImageDataSize();
+        extern private ulong GetImageDataSize();
 
         extern private static AtomicSafetyHandle GetSafetyHandle(Texture2D tex);
         extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel);
@@ -388,6 +395,15 @@ namespace UnityEngine
             return PackTextures(textures, padding, 2048);
         }
 
+        [FreeFunction(Name = "Texture2DScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Full(Texture src);
+
+        [FreeFunction(Name = "Texture2DScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Slice(Texture src, int srcElement, int srcMip, int dstMip);
+
+        [FreeFunction(Name = "Texture2DScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Region(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, int dstMip, int dstX, int dstY);
+
         extern public bool alphaIsTransparency { get; set; }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "Unity.UIElements")]
@@ -443,6 +459,15 @@ namespace UnityEngine
         {
             SetPixels(colors, face, 0);
         }
+
+        [FreeFunction(Name = "CubemapScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Full(Texture src);
+
+        [FreeFunction(Name = "CubemapScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Slice(Texture src, int srcElement, int srcMip, int dstFace, int dstMip);
+
+        [FreeFunction(Name = "CubemapScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Region(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, int dstFace, int dstMip, int dstX, int dstY);
 
         extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel, int face);
         extern private IntPtr GetWritableImageData(int frame);
@@ -559,8 +584,17 @@ namespace UnityEngine
         [FreeFunction(Name = "Texture3DScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
+        [FreeFunction(Name = "Texture3DScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Full(Texture src);
+
+        [FreeFunction(Name = "Texture3DScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Slice(Texture src, int srcElement, int srcMip, int dstElement, int dstMip);
+
+        [FreeFunction(Name = "Texture3DScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Region(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, int dstElement, int dstMip, int dstX, int dstY);
+
         extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel);
-        extern private IntPtr GetImageDataPointer();
+        extern private IntPtr GetImageData();
     }
 
     [NativeHeader("Runtime/Graphics/Texture2DArray.h")]
@@ -637,8 +671,17 @@ namespace UnityEngine
             SetPixels32(colors, arrayElement, 0);
         }
 
+        [FreeFunction(Name = "Texture2DArrayScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Full(Texture src);
+
+        [FreeFunction(Name = "Texture2DArrayScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Slice(Texture src, int srcElement, int srcMip, int dstElement, int dstMip);
+
+        [FreeFunction(Name = "Texture2DArrayScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Region(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, int dstElement, int dstMip, int dstX, int dstY);
+
         extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel, int element);
-        extern private IntPtr GetImageDataPointer();
+        extern private IntPtr GetImageData();
     }
 
     [NativeHeader("Runtime/Graphics/CubemapArrayTexture.h")]
@@ -701,8 +744,17 @@ namespace UnityEngine
         [FreeFunction(Name = "CubemapArrayScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int face, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
+        [FreeFunction(Name = "CubemapArrayScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Full(Texture src);
+
+        [FreeFunction(Name = "CubemapArrayScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Slice(Texture src, int srcElement, int srcMip, int dstElement, int dstMip);
+
+        [FreeFunction(Name = "CubemapArrayScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern private void CopyPixels_Region(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, int dstElement, int dstMip, int dstX, int dstY);
+
         extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel, int face, int element);
-        extern private IntPtr GetImageDataPointer();
+        extern private IntPtr GetImageData();
     }
 
     [NativeHeader("Runtime/Graphics/SparseTexture.h")]

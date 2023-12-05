@@ -184,6 +184,7 @@ namespace UnityEngine.Accessibility
                 frame = frame,
                 language = language,
                 implementsSelected = selected != null,
+                implementsDismissed = dismissed != null,
             };
 
             CreateNativeNodeWithData(ref nodeData);
@@ -555,6 +556,9 @@ namespace UnityEngine.Accessibility
         /// <summary>
         /// Called when the user of the screen reader selects this node.
         /// </summary>
+        /// <remarks>
+        /// Return an appropriate @@bool@@ value to indicate if the node was successfully selected.
+        /// </remarks>
         public event Func<bool> selected;
 
         /// <summary>
@@ -566,6 +570,17 @@ namespace UnityEngine.Accessibility
         /// Called when the user of the screen reader decrements the content of the node.
         /// </summary>
         public event Action decremented;
+
+        /// <summary>
+        /// Called when the user of the screen reader dismisses this node.
+        /// </summary>
+        /// <remarks>
+        /// Return an appropriate @@bool@@ value to indicate if the node was successfully dismissed.
+        ///
+        /// On Android, subscribing to this event enables the Dismiss custom action, which is available in the TalkBack
+        /// local context menu. This is not the same as the Back system gesture, which activates the Back button.
+        /// </remarks>
+        public event Func<bool> dismissed;
 
         string m_Label;
         string m_Value;
@@ -603,6 +618,7 @@ namespace UnityEngine.Accessibility
             nodeData.childIds = nodeChildIds;
             nodeData.language = language;
             nodeData.implementsSelected = selected != null;
+            nodeData.implementsDismissed = dismissed != null;
         }
 
         internal void Destroy(bool destroyChildren)
@@ -717,6 +733,11 @@ namespace UnityEngine.Accessibility
         internal void InvokeDecremented()
         {
             decremented?.Invoke();
+        }
+
+        internal bool Dismissed()
+        {
+            return dismissed?.Invoke() ?? false;
         }
     }
 }

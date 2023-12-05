@@ -301,7 +301,7 @@ namespace UnityEditor.Experimental
                             {
                                 string cacheHash = ccReader.ReadString();
                                 if (cacheHash == catalogHash)
-                                    rebuildCatalog = !styleCatalog.Load(ccReader);
+                                    rebuildCatalog = !s_StyleCatalog.Load(ccReader);
                             }
                         }
                     }
@@ -311,11 +311,11 @@ namespace UnityEditor.Experimental
                 {
                     Console.WriteLine($"Loading style catalogs ({paths.Count})\r\n\t{String.Join("\r\n\t", paths.ToArray())}");
 
-                    styleCatalog.Load(paths);
+                    s_StyleCatalog.Load(paths);
 
                     if (paths.Count != 0)
                     {
-                        SaveCatalogToDisk(styleCatalog, catalogHash, k_GlobalStyleCatalogCacheFilePath);
+                        SaveCatalogToDisk(s_StyleCatalog, catalogHash, k_GlobalStyleCatalogCacheFilePath);
                     }
                 }
             }

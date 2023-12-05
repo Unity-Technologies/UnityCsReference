@@ -21,6 +21,8 @@ namespace UnityEditor.Toolbars
 
         static readonly GUIContent s_PlayButtonContextMenuItem = EditorGUIUtility.TrTextContent("Create Game View On Play");
 
+        internal static event Action<VisualElement> onPlayModeButtonsCreated;
+
         public PlayModeButtons()
         {
             name = "PlayMode";
@@ -75,6 +77,15 @@ namespace UnityEditor.Toolbars
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+
+            try
+            {
+                onPlayModeButtonsCreated?.Invoke(this);
+            }
+            catch(Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)

@@ -160,6 +160,14 @@ namespace UnityEditor.Build.Profile
             BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsStandalonePlatform);
 
         /// <summary>
+        /// Retrieve the respective module name for a build target
+        /// </summary>
+        public static string GetModuleName(BuildTarget buildTarget)
+        {
+            return BuildTargetDiscovery.GetModuleNameForBuildTarget(buildTarget);
+        }
+
+        /// <summary>
         /// Internal method for switching <see cref="EditorUserBuildSettings"/> active build target and subtarget.
         /// </summary>
         public static void SwitchLegacyActiveFromBuildProfile(BuildProfile profile)

@@ -65,6 +65,8 @@ namespace Unity.UI.Builder
         const float m_PreviewMinHeight = 20;
         float m_CachedPreviewHeight = m_PreviewDefaultHeight;
 
+        VisualElement m_TextGeneratorStyle;
+
         // Utilities
         BuilderInspectorMatchingSelectors m_MatchingSelectors;
         BuilderInspectorStyleFields m_StyleFields;
@@ -242,6 +244,10 @@ namespace Unity.UI.Builder
             var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
                 BuilderConstants.UIBuilderPackagePath + "/Inspector/BuilderInspector.uxml");
             template.CloneTree(this);
+
+            m_TextGeneratorStyle = this.Q<BuilderStyleRow>(null, "unity-text-generator");
+            UIToolkitProjectSettings.onEnableAdvancedTextChanged += (show => m_TextGeneratorStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None);
+            m_TextGeneratorStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
 
             // Get the scroll view.
             // HACK: ScrollView is not capable of remembering a scroll position for content that changes often.
@@ -1660,6 +1666,7 @@ namespace Unity.UI.Builder
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
+            UIToolkitProjectSettings.onEnableAdvancedTextChanged -= (show => m_TextGeneratorStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None);
             if (m_PreviewWindow != null)
             {
                 previewWindow.Close();

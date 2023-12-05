@@ -5,10 +5,12 @@
 using System;
 using UnityEditor.UIElements.Experimental.Debugger;
 using UnityEditor.UIElements.Experimental.UILayoutDebugger;
+using UnityEngine;
 
 namespace UnityEditor.UIElements
 {
-    static class UIToolkitProjectSettings
+    [FilePath("ProjectSettings/UIToolkitProjectSettings.asset", FilePathAttribute.Location.ProjectFolder)]
+    internal class UIToolkitProjectSettings : ScriptableSingleton<UIToolkitProjectSettings>
     {
         const string k_EditorExtensionModeKey = "UIBuilder.EditorExtensionModeKey";
         const string k_HideNotificationAboutMissingUITKPackage = "UIBuilder.HideNotificationAboutMissingUITKPackage";
@@ -16,7 +18,29 @@ namespace UnityEditor.UIElements
         const string k_EnableAbsolutePositionPlacement = "UIBuilder.EnableAbsolutePositionPlacement";
         const string k_EnableEventDebugger = "UIToolkit.EnableEventDebugger";
         const string k_EnableLayoutDebugger = "UIToolkit.EnableLayoutDebugger";
-        const string k_EnableTextJobs = "UIToolkit.EnableTextJobs";
+        const string k_EnableAdvancedText = "UIToolkit.EnableAdvancedText";
+
+        [SerializeField]
+        private bool m_EnableAdvancedText = false;
+
+        internal static bool enableAdvancedText
+        {
+            get => instance.m_EnableAdvancedText;
+            set
+            {
+                if (instance.m_EnableAdvancedText == value)
+                    return;
+                instance.m_EnableAdvancedText = value;
+                onEnableAdvancedTextChanged?.Invoke(value);
+                instance.Save();
+            }
+        }
+        internal static Action<bool> onEnableAdvancedTextChanged;
+
+        public void Save()
+        {
+            Save(true);
+        }
 
         public static bool enableEditorExtensionModeByDefault
         {
@@ -105,14 +129,21 @@ namespace UnityEditor.UIElements
             EditorUserSettings.SetConfigValue(name, value.ToString());
         }
 
-        internal static void Reset()
+        internal void Reset()
         {
+            enableAdvancedText = false;
+        }
+
+
+        internal static void Reset2()
+        {
+            //SD: Renamed because a reset is a special keyword expected to reset the scriptable object to its default state. I don't know where this is used (tests?)
             EditorUserSettings.SetConfigValue(k_EditorExtensionModeKey, null);
             EditorUserSettings.SetConfigValue(k_HideNotificationAboutMissingUITKPackage, null);
             EditorUserSettings.SetConfigValue(k_DisableMouseWheelZooming, null);
             EditorUserSettings.SetConfigValue(k_EnableAbsolutePositionPlacement, null);
             EditorUserSettings.SetConfigValue(k_EnableEventDebugger, null);
-            EditorUserSettings.SetConfigValue(k_EnableTextJobs, null);
+            enableAdvancedText = false;
         }
     }
 }

@@ -584,8 +584,10 @@ namespace Unity.UI.Builder
             {
                 if (attributesOwner is ObjectField && attributeName == "type")
                     return "objectType";
-                else if (attributeName == "readonly")
+                if (attributeName == "readonly")
                     return "isReadOnly";
+                if (attributeName == "enabled")
+                    return "enabledSelf";
             }
 
             var camel = BuilderNameUtilities.ConvertDashToCamel(attributeName);
@@ -603,8 +605,10 @@ namespace Unity.UI.Builder
             {
                 if (m_CurrentElement is ObjectField && CSProperty == "objectType")
                     return "type";
-                else if (CSProperty == "isReadonly")
+                if (CSProperty == "isReadonly")
                     return "readOnly";
+                if (CSProperty == "enabledSelf")
+                    return "enabled";
             }
 
             return BuilderNameUtilities.ConvertCamelToDash(CSProperty);
@@ -1187,8 +1191,17 @@ namespace Unity.UI.Builder
 
             // Save the property name.
             var propertyName = attribute.name;
-            var bindingProperty = GetRemapAttributeNameToCSProperty(propertyName);
-            fieldElement.SetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName, bindingProperty);
+
+            if (attribute is UxmlSerializedAttributeDescription serializedAttributeDescription)
+            {
+                fieldElement.SetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName, serializedAttributeDescription.serializedField.Name);
+            }
+            else
+            {
+                var bindingProperty = GetRemapAttributeNameToCSProperty(propertyName);
+                fieldElement.SetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName, bindingProperty);
+            }
+
 
             // Set initial value.
             UpdateAttributeField(fieldElement);
@@ -1658,7 +1671,7 @@ namespace Unity.UI.Builder
                         }
                     }
 
-                    // Apply the attribute flags before we CallDeserializeOnElement 
+                    // Apply the attribute flags before we CallDeserializeOnElement
                     description.SetSerializedValueAttributeFlags(currentUxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
                     changesToProcess.Add((currentAttributeUxmlOwner, fieldElement, newValue, currentUxmlSerializedData));
                 }

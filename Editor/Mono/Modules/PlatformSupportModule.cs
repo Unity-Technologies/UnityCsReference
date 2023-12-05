@@ -389,6 +389,8 @@ namespace UnityEditor.Modules
         /// a new classic profile and we need to copy settings - that live in the managed side only - to it
         /// </summary>
         void CopyPlatformSettingsToBuildProfile(BuildProfilePlatformSettingsBase platformSettingsBase);
+
+        void OnDisable();
     }
 
     // Interface for target device related operations
