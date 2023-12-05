@@ -2597,7 +2597,7 @@ namespace UnityEngine
             var shapeIndex = groupShapes.Count;
 
             // Fetch index offset we need to shift the new shape vertices by.
-            var startVertexOffset = physicsShapeGroup.vertexCount;
+            var startVertexOffset = m_GroupState.m_Vertices.Count;
 
             // Add the new shapes and vertices.
             groupShapes.AddRange(physicsShapeGroup.groupShapes);

@@ -653,6 +653,24 @@ namespace UnityEditor.UIElements
             return field;
         }
 
+        private VisualElement ConfigureLabelOnly(SerializedProperty property)
+        {
+            var wrapper = new VisualElement();
+            // add the base classes for the field which will provide the correct margins
+            wrapper.AddToClassList(BaseField<ObjectField>.ussClassName);
+            wrapper.AddToClassList(BaseField<ObjectField>.alignedFieldUssClassName);
+
+            var labelOnly = new Label();
+            var fieldLabel = label ?? property.localizedDisplayName;
+            labelOnly.name = "unity-input-" + property.propertyPath;
+            labelOnly.text = fieldLabel;
+
+            labelOnly.AddToClassList(labelUssClassName);
+            wrapper.Add(labelOnly);
+
+            return wrapper;
+        }
+
         internal static void ConfigureFieldStyles<TField, TValue>(TField field) where TField : BaseField<TValue>
         {
             field.labelElement.AddToClassList(labelUssClassName);
@@ -704,6 +722,7 @@ namespace UnityEditor.UIElements
         {
             var propertyType = property.propertyType;
 
+
             if (EditorGUI.HasVisibleChildFields(property, true) && !property.isArray)
                 return CreateFoldout(property, originalField);
 
@@ -753,6 +772,10 @@ namespace UnityEditor.UIElements
 
                 case SerializedPropertyType.Color:
                     return ConfigureField<ColorField, Color>(originalField as ColorField, property, () => new ColorField());
+
+                case SerializedPropertyType.ManagedReference:
+                    // the previous behavior was to show the label even if the field wasn't initialized
+                    return ConfigureLabelOnly(property);
 
                 case SerializedPropertyType.ObjectReference:
                 {

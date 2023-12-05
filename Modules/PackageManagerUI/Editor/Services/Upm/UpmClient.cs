@@ -526,17 +526,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageInfo?.source == PackageSource.BuiltIn)
                 return RegistryType.UnityRegistry;
 
-            if (string.IsNullOrEmpty(packageInfo?.registry?.url))
-                return RegistryType.None;
-
 #pragma warning disable 618
             // Ideally we should be only using `packageInfo.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore` here
             // because `packageInfo.isAssetStorePackage` is marked as Obsolete. However there's currently a serialization issue (PAK-3869) with
             // packageInfo.entitlements that sometimes licensingModel is set to None when it should be EntitlementLicensingModel.AssetStore
             // As a result, we will use the deprecated packageInfo.isAssetStorePackage until the PAK-3869 is fixed.
-            if (packageInfo.isAssetStorePackage || packageInfo.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore)
+            if (packageInfo?.isAssetStorePackage == true || packageInfo?.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore)
 #pragma warning restore 0618
                 return RegistryType.AssetStore;
+
+            // Details from the UPM Core team:
+            // We need to check "versions" because RegistryInfo is never null.
+            // It is always populated with the registry info from which the search was performed (usually the main Unity Registry).
+            // The most accurate way to determine that a package's registry is neither "UnityRegistry" nor "MyRegistries"
+            // is by verifying that there are no versions found in the "versions" list.
+            if (packageInfo?.versions == null || packageInfo.versions.all.Length == 0)
+                return RegistryType.None;
 
             if (m_RegistryUrls.TryGetValue(packageInfo.registry.url, out var result))
                 return result;
