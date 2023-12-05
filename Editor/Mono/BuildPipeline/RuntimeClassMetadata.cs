@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.Scripting;
+using System.Diagnostics;
 
 namespace UnityEditor
 {
@@ -53,8 +54,16 @@ namespace UnityEditor
         [RequiredByNativeCode]
         public void SetUsedTypesInUserAssembly(string[] typeNames, string assemblyName)
         {
-            if (!m_UsedTypesPerUserAssembly.TryGetValue(assemblyName, out HashSet<string> types))
-                m_UsedTypesPerUserAssembly[assemblyName] = types = new HashSet<string>();
+            string assemblyFileName = assemblyName;
+            if (!assemblyFileName.EndsWith(".dll"))
+            {
+                assemblyFileName = assemblyName + ".dll";
+            }
+
+            if (!m_UsedTypesPerUserAssembly.TryGetValue(assemblyFileName, out HashSet<string> types))
+            {
+                m_UsedTypesPerUserAssembly[assemblyFileName] = types = new HashSet<string>();
+            }
 
             foreach (var typeName in typeNames)
                 types.Add(typeName);
@@ -77,40 +86,43 @@ namespace UnityEditor
             "Unity.Analytics.dll",
         };
 
-        static string[] UserAssemblies
+        private static string[] GetTargetUserAssemblyNames()
         {
-            get
+            EditorCompilation.TargetAssemblyInfo[] allTargetAssemblies = EditorCompilationInterface.GetTargetAssemblyInfos();
+
+            string[] targetAssemblyNames = new string[allTargetAssemblies.Length + s_TreatedAsUserAssemblies.Length];
+
+            for (int i = 0; i < allTargetAssemblies.Length; ++i)
             {
-                EditorCompilation.TargetAssemblyInfo[] allTargetAssemblies = EditorCompilationInterface.GetTargetAssemblyInfos();
-
-                string[] targetAssemblyNames = new string[allTargetAssemblies.Length + s_TreatedAsUserAssemblies.Length];
-
-                for (int i = 0; i < allTargetAssemblies.Length; ++i)
-                {
-                    targetAssemblyNames[i] = allTargetAssemblies[i].Name;
-                }
-                for (int i = 0; i < s_TreatedAsUserAssemblies.Length; ++i)
-                {
-                    targetAssemblyNames[allTargetAssemblies.Length + i] = s_TreatedAsUserAssemblies[i];
-                }
-                return targetAssemblyNames;
+                targetAssemblyNames[i] = allTargetAssemblies[i].Name;
             }
+            for (int i = 0; i < s_TreatedAsUserAssemblies.Length; ++i)
+            {
+                targetAssemblyNames[allTargetAssemblies.Length + i] = s_TreatedAsUserAssemblies[i];
+            }
+            for (int i=0; i<targetAssemblyNames.Length; ++i)
+            {
+                if (!targetAssemblyNames[i].EndsWith(".dll"))
+                    targetAssemblyNames[i] += ".dll";
+            }
+            return targetAssemblyNames;
         }
 
-        public bool IsDLLUsed(string dll)
+        private bool IsAssemblyDLLUsed(string assemblyName, string[] userAssemblyNames) 
         {
+            Debug.Assert(assemblyName.EndsWith(".dll"));
             if (m_UsedTypesPerUserAssembly == null)
                 return true;
 
-            if (Array.IndexOf(UserAssemblies, dll) != -1)
+            if (Array.IndexOf(userAssemblyNames, assemblyName) != -1)
             {
                 // Don't treat code in packages as used automatically (case 1003047).
-                var asmdefPath = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(dll);
+                var asmdefPath = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(assemblyName);
                 if (asmdefPath == null || !EditorCompilationInterface.Instance.IsPathInPackageDirectory(asmdefPath))
                     return true;
             }
-
-            return m_UsedTypesPerUserAssembly.ContainsKey(dll);
+            bool isUsed = m_UsedTypesPerUserAssembly.ContainsKey(assemblyName);
+            return isUsed;
         }
 
         protected void AddUsedClass(string assemblyName, string className)
@@ -121,8 +133,15 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(className))
                 throw new ArgumentException(nameof(className));
 
-            if (!m_UsedTypesPerUserAssembly.TryGetValue(assemblyName, out HashSet<string> types))
-                m_UsedTypesPerUserAssembly[assemblyName] = types = new HashSet<string>();
+            string assemblyFileName = assemblyName;
+            if (!assemblyFileName.EndsWith(".dll"))
+            {
+                assemblyFileName = assemblyName + ".dll";
+            }
+            if (!m_UsedTypesPerUserAssembly.TryGetValue(assemblyFileName, out HashSet<string> types))
+            {
+                m_UsedTypesPerUserAssembly[assemblyFileName] = types = new HashSet<string>();
+            }
 
             types.Add(className);
         }
@@ -172,11 +191,23 @@ namespace UnityEditor
                 engineModuleTypes.Add(managedName);
             }
 
-            items.Add("UnityEngine.dll", engineModuleTypes.ToArray());
-
+            bool engineModuleTypesAdded = false;
             foreach (var userAssembly in m_UsedTypesPerUserAssembly)
-                items.Add(userAssembly.Key, userAssembly.Value.ToArray());
+            {
+                if (userAssembly.Key == "UnityEngine.dll" && !engineModuleTypesAdded)
+                {
+                    engineModuleTypes.UnionWith(userAssembly.Value);
+                    items.Add(userAssembly.Key, engineModuleTypes.ToArray());
+                    engineModuleTypesAdded = true;
+                    continue;
+                }
 
+                items.Add(userAssembly.Key, userAssembly.Value.ToArray());
+            }
+            if (!engineModuleTypesAdded)
+            {
+                items.Add("UnityEngine.dll", engineModuleTypes.ToArray());
+            }
             return items;
         }
 
@@ -285,6 +316,10 @@ namespace UnityEditor
                 m_UserAssemblies.Add(assembly);
         }
 
-        internal string[] GetUserAssemblies() => m_UserAssemblies.Where(s => IsDLLUsed(s)).ToArray();
+        internal string[] GetUsedUserAssemblies()
+        {
+            var userAssemblyNames = GetTargetUserAssemblyNames();
+            return m_UserAssemblies.Where(s => IsAssemblyDLLUsed(s, userAssemblyNames)).ToArray();
+        }
     }
 }

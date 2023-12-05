@@ -43,7 +43,7 @@ namespace UnityEditor
         internal static string s_RecycledCurrentEditingString;
         private static bool bKeyEventActive = false;
 
-        internal static bool s_DragToPosition = true;
+        internal static bool s_DragToPosition = false;
         internal static bool s_Dragged = false;
         internal static bool s_SelectAllOnMouseUp = true;
 

@@ -228,21 +228,46 @@ namespace UnityEngine
         }
 
         // Deletes previous text on the line
-        public bool DeleteLineBack() => m_TextEditing.DeleteLineBack();
+        public bool DeleteLineBack()
+        {
+            var result = m_TextEditing.DeleteLineBack();
+            UpdateTextHandle();
+            return result;
+        }  
 
         // Deletes the previous word
-        public bool DeleteWordBack() => m_TextEditing.DeleteWordBack();
+        public bool DeleteWordBack()
+        {
+            var result = m_TextEditing.DeleteWordBack();
+            UpdateTextHandle();
+            return result;
+        } 
 
         // Deletes the following word
-        public bool DeleteWordForward() => m_TextEditing.DeleteWordForward();
+        public bool DeleteWordForward()
+        {
+            var result = m_TextEditing.DeleteWordForward();
+            UpdateTextHandle();
+            return result;
+        }
 
         // perform a right-delete
-        public bool Delete() => m_TextEditing.Delete();
+        public bool Delete()
+        {
+            var result = m_TextEditing.Delete();
+            UpdateTextHandle();
+            return result;
+        }
 
         public bool CanPaste() => m_TextEditing.CanPaste();
 
         // Perform a left-delete
-        public bool Backspace() => m_TextEditing.Backspace();
+        public bool Backspace()
+        {
+            var result = m_TextEditing.Backspace();
+            UpdateTextHandle();
+            return result;
+        } 
 
         /// Select all the text
         public void SelectAll() => m_TextSelecting.SelectAll();
@@ -258,10 +283,19 @@ namespace UnityEngine
         public string SelectedText => m_TextSelecting.selectedText;
 
         /// Delete the current selection. If there is no selection, this function does not do anything...
-        public bool DeleteSelection() => m_TextEditing.DeleteSelection();
+        public bool DeleteSelection()
+        {
+            var result = m_TextEditing.DeleteSelection();
+            UpdateTextHandle();
+            return result;
+        } 
 
         /// Replace the selection with /replace/. If there is no selection, /replace/ is inserted at the current cursor point.
-        public void ReplaceSelection(string replace) => m_TextEditing.ReplaceSelection(replace);
+        public void ReplaceSelection(string replace)
+        {
+            m_TextEditing.ReplaceSelection(replace);
+            UpdateTextHandle();
+        }
 
         /// Replaced the selection with /c/
         public void Insert(char c)
@@ -540,7 +574,9 @@ namespace UnityEngine
             if (isPasswordField)
                 return false;
 
-            return m_TextEditing.Cut();
+            bool result =  m_TextEditing.Cut();
+            UpdateTextHandle();
+            return result;
         }
 
         public void Copy()
@@ -558,7 +594,9 @@ namespace UnityEngine
 
         public bool Paste()
         {
-            return m_TextEditing.Paste();
+            bool result = m_TextEditing.Paste();
+            UpdateTextHandle();
+            return result;
         }
 
         public void DetectFocusChange()

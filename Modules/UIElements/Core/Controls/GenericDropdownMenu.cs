@@ -635,6 +635,7 @@ namespace UnityEngine.UIElements
         void OnKeyDown(KeyDownEvent evt)
         {
             onKey?.Invoke(evt.character, evt.keyCode, evt.modifiers);
+            evt.StopPropagation();
         }
 
         void OnFocusOut(FocusOutEvent evt)
@@ -944,7 +945,7 @@ namespace UnityEngine.UIElements
 
             if (isChecked)
                 item.pseudoStates |= PseudoStates.Checked;
-            
+
             var leftAppendix = children[0];
             leftAppendix.AddToClassList(appendixUssClassName);
 
@@ -1000,7 +1001,7 @@ namespace UnityEngine.UIElements
         {
             if (m_Current.children.Count == 0 && m_Current.headerActions.Count == 0)
                 return;
-            
+
             m_Title.text = m_Current.name;
             var items = m_Current.children;
 
