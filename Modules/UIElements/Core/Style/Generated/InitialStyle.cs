@@ -104,6 +104,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.rareData.Write().unitySliceScale = 1f;
             s_InitialStyle.rareData.Write().unitySliceTop = 0;
             s_InitialStyle.inheritedData.Write().unityTextAlign = TextAnchor.UpperLeft;
+            s_InitialStyle.inheritedData.Write().unityTextGenerator = TextGeneratorType.Standard;
             s_InitialStyle.inheritedData.Write().unityTextOutlineColor = Color.clear;
             s_InitialStyle.inheritedData.Write().unityTextOutlineWidth = 0f;
             s_InitialStyle.rareData.Write().unityTextOverflowPosition = TextOverflowPosition.End;
@@ -187,6 +188,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static float unitySliceScale => s_InitialStyle.rareData.Read().unitySliceScale;
         public static int unitySliceTop => s_InitialStyle.rareData.Read().unitySliceTop;
         public static TextAnchor unityTextAlign => s_InitialStyle.inheritedData.Read().unityTextAlign;
+        public static TextGeneratorType unityTextGenerator => s_InitialStyle.inheritedData.Read().unityTextGenerator;
         public static Color unityTextOutlineColor => s_InitialStyle.inheritedData.Read().unityTextOutlineColor;
         public static float unityTextOutlineWidth => s_InitialStyle.inheritedData.Read().unityTextOutlineWidth;
         public static TextOverflowPosition unityTextOverflowPosition => s_InitialStyle.rareData.Read().unityTextOverflowPosition;

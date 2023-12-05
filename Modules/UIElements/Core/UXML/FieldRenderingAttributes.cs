@@ -16,6 +16,7 @@ namespace UnityEngine.UIElements
     class LayerDecoratorAttribute : PropertyAttribute { }
     class BindingModeDrawerAttribute : PropertyAttribute { }
     class DataSourceDrawerAttribute : PropertyAttribute { }
+    class AdvanceTextGeneratorDecoratorAttribute : PropertyAttribute { }
     class BindingPathDrawerAttribute : PropertyAttribute { }
 
     class DataSourceTypeDrawerAttribute : UxmlTypeReferenceAttribute

@@ -107,6 +107,9 @@ namespace UnityEditor
         [NativeName("SetAssetBundleName")]
         extern public void SetAssetBundleNameAndVariant(string assetBundleName, string assetBundleVariant);
 
+        [NativeMethod("SetThumbnailFromTexture2D")]
+        extern internal void SetThumbnailFromTexture2D(Texture2D image, int instanceID);
+
         [FreeFunction("FindAssetImporterAtAssetPath")]
         extern public static  AssetImporter GetAtPath(string path);
 

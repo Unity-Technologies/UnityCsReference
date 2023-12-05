@@ -9,7 +9,6 @@ using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 
-
 namespace UnityEngine.TextCore.LowLevel
 {
     /// <summary>
@@ -72,6 +71,7 @@ namespace UnityEngine.TextCore.LowLevel
 
     /// <summary>
     /// Error codes returned and relevant to the various FontEngine functions.
+    /// Source codes are located in fterrdef.h
     /// </summary>
     public enum FontEngineError
     {

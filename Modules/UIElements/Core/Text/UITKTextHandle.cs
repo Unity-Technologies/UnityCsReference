@@ -3,6 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
 
@@ -19,6 +22,21 @@ namespace UnityEngine.UIElements
         public Vector2 RoundedSizes { get; set; }
 
         TextElement m_TextElement;
+        static TextLib m_TextLib;
+
+        static TextLib TextLib
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (m_TextLib == null)
+                {
+                    m_TextLib = new TextLib();
+                }
+                return m_TextLib;
+            }
+        }
+
 
         public Vector2 ComputeTextSize(string textToMeasure, float width, float height)
         {
@@ -44,6 +62,21 @@ namespace UnityEngine.UIElements
             HandleLinkAndATagCallbacks();
 
             return textInfo.meshInfo;
+        }
+
+        public NativeTextInfo UpdateNative(ref bool success)
+        {
+            if (!ConvertUssToNativeTextGenerationSettings())
+            {
+                success = false;
+                return new NativeTextInfo();
+            }
+
+            if (m_PreviousNativeGenerationSettingsHash != nativeSettings.GetHashCode())
+                nativeTextInfo = TextLib.GenerateText(nativeSettings);
+
+            success = true;
+            return nativeTextInfo;
         }
 
         public override void AddTextInfoToCache()
@@ -318,6 +351,65 @@ namespace UnityEngine.UIElements
             return TextOverflowMode.Overflow;
         }
 
+        internal bool ConvertUssToNativeTextGenerationSettings()
+        {
+            var fa = TextUtilities.GetFontAsset(m_TextElement);
+            if (fa.atlasPopulationMode == AtlasPopulationMode.Static)
+            {
+                Debug.LogError($"Advanced text system cannot render using static font asset {fa.name}");
+                return false;
+            }
+            var style = m_TextElement.computedStyle;
+            nativeSettings.text = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedText;
+            nativeSettings.screenWidth = (int)(m_TextElement.contentRect.width * 64);
+            nativeSettings.screenHeight = (int)(m_TextElement.contentRect.height * 64);
+            nativeSettings.fontSize = style.fontSize.value > 0
+                ? style.fontSize.value
+                : fa.faceInfo.pointSize;
+            nativeSettings.wrapText = m_TextElement.computedStyle.whiteSpace == WhiteSpace.Normal;
+            nativeSettings.horizontalAlignment = TextGeneratorUtilities.GetHorizontalAlignment(style.unityTextAlign);
+            nativeSettings.verticalAlignment = TextGeneratorUtilities.GetVerticalAlignment(style.unityTextAlign);
+
+            nativeSettings.color = m_TextElement.computedStyle.color;
+            nativeSettings.fontAsset = fa.nativeFontAsset;
+            nativeSettings.languageDirection = m_TextElement.localLanguageDirection.toTextCore();
+
+            var textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
+            List<IntPtr> globalFontAssetFallbacks = new List<IntPtr>();
+            if (textSettings != null && textSettings.fallbackFontAssets != null)
+            {
+                foreach (var fallback in textSettings.fallbackFontAssets)
+                {
+                    if (fallback == null)
+                        continue;
+                    if (fallback.atlasPopulationMode == AtlasPopulationMode.Static && fallback.characterTable.Count > 0)
+                    {
+                        Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
+                        continue;
+                    }
+                    globalFontAssetFallbacks.Add(fallback.nativeFontAsset);
+                }
+            }
+
+            if (textSettings != null && textSettings.emojiFallbackTextAssets != null)
+            {
+                foreach (FontAsset fallback in textSettings.emojiFallbackTextAssets)
+                {
+                    if (fallback == null)
+                        continue;
+                    if (fallback.atlasPopulationMode == AtlasPopulationMode.Static && fallback.characterTable.Count > 0)
+                    {
+                        Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
+                        continue;
+                    }
+                    globalFontAssetFallbacks.Add(fallback.nativeFontAsset);
+                }
+            }
+            nativeSettings.globalFontAssetFallbacks = globalFontAssetFallbacks.ToArray();
+            nativeSettings.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
+            return true;
+        }
+
         internal virtual void ConvertUssToTextGenerationSettings()
         {
             var style = m_TextElement.computedStyle;
@@ -423,6 +515,7 @@ namespace UnityEngine.UIElements
     internal static class TextUtilities
     {
         public static Func<TextSettings> getEditorTextSettings;
+        internal static Func<bool> IsAdvancedTextEnabled;
         private static TextSettings s_TextSettings;
         public static TextSettings textSettings
         {
@@ -507,17 +600,6 @@ namespace UnityEngine.UIElements
             return null;
         }
 
-        internal static Font GetFont(VisualElement ve)
-        {
-            var style = ve.computedStyle;
-            if (style.unityFontDefinition.font != null)
-                return style.unityFontDefinition.font;
-            if (style.unityFont != null)
-                return style.unityFont;
-
-            return style.unityFontDefinition.fontAsset?.sourceFontFile;
-        }
-
         internal static bool IsFontAssigned(VisualElement ve)
         {
             return ve.computedStyle.unityFont != null || !ve.computedStyle.unityFontDefinition.IsEmpty();
@@ -528,6 +610,22 @@ namespace UnityEngine.UIElements
             if (ve.panel is RuntimePanel runtimePanel)
                 return runtimePanel.panelSettings.textSettings ?? PanelTextSettings.defaultPanelTextSettings;
             return getEditorTextSettings();
+        }
+
+        static bool s_HasAdvancedTextSystemErrorBeenShown = false;
+
+        internal static bool IsAdvancedTextEnabledForElement(TextElement te)
+        {
+            var isAdvancedTextGeneratorEnabledOnTextElement = te.computedStyle.unityTextGenerator == TextGeneratorType.Advanced;
+            var isAdvancedTextGeneratorEnabledOnProject = false;
+            isAdvancedTextGeneratorEnabledOnProject = IsAdvancedTextEnabled?.Invoke() ?? false;
+            if (!s_HasAdvancedTextSystemErrorBeenShown && !isAdvancedTextGeneratorEnabledOnProject && isAdvancedTextGeneratorEnabledOnTextElement)
+            {
+                s_HasAdvancedTextSystemErrorBeenShown = true;
+                Debug.LogError("Advanced Text Generator is disabled but the API is still called. Please enable it in the UI Toolkit Project Settings if you want to use it, or refrain from calling the API.");
+            }
+
+            return isAdvancedTextGeneratorEnabledOnTextElement && isAdvancedTextGeneratorEnabledOnProject;
         }
 
         internal static float ConvertPixelUnitsToTextCoreRelativeUnits(VisualElement ve, FontAsset fontAsset)

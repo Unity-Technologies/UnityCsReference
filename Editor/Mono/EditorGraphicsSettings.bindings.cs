@@ -147,5 +147,36 @@ namespace UnityEditor.Rendering
             for (int i = 0; i < count; ++i)
                 action?.Invoke(Internal_GetSettingsForRenderPipelineAt(i) as RenderPipelineGlobalSettings);
         }
+
+        public static bool TryGetFirstRenderPipelineSettingsFromInterface<TSettingsInterfaceType>(out TSettingsInterfaceType settings)
+            where TSettingsInterfaceType : class, IRenderPipelineGraphicsSettings
+        {
+            settings = null;
+
+            if (!GraphicsSettings.TryGetCurrentRenderPipelineGlobalSettings(out RenderPipelineGlobalSettings asset))
+                return false;
+
+            if (asset.TryGetFirstSettingsImplementingInterface<TSettingsInterfaceType>(out var baseSettings))
+            {
+                settings = baseSettings;
+                return true;
+            }
+
+            return false;
+        }
+
+        public static TSettingsInterfaceType[] GetRenderPipelineSettingsFromInterface<TSettingsInterfaceType>()
+            where TSettingsInterfaceType : class, IRenderPipelineGraphicsSettings
+        {
+            if (!GraphicsSettings.TryGetCurrentRenderPipelineGlobalSettings(out RenderPipelineGlobalSettings asset))
+                return new TSettingsInterfaceType[] {};
+
+            if (asset.GetSettingsImplementingInterface<TSettingsInterfaceType>(out var baseSettings))
+            {
+                return baseSettings.ToArray();
+            }
+
+            return new TSettingsInterfaceType[] {};
+        }
     }
 }

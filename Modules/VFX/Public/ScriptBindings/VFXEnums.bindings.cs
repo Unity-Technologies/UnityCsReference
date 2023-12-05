@@ -366,6 +366,8 @@ namespace UnityEngine.VFX
         MeshOutput = 1 << 4,
         [Description("The effect has exposed texture, mesh or graphics buffer properties.")]
         ExposedObject = 1 << 5,
+        [Description("The effect uses Shader Keywords in particle output.")]
+        ShaderKeyword = 1 << 6,
         [Description("Unknown reason.")]
         Unknown = -1
     };

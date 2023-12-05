@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
     {
         internal static Action UpdatePanelsCallback;
         internal static Action<bool> RepaintPanelsCallback;
-        internal static Action RenderBatchModeOffscreenPanelsCallback;
+        internal static Action RenderOffscreenPanelsCallback;
 
         [RequiredByNativeCode]
         public static void UpdatePanels()
@@ -32,9 +32,9 @@ namespace UnityEngine.UIElements
         }
 
         [RequiredByNativeCode]
-        public static void RenderBatchModeOffscreenPanels()
+        public static void RenderOffscreenPanels()
         {
-            RenderBatchModeOffscreenPanelsCallback?.Invoke();
+            RenderOffscreenPanelsCallback?.Invoke();
         }
 
         public extern static void RegisterPlayerloopCallback();

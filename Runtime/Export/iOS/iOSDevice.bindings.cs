@@ -89,6 +89,10 @@ namespace UnityEngine.iOS
         iPadPro6Gen     = 76,
         iPadPro11Inch4Gen = 77,
         iPad10Gen       = 78,
+        iPhone15        = 79,
+        iPhone15Plus    = 80,
+        iPhone15Pro     = 81,
+        iPhone15ProMax  = 82,
 
         iPhoneUnknown       = 10001,
         iPadUnknown         = 10002,

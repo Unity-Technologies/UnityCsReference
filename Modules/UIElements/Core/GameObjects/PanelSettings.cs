@@ -506,6 +506,7 @@ namespace UnityEngine.UIElements
         internal static Func<ThemeStyleSheet> GetOrCreateDefaultTheme;
         internal static Func<int, Vector2> GetGameViewResolution;
         internal static Action<PanelSettings> SetPanelSettingsAssetDirty;
+        internal static Func<bool> IsAdvancedTextEnabled;
 
         internal static void SetupLiveReloadPanelTrackers(bool isLiveReloadOn)
         {
@@ -569,6 +570,13 @@ namespace UnityEngine.UIElements
         [HideInInspector]
         private Shader m_RuntimeWorldShader;
 
+        [SerializeField]
+        [HideInInspector]
+        internal bool m_EnableAdvancedTextGenerator;
+
+        [SerializeField]
+        [HideInInspector]
+        internal TextAsset m_ICUDataAsset;
 
         /// <summary>
         /// Specifies a <see cref="PanelTextSettings"/> that will be used by every UI Document attached to the panel.
@@ -600,6 +608,7 @@ namespace UnityEngine.UIElements
             SetPanelSettingsAssetDirty?.Invoke(this);
 
             InitializeShaders();
+            m_EnableAdvancedTextGenerator = IsAdvancedTextEnabled?.Invoke() ?? false;
         }
 
         private void OnEnable()
@@ -619,6 +628,7 @@ namespace UnityEngine.UIElements
 
             UpdateScreenDPI();
             InitializeShaders();
+            m_EnableAdvancedTextGenerator = IsAdvancedTextEnabled?.Invoke() ?? false;
         }
 
         private void OnDisable()
@@ -641,7 +651,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// Note that the values returned may change over time when the underlying architecture is modified.
-        /// 
+        ///
         /// As this is called at every change marked on any visual element of the panel, the overhead is not negligible.
         /// The callback will not be called in release builds as the method is stripped.
         /// </remarks>
@@ -879,9 +889,11 @@ namespace UnityEngine.UIElements
         private RenderTexture m_OldTargetTexture;
         private float m_OldSortingOrder;
         private bool m_IsLoaded = false;
+        internal static Action<PanelSettings> s_OnValidateCallback;
 
         private void OnValidate()
         {
+
             bool isDirty = false;
 
             if (m_IsLoaded)
@@ -926,6 +938,8 @@ namespace UnityEngine.UIElements
             else
             {
                 m_IsLoaded = true;
+                if(this!= null)
+                    s_OnValidateCallback?.Invoke(this);
             }
 
             m_OldReferenceDpi = m_ReferenceDpi;

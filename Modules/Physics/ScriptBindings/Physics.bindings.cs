@@ -52,7 +52,8 @@ namespace UnityEngine
             JointSupport = 1 << 2,
             ArticulationSupport = 1 << 3,
             VehicleSupport = 1 << 4,
-            AllSupport = RigidbodySupport | ShapeSupport | JointSupport | ArticulationSupport | VehicleSupport
+            SDKPhysicsDebuggerSupport = 1 << 5,
+            AllSupport = RigidbodySupport | ShapeSupport | JointSupport | ArticulationSupport | VehicleSupport | SDKPhysicsDebuggerSupport
         };
 
         const uint k_InvalidID = 0;
@@ -1056,6 +1057,12 @@ namespace UnityEngine
                                      MeshColliderCookingOptions.WeldColocatedVertices |
                                      MeshColliderCookingOptions.UseFastMidphase);
         }
+
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        internal static extern bool ConnectPhysicsSDKVisualDebugger();
+
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        internal static extern void DisconnectPhysicsSDKVisualDebugger();
 
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
         internal static extern Collider ResolveShapeToCollider(IntPtr shapePtr);

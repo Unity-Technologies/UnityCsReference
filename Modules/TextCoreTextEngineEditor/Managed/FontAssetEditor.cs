@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditorInternal;
 using System.Collections.Generic;
@@ -317,12 +318,11 @@ namespace UnityEditor.TextCore.Text
             // Create serialized object to allow us to use a serialized property of an empty kerning pair.
             m_SerializedPropertyHolder = CreateInstance<SerializedPropertyHolder>();
             m_SerializedPropertyHolder.fontAsset = m_fontAsset;
-            using (SerializedObject internalSerializedObject = new (m_SerializedPropertyHolder))
-            {
-                m_FirstCharacterUnicode_prop = internalSerializedObject.FindProperty("firstCharacter");
-                m_SecondCharacterUnicode_prop = internalSerializedObject.FindProperty("secondCharacter");
-                m_EmptyGlyphPairAdjustmentRecord_prop = internalSerializedObject.FindProperty("glyphPairAdjustmentRecord");
-            }
+            SerializedObject internalSerializedObject = new SerializedObject(m_SerializedPropertyHolder);
+            m_FirstCharacterUnicode_prop = internalSerializedObject.FindProperty("firstCharacter");
+            m_SecondCharacterUnicode_prop = internalSerializedObject.FindProperty("secondCharacter");
+            m_EmptyGlyphPairAdjustmentRecord_prop = internalSerializedObject.FindProperty("glyphPairAdjustmentRecord");
+
             m_materialPresets = TextCoreEditorUtilities.FindMaterialReferences(m_fontAsset);
 
             m_GlyphSearchList = new List<int>();
@@ -372,9 +372,15 @@ namespace UnityEditor.TextCore.Text
             }
         }
 
+        internal static Func<bool> IsAdvancedTextEnabled;
+
         public override void OnInspectorGUI()
         {
             //Debug.Log("OnInspectorGUI Called.");
+            if (IsAdvancedTextEnabled.Invoke())
+            {
+                EditorGUILayout.HelpBox("Enabling the Advanced Text Generator restricts customization of font metrics and static font assets. Additionally, some properties are still in development and may not be available.", MessageType.Warning, true);
+            }
 
             Event currentEvent = Event.current;
 

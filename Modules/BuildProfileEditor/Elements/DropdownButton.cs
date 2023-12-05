@@ -44,9 +44,13 @@ namespace UnityEditor.Build.Profile.Elements
             {
                 m_Menu.DropDown(buildRect);
             }
-            else if (GUI.Button(buildRect, m_BuildButton, BuildProfileModuleUtil.dropDownToggleButton))
+            else
             {
-                m_DefaultClicked();
+                GUIStyle style = m_Menu == null ? GUI.skin.button : BuildProfileModuleUtil.dropDownToggleButton;
+                if (GUI.Button(buildRect, m_BuildButton, style))
+                {
+                    m_DefaultClicked();
+                }
             }
         }
     }

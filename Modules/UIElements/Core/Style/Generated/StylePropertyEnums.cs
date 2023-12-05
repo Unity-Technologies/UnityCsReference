@@ -43,6 +43,7 @@ namespace UnityEngine.UIElements.StyleSheets
         RepeatXY,
         ScaleMode,
         TextAnchor,
+        TextGeneratorType,
         TextOverflow,
         TextOverflowPosition,
         TransformOriginOffset,
@@ -139,13 +140,14 @@ namespace UnityEngine.UIElements.StyleSheets
         UnitySliceScale = StylePropertyGroup.Rare << k_GroupOffset | 7,
         UnitySliceTop = StylePropertyGroup.Rare << k_GroupOffset | 8,
         UnityTextAlign = StylePropertyGroup.Inherited << k_GroupOffset | 8,
+        UnityTextGenerator = StylePropertyGroup.Inherited << k_GroupOffset | 9,
         UnityTextOutline = StylePropertyGroup.Shorthand << k_GroupOffset | 10,
-        UnityTextOutlineColor = StylePropertyGroup.Inherited << k_GroupOffset | 9,
-        UnityTextOutlineWidth = StylePropertyGroup.Inherited << k_GroupOffset | 10,
+        UnityTextOutlineColor = StylePropertyGroup.Inherited << k_GroupOffset | 10,
+        UnityTextOutlineWidth = StylePropertyGroup.Inherited << k_GroupOffset | 11,
         UnityTextOverflowPosition = StylePropertyGroup.Rare << k_GroupOffset | 9,
-        Visibility = StylePropertyGroup.Inherited << k_GroupOffset | 11,
-        WhiteSpace = StylePropertyGroup.Inherited << k_GroupOffset | 12,
+        Visibility = StylePropertyGroup.Inherited << k_GroupOffset | 12,
+        WhiteSpace = StylePropertyGroup.Inherited << k_GroupOffset | 13,
         Width = StylePropertyGroup.Layout << k_GroupOffset | 32,
-        WordSpacing = StylePropertyGroup.Inherited << k_GroupOffset | 13
+        WordSpacing = StylePropertyGroup.Inherited << k_GroupOffset | 14
     }
 }

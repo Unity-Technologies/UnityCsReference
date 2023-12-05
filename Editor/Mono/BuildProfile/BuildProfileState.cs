@@ -74,8 +74,8 @@ namespace UnityEditor.Build.Profile
         /// Primary use case is for 'Run Last Build' action from console paltforms which implement
         /// module specific build callbacks.
         /// </remarks>
-        public IList<(string displayName, Action callback, ActionState state)> additionalActions { get; set; }
-            = new List<(string, Action, ActionState)>();
+        public IList<(string displayName, bool isOn, Action callback, ActionState state)> additionalActions { get; set; }
+            = new List<(string, bool, Action, ActionState)>();
 
         /// <summary>
         /// Reprocess the current state.
@@ -98,6 +98,19 @@ namespace UnityEditor.Build.Profile
             if (lhs == ActionState.Disabled || rhs == ActionState.Disabled)
                 return ActionState.Disabled;
             return ActionState.Enabled;
+        }
+
+        /// <summary>
+        /// Update the build action and the build and run action to the specified <see cref="ActionState"/> and refresh.
+        /// </summary>
+        public void UpdateBuildActionStates(ActionState buildActionState, ActionState buildAndRunActionState)
+        {
+            if (buildAction == buildActionState && buildAndRunAction == buildAndRunActionState)
+                return;
+
+            buildAction = buildActionState;
+            buildAndRunAction = buildAndRunActionState;
+            Refresh();
         }
     }
 }

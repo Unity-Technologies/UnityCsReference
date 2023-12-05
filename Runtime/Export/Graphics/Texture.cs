@@ -652,7 +652,7 @@ namespace UnityEngine
             this.groupName = groupName;
         }
     }
-     
+
 
     public partial class Texture : Object
     {
@@ -714,7 +714,7 @@ namespace UnityEngine
                 return false;
             }
         }
-        
+
         internal bool ValidateFormat(GraphicsFormat format, GraphicsFormatUsage usage)
         {
             // *ONLY* GPU support is checked here. If it is not available, fail validation.
@@ -1045,7 +1045,7 @@ namespace UnityEngine
             if (!isReadable) throw CreateNonReadableException(this);
 
             int stride = UnsafeUtility.SizeOf<T>();
-            ulong arrayLength = GetRawImageDataSize() / (ulong)stride;
+            ulong arrayLength = GetImageDataSize() / (ulong)stride;
 
             if (arrayLength > Int32.MaxValue) throw CreateNativeArrayLengthOverflowException();
 
@@ -1161,6 +1161,27 @@ namespace UnityEngine
         public Color[] GetPixels()
         {
             return GetPixels(0);
+        }
+
+        public void CopyPixels(Texture src)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Full(src);
+        }
+
+        public void CopyPixels(Texture src, int srcElement, int srcMip, int dstMip)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Slice(src, srcElement, srcMip, dstMip);
+        }
+
+        public void CopyPixels(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, int dstMip, int dstX, int dstY)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Region(src, srcElement, srcMip, srcX, srcY, srcWidth, srcHeight, dstMip, dstX, dstY);
         }
 
         public bool ignoreMipmapLimit
@@ -1357,6 +1378,27 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]  public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
         [uei.ExcludeFromDocs]  public void Apply() { Apply(true, false); }
 
+        public void CopyPixels(Texture src)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Full(src);
+        }
+
+        public void CopyPixels(Texture src, int srcElement, int srcMip, CubemapFace dstFace, int dstMip)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Slice(src, srcElement, srcMip, (int)dstFace, dstMip);
+        }
+
+        public void CopyPixels(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, CubemapFace dstFace, int dstMip, int dstX, int dstY)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Region(src, srcElement, srcMip, srcX, srcY, srcWidth, srcHeight, (int)dstFace, dstMip, dstX, dstY);
+        }
+
         private static void ValidateIsNotCrunched(TextureCreationFlags flags)
         {
             if ((flags &= TextureCreationFlags.Crunch) != 0)
@@ -1517,7 +1559,7 @@ namespace UnityEngine
         {
             if (!isReadable) throw CreateNonReadableException(this);
             if (mipLevel < 0 || mipLevel >= mipmapCount) throw new ArgumentException("The passed in miplevel " + mipLevel + " is invalid. The valid range is 0 through  " + (mipmapCount - 1));
-            if (GetImageDataPointer().ToInt64() == 0) throw new UnityException($"Texture '{name}' has no data.");
+            if (GetImageData().ToInt64() == 0) throw new UnityException($"Texture '{name}' has no data.");
 
             ulong chainOffset = GetPixelDataOffset(mipLevel);
             ulong arraySize = GetPixelDataSize(mipLevel);
@@ -1526,11 +1568,32 @@ namespace UnityEngine
 
             if (arrayLength > Int32.MaxValue) throw CreateNativeArrayLengthOverflowException();
 
-            IntPtr dataPtr = new IntPtr((long)((ulong)GetImageDataPointer() + chainOffset));
+            IntPtr dataPtr = new IntPtr((long)((ulong)GetImageData() + chainOffset));
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)dataPtr, (int)arrayLength, Allocator.None);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel));
             return array;
+        }
+
+        public void CopyPixels(Texture src)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Full(src);
+        }
+
+        public void CopyPixels(Texture src, int srcElement, int srcMip, int dstElement, int dstMip)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Slice(src, srcElement, srcMip, dstElement, dstMip);
+        }
+
+        public void CopyPixels(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, int dstElement, int dstMip, int dstX, int dstY)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Region(src, srcElement, srcMip, srcX, srcY, srcWidth, srcHeight, dstElement, dstMip, dstX, dstY);
         }
 
         private static void ValidateIsNotCrunched(TextureCreationFlags flags)
@@ -1689,11 +1752,32 @@ namespace UnityEngine
 
             if (arrayLength > Int32.MaxValue) throw CreateNativeArrayLengthOverflowException();
 
-            IntPtr dataPtr = new IntPtr((long)((ulong)GetImageDataPointer() + (singleElementDataSize * (ulong)element + chainOffset)));
+            IntPtr dataPtr = new IntPtr((long)((ulong)GetImageData() + (singleElementDataSize * (ulong)element + chainOffset)));
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)dataPtr, (int)arrayLength, Allocator.None);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel, element));
             return array;
+        }
+
+        public void CopyPixels(Texture src)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Full(src);
+        }
+
+        public void CopyPixels(Texture src, int srcElement, int srcMip, int dstElement, int dstMip)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Slice(src, srcElement, srcMip, dstElement, dstMip);
+        }
+
+        public void CopyPixels(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, int dstElement, int dstMip, int dstX, int dstY)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Region(src, srcElement, srcMip, srcX, srcY, srcWidth, srcHeight, dstElement, dstMip, dstX, dstY);
         }
 
         public bool ignoreMipmapLimit
@@ -1823,11 +1907,32 @@ namespace UnityEngine
 
             if (arrayLength > Int32.MaxValue) throw CreateNativeArrayLengthOverflowException();
 
-            IntPtr dataPtr = new IntPtr((long)((ulong)GetImageDataPointer() + (singleElementDataSize * (ulong)elementOffset + chainOffset)));
+            IntPtr dataPtr = new IntPtr((long)((ulong)GetImageData() + (singleElementDataSize * (ulong)elementOffset + chainOffset)));
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)dataPtr, (int)(arrayLength), Allocator.None);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel, (int)face, element));
             return array;
+        }
+
+        public void CopyPixels(Texture src)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Full(src);
+        }
+
+        public void CopyPixels(Texture src, int srcElement, int srcMip, int dstElement, int dstMip)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Slice(src, srcElement, srcMip, dstElement, dstMip);
+        }
+
+        public void CopyPixels(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, int dstElement, int dstMip, int dstX, int dstY)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!src.isReadable) throw CreateNonReadableException(src);
+            CopyPixels_Region(src, srcElement, srcMip, srcX, srcY, srcWidth, srcHeight, dstElement, dstMip, dstX, dstY);
         }
 
         private static void ValidateIsNotCrunched(TextureCreationFlags flags)

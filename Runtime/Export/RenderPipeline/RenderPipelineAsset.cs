@@ -87,6 +87,8 @@ namespace UnityEngine.Rendering
             }
         }
 
+        internal string pipelineTypeFullName => pipelineType?.FullName ?? string.Empty;
+
         protected virtual void EnsureGlobalSettings()
         {
 

@@ -646,6 +646,15 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref ResolvedStyleAccess container, TextAnchor value) => throw new System.InvalidOperationException();
         }
 
+        class UnityTextGeneratorProperty : ResolvedEnumProperty<TextGeneratorType>
+        {
+            public override string Name => nameof(IResolvedStyle.unityTextGenerator);
+            public override string ussName => "-unity-text-generator";
+            public override bool IsReadOnly => true;
+            public override TextGeneratorType GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityTextGenerator;
+            public override void SetValue(ref ResolvedStyleAccess container, TextGeneratorType value) => throw new System.InvalidOperationException();
+        }
+
         class UnityTextOutlineColorProperty : ResolvedColorProperty
         {
             public override string Name => nameof(IResolvedStyle.unityTextOutlineColor);
@@ -711,8 +720,8 @@ namespace UnityEngine.UIElements
 
         public ResolvedStyleAccessPropertyBag()
         {
-            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(77);
-            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(231);
+            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(78);
+            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(234);
             AddProperty(new AlignContentProperty());
             AddProperty(new AlignItemsProperty());
             AddProperty(new AlignSelfProperty());
@@ -783,6 +792,7 @@ namespace UnityEngine.UIElements
             AddProperty(new UnitySliceScaleProperty());
             AddProperty(new UnitySliceTopProperty());
             AddProperty(new UnityTextAlignProperty());
+            AddProperty(new UnityTextGeneratorProperty());
             AddProperty(new UnityTextOutlineColorProperty());
             AddProperty(new UnityTextOutlineWidthProperty());
             AddProperty(new UnityTextOverflowPositionProperty());

@@ -538,19 +538,19 @@ namespace UnityEditor
             return content;
         }
 
-        internal static Object CreateScriptAssetWithContent(string pathName, string templateContent)
+        public static Object CreateScriptAssetWithContent(string assetPath, string scriptContent)
         {
-            AssetModificationProcessorInternal.OnWillCreateAsset(pathName);
+            AssetModificationProcessorInternal.OnWillCreateAsset(assetPath);
 
-            templateContent = SetLineEndings(templateContent, EditorSettings.lineEndingsForNewScripts);
+            scriptContent = SetLineEndings(scriptContent, EditorSettings.lineEndingsForNewScripts);
 
-            string fullPath = Path.GetFullPath(pathName);
-            File.WriteAllText(fullPath, templateContent);
+            string fullPath = Path.GetFullPath(assetPath);
+            File.WriteAllText(fullPath, scriptContent);
 
             // Import the asset
-            AssetDatabase.ImportAsset(pathName);
+            AssetDatabase.ImportAsset(assetPath);
 
-            return AssetDatabase.LoadAssetAtPath(pathName, typeof(Object));
+            return AssetDatabase.LoadAssetAtPath(assetPath, typeof(Object));
         }
 
         internal static string RemoveOrInsertNamespace(string content, string rootNamespace)

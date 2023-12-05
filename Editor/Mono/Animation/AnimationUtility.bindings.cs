@@ -81,6 +81,15 @@ namespace UnityEditor
             TooManySegments = 3
         }
 
+        internal enum DiscreteBindingResult
+        {
+            Valid = 0,
+            InvalidScript = 1,
+            MissingField = 2,
+            IncompatibleFieldType = 3,
+            MissingDiscreteAttribute  = 4
+        }
+
         public delegate void OnCurveWasModified(AnimationClip clip, EditorCurveBinding binding, CurveModifiedType type);
         public static OnCurveWasModified onCurveWasModified;
 
@@ -270,7 +279,7 @@ namespace UnityEditor
         [NativeThrows]
         extern private static void Internal_SetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, AnimationCurve curve, bool syncEditorCurves);
 
-        extern internal static bool IsDiscreteIntBinding(EditorCurveBinding binding);
+        extern internal static DiscreteBindingResult IsDiscreteIntBinding(EditorCurveBinding binding);
 
         extern internal static void SyncEditorCurves([NotNull] AnimationClip clip);
 

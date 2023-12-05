@@ -116,6 +116,8 @@ namespace UnityEditor.AssetImporters
         [NativeName("DependsOnImportedAsset")]
         private extern void DependsOnImportedAssetInternal(string path);
 
+        public extern Object GetReferenceToAssetMainObject(string path);
+
         public void DependsOnArtifact(ArtifactKey key)
         {
             if (!key.isValid)

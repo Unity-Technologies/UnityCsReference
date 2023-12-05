@@ -1278,7 +1278,7 @@ namespace UnityEditor.Search
             return Create(flags).ShowWindow(width, height, flags);
         }
 
-        [MenuItem("Edit/Search All... %k", priority = 161)]
+        [MenuItem("Edit/Search/Search All... %k", priority = 141)]
         internal static ISearchView OpenDefaultQuickSearch()
         {
             var window = Open(flags: SearchFlags.OpenGlobal);

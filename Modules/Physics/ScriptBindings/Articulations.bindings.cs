@@ -266,7 +266,7 @@ namespace UnityEngine
             AddForceAtPosition(force, position, ForceMode.Force);
         }
 
-        extern public Vector3 velocity { get; set; }
+        extern public Vector3 linearVelocity { get; set; }
         extern public Vector3 angularVelocity { get; set; }
 
         extern public float mass { get; set; }

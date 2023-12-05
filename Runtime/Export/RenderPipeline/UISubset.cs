@@ -10,9 +10,8 @@ namespace UnityEngine.Rendering
     [Flags]
     public enum UISubset
     {
-        UGUI = (1 << 0),
-        UIToolkit = (1 << 1),
-        LowLevel = (1 << 2),
+        UIToolkit_UGUI = (1 << 0),
+        LowLevel = (1 << 1),
         All = ~0
     }
 }

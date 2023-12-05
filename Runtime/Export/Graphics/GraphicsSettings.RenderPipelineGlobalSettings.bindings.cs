@@ -109,7 +109,7 @@ namespace UnityEngine.Rendering
 
             if (currentRenderPipeline != null)
             {
-                asset = Internal_GetSettingsForRenderPipeline(currentRenderPipeline.pipelineType?.FullName ?? string.Empty) as RenderPipelineGlobalSettings;
+                asset = Internal_GetSettingsForRenderPipeline(currentRenderPipeline.pipelineTypeFullName) as RenderPipelineGlobalSettings;
             }
 
             return asset;

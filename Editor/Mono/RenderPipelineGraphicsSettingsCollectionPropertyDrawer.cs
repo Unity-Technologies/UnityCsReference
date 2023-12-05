@@ -173,17 +173,17 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
             }
         }
         
-        void ShowContextualMenu(Rect rect, IRenderPipelineGraphicsSettings target)
+        void ShowContextualMenu(Rect rect, IRenderPipelineGraphicsSettings target, SerializedProperty property)
         {
             var contextualMenu = DropdownUtility.CreateDropdown(true);
-            RenderPipelineGraphicsSettingsContextMenuManager.PopulateContextMenu(target, ref contextualMenu);
+            RenderPipelineGraphicsSettingsContextMenuManager.PopulateContextMenu(target, property, ref contextualMenu);
             DropdownUtility.ShowDropdown(contextualMenu, rect.position + Vector2.up * rect.size.y);
         }
         
         void DrawContextualMenuButton(VisualElement root, GraphicsSettingsDrawerInfo drawerInfo)
         {
             var button = new Button(Background.FromTexture2D(EditorGUIUtility.LoadIcon("pane options")));
-            button.clicked += () => ShowContextualMenu(button.worldBound, drawerInfo.target);
+            button.clicked += () => ShowContextualMenu(button.worldBound, drawerInfo.target, drawerInfo.property);
             root.Add(button);
         }
 

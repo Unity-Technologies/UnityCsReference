@@ -189,5 +189,26 @@ namespace UnityEngine.Accessibility
                 node.InvokeDecremented();
             }
         }
+
+        /// <summary>
+        /// Called when the native accessibility node with the given ID is
+        /// dismissed.
+        /// </summary>
+        /// <returns>True if the node was successfully dismissed, false otherwise.</returns>
+        [RequiredByNativeCode]
+        internal static bool Internal_InvokeDismissed(int id)
+        {
+            var service = AssistiveSupport.GetService<AccessibilityHierarchyService>();
+
+            if (service == null)
+                return false;
+
+            if (service.TryGetNode(id, out var node))
+            {
+                return node.Dismissed();
+            }
+
+            return false;
+        }
     }
 }

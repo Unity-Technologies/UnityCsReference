@@ -119,7 +119,7 @@ namespace UnityEngine.Accessibility
         /// <param name="parent">The parent of the node being added. When the value given is @@null@@, the created node
         /// is placed at the root level.</param>
         /// <returns>The node created and added.</returns>
-        public AccessibilityNode AddNode(string label, AccessibilityNode parent = null)
+        public AccessibilityNode AddNode(string label = null, AccessibilityNode parent = null)
         {
             return InsertNode(-1, label, parent);
         }
@@ -136,7 +136,7 @@ namespace UnityEngine.Accessibility
         /// <param name="parent">The parent of the node being added. When the value given is @@null@@, the created node
         /// is placed at the root level.</param>
         /// <returns>The node created and inserted.</returns>
-        public AccessibilityNode InsertNode(int childIndex, string label, AccessibilityNode parent = null)
+        public AccessibilityNode InsertNode(int childIndex, string label = null, AccessibilityNode parent = null)
         {
             // Generate a new node to return, then add it to the manager under it's parent
             var node = GenerateNewNode();

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
 {
@@ -321,13 +322,23 @@ namespace UnityEngine.UIElements
 
         private bool m_WasElided;
 
-        //Used in tests
+        // Used in tests
         internal void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
             UpdateVisibleText();
 
             if (TextUtilities.IsFontAssigned(this))
-                mgc.meshGenerator.textJobSystem.GenerateText(mgc, this);
+            {
+                if (TextUtilities.IsAdvancedTextEnabledForElement(this) && isReadOnly)
+                {
+                    bool isSuccess = false;
+                    var textInfo = uitkTextHandle.UpdateNative(ref isSuccess);
+                    if (isSuccess)
+                        mgc.DrawNativeText(textInfo, contentRect.min);
+                }
+                else
+                    mgc.meshGenerator.textJobSystem.GenerateText(mgc, this);
+            }
         }
 
         internal void OnGenerateTextOver(MeshGenerationContext mgc)

@@ -11,6 +11,6 @@ namespace UnityEngine.UIElements;
 [StructLayout(LayoutKind.Sequential)]
 struct VisualNodeTextData
 {
-    public LanguageDirection LanguageDirection;
-    public LanguageDirection LocalLanguageDirection;
+    internal LanguageDirection LanguageDirection;
+    internal LanguageDirection LocalLanguageDirection;
 }

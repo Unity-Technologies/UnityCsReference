@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Modules;
 using UnityEditor.Build.Profile.Elements;
 using UnityEngine.UIElements;
 
@@ -24,6 +25,8 @@ namespace UnityEditor.Build.Profile
         public BuildProfileWorkflowState parentState { get; set; }
 
         public BuildProfileWorkflowState editorState { get; set; }
+
+        IBuildProfileExtension m_PlatformExtension = null;
 
         public BuildProfileEditor()
         {
@@ -98,15 +101,18 @@ namespace UnityEditor.Build.Profile
         public void OnDisable()
         {
             CleanupEventHandlers();
+
+            if (m_PlatformExtension != null)
+                m_PlatformExtension.OnDisable();
         }
 
         void ShowPlatformSettings(BuildProfile profile, VisualElement platformSettingsBaseRoot)
         {
             var platformProperties = serializedObject.FindProperty(k_PlatformSettingPropertyName);
-            var platformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.buildTarget);
-            if (platformExtension != null)
+            m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.buildTarget);
+            if (m_PlatformExtension != null)
             {
-                var settings = platformExtension.CreateSettingsGUI(
+                var settings = m_PlatformExtension.CreateSettingsGUI(
                     serializedObject, platformProperties, editorState);
                 platformSettingsBaseRoot.Add(settings);
             }

@@ -13,7 +13,7 @@ namespace Unity.UI.Builder
     {
         static readonly List<string> kNewSelectorPseudoStatesNames = new List<string>()
         {
-            ":hover", ":active", ":selected", ":checked", ":focus"
+            ":hover", ":active", ":selected", ":checked", ":focus", ":disabled"
         };
 
         static readonly string s_UssPath = BuilderConstants.UIBuilderPackagePath + "/Explorer/BuilderNewSelectorField.uss";

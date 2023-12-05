@@ -105,6 +105,45 @@ namespace UnityEngine.Rendering
             return settings != null;
         }
 
+        protected internal bool TryGetFirstSettingsImplementingInterface<TSettingsInterfaceType>(out TSettingsInterfaceType settings)
+            where TSettingsInterfaceType : class, IRenderPipelineGraphicsSettings
+        {
+            settings = null;
+
+            if (settingsList == null)
+                return false;
+
+            for (int i = 0; i < settingsList.Count; i++)
+            {
+                if (settingsList[i] is TSettingsInterfaceType match)
+                {
+                    settings = match;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        protected internal bool GetSettingsImplementingInterface<TSettingsInterfaceType>(out List<TSettingsInterfaceType> settings)
+            where TSettingsInterfaceType : class, IRenderPipelineGraphicsSettings
+        {
+            settings = new ();
+
+            if (settingsList == null)
+                return false;
+
+            for (int i = 0; i < settingsList.Count; i++)
+            {
+                if (settingsList[i] is TSettingsInterfaceType match)
+                {
+                    settings.Add(match);
+                }
+            }
+
+            return settings.Count > 0;
+        }
+
         protected internal bool Contains(Type type)
         {
             return settingsList != null && settingsMap.ContainsKey(type);

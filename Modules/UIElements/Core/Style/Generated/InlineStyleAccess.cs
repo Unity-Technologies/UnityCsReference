@@ -1135,6 +1135,23 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleEnum<TextGeneratorType> IStyle.unityTextGenerator
+        {
+            get
+            {
+                var tmp = GetStyleInt(StylePropertyId.UnityTextGenerator);
+                return new StyleEnum<TextGeneratorType>((TextGeneratorType)tmp.value, tmp.keyword);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.UnityTextGenerator, value))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint);
+                }
+            }
+        }
+
         StyleColor IStyle.unityTextOutlineColor
         {
             get

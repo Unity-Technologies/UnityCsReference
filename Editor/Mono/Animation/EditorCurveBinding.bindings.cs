@@ -9,6 +9,7 @@ using UnityEngine.Playables;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.Internal;
 using UnityEngine;
+using static UnityEditor.AnimationUtility;
 
 namespace UnityEditor
 {
@@ -129,7 +130,8 @@ namespace UnityEditor
             binding.m_isSerializeReferenceCurve = 0;
             binding.m_isUnknownCurve = 0;
 
-            if (!AnimationUtility.IsDiscreteIntBinding(binding))
+            DiscreteBindingResult result = AnimationUtility.IsDiscreteIntBinding(binding);
+            if (result == DiscreteBindingResult.IncompatibleFieldType || result == DiscreteBindingResult.MissingDiscreteAttribute)
             {
                 Debug.LogWarning(
                     $"Property [" + inPropertyName + "] is not a supported discrete curve binding. " +

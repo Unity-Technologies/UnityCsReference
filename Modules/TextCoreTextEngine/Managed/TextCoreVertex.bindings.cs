@@ -13,7 +13,7 @@ namespace UnityEngine.TextCore.Text
     /// Structure which contains the vertex attributes (geometry) of the text object.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Modules/TextCoreTextEngine/TextCoreVertex.h")]
+    [NativeHeader("Modules/TextCoreTextEngine/Native/TextCoreVertex.h")]
     [UsedByNativeCode("TextCoreVertex")]
     [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
     internal struct TextCoreVertex

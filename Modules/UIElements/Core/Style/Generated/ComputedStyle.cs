@@ -104,6 +104,7 @@ namespace UnityEngine.UIElements
         public float unitySliceScale => rareData.Read().unitySliceScale;
         public int unitySliceTop => rareData.Read().unitySliceTop;
         public TextAnchor unityTextAlign => inheritedData.Read().unityTextAlign;
+        public TextGeneratorType unityTextGenerator => inheritedData.Read().unityTextGenerator;
         public Color unityTextOutlineColor => inheritedData.Read().unityTextOutlineColor;
         public float unityTextOutlineWidth => inheritedData.Read().unityTextOutlineWidth;
         public TextOverflowPosition unityTextOverflowPosition => rareData.Read().unityTextOverflowPosition;
@@ -436,6 +437,9 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.UnityTextAlign:
                         inheritedData.Write().unityTextAlign = (TextAnchor)reader.ReadEnum(StyleEnumType.TextAnchor, 0);
                         break;
+                    case StylePropertyId.UnityTextGenerator:
+                        inheritedData.Write().unityTextGenerator = (TextGeneratorType)reader.ReadEnum(StyleEnumType.TextGeneratorType, 0);
+                        break;
                     case StylePropertyId.UnityTextOutline:
                         ShorthandApplicator.ApplyUnityTextOutline(reader, ref this);
                         break;
@@ -674,6 +678,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.Write().unityTextAlign = (TextAnchor)sv.number;
+                    break;
+                case StylePropertyId.UnityTextGenerator:
+                    inheritedData.Write().unityTextGenerator = (TextGeneratorType)sv.number;
                     break;
                 case StylePropertyId.UnityTextOutlineColor:
                     inheritedData.Write().unityTextOutlineColor = sv.color;
@@ -981,6 +988,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.Write().unityTextAlign = other.inheritedData.Read().unityTextAlign;
+                    break;
+                case StylePropertyId.UnityTextGenerator:
+                    inheritedData.Write().unityTextGenerator = other.inheritedData.Read().unityTextGenerator;
                     break;
                 case StylePropertyId.UnityTextOutlineColor:
                     inheritedData.Write().unityTextOutlineColor = other.inheritedData.Read().unityTextOutlineColor;
@@ -3222,6 +3232,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.Write().unityTextAlign = InitialStyle.unityTextAlign;
                     break;
+                case StylePropertyId.UnityTextGenerator:
+                    inheritedData.Write().unityTextGenerator = InitialStyle.unityTextGenerator;
+                    break;
                 case StylePropertyId.UnityTextOutline:
                     inheritedData.Write().unityTextOutlineColor = InitialStyle.unityTextOutlineColor;
                     inheritedData.Write().unityTextOutlineWidth = InitialStyle.unityTextOutlineWidth;
@@ -3296,6 +3309,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.Write().unityTextAlign = parentStyle.unityTextAlign;
+                    break;
+                case StylePropertyId.UnityTextGenerator:
+                    inheritedData.Write().unityTextGenerator = parentStyle.unityTextGenerator;
                     break;
                 case StylePropertyId.UnityTextOutlineColor:
                     inheritedData.Write().unityTextOutlineColor = parentStyle.unityTextOutlineColor;
@@ -3379,6 +3395,7 @@ namespace UnityEngine.UIElements
                 }
 
                 if ((changes & (VersionChangeType.Layout | VersionChangeType.Repaint)) == 0 && (x.unityFont != y.unityFont ||
+                    x.unityTextGenerator != y.unityTextGenerator ||
                     x.fontSize != y.fontSize ||
                     x.unityFontDefinition != y.unityFontDefinition ||
                     x.unityFontStyleAndWeight != y.unityFontStyleAndWeight ||

@@ -5,7 +5,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
+using static Unity.Collections.LowLevel.Unsafe.DisposeSentinel.Dummy;
 
 namespace UnityEditor.UIElements.Inspector
 {

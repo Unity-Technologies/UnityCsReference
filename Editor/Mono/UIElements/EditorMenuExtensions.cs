@@ -45,7 +45,7 @@ namespace UnityEditor.UIElements
         // Used for tests
         internal const float k_MaxMenuWidth = 512.0f;
         internal const float k_SubmenuExpandDelay = 0.35f;
-        internal const string k_SearchShortcutId = "Main Menu/Edit/Find";
+        internal const string k_SearchShortcutId = "Main Menu/Edit/Search/Find";
 
         internal static readonly Rect k_InvalidRect = new(0, 0, -1, -1);
 

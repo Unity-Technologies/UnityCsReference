@@ -92,6 +92,8 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal NativeTextInfo nativeTextInfo;
         internal static TextInfo textInfoCommon => textInfosCommon[JobsUtility.ThreadIndex];
         static TextGenerator generator => generators[JobsUtility.ThreadIndex];
 
@@ -101,14 +103,17 @@ namespace UnityEngine.TextCore.Text
             get => settingsArray [JobsUtility.ThreadIndex];
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal NativeTextGenerationSettings nativeSettings;
+
         ~TextHandle()
         {
             RemoveTextInfoFromCache();
         }
 
-        internal Vector2 preferredSize { 
+        internal Vector2 preferredSize {
             [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-            get; 
+            get;
             private set;
         }
 
@@ -224,8 +229,10 @@ namespace UnityEngine.TextCore.Text
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal int m_PreviousGenerationSettingsHash;
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal int m_PreviousNativeGenerationSettingsHash;
 
-		protected internal static List<OTL_FeatureTag> m_ActiveFontFeatures = new List<OTL_FeatureTag>() { OTL_FeatureTag.kern };
+        protected internal static List<OTL_FeatureTag> m_ActiveFontFeatures = new List<OTL_FeatureTag>() { OTL_FeatureTag.kern };
 
         private bool isDirty;
         public void SetDirty()
@@ -834,6 +841,7 @@ namespace UnityEngine.TextCore.Text
                 return textInfo;
 
             TextGenerator.GenerateText(settings, textInfo);
+
             return textInfo;
         }
 

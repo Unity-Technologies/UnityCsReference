@@ -325,14 +325,14 @@ namespace UnityEditor
             m_StageHandling.CacheStageHeaderContent();
         }
 
-        [MenuItem("Edit/Paste as Child (Keep Local Transform) %#V", false, 103)]
+        [MenuItem("Edit/Paste Special/Paste as Child (Keep Local Transform) %#V", false, 103)]
         static void PasteAsChildKeepLocal() => ClipboardUtility.PasteGOAsChild(false);
 
-        [MenuItem("Edit/Paste as Child (Keep World Transform)", false, 104)]
+        [MenuItem("Edit/Paste Special/Paste as Child (Keep World Transform)", false, 104)]
         static void PasteAsChildKeepWorld() => ClipboardUtility.PasteGOAsChild(true);
 
-        [MenuItem("Edit/Paste as Child (Keep Local Transform) %#V", true, 103)]
-        [MenuItem("Edit/Paste as Child (Keep World Transform)", true, 104)]
+        [MenuItem("Edit/Paste Special/Paste as Child (Keep Local Transform) %#V", true, 103)]
+        [MenuItem("Edit/Paste Special/Paste as Child (Keep World Transform)", true, 104)]
         static bool ValidatePasteAsChild() => ClipboardUtility.CanPasteAsChild();
 
         internal static SceneHierarchyWindow GetSceneHierarchyWindowToFocusForNewGameObjects()

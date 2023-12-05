@@ -32,10 +32,10 @@ namespace UnityEngine
     [NativeHeader("Modules/Physics/Rigidbody.h")]
     public partial class Rigidbody : Component
     {
-        extern public Vector3 velocity { get; set; }
+        extern public Vector3 linearVelocity { get; set; }
         extern public Vector3 angularVelocity { get; set; }
-        extern public float drag { get; set; }
-        extern public float angularDrag { get; set; }
+        extern public float linearDamping { get; set; }
+        extern public float angularDamping { get; set; }
         extern public float mass { get; set; }
         extern public void SetDensity(float density);
         extern public bool useGravity { get; set; }

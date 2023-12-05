@@ -44,6 +44,9 @@ namespace UnityEngine.Accessibility
         /// The accessibility node behaves like a slider, allowing continuous
         /// adjustment through a range of values.
         Slider                  = 1 << 7,
+
+        /// The accessibility node behaves like a toggle.
+        Toggle                  = 1 << 8,
     }
 
     /// <summary>
@@ -152,8 +155,17 @@ namespace UnityEngine.Accessibility
         /// <see cref="AccessibilityNode.selected"/> callback.
         /// </summary>
         /// <remarks>
-        /// This is only used on Android.
+        /// Adds the Click action to nodes on Android.
         /// </remarks>
         public bool implementsSelected { get; set; }
+
+        /// <summary>
+        /// Whether the accessibility node implements the
+        /// <see cref="AccessibilityNode.dismissed"/> callback.
+        /// </summary>
+        /// <remarks>
+        /// Adds the Dismiss action to nodes on Android.
+        /// </remarks>
+        public bool implementsDismissed { get; set; }
     }
 }
