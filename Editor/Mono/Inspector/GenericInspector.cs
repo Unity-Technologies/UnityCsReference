@@ -2,9 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
+using UnityEditor.Audio.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -398,6 +401,11 @@ namespace UnityEditor
             }
 
             UIElements.InspectorElement.FillDefaultInspector(root, serializedObject, this);
+
+            if (target is MonoBehaviour behaviour && AudioUtil.HasAudioCallback(behaviour))
+            {
+                root.Add(new OnAudioFilterReadLevelMeter(behaviour));
+            }
 
             return root;
         }

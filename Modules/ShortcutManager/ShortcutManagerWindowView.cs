@@ -368,7 +368,7 @@ namespace UnityEditor.ShortcutManagement
                     newProfileName = initialValueForNewProfile + string.Format(" ({0})", ++uniqueProfileNumber);
                 }
             }
-            
+
             PromptWindow.Show(L10n.Tr("Create profile"),
                 L10n.Tr("Create a shortcut profile"),
                 L10n.Tr("Enter the name of the profile you want to create"),
@@ -1456,8 +1456,8 @@ namespace UnityEditor.ShortcutManagement
         {
             input.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
             input.RegisterCallback<KeyUpEvent>(OnKeyUp, TrickleDown.TrickleDown);
-            input.RegisterCallback<MouseDownEvent>(OnMouse, TrickleDown.TrickleDown);
-            input.RegisterCallback<MouseUpEvent>(OnMouse, TrickleDown.TrickleDown);
+            input.RegisterCallback<PointerDownEvent>(OnPointer, TrickleDown.TrickleDown);
+            input.RegisterCallback<PointerUpEvent>(OnPointer, TrickleDown.TrickleDown);
             input.RegisterCallback<FocusEvent>((evt) => {
                 StartNewCombination();
                 evt.StopPropagation();
@@ -1514,9 +1514,9 @@ namespace UnityEditor.ShortcutManagement
             textSelection.MoveTextEnd();
         }
 
-        void OnMouse<T>(MouseEventBase<T> evt) where T : MouseEventBase<T>, new()
+        void OnPointer<T>(PointerEventBase<T> evt) where T : PointerEventBase<T>, new()
         {
-            if (evt.GetType() == typeof(MouseDownEvent))
+            if (evt.GetType() == typeof(PointerDownEvent))
             {
                 var keyCode = KeyCode.Mouse0 + evt.button;
 

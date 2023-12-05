@@ -188,18 +188,33 @@ namespace UnityEditor.ShortcutManagement
 
         public void FindShortcutsWithConflicts(List<ShortcutEntry> output, IContextManager contextManager)
         {
+            var conflictingEntries = new HashSet<int>();
             foreach (List<ShortcutEntry> entries in m_IndexedShortcutEntries)
             {
                 if (entries == null || entries.Count < 2)
                     continue;
+
                 for (int i = 0; i < entries.Count; ++i)
                 {
+                    var firstEntryHashCode = entries[i].GetHashCode();
+
                     for (int j = i + 1; j < entries.Count; ++j)
                     {
+                        var secondEntryHashCode = entries[j].GetHashCode();
+
                         if (DoShortcutEntriesConflict(entries[i], entries[j], contextManager))
                         {
-                            output.Add(entries[i]);
-                            output.Add(entries[j]);
+                            if (!conflictingEntries.Contains(firstEntryHashCode))
+                            {
+                                output.Add(entries[i]);
+                                conflictingEntries.Add(firstEntryHashCode);
+                            }
+
+                            if (!conflictingEntries.Contains(secondEntryHashCode))
+                            {
+                                output.Add(entries[j]);
+                                conflictingEntries.Add(secondEntryHashCode);
+                            }
                         }
                     }
                 }

@@ -45,6 +45,8 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            AI.NavMeshEditorHelpers.DisplayInstallPackageButtonIfNeeded();
+            
             serializedObject.Update();
 
             EditorGUILayout.PropertyField(m_Start, Styles.Start);

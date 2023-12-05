@@ -1279,6 +1279,7 @@ namespace UnityEngine.UIElements
         private void DoSelect(Vector2 localPosition, int clickCount, bool actionKey, bool shiftKey)
         {
             var clickedIndex = virtualizationController.GetIndexFromPosition(localPosition);
+            var effectiveClickCount = (m_SelectedIndices.Count() > 0 && m_SelectedIndices.First() != clickedIndex) ? 1 : (clickCount > 2) ? 2 : clickCount;
             if (clickedIndex > viewController.itemsSource.Count - 1)
                 return;
 
@@ -1286,7 +1287,8 @@ namespace UnityEngine.UIElements
                 return;
 
             var clickedItemId = viewController.GetIdForIndex(clickedIndex);
-            switch (clickCount)
+
+            switch (effectiveClickCount)
             {
                 case 1:
                     if (selectionType == SelectionType.Multiple && actionKey)
