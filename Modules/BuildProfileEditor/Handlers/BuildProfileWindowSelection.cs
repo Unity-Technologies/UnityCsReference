@@ -23,11 +23,11 @@ namespace UnityEditor.Build.Profile.Handlers
         readonly ListView m_MissingClassicPlatformListView;
         readonly ListView m_BuildProfilesListView;
 
-        Image m_SelectedProfileImage;
-        Label m_SelectedProfileNameLabel;
-        Label m_SelectedProfilePlatformLabel;
+        readonly Image m_SelectedProfileImage;
+        readonly Label m_SelectedProfileNameLabel;
+        readonly Label m_SelectedProfilePlatformLabel;
 
-        List<BuildProfile> m_SelectedBuildProfiles;
+        readonly List<BuildProfile> m_SelectedBuildProfiles;
 
         internal bool IsMultipleSelection() => m_SelectedBuildProfiles.Count > 1;
         internal bool HasSelection() => m_SelectedBuildProfiles.Count > 0;
@@ -68,7 +68,7 @@ namespace UnityEditor.Build.Profile.Handlers
                     m_SelectedProfileNameLabel.text = profile.name;
                     m_SelectedProfilePlatformLabel.text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(
                         profile.moduleName, profile.subtarget);
-                    m_SelectedProfilePlatformLabel.Hide();
+                    m_SelectedProfilePlatformLabel.Show();
                     ClearListViewSelection(ListViewSelectionType.Classic);
                 }
             }

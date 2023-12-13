@@ -63,6 +63,19 @@ namespace UnityEngine
             set => m_TextSelectingUtility.cursorIndex = value;
         }
 
+        private int cursorIndexNoValidation {
+            get => m_TextSelectingUtility.cursorIndexNoValidation;
+            set => m_TextSelectingUtility.cursorIndexNoValidation = value;
+        }
+        private int selectIndexNoValidation {
+            get => m_TextSelectingUtility.selectIndexNoValidation;
+            set => m_TextSelectingUtility.selectIndexNoValidation = value;
+        }
+
+        private int stringCursorIndexNoValidation {
+            get => textHandle.GetCorrespondingStringIndex(m_TextSelectingUtility.cursorIndexNoValidation);
+        }
+
         //Used by automated tests
         internal int stringSelectIndex
         {
@@ -157,8 +170,8 @@ namespace UnityEngine
             if (m_CursorIndexSavedState != -1)
                 return;
 
-            m_CursorIndexSavedState = m_TextSelectingUtility.cursorIndex;
-            cursorIndex = selectIndex = m_CursorIndexSavedState + GUIUtility.compositionString.Length;
+            m_CursorIndexSavedState = m_TextSelectingUtility.cursorIndexNoValidation;
+            cursorIndexNoValidation = selectIndexNoValidation = m_CursorIndexSavedState + GUIUtility.compositionString.Length;
         }
 
         /// <summary>
@@ -466,16 +479,31 @@ namespace UnityEngine
             DeleteSelection();
             text = text.Insert(stringCursorIndex, replace);
 
-            var newIndex = cursorIndex + new StringInfo(replace).LengthInTextElements;
-            cursorIndex = newIndex;
-            selectIndex = newIndex;
+            var newIndex = cursorIndexNoValidation + new StringInfo(replace).LengthInTextElements;
+            cursorIndexNoValidation = newIndex;
+            selectIndexNoValidation = newIndex;
             m_TextSelectingUtility.ClearCursorPos();
         }
 
+        private char m_HighSurrogate;
+
         /// Replaced the selection with /c/
-        public void Insert(char c)
+        public bool Insert(char c)
         {
+            if (char.IsHighSurrogate(c))
+            {
+                m_HighSurrogate = c;
+                return false;
+            }
+            else if (char.IsLowSurrogate(c))
+            {
+                var lowSurrogate = c;
+                string combinedString = new string(new char[] { m_HighSurrogate, lowSurrogate });
+                ReplaceSelection(combinedString.ToString());
+                return true;
+            }
             ReplaceSelection(c.ToString());
+            return true;
         }
 
         /// Move selection to alt cursor /position/

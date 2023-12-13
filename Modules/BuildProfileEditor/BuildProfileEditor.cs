@@ -14,13 +14,20 @@ namespace UnityEditor.Build.Profile
     {
         const string k_Uxml = "BuildProfile/UXML/BuildProfileEditor.uxml";
         const string k_PlatformSettingPropertyName = "m_PlatformBuildProfile";
-        private const string k_PlatformWarningHelpBox = "platform-warning-help-box";
-        private const string k_BuildSettingsLabel = "build-settings-label";
-        private const string k_PlatformSettingsBaseRoot = "platform-settings-base-root";
-        private const string k_BuildDataLabel = "build-data-label";
-        private const string k_SharedSettingsInfoHelpbox = "shared-settings-info-helpbox";
+        const string k_PlatformWarningHelpBox = "platform-warning-help-box";
+        const string k_BuildSettingsLabel = "build-settings-label";
+        const string k_PlatformSettingsBaseRoot = "platform-settings-base-root";
+        const string k_BuildDataLabel = "build-data-label";
+        const string k_SharedSettingsInfoHelpbox = "shared-settings-info-helpbox";
+        const string k_SharedSettingsInfoHelpboxButton = "shared-settings-info-helpbox-button";
+        const string k_SceneListFoldout = "scene-list-foldout";
+        const string k_SceneListFoldoutRoot = "scene-list-foldout-root";
+        const string k_SceneListFoldoutClassicSection = "scene-list-foldout-classic-section";
+        const string k_SceneListFoldoutClassicButton = "scene-list-foldout-classic-button";
 
         private BuildProfileSceneList m_SceneList;
+
+        public BuildProfileWindow parent { get; set; }
 
         public BuildProfileWorkflowState parentState { get; set; }
 
@@ -62,6 +69,12 @@ namespace UnityEditor.Build.Profile
 
             if (!BuildProfileContext.IsClassicPlatformProfile(profile))
                 sharedSettingsInfoHelpBox.Hide();
+            else
+            {
+                var button = root.Q<Button>(k_SharedSettingsInfoHelpboxButton);
+                button.text = TrText.addBuildProfile;
+                button.clicked += parent.DuplicateSelectedClassicProfile;
+            }
 
             bool hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, profile.moduleName, profile.subtarget);
             if (hasErrors)
@@ -87,12 +100,14 @@ namespace UnityEditor.Build.Profile
             root.Q<HelpBox>(k_PlatformWarningHelpBox).Hide();
             root.Q<Label>(k_BuildSettingsLabel).Hide();
             root.Q<VisualElement>(k_PlatformSettingsBaseRoot).Hide();
+            root.Q<Button>(k_SharedSettingsInfoHelpboxButton).Hide();
+
+            var sharedSettingsHelpbox = root.Q<HelpBox>(k_SharedSettingsInfoHelpbox);
+            sharedSettingsHelpbox.text = TrText.sharedSettingsSectionInfo;
+
             var sectionLabel = root.Q<Label>(k_BuildDataLabel);
             sectionLabel.AddToClassList("text-large");
-            var sharedSettingsInfoHelpBox = root.Q<HelpBox>(k_SharedSettingsInfoHelpbox);
-
             sectionLabel.text = TrText.sceneList;
-            sharedSettingsInfoHelpBox.text = TrText.sharedSettingsInfo;
 
             AddSceneList(root);
             return root;
@@ -121,12 +136,12 @@ namespace UnityEditor.Build.Profile
         void AddSceneList(VisualElement root, BuildProfile profile = null)
         {
             // On no build profile show EditorBuildSetting scene list,
-            // classic platforms show reado-only version.
+            // classic platforms show read-only version.
             bool isGlobalSceneList = profile == null;
             bool isClassicPlatform = !isGlobalSceneList && BuildProfileContext.IsClassicPlatformProfile(profile);
             bool isEnable = isGlobalSceneList || !isClassicPlatform;
 
-            var sceneListFoldout = root.Q<Foldout>("scene-list-foldout");
+            var sceneListFoldout = root.Q<Foldout>(k_SceneListFoldout);
             sceneListFoldout.text = TrText.sceneList;
             m_SceneList = (isGlobalSceneList || isClassicPlatform)
                 ? new BuildProfileSceneList()
@@ -134,7 +149,19 @@ namespace UnityEditor.Build.Profile
             Undo.undoRedoEvent += m_SceneList.OnUndoRedo;
             var container = m_SceneList.GetSceneListGUI(sceneListFoldout, isEnable);
             container.SetEnabled(isEnable);
-            sceneListFoldout.Add(container);
+            root.Q<VisualElement>(k_SceneListFoldoutRoot).Add(container);
+
+            if (isClassicPlatform)
+            {
+                // Bind Global Scene List button
+                root.Q<VisualElement>(k_SceneListFoldoutClassicSection).Show();
+                var globalSceneListButton = root.Q<Button>(k_SceneListFoldoutClassicButton);
+                globalSceneListButton.text = TrText.openSceneList;
+                globalSceneListButton.clicked += () =>
+                {
+                    parent.OnClassicSceneListSelected();
+                };
+            }
         }
 
         void CleanupEventHandlers()

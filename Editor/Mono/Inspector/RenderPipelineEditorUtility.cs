@@ -67,5 +67,8 @@ namespace UnityEditor.Rendering
             s_RenderPipelineAssetToRenderPipelineType[pipelineAssetType] = pipelineType;
             return pipelineType;
         }
+
+        public static bool TrySetRenderingLayerName(int index, string name)
+            => TagManager.TrySetRenderingLayerName(index, name);
     }
 }

@@ -654,6 +654,8 @@ namespace UnityEngine.UIElements
             {
                 if (m_TextInputBase.textElement.emojiFallbackSupport == value)
                     return;
+
+                labelElement.emojiFallbackSupport = value;
                 m_TextInputBase.textElement.emojiFallbackSupport = value;
                 NotifyPropertyChanged(emojiFallbackSupportProperty);
             }

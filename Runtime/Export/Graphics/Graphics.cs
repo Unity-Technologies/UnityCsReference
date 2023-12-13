@@ -152,7 +152,7 @@ namespace UnityEngine
         public RenderParams(Material mat)
         {
             layer = 0;
-            renderingLayerMask = GraphicsSettings.defaultRenderingLayerMask;
+            renderingLayerMask = RenderingLayerMask.defaultRenderingLayerMask;
             rendererPriority = 0;
             worldBounds = new Bounds(Vector3.zero, Vector3.zero);
             camera = null;

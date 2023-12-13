@@ -22,6 +22,7 @@ namespace UnityEditor.AssetImporters
         private SpriteAlignment m_Alignment;
         private Vector2 m_Pivot;
         private Vector4 m_Border;
+        private string m_CustomData;
         private float m_TessellationDetail;
         private string m_SpriteID;
         private List<Vector2[]> m_Outline;
@@ -31,6 +32,7 @@ namespace UnityEditor.AssetImporters
         public SpriteAlignment alignment { get { return m_Alignment; } set { m_Alignment = value; } }
         public Vector2 pivot { get { return m_Pivot; } set { m_Pivot = value; } }
         public Vector4 border { get { return m_Border; } set { m_Border = value; } }
+        internal string customData { get { return m_CustomData; } set { m_CustomData = value; } }
         public List<Vector2[]> outline { get { return m_Outline; } set { m_Outline = value; } }
         public float tessellationDetail {get { return m_TessellationDetail; } set { m_TessellationDetail = value; } }
         public string spriteID {get { return m_SpriteID; } set { m_SpriteID = value; } }

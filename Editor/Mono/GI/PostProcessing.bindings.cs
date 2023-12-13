@@ -621,9 +621,9 @@ namespace UnityEngine.LightTransport
                     return false;
 
                 // Read back from GPU memory into CPU memory.
-                var shInputBuffer = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.TempJob);
-                var shOutputBuffer = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.TempJob);
-                EventID eventId = rrContext.ReadBuffer(shIn.Id, shInputBuffer.Reinterpret<byte>(sizeofSphericalHarmonicsL2));
+                using var shInputBuffer = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                using var shOutputBuffer = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                EventID eventId = rrContext.ReadBuffer(shIn, shInputBuffer);
                 bool waitResult = rrContext.Wait(eventId);
                 Debug.Assert(waitResult, "Failed to read SH from context.");
 
@@ -638,7 +638,7 @@ namespace UnityEngine.LightTransport
                 jobHandle.Complete();
 
                 // Write back to GPU.
-                eventId = rrContext.WriteBuffer(shOut.Id, shOutputBuffer.Reinterpret<byte>(sizeofSphericalHarmonicsL2));
+                eventId = rrContext.WriteBuffer(shOut, shOutputBuffer);
                 waitResult = rrContext.Wait(eventId);
                 Debug.Assert(waitResult, "Failed to write SH to context.");
                 return true;

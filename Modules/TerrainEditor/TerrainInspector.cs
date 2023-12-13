@@ -168,7 +168,7 @@ namespace UnityEditor
             public readonly GUIContent assign = EditorGUIUtility.TrTextContent("Assign");
             public readonly GUIContent duplicateTab = EditorGUIUtility.TrTextContent("This inspector tab is not the active Terrain inspector, paint functionality disabled.");
             public readonly GUIContent makeMeActive = EditorGUIUtility.TrTextContent("Activate this inspector");
- 
+
             // Heightmaps
             public readonly GUIContent textures = EditorGUIUtility.TrTextContent("Texture Resolutions (On Terrain Data)");
             public readonly GUIContent requireResampling = EditorGUIUtility.TrTextContent("Require resampling on change");
@@ -1695,29 +1695,22 @@ namespace UnityEditor
         // if we switch to serializedProperty multi-edit, we can just use that function directly instead
         private void ShowRenderingLayerMask(bool useMiniStyle = false)
         {
-            RenderPipelineAsset srpAsset = GraphicsSettings.currentRenderPipeline;
-            bool usingSRP = srpAsset != null;
-            if (!usingSRP || target == null)
+            if (!GraphicsSettings.isScriptableRenderPipelineEnabled || target == null)
                 return;
 
-            var mask = (int)m_Terrain.renderingLayerMask;
-            var layerNames = srpAsset.prefixedRenderingLayerMaskNames;
-            if (layerNames == null)
-                layerNames = RendererEditorBase.defaultPrefixedRenderingLayerNames;
+            using var changeScope = new EditorGUI.ChangeCheckScope();
 
-            EditorGUI.BeginChangeCheck();
-
+            var mask = m_Terrain.renderingLayerMask;
             var rect = EditorGUILayout.GetControlRect();
             if (useMiniStyle)
             {
                 rect = ModuleUI.PrefixLabel(rect, Styles.renderingLayerMask);
-                mask = EditorGUI.MaskField(rect, GUIContent.none, mask, layerNames,
-                    ParticleSystemStyles.Get().popup);
+                mask = EditorGUI.RenderingLayerMaskField(rect, GUIContent.none, mask, ParticleSystemStyles.Get().popup);
             }
             else
-                mask = EditorGUI.MaskField(rect, Styles.renderingLayerMask, mask, layerNames);
+                mask = EditorGUI.RenderingLayerMaskField(rect, Styles.renderingLayerMask, mask);
 
-            if (EditorGUI.EndChangeCheck())
+            if (changeScope.changed)
             {
                 Undo.RecordObject(m_Terrain, "Set Terrain rendering layer mask");
                 m_Terrain.renderingLayerMask = (UInt32)mask;

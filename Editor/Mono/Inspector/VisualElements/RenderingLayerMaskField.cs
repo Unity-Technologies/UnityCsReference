@@ -49,12 +49,9 @@ namespace UnityEditor.UIElements
 
         void UpdateLayersInfo()
         {
-            // Get the layers : names and values
-            TagManager.GetDefinedRenderingLayers(out var layerNames, out var layerValues);
-
             // Create the appropriate lists...
-            choices = new List<string>(layerNames);
-            choicesMasks = new List<int>(layerValues);
+            choices = new List<string>(RenderingLayerMask.GetDefinedRenderingLayerNames());
+            choicesMasks = new List<int>(RenderingLayerMask.GetDefinedRenderingLayerValues());
         }
 
         /// <summary>

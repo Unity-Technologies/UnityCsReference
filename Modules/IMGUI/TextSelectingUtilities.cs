@@ -90,6 +90,17 @@ namespace UnityEngine
                 }
             }
         }
+
+        internal int selectIndexNoValidation {
+            get { return m_SelectIndex; }
+            set {
+                if (m_SelectIndex != value)
+                {
+                    SetSelectIndexWithoutNotify(value);
+                    OnSelectIndexChange?.Invoke();
+                }
+            }
+        }
         internal void SetSelectIndexWithoutNotify(int index)
         {
             m_SelectIndex = index;

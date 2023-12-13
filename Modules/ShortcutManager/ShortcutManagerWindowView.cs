@@ -246,7 +246,9 @@ namespace UnityEditor.ShortcutManagement
             if (Event.current != null && Event.current.type == EventType.MouseDown)
             {
                 m_IgnoreContext = Event.current.button == 1;
-                evt.newValue.Add(KeyCombination.FromInput(Event.current));
+                var combination = KeyCombination.FromInput(Event.current);
+                if (!evt.newValue.Contains(combination))
+                    evt.newValue.Add(combination);
                 Event.current.Use();
 
                 var e = new Event(Event.current) { type = EventType.MouseUp };
@@ -1542,6 +1544,7 @@ namespace UnityEditor.ShortcutManagement
 
                 Apply();
             }
+
             evt.StopPropagation();
         }
 

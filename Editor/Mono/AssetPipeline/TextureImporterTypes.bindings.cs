@@ -18,6 +18,7 @@ namespace UnityEditor
         public int alignment;
         public Vector2 pivot;
         public Vector4 border;
+        internal string customData;
     }
 
     // Note: MUST match memory layout of TextureImporterSettings in TextureImporter.h!

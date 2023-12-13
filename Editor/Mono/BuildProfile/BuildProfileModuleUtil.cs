@@ -35,29 +35,42 @@ namespace UnityEditor.Build.Profile
             (moduleName, subtarget) switch
             {
                 ("OSXStandalone", StandaloneBuildSubtarget.Server) => "Mac Server",
-                ("WindowsStandalone",StandaloneBuildSubtarget.Server) => "Windows Server",
+                ("WindowsStandalone", StandaloneBuildSubtarget.Server) => "Windows Server",
                 ("LinuxStandalone", StandaloneBuildSubtarget.Server) => "Linux Server",
                 ("OSXStandalone", _) => "Mac",
                 ("WindowsStandalone", _) => "Windows",
                 ("LinuxStandalone", _) => "Linux",
-                ("UWP", _) => "Universal Windows Platform",
-                ("AppleTV", _) => "tvOS",
-                _ => moduleName
+                _ => GetModuleDisplayName(moduleName)
             };
 
         /// <summary>
-        /// Fetch editor platform icon texture.
+        /// Fetch default editor platform icon texture.
         /// </summary>
         public static Texture2D GetPlatformIcon(string moduleName, StandaloneBuildSubtarget subtarget)
         {
-            if (subtarget == StandaloneBuildSubtarget.Server)
-            {
-                return EditorGUIUtility.LoadIcon(string.Format(k_BuildSettingsPlatformIconFormat, "DedicatedServer"));
-            }
+            return GetBuildProfileIcon();
+            // TODO: Finalize Icon Design https://jira.unity3d.com/browse/PLAT-7379
+            //       return EditorGUIUtility.LoadIcon(GetPlatformIconId(moduleName, subtarget));
+        }
 
-            return EditorGUIUtility.LoadIcon(
-                s_DiscoveredTargetInfos.TryGetValue(moduleName, out var targetInfo)
-                ? targetInfo.iconName : "BuildSettings.Editor");
+        /// <summary>
+        /// Fetch small (16x16) editor platform icon texture.
+        /// </summary>
+        public static Texture2D GetPlatformIconSmall(string moduleName, StandaloneBuildSubtarget subtarget)
+        {
+            return GetBuildProfileIcon();
+            // TODO: Finalize Icon Design https://jira.unity3d.com/browse/PLAT-7379
+            //       return EditorGUIUtility.LoadIcon(GetPlatformIconId(moduleName, subtarget) + ".Small");
+        }
+
+        public static Texture2D GetBuildProfileIcon() => EditorGUIUtility.FindTexture(typeof(UnityEditor.Build.Profile.BuildProfile));
+
+        /// <summary>
+        /// Load internal warning icon
+        /// </summary>
+        public static Texture2D GetWarningIcon()
+        {
+            return EditorGUIUtility.LoadIcon("d_console.warnicon.sml");
         }
 
         /// <summary>
@@ -242,6 +255,15 @@ namespace UnityEditor.Build.Profile
             return result;
         }
 
+        /// <summary>
+        /// Retrieve string of filename invalid characters
+        /// </summary>
+        /// <returns></returns>
+        public static string GetFilenameInvalidCharactersStr()
+        {
+            return EditorUtility.GetInvalidFilenameChars();
+        }
+
         internal static BuildTarget GetBuildTarget(string moduleName)
         {
             return s_DiscoveredTargetInfos[moduleName].buildTargetPlatformVal;
@@ -256,6 +278,32 @@ namespace UnityEditor.Build.Profile
                 result.TryAdd(targetString, kvp);
             }
             return result;
+        }
+
+        static string GetPlatformIconId(string moduleName, StandaloneBuildSubtarget subtarget)
+        {
+            if (subtarget == StandaloneBuildSubtarget.Server)
+            {
+                return string.Format(k_BuildSettingsPlatformIconFormat, "DedicatedServer");
+            }
+
+            if (s_DiscoveredTargetInfos.TryGetValue(moduleName, out var targetInfo))
+            {
+                return targetInfo.iconName;
+            }
+
+            return "BuildSettings.Editor";
+        }
+
+        /// <summary>
+        /// Module display name as defined on native side in "BuildTargetGroupName.h"
+        /// </summary>
+        static string GetModuleDisplayName(string moduleName)
+        {
+            if (!s_DiscoveredTargetInfos.TryGetValue(moduleName, out var gt))
+                return moduleName;
+
+            return BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(gt.buildTargetPlatformVal));
         }
     }
 }

@@ -70,7 +70,8 @@ namespace UnityEngine.LightTransport
             where T: struct
         {
             void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(dst);
-            return EnqueueBufferRead(src.Id, ptr, (UInt64)dst.Length * (UInt64)UnsafeUtility.SizeOf<T>(), src.Offset);
+            UInt64 sizeofElem = (UInt64)UnsafeUtility.SizeOf<T>();
+            return EnqueueBufferRead(src.Id, ptr, (UInt64)dst.Length * sizeofElem, src.Offset * sizeofElem);
         }
 
         [NativeMethod(IsThreadSafe = true)]
@@ -80,7 +81,8 @@ namespace UnityEngine.LightTransport
             where T: struct
         {
             void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(src);
-            return EnqueueBufferWrite(dst.Id, ptr, (UInt64)src.Length * (UInt64)UnsafeUtility.SizeOf<T>(), dst.Offset);
+            UInt64 sizeofElem = (UInt64)UnsafeUtility.SizeOf<T>();
+            return EnqueueBufferWrite(dst.Id, ptr, (UInt64)src.Length * sizeofElem, dst.Offset * sizeofElem);
         }
 
         [NativeMethod(IsThreadSafe = true)]

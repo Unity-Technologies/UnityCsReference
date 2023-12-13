@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 ﻿using System;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -15,6 +16,11 @@ namespace UnityEngine
     public struct RenderingLayerMask
     {
         [NativeName("m_Bits")] uint m_Bits;
+
+        //TODO: Replace this with a proper default value transferring.
+        //Using a Internal_GetDefaultRenderingLayerValue() raise an error on MonoBehaviours. It can't be used for field initialization.
+        //It must match TagManager::kDefaultRenderingLayerMask.
+        public static RenderingLayerMask defaultRenderingLayerMask { get; } = new() {m_Bits = 1u};
 
         public static implicit operator uint(RenderingLayerMask mask)
         {
@@ -31,14 +37,14 @@ namespace UnityEngine
 
         public static implicit operator int(RenderingLayerMask mask)
         {
-            return unchecked((int) mask.m_Bits);
+            return unchecked((int)mask.m_Bits);
         }
 
         // implicitly converts an integer to a LayerMask
         public static implicit operator RenderingLayerMask(int intVal)
         {
             RenderingLayerMask mask;
-            mask.m_Bits = unchecked((uint) intVal);
+            mask.m_Bits = unchecked((uint)intVal);
             return mask;
         }
 
@@ -48,6 +54,9 @@ namespace UnityEngine
             get => m_Bits;
             set => m_Bits = value;
         }
+
+        [NativeMethod("GetDefaultRenderingLayerValue")]
+        static extern uint Internal_GetDefaultRenderingLayerValue();
 
         // Given a layer number, returns the name of the layer as defined in either a Builtin or a User Layer in the [[wiki:class-TagManager|Tag Manager]]
         [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
@@ -89,7 +98,23 @@ namespace UnityEngine
                 if (layer != -1)
                     mask |= 1u << layer;
             }
+
             return mask;
         }
+
+        [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
+        public static extern int GetDefinedRenderingLayerCount();
+
+        [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
+        public static extern int GetLastDefinedRenderingLayerIndex();
+
+        [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
+        public static extern uint GetDefinedRenderingLayersCombinedMaskValue();
+
+        [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
+        public static extern string[] GetDefinedRenderingLayerNames();
+
+        [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
+        public static extern int[] GetDefinedRenderingLayerValues();
     }
 }

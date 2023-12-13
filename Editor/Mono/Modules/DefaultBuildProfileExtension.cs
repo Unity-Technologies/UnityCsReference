@@ -88,16 +88,14 @@ namespace UnityEditor.Modules
             SerializedObject serializedObject, SerializedProperty rootProperty, BuildProfileWorkflowState workflowState)
         {
             var platformWarningsGUI = CreatePlatformBuildWarningsGUI(serializedObject, rootProperty);
-            // TO-DO: Add 2f margin to the top of the common settings GUI. (PLAT-7268)
-            // Setup common settings before creating the platform settings GUI so
-            // that they can be use in the them.
             var commonSettingsGUI = CreateCommonSettingsGUI(serializedObject, rootProperty);
+            var platformSettingsGUI = CreatePlatformSettingsGUI(serializedObject, rootProperty, workflowState);
 
             var settingsGUI = new VisualElement();
             if (platformWarningsGUI != null)
                 settingsGUI.Add(platformWarningsGUI);
-            settingsGUI.Add(CreatePlatformSettingsGUI(serializedObject, rootProperty, workflowState));
-            if (m_IsClassicProfile)
+            settingsGUI.Add(platformSettingsGUI);
+            if (m_IsClassicProfile && BuildPlayerWindow.WillDrawMultiplayerBuildOptions())
                 settingsGUI.Add(CreateMultiplayerSettingsGUI());
             settingsGUI.Add(commonSettingsGUI);
             return settingsGUI;
@@ -239,13 +237,11 @@ namespace UnityEditor.Modules
 
             if (Unsupported.IsSourceBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(m_BuildTarget))
             {
-                using (var horizontal = new EditorGUILayout.HorizontalScope())
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    var oldWidth = EditorGUIUtility.labelWidth;
-                    EditorGUIUtility.labelWidth = EditorGUI.CalcPrefixLabelWidth(k_InstallInBuildFolder);
                     EditorGUILayout.PropertyField(m_InstallInBuildFolder, k_InstallInBuildFolder, GUILayout.ExpandWidth(false));
-                    EditorGUIUtility.labelWidth = oldWidth;
-
+                    EditorGUILayout.BeginVertical();
+                    GUILayout.Space(3);
                     if (GUILayout.Button(k_InstallInBuildFolderHelp, EditorStyles.iconButton))
                     {
                         const string k_ViewScriptPath = "Documentation/InternalDocs/docs/BuildSystem/view";
@@ -258,6 +254,8 @@ namespace UnityEditor.Modules
                         else
                             System.Diagnostics.Process.Start(path + k_MacAndLinuxEditorScriptExtension);
                     }
+
+                    EditorGUILayout.EndVertical();
                 }
             }
             else
@@ -441,6 +439,35 @@ namespace UnityEditor.Modules
         {
         }
         
+        /// Helper method for rendering an IMGUI popup over an enum
+        /// serialized property.
+        /// </summary>
+        protected void ShowIMGUIPopupOption<T>
+        (
+            GUIContent label,
+            (T SettingValue, GUIContent GUIString)[] options,
+            SerializedProperty currentSetting
+        ) where T : Enum
+        {
+            using var vertical = new EditorGUILayout.VerticalScope();
+            using var prop = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, currentSetting);
+
+            // Find the index of the currently set value relative to the GUI layout
+            var selectedIndex = Array.FindIndex(options,
+                match => match.SettingValue.Equals((T)(object)currentSetting.intValue));
+            selectedIndex = selectedIndex < 0 ? 0 : selectedIndex;
+
+            var GUIStrings = new GUIContent[options.Length];
+            for (var i = 0; i < options.Length; i++)
+                GUIStrings[i] = options[i].GUIString;
+
+            EditorGUI.BeginChangeCheck();
+            var newIndex = EditorGUILayout.Popup(label, selectedIndex, GUIStrings);
+            if (EditorGUI.EndChangeCheck())
+                currentSetting.intValue = (int)(object)options[newIndex].SettingValue;
+        }
+
+        /// <summary>
         /// Helper method for rendering an IMGUI popup over an enum
         /// serialized property.
         /// </summary>

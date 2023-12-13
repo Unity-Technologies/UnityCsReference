@@ -19,7 +19,7 @@ namespace UnityEditor
             AnyCPU,
             [InspectorName("Intel 64-bit")]
             x86_64,
-            [InspectorName("Apple silicon")]
+            [InspectorName("Apple silicon / Arm64")]
             ARM64
         }
 
@@ -115,8 +115,8 @@ namespace UnityEditor
                 case EditorPluginOSArchitecture.AnyOS:
                     return arch == EditorPluginCPUArchitecture.AnyCPU;
                 case EditorPluginOSArchitecture.OSX:
-                    return true;
                 case EditorPluginOSArchitecture.Windows:
+                    return true;
                 case EditorPluginOSArchitecture.Linux:
                     return arch != EditorPluginCPUArchitecture.ARM64;
                 default:

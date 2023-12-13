@@ -23,6 +23,7 @@ namespace UnityEngine.Rendering
         extern public static bool realtimeDirectRectangularAreaLights { get; set; }
         extern public static bool lightsUseLinearIntensity   { get; set; }
         extern public static bool lightsUseColorTemperature  { get; set; }
+        [Obsolete ($"This property is obsolete. Use {nameof(RenderingLayerMask)} API and Tags & Layers project settings instead. #from(23.3)")]
         extern public static uint defaultRenderingLayerMask { get; set; }
         extern public static Camera.GateFitMode defaultGateFitMode { get; set; }
         extern public static bool useScriptableRenderPipelineBatching { get; set; }

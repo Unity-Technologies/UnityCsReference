@@ -105,7 +105,7 @@ namespace UnityEditor.Build.Profile
                 var cardDescription = m_Cards[index];
                 card.Set(
                     cardDescription.displayName,
-                    BuildProfileModuleUtil.GetPlatformIcon(cardDescription.moduleName, cardDescription.subtarget));
+                    BuildProfileModuleUtil.GetPlatformIconSmall(cardDescription.moduleName, cardDescription.subtarget));
             };
             cards.selectedIndicesChanged += (indices) =>
             {
