@@ -4,13 +4,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.LightTransport
 {
-    public struct BufferID
+    [DebuggerDisplay("BufferID({Value})")]
+    public struct BufferID : IEquatable<BufferID>
     {
         public UInt64 Value;
         public BufferID(UInt64 value)
@@ -23,8 +25,17 @@ namespace UnityEngine.LightTransport
         {
             return new BufferSlice<T>(this, offset);
         }
+
+        // Value type semantics
+        public override int GetHashCode() => Value.GetHashCode();
+        public bool Equals(BufferID other) => other.Value == Value;
+        public override bool Equals(object obj) => obj is BufferID other && Equals(other);
+        public static bool operator ==(BufferID a, BufferID b) => a.Equals(b);
+        public static bool operator !=(BufferID a, BufferID b) => !a.Equals(b);
+
     }
-    public struct BufferSlice<T>
+    [DebuggerDisplay("BufferSlice(Id: {Id.Value}, Offset: {Offset})")]
+    public struct BufferSlice<T> : IEquatable<BufferSlice<T>>
         where T : struct
     {
         public BufferSlice(BufferID id, UInt64 offset)
@@ -59,14 +70,29 @@ namespace UnityEngine.LightTransport
 
             return new BufferSlice<U>(Id, newOffset);
         }
+
+        // Value type semantics
+        public override int GetHashCode() => HashCode.Combine(Id, Offset);
+        public bool Equals(BufferSlice<T> other) => other.Id == Id && other.Offset == Offset;
+        public override bool Equals(object obj) => obj is BufferSlice<T> other && Equals(other);
+        public static bool operator ==(BufferSlice<T> a, BufferSlice<T> b) => a.Equals(b);
+        public static bool operator !=(BufferSlice<T> a, BufferSlice<T> b) => !a.Equals(b);
     }
-    public struct EventID
+    [DebuggerDisplay("EventID({Value})")]
+    public struct EventID : IEquatable<EventID>
     {
         public UInt64 Value;
         public EventID(UInt64 value)
         {
             Value = value;
         }
+
+        // Value type semantics
+        public override int GetHashCode() => Value.GetHashCode();
+        public bool Equals(EventID other) => other.Value == Value;
+        public override bool Equals(object obj) => obj is EventID other && Equals(other);
+        public static bool operator ==(EventID a, EventID b) => a.Equals(b);
+        public static bool operator !=(EventID a, EventID b) => !a.Equals(b);
     }
     /// <summary>
     /// Buffer and command queue abstraction layer hiding the underlying storage
@@ -82,14 +108,6 @@ namespace UnityEngine.LightTransport
         bool IsCompleted(EventID id);
         bool Wait(EventID id);
         bool Flush();
-    }
-    public static class DeviceContextExtensions
-    {
-        public static EventID WriteBuffer<T>(this IDeviceContext context, BufferID dst, NativeArray<T> src)
-            where T : struct => context.WriteBuffer(new BufferSlice<T>(dst, 0), src);
-
-        public static EventID ReadBuffer<T>(this IDeviceContext context, BufferID src, NativeArray<T> dst)
-            where T : struct => context.ReadBuffer(new BufferSlice<T>(src, 0), dst);
     }
     [StructLayout(LayoutKind.Sequential)]
     public class ReferenceContext : IDeviceContext

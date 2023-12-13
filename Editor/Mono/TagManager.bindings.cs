@@ -80,29 +80,10 @@ namespace UnityEditor
         static extern void Internal_GetDefinedLayers([Out] string[] layerNames, [Out] int[] layerValues);
 
         [NativeMethod]
-        internal extern bool TrySetRenderingLayerName(int index, string name);
-
-        [NativeMethod]
         internal extern bool IsIndexReservedForDefaultRenderingLayer(int index);
 
-        [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
-        internal static extern int GetDefinedRenderingLayerCount();
-
-        [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
-        internal static extern int GetLastDefinedRenderingLayerIndex();
-
-        internal static void GetDefinedRenderingLayers(out string[] renderingLayerNames, out int[] renderingLayerValues)
-        {
-            var definedLayerCount = GetDefinedRenderingLayerCount();
-
-            renderingLayerNames = new string[definedLayerCount];
-            renderingLayerValues = new int[definedLayerCount];
-
-            Internal_GetDefinedRenderingLayers(renderingLayerNames, renderingLayerValues);
-        }
-
-        [FreeFunction("GetTagManager().GetDefinedRenderingLayers")]
-        static extern void Internal_GetDefinedRenderingLayers([Out] string[] layerNames, [Out] int[] layerValues);
+        [FreeFunction("GetTagManager().TrySetRenderingLayerName")]
+        internal static extern bool TrySetRenderingLayerName(int index, string name);
 
         [NativeMethod]
         internal extern int StringToRenderingLayer(string name);

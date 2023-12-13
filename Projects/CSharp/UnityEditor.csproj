@@ -752,6 +752,9 @@
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfilePlatformSettingsBase.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfilePlatformSettingsBase.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileRenameOverlay.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfileRenameOverlay.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileSceneListTreeView.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfileSceneListTreeView.cs</Link>
     </Compile>
@@ -977,8 +980,14 @@
     <Compile Include="..\..\Editor\Mono\EditorGUI.EnumMaskField.deprecated.cs">
       <Link>Editor\Mono\EditorGUI.EnumMaskField.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorGUI.RenderPipeline.cs">
+      <Link>Editor\Mono\EditorGUI.RenderPipeline.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\EditorGUI.cs">
       <Link>Editor\Mono\EditorGUI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorGUILayout.RenderPipeline.cs">
+      <Link>Editor\Mono\EditorGUILayout.RenderPipeline.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\EditorGUILayout.cs">
       <Link>Editor\Mono\EditorGUILayout.cs</Link>
@@ -4402,6 +4411,9 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\AssemblyInfo.cs">
       <Link>Modules\BuildProfileEditor\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\AssetImportOverridesWindow.cs">
+      <Link>Modules\BuildProfileEditor\AssetImportOverridesWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\BuildProfileEditor.cs">
       <Link>Modules\BuildProfileEditor\BuildProfileEditor.cs</Link>
@@ -10838,7 +10850,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_dc19/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_50cc/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

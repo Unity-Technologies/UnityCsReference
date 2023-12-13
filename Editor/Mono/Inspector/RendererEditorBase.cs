@@ -307,40 +307,6 @@ namespace UnityEditor
             }
         }
 
-        private static string[] m_DefaultRenderingLayerNames;
-        internal static string[] defaultRenderingLayerNames
-        {
-            get
-            {
-                if (m_DefaultRenderingLayerNames == null)
-                {
-                    m_DefaultRenderingLayerNames = new string[32];
-                    for (int i = 0; i < m_DefaultRenderingLayerNames.Length; ++i)
-                    {
-                        m_DefaultRenderingLayerNames[i] = string.Format("Layer{0}", i + 1);
-                    }
-                }
-                return m_DefaultRenderingLayerNames;
-            }
-        }
-
-        private static string[] m_DefaultPrefixedRenderingLayerNames;
-        internal static string[] defaultPrefixedRenderingLayerNames
-        {
-            get
-            {
-                if (m_DefaultPrefixedRenderingLayerNames == null)
-                {
-                    m_DefaultPrefixedRenderingLayerNames = new string[32];
-                    for (int i = 0; i < m_DefaultPrefixedRenderingLayerNames.Length; ++i)
-                    {
-                        m_DefaultPrefixedRenderingLayerNames[i] = string.Format("{0}: {1}", i, defaultRenderingLayerNames[i]);
-                    }
-                }
-                return m_DefaultPrefixedRenderingLayerNames;
-            }
-        }
-
         private SerializedProperty m_SortingOrder;
         private SerializedProperty m_SortingLayerID;
         private SerializedProperty m_DynamicOccludee;
@@ -490,47 +456,34 @@ namespace UnityEditor
 
         internal static void DrawRenderingLayer(SerializedProperty layerMask, Renderer target, Object[] targets, bool useMiniStyle = false)
         {
-            RenderPipelineAsset srpAsset = GraphicsSettings.currentRenderPipeline;
-            bool usingSRP = srpAsset != null;
-            if (!usingSRP || target == null)
+            if (!GraphicsSettings.isScriptableRenderPipelineEnabled || target == null)
                 return;
 
-            EditorGUI.showMixedValue = layerMask.hasMultipleDifferentValues;
+            using var changeScope = new EditorGUI.ChangeCheckScope();
 
-            var renderer = target;
-            var mask = (int)renderer.renderingLayerMask;
-            var layerNames = srpAsset.prefixedRenderingLayerMaskNames;
-            if (layerNames == null)
-                layerNames = defaultPrefixedRenderingLayerNames;
-
-            EditorGUI.BeginChangeCheck();
-
+            var mask = target.renderingLayerMask;
             var rect = EditorGUILayout.GetControlRect();
-            EditorGUI.BeginProperty(rect, Styles.renderingLayerMask, layerMask);
             if (useMiniStyle)
             {
                 rect = ModuleUI.PrefixLabel(rect, Styles.renderingLayerMask);
-                mask = EditorGUI.MaskField(rect, GUIContent.none, mask, layerNames,
-                    ParticleSystemStyles.Get().popup);
+                mask = EditorGUI.RenderingLayerMaskField(rect, GUIContent.none, mask, ParticleSystemStyles.Get().popup);
             }
             else
-                mask = EditorGUI.MaskField(rect, Styles.renderingLayerMask, mask, layerNames);
-            EditorGUI.EndProperty();
+                mask = EditorGUI.RenderingLayerMaskField(rect,Styles.renderingLayerMask, mask);
 
-            if (EditorGUI.EndChangeCheck())
+            if (changeScope.changed)
             {
                 Undo.RecordObjects(targets, "Set rendering layer mask");
-                foreach (var t in targets)
+                for (var i = 0; i < targets.Length; i++)
                 {
+                    var t = targets[i];
                     var r = t as Renderer;
-                    if (r != null)
-                    {
-                        r.renderingLayerMask = (uint)mask;
-                        EditorUtility.SetDirty(t);
-                    }
+                    if (r == null)
+                        continue;
+                    r.renderingLayerMask = mask;
+                    EditorUtility.SetDirty(t);
                 }
             }
-            EditorGUI.showMixedValue = false;
         }
 
         internal static void DrawRendererPriority(SerializedProperty rendererPrority, bool useMiniStyle = false)
@@ -602,7 +555,7 @@ namespace UnityEditor
                                     buildFlags = buildFlags | (int)type;
                                 }
                             }
-                                
+
                         }
 
                         if (EditorGUI.EndChangeCheck())
@@ -613,7 +566,7 @@ namespace UnityEditor
                                 m_RayTracingAccelStructBuildFlags.intValue = buildFlags;
                         }
                     }
-                    
+
                     EditorGUI.indentLevel--;
                 }
                 EditorGUILayout.EndFoldoutHeaderGroup();

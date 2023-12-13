@@ -63,7 +63,6 @@ namespace UnityEditor
         private static readonly int s_ColorHash = "s_ColorHash".GetHashCode();
         private static readonly int s_CurveHash = "s_CurveHash".GetHashCode();
         private static readonly int s_LayerMaskField = "s_LayerMaskField".GetHashCode();
-        private static readonly int s_RenderingLayerMaskField = "s_RenderingLayerMaskField".GetHashCode();
         private static readonly int s_MaskField = "s_MaskField".GetHashCode();
         private static readonly int s_EnumFlagsField = "s_EnumFlagsField".GetHashCode();
         private static readonly int s_GenericField = "s_GenericField".GetHashCode();
@@ -6606,7 +6605,7 @@ namespace UnityEditor
             if (content.image != null)
             {
                 var labelRect = position;
-                int iconSize = (int) (content.image.width / EditorGUIUtility.pixelsPerPoint) + EditorStyles.helpBox.padding.right;
+                int iconSize = (int) (content.image.width / EditorGUIUtility.pixelsPerPoint);
                 labelRect.x += iconSize;
                 labelRect.width -= iconSize;
 
@@ -7136,40 +7135,6 @@ namespace UnityEditor
             var newValue = MaskFieldGUI.DoMaskField(position, id, unchecked((int)layers), s_LayerNames, s_LayerValues, style);
             if (EditorGUI.EndChangeCheck() && property != null)
                 property.intValue = newValue;
-            return unchecked((uint)newValue);
-        }
-
-        // Make a field for rendering layer masks.
-        internal static void RenderingLayerMaskField(Rect position, SerializedProperty property, GUIContent label, GUIStyle style)
-        {
-            RenderingLayerMaskField(position, property.uintValue, property, label, style);
-        }
-
-        internal static void RenderingLayerMaskField(Rect position, SerializedProperty property, GUIContent label)
-        {
-            RenderingLayerMaskField(position, property.uintValue, property, label, EditorStyles.layerMaskField);
-        }
-
-        internal static RenderingLayerMask RenderingLayerMaskField(Rect position, RenderingLayerMask layers, GUIContent label)
-        {
-            return RenderingLayerMaskField(position, layers, null, label, EditorStyles.layerMaskField);
-        }
-
-        internal static uint RenderingLayerMaskField(Rect position, UInt32 layers, SerializedProperty property, GUIContent label, GUIStyle style)
-        {
-            var id = GUIUtility.GetControlID(s_RenderingLayerMaskField, FocusType.Keyboard, position);
-            if (label != null)
-                position = PrefixLabel(position, id, label);
-
-            TagManager.GetDefinedRenderingLayers(out var renderingLayerNames, out var renderingLayerValues);
-
-            using var scope = new MixedValueScope();
-
-            BeginChangeCheck();
-            var newValue = MaskFieldGUI.DoMaskField(position, id, unchecked((int)layers), renderingLayerNames, renderingLayerValues, style);
-            if (EndChangeCheck() && property != null)
-                property.FindPropertyRelative("m_Bits").uintValue = (uint)newValue;
-
             return unchecked((uint)newValue);
         }
 
@@ -7704,6 +7669,23 @@ namespace UnityEditor
                     {
                         TagManager.GetDefinedLayers(ref m_FlagNames, ref m_FlagValues);
                         MaskFieldGUI.GetMaskButtonValue(property.intValue, m_FlagNames, m_FlagValues, out var toggleLabel, out var toggleLabelMixed);
+                        if (label != null)
+                            position = PrefixLabel(position, label, EditorStyles.label);
+
+                        var toggleLabelContent = property.hasMultipleDifferentValues ? mixedValueContent : MaskFieldGUI.DoMixedLabel(toggleLabel, toggleLabelMixed, position, EditorStyles.layerMaskField);
+                        bool toggled = DropdownButton(position, toggleLabelContent, FocusType.Keyboard, EditorStyles.layerMaskField);
+                        if (toggled)
+                        {
+                            PopupWindowWithoutFocus.Show(position, new MaskFieldDropDown(property));
+                            GUIUtility.ExitGUI();
+                        }
+                        break;
+                    }
+                    case SerializedPropertyType.RenderingLayerMask:
+                    {
+                        var names = RenderingLayerMask.GetDefinedRenderingLayerNames();
+                        var values = RenderingLayerMask.GetDefinedRenderingLayerValues();
+                        MaskFieldGUI.GetMaskButtonValue((int) property.uintValue, names, values, out var toggleLabel, out var toggleLabelMixed);
                         if (label != null)
                             position = PrefixLabel(position, label, EditorStyles.label);
 

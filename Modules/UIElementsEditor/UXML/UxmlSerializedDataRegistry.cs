@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -15,14 +16,15 @@ namespace UnityEditor.UIElements
     {
         const string k_DefaultDependencyPrefix = "UxmlSerializedData/";
 
-        private static bool s_Registered;
+        static bool s_Registered;
 
-        // We use a sorted dictionary so that the UI Builder Library (ImportUxmlSerializedDataFromSource) can process the namespaces together.
-        public static Dictionary<string, Type> SerializedDataTypes { get; } = new Dictionary<string, Type>();
-        private static Dictionary<string, UxmlSerializedDataDescription> s_DescriptionsCache = new Dictionary<string, UxmlSerializedDataDescription>();
+        static readonly Dictionary<string, Type> s_MovedTypes = new();
+        static readonly Dictionary<string, UxmlSerializedDataDescription> s_DescriptionsCache = new();
+
+        public static Dictionary<string, Type> SerializedDataTypes { get; } = new();
 
         [UsedImplicitly, InitializeOnLoadMethod]
-        private static void RegisterDependencies()
+        internal static void RegisterDependencies()
         {
             // No need to register custom dependencies when going to play mode
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -42,6 +44,8 @@ namespace UnityEditor.UIElements
         public static void ClearCache()
         {
             SerializedDataTypes.Clear();
+            s_MovedTypes.Clear();
+
             s_Registered = false;
 
             ClearDescriptionCache();
@@ -61,7 +65,7 @@ namespace UnityEditor.UIElements
             if (s_DescriptionsCache.TryGetValue(typeName, out var desc))
                 return desc;
 
-            if (!SerializedDataTypes.TryGetValue(typeName, out var type))
+            if (!SerializedDataTypes.TryGetValue(typeName, out var type) && !s_MovedTypes.TryGetValue(typeName, out type))
                 return null;
 
             desc = UxmlSerializedDataDescription.Create(type);
@@ -77,38 +81,53 @@ namespace UnityEditor.UIElements
                 return;
 
             var types = TypeCache.GetTypesDerivedFrom<UxmlSerializedData>();
-            foreach (var type in types)
+            foreach (var serializedDataType in types)
             {
-                var attributes = type.Attributes;
+                var attributes = serializedDataType.Attributes;
                 if ((attributes & TypeAttributes.Abstract) != 0)
                     continue;
 
-                var declaringType = type.DeclaringType;
+                var declaringType = serializedDataType.DeclaringType;
 
                 var uxmlElementAttribute = declaringType.GetCustomAttribute<UxmlElementAttribute>();
                 if (uxmlElementAttribute != null && !string.IsNullOrEmpty(uxmlElementAttribute.name))
                 {
                     if (string.IsNullOrEmpty(declaringType.Namespace))
-                        RegisterType(uxmlElementAttribute.name, type);
+                        RegisterType(uxmlElementAttribute.name, serializedDataType);
                     else
-                        RegisterType($"{declaringType.Namespace}.{uxmlElementAttribute.name}", type);
+                        RegisterType($"{declaringType.Namespace}.{uxmlElementAttribute.name}", serializedDataType);
                 }
 
-                RegisterType(declaringType.FullName, type);
+                RegisterType(declaringType.FullName, serializedDataType);
             }
 
             s_Registered = true;
         }
 
-        static void RegisterType(string typeName, Type type)
+        static void RegisterType(string typeName, Type serializedDataType)
         {
             if (SerializedDataTypes.TryGetValue(typeName, out var desc))
             {
-                Debug.LogError($"A UxmlElement for the type {typeName} in the assembly {type.Assembly.GetName().Name} was already registered from another assembly {desc.Assembly.GetName().Name}.");
+                Debug.LogError($"A UxmlElement for the type {typeName} in the assembly {serializedDataType.Assembly.GetName().Name} was already registered from another assembly {desc.Assembly.GetName().Name}.");
                 return;
             }
 
-            SerializedDataTypes[typeName] = type;
+            SerializedDataTypes[typeName] = serializedDataType;
+
+            // Check for MovedFromAttribute
+            var elementType = serializedDataType.DeclaringType;
+            var movedFromAttribute = elementType.GetCustomAttribute<MovedFromAttribute>();
+            if (movedFromAttribute != null)
+            {
+                var fullOldName = VisualElementFactoryRegistry.GetMovedUIControlTypeName(elementType, movedFromAttribute);
+                if (s_MovedTypes.TryGetValue(fullOldName, out var conflict))
+                {
+                    Debug.LogError($"The UxmlElement for the type {typeName} contains a MovedFromAttribute with the old name {fullOldName} which is already registered to {conflict.DeclaringType.FullName}.");
+                    return;
+                }
+
+                s_MovedTypes[fullOldName] = serializedDataType;
+            }
         }
     }
 }

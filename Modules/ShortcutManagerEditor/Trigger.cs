@@ -115,7 +115,10 @@ namespace UnityEditor.ShortcutManagement
 
             // Use the event and return if the key is currently used in an active clutch
             if (m_ActiveClutches.ContainsKey(evt.keyCode))
+            {
+                evt.Use();
                 return;
+            }
 
             var keyCodeCombination = KeyCombination.FromInput(evt);
             m_KeyCombinationSequence.Add(keyCodeCombination);

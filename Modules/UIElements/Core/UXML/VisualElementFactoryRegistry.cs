@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
         private static Dictionary<string, List<IUxmlFactory>> s_Factories;
         private static Dictionary<string, List<IUxmlFactory>> s_MovedTypesFactories;
 
-        private static string GetMovedUIControlTypeName(Type type, MovedFromAttribute attr)
+        internal static string GetMovedUIControlTypeName(Type type, MovedFromAttribute attr)
         {
             if (type == null)
                 return string.Empty;

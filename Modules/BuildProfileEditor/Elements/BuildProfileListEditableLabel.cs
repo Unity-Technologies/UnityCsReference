@@ -14,21 +14,28 @@ namespace UnityEditor.Build.Profile.Elements
     internal class BuildProfileListEditableLabel : BuildProfileListLabel
     {
         protected override string k_Uxml => "BuildProfile/UXML/BuildProfileEditableLabelElement.uxml";
+
         bool m_IsIndicatorActiveOnEdit;
         TextField m_TextField;
         Func<object, string, bool> m_OnNameChanged;
+        BuildProfileRenameOverlay m_RenameOverlay;
 
         internal BuildProfileListEditableLabel(Func<object, string, bool> onNameChanged)
         {
             m_OnNameChanged = onNameChanged;
             m_TextField = this.Q<TextField>("profile-list-text-field");
             m_TextField.RegisterCallback<FocusOutEvent>(OnEditTextFinished);
+            m_TextField.RegisterValueChangedCallback(OnTextFieldValueChange);
             m_TextField.Hide();
+
+            m_RenameOverlay = new BuildProfileRenameOverlay(m_TextField);
         }
 
-        ~BuildProfileListEditableLabel()
+        internal void UnbindItem()
         {
             m_TextField.UnregisterCallback<FocusOutEvent>(OnEditTextFinished);
+            m_TextField.UnregisterValueChangedCallback(OnTextFieldValueChange);
+            m_RenameOverlay.OnRenameEnd();
         }
 
         internal void EditName()
@@ -51,16 +58,22 @@ namespace UnityEditor.Build.Profile.Elements
             m_TextField.Hide();
 
             if (m_OnNameChanged.Invoke(dataSource, m_TextField.value))
-            {
                 m_Text.text = m_TextField.value;
-            }
 
             m_Text.Show();
 
             if (m_IsIndicatorActiveOnEdit)
-            {
                 SetActiveIndicator(true);
-            }
+
+            m_RenameOverlay.OnRenameEnd();
+        }
+
+        void OnTextFieldValueChange(ChangeEvent<string> evt)
+        {
+            if (string.IsNullOrEmpty(evt.newValue))
+                return;
+
+            m_RenameOverlay.OnNameChanged(evt.previousValue, evt.newValue);
         }
     }
 }

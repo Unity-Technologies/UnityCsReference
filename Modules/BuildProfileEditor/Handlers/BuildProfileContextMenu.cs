@@ -2,9 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.IO;
+using System;
 using UnityEditor.Build.Profile.Elements;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Profile.Handlers
@@ -21,9 +20,9 @@ namespace UnityEditor.Build.Profile.Handlers
         static readonly string k_DeleteTitle = L10n.Tr("Delete Active Build Profile");
         static readonly string k_DeleteMessage = L10n.Tr("This will delete your active build profile and activate the respective platform build profile. This cannot be undone.");
 
-        BuildProfileWindowSelection m_ProfileSelection;
-        BuildProfileDataSource m_ProfileDataSource;
-        BuildProfileWindow m_ProfileWindow;
+        readonly BuildProfileWindowSelection m_ProfileSelection;
+        readonly BuildProfileDataSource m_ProfileDataSource;
+        readonly BuildProfileWindow m_ProfileWindow;
 
         internal BuildProfileContextMenu(BuildProfileWindow window, BuildProfileWindowSelection profileSelection, BuildProfileDataSource profileDataSource)
         {
@@ -93,21 +92,26 @@ namespace UnityEditor.Build.Profile.Handlers
             if (buildProfile == null || string.IsNullOrEmpty(buildProfileLabelName))
                 return false;
 
-            char[] invalidChars = Path.GetInvalidFileNameChars();
-            foreach (var character in invalidChars)
-            {
-                if (buildProfileLabelName.Contains(character))
-                {
-                    Debug.LogWarning($"A file name can't contain the following character:\t{character}");
-                    return false;
-                }
-            }
-
             string newName = buildProfileLabelName;
             m_ProfileDataSource.RenameAsset(buildProfile, newName);
             m_ProfileSelection.ClearListViewSelection(BuildProfileWindowSelection.ListViewSelectionType.ClassicAndCustom);
             SelectBuildProfileInView(buildProfile, isClassic: false, shouldAppend: false);
             return true;
+        }
+
+        internal void HandleDuplicateSelectedProfiles(bool duplicateClassic)
+        {
+            var selectedProfiles = m_ProfileSelection.GetAll();
+            var duplicatedProfiles = m_ProfileDataSource.DuplicateProfiles(selectedProfiles, duplicateClassic);
+
+            m_ProfileWindow.RepaintAndClearSelection();
+
+            for (int i = 0; i < duplicatedProfiles.Count; ++i)
+            {
+                var duplicated = duplicatedProfiles[i];
+                bool shouldAppend = i > 0;
+                SelectBuildProfileInView(duplicated, isClassic: false, shouldAppend);
+            }
         }
 
         internal void SelectClassicBuildProfileInViewForModule(string moduleName)
@@ -133,21 +137,6 @@ namespace UnityEditor.Build.Profile.Handlers
             var index = targetProfiles.IndexOf(buildProfile);
             if (index >= 0)
                 m_ProfileSelection.SelectBuildProfileInViewByIndex(index, isClassic, shouldAppend);
-        }
-
-        void HandleDuplicateSelectedProfiles(bool duplicateClassic)
-        {
-            var selectedProfiles = m_ProfileSelection.GetAll();
-            var duplicatedProfiles = m_ProfileDataSource.DuplicateProfiles(selectedProfiles, duplicateClassic);
-
-            m_ProfileWindow.RepaintAndClearSelection();
-
-            for (int i = 0; i < duplicatedProfiles.Count; ++i)
-            {
-                var duplicated = duplicatedProfiles[i];
-                bool shouldAppend = i > 0;
-                SelectBuildProfileInView(duplicated, isClassic: false, shouldAppend);
-            }
         }
 
         void HandleDeleteSelectedProfiles()

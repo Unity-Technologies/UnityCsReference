@@ -160,6 +160,8 @@ namespace UnityEditor
             GetWindow<BuildPlayerWindow>(false, "Build Settings");
         }
 
+        internal static bool WillDrawMultiplayerBuildOptions() => drawingMultiplayerBuildOptions != null;
+
         internal static void DrawMultiplayerBuildOption(NamedBuildTarget namedBuildTarget)
         {
             drawingMultiplayerBuildOptions?.Invoke(namedBuildTarget);

@@ -303,12 +303,6 @@ namespace UnityEditor
         VisualElement SetupRenderingLayers(VisualElement content, SerializedProperty renderingLayersProperty)
         {
             var renderingLayers = content.Q<ListView>("RenderingLayers");
-            if (!Unsupported.IsDeveloperMode())
-            {
-                renderingLayers.style.display = DisplayStyle.None;
-                return renderingLayers;
-            }
-
             renderingLayers.fixedItemHeight = Styles.elementHeight;
             renderingLayers.headerTitle = Styles.renderingLayers.text;
             renderingLayers.makeItem = () => new TextField();

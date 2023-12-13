@@ -153,7 +153,7 @@ namespace UnityEngine.Rendering
             enableTriangleCulling = true;
             frontTriangleCounterClockwise = false;
             layer = 0;
-            renderingLayerMask = GraphicsSettings.defaultRenderingLayerMask;
+            renderingLayerMask = RenderingLayerMask.defaultRenderingLayerMask;
             mask = 0xFF;
             motionVectorMode = MotionVectorGenerationMode.Camera;
             lightProbeUsage = LightProbeUsage.Off;
@@ -173,7 +173,7 @@ namespace UnityEngine.Rendering
             enableTriangleCulling = true;
             frontTriangleCounterClockwise = false;
             layer = 0;
-            renderingLayerMask = GraphicsSettings.defaultRenderingLayerMask;
+            renderingLayerMask = RenderingLayerMask.defaultRenderingLayerMask;
             mask = 0xFF;
             motionVectorMode = MotionVectorGenerationMode.Camera;
             lightProbeUsage = LightProbeUsage.Off;
@@ -262,7 +262,7 @@ namespace UnityEngine.Rendering
             enableTriangleCulling = true;
             frontTriangleCounterClockwise = false;
             layer = 0;
-            renderingLayerMask = GraphicsSettings.defaultRenderingLayerMask;
+            renderingLayerMask = RenderingLayerMask.defaultRenderingLayerMask;
             mask = 0xFF;
             motionVectorMode = MotionVectorGenerationMode.Camera;
             lightProbeUsage = LightProbeUsage.Off;
@@ -287,7 +287,7 @@ namespace UnityEngine.Rendering
             enableTriangleCulling = true;
             frontTriangleCounterClockwise = false;
             layer = 0;
-            renderingLayerMask = GraphicsSettings.defaultRenderingLayerMask;
+            renderingLayerMask = RenderingLayerMask.defaultRenderingLayerMask;
             mask = 0xFF;
             motionVectorMode = MotionVectorGenerationMode.Camera;
             lightProbeUsage = LightProbeUsage.Off;
@@ -338,13 +338,13 @@ namespace UnityEngine.Rendering
             Automatic   = 1,    // New renderers are added automatically based on a RayTracingModeMask.
         }
 
-        public struct BuildSettings 
+        public struct BuildSettings
         {
-            public RayTracingAccelerationStructureBuildFlags buildFlags { get; set; } 
-            public Vector3 relativeOrigin { get; set; } 
+            public RayTracingAccelerationStructureBuildFlags buildFlags { get; set; }
+            public Vector3 relativeOrigin { get; set; }
             public BuildSettings()
             {
-                buildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;                
+                buildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
                 relativeOrigin = Vector3.zero;
             }
             public BuildSettings(RayTracingAccelerationStructureBuildFlags buildFlags, Vector3 relativeOrigin)
@@ -367,7 +367,7 @@ namespace UnityEngine.Rendering
                 this.layerMask = layerMask;
             }
         }
-		
+
         public struct Settings
         {
             public ManagementMode managementMode;
@@ -427,7 +427,7 @@ namespace UnityEngine.Rendering
 
             m_Ptr = IntPtr.Zero;
         }
-        
+
         public RayTracingAccelerationStructure(Settings settings)
         {
             m_Ptr = Create(settings);
@@ -443,7 +443,7 @@ namespace UnityEngine.Rendering
                 buildFlagsStaticGeometries = RayTracingAccelerationStructureBuildFlags.PreferFastTrace,
                 buildFlagsDynamicGeometries = RayTracingAccelerationStructureBuildFlags.PreferFastTrace
             };
-            
+
             m_Ptr = Create(settings);
         }
 
@@ -457,7 +457,7 @@ namespace UnityEngine.Rendering
 #pragma warning restore 414
 
         public void Build()
-        {            
+        {
             Build(new BuildSettings());
         }
 
@@ -475,9 +475,9 @@ namespace UnityEngine.Rendering
         {
             return AddInstanceSubMeshFlagsArray(targetRenderer, subMeshFlags, enableTriangleCulling, frontTriangleCounterClockwise, mask, id);
         }
-         
+
         public int AddInstance(RayTracingAABBsInstanceConfig config, Matrix4x4 matrix, uint id = 0xFFFFFFFF)
-        {         
+        {
             if (config.aabbBuffer == null)
                 throw new ArgumentNullException("config.aabbBuffer.");
 
@@ -727,7 +727,7 @@ namespace UnityEngine.Rendering
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::Build", HasExplicitThis = true)]
         extern public void Build(BuildSettings buildSettings);
- 
+
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddVFXInstances", HasExplicitThis = true)]
         extern public void AddVFXInstances([NotNull] Renderer targetRenderer, uint[] vfxSystemMasks);
 
@@ -755,7 +755,7 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("RayTracingAccelerationStructure_Bindings::Destroy")]
         extern private static void Destroy(RayTracingAccelerationStructure accelStruct);
-       
+
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::RemoveInstance", HasExplicitThis = true)]
         extern private void RemoveInstance_Renderer([NotNull] Renderer targetRenderer);
 

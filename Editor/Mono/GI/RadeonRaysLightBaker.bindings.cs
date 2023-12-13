@@ -16,11 +16,13 @@ namespace UnityEditor.LightBaking
         [NativeMethod(IsThreadSafe = true)]
         internal static extern unsafe Result IntegrateProbeDirectRadianceRadeonRays(void* positions, UnityEngine.LightTransport.IntegrationContext integrationContext,
             int positionOffset, int positionCount, float pushoff, int bounceCount, int directSampleCount, int giSampleCount, int envSampleCount,
+            bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment,
             UnityEngine.LightTransport.RadeonRaysContext context, UnityEngine.LightTransport.BakeProgressState progress, void* radianceBufferOut);
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern unsafe Result IntegrateProbeIndirectRadianceRadeonRays(void* positions, UnityEngine.LightTransport.IntegrationContext integrationContext,
             int positionOffset, int positionCount, float pushoff, int bounceCount, int directSampleCount, int giSampleCount, int envSampleCount,
+            bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment,
             UnityEngine.LightTransport.RadeonRaysContext context, UnityEngine.LightTransport.BakeProgressState progress, void* radianceBufferOut);
 
         [NativeMethod(IsThreadSafe = true)]

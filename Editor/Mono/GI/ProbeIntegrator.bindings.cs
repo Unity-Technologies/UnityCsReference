@@ -42,8 +42,10 @@ namespace UnityEngine.LightTransport
         }
         public void Prepare(IDeviceContext context, IWorld world, BufferSlice<Vector3> positions, float pushoff, int bounceCount);
         public void SetProgressReporter(BakeProgressState progress);
-        public Result IntegrateDirectRadiance(IDeviceContext context, int positionOffset, int positionCount, int sampleCount, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut);
-        public Result IntegrateIndirectRadiance(IDeviceContext context, int positionOffset, int positionCount, int sampleCount, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut);
+        public Result IntegrateDirectRadiance(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
+            bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut);
+        public Result IntegrateIndirectRadiance(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
+            bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut);
         public Result IntegrateValidity(IDeviceContext context, int positionOffset, int positionCount, int sampleCount, BufferSlice<float> validityEstimateOut);
     }
     internal class WintermuteProbeIntegrator : IProbeIntegrator
@@ -53,10 +55,6 @@ namespace UnityEngine.LightTransport
         private float _pushoff;
         private int _bounceCount;
         BakeProgressState _progress = null;
-        const int sizeOfFloat = 4;
-        const int SHL2RGBElements = 3 * 9;
-        const int sizeOfSHL2 = sizeOfFloat * SHL2RGBElements;
-        const int sizeOfVector3 = sizeOfFloat * 3;
         public void Prepare(IDeviceContext context, IWorld world, BufferSlice<Vector3> positions, float pushoff, int bounceCount)
         {
             Debug.Assert(world is WintermuteWorld);
@@ -70,51 +68,52 @@ namespace UnityEngine.LightTransport
         {
             _progress = progress;
         }
-        public unsafe IProbeIntegrator.Result IntegrateDirectRadiance(IDeviceContext context,
-            int positionOffset, int positionCount, int sampleCount, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
+        public unsafe IProbeIntegrator.Result IntegrateDirectRadiance(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
+            bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
         {
             Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
             var wmContext = context as WintermuteContext;
-            using var positions = new NativeArray<Vector3>(positionCount, Allocator.TempJob);
-            EventID eventId = context.ReadBuffer(_positions.Id, positions.Reinterpret<byte>(sizeOfVector3));
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            EventID eventId = context.ReadBuffer(_positions, positions);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
             UnityEngine.Vector3* positionsPtr = (Vector3*)NativeArrayUnsafeUtility.GetUnsafePtr(positions);
-            var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.TempJob);
+            using var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* shPtr = NativeArrayUnsafeUtility.GetUnsafePtr(radianceBuffer);
             int directSampleCount = sampleCount;
-            int giSampleCount = sampleCount;
-            int envSampleCount = sampleCount;
+            int giSampleCount = 0;
+            int envSampleCount = 0;
             var lightBakerResult = LightBaker.IntegrateProbeDirectRadianceWintermute(positionsPtr, integrationContext, positionOffset, positionCount, _pushoff,
-                _bounceCount, directSampleCount, giSampleCount, envSampleCount, wmContext, _progress, shPtr);
+                _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, wmContext, _progress, shPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
-            eventId = context.WriteBuffer(radianceEstimateOut.Id, radianceBuffer.Reinterpret<byte>(sizeOfSHL2));
+            eventId = context.WriteBuffer(radianceEstimateOut, radianceBuffer);
             waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
 
             return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
         public unsafe IProbeIntegrator.Result IntegrateIndirectRadiance(IDeviceContext context,
-            int positionOffset, int positionCount, int sampleCount, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
+            int positionOffset, int positionCount, int sampleCount, bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment,
+            BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
         {
             Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
             var wmContext = context as WintermuteContext;
-            using var positions = new NativeArray<Vector3>(positionCount, Allocator.TempJob);
-            EventID eventId = context.ReadBuffer(_positions.Id, positions.Reinterpret<byte>(sizeOfVector3));
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            EventID eventId = context.ReadBuffer(_positions, positions);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
             UnityEngine.Vector3* positionsPtr = (Vector3*)NativeArrayUnsafeUtility.GetUnsafePtr(positions);
-            var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.TempJob);
+            using var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* shPtr = NativeArrayUnsafeUtility.GetUnsafePtr(radianceBuffer);
-            int directSampleCount = sampleCount;
+            int directSampleCount = 0;
             int giSampleCount = sampleCount;
-            int envSampleCount = sampleCount;
+            int envSampleCount = ignoreIndirectEnvironment ? 0 : sampleCount;
             var lightBakerResult = LightBaker.IntegrateProbeIndirectRadianceWintermute(positionsPtr, integrationContext, positionOffset, positionCount, _pushoff,
-                _bounceCount, directSampleCount, giSampleCount, envSampleCount, wmContext, _progress, shPtr);
+                _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, wmContext, _progress, shPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
-            eventId = context.WriteBuffer(radianceEstimateOut.Id, radianceBuffer.Reinterpret<byte>(sizeOfSHL2));
+            eventId = context.WriteBuffer(radianceEstimateOut, radianceBuffer);
             waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
 
@@ -125,21 +124,21 @@ namespace UnityEngine.LightTransport
         {
             Debug.Assert(context is WintermuteContext, "Expected RadeonRaysContext but got something else.");
             var wmContext = context as WintermuteContext;
-            using var positions = new NativeArray<Vector3>(positionCount, Allocator.TempJob);
-            EventID eventId = context.ReadBuffer(_positions.Id, positions.Reinterpret<byte>(sizeOfVector3));
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            EventID eventId = context.ReadBuffer(_positions, positions);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
             void* positionsPtr = NativeArrayUnsafeUtility.GetUnsafePtr(positions);
-            var validityBuffer = new NativeArray<float>(positionCount, Allocator.TempJob);
+            using var validityBuffer = new NativeArray<float>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* validityPtr = NativeArrayUnsafeUtility.GetUnsafePtr(validityBuffer);
-            int directSampleCount = sampleCount;
+            int directSampleCount = 0;
             int giSampleCount = sampleCount;
-            int envSampleCount = sampleCount;
+            int envSampleCount = 0;
             var lightBakerResult = LightBaker.IntegrateProbeValidityWintermute(positionsPtr, integrationContext, positionOffset, positionCount, _pushoff,
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, wmContext, _progress, validityPtr);
             
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
-            eventId = context.WriteBuffer(validityEstimateOut.Id, validityBuffer.Reinterpret<byte>(sizeOfFloat));
+            eventId = context.WriteBuffer(validityEstimateOut, validityBuffer);
             waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
 
@@ -173,51 +172,51 @@ namespace UnityEngine.LightTransport
         {
             _progress = progress;
         }
-        public unsafe IProbeIntegrator.Result IntegrateDirectRadiance(IDeviceContext context,
-            int positionOffset, int positionCount, int sampleCount, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
+        public unsafe IProbeIntegrator.Result IntegrateDirectRadiance(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
+            bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
         {
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
-            using var positions = new NativeArray<Vector3>(positionCount, Allocator.TempJob);
-            EventID eventId = context.ReadBuffer(_positions.Id, positions.Reinterpret<byte>(sizeOfVector3));
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            EventID eventId = context.ReadBuffer(_positions, positions);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
             UnityEngine.Vector3* positionsPtr = (Vector3*)NativeArrayUnsafeUtility.GetUnsafePtr(positions);
-            var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.TempJob);
+            using var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* shPtr = NativeArrayUnsafeUtility.GetUnsafePtr(radianceBuffer);
             int directSampleCount = sampleCount;
-            int giSampleCount = sampleCount;
-            int envSampleCount = sampleCount;
+            int giSampleCount = 0;
+            int envSampleCount = 0;
             var lightBakerResult = LightBaker.IntegrateProbeDirectRadianceRadeonRays(positionsPtr, integrationContext, positionOffset, positionCount, _pushoff,
-                _bounceCount, directSampleCount, giSampleCount, envSampleCount, rrContext, _progress, shPtr);
+                _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, rrContext, _progress, shPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
-            eventId = context.WriteBuffer(radianceEstimateOut.Id, radianceBuffer.Reinterpret<byte>(sizeOfSHL2));
+            eventId = context.WriteBuffer(radianceEstimateOut, radianceBuffer);
             waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
 
             return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
-        public unsafe IProbeIntegrator.Result IntegrateIndirectRadiance(IDeviceContext context,
-            int positionOffset, int positionCount, int sampleCount, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
+        public unsafe IProbeIntegrator.Result IntegrateIndirectRadiance(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
+            bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
         {
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
-            using var positions = new NativeArray<Vector3>(positionCount, Allocator.TempJob);
-            EventID eventId = context.ReadBuffer(_positions.Id, positions.Reinterpret<byte>(sizeOfVector3));
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            EventID eventId = context.ReadBuffer(_positions, positions);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
             UnityEngine.Vector3* positionsPtr = (Vector3*)NativeArrayUnsafeUtility.GetUnsafePtr(positions);
-            var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.TempJob);
+            using var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* shPtr = NativeArrayUnsafeUtility.GetUnsafePtr(radianceBuffer);
-            int directSampleCount = sampleCount;
+            int directSampleCount = 0;
             int giSampleCount = sampleCount;
-            int envSampleCount = sampleCount;
+            int envSampleCount = ignoreIndirectEnvironment ? 0 : sampleCount; ;
             var lightBakerResult = LightBaker.IntegrateProbeIndirectRadianceRadeonRays(positionsPtr, integrationContext, positionOffset, positionCount, _pushoff,
-                _bounceCount, directSampleCount, giSampleCount, envSampleCount, rrContext, _progress, shPtr);
+                _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, rrContext, _progress, shPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
-            eventId = context.WriteBuffer(radianceEstimateOut.Id, radianceBuffer.Reinterpret<byte>(sizeOfSHL2));
+            eventId = context.WriteBuffer(radianceEstimateOut, radianceBuffer);
             waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
 
@@ -228,21 +227,21 @@ namespace UnityEngine.LightTransport
         {
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
-            using var positions = new NativeArray<Vector3>(positionCount, Allocator.TempJob);
-            EventID eventId = context.ReadBuffer(_positions.Id, positions.Reinterpret<byte>(sizeOfVector3));
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            EventID eventId = context.ReadBuffer(_positions, positions);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
             void* positionsPtr = NativeArrayUnsafeUtility.GetUnsafePtr(positions);
-            var validityBuffer = new NativeArray<float>(positionCount, Allocator.TempJob);
+            using var validityBuffer = new NativeArray<float>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* validityPtr = NativeArrayUnsafeUtility.GetUnsafePtr(validityBuffer);
-            int directSampleCount = sampleCount;
+            int directSampleCount = 0;
             int giSampleCount = sampleCount;
-            int envSampleCount = sampleCount;
+            int envSampleCount = 0;
             var lightBakerResult = LightBaker.IntegrateProbeValidityRadeonRays(positionsPtr, integrationContext, positionOffset, positionCount, _pushoff,
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, rrContext, _progress, validityPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
-            eventId = context.WriteBuffer(validityEstimateOut.Id, validityBuffer.Reinterpret<byte>(sizeOfFloat));
+            eventId = context.WriteBuffer(validityEstimateOut, validityBuffer);
             waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to write validity to context.");
 

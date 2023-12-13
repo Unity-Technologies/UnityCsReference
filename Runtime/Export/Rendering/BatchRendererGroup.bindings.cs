@@ -175,6 +175,7 @@ namespace UnityEngine.Rendering
         LODCrossFadeKeyword = 1 << 4, // Draw command instances have LOD_FADE_CROSSFADE keyword enabled
         LODCrossFadeValuePacked = 1 << 5, // Draw command instances have a 8-bit SNORM crossfade dither factor in the highest bits of their visible instance index
         LODCrossFade = LODCrossFadeKeyword | LODCrossFadeValuePacked,
+        UseLegacyLightmapsKeyword = 1 << 6, // Draw command instances have USE_LEGACY_LIGHTMAPS keyword enabled
     }
 
     // Match with CullLightmappedShadowCasters in C++ side
@@ -270,7 +271,7 @@ namespace UnityEngine.Rendering
         public BatchID batchID;
         public BatchMaterialID materialID;
         public ushort splitVisibilityMask;
-        private ushort unusedPadding1;
+        public ushort lightmapIndex;
         public int sortingPosition; // If HasSortingPosition is set, this points to a float3 in instanceSortingPositions. If not, it will be directly casted into float and used as the distance.
         public uint visibleOffset;
 
@@ -287,7 +288,7 @@ namespace UnityEngine.Rendering
         public BatchID batchID;
         public BatchMaterialID materialID;
         public ushort splitVisibilityMask;
-        private ushort unusedPadding1;
+        public ushort lightmapIndex;
         public int sortingPosition; // If HasSortingPosition is set, this points to a float3 in instanceSortingPositions. If not, it will be directly casted into float and used as the distance.
         public uint visibleOffset;
 
@@ -307,7 +308,7 @@ namespace UnityEngine.Rendering
         public BatchID batchID;
         public BatchMaterialID materialID;
         public ushort splitVisibilityMask;
-        private ushort unusedPadding1;
+        public ushort lightmapIndex;
         public int sortingPosition; // If HasSortingPosition is set, this points to a float3 in instanceSortingPositions. If not, it will be directly casted into float and used as the distance.
         public uint visibleOffset;
 
@@ -326,7 +327,7 @@ namespace UnityEngine.Rendering
         public BatchID batchID;
         public BatchMaterialID materialID;
         public ushort splitVisibilityMask;
-        private ushort unusedPadding1;
+        public ushort lightmapIndex;
         public int sortingPosition; // If HasSortingPosition is set, this points to a float3 in instanceSortingPositions. If not, it will be directly casted into float and used as the distance.
         public uint visibleOffset;
 

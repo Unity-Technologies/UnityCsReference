@@ -616,23 +616,14 @@ namespace UnityEditor
 
             public void DrawRenderingLayerMask()
             {
-                RenderPipelineAsset srpAsset = GraphicsSettings.currentRenderPipeline;
-                bool usingSRP = srpAsset != null;
-                if (!usingSRP)
+                if (!GraphicsSettings.isScriptableRenderPipelineEnabled)
                     return;
 
-                EditorGUI.showMixedValue = renderingLayerMask.hasMultipleDifferentValues;
-
-                var mask = renderingLayerMask.intValue;
-                var layerNames = srpAsset.prefixedRenderingLayerMaskNames;
-                if (layerNames == null)
-                    layerNames = RendererEditorBase.defaultPrefixedRenderingLayerNames;
-
-                var rect = EditorGUILayout.GetControlRect();
-                EditorGUI.BeginProperty(rect, Styles.RenderingLayerMask, renderingLayerMask);
-                EditorGUI.MaskField(rect, Styles.RenderingLayerMask, mask, layerNames);
-                EditorGUI.EndProperty();
-                EditorGUI.showMixedValue = false;
+                using var changeScope = new EditorGUI.ChangeCheckScope();
+                var mask = renderingLayerMask.uintValue;
+                mask = EditorGUILayout.RenderingLayerMaskField(Styles.RenderingLayerMask, mask);
+                if (changeScope.changed)
+                    renderingLayerMask.uintValue = mask;
             }
 
             public void ApplyModifiedProperties()

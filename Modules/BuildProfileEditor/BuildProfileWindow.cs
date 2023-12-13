@@ -26,6 +26,7 @@ namespace UnityEditor.Build.Profile
     {
         const string k_DevOpsUrl = "https://unity.com/products/unity-devops?utm_medium=desktop-app&utm_source=unity-editor-window-menu&utm_content=buildsettings";
         const string k_Uxml = "BuildProfile/UXML/BuildProfileWindow.uxml";
+        const string k_PlayerSettingsWindow = "Project/Player";
 
         internal const string buildProfileClassicPlatformVisualElement = "build-profile-classic-platforms";
         internal const string buildProfileClassicPlatformMissingVisualElement = "build-profile-classic-platforms-missing";
@@ -65,10 +66,12 @@ namespace UnityEditor.Build.Profile
 
         VisualElement m_AdditionalActionsDropdown;
         DropdownButton m_BuildButton;
+        ToolbarButton m_AssetImportButton;
         Button m_BuildAndRunButton;
         Button m_ActivateButton;
-        Button m_TempOpenLegacyBuildSettingsButton;
         Button m_ClassicSceneListButton;
+        AssetImportOverridesWindow m_AssetImportWindow;
+        Background m_WarningIcon;
 
         [UsedImplicitly, RequiredByNativeCode]
         public static void ShowBuildProfileWindow()
@@ -87,6 +90,8 @@ namespace UnityEditor.Build.Profile
             var listViewAddProfileButton = rootVisualElement.Q<Button>("fallback-add-profile-button");
             var addBuildProfileButton = rootVisualElement.Q<ToolbarButton>("add-build-profile-button");
             var unityDevOpsButton = rootVisualElement.Q<ToolbarButton>("learn-more-unity-dev-ops-button");
+            var playerSettingsButton = rootVisualElement.Q<ToolbarButton>("player-settings-button");
+            m_AssetImportButton = rootVisualElement.Q<ToolbarButton>("asset-import-overrides-button");
 
             // Capture static visual element reference.
             m_AdditionalActionsDropdown = rootVisualElement.Q<VisualElement>("additional-actions-dropdown-button");
@@ -97,7 +102,6 @@ namespace UnityEditor.Build.Profile
             m_BuildProfilesListView = rootVisualElement.Q<ListView>(buildProfilesVisualElement);
             m_BuildAndRunButton = rootVisualElement.Q<Button>("build-and-run-button");
             m_ActivateButton = rootVisualElement.Q<Button>("activate-button");
-            m_TempOpenLegacyBuildSettingsButton = rootVisualElement.Q<Button>("temp-open-legacy-window-button");
             m_WelcomeMessageElement = rootVisualElement.Q<VisualElement>("fallback-no-custom-build-profiles");
             m_ClassicSceneListButton = rootVisualElement.Q<Button>("classic-scenes-in-build-button");
             m_InspectorHeader = rootVisualElement.Q<VisualElement>("build-profile-editor-header");
@@ -108,10 +112,13 @@ namespace UnityEditor.Build.Profile
             rootVisualElement.Q<Label>("fallback-welcome-label").text = TrText.buildProfileWelcome;
             addBuildProfileButton.text = TrText.addBuildProfile;
             unityDevOpsButton.text = TrText.learnMoreUnityDevOps;
+            playerSettingsButton.text = TrText.playerSettings;
             listViewAddProfileButton.text = TrText.addBuildProfile;
             m_ActivateButton.text = TrText.activate;
             m_BuildAndRunButton.text = TrText.buildAndRun;
             m_ClassicSceneListButton.text = TrText.sceneList;
+
+            UpdateToolbarButtonState();
 
             // Build dynamic visual elements.
             if (m_BuildProfileDataSource != null)
@@ -145,15 +152,46 @@ namespace UnityEditor.Build.Profile
             m_ClassicSceneListButton.clicked += OnClassicSceneListSelected;
             addBuildProfileButton.clicked += PlatformDiscoveryWindow.ShowWindow;
             listViewAddProfileButton.clicked += PlatformDiscoveryWindow.ShowWindow;
+            playerSettingsButton.clicked += () =>
+            {
+                SettingsService.OpenProjectSettings(k_PlayerSettingsWindow);
+            };
+            m_AssetImportButton.clicked += () =>
+            {
+                if (m_AssetImportWindow == null)
+                    m_AssetImportWindow = ScriptableObject.CreateInstance<AssetImportOverridesWindow>();
+
+                m_AssetImportWindow.ShowUtilityWindow(UpdateToolbarButtonState);
+            };
             unityDevOpsButton.clicked += () =>
             {
                 Application.OpenURL(k_DevOpsUrl);
             };
 
-            // TODO: Temporarily allow showing legacy window.
-            // jira: https://jira.unity3d.com/browse/PLAT-7025
-            m_TempOpenLegacyBuildSettingsButton.clicked += BuildPlayerWindow.ShowBuildPlayerWindow;
             BuildProfileContext.instance.activeProfileChanged += OnActiveProfileChanged;
+        }
+
+        /// <summary>
+        /// Duplicates and selects the current classic platform profile.
+        /// </summary>
+        internal void DuplicateSelectedClassicProfile()
+        {
+            m_BuildProfileContextMenu.HandleDuplicateSelectedProfiles(true);
+        }
+
+        /// <summary>
+        /// Show classic platform UI for globally shared settings.
+        /// </summary>
+        internal void OnClassicSceneListSelected()
+        {
+            m_BuildProfileClassicPlatformListView.ClearSelection();
+            m_BuildProfilesListView.ClearSelection();
+
+            DestroyImmediate(buildProfileEditor);
+            buildProfileEditor = ScriptableObject.CreateInstance<BuildProfileEditor>();
+            m_BuildProfileInspectorElement.Clear();
+            m_BuildProfileInspectorElement.Add(buildProfileEditor.CreateLegacyGUI());
+            m_InspectorHeader.Hide();
         }
 
         void CreateMissingClassicPlatformListView()
@@ -182,7 +220,7 @@ namespace UnityEditor.Build.Profile
                 var buildProfileLabel = element as BuildProfileListLabel;
                 UnityEngine.Assertions.Assert.IsNotNull(buildProfileLabel, "Build profile label is null");
 
-                var icon = BuildProfileModuleUtil.GetPlatformIcon(buildTarget, subtarget);
+                var icon = BuildProfileModuleUtil.GetPlatformIconSmall(buildTarget, subtarget);
                 buildProfileLabel.Set(BuildProfileModuleUtil.GetClassicPlatformDisplayName(buildTarget, subtarget), icon);
             };
             m_MissingClassicPlatformListView.selectionChanged += OnMissingClassicPlatformSelected;
@@ -192,6 +230,13 @@ namespace UnityEditor.Build.Profile
         {
             m_BuildProfileDataSource.Dispose();
             BuildProfileContext.instance.activeProfileChanged -= OnActiveProfileChanged;
+
+            if (m_AssetImportWindow != null)
+                m_AssetImportWindow.Close();
+
+            // Set list view's items source to null, so the items' unbind gets called
+            m_BuildProfilesListView.itemsSource = null;
+            m_BuildProfileClassicPlatformListView.itemsSource = null;
         }
 
         /// <summary>
@@ -294,21 +339,6 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
-        /// Show classic platform UI for globally shared settings.
-        /// </summary>
-        void OnClassicSceneListSelected()
-        {
-            m_BuildProfileClassicPlatformListView.ClearSelection();
-            m_BuildProfilesListView.ClearSelection();
-
-            DestroyImmediate(buildProfileEditor);
-            buildProfileEditor = ScriptableObject.CreateInstance<BuildProfileEditor>();
-            m_BuildProfileInspectorElement.Clear();
-            m_BuildProfileInspectorElement.Add(buildProfileEditor.CreateLegacyGUI());
-            m_InspectorHeader.Hide();
-        }
-
-        /// <summary>
         /// Handle selection of build profile item, creates embedded inspector and clears
         /// adjacent list views.
         /// </summary>
@@ -337,6 +367,7 @@ namespace UnityEditor.Build.Profile
             DestroyImmediate(buildProfileEditor);
             buildProfileEditor = (BuildProfileEditor) Editor.CreateEditor(profile, typeof(BuildProfileEditor));
             buildProfileEditor.parentState = m_WindowState;
+            buildProfileEditor.parent = this;
             m_BuildProfileInspectorElement.Clear();
 
             if (!m_BuildProfileSelection.IsMultipleSelection())
@@ -400,6 +431,11 @@ namespace UnityEditor.Build.Profile
             BuildProfile activateProfile = m_BuildProfileSelection.Get(0);
             if (IsActiveBuildProfileOrPlatform(activateProfile))
                 return;
+
+            // Apply current asset import overrides if switching profile
+            // without applying
+            m_AssetImportWindow?.ApplyCurrentAssetImportOverrides();
+            UpdateToolbarButtonState();
 
             // Classic profiles should not be set as active, they are identified
             // by the state of EditorUserBuildSettings active build target.
@@ -510,7 +546,7 @@ namespace UnityEditor.Build.Profile
                 string platformDisplayName = useNameAsDisplayName
                     ? profile.name
                     : BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.moduleName, profile.subtarget);
-                var icon = BuildProfileModuleUtil.GetPlatformIcon(profile.moduleName, profile.subtarget);
+                var icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.moduleName, profile.subtarget);
                 editableBuildProfileLabel.Set(platformDisplayName, icon);
 
                 if (IsActiveBuildProfileOrPlatform(profile))
@@ -520,6 +556,17 @@ namespace UnityEditor.Build.Profile
                 }
                 else
                     editableBuildProfileLabel.SetActiveIndicator(false);
+
+                if (!BuildProfileContext.IsClassicPlatformProfile(profile))
+                {
+                    editableBuildProfileLabel.tooltip =  AssetDatabase.GetAssetPath(profile);
+                }
+            };
+
+            target.unbindItem = (VisualElement element, int index) =>
+            {
+                var editableBuildProfileLabel = element as BuildProfileListEditableLabel;
+                editableBuildProfileLabel.UnbindItem();
             };
         }
 
@@ -529,6 +576,24 @@ namespace UnityEditor.Build.Profile
             label.AddToClassList("pl-large");
             label.AddManipulator(m_BuildProfileContextMenu.AddBuildProfileContextMenu());
             return label;
+        }
+
+        void UpdateToolbarButtonState()
+        {
+            if (m_AssetImportButton == null)
+                return;
+
+            TryLoadWarningIcon();
+
+            m_AssetImportButton.tooltip = AssetImportOverridesWindow.IsAssetImportOverrideEnabled ? TrText.assetImportOverrideTooltip : string.Empty;
+            m_AssetImportButton.iconImage = AssetImportOverridesWindow.IsAssetImportOverrideEnabled ? m_WarningIcon : null;
+            m_AssetImportButton.text = AssetImportOverridesWindow.IsAssetImportOverrideEnabled ? $" {TrText.assetImportOverrides}" : TrText.assetImportOverrides;
+        }
+
+        void TryLoadWarningIcon()
+        {
+            if (m_WarningIcon == null)
+                m_WarningIcon = Background.FromTexture2D(BuildProfileModuleUtil.GetWarningIcon());
         }
 
         /// <summary>

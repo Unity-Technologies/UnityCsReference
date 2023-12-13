@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Rendering
 {
-    [CustomEditor(typeof(RenderPipelineGlobalSettings))]
+    [CustomEditor(typeof(RenderPipelineGlobalSettings), editorForChildClasses: true)]
     public class RenderPipelineGlobalSettingsEditor : Editor
     {
         static class Strings

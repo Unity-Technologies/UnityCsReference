@@ -17,6 +17,12 @@ namespace UnityEngine.Rendering
                 return null;
             }
         }
+
+        [Obsolete($"This property is obsolete. Use {nameof(RenderingLayerMask)} API and Tags & Layers project settings instead. #from(23.3)", false)]
+        public virtual string[] renderingLayerMaskNames => null;
+
+        [Obsolete($"This property is obsolete. Use {nameof(RenderingLayerMask)} API and Tags & Layers project settings instead. #from(23.3)", false)]
+        public virtual string[] prefixedRenderingLayerMaskNames => null;
     }
 
     public abstract partial class RenderPipelineAsset<TRenderPipeline>

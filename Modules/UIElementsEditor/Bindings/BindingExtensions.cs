@@ -1852,9 +1852,8 @@ namespace UnityEditor.UIElements.Bindings
         {
             if (!propCompareValues(lastFieldValue, boundProperty, propGetValue))
             {
-                Undo.RegisterCompleteObjectUndo(boundProperty.m_SerializedObject.targetObject, GetUndoMessage(boundProperty));
                 propSetValue(boundProperty, lastFieldValue);
-                boundProperty.m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
+                boundProperty.m_SerializedObject.ApplyModifiedProperties();
                 // Force the field to update its display as its label is dependent on having an up to date SerializedProperty. (UUM-27629)
                 if (field is ObjectField objectField)
                 {
@@ -2237,8 +2236,6 @@ namespace UnityEditor.UIElements.Bindings
             if (lastEnumValue == boundProperty.intValue)
                 return false;
 
-            Undo.RegisterCompleteObjectUndo(boundProperty.m_SerializedObject.targetObject, GetUndoMessage(boundProperty));
-
             // When the value is a negative we need to convert it or it will be clamped.
             var underlyingType = managedType.GetEnumUnderlyingType();
             if (lastEnumValue < 0 && (underlyingType == typeof(uint) || underlyingType == typeof(ushort) || underlyingType == typeof(byte)))
@@ -2249,7 +2246,7 @@ namespace UnityEditor.UIElements.Bindings
             {
                 boundProperty.intValue = lastEnumValue;
             }
-            boundProperty.m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
+            boundProperty.m_SerializedObject.ApplyModifiedProperties();
             return true;
         }
 
@@ -2447,15 +2444,14 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
-            if(boundProperty.hasMultipleDifferentValues)            
-                lastFieldValueIndex = default;            
+            if (boundProperty.hasMultipleDifferentValues)
+                lastFieldValueIndex = default;
 
             if (lastFieldValueIndex >= 0 && lastFieldValueIndex < displayIndexToEnumIndex.Count
                 && boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])
             {
-                Undo.RegisterCompleteObjectUndo(boundProperty.m_SerializedObject.targetObject, GetUndoMessage(boundProperty));
                 boundProperty.enumValueIndex = displayIndexToEnumIndex[lastFieldValueIndex];
-                boundProperty.m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
+                boundProperty.m_SerializedObject.ApplyModifiedProperties();
                 return true;
             }
             return false;

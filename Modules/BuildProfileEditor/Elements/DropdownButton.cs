@@ -14,7 +14,7 @@ namespace UnityEditor.Build.Profile.Elements
     /// </summary>
     internal class DropdownButton : VisualElement
     {
-        const int k_ButtonWidth = 105;
+        const int k_ButtonWidth = 120;
         readonly GenericMenu m_Menu;
         readonly GUIContent m_BuildButton;
         readonly Action m_DefaultClicked;

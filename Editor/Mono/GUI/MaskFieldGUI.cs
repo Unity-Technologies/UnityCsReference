@@ -33,7 +33,7 @@ namespace UnityEditor
             // Which view should we send it to.
             private readonly GUIView m_SourceView;
 
-            // Current drop-down reference 
+            // Current drop-down reference
             public MaskFieldDropDown m_DropDown;
 
             // validation flag for masks that are changed externally
@@ -84,7 +84,7 @@ namespace UnityEditor
                     m_SourceView.SendEvent(EditorGUIUtility.CommandEvent(kMaskMenuChangedMessage));
             }
 
-            public void UpdateFlagChanges(int mask, int[] optionMaskValues)
+            public void UpdateFlagChanges(int controlID, int mask, int[] optionMaskValues)
             {
                 var evt = Event.current;
 
@@ -102,7 +102,7 @@ namespace UnityEditor
                         return;
                     }
 
-                    if (mask != m_NewMask)
+                    if (mask != m_NewMask && m_ControlID == controlID)
                         m_DropDown.UpdateMaskValues(mask, optionMaskValues);
 
                     m_Validate = false;
@@ -150,7 +150,7 @@ namespace UnityEditor
 
             // This checks and update flags changes that are modified out of dropdown menu
             if (MaskCallbackInfo.m_Instance != null)
-                MaskCallbackInfo.m_Instance.UpdateFlagChanges(mask, optionMaskValues);
+                MaskCallbackInfo.m_Instance.UpdateFlagChanges(controlID, mask, optionMaskValues);
 
             Event evt = Event.current;
             if (evt.type == EventType.Repaint)
