@@ -750,5 +750,21 @@ namespace UnityEngine.UIElements
                 dragContainer.Add(dragElement);
             }
         }
+
+        internal override void RegisterEditingCallbacks()
+        {
+            labelElement.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+            dragContainer.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+
+            dragContainer.RegisterCallback<PointerUpEvent>(EndEditing);
+        }
+
+        internal override void UnregisterEditingCallbacks()
+        {
+            labelElement.UnregisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+            dragContainer.UnregisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+
+            dragContainer.UnregisterCallback<PointerUpEvent>(EndEditing);
+        }
     }
 }

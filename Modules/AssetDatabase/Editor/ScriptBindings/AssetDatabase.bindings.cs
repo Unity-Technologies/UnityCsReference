@@ -289,6 +289,9 @@ namespace UnityEditor
             InstanceIDsToGUIDs((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), (IntPtr)guidsOut.GetUnsafePtr(), instanceIDs.Length);
         }
 
+        [FreeFunction("AssetDatabase::ReserveMonoScriptInstanceID")]
+        extern internal static int ReserveMonoScriptInstanceID(GUID guid);
+
         extern public static System.Type GetMainAssetTypeAtPath(string assetPath);
 
         extern public static System.Type GetMainAssetTypeFromGUID(GUID guid);

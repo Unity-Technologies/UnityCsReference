@@ -15,6 +15,7 @@ namespace Unity.UI.Builder
     internal class BuilderInspectorAttributes : IBuilderInspectorSection
     {
         static readonly Dictionary<Type, TypeInfo> s_CachedTypeInfos = new Dictionary<Type, TypeInfo>();
+        static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
 
         static readonly UnityEngine.Pool.ObjectPool<BuilderAttributeTypeName> s_TypeNameItemPool =
             new UnityEngine.Pool.ObjectPool<BuilderAttributeTypeName>(
@@ -382,6 +383,13 @@ namespace Unity.UI.Builder
             {
                 fieldElement.GetFieldStatusIndicator().populateMenuItems =
                     (menu) => BuildAttributeFieldContextualMenu(menu, fieldElement);
+            }
+
+            if (fieldElement is IEditableElement editableElement)
+            {
+                // used to group undo operations (UUM-32599)
+                editableElement.editingStarted += () => SetUndoGroup(fieldElement);
+                editableElement.editingEnded += () => UnsetUndoGroup(fieldElement);
             }
 
             m_Inspector.UpdateFieldStatus(fieldElement, null);
@@ -1240,6 +1248,8 @@ namespace Unity.UI.Builder
         }
         void PostAttributeValueChange(BindableElement field, string value)
         {
+            var undoGroup = Undo.GetCurrentGroup();
+
             // Undo/Redo
             Undo.RegisterCompleteObjectUndo(m_Inspector.visualTreeAsset,
                 BuilderConstants.ChangeAttributeValueUndoMessage);
@@ -1317,6 +1327,22 @@ namespace Unity.UI.Builder
             {
                 m_Inspector.UpdateFieldStatus(field, null);
             }
+
+            // Use the undo group of the field if it has one, otherwise use the current undo group
+            var fieldUndoGroup = (int?)field.GetProperty(UndoGroupPropertyKey);
+            Undo.CollapseUndoOperations(fieldUndoGroup ?? undoGroup);
+        }
+
+        void SetUndoGroup(VisualElement field)
+        {
+            Undo.IncrementCurrentGroup();
+            field?.SetProperty(UndoGroupPropertyKey, Undo.GetCurrentGroup());
+        }
+
+        void UnsetUndoGroup(VisualElement field)
+        {
+            Undo.IncrementCurrentGroup();
+            field?.SetProperty(UndoGroupPropertyKey, null);
         }
     }
 }
