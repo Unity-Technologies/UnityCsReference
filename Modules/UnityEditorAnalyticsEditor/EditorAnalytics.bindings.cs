@@ -139,7 +139,7 @@ namespace UnityEditor
 
         internal static bool SendEventBuildTargetPermissions(object parameters)
         {
-            return EditorAnalytics.SendEvent("buildTargetPermissions", parameters, SendEventOptions.kAppendBuildGuid | SendEventOptions.kAppendBuildTarget);
+            return EditorAnalytics.SendEventWithVersion("buildTargetPermissions", parameters, 2, SendEventOptions.kAppendBuildGuid | SendEventOptions.kAppendBuildTarget);
         }
 
         internal static bool SendCollabUserAction(object parameters)
@@ -167,7 +167,7 @@ namespace UnityEditor
 
         extern private static bool SendEvent(string eventName, object parameters, SendEventOptions sendEventOptions = SendEventOptions.kAppendNone);
 
-        extern private static bool SendEventWithVersion(string eventName, object parameters, int ver, SendEventOptions sendEventOptions = SendEventOptions.kAppendNone);
+        extern internal static bool SendEventWithVersion(string eventName, object parameters, int ver, SendEventOptions sendEventOptions = SendEventOptions.kAppendNone);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey)

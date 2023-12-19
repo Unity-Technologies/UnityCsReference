@@ -265,10 +265,10 @@ namespace UnityEditor.UIElements
             CurveEditorSettings settings = new CurveEditorSettings();
             if (rawValue == null)
                 rawValue = new AnimationCurve();
-            CurveEditorWindow.instance.Show(OnCurveChanged, settings);
             CurveEditorWindow.curve = rawValue;
 
             CurveEditorWindow.color = curveColor;
+            CurveEditorWindow.instance.Show(OnCurveChanged, settings);
         }
 
         [EventInterest(typeof(KeyDownEvent), typeof(PointerDownEvent), typeof(DetachFromPanelEvent),

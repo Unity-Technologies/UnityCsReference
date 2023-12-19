@@ -162,7 +162,7 @@ namespace UnityEngine
         }
 
         [ThreadAndSerializationSafe]
-        internal static extern void LogCompilerMessage(string message, string fileName, int lineNumber, int columnNumber, bool forEditor, bool isError, int identifier);
+        internal static extern void LogCompilerMessage(string message, string fileName, int lineNumber, int columnNumber, bool forEditor, bool isError, int identifier, int instanceId);
         [ThreadAndSerializationSafe]
         private static extern void LogCompilerWarning(string message, string fileName, int lineNumber, int columnNumber);
         [ThreadAndSerializationSafe]

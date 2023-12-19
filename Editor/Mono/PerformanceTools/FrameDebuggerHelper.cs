@@ -60,6 +60,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal const string _CUBEMAP = "_CUBEMAP";
             internal static int _Levels = Shader.PropertyToID("_Levels");
             internal static int _MainTex = Shader.PropertyToID("_MainTex");
+            internal static int _MainTexDepth = Shader.PropertyToID("_MainTexDepth");
             internal static int _Channels = Shader.PropertyToID("_Channels");
             internal static int _ShouldYFlip = Shader.PropertyToID("_ShouldYFlip");
             internal static int _UndoOutputSRGB = Shader.PropertyToID("_UndoOutputSRGB");
@@ -72,6 +73,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             ref RenderTexture output,
             int width,
             int height,
+            int depth,
             Vector4 channels,
             Vector4 levels,
             bool shouldYFlip,
@@ -83,7 +85,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             output.name = t.name;
             int msaaValue = GetMSAAValue(ref t);
             TextureDimension samplerType = t.dimension;
-            SetMaterialProperties(width, height, samplerType, msaaValue, channels, levels, shouldYFlip, undoOutputSRGB);
+            SetMaterialProperties(width, height, depth, samplerType, msaaValue, channels, levels, shouldYFlip, undoOutputSRGB);
             frameDebuggerMaterial.SetTexture(ShaderPropertyIDs._MainTex, t);
 
             Blit(ref output);
@@ -106,7 +108,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
             int msaaValue = GetMSAAValue(ref rt);
             TextureDimension samplerType = rt.dimension;
-            SetMaterialProperties(width, height, samplerType, msaaValue, channels, levels, shouldYFlip, undoOutputSRGB);
+            SetMaterialProperties(width, height, rt.volumeDepth, samplerType, msaaValue, channels, levels, shouldYFlip, undoOutputSRGB);
             frameDebuggerMaterial.SetTexture(ShaderPropertyIDs._MainTex, rt);
 
             Blit(ref output);
@@ -115,6 +117,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         private static void SetMaterialProperties(
             int width,
             int height,
+            int depth,
             TextureDimension samplerType,
             int msaaValue,
             Vector4 channels,
@@ -145,6 +148,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             // Create the RenderTexture
             mat.SetFloat(ShaderPropertyIDs._MainTexWidth, width);
             mat.SetFloat(ShaderPropertyIDs._MainTexHeight, height);
+            mat.SetFloat(ShaderPropertyIDs._MainTexDepth, depth);
             mat.SetVector(ShaderPropertyIDs._Channels, channels);
             mat.SetVector(ShaderPropertyIDs._Levels, levels);
             mat.SetFloat(ShaderPropertyIDs._ShouldYFlip, shouldYFlip ? 1.0f : 0.0f);
@@ -161,6 +165,20 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
             // Restore previously active render texture
             RenderTexture.active = currentActiveRT;
+        }
+
+        internal static int GetVolumeDepth(ref Texture t)
+        {
+            RenderTexture rt = t as RenderTexture;
+            return GetVolumeDepth(ref rt);
+        }
+
+        internal static int GetVolumeDepth(ref RenderTexture rt)
+        {
+            if (rt != null)
+                return rt.volumeDepth;
+
+            return 1;
         }
 
         internal static int GetMSAAValue(ref Texture t)

@@ -14,6 +14,15 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
+    /// Interface for all editable elements.
+    /// </summary>
+    internal interface IEditableElement
+    {
+        internal Action editingStarted { get; set; }
+        internal Action editingEnded { get; set; }
+    }
+
+    /// <summary>
     /// <para>Abstract base class for controls.</para>
     /// <para>A BaseField is a base class for field elements like <see cref="TextField"/> and <see cref="IntegerField"/>.
     /// To align a BaseField element automatically with other fields in an Inspector window,
@@ -25,7 +34,7 @@ namespace UnityEngine.UIElements
     /// to align with other fields in the Inspector window. If there are IMGUI fields present,
     /// UI Toolkit fields are aligned with them for consistency and compatibility.</para>
     /// </summary>
-    public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>, IMixedValueSupport, IPrefixLabel
+    public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>, IMixedValueSupport, IPrefixLabel, IEditableElement
     {
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseField"/>.
@@ -269,6 +278,9 @@ namespace UnityEngine.UIElements
         private VisualElement m_CachedContextWidthElement;
         private VisualElement m_CachedInspectorElement;
 
+        Action IEditableElement.editingStarted { get; set; }
+        Action IEditableElement.editingEnded { get; set; }
+
         internal BaseField(string label)
         {
             isCompositeRoot = true;
@@ -304,6 +316,9 @@ namespace UnityEngine.UIElements
 
         private void OnAttachToPanel(AttachToPanelEvent e)
         {
+            // indicates the start and end of the field value being edited
+            RegisterEditingCallbacks();
+
             if (e.destinationPanel == null)
             {
                 return;
@@ -354,7 +369,31 @@ namespace UnityEngine.UIElements
 
         private void OnDetachFromPanel(DetachFromPanelEvent e)
         {
+            UnregisterEditingCallbacks();
+
             onValidateValue = null;
+        }
+
+        internal virtual void RegisterEditingCallbacks()
+        {
+            RegisterCallback<FocusInEvent>(StartEditing);
+            RegisterCallback<FocusOutEvent>(EndEditing);
+        }
+
+        internal virtual void UnregisterEditingCallbacks()
+        {
+            UnregisterCallback<FocusInEvent>(StartEditing);
+            UnregisterCallback<FocusOutEvent>(EndEditing);
+        }
+
+        internal void StartEditing(EventBase e)
+        {
+            ((IEditableElement)this).editingStarted?.Invoke();
+        }
+
+        internal void EndEditing(EventBase e)
+        {
+            ((IEditableElement)this).editingEnded?.Invoke();
         }
 
         private void OnCustomStyleResolved(CustomStyleResolvedEvent evt)
