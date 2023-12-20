@@ -106,16 +106,11 @@ namespace UnityEngine.UIElements
             get { return textInput.multiline; }
             set
             {
-                if (multiline == value)
-                    return;
-
-                // Since we strip the line character(s) in single line mode, we need to restore them if the user decides
-                // to set the value before setting the multiline value to true.
-                if (value && text != m_RawString && !string.IsNullOrEmpty(m_RawString))
-                    SetValueWithoutNotify(m_RawString);
-
+                var previous = multiline;
                 textInput.multiline = value;
-                NotifyPropertyChanged(multilineProperty);
+
+                if (previous != multiline)
+                    NotifyPropertyChanged(multilineProperty);
             }
         }
 
@@ -174,9 +169,6 @@ namespace UnityEngine.UIElements
             textEdition.isPassword = isPasswordField;
         }
 
-        // To be used for storing the original string which includes any new line character(s).
-        private string m_RawString;
-
         /// <summary>
         /// The string currently being exposed by the field.
         /// </summary>
@@ -185,11 +177,7 @@ namespace UnityEngine.UIElements
             get { return base.value; }
             set
             {
-                m_RawString = value;
-                var textMatchesMultiline = !multiline && !string.IsNullOrEmpty(value) && value.Contains("\n");
-                var newValue = textMatchesMultiline ? value?.Replace("\n", "") : value;
-
-                base.value = newValue;
+                base.value = value;
                 textEdition.UpdateText(rawValue);
             }
         }

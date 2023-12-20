@@ -79,6 +79,7 @@ namespace UnityEngine.UIElements
             m_Changed = false;
 
             evt.GetEquivalentImguiEvent(m_ImguiEvent);
+            bool generatePreview = false;
             if (editingUtilities.HandleKeyEvent(m_ImguiEvent))
             {
                 if (textElement.text != editingUtilities.text)
@@ -149,26 +150,26 @@ namespace UnityEngine.UIElements
 
                 if (c >= k_Space || evt.keyCode == KeyCode.Tab || (textElement.edition.multiline && !evt.altKey && (c == '\n' || c == '\r' || c == k_LineFeed)))
                 {
-                    editingUtilities.Insert(c);
-                    m_Changed = true;
+                    m_Changed = editingUtilities.Insert(c);
                 }
                 // On windows, key presses also send events with keycode but no character. Eat them up here.
                 else
                 {
                     // if we have a composition string, make sure we clear the previous selection.
                     var oldIsCompositionActive = editingUtilities.isCompositionActive;
-                    if(editingUtilities.UpdateImeState() || oldIsCompositionActive != editingUtilities.isCompositionActive)
+                    generatePreview = true;
+                    if (editingUtilities.UpdateImeState() || oldIsCompositionActive != editingUtilities.isCompositionActive)
                         m_Changed = true;
                 }
             }
             if (m_Changed)
-                UpdateLabel();
+                UpdateLabel(generatePreview);
 
             // The selection indices might have changed.
             textElement.edition.UpdateScrollOffset?.Invoke(evt.keyCode == KeyCode.Backspace);
         }
 
-        void UpdateLabel()
+        void UpdateLabel(bool generatePreview)
         {
             var oldText = editingUtilities.text;
 
@@ -176,7 +177,7 @@ namespace UnityEngine.UIElements
             if (imeEnabled && editingUtilities.ShouldUpdateImeWindowPosition())
                 editingUtilities.SetImeWindowPosition(new Vector2(textElement.worldBound.x, textElement.worldBound.y));
 
-            var fullText = editingUtilities.GeneratePreviewString(textElement.enableRichText);
+            var fullText = generatePreview ? editingUtilities.GeneratePreviewString(textElement.enableRichText) : editingUtilities.text;
 
             //Note that UpdateText will update editingUtilities with the latest text if validations were made.
             textElement.edition.UpdateText(fullText);
@@ -268,7 +269,7 @@ namespace UnityEngine.UIElements
             }
 
             if (m_Changed)
-                UpdateLabel();
+                UpdateLabel(true);
 
             // The selection indices might have changed.
             textElement.edition.UpdateScrollOffset?.Invoke(false);

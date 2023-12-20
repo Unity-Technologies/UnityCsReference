@@ -22,7 +22,7 @@ namespace UnityEditor
 
         public override Vector2 GetWindowSize()
         {
-            var windowHeight = 2f * kFrameWidth + EditorGUI.kSingleLineHeight * 6;
+            var windowHeight = 2f * kFrameWidth + EditorGUI.kSingleLineHeight * 7;
             if (UnityEngine.VFX.VFXManager.activateVFX)
             {
                 windowHeight += EditorGUI.kSingleLineHeight;
