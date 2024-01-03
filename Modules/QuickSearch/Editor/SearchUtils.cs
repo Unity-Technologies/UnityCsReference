@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using UnityEngine.Pool;
+using UnityEditor.Search.Providers;
 
 using UnityEditor.SceneManagement;
 
@@ -996,15 +997,11 @@ namespace UnityEditor.Search
         public static void ShowIconPicker(Action<Texture2D, bool> iconSelectedHandler)
         {
             var pickIconContext = SearchService.CreateContext(new[] { "adb", "asset" }, "", SearchFlags.WantsMore);
-            var viewState = new SearchViewState(pickIconContext,
+            var viewState = SearchViewState.CreatePickerState("Icon", pickIconContext,
                 (newIcon, canceled) => iconSelectedHandler(newIcon as Texture2D, canceled),
                 null,
                 "Texture",
-                typeof(Texture2D))
-            {
-                title = "Icon"
-            };
-            viewState.SetSearchViewFlags(UnityEngine.Search.SearchViewFlags.GridView);
+                typeof(Texture2D));
             SearchService.ShowPicker(viewState);
         }
 
@@ -1233,6 +1230,92 @@ namespace UnityEditor.Search
                 "Find References");
         }
 
+        [CommandHandler("OpenToSearchByProperty")]
+        internal static void OpenToSearchByProperty(CommandExecuteContext c)
+        {
+            var prop = c.GetArgument<SerializedProperty>(0);
+            if (prop == null)
+                return;
+            OpenToSearchByProperty(prop);
+        }
+
+        [CommandHandler("IsPropertyValidForQuery")]
+        internal static void IsPropertyValidForQuery(CommandExecuteContext c)
+        {
+            var prop = c.GetArgument<SerializedProperty>(0);
+            if (prop == null)
+            {
+                c.result = false;
+                return;
+            }
+            c.result = IsPropertyValidForQuery(prop);
+        }
+
+        internal static bool IsPropertyValidForQuery(SerializedProperty prop)
+        {
+            var valid = !(prop == null ||
+                prop.serializedObject == null ||
+                !prop.serializedObject.isValid ||
+                !prop.serializedObject.targetObject ||
+                prop.serializedObject.targetObject == null);
+            return valid && IsPropertyTypeSupported(prop);
+        }
+
+        internal static ISearchView OpenToSearchByProperty(SerializedProperty prop)
+        {
+            if (!IsPropertyValidForQuery(prop))
+                return SearchWindow.OpenDefaultQuickSearch();
+
+            var query = FormatPropertyQuery(prop);
+            if (query == null)
+                return SearchWindow.OpenDefaultQuickSearch();
+
+            var context = SearchService.CreateContext(query, SearchFlags.OpenGlobal);
+            return SearchService.ShowWindow(context);
+        }
+
+        internal static string GetPropertyValueForQuery(SerializedProperty prop)
+        {
+            var value = PropertySelectors.GetSerializedPropertyValue(prop);
+            switch(prop.propertyType)
+            {
+                case SerializedPropertyType.Color:
+                    return $"#{ColorUtility.ToHtmlStringRGB((Color)value)}";
+                case SerializedPropertyType.ObjectReference:
+                case SerializedPropertyType.ManagedReference:
+                case SerializedPropertyType.ExposedReference:
+                    return GetObjectPath(value as UnityEngine.Object);
+                default:
+                    return value == null ? null : value.ToString();
+            }
+        }
+
+        internal static string FormatPropertyQuery(SerializedProperty prop)
+        {
+            string query = null;
+            if (!IsPropertyValidForQuery(prop))
+                return query;
+
+            var target = prop.serializedObject.targetObject;
+            var assetPath = AssetDatabase.GetAssetPath(target);
+            var propertyPath = prop.propertyPath.Replace(" ", "");
+            var propertyValue = GetPropertyValueForQuery(prop);
+            var baseQuery = $"{propertyPath}={propertyValue}";
+            if (!string.IsNullOrEmpty(assetPath))
+            {
+                // Format asset Query;
+                return $"{AssetProvider.filterId}{baseQuery}";
+            }
+            
+            if (target is UnityEngine.GameObject || target is MonoBehaviour || target is Component)
+            {
+                // Format Hierarchy Query:
+                return $"{BuiltInSceneObjectsProvider.filterId}#{baseQuery}";
+            }
+
+            return null;
+        }
+
         internal static ISearchView OpenWithContextualProvider(string searchQuery, string[] providerIds, SearchFlags flags, string topic = null, bool useExplicitProvidersAsNormalProviders = false)
         {
             var providers = SearchService.GetProviders(providerIds).ToArray();
@@ -1264,3 +1347,4 @@ namespace UnityEditor.Search
         }
     }
 }
+

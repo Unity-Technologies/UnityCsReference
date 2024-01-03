@@ -349,11 +349,7 @@ namespace UnityEditor
             if (m_IsLosingFocus)
                 return;
 
-            // [UUM-44009] Delayed text editor crashes the editor when opening context menu 
-            // at the same time when applying changes. We work around it by deferring 
-            // finalization to when the context menu is closing.
-            if (!EditorMenuExtensions.isEditorContextMenuActive)
-            	EditorGUI.EndEditingActiveTextField();
+            EditorGUI.EndEditingActiveTextField();
 
             try
             {

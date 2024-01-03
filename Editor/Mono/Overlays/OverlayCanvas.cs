@@ -730,7 +730,7 @@ namespace UnityEditor.Overlays
             m_PopupOverlay = popup;
             m_PopupOverlay.RegisterCallback<FocusOutEvent>(evt =>
             {
-                if (evt.relatedTarget is VisualElement target && (m_PopupOverlay == target || m_PopupOverlay.Contains(target)) && !EditorMenuExtensions.isEditorContextMenuActive)
+                if (evt.relatedTarget is VisualElement target && (m_PopupOverlay == target || m_PopupOverlay.Contains(target)))
                     return;
 
                 // When the new focus is an embedded IMGUIContainer or popup window, give focus back to the modal

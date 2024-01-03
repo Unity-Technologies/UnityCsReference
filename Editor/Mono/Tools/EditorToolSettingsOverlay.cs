@@ -14,7 +14,7 @@ using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
-    [Overlay(typeof(SceneView), "Tool Settings", true)]
+    [Overlay(typeof(SceneView), "Tool Settings", true, priority = (int)OverlayPriority.ToolSettings)]
     [Icon("Icons/Overlays/ToolSettings.png")]
     sealed class EditorToolSettingsOverlay : Overlay, ICreateToolbar, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {

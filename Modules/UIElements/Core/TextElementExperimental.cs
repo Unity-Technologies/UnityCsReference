@@ -42,7 +42,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         void ITextElementExperimentalFeatures.SetRenderedText(string renderedText)
         {
-            this.renderedText = renderedText;
+            this.SetRenderedText(renderedText);
         }
     }
 }

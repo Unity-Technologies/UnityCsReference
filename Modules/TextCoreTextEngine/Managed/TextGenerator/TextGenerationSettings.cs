@@ -11,7 +11,24 @@ namespace UnityEngine.TextCore.Text
     [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
     internal class TextGenerationSettings : IEquatable<TextGenerationSettings>
     {
-        public string text;
+        private RenderedText m_RenderedText;
+        private string m_CachedRenderedText;
+
+        public RenderedText renderedText
+        {
+            get => m_RenderedText;
+            set
+            {
+                m_RenderedText = value;
+                m_CachedRenderedText = null;
+            }
+        }
+
+        public string text
+        {
+            get => m_CachedRenderedText ??= renderedText.CreateString();
+            set => renderedText = new RenderedText(value);
+        }
 
         public Rect screenRect;
         public Vector4 margins;
@@ -83,7 +100,8 @@ namespace UnityEngine.TextCore.Text
         // Used by automated tests
         internal TextGenerationSettings(TextGenerationSettings tgs)
         {
-            text = tgs.text;
+            m_RenderedText = tgs.m_RenderedText;
+            m_CachedRenderedText = tgs.m_CachedRenderedText;
             screenRect = tgs.screenRect;
             margins = tgs.margins;
             scale = tgs.scale;
@@ -141,7 +159,7 @@ namespace UnityEngine.TextCore.Text
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return text == other.text && screenRect.Equals(other.screenRect) && margins.Equals(other.margins)
+            return m_RenderedText.Equals(other.m_RenderedText) && screenRect.Equals(other.screenRect) && margins.Equals(other.margins)
                 && scale.Equals(other.scale) && Equals(fontAsset, other.fontAsset) && Equals(material, other.material)
                 && Equals(spriteAsset, other.spriteAsset) && Equals(styleSheet, other.styleSheet)
                 && fontStyle == other.fontStyle && Equals(textSettings, other.textSettings)
@@ -180,7 +198,7 @@ namespace UnityEngine.TextCore.Text
         public override int GetHashCode()
         {
             var hashCode = new HashCode();
-            hashCode.Add(text);
+            hashCode.Add(m_RenderedText);
             hashCode.Add(screenRect);
             hashCode.Add(margins);
             hashCode.Add(scale);

@@ -501,7 +501,7 @@ namespace UnityEditor.Search
                 var sortOrder = (SearchQuerySortOrder)i;
                 dropDownMenu.AddItem(options[i].text, sortOrder == currentSortingOrder, () => SortQueries(sortOrder));
             }
-            DropdownUtility.ShowDropdown(dropDownMenu, worldPosition, sortButton);
+            dropDownMenu.DropDown(new Rect(worldPosition, Vector2.one), sortButton);
         }
 
         internal void SortQueries(SearchQuerySortOrder sortOrder)

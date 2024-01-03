@@ -25,16 +25,13 @@ namespace Unity.Hierarchy
         [RequiredByNativeCode] IntPtr m_Ptr;
         [RequiredByNativeCode] readonly bool m_IsWrapper;
 
-        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
-        [RequiredByNativeCode] internal readonly Hierarchy m_Hierarchy;
+        [FreeFunction("HierarchyCommandListBindings::Create", IsThreadSafe = true)]
+        static extern IntPtr Internal_Create(Hierarchy hierarchy, HierarchyNodeType nodeType, int initialCapacity);
 
-        [FreeFunction("HierarchyCommandListBindings::Create")]
-        static extern IntPtr Internal_Create(Hierarchy hierarchy, int initialCapacity);
-
-        [FreeFunction("HierarchyCommandListBindings::Destroy")]
+        [FreeFunction("HierarchyCommandListBindings::Destroy", IsThreadSafe = true)]
         static extern void Internal_Destroy(IntPtr ptr);
 
-        [FreeFunction("HierarchyCommandListBindings::BindScriptingObject", HasExplicitThis = true)]
+        [FreeFunction("HierarchyCommandListBindings::BindScriptingObject", HasExplicitThis = true, IsThreadSafe = true)]
         extern void Internal_BindScriptingObject([Unmarshalled] HierarchyCommandList self);
 
         /// <summary>
@@ -45,33 +42,36 @@ namespace Unity.Hierarchy
         /// <summary>
         /// The current size in bytes used by commands in the command list.
         /// </summary>
-        public extern int Size { [NativeMethod("Size")] get; }
+        public extern int Size { [NativeMethod("Size", IsThreadSafe = true)] get; }
 
         /// <summary>
         /// The capacity in bytes for storing commands in the command list.
         /// </summary>
-        public extern int Capacity { [NativeMethod("Capacity")] get; }
+        public extern int Capacity { [NativeMethod("Capacity", IsThreadSafe = true)] get; }
 
         /// <summary>
         /// Determines if the command list is empty.
         /// </summary>
-        public extern bool IsEmpty { [NativeMethod("IsEmpty")] get; }
+        public extern bool IsEmpty { [NativeMethod("IsEmpty", IsThreadSafe = true)] get; }
 
         /// <summary>
         /// Determines if the command list is currently executing.
         /// </summary>
-        public extern bool IsExecuting { [NativeMethod("IsExecuting")] get; }
+        public extern bool IsExecuting { [NativeMethod("IsExecuting", IsThreadSafe = true)] get; }
 
         /// <summary>
         /// Creates a new command list.
         /// </summary>
         /// <param name="hierarchy">The hierarchy.</param>
-        /// <param name="initialCapacity">The initial capacity in bytes.</param>
+        /// <param name="initialCapacity">The initial required capacity in bytes.</param>
         public HierarchyCommandList(Hierarchy hierarchy, int initialCapacity = 64 * 1024)
+            : this(hierarchy, HierarchyNodeType.Null, initialCapacity)
+        {}
+
+        internal HierarchyCommandList(Hierarchy hierarchy, HierarchyNodeType nodeType, int initialCapacity = 64 * 1024)
         {
-            m_Ptr = Internal_Create(hierarchy, initialCapacity);
+            m_Ptr = Internal_Create(hierarchy, nodeType, initialCapacity);
             m_IsWrapper = false;
-            m_Hierarchy = hierarchy;
             Internal_BindScriptingObject(this);
         }
 
@@ -102,6 +102,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Clears all commands from the command list.
         /// </summary>
+        [NativeMethod(IsThreadSafe = true)]
         public extern void Clear();
 
         /// <summary>
@@ -109,7 +110,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="count">The number of nodes to reserve memory for.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool Reserve(int count);
 
         /// <summary>
@@ -146,7 +147,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node to remove.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool Remove(in HierarchyNode node);
 
         /// <summary>
@@ -154,7 +155,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool RemoveChildren(in HierarchyNode node);
 
         /// <summary>
@@ -163,7 +164,7 @@ namespace Unity.Hierarchy
         /// <param name="node">The hierarchy node to set a parent for.</param>
         /// <param name="parent">The hierarchy node to set as the parent node.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool SetParent(in HierarchyNode node, in HierarchyNode parent);
 
         /// <summary>
@@ -172,7 +173,7 @@ namespace Unity.Hierarchy
         /// <param name="node">The hierarchy node to set a sorting index for.</param>
         /// <param name="sortIndex">The sorting index.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool SetSortIndex(in HierarchyNode node, int sortIndex);
 
         /// <summary>
@@ -181,7 +182,7 @@ namespace Unity.Hierarchy
         /// <param name="node">The hierarchy node with child nodes to sort by their index.</param>
         /// <param name="recurse">Whether to sort the child nodes recursively.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool SortChildren(in HierarchyNode node, bool recurse = false);
 
         /// <summary>
@@ -232,20 +233,20 @@ namespace Unity.Hierarchy
         /// <param name="node">The hierarchy node.</param>
         /// <param name="name">The name of the node.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool SetName(in HierarchyNode node, string name);
 
         /// <summary>
         /// Executes all the commands in the hierarchy command list.
         /// </summary>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern void Execute();
 
         /// <summary>
         /// Executes one command from the hierarchy command list.
         /// </summary>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool ExecuteIncremental();
 
         /// <summary>
@@ -253,22 +254,22 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="milliseconds">The time limit in milliseconds.</param>
         /// <returns><see langword="true"/> if additional invocations are needed to complete the execution, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool ExecuteIncrementalTimed(double milliseconds);
 
-        [NativeThrows, FreeFunction("HierarchyCommandListBindings::AddNode", HasExplicitThis = true)]
+        [FreeFunction("HierarchyCommandListBindings::AddNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern bool AddNode(in HierarchyNode parent, out HierarchyNode node);
 
-        [NativeThrows, FreeFunction("HierarchyCommandListBindings::AddNodeSpan", HasExplicitThis = true)]
+        [FreeFunction("HierarchyCommandListBindings::AddNodeSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern bool AddNodeSpan(in HierarchyNode parent, Span<HierarchyNode> outNodes);
 
-        [NativeThrows, FreeFunction("HierarchyCommandListBindings::SetNodePropertyRaw", HasExplicitThis = true)]
+        [FreeFunction("HierarchyCommandListBindings::SetNodePropertyRaw", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern unsafe bool SetNodePropertyRaw(in HierarchyPropertyId property, in HierarchyNode node, void* ptr, int size);
 
-        [NativeThrows, FreeFunction("HierarchyCommandListBindings::SetNodePropertyString", HasExplicitThis = true)]
+        [FreeFunction("HierarchyCommandListBindings::SetNodePropertyString", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern bool SetNodePropertyString(in HierarchyPropertyId property, in HierarchyNode node, string value);
 
-        [NativeThrows, FreeFunction("HierarchyCommandListBindings::ClearNodeProperty", HasExplicitThis = true)]
+        [FreeFunction("HierarchyCommandListBindings::ClearNodeProperty", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern bool ClearNodeProperty(in HierarchyPropertyId property, in HierarchyNode node);
     }
 }

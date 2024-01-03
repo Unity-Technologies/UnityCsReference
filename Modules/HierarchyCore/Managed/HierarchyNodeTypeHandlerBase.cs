@@ -20,6 +20,7 @@ namespace Unity.Hierarchy
         [RequiredByNativeCode, VisibleToOtherModules("UnityEditor.HierarchyModule")] internal IntPtr m_Ptr;
         [RequiredByNativeCode, VisibleToOtherModules("UnityEditor.HierarchyModule")] internal bool m_IsWrapper;
         [RequiredByNativeCode] readonly Hierarchy m_Hierarchy;
+        [RequiredByNativeCode] readonly HierarchyCommandList m_CommandList;
 
         static readonly Dictionary<Type, int> s_NodeTypes = new();
 
@@ -27,6 +28,11 @@ namespace Unity.Hierarchy
         /// Get the Hierarchy owning this handler.
         /// </summary>
         public Hierarchy Hierarchy => m_Hierarchy;
+
+        /// <summary>
+        /// Get the <see cref="HierarchyCommandList"/> associated with this handler.
+        /// </summary>
+        protected HierarchyCommandList CommandList => m_CommandList;
 
         internal bool IsCreated => m_Ptr != IntPtr.Zero;
 
@@ -37,7 +43,7 @@ namespace Unity.Hierarchy
         protected HierarchyNodeTypeHandlerBase(Hierarchy hierarchy)
         {
             m_Hierarchy = hierarchy;
-            Initialize();
+            m_CommandList = new HierarchyCommandList(hierarchy, GetNodeType());
         }
 
         ~HierarchyNodeTypeHandlerBase()
@@ -62,7 +68,10 @@ namespace Unity.Hierarchy
         /// Disposes this hierarchy node type handler to free up resources in the derived class.
         /// </summary>
         /// <param name="disposing">Returns true if called from Dispose, false otherwise.</param>
-        protected virtual void Dispose(bool disposing) { }
+        protected virtual void Dispose(bool disposing)
+        {
+            m_CommandList.Dispose();
+        }
 
         /// <summary>
         /// Retrieves the hierarchy node type for this hierarchy node type handler.
@@ -94,14 +103,14 @@ namespace Unity.Hierarchy
         /// Callback that determines if pending changes from a registered node type handler need to be applied to the hierarchy. When the hierarchy is updated, `ChangesPending` is called on all registered node ype handlers. If they return true, then `IntegrateChanges` is called on them. If they return false, then `IntegrateChanges` is not called on them.
         /// </summary>
         /// <returns><see langword="true"/> if changes are pending, <see langword="false"/> otherwise.</returns>
-        protected abstract bool ChangesPending();
+        protected virtual bool ChangesPending() => false;
 
         /// <summary>
         /// Callback that determines if changes from an update need to be integrated into the hierarchy. `IntegrateChanges` is called after <see cref="ChangesPending"/> returns <see langword="true"/>. When the hierarchy is updated, `ChangesPending` is called on all registered node ype handlers. If they return true, then `IntegrateChanges` is called on them. If they return false, then `IntegrateChanges` is not called on them.
         /// </summary>
         /// <param name="cmdList">A hierarchy command list that can modify the hierarchy.</param>
         /// <returns><see langword="true"/> if more invocations are needed to complete integrating changes, and <see langword="false"/> if the handler is done integrating changes.</returns>
-        protected abstract bool IntegrateChanges(HierarchyCommandList cmdList);
+        protected virtual bool IntegrateChanges(HierarchyCommandList cmdList) => false;
 
         /// <summary>
         /// Called when a new search query begins.
@@ -128,7 +137,7 @@ namespace Unity.Hierarchy
         {
         }
 
-        [FreeFunction("HierarchyNodeTypeHandlerManager::Get().GetNodeType")]
+        [FreeFunction("HierarchyNodeTypeHandlerManager::Get().GetNodeType", IsThreadSafe = true)]
         static extern int GetNodeType(Type type);
 
         internal void Internal_SearchBegin(HierarchySearchQueryDescriptor query) => SearchBegin(query);

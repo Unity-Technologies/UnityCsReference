@@ -408,16 +408,7 @@ namespace UnityEngine.UIElements
                 menu.AddItem(m_EnumData.displayNames[i], isSelected, contentView => ChangeValueFromMenu(contentView), m_EnumData.values[i]);
             }
 
-            var genericDropdownMenu = menu as GenericDropdownMenu;
-
-            if (isPlayer || genericDropdownMenu == null)
-            {
-                menu.DropDown(visualInput.worldBound, this, true);
-            }
-            else
-            {
-                DropdownUtility.ShowDropdown(genericDropdownMenu, visualInput.worldBound.position + Vector2.up * visualInput.worldBound.size.y, this);
-            }
+            menu.DropDown(visualInput.worldBound, this, true);
         }
 
         private void ChangeValueFromMenu(object menuItem)

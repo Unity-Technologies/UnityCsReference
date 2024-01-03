@@ -731,10 +731,9 @@ namespace UnityEditor.Search
         {
             var context = CreateContext(GetObjectProviders(), searchText, flags | SearchFlags.OpenPicker);
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, searchText, "object", "api");
-            return ShowPicker(new SearchViewState(context, selectHandler, trackingHandler, typeName, filterType)
-            {
-                position = new Rect(0, 0, defaultWidth, defaultHeight)
-            }.SetSearchViewFlags(SearchViewFlags.None));
+            var state = SearchViewState.CreatePickerState("Select object", context, selectHandler, trackingHandler, typeName, filterType);
+            state.position = new Rect(0, 0, defaultWidth, defaultHeight);
+            return ShowPicker(state);
         }
 
         public static ISearchView ShowPicker(
@@ -747,14 +746,10 @@ namespace UnityEditor.Search
         {
             context.options |= flags | SearchFlags.OpenPicker;
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, context.searchText, "item", "api");
-            return SearchPickerWindow.ShowPicker(new SearchViewState(context, selectHandler)
-            {
-                trackingHandler = trackingHandler,
-                filterHandler = filterHandler,
-                title = title,
-                itemSize = itemSize,
-                position = new Rect(0, 0, defaultWidth, defaultHeight)
-            }.SetSearchViewFlags(SearchViewFlags.None));
+            var state = SearchViewState.CreatePickerState(title, context, selectHandler, trackingHandler, filterHandler);
+            state.position = new Rect(0, 0, defaultWidth, defaultHeight);
+            state.itemSize = itemSize;
+            return SearchPickerWindow.ShowPicker(state);
         }
 
         /// <summary>

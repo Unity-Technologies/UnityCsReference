@@ -4,7 +4,12 @@
 
 namespace UnityEditor.ShortcutManagement
 {
-    interface IShortcutToolContext
+    // shim for packages who access this through internal bridge
+    interface IShortcutToolContext : IShortcutContext
+    {
+    }
+
+    public interface IShortcutContext
     {
         bool active { get; }
     }

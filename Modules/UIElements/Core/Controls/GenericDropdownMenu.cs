@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Provides methods to display contextual menus with default textual options, <see cref="VisualElement"/>, or a combination of both.
+    /// GenericDropdownMenu allows you to display contextual menus with default textual options or any <see cref="VisualElement"/>.
     /// </summary>
     public class GenericDropdownMenu : IGenericMenu
     {
@@ -27,275 +27,86 @@ namespace UnityEngine.UIElements
             public VisualElement element;
             public Action action;
             public Action<object> actionUserData;
-            public bool isCustomContent;
-            internal readonly Guid guid = Guid.NewGuid();
-
-            public MenuItem parent;
-            public List<MenuItem> children = new();
-            public List<MenuItem> headerActions = new();
-
-            // Accelerates child search
-            Dictionary<int, MenuItem> childrenDictionary = new();
-
-            public bool isSubmenu => children.Count > 0;
-            public bool isSeparator => string.IsNullOrEmpty(name) || name[^1] == '/';
-            public bool isActionValid => action != null || actionUserData != null;
-
-            public void PerformAction()
-            {
-                if (actionUserData != null)
-                    actionUserData.Invoke(element.userData);
-                else
-                    action?.Invoke();
-            }
-
-            public void AddChild(MenuItem item)
-            {
-                children.Add(item);
-
-                if (string.IsNullOrEmpty(item.name) || item.name[^1] == '/')
-                    return;
-
-                childrenDictionary.Add(item.name.GetHashCode(), item);
-            }
-
-            public bool HasChild(string name) => childrenDictionary.ContainsKey(name.GetHashCode());
-
-            public MenuItem GetChild(string name)
-            {
-                childrenDictionary.TryGetValue(name.GetHashCode(), out var child);
-                return child;
-            }
         }
 
-        const string hiddenClassName = "unity-hidden";
-
         /// <summary>
-        /// The USS class name of elements of this type.
+        /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-base-dropdown";
         /// <summary>
-        /// The USS class name of items in elements of this type.
+        /// USS class name of labels in elements of this type.
         /// </summary>
         public static readonly string itemUssClassName = ussClassName + "__item";
         /// <summary>
-        /// The USS class name of clicked items in elements of this type.
-        /// </summary>
-        public static readonly string clickUssClassName = ussClassName + "__click";
-        /// <summary>
-        /// The USS class name of labels in elements of this type.
+        /// USS class name of labels in elements of this type.
         /// </summary>
         public static readonly string labelUssClassName = ussClassName + "__label";
         /// <summary>
-        /// The USS class name of inner containers in elements of this type.
+        /// USS class name of inner containers in elements of this type.
         /// </summary>
         public static readonly string containerInnerUssClassName = ussClassName + "__container-inner";
         /// <summary>
-        /// The USS class name of outer containers in elements of this type.
+        /// USS class name of outer containers in elements of this type.
         /// </summary>
         public static readonly string containerOuterUssClassName = ussClassName + "__container-outer";
         /// <summary>
-        /// The USS class name of separators in elements of this type.
-        /// </summary>
-        public static readonly string appendixUssClassName = ussClassName + "__appendix";
-        /// <summary>
-        /// The USS class name of checkmarks in elements of this type.
+        /// USS class name of separators in elements of this type.
         /// </summary>
         public static readonly string checkmarkUssClassName = ussClassName + "__checkmark";
         /// <summary>
-        /// The USS class name of separators in elements of this type.
+        /// USS class name of separators in elements of this type.
         /// </summary>
         public static readonly string separatorUssClassName = ussClassName + "__separator";
 
-        internal static readonly string descendantUssClassName = ussClassName + "__descendant";
-        internal static readonly string latentUssClassName = ussClassName + "__latent";
-        internal static readonly string iconUssClassName = ussClassName + "__icon";
-        internal static readonly string submenuUssClassName = ussClassName + "__submenu";
-        internal static readonly string titleAreaUssClassName = ussClassName + "__title-area";
-        internal static readonly string titleAreaWithBackUssClassName = ussClassName + "__title-area-back";
-        internal static readonly string backUssClassName = ussClassName + "__back";
-        internal static readonly string titleUssClassName = ussClassName + "__title";
-        internal static readonly string titleButtonContainerUssClassName = ussClassName + "__title-button-container";
-
-        // Amount of context menus that we aim to pool
-        internal const int k_OptimizedMenus = 5;
-
-        // Amount of objects that we aim to pool
-        internal const int k_OptimizedElements = 100 * k_OptimizedMenus;
-
-        MenuItem m_Root = new();
-        MenuItem m_Current;
+        List<MenuItem> m_Items = new List<MenuItem>();
+        // Used in tests
+        internal List<MenuItem> items => m_Items;
 
         VisualElement m_MenuContainer;
-        VisualElement m_TitleBar;
-        VisualElement m_Back;
-        VisualElement m_HeaderButtons;
-        VisualElement m_HeaderSeparator;
-        Label m_Title;
         VisualElement m_OuterContainer;
-        ListView m_ListView;
+        ScrollView m_ScrollView;
         VisualElement m_PanelRootVisualContainer;
         VisualElement m_TargetElement;
-        KeyboardNavigationManipulator m_NavigationManipulator;
-        bool m_AllowSubmenus;
         Rect m_DesiredRect;
-        internal int m_PreviousIndex = -1;
+        KeyboardNavigationManipulator m_NavigationManipulator;
 
-        internal GenericDropdownMenu m_Parent;
-        internal GenericDropdownMenu m_Child;
-
-        internal Action<MenuItem, GenericDropdownMenu> m_SubmenuOverride;
-        internal Action<bool, bool> m_OnBeforePerformAction;
-        internal Action m_OnBack;
-        internal Action m_OnDetachedFromMenuContainer;
-
-        internal event Action onRebuild;
-        internal event Action<char, KeyCode, EventModifiers> onKey;
-        internal event Action<KeyboardNavigationOperation> onKeyboardNavigationOperation;
-
-        static bool s_ScheduleFocusFirstItem = false;
-
-        static internal Func<Texture2D, string, bool, bool, VisualElement> CreateHeaderItem;
-        static internal Action<VisualElement> SetupHeaderStrip;
-
-        // Used by UI Toolkit Debugger
-        internal static bool s_Picking = false;
-        // UI Toolkit Debugger picker is unchecked on pointer down while we need to remember its state in pointer up event for Windows
-        static bool s_wasPicking = false;
-
-        // Used for tests or by Editor
         internal VisualElement menuContainer => m_MenuContainer;
         internal VisualElement outerContainer => m_OuterContainer;
-        internal ScrollView scrollView => m_ListView.scrollView;
-        internal MenuItem root => m_Root;
-        internal List<MenuItem> items => root.children;
-        internal MenuItem current => m_Current;
-        internal bool allowBackButton { get; set; }
-        internal bool autoClose { get; set; }
-        internal bool customFocusHandling { get; set; }
-        internal Label title => m_Title;
+        internal ScrollView scrollView => m_ScrollView;
 
-        static readonly ObjectPool<ListView> s_ListPool = new (() =>
-        {
-            var listView = new ListView()
-            {
-                pickingMode = PickingMode.Position,
-                virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight,
-                focusable = true,
-                selectionType = SelectionType.None,
-                classList = { containerInnerUssClassName },
-                makeItem = () => new VisualElement() { focusable = false, pickingMode = PickingMode.Ignore },
-                unbindItem = (v, i) => v.Clear(),
-                style =
-                {
-                    flexGrow = 1,
-                }
-            };
-            listView.bindItem = (v, i) => v.Add((listView.itemsSource as List<MenuItem>)?[i].element);
-            listView.scrollView.touchScrollBehavior = ScrollView.TouchScrollBehavior.Clamped;
-            listView.scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            listView.itemsSourceChanged += () =>
-            {
-                // We don't allow separators at the top or bottom
-                if (listView.itemsSource is List<MenuItem> items)
-                {
-                    while (items.Count > 0 && items[0].isSeparator)
-                        items.RemoveAt(0);
-
-                    while (items.Count > 0 && items[^1].isSeparator)
-                        items.Remove(items[^1]);
-                }
-            };
-            return listView;
-        }, k_OptimizedMenus);
-        static readonly ObjectPool<VisualElement> s_ItemPool = new(() =>
-        {
-            // Since item element callback lists are cleared we cannot declare
-            // any callbacks in the constructor code as it will get deleted
-            // upon release and won't work upon reuse.
-            var item = new VisualElement();
-            item.AddToClassList(itemUssClassName);
-
-            var leftAppendix = new VisualElement();
-            leftAppendix.pickingMode = PickingMode.Ignore;
-            item.Add(leftAppendix);
-
-            var label = new Label();
-            label.AddToClassList(labelUssClassName);
-            label.pickingMode = PickingMode.Ignore;
-            item.Add(label);
-
-            var rightAppendix = new VisualElement();
-            rightAppendix.pickingMode = PickingMode.Ignore;
-            item.Add(rightAppendix);
-
-            return item;
-        }, k_OptimizedElements);
-
-        internal void ExtendItem(Action<MenuItem> action) => ExtendItemRecursive(root, action);
-
-        void ExtendItemRecursive(MenuItem submenu, Action<MenuItem> action)
-        {
-            action.Invoke(submenu);
-
-            foreach (var child in submenu.children)
-            {
-                ExtendItemRecursive(child, action);
-            }
-        }
-
-        internal ListView innerContainer => m_ListView;
+        internal bool isSingleSelectionDropdown { get; set; }
+        internal bool closeOnParentResize { get; set; }
 
         /// <summary>
-        /// Returns the content container for the <see cref="GenericDropdownMenu"/>.
+        /// Returns the content container for the <see cref="GenericDropdownMenu"/>. Allows users to create their own
+        /// dropdown menu if they don't want to use the default implementation.
         /// </summary>
-        /// <remarks>
-        /// Allows users to create their own dropdown menu if they don't want to use the default implementation.
-        /// </remarks>
-        [Obsolete($"Use '{nameof(AddItem)}' method to add custom content.", false)]
-        public VisualElement contentContainer => m_ListView.contentContainer;
+        public VisualElement contentContainer => m_ScrollView.contentContainer;
 
         /// <summary>
         ///  Initializes and returns an instance of GenericDropdownMenu.
         /// </summary>
-        public GenericDropdownMenu() : this(false) { }
-
-        internal GenericDropdownMenu(bool allowSubmenus)
+        public GenericDropdownMenu()
         {
-            m_AllowSubmenus = allowSubmenus;
+            m_MenuContainer = new VisualElement();
+            m_MenuContainer.AddToClassList(ussClassName);
 
-            m_MenuContainer = new VisualElement() { classList = { ussClassName } };
-
-            m_OuterContainer = new VisualElement() { classList = { containerOuterUssClassName }};
+            m_OuterContainer = new VisualElement();
+            m_OuterContainer.AddToClassList(containerOuterUssClassName);
             m_MenuContainer.Add(m_OuterContainer);
 
-            m_TitleBar = new VisualElement() { classList = { titleAreaUssClassName, hiddenClassName } };
-            m_TitleBar.RegisterCallback<PointerUpEvent>(e =>
-            {
-                NavigateBack();
-                e.StopPropagation();
-            });
-            m_OuterContainer.hierarchy.Add(m_TitleBar);
-
-            m_HeaderSeparator = CreateSeparator();
-            m_OuterContainer.hierarchy.Add(m_HeaderSeparator);
-
-            m_Back = new VisualElement() { classList = { backUssClassName, hiddenClassName } };
-            m_TitleBar.hierarchy.Add(m_Back);
-
-            m_Title = new Label() { classList = { titleUssClassName } };
-            m_TitleBar.hierarchy.Add(m_Title);
-
-            m_HeaderButtons = new VisualElement() { classList = { titleButtonContainerUssClassName } };
-            m_TitleBar.Add(m_HeaderButtons);
-
-            m_ListView = s_ListPool.Get();
-            m_OuterContainer.hierarchy.Add(m_ListView);
+            m_ScrollView = new ScrollView();
+            m_ScrollView.AddToClassList(containerInnerUssClassName);
+            m_ScrollView.pickingMode = PickingMode.Position;
+            m_ScrollView.contentContainer.focusable = true;
+            m_ScrollView.touchScrollBehavior = ScrollView.TouchScrollBehavior.Clamped;
+            m_OuterContainer.hierarchy.Add(m_ScrollView);
 
             m_MenuContainer.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             m_MenuContainer.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
-            autoClose = true;
+            isSingleSelectionDropdown = true;
+            closeOnParentResize = true;
         }
 
         void OnAttachToPanel(AttachToPanelEvent evt)
@@ -303,25 +114,14 @@ namespace UnityEngine.UIElements
             if (evt.destinationPanel == null)
                 return;
 
-            m_ListView.Focus();
-            m_ListView.AddManipulator(m_NavigationManipulator = new KeyboardNavigationManipulator(Apply));
+            contentContainer.AddManipulator(m_NavigationManipulator = new KeyboardNavigationManipulator(Apply));
             m_MenuContainer.RegisterCallback<PointerDownEvent>(OnPointerDown);
             m_MenuContainer.RegisterCallback<PointerMoveEvent>(OnPointerMove);
             m_MenuContainer.RegisterCallback<PointerUpEvent>(OnPointerUp);
-            m_MenuContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
 
             evt.destinationPanel.visualTree.RegisterCallback<GeometryChangedEvent>(OnParentResized);
-            m_ListView.RegisterCallback<GeometryChangedEvent>(OnContainerGeometryChanged);
-            m_ListView.RegisterCallback<FocusOutEvent>(OnFocusOut);
-            m_ListView.RegisterCallback<PointerLeaveEvent>(OnPointerLeave);
-
-            m_Current = m_Root;
-            Rebuild();
-
-            if (s_ScheduleFocusFirstItem)
-                m_ListView.schedule.Execute(() => Apply(KeyboardNavigationOperation.Next));
-
-            s_ScheduleFocusFirstItem = false;
+            m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnContainerGeometryChanged);
+            m_ScrollView.RegisterCallback<FocusOutEvent>(OnFocusOut);
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -329,68 +129,22 @@ namespace UnityEngine.UIElements
             if (evt.originPanel == null)
                 return;
 
-            m_ListView.RemoveManipulator(m_NavigationManipulator);
+            m_MenuContainer.UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            m_MenuContainer.UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+
+            contentContainer.RemoveManipulator(m_NavigationManipulator);
             m_MenuContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown);
             m_MenuContainer.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
             m_MenuContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp);
 
             evt.originPanel.visualTree.UnregisterCallback<GeometryChangedEvent>(OnParentResized);
-            m_ListView.UnregisterCallback<GeometryChangedEvent>(OnContainerGeometryChanged);
-            m_ListView.UnregisterCallback<FocusOutEvent>(OnFocusOut);
-            m_ListView.UnregisterCallback<PointerLeaveEvent>(OnPointerLeave);
-
-            m_ListView.style.maxWidth = StyleKeyword.Null;
-            m_ListView.itemsSource = Array.Empty<MenuItem>();
-            m_ListView.Rebuild();
-            m_ListView.EnableInClassList(latentUssClassName, false);
-            m_ListView.EnableInClassList(clickUssClassName, false);
-            m_ListView.RemoveFromHierarchy();
-            s_ListPool.Release(m_ListView);
-
-            m_OnDetachedFromMenuContainer?.Invoke();
-
-            if (m_Current.parent != null)
-                return;
-
-            ReleasePooledItems(m_Root);
+            m_ScrollView.UnregisterCallback<GeometryChangedEvent>(OnContainerGeometryChanged);
+            m_ScrollView.UnregisterCallback<FocusOutEvent>(OnFocusOut);
         }
 
-        void ReleasePooledItems(MenuItem root)
-        {
-            foreach (var child in root.children)
-                ReleasePooledItems(child);
-
-            if (root.element == null || !root.element.ClassListContains(itemUssClassName))
-                return;
-
-            root.element.pseudoStates = 0;
-
-            foreach (var child in root.element.Children())
-            {
-                if (child.ClassListContains(appendixUssClassName))
-                {
-                    child.ClearClassList();
-                    child.style.backgroundImage = StyleKeyword.Null;
-                    child.Clear();
-                }
-                else if(child.ClassListContains(labelUssClassName))
-                {
-                    if (child is Label label)
-                        label.text = string.Empty;
-                }
-            }
-
-            root.element.m_CallbackRegistry.m_BubbleUpCallbacks.GetCallbackListForWriting().Clear();
-            root.element.m_CallbackRegistry.m_TrickleDownCallbacks.GetCallbackListForWriting().Clear();
-            s_ItemPool.Release(root.element);
-        }
-
-        internal void Hide(bool giveFocusBack = false, bool hideParent = true)
+        void Hide(bool giveFocusBack = false)
         {
             m_MenuContainer.RemoveFromHierarchy();
-
-            if (hideParent)
-                m_Parent?.Hide(giveFocusBack);
 
             if (m_TargetElement != null)
             {
@@ -403,195 +157,86 @@ namespace UnityEngine.UIElements
             m_TargetElement = null;
         }
 
-        internal void Apply(KeyboardNavigationOperation op, EventBase sourceEvent)
+        void Apply(KeyboardNavigationOperation op, EventBase sourceEvent)
         {
             if (Apply(op))
+            {
                 sourceEvent.StopPropagation();
+            }
         }
 
-        internal bool Apply(KeyboardNavigationOperation op)
+        bool Apply(KeyboardNavigationOperation op)
         {
             var selectedIndex = GetSelectedIndex();
-            MenuItem item;
 
             void UpdateSelectionDown(int newIndex)
             {
-                if (newIndex >= m_Current.children.Count)
-                    newIndex = 0;
-                m_ListView.ScrollToItem(newIndex);
-
-                // If all menu items disabled without iteration limit we would enter an endless loop
-                for (int i = 0; newIndex < m_Current.children.Count && i < m_Current.children.Count; i++)
+                while (newIndex < m_Items.Count)
                 {
-                    var item = m_Current.children[newIndex];
-
-                    if (item.element.enabledSelf && !item.isSeparator && item.isActionValid)
+                    if (m_Items[newIndex].element.enabledSelf)
                     {
-                        ChangeSelectedIndex(newIndex);
+                        ChangeSelectedIndex(newIndex, selectedIndex);
                         break;
                     }
 
                     ++newIndex;
-
-                    if (newIndex >= m_Current.children.Count)
-                        newIndex = 0;
                 }
             }
 
             void UpdateSelectionUp(int newIndex)
             {
-                if (newIndex < 0)
-                    newIndex = m_Current.children.Count - 1;
-                m_ListView.ScrollToItem(newIndex);
-
-                // If all menu items disabled without iteration limit we would enter an endless loop
-                for (int i = 0; newIndex >= 0 && i < m_Current.children.Count; i++)
+                while (newIndex >= 0)
                 {
-                    var item = m_Current.children[newIndex];
-
-                    if (item.element.enabledSelf && !item.isSeparator && item.isActionValid)
+                    if (m_Items[newIndex].element.enabledSelf)
                     {
-                        ChangeSelectedIndex(newIndex);
+                        ChangeSelectedIndex(newIndex, selectedIndex);
                         break;
                     }
 
                     --newIndex;
-
-                    if (newIndex < 0)
-                        newIndex = m_Current.children.Count - 1;
                 }
             }
-
-            var result = false;
 
             switch (op)
             {
-                case KeyboardNavigationOperation.MoveLeft:
-                    if (m_Parent == null)
-                        return true;
-
-                    FirstOrDefault(m_Current.children)?.parent?.element?.Focus();
-
-                    if (allowBackButton)
-                        NavigateBack(true);
-                    else
-                    {
-                        m_Parent.m_Child = null;
-                        Hide(true, false);
-                    }
-
-                    m_OnBack?.Invoke();
-                    result = true;
-                    break;
-
                 case KeyboardNavigationOperation.Cancel:
-                    FirstOrDefault(m_Current.children)?.parent?.element?.Focus();
-
-                    if (allowBackButton)
-                        NavigateBack(true);
-                    else
-                    {
-                        if(m_Parent != null)
-                            m_Parent.m_Child = null;
-
-                        Hide(true, false);
-                    }
-
-                    m_OnBack?.Invoke();
-                    result = true;
-                    break;
-
+                    Hide(true);
+                    return true;
                 case KeyboardNavigationOperation.Submit:
-                    if (selectedIndex < 0)
-                        return false;
-
-                    item = m_Current.children[selectedIndex];
+                    var item = m_Items[selectedIndex];
                     if (selectedIndex >= 0 && item.element.enabledSelf)
                     {
-                        m_OnBeforePerformAction?.Invoke(item.isSubmenu, autoClose);
-                        item.PerformAction();
+                        item.action?.Invoke();
+                        item.actionUserData?.Invoke(item.element.userData);
                     }
 
-                    if (!item.isSubmenu)
-                        Hide(true);
-
-                    result = true;
-                    break;
+                    Hide(true);
+                    return true;
                 case KeyboardNavigationOperation.Previous:
-                    UpdateSelectionUp(selectedIndex < 0 ? m_Current.children.Count - 1 : selectedIndex - 1);
-                    result = true;
-                    break;
+                    UpdateSelectionUp(selectedIndex < 0 ? m_Items.Count - 1 : selectedIndex - 1);
+                    return true;
                 case KeyboardNavigationOperation.Next:
                     UpdateSelectionDown(selectedIndex + 1);
-                    result = true;
-                    break;
+                    return true;
                 case KeyboardNavigationOperation.PageUp:
                 case KeyboardNavigationOperation.Begin:
                     UpdateSelectionDown(0);
-                    result = true;
-                    break;
+                    return true;
                 case KeyboardNavigationOperation.PageDown:
                 case KeyboardNavigationOperation.End:
-                    UpdateSelectionUp(m_Current.children.Count - 1);
-                    result = true;
-                    break;
-                case KeyboardNavigationOperation.MoveRight:
-                    if (selectedIndex < 0)
-                        return false;
-
-                    item = m_Current.children[selectedIndex];
-                    s_ScheduleFocusFirstItem = true;
-
-                    if (item.isSubmenu)
-                    {
-                        m_OnBeforePerformAction?.Invoke(item.isSubmenu, autoClose);
-                        item.PerformAction();
-                    }
-
-                    result = true;
-                    break;
+                    UpdateSelectionUp(m_Items.Count - 1);
+                    return true;
             }
 
-            if (result == true)
-                onKeyboardNavigationOperation?.Invoke(op);
-
-            return result;
+            return false;
         }
 
-        void ClickItem()
-        {
-            var selectedIndex = GetSelectedIndex();
-            if (selectedIndex != -1)
-            {
-                var item = m_Current.children[selectedIndex];
-
-                if (item.element.enabledSelf && !s_wasPicking)
-                {
-                    m_OnBeforePerformAction?.Invoke(item.isSubmenu, autoClose);
-                    item.PerformAction();
-
-                    if(item.children.Count < 1)
-                    {
-                        if (autoClose)
-                            Hide(true);
-                        else
-                            NavigateTo(current);
-                    }
-                }
-            }
-
-            s_wasPicking = false;
-        }
+        Vector2 m_MousePosition;
 
         void OnPointerDown(PointerDownEvent evt)
         {
-            if (evt.button != 0)
-                return;
-
+            m_MousePosition = m_ScrollView.WorldToLocal(evt.position);
             UpdateSelection(evt.elementTarget);
-
-            if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX && Application.isEditor)
-                ClickItem();
 
             if (evt.pointerId != PointerId.mousePointerId)
             {
@@ -603,6 +248,7 @@ namespace UnityEngine.UIElements
 
         void OnPointerMove(PointerMoveEvent evt)
         {
+            m_MousePosition = m_ScrollView.WorldToLocal(evt.position);
             UpdateSelection(evt.elementTarget);
 
             if (evt.pointerId != PointerId.mousePointerId)
@@ -610,17 +256,23 @@ namespace UnityEngine.UIElements
                 m_MenuContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
             }
 
-            s_wasPicking |= s_Picking;
             evt.StopPropagation();
         }
 
         void OnPointerUp(PointerUpEvent evt)
         {
-            if (evt.button != 0)
-                return;
+            var selectedIndex = GetSelectedIndex();
+            if (selectedIndex != -1)
+            {
+                var item = m_Items[selectedIndex];
+                item.action?.Invoke();
+                item.actionUserData?.Invoke(item.element.userData);
 
-            if (SystemInfo.operatingSystemFamily != OperatingSystemFamily.MacOSX || !Application.isEditor)
-                ClickItem();
+                if (isSingleSelectionDropdown)
+                {
+                    Hide(true);
+                }
+            }
 
             if (evt.pointerId != PointerId.mousePointerId)
             {
@@ -630,98 +282,94 @@ namespace UnityEngine.UIElements
             evt.StopPropagation();
         }
 
-        void OnPointerLeave(PointerLeaveEvent evt)
-        {
-            m_ListView.EnableInClassList(clickUssClassName, false);
-        }
-
-        void OnKeyDown(KeyDownEvent evt)
-        {
-            onKey?.Invoke(evt.character, evt.keyCode, evt.modifiers);
-            evt.StopPropagation();
-        }
-
         void OnFocusOut(FocusOutEvent evt)
         {
-            if (customFocusHandling)
-                return;
-
-            Hide();
+            if (!m_ScrollView.ContainsPoint(m_MousePosition))
+            {
+                Hide();
+            }
+            else
+            {
+                // Keep the focus in.
+                m_MenuContainer.schedule.Execute(contentContainer.Focus);
+            }
         }
 
         void OnParentResized(GeometryChangedEvent evt)
         {
-            var isPlayer = menuContainer.elementPanel?.contextType == ContextType.Player;
-
-            if (!isPlayer)
-                return;
-
-            Hide(true);
+            if (closeOnParentResize)
+            {
+                Hide(true);
+            }
         }
 
         void UpdateSelection(VisualElement target)
         {
+            if (!m_ScrollView.ContainsPoint(m_MousePosition))
+            {
+                var selectedIndex = GetSelectedIndex();
+                if (selectedIndex >= 0)
+                    m_Items[selectedIndex].element.pseudoStates &= ~PseudoStates.Hover;
+
+                return;
+            }
+
             if (target == null)
                 return;
 
-            ChangeSelectedIndex(m_Current.children.FindIndex(c => c.element == target));
-
-            m_Parent?.ChangeSelectedIndex(m_Parent.m_Current.children.IndexOf(root.parent));
-        }
-
-        void ChangeSelectedIndex(int newIndex)
-        {
-            if (m_PreviousIndex >= 0 && m_PreviousIndex < m_Current.children.Count)
+            if ((target.pseudoStates & PseudoStates.Hover) != PseudoStates.Hover)
             {
-                m_Current.children[m_PreviousIndex].element.pseudoStates &= ~PseudoStates.Hover;
-            }
-
-            m_PreviousIndex = newIndex;
-
-            if (newIndex >= 0 && newIndex < m_Current.children.Count)
-            {
-                m_Current.children[newIndex].element.pseudoStates |= PseudoStates.Hover;
-                var elementToSelect = m_Current.children[newIndex].element.parent;
-
-                if (elementToSelect != null)
+                var selectedIndex = GetSelectedIndex();
+                if (selectedIndex >= 0)
                 {
-                    m_ListView.ScrollTo(elementToSelect);
-                }
-            }
-
-            m_Parent?.ChangeSelectedIndex(m_Parent.m_Current.children.IndexOf(root.parent));
-        }
-
-        internal int GetSelectedIndex()
-        {
-            int index = 0;
-            foreach (var item in m_Current.children)
-            {
-                if ((item.element?.pseudoStates & PseudoStates.Hover) == PseudoStates.Hover)
-                {
-                    return index;
+                    m_Items[selectedIndex].element.pseudoStates &= ~PseudoStates.Hover;
                 }
 
-                index++;
+                target.pseudoStates |= PseudoStates.Hover;
+            }
+        }
+
+        void ChangeSelectedIndex(int newIndex, int previousIndex)
+        {
+            if (previousIndex >= 0 && previousIndex < m_Items.Count)
+            {
+                m_Items[previousIndex].element.pseudoStates &= ~PseudoStates.Hover;
+            }
+
+            if (newIndex >= 0 && newIndex < m_Items.Count)
+            {
+                m_Items[newIndex].element.pseudoStates |= PseudoStates.Hover;
+                m_ScrollView.ScrollTo(m_Items[newIndex].element);
+            }
+        }
+
+        int GetSelectedIndex()
+        {
+            for (var i = 0; i < m_Items.Count; ++i)
+            {
+                if ((m_Items[i].element.pseudoStates & PseudoStates.Hover) == PseudoStates.Hover)
+                {
+                    return i;
+                }
             }
 
             return -1;
         }
 
         /// <summary>
-        /// Adds an item to this menu using a default <see cref="VisualElement"/>.
+        /// Adds an item to this menu using a default VisualElement.
         /// </summary>
         /// <param name="itemName">The text to display to the user.</param>
-        /// <param name="isChecked">Whether to display a checkmark next to the item.</param>
+        /// <param name="isChecked">Indicates whether a checkmark next to the item is displayed.</param>
         /// <param name="action">The callback to invoke when the item is selected by the user.</param>
         public void AddItem(string itemName, bool isChecked, Action action)
         {
-            AddItem(itemName, isChecked, action, null, string.Empty);
-        }
+            var menuItem = AddItem(itemName, isChecked, true);
 
-        internal void AddItem(string itemName, bool isChecked, Action action, Texture2D icon, string tooltip)
-        {
-            AddItem(itemName, isChecked, true, action, null, null, icon, tooltip);
+            if (menuItem != null)
+            {
+                menuItem.action = action;
+            }
         }
 
         /// <summary>
@@ -731,323 +379,108 @@ namespace UnityEngine.UIElements
         /// This overload of the method accepts an arbitrary object that's passed as a parameter to your callback.
         /// </remarks>
         /// <param name="itemName">The text to display to the user.</param>
-        /// <param name="isChecked">Whether to display a checkmark next to the item.</param>
+        /// <param name="isChecked">Indicates whether a checkmark next to the item is displayed.</param>
         /// <param name="action">The callback to invoke when the item is selected by the user.</param>
         /// <param name="data">The object to pass to the callback as a parameter.</param>
         public void AddItem(string itemName, bool isChecked, Action<object> action, object data)
         {
-            AddItem(itemName, isChecked, action, data, null, string.Empty);
-        }
+            var menuItem = AddItem(itemName, isChecked, true, data);
 
-        internal void AddItem(string itemName, bool isChecked, Action<object> action, object data, Texture2D icon, string tooltip)
-        {
-            AddItem(itemName, isChecked, true, null, action, data, icon, tooltip);
-        }
-
-        /// <summary>
-        /// Adds an item to this menu using a custom <see cref="VisualElement"/>.
-        /// </summary>
-        /// <param name="itemName">The text that identifies this visual element.</param>
-        /// <param name="content">Custom menu item visual element.</param>
-        public void AddItem(string itemName, VisualElement content)
-        {
-            AddItem(itemName, content, true);
+            if (menuItem != null)
+            {
+                menuItem.actionUserData = action;
+            }
         }
 
         /// <summary>
-        /// Adds a disabled item to this menu using a default <see cref="VisualElement"/>.
+        /// Adds a disabled item to this menu using a default VisualElement.
         /// </summary>
         /// <remarks>
         /// Items added with this method cannot be selected by the user.
         /// </remarks>
-        /// <param name="itemName">The text that identifies this visual element.</param>
-        /// <param name="isChecked">Whether to display a checkmark next to the item.</param>
+        /// <param name="itemName">The text to display to the user.</param>
+        /// <param name="isChecked">Indicates whether a checkmark next to the item is displayed.</param>
         public void AddDisabledItem(string itemName, bool isChecked)
         {
-            AddDisabledItem(itemName, isChecked, null, string.Empty);
-        }
-
-        internal void AddDisabledItem(string itemName, bool isChecked, Texture2D icon, string tooltip)
-        {
-            AddItem(itemName, isChecked, false, null, null, null, icon, tooltip);
-        }
-
-        internal void AddDisabledItem(string itemName, VisualElement content)
-        {
-            AddItem(itemName, content, false);
-        }
-
-        internal void AddHeaderItem(Texture2D icon, string tooltip, bool isChecked, Action action)
-        {
-            AddHeaderItem(icon, tooltip, true, isChecked, action);
-        }
-
-        internal void AddHeaderItem(Texture2D icon, string tooltip, bool isChecked, Action<object> action, object data)
-        {
-            AddHeaderItem(icon, tooltip, true, isChecked, null, action, data);
-        }
-
-        internal void AddDisabledHeaderItem(Texture2D icon, string tooltip, bool isChecked)
-        {
-            AddHeaderItem(icon, tooltip, false, isChecked);
+            AddItem(itemName, isChecked, false);
         }
 
         /// <summary>
         /// Adds a visual separator after the previously added items in this menu.
         /// </summary>
-        /// <param name="path">Path to submenu where the separator is added.</param>
+        /// <param name="path">Not used.</param>
         public void AddSeparator(string path)
         {
-            AddItem(path, false, true);
+            // TODO path is not used. This is because IGenericMenu requires it, but this is not great.
+            var separator = new VisualElement();
+            separator.AddToClassList(separatorUssClassName);
+            separator.pickingMode = PickingMode.Ignore;
+            m_ScrollView.Add(separator);
         }
 
-        internal static VisualElement CreateSeparator() => new()
+        MenuItem AddItem(string itemName, bool isChecked, bool isEnabled, object data = null)
         {
-            pickingMode = PickingMode.Ignore,
-            classList = { separatorUssClassName }
-        };
-
-        internal MenuItem AddItem(string itemName, bool isChecked, bool isEnabled, Action action1 = null, Action<object> action2 = null, object data = null, Texture2D icon = null, string tooltip = "")
-        {
-            var parent = GetOrCreateParents(ref itemName, icon);
-            var menuItem = new MenuItem
+            // Empty item name must count as a separator.
+            if (string.IsNullOrEmpty(itemName) || itemName.EndsWith("/"))
             {
-                name = itemName ?? string.Empty,
-                parent = parent,
-                action = action1,
-                actionUserData = action2,
-            };
+                AddSeparator(itemName);
+                return null;
+            }
 
-            // Empty item name must count as a separator. Also don't allow to put two separators next to each other
-            if (string.IsNullOrWhiteSpace(itemName) || itemName[^1] == '/')
-            {
-                if(parent.children.Count == 0 || (parent.children[^1]?.isSeparator ?? true))
+            // Ignore if item already exists.
+            for (var i = 0; i < m_Items.Count; ++i)
+                if (itemName == m_Items[i].name)
                     return null;
 
-                menuItem.element = CreateSeparator();
-            }
-            else
-            {
-                if (parent.HasChild(itemName))
-                    return null;
+            var rowElement = new VisualElement();
+            rowElement.AddToClassList(itemUssClassName);
+            rowElement.SetEnabled(isEnabled);
+            rowElement.userData = data;
 
-                menuItem.element = BuildItem(itemName, isChecked, isEnabled, false, data, icon, tooltip);
-            }
-
-            parent.AddChild(menuItem);
-            return menuItem;
-        }
-
-        internal MenuItem AddItem(string itemName, VisualElement content, bool isEnabled)
-        {
-            var parent = GetOrCreateParents(ref itemName);
-            content.SetEnabled(isEnabled);
-
-            var menuItem = new MenuItem
-            {
-                name = itemName,
-                parent = parent,
-                element = content,
-                isCustomContent = true
-            };
-            parent.children.Add(menuItem);
-            return menuItem;
-        }
-
-        internal void AddHeaderItem(Texture2D icon, string tooltip, bool isEnabled, bool isChecked, Action action1 = null, Action<object> action2 = null, object data = null)
-        {
-            var headerItem = new MenuItem
-            {
-                name = string.Empty,
-                parent = null,
-                action = action1,
-                actionUserData = action2,
-                element = CreateHeaderItem?.Invoke(icon, tooltip, isEnabled, isChecked)
-            };
-
-            headerItem.element.userData = data;
-
-            headerItem.element.RegisterCallback<ClickEvent>(e =>
-            {
-                m_OnBeforePerformAction?.Invoke(false, autoClose);
-                headerItem.PerformAction();
-                Hide(true);
-            });
-
-            root.headerActions.Add(headerItem);
-        }
-
-        internal void AddItem(MenuItem item)
-        {
-            m_Root.AddChild(item);
-        }
-
-        internal void AddHeaderItem(MenuItem item)
-        {
-            m_Root.headerActions.Add(item);
-        }
-
-        MenuItem GetOrCreateParents(ref string path, Texture2D icon = null, bool canCreateParent = true)
-        {
-            var item = m_Root;
-
-            if (path == null)
-                return item;
-
-            var slashIndex = path.IndexOf('/', StringComparison.Ordinal);
-
-            Texture2D elementIcon = null;
-            while (m_AllowSubmenus && slashIndex > 0)
-            {
-                if (slashIndex == path.Length - 1)
-                    elementIcon = icon;
-
-                var childName = path[..slashIndex];
-                var childItem = item.GetChild(childName);
-
-                if (childItem == null)
-                {
-                    if (!canCreateParent)
-                        return null;
-
-                    childItem = new MenuItem
-                    {
-                        name = childName,
-                        parent = item,
-                        element = BuildItem(childName, false, true, true, null, elementIcon, string.Empty),
-                    };
-                    childItem.action = () =>
-                    {
-                        if (m_SubmenuOverride != null)
-                            m_SubmenuOverride.Invoke(childItem, this);
-                        else
-                            NavigateTo(childItem);
-                    };
-
-                    item.AddChild(childItem);
-                }
-
-                item = childItem;
-                path = path[(slashIndex + 1)..];
-                slashIndex = path.IndexOf('/', StringComparison.Ordinal);
-            }
-
-            return item;
-        }
-
-        internal static VisualElement BuildItem(string name, bool isChecked, bool isEnabled, bool isSubmenu, object data, Texture2D icon, string tooltip)
-        {
-            var item = s_ItemPool.Get();
-            item.RegisterCallback<PointerDownEvent>(e => item.parent.parent.parent.EnableInClassList(clickUssClassName, true));
-            item.RegisterCallback<PointerUpEvent>(e => item.parent.parent.parent.EnableInClassList(clickUssClassName, false));
-            item.SetEnabled(isEnabled);
-            item.userData = data;
-            item.tooltip = tooltip;
-
-            var children = item.Children() as List<VisualElement>;
+            var checkElement = new VisualElement();
+            checkElement.AddToClassList(checkmarkUssClassName);
+            checkElement.pickingMode = PickingMode.Ignore;
+            rowElement.Add(checkElement);
 
             if (isChecked)
-                item.pseudoStates |= PseudoStates.Checked;
-
-            var leftAppendix = children[0];
-            leftAppendix.AddToClassList(appendixUssClassName);
-
-            if (icon != null)
             {
-                leftAppendix.AddToClassList(iconUssClassName);
-                leftAppendix.style.backgroundImage = icon;
-            }
-            else
-            {
-                leftAppendix.AddToClassList(checkmarkUssClassName);
+                rowElement.pseudoStates |= PseudoStates.Checked;
             }
 
-            var label = children[1] as Label;
-            label.text = name;
+            var label = new Label(itemName);
+            label.AddToClassList(labelUssClassName);
+            label.pickingMode = PickingMode.Ignore;
+            rowElement.Add(label);
 
-            var rightAppendix = children[2];
-            rightAppendix.AddToClassList(appendixUssClassName);
+            m_ScrollView.Add(rowElement);
 
-            if (isSubmenu)
+            MenuItem menuItem = new MenuItem
             {
-                rightAppendix.AddToClassList(submenuUssClassName);
-            }
+                name = itemName,
+                element = rowElement,
+            };
+            m_Items.Add(menuItem);
 
-            return item;
-        }
-
-        internal void NavigateTo(MenuItem menu)
-        {
-            m_Current = menu;
-            Rebuild();
-        }
-
-        internal void NavigateBack(bool hideRoots = false)
-        {
-            if (m_Current.parent == null)
-            {
-                // Need to be able to disable hiding for search mode
-                if(hideRoots)
-                    Hide();
-
-                return;
-            }
-
-            var select = m_Current.element;
-            m_Current = m_Current.parent;
-
-            Rebuild();
-            select?.schedule.Execute(() => UpdateSelection(select));
-        }
-
-        void Rebuild()
-        {
-            if (m_Current.children.Count == 0 && m_Current.headerActions.Count == 0)
-                return;
-
-            m_Title.text = m_Current.name;
-            var items = m_Current.children;
-
-            m_ListView.itemsSource = items;
-            m_ListView.RefreshItems();
-
-            m_HeaderButtons.Clear();
-
-            foreach (var item in m_Current.headerActions)
-                m_HeaderButtons.Add(item.element);
-
-            SetupHeaderStrip?.Invoke(m_HeaderButtons);
-
-            onRebuild?.Invoke();
-
-            m_TitleBar.EnableInClassList(hiddenClassName, string.IsNullOrWhiteSpace(m_Title.text) && m_Current.headerActions.Count < 1);
-
-            var backButtonHidden = m_Current.parent == null || !allowBackButton;
-            m_Back.EnableInClassList(hiddenClassName, backButtonHidden);
-            m_TitleBar.EnableInClassList(titleAreaWithBackUssClassName, !backButtonHidden);
-
-            var separatorIndex = outerContainer.IndexOf(m_HeaderSeparator);
-            var visibleChilds = 0;
-            for (int i = 0; i < separatorIndex; i++)
-            {
-                if (!outerContainer.ElementAt(i).ClassListContains(hiddenClassName))
-                    visibleChilds++;
-            }
-            m_HeaderSeparator.EnableInClassList(hiddenClassName, visibleChilds < 1);
+            return menuItem;
         }
 
         internal void UpdateItem(string itemName, bool isChecked)
         {
-            // Since this is only used by MaskFieldBase we can assume we won't need to update submenus
-            var item = root.children.Find(x => x.name == itemName);
+            var item = m_Items.Find(x => x.name == itemName);
 
             if (item == null)
+            {
                 return;
+            }
 
             if (isChecked)
+            {
                 item.element.pseudoStates |= PseudoStates.Checked;
+            }
             else
+            {
                 item.element.pseudoStates &= ~PseudoStates.Checked;
+            }
         }
 
         /// <summary>
@@ -1097,7 +530,7 @@ namespace UnityEngine.UIElements
 
             m_DesiredRect = anchored ? position : Rect.zero;
 
-            m_MenuContainer.schedule.Execute(m_ListView.Focus);
+            m_MenuContainer.schedule.Execute(contentContainer.Focus);
             EnsureVisibilityInParent();
 
             if (targetElement != null)
@@ -1126,30 +559,16 @@ namespace UnityEngine.UIElements
                     m_OuterContainer.style.left = posX;
                     m_OuterContainer.style.top = posY;
                 }
-                else
+
+                m_OuterContainer.style.height = Mathf.Min(
+                    m_MenuContainer.layout.height - m_MenuContainer.layout.y - m_OuterContainer.layout.y,
+                    m_ScrollView.layout.height + m_OuterContainer.resolvedStyle.borderBottomWidth + m_OuterContainer.resolvedStyle.borderTopWidth);
+
+                if (m_DesiredRect != Rect.zero)
                 {
-                    m_OuterContainer.style.maxHeight = m_PanelRootVisualContainer.layout.height - m_DesiredRect.y;
                     m_OuterContainer.style.width = m_DesiredRect.width;
                 }
             }
-        }
-
-        // Avoid Linq
-        static T FirstOrDefault<T>(List<T> source)
-        {
-            foreach (var item in source)
-                return item;
-
-            return default;
-        }
-
-        static T FirstOrDefault<T>(List<T> source, Func<T, bool> predicate)
-        {
-            foreach (var item in source)
-                if(predicate(item))
-                    return item;
-
-            return default;
         }
     }
 }

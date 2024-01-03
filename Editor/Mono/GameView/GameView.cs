@@ -863,12 +863,21 @@ namespace UnityEditor
 
         void OnBecameVisible()
         {
+            if (latestState == PlayModeStateChange.EnteredPlayMode) 
+                m_Parent.EnableVSync(m_VSyncEnabled);
+            
             EditorApplication.update += RepaintIfNeeded;
         }
 
         void OnBecameInvisible()
         {
             EditorApplication.update -= RepaintIfNeeded;
+        }
+        
+        void OnAddedAsTab()
+        {
+            if (latestState == PlayModeStateChange.EnteredPlayMode)
+                m_Parent.EnableVSync(m_VSyncEnabled);
         }
 
         void RepaintIfNeeded()

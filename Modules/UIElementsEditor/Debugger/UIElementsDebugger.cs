@@ -80,7 +80,7 @@ namespace UnityEditor.UIElements.Debugger
         private bool m_ShowWireframe = false;
 
         [SerializeField]
-        private bool m_RetainContextMenu = false;
+        private bool m_ShowTextureAtlasViewer = false;
 
         public DebuggerSelection selection { get; } = new DebuggerSelection();
         public VisualElement selectedElement => selection.element;
@@ -172,15 +172,14 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        public bool retainContextMenu
+        public bool showTextureAtlasViewer
         {
-            get { return m_RetainContextMenu; }
+            get { return m_ShowTextureAtlasViewer; }
             set
             {
-                if (m_RetainContextMenu == value)
+                if (m_ShowTextureAtlasViewer == value)
                     return;
-                EditorMenuExtensions.CloseAllContextMenus();
-                m_RetainContextMenu = EditorMenuExtensions.s_DebugMode = value;
+                m_ShowTextureAtlasViewer = value;
                 onStateChange?.Invoke();
             }
         }
@@ -283,7 +282,7 @@ namespace UnityEditor.UIElements.Debugger
         private ToolbarToggle m_ShowDrawStatsToggle;
         private ToolbarToggle m_BreakBatchesToggle;
         private ToolbarToggle m_ShowWireframeToggle;
-        private ToolbarToggle m_RetainContextMenuToggle;
+        private ToolbarButton m_TextureAtlasViewerButton;
         private EnumField m_ShowTextMetrics;
 
         private DebuggerTreeView m_TreeViewContainer;
@@ -318,9 +317,9 @@ namespace UnityEditor.UIElements.Debugger
 
             m_Root.Add(m_Toolbar);
 
-            m_PickToggle = new ToolbarToggle() { name = "pickToggle" };
+            m_PickToggle = new ToolbarToggle { name = "pickToggle" };
             m_PickToggle.text = "Pick Element";
-            m_PickToggle.RegisterValueChangedCallback((e) =>
+            m_PickToggle.RegisterValueChangedCallback(e =>
             {
                 m_Context.pickElement = e.newValue;
 
@@ -338,13 +337,13 @@ namespace UnityEditor.UIElements.Debugger
 
             m_Toolbar.Add(m_PickToggle);
 
-            m_ShowLayoutToggle = new ToolbarToggle() { name = "layoutToggle" };
+            m_ShowLayoutToggle = new ToolbarToggle { name = "layoutToggle" };
             m_ShowLayoutToggle.text = "Show Layout";
-            m_ShowLayoutToggle.RegisterValueChangedCallback((e) => { m_Context.showLayoutBound = e.newValue; });
+            m_ShowLayoutToggle.RegisterValueChangedCallback(e => { m_Context.showLayoutBound = e.newValue; });
 
             m_Toolbar.Add(m_ShowLayoutToggle);
 
-            m_ShowTextMetrics = new EnumField() { name = "showTextMetrics" };
+            m_ShowTextMetrics = new EnumField { name = "showTextMetrics" };
             m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
 
             // Update USS classes so it looks like other ToolbarToggles
@@ -356,40 +355,44 @@ namespace UnityEditor.UIElements.Debugger
             m_ShowTextMetrics.Init(TextInfoOverlay.DisplayOption.None);
             m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
 
-            m_ShowTextMetrics.RegisterValueChangedCallback((e) =>
+            m_ShowTextMetrics.RegisterValueChangedCallback(e =>
             {
                 m_TextInfoOverlay.displayOption = (TextInfoOverlay.DisplayOption)e.newValue;
                 m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
             });
             m_Toolbar.Add(m_ShowTextMetrics);
 
+            if (Unsupported.IsDeveloperMode())
+            {
+                m_RepaintOverlayToggle = new ToolbarToggle { name = "repaintOverlayToggle", text = "Repaint Overlay" };
+                m_RepaintOverlayToggle.RegisterValueChangedCallback(e => m_Context.showRepaintOverlay = e.newValue);
+                m_Toolbar.Add(m_RepaintOverlayToggle);
+            }
+
+            if (Unsupported.IsDeveloperMode())
+            {
+                m_ShowDrawStatsToggle = new ToolbarToggle { name = "drawStatsToggle", text = "Draw Stats Overlay" };
+                m_ShowDrawStatsToggle.RegisterValueChangedCallback(e => { m_Context.showDrawStats = e.newValue; });
+                m_Toolbar.Add(m_ShowDrawStatsToggle);
+            }
+
+            if (Unsupported.IsDeveloperMode())
+            {
+                m_BreakBatchesToggle = new ToolbarToggle { name = "breakBatchesToggle", text = "Break Batches", tooltip = "Useful when taking captures with RenderDoc" };
+                m_BreakBatchesToggle.RegisterValueChangedCallback(e => { m_Context.breakBatches = e.newValue; });
+                m_Toolbar.Add(m_BreakBatchesToggle);
+            }
+
             if (Unsupported.IsDeveloperBuild())
             {
-                m_RepaintOverlayToggle = new ToolbarToggle() { name = "repaintOverlayToggle" };
-                m_RepaintOverlayToggle.text = "Repaint Overlay";
-                m_RepaintOverlayToggle.RegisterValueChangedCallback((e) => m_Context.showRepaintOverlay = e.newValue);
-                m_Toolbar.Add(m_RepaintOverlayToggle);
-
-                m_ShowDrawStatsToggle = new ToolbarToggle() { name = "drawStatsToggle" };
-                m_ShowDrawStatsToggle.text = "Draw Stats";
-                m_ShowDrawStatsToggle.RegisterValueChangedCallback((e) => { m_Context.showDrawStats = e.newValue; });
-                m_Toolbar.Add(m_ShowDrawStatsToggle);
-
-                m_BreakBatchesToggle = new ToolbarToggle() { name = "breakBatchesToggle" };
-                m_BreakBatchesToggle.text = "Break Batches";
-                m_BreakBatchesToggle.RegisterValueChangedCallback((e) => { m_Context.breakBatches = e.newValue; });
-                m_Toolbar.Add(m_BreakBatchesToggle);
-
-                m_ShowWireframeToggle = new ToolbarToggle() { name = "showWireframeToggle" };
-                m_ShowWireframeToggle.text = "Show Wireframe";
-                m_ShowWireframeToggle.RegisterValueChangedCallback((e) => { m_Context.showWireframe = e.newValue; });
+                m_ShowWireframeToggle = new ToolbarToggle { name = "showWireframeToggle", text = "Show Wireframe" };
+                m_ShowWireframeToggle.RegisterValueChangedCallback(e => { m_Context.showWireframe = e.newValue; });
                 m_Toolbar.Add(m_ShowWireframeToggle);
-                m_RetainContextMenuToggle = new ToolbarToggle() { name = "retainContextMenuToggle" };
-                m_RetainContextMenuToggle.text = "Retain Context Menu";
-                m_RetainContextMenuToggle.RegisterValueChangedCallback((e) => { m_Context.retainContextMenu = e.newValue; });
-                m_Toolbar.Add(m_RetainContextMenuToggle);
-
             }
+
+            m_TextureAtlasViewerButton = new ToolbarButton { name = "textureAtlasViewerButton", text = "Texture Atlas Viewer" };
+            m_TextureAtlasViewerButton.clicked += () => { TextureAtlasViewerWindow.ShowWindow(); };
+            m_Toolbar.Add(m_TextureAtlasViewerButton);
 
             var splitter = new TwoPaneSplitView(0, 300, TwoPaneSplitViewOrientation.Horizontal);
             m_Root.Add(splitter);
@@ -418,8 +421,6 @@ namespace UnityEditor.UIElements.Debugger
             base.OnDisable();
 
             EditorApplication.update -= EditorUpdate;
-            EditorMenuExtensions.s_DebugMode = false;
-            GenericDropdownMenu.s_Picking = false;
 
             if (DebuggerEventDispatchUtilities.s_GlobalPanelDebug == this)
                 DebuggerEventDispatchUtilities.s_GlobalPanelDebug = null;
@@ -466,18 +467,18 @@ namespace UnityEditor.UIElements.Debugger
             m_ShowLayoutToggle.SetValueWithoutNotify(m_Context.showLayoutBound);
 
             if (Unsupported.IsDeveloperBuild())
-            {
                 m_RepaintOverlayToggle.SetValueWithoutNotify(m_Context.showRepaintOverlay);
+
+            if (Unsupported.IsDeveloperMode())
                 m_ShowDrawStatsToggle.SetValueWithoutNotify(m_Context.showDrawStats);
+
+            if (Unsupported.IsDeveloperMode())
                 m_BreakBatchesToggle.SetValueWithoutNotify(m_Context.breakBatches);
+
+            if (Unsupported.IsDeveloperBuild())
                 m_ShowWireframeToggle.SetValueWithoutNotify(m_Context.showWireframe);
-                m_RetainContextMenuToggle.SetValueWithoutNotify(m_Context.retainContextMenu);
 
-                ApplyToPanel(m_Context);
-            }
-
-            EditorMenuExtensions.s_DebugMode = m_Context.retainContextMenu;
-            GenericDropdownMenu.s_Picking = EditorMenuExtensions.s_DebugMode && m_Context.pickElement;
+            ApplyToPanel(m_Context);
 
             panelDebug?.MarkDirtyRepaint();
             panelDebug?.MarkDebugContainerDirtyRepaint();

@@ -25,7 +25,6 @@ using System.Reflection;
 using Unity.Profiling;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 
 namespace UnityEditor
 {
@@ -43,7 +42,7 @@ namespace UnityEditor
         internal static string s_RecycledCurrentEditingString;
         private static bool bKeyEventActive = false;
 
-        internal static bool s_DragToPosition = true;
+        internal static bool s_DragToPosition = false;
         internal static bool s_Dragged = false;
         internal static bool s_SelectAllOnMouseUp = true;
 
@@ -521,7 +520,7 @@ namespace UnityEditor
 
             internal bool IsEditingControl(int id)
             {
-                return GUIUtility.keyboardControl == id && controlID == id && s_ActuallyEditing && (GUIView.current.hasFocus || EditorMenuExtensions.isEditorContextMenuActive);
+                return GUIUtility.keyboardControl == id && controlID == id && s_ActuallyEditing && GUIView.current.hasFocus;
             }
 
             public virtual void BeginEditing(int id, string newText, Rect position, GUIStyle style, bool multiline, bool passwordField)
@@ -573,9 +572,6 @@ namespace UnityEditor
 
             public virtual void EndEditing()
             {
-                if (EditorMenuExtensions.isEditorContextMenuActive)
-                    return;
-
                 if (activeEditor == this)
                 {
                     activeEditor = null;
@@ -4021,6 +4017,11 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     if (evt.button == 0 && position.Contains(evt.mousePosition))
                     {
+                        if (Application.platform == RuntimePlatform.OSXEditor)
+                        {
+                            position.y = position.y - selected * 16 - 19;
+                        }
+
                         PopupCallbackInfo.instance = new PopupCallbackInfo(controlID);
                         EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null);
                         GUIUtility.keyboardControl = controlID;
@@ -4030,6 +4031,11 @@ namespace UnityEditor
                 case EventType.KeyDown:
                     if (evt.MainActionKeyForControl(controlID))
                     {
+                        if (Application.platform == RuntimePlatform.OSXEditor)
+                        {
+                            position.y = position.y - selected * 16 - 19;
+                        }
+
                         PopupCallbackInfo.instance = new PopupCallbackInfo(controlID);
                         EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null);
                         evt.Use();
@@ -5471,14 +5477,49 @@ namespace UnityEditor
                         hovered ^= hoveredEyedropper;
                     }
 
-                    if (hovered && evt.button == 0)
+                    if (hovered)
                     {
-                        // Left click: Show the ColorPicker
-                        GUIUtility.keyboardControl = id;
-                        showMixedValue = false;
-                        ColorPicker.Show(GUIView.current, value, showAlpha, hdr);
-                        GUIUtility.ExitGUI();
-                        break;
+                        switch (evt.button)
+                        {
+                            case 0:
+                                // Left click: Show the ColorPicker
+                                GUIUtility.keyboardControl = id;
+                                showMixedValue = false;
+                                ColorPicker.Show(GUIView.current, value, showAlpha, hdr);
+                                GUIUtility.ExitGUI();
+                                break;
+
+                            case 1:
+                                // Right click: Show color context menu
+                                // See ExecuteCommand section below to see handling for copy & paste
+                                GUIUtility.keyboardControl = id;
+
+                                var names = new[] {L10n.Tr("Copy"), L10n.Tr("Paste")};
+                                var enabled = new[] {true, wasEnabled && Clipboard.hasColor};
+                                var currentView = GUIView.current;
+
+                                EditorUtility.DisplayCustomMenu(
+                                    new Rect(Event.current.mousePosition, Vector2.zero),
+                                    names,
+                                    enabled,
+                                    null,
+                                    delegate(object data, string[] options, int selected)
+                                    {
+                                        if (selected == 0)
+                                        {
+                                            Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Copy);
+                                            currentView.SendEvent(e);
+                                        }
+                                        else if (selected == 1)
+                                        {
+                                            Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Paste);
+                                            currentView.SendEvent(e);
+                                        }
+                                    },
+                                    null);
+                                evt.Use();
+                                return origColor;
+                        }
                     }
 
                     if (showEyedropper)
@@ -5492,40 +5533,6 @@ namespace UnityEditor
                         }
                     }
                     break;
-
-                case EventType.ContextClick:
-                    if (!hovered)
-                        break;
-
-                    // Right click: Show color context menu
-                    // See ExecuteCommand section below to see handling for copy & paste
-                    GUIUtility.keyboardControl = id;
-
-                    var names = new[] { L10n.Tr("Copy"), L10n.Tr("Paste") };
-                    var enabled = new[] { true, wasEnabled && Clipboard.hasColor };
-                    var currentView = GUIView.current;
-
-                    EditorUtility.DisplayCustomMenu(
-                        new Rect(Event.current.mousePosition, Vector2.zero),
-                        names,
-                        enabled,
-                        null,
-                        delegate (object data, string[] options, int selected)
-                        {
-                            if (selected == 0)
-                            {
-                                Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Copy);
-                                currentView.SendEvent(e);
-                            }
-                            else if (selected == 1)
-                            {
-                                Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Paste);
-                                currentView.SendEvent(e);
-                            }
-                        },
-                        null);
-
-                    return origColor;
 
                 case EventType.Repaint:
                     Rect position2;
@@ -6602,20 +6609,7 @@ namespace UnityEditor
 
         public static void HelpBox(Rect position, GUIContent content)
         {
-            if (content.image != null)
-            {
-                var labelRect = position;
-                int iconSize = (int) (content.image.width / EditorGUIUtility.pixelsPerPoint);
-                labelRect.x += iconSize;
-                labelRect.width -= iconSize;
-
-                GUI.Label(position, EditorGUIUtility.TempContent(content.image), EditorStyles.helpBox);
-                GUI.Label(labelRect, EditorGUIUtility.TempContent(content.text), EditorStyles.helpBoxLabel);
-            }
-            else
-            {
-                GUI.Label(position, content, EditorStyles.helpBox);
-            }
+            GUI.Label(position, content, EditorStyles.helpBox);
         }
 
         internal static bool LabelHasContent(GUIContent label)

@@ -6,7 +6,7 @@ using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor
 {
-    class SceneViewPickingShortcutContext : IShortcutToolContext
+    class SceneViewPickingShortcutContext : IShortcutContext
     {
         public SceneView window => EditorWindow.focusedWindow as SceneView;
 

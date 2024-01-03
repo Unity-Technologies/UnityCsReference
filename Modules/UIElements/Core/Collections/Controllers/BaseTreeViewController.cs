@@ -568,7 +568,7 @@ namespace UnityEngine.UIElements
             if (IsViewDataKeyEnabled())
                 return baseTreeView.expandedItemIds.Contains(id);
 
-            return m_IdToNodeDictionary.ContainsKey(id) && m_Hierarchy.Exists(m_IdToNodeDictionary[id]) && m_HierarchyViewModel.HasFlags(m_IdToNodeDictionary[id], HierarchyNodeFlags.Expanded);
+            return m_IdToNodeDictionary.ContainsKey(id) && m_Hierarchy.Exists(m_IdToNodeDictionary[id]) && m_HierarchyViewModel.HasAllFlags(m_IdToNodeDictionary[id], HierarchyNodeFlags.Expanded);
         }
 
         /// <summary>
@@ -656,7 +656,7 @@ namespace UnityEngine.UIElements
             {
                 baseTreeView.expandedItemIds.Clear();
 
-                foreach (var node in m_HierarchyViewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Expanded))
+                foreach (var node in m_HierarchyViewModel.EnumerateNodesWithAllFlags(HierarchyNodeFlags.Expanded))
                     baseTreeView.expandedItemIds.Add(m_TreeViewDataProperty.GetValue(node));
 
                 baseTreeView.SaveViewData();
@@ -760,7 +760,7 @@ namespace UnityEngine.UIElements
                 list.AddRange(baseTreeView.expandedItemIds);
 
             // Otherwise we will populate the list with the expanded IDs from the view model
-            foreach (var node in m_HierarchyViewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Expanded))
+            foreach (var node in m_HierarchyViewModel.EnumerateNodesWithAllFlags(HierarchyNodeFlags.Expanded))
                 list.Add(m_TreeViewDataProperty.GetValue(node));
         }
 
@@ -777,7 +777,7 @@ namespace UnityEngine.UIElements
             while (parentNode != m_Hierarchy.Root && (parentNode = GetHierarchyNodeById(m_TreeViewDataProperty.GetValue(parentNode))) != m_Hierarchy.Root)
             {
                 var parentItemId = m_TreeViewDataProperty.GetValue(parentNode);
-                if (!m_HierarchyViewModel.HasFlags(parentNode, HierarchyNodeFlags.Expanded) && CanChangeExpandedState(parentItemId))
+                if (!m_HierarchyViewModel.HasAllFlags(parentNode, HierarchyNodeFlags.Expanded) && CanChangeExpandedState(parentItemId))
                 {
                     if (IsViewDataKeyEnabled())
                         baseTreeView.expandedItemIds.Add(parentItemId);

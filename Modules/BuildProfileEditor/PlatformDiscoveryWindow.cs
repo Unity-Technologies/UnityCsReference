@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEditor.Build.Profile.Elements;
+using UnityEditor.Build.Profile.Handlers;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -16,7 +17,6 @@ namespace UnityEditor.Build.Profile
     internal class PlatformDiscoveryWindow : EditorWindow
     {
         const string k_Uxml = "BuildProfile/UXML/PlatformDiscoveryWindow.uxml";
-        const string k_AssetFolderPath = "Assets/Settings/BuildProfiles";
 
         BuildProfileCard[] m_Cards;
         BuildProfileCard m_SelectedCard;
@@ -29,8 +29,6 @@ namespace UnityEditor.Build.Profile
         /// is not supported.
         /// </summary>
         HelpBox m_CardWarningHelpBox;
-
-        internal static string customBuildProfilePath => k_AssetFolderPath;
 
         public static void ShowWindow()
         {
@@ -123,13 +121,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         static void OnAddBuildProfileClicked(BuildProfileCard card)
         {
-            if (!AssetDatabase.IsValidFolder("Assets/Settings"))
-                AssetDatabase.CreateFolder("Assets", "Settings");
-
-            if (!AssetDatabase.IsValidFolder(k_AssetFolderPath))
-                AssetDatabase.CreateFolder("Assets/Settings", "BuildProfiles");
-
-            BuildProfile.CreateInstance(card.moduleName, card.subtarget, GetNewProfileName(card.displayName));
+            BuildProfileDataSource.CreateAsset(card.moduleName, card.subtarget, card.displayName);
         }
 
         static BuildProfileCard[] FindAllVisiblePlatforms()
@@ -146,7 +138,5 @@ namespace UnityEditor.Build.Profile
             }
             return cards.ToArray();
         }
-
-        static string GetNewProfileName(string displayName) => $"{k_AssetFolderPath}/{displayName}.asset";
     }
 }

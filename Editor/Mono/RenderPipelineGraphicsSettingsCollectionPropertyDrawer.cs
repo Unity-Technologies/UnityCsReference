@@ -175,9 +175,9 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
         
         void ShowContextualMenu(Rect rect, IRenderPipelineGraphicsSettings target, SerializedProperty property)
         {
-            var contextualMenu = DropdownUtility.CreateDropdown(true);
+            var contextualMenu = new GenericMenu(); //use ImGUI for now, need to be updated later
             RenderPipelineGraphicsSettingsContextMenuManager.PopulateContextMenu(target, property, ref contextualMenu);
-            DropdownUtility.ShowDropdown(contextualMenu, rect.position + Vector2.up * rect.size.y);
+            contextualMenu.DropDown(new Rect(rect.position + Vector2.up * rect.size.y, Vector2.zero), shouldDiscardMenuOnSecondClick: true);
         }
         
         void DrawContextualMenuButton(VisualElement root, GraphicsSettingsDrawerInfo drawerInfo)

@@ -38,7 +38,6 @@ namespace UnityEditor.Toolbars
             Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(buttonRect.x, buttonRect.y));
             buttonRect.x = temp.x;
             buttonRect.y = temp.y;
-            MenuController.positionOverride = buttonRect;
             EditorUtility.Internal_DisplayPopupMenu(buttonRect, "Window/Layouts", Toolbar.get, 0, true);
         }
 

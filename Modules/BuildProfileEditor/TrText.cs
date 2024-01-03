@@ -23,7 +23,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string platforms = L10n.Tr("Platforms");
         public static readonly string build = L10n.Tr("Build");
         public static readonly string buildAndRun = L10n.Tr("Build And Run");
-        public static readonly string buildSettings = L10n.Tr("Build Settings");
+        public static readonly string platformSettings = L10n.Tr("Platform Settings");
         public static readonly string buildData = L10n.Tr("Build Data");
         public static readonly string sharedSettingsInfo =
             L10n.Tr("Platform builds use the shared scene list. To change the scene list or other settings independently, create a Build Profile for this platform.");
@@ -32,6 +32,8 @@ namespace UnityEditor.Build.Profile
         public static readonly string activate = L10n.Tr("Switch Profile");
         public static readonly string sceneList = L10n.Tr("Scene List");
         public static readonly string openSceneList = L10n.Tr("Open Scene List");
+        public static readonly string compilingMessage = L10n.Tr("Cannot build player while editor is importing assets or compiling scripts.");
+        public static readonly string invalidVirtualTexturingSettingMessage = L10n.Tr("Cannot build player because Virtual Texturing is enabled, but the target platform or graphics API does not support Virtual Texturing. Go to Player Settings to resolve the incompatibility.");
 
         // Platform Discovery Window
         public static readonly string platformDiscoveryTitle = L10n.Tr("Platform Browser");

@@ -96,7 +96,7 @@ namespace UnityEditor
         private SerializedProperty m_GenerateLightingData;
         private SerializedProperty m_MaskInteraction;
 
-        public class ShortcutContext : IShortcutToolContext
+        public class ShortcutContext : IShortcutContext
         {
             public bool active { get; set; }
         }

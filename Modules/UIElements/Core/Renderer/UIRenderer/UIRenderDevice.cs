@@ -963,6 +963,8 @@ namespace UnityEngine.UIElements.UIR
                             st.constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
                         if (shaderInfo != null)
                             st.constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
+
+                        m_TextureSlotManager.Reset();
                     }
 
                     if (head.type != CommandType.Draw)

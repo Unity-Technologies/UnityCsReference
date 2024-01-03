@@ -8,7 +8,6 @@ using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.Experimental;
 using Object = UnityEngine.Object;
 using SelectionType = UnityEditor.RectSelection.SelectionType;
 
@@ -76,7 +75,8 @@ namespace UnityEditor
             return SelectionType.Normal;
         }
 
-        static Object[] GetNewSelection(Object[] existing, PickingObject incoming, SelectionType type)
+        //Used by tests in EditAndPlaymodeTests/Picking
+        internal static Object[] GetNewSelection(Object[] existing, PickingObject incoming, SelectionType type)
         {
             Object[] newSelection;
 
@@ -122,80 +122,6 @@ namespace UnityEditor
             }
         }
 
-        // used by EditModeAndPlayModeTests/Picking
-        // ReSharper disable once MemberCanBePrivate.Global
-        internal class PiercingContext : IDisposable
-        {
-            readonly SceneView m_SceneView;
-            public readonly List<PickingObject> overlapping;
-            readonly Object[] m_ExistingSelection;
-            readonly Object[] m_Preview = new Object[1];
-            readonly List<GameObject> m_GameObjectPreview;
-            bool m_SelectionUpdated;
-
-            public PiercingContext(SceneView view, Vector2 point)
-            {
-                m_SceneView = view;
-                m_GameObjectPreview = new List<GameObject>();
-                overlapping = new List<PickingObject>();
-                foreach(var o in SceneViewPicking.GetAllOverlapping(point))
-                    overlapping.Add(o);
-                m_ExistingSelection = Selection.objects;
-            }
-
-            List<GameObject> CastGameObjects(IEnumerable<Object> objects)
-            {
-                m_GameObjectPreview.Clear();
-                foreach(var o in objects)
-                    if(o is GameObject go)
-                        m_GameObjectPreview.Add(go);
-                return m_GameObjectPreview;
-            }
-
-            public void UpdatePreview(PickingObject target, SelectionType type)
-            {
-                m_Preview[0] = target.target;
-                HandleUtility.FilterInstanceIDs(CastGameObjects(GetNewSelection(m_ExistingSelection, target, type)),
-                    out SceneView.s_CachedParentRenderersForOutlining,
-                    out SceneView.s_CachedChildRenderersForOutlining);
-                m_SceneView.Repaint();
-            }
-
-            public void ResetPreview(bool showExistingSelection)
-            {
-                if (showExistingSelection)
-                {
-                    HandleUtility.FilterInstanceIDs(CastGameObjects(m_ExistingSelection),
-                        out SceneView.s_CachedParentRenderersForOutlining,
-                        out SceneView.s_CachedChildRenderersForOutlining);
-                }
-                else
-                {
-                    SceneView.s_CachedParentRenderersForOutlining = new int[] { };
-                    SceneView.s_CachedChildRenderersForOutlining = new int[] { };
-                }
-            }
-
-            public void UpdateSelection(PickingObject incoming, SelectionType type)
-            {
-                Selection.objects = GetNewSelection(m_ExistingSelection, incoming, type);
-                m_SelectionUpdated = true;
-            }
-
-            public void Dispose()
-            {
-                if (!m_SelectionUpdated)
-                {
-                    Selection.objects = m_ExistingSelection;
-                    ResetPreview(true);
-                }
-                else if (Selection.objects.Length < 1)
-                {
-                    ResetPreview(false);
-                }
-            }
-        }
-
         static void ShowSelectionPiercingMenu(SceneView sceneView, bool forceSubtractive)
         {
             var evt = Event.current;
@@ -208,50 +134,23 @@ namespace UnityEditor
 
             evt.Use();
 
-            var context = new PiercingContext(sceneView, Event.current.mousePosition);
+            var overlapping = new List<PickingObject>();
+            foreach(var o in SceneViewPicking.GetAllOverlapping(evt.mousePosition))
+                overlapping.Add(o);
+
             var selectionPiercingMenu = new DropdownMenu();
-            var piercingMenuDesc = new DropdownMenuDescriptor();
-            piercingMenuDesc.onDetachedFromMenuContainerCallback = () => { context.Dispose(); };
-            selectionPiercingMenu.SetDescriptor(piercingMenuDesc);
-
-            foreach (var obj in context.overlapping)
+            foreach (var obj in overlapping)
             {
-                var item = GenericDropdownMenu.BuildItem(obj.target.name, false, true, false, null, null, "");
-
-                item.RegisterCallback<MouseDownEvent>(x =>
-                {
-                    // intentionally not passing x.modifiers here because there is no way to update the preview when
-                    // modifier keys are pressed while already hovering the menu item. it means that the results from
-                    // a click and preview are not guaranteed or even likely to be in sync, which is a pretty terrible
-                    // user experience.
-                    context.UpdateSelection(obj, GetSelectionType(EventModifiers.None, forceSubtractive));
-                });
-
-                // outline preview only works with renderer instance ids
-                if(obj.TryGetGameObject(out var gameObject))
-                {
-                    item.RegisterCallback<MouseEnterEvent>(x => { context.UpdatePreview(obj, GetSelectionType(EventModifiers.None, forceSubtractive)); });
-                    item.RegisterCallback<MouseOutEvent>(x => { context.ResetPreview(forceSubtractive); });
-                }
-
-                selectionPiercingMenu.AppendContent(obj.target.name, item, DropdownMenuAction.AlwaysEnabled);
+                var showInSelection = forceSubtractive && Selection.Contains(obj.target);
+                selectionPiercingMenu.AppendAction(obj.target.name,
+                    _ => Selection.objects = GetNewSelection(Selection.objects, obj, GetSelectionType(EventModifiers.None, forceSubtractive)),
+                    _ => showInSelection ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
             }
 
             if (selectionPiercingMenu.MenuItems().Count == 0)
-            {
                 selectionPiercingMenu.AppendAction("Nothing to Select Under Pointer", null, DropdownMenuAction.Status.Disabled);
-            }
-            else
-            {
-                // selection changes will flush the preview outline, which we want to avoid if ultimately the current
-                // selection is sticking around.
-                if(!forceSubtractive)
-                    Selection.objects = new Object[] { };
 
-                context.ResetPreview(forceSubtractive);
-            }
-
-            selectionPiercingMenu.DisplayEditorMenu(new Rect(Event.current.mousePosition, Vector2.zero));
+            selectionPiercingMenu.DoDisplayEditorMenu(new Rect(Event.current.mousePosition, Vector2.zero));
         }
     }
 }

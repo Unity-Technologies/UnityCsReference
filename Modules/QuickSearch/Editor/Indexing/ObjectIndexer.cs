@@ -408,12 +408,9 @@ namespace UnityEditor.Search
             var next = p.NextVisible(true);
             while (next)
             {
-                if (p.isValid)
-                {
-                    var fieldName = GetFieldName(p.displayName);
-                    if (p.propertyPath[p.propertyPath.Length - 1] != ']')
-                        IndexProperty(documentIndex, fieldName, p, maxDepth);
-                }
+                var fieldName = GetFieldName(p.displayName);
+                if (p.propertyPath[p.propertyPath.Length - 1] != ']')
+                    IndexProperty(documentIndex, fieldName, p, maxDepth);
 
                 next = shouldContinueIterating(p) && p.NextVisible(ShouldIndexChildren(p, recursive));
             }

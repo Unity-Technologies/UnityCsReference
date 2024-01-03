@@ -1446,9 +1446,7 @@ namespace UnityEditor
             for (int i = 0, prefabMenuItemsCount = genericMenuForGettingPrefabItems.menuItems.Count; i < prefabMenuItemsCount; ++i)
             {
                 GenericMenu.MenuItem menuItem = genericMenuForGettingPrefabItems.menuItems[i];
-                if (menuItem.separator && menuItem.content.text.Equals("Prefab/"))
-                    menu.AppendAction("Prefab/", null, (_) => DropdownMenuAction.Status.Normal, null, PrefabUtility.GameObjectStyles.prefabIcon);
-                else if (menuItem.separator)
+                if (menuItem.separator)
                     menu.AppendSeparator(menuItem.content.text);
                 else if (menuItem.func2 != null && menuItem.userData != null)
                     menu.AppendAction(menuItem.content.text, action => { menuItem.func2(menuItem.userData); });

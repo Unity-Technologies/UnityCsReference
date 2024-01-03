@@ -74,19 +74,12 @@ namespace UnityEditor
         void ShowSelectionDropdown(ClickEvent evt)
         {
             var menu = new DropdownMenu();
-            menu.SetDescriptor(new DropdownMenuDescriptor()
-            {
-                allowSubmenus = false,
-                layout = DropdownMenuLayout.Short,
-                search = DropdownMenuSearch.Always
-            });
-
             foreach (var vp in m_Overlay.availableViewpoints)
             {
                 var status = vp.TargetObject.Equals(m_Overlay.viewpoint.TargetObject) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
-                menu.AppendAction(vp.TargetObject.name, (_) => { m_Overlay.viewpoint = vp; }, status, ViewpointProxyTypeCache.GetIcon(vp));
+                menu.AppendAction(vp.TargetObject.name, (_) => { m_Overlay.viewpoint = vp; }, status);
             }
-            menu.DisplayEditorMenu(worldBound);
+            menu.DoDisplayEditorMenu(worldBound);
         }
 
         void OnViewpointSelected(IViewpoint vp) => SetCameraName();
@@ -428,7 +421,7 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), overlayId, k_DisplayName)]
+    [Overlay(typeof(SceneView), overlayId, k_DisplayName, priority = (int)OverlayPriority.Cameras)]
     [Icon("Icons/Overlays/CameraPreview.png")]
     class CamerasOverlay : Overlay
     {

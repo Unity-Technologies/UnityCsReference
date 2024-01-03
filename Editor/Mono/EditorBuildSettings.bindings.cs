@@ -86,15 +86,24 @@ namespace UnityEditor
         {
             get
             {
-                if (EditorUserBuildSettings.IsBuildProfileWorkflowEnabled()
-                    && BuildProfileContext.instance.activeProfile is not null)
+                if (BuildProfileContext.instance.activeProfile is not null)
                 {
                     return BuildProfileContext.instance.activeProfile.scenes;
                 }
 
                 return GetEditorBuildSettingsScenes();
             }
-            set => SetEditorBuildSettingsScenes(value);
+            set
+            {
+                if (BuildProfileContext.instance.activeProfile is not null)
+                {
+                    BuildProfileContext.instance.activeProfile.scenes = value;
+                }
+                else
+                {
+                    SetEditorBuildSettingsScenes(value);
+                }
+            }
         }
 
         [RequiredByNativeCode]

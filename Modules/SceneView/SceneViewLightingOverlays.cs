@@ -12,7 +12,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
-    [Overlay(typeof(SceneView), k_OverlayID, "Lighting Visualization", defaultDockZone = DockZone.RightColumn)]
+    [Overlay(typeof(SceneView), k_OverlayID, "Lighting Visualization", priority = (int)OverlayPriority.LightingVisualization, defaultDockZone = DockZone.RightColumn)]
     [Icon("Icons/LightingVisualization.png")]
     class SceneViewLighting : Overlay, ITransientOverlay
     {
@@ -312,7 +312,7 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), k_OverlayID, "PBR Validation Settings", defaultDockZone = DockZone.RightColumn)]
+    [Overlay(typeof(SceneView), k_OverlayID, "PBR Validation Settings", priority = (int)OverlayPriority.PBRValidation, defaultDockZone = DockZone.RightColumn)]
     [Icon("Icons/Exposure.png")]
     class SceneViewLightingPBRValidation : Overlay, ITransientOverlay
     {
@@ -649,7 +649,7 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), k_OverlayID, "Lighting Visualization Colors", defaultDockZone = DockZone.LeftColumn)]
+    [Overlay(typeof(SceneView), k_OverlayID, "Lighting Visualization Colors", priority = (int)OverlayPriority.LightingVisualizationColor, defaultDockZone = DockZone.LeftColumn)]
     [Icon("Icons/LightingVisualizationColors.png")]
     class SceneViewLightingColors : Overlay, ITransientOverlay
     {
@@ -779,7 +779,7 @@ namespace UnityEditor
         VisualElement CreateBackfaceHighlightsContent()
         {
             var root = new VisualElement() { name = "Back-Facing Geometry Content" };
-            
+
             root.Add(m_PrefColorSwatches[kSceneViewHighlightBackfaces] = CreateColorSwatch("Back-Facing Geometry", kSceneViewHighlightBackfaces));
 
             return root;

@@ -1661,14 +1661,7 @@ sealed partial class EditorGUILayout
     // Make a help box with a message to the user.
     public static void HelpBox(GUIContent content, bool wide = true)
     {
-        BeginHorizontal();
-        PrefixLabel(wide ? GUIContent.none : EditorGUIUtility.blankContent, EditorStyles.helpBox);
-        Rect r = GUILayoutUtility.GetRect(content, EditorStyles.helpBox);
-        int oldIndent = EditorGUI.indentLevel;
-        EditorGUI.indentLevel = 0;
-        EditorGUI.HelpBox(r, content);
-        EditorGUI.indentLevel = oldIndent;
-        EndHorizontal();
+        LabelField(wide ? GUIContent.none : EditorGUIUtility.blankContent, content, EditorStyles.helpBox);
     }
 
     // Make a label in front of some control.

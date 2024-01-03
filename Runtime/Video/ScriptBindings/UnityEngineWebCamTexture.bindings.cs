@@ -19,6 +19,7 @@ namespace UnityEngine
 
     public enum WebCamKind
     {
+        Unknown = 0,
         // WideAngle (default) camera
         WideAngle = 1,
         // Telephoto camera

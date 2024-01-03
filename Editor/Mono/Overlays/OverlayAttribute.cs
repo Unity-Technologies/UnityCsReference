@@ -7,6 +7,27 @@ using UnityEngine;
 
 namespace UnityEditor.Overlays
 {
+    enum OverlayPriority
+    {
+        //Default overlays
+        Tools = 0,
+        ToolSettings = 1,
+        GridAndSnap = 2,
+        DrawModes = 5,
+        ViewOptions = 6,
+        Search = 11,
+        Orientation = 12,
+        Cameras = 13,
+        //Additional overlays
+        AINavigation = 20,
+        LightingVisualization = 31,
+        PBRValidation = 32,
+        LightingVisualizationColor = 33,
+        ClothConstraints = 41,
+        ClothCollisions = 42,
+        Default = 100
+    }
+
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class OverlayAttribute : Attribute
     {
@@ -25,6 +46,7 @@ namespace UnityEditor.Overlays
         float m_MinHeight;
         float m_MaxWidth;
         float m_MaxHeight;
+        int m_Priority = (int)OverlayPriority.Default;
 
         public Type editorWindowType
         {
@@ -119,6 +141,12 @@ namespace UnityEditor.Overlays
         internal Vector2 defaultSize => new Vector2(defaultWidth, defaultHeight);
         internal Vector2 minSize => new Vector2(minWidth, minHeight);
         internal Vector2 maxSize => new Vector2(maxWidth, maxHeight);
+
+        public int priority
+        {
+            get => m_Priority;
+            set => m_Priority = value;
+        }
 
         public OverlayAttribute()
         {

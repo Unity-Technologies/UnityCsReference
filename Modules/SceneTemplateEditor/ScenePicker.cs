@@ -20,14 +20,9 @@ namespace UnityEditor.Search
         internal static void OpenScenePicker()
         {
             var searchContext = SearchService.CreateContext(CreateOpenSceneProviders(), string.Empty);
-            SearchService.ShowPicker(new SearchViewState(searchContext, OnSceneSelected)
-            {
-                flags = SearchViewFlags.DisableInspectorPreview |
-                        SearchViewFlags.DisableSavedSearchQuery |
-                        SearchViewFlags.GridView,
-                title = L10n.Tr("Scenes"),
-                excludeClearItem = true
-            });
+            var state = SearchViewState.CreatePickerState(L10n.Tr("Scenes"), searchContext, OnSceneSelected);
+            state.excludeClearItem = true;
+            SearchService.ShowPicker(state);
         }
 
         static IEnumerable<SearchProvider> CreateOpenSceneProviders()

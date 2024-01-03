@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.LightTransport;
-using static UnityEditor.LightBaking.LightBaker;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.LightBaking
 {
@@ -15,7 +15,7 @@ namespace UnityEditor.LightBaking
     [StaticAccessor("LightBakerBindings", StaticAccessorType.DoubleColon)]
     internal static partial class LightBaker
     {
-        public enum ResultType : UInt32
+        public enum ResultType : uint
         {
             Success = 0,
             Cancelled,
@@ -23,35 +23,40 @@ namespace UnityEditor.LightBaking
             OutOfMemory,
             InvalidInput,
             LowLevelAPIFailure,
+            FailedCreatingJobQueue,
             IOFailed,
+            ConnectedToBaker,
             Undefined
         }
 
+        [RequiredByNativeCode]
         public struct Result
         {
             public ResultType type;
-            public String message;
+            public string message;
             public override string ToString()
             {
                 if (message.Length == 0)
                     return $"Result type: '{type}'";
-                else
-                    return $"Result type: '{type}', message: '{message}'";
+                return $"Result type: '{type}', message: '{message}'";
             }
 
             public IProbeIntegrator.Result ConvertToIProbeIntegratorResult()
             {
-                IProbeIntegrator.Result result = new IProbeIntegrator.Result();
-                result.type = (IProbeIntegrator.ResultType)type;
-                result.message = message;
+                IProbeIntegrator.Result result = new ()
+                {
+                    type = (IProbeIntegrator.ResultType)type,
+                    message = message
+                };
                 return result;
             }
         }
-    
+
         public enum Backend
         {
             CPU = 0,
-            GPU = 1
+            GPU = 1,
+            UnityComputeGPU = 2
         }
         public enum TransmissionChannels
         {
@@ -84,7 +89,7 @@ namespace UnityEditor.LightBaking
             CombinedDirectional = 1
         };
         [Flags]
-        public enum ProbeRequestOutputType : UInt32
+        public enum ProbeRequestOutputType : uint
         {
             RadianceDirect = 1 << 0,
             RadianceIndirect = 1 << 1,
@@ -98,19 +103,19 @@ namespace UnityEditor.LightBaking
         public struct ProbeRequest
         {
             public ProbeRequestOutputType outputTypeMask;
-            public UInt64 positionOffset;
-            public UInt64 positionLength;
+            public ulong positionOffset;
+            public ulong positionLength;
             public float pushoff;
             public string outputFolderPath;
 
             // Environment occlusion
-            public UInt64 integrationRadiusOffset;
-            public UInt32 environmentOcclusionSampleCount;
+            public ulong integrationRadiusOffset;
+            public uint environmentOcclusionSampleCount;
             public bool ignoreDirectEnvironment;
             public bool ignoreIndirectEnvironment;
         };
         [Flags]
-        public enum LightmapRequestOutputType : UInt32
+        public enum LightmapRequestOutputType : uint
         {
             IrradianceIndirect = 1 << 0,
             IrradianceDirect = 1 << 1,
@@ -139,20 +144,20 @@ namespace UnityEditor.LightBaking
         public struct LightmapRequest
         {
             public LightmapRequestOutputType outputTypeMask;
-            public UInt32 lightmapOffset;
-            public UInt32 lightmapCount;
+            public uint lightmapOffset;
+            public uint lightmapCount;
             public TilingMode tilingMode;
             public string outputFolderPath;
         };
         public struct Resolution
         {
-            public Resolution(UInt32 widthIn, UInt32 heightIn)
+            public Resolution(uint widthIn, uint heightIn)
             {
                 width = widthIn;
                 height = heightIn;
             }
-            public UInt32 width;
-            public UInt32 height;
+            public uint width;
+            public uint height;
         }
 
         public struct TextureData
@@ -182,7 +187,7 @@ namespace UnityEditor.LightBaking
 
         public struct CookieData
         {
-            public CookieData(Resolution resolutionIn, UInt32 pixelStrideIn, UInt32 slicesIn, bool repeatIn)
+            public CookieData(Resolution resolutionIn, uint pixelStrideIn, uint slicesIn, bool repeatIn)
             {
                 resolution = resolutionIn;
                 pixelStride = pixelStrideIn;
@@ -191,8 +196,8 @@ namespace UnityEditor.LightBaking
                 data = new byte[resolution.width * resolution.height * slices * pixelStride];
             }
             public Resolution resolution;
-            public UInt32 pixelStride;
-            public UInt32 slices;
+            public uint pixelStride;
+            public uint slices;
             public bool repeat;
             public byte[] data;
         }
@@ -213,7 +218,7 @@ namespace UnityEditor.LightBaking
 
         public struct Terrain
         {
-            public UInt32 heightMapIndex; // index into BakeInput::m_HeightmapData
+            public uint heightMapIndex; // index into BakeInput::m_HeightmapData
             public int terrainHoleIndex; // index into BakeInput::m_TerrainHoleData -1 means no hole data
             public float outputResolution;
             public Vector3 heightmapScale;
@@ -266,7 +271,7 @@ namespace UnityEditor.LightBaking
             public Quaternion orientation;
             public Vector3 position;
             public float range;
-            public Int32 cookieTextureIndex;
+            public int cookieTextureIndex;
             public float cookieScale;
             public float coneAngle;
             public float innerConeAngle;
@@ -277,43 +282,100 @@ namespace UnityEditor.LightBaking
             public FalloffType falloff;
             public AngularFalloffType angularFalloff;
             public bool castsShadows;
-            public Int32 shadowMaskChannel;
+            public int shadowMaskChannel;
         }
 
         public struct SampleCount
         {
-            public UInt32 directSampleCount;
-            public UInt32 indirectSampleCount;
-            public UInt32 environmentSampleCount;
+            public uint directSampleCount;
+            public uint indirectSampleCount;
+            public uint environmentSampleCount;
         };
 
         public struct LightingSettings
         {
             public SampleCount lightmapSampleCounts;
             public SampleCount probeSampleCounts;
-            public UInt32 minBounces;
-            public UInt32 maxBounces;
+            public uint minBounces;
+            public uint maxBounces;
             public LightmapBakeMode lightmapBakeMode;
             public MixedLightingMode mixedLightingMode;
             public bool aoEnabled;
             public float aoDistance;
         };
 
+        [RequiredByNativeCode]
+        [StructLayout(LayoutKind.Sequential)]
+        public class ExternalProcessConnection : IDisposable
+        {
+            private IntPtr _ptr;
+            private readonly bool _ownsPtr;
+
+            public ExternalProcessConnection()
+            {
+                _ptr = Internal_Create();
+                _ownsPtr = true;
+            }
+
+            public ExternalProcessConnection(IntPtr ptr)
+            {
+                _ptr = ptr;
+                _ownsPtr = false;
+            }
+
+            public bool Connect(int bakePortNumber)
+            {
+                return Internal_Connect(bakePortNumber);
+            }
+
+            ~ExternalProcessConnection()
+            {
+                Destroy();
+            }
+
+            public void Dispose()
+            {
+                Destroy();
+                GC.SuppressFinalize(this);
+            }
+
+            void Destroy()
+            {
+                if (_ownsPtr && _ptr != IntPtr.Zero)
+                {
+                    Internal_Destroy(_ptr);
+                    _ptr = IntPtr.Zero;
+                }
+            }
+
+            [NativeMethod(IsThreadSafe = true)]
+            static extern void Internal_Destroy(IntPtr ptr);
+            [NativeMethod(IsThreadSafe = true)]
+            static extern IntPtr Internal_Create();
+            extern bool Internal_Connect(int bakePortNumber);
+
+            internal static class BindingsMarshaller
+            {
+                public static IntPtr ConvertToNative(ExternalProcessConnection connection) => connection._ptr;
+            }
+        }
+
+        [RequiredByNativeCode]
         [StructLayout(LayoutKind.Sequential)]
         public class BakeInput : IDisposable
         {
-            internal IntPtr m_Ptr;
-            internal bool m_OwnsPtr;
+            private IntPtr _ptr;
+            private readonly bool _ownsPtr;
 
             public BakeInput()
             {
-                m_Ptr = Internal_Create();
-                m_OwnsPtr = true;
+                _ptr = Internal_Create();
+                _ownsPtr = true;
             }
             public BakeInput(IntPtr ptr)
             {
-                m_Ptr = ptr;
-                m_OwnsPtr = false;
+                _ptr = ptr;
+                _ownsPtr = false;
             }
             ~BakeInput()
             {
@@ -328,33 +390,33 @@ namespace UnityEditor.LightBaking
 
             void Destroy()
             {
-                if (m_OwnsPtr && m_Ptr != IntPtr.Zero)
+                if (_ownsPtr && _ptr != IntPtr.Zero)
                 {
-                    Internal_Destroy(m_Ptr);
-                    m_Ptr = IntPtr.Zero;
+                    Internal_Destroy(_ptr);
+                    _ptr = IntPtr.Zero;
                 }
             }
 
-            extern public UInt64 GetByteSize();
+            public extern ulong GetByteSize();
 
-            public Texture2D GetAlbedoTexture(UInt32 index)
+            public Texture2D GetAlbedoTexture(uint index)
             {
                 if (index >= albedoTextureCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (albedoTextureCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {albedoTextureCount - 1}, but was {index}");
                 TextureData textureData = GetAlbedoTextureData(index);
-                var tex = new Texture2D((int)textureData.resolution.width, (int)textureData.resolution.height, TextureFormat.RGBAFloat, false);
+                Texture2D tex = new ((int)textureData.resolution.width, (int)textureData.resolution.height, TextureFormat.RGBAFloat, false);
                 tex.SetPixelData(textureData.data, 0);
                 tex.filterMode = FilterMode.Point;
                 tex.Apply();
                 return tex;
             }
 
-            public Texture2D GetEmissiveTexture(UInt32 index)
+            public Texture2D GetEmissiveTexture(uint index)
             {
                 if (index >= emissiveTextureCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (emissiveTextureCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {emissiveTextureCount - 1}, but was {index}");
                 TextureData textureData = GetEmissiveTextureData(index);
-                var tex = new Texture2D((int)textureData.resolution.width, (int)textureData.resolution.height, TextureFormat.RGBAFloat, false);
+                Texture2D tex = new ((int)textureData.resolution.width, (int)textureData.resolution.height, TextureFormat.RGBAFloat, false);
                 tex.SetPixelData(textureData.data, 0);
                 tex.filterMode = FilterMode.Point;
                 tex.Apply();
@@ -376,214 +438,214 @@ namespace UnityEditor.LightBaking
                 Internal_SetLightingSettings(lightingSettings);
             }
 
-            extern UInt32 Internal_LightmapWidth(UInt32 index);
-            extern UInt32 Internal_LightmapHeight(UInt32 index);
-            extern UInt32 Internal_InstanceCount(UInt32 lightmapIndex);
+            extern uint Internal_LightmapWidth(uint index);
+            extern uint Internal_LightmapHeight(uint index);
+            extern uint Internal_InstanceCount(uint lightmapIndex);
 
-            extern public UInt32 instanceCount { get; }
-            extern Instance Internal_Instance(UInt32 index);
-            public Instance instance(UInt32 index)
+            public extern uint instanceCount { get; }
+            extern Instance Internal_Instance(uint index);
+            public Instance instance(uint index)
             {
                 if (index >= instanceCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (instanceCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {instanceCount - 1}, but was {index}");
                 Instance instance = Internal_Instance(index);
                 return instance;
             }
-            extern void Internal_SetInstance(UInt32 index, Instance instance);
-            public void instance(UInt32 index, Instance instance)
+            extern void Internal_SetInstance(uint index, Instance instance);
+            public void instance(uint index, Instance instance)
             {
                 if (index >= instanceCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (instanceCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {instanceCount - 1}, but was {index}");
                 Internal_SetInstance(index, instance);
             }
 
-            extern public UInt32 terrainCount { get; }
-            extern Terrain Internal_GetTerrain(UInt32 index);
-            public Terrain GetTerrain(UInt32 index)
+            public extern uint terrainCount { get; }
+            extern Terrain Internal_GetTerrain(uint index);
+            public Terrain GetTerrain(uint index)
             {
                 if (index >= terrainCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (terrainCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {terrainCount - 1}, but was {index}");
                 Terrain terrain = Internal_GetTerrain(index);
                 return terrain;
             }
 
-            public UInt32 lightmapInstanceCount(UInt32 index)
+            public uint lightmapInstanceCount(uint index)
             {
                 if (index >= lightmapCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (lightmapCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {lightmapCount - 1}, but was {index}");
                 return Internal_InstanceCount(index);
             }
 
-            extern public  Vector2[] GetUV1VertexData(UInt32 meshIndex);
+            public extern Vector2[] GetUV1VertexData(uint meshIndex);
 
-            extern public UInt32 meshCount { get; }
-            extern public UInt32 heightmapCount { get; }
-            extern public UInt32 holemapCount { get; }
-            extern public UInt32 materialCount { get; }
-            extern Material Internal_GetMaterial(UInt32 index);
-            extern void Internal_SetMaterial(UInt32 index, Material material);
-            public Material GetMaterial(UInt32 index)
+            public extern uint meshCount { get; }
+            public extern uint heightmapCount { get; }
+            public extern uint holemapCount { get; }
+            public extern uint materialCount { get; }
+            extern Material Internal_GetMaterial(uint index);
+            extern void Internal_SetMaterial(uint index, Material material);
+            public Material GetMaterial(uint index)
             {
                 if (index >= materialCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (materialCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {materialCount - 1}, but was {index}");
                 Material material = Internal_GetMaterial(index);
                 return material;
             }
-            public void SetMaterial(UInt32 index, Material material)
+            public void SetMaterial(uint index, Material material)
             {
                 if (index >= materialCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (materialCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {materialCount - 1}, but was {index}");
                 Internal_SetMaterial(index, material);
             }
-            public int GetMaterialIndex(UInt32 instanceIndex, UInt32 submeshIndex)
+            public int GetMaterialIndex(uint instanceIndex, uint submeshIndex)
             {
                 if (instanceIndex >= instanceCount)
-                    throw new ArgumentException(string.Format("instanceIndex must be between 0 and " + (instanceCount - 1) + ", but was {0}", instanceIndex));
+                    throw new ArgumentException($"instanceIndex must be between 0 and {instanceCount - 1}, but was {instanceIndex}");
                 Instance theInstance = instance(instanceIndex);
                 if (theInstance.submeshMaterialIndices.Length == 0)
-                    throw new ArgumentException(string.Format("instance {0} has not materials", instanceIndex));
+                    throw new ArgumentException($"instance {instanceIndex} has not materials");
                 if (submeshIndex >= theInstance.submeshMaterialIndices.Length)
-                    throw new ArgumentException(string.Format("submeshIndex must be between 0 and " + (theInstance.submeshMaterialIndices.Length - 1) + ", but was {0}", submeshIndex));
+                    throw new ArgumentException($"submeshIndex must be between 0 and {theInstance.submeshMaterialIndices.Length - 1}, but was {submeshIndex}");
                 return theInstance.submeshMaterialIndices[submeshIndex];
             }
-            extern UInt32 Internal_GetLightCount();
-            public UInt32 GetLightCount()
+            extern uint Internal_GetLightCount();
+            public uint GetLightCount()
             {
                 return Internal_GetLightCount();
             }
-            extern Light Internal_GetLight(UInt32 index);
-            extern void Internal_SetLight(UInt32 index, Light light);
-            public Light GetLight(UInt32 index)
+            extern Light Internal_GetLight(uint index);
+            extern void Internal_SetLight(uint index, Light light);
+            public Light GetLight(uint index)
             {
                 if (index >= GetLightCount())
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (GetLightCount() - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {GetLightCount() - 1}, but was {index}");
                 return Internal_GetLight(index);
             }
-            public void SetLight(UInt32 index, Light light)
+            public void SetLight(uint index, Light light)
             {
                 if (index >= GetLightCount())
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (GetLightCount() - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {GetLightCount() - 1}, but was {0}");
                 Internal_SetLight(index, light);
             }
 
-            extern Int32 Internal_instanceAlbedoEmissiveIndex(UInt32 instanceIndex);
-            extern Int32 Internal_instanceTransmissiveIndex(UInt32 instanceIndex, UInt32 submeshIndex);
-            public Int32 instanceToAlbedoIndex(UInt32 instanceIndex)
+            extern int Internal_instanceAlbedoEmissiveIndex(uint instanceIndex);
+            extern int Internal_instanceTransmissiveIndex(uint instanceIndex, uint submeshIndex);
+            public int instanceToAlbedoIndex(uint instanceIndex)
             {
                 if (instanceIndex >= instanceCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (instanceCount - 1) + ", but was {0}", instanceIndex));
+                    throw new ArgumentException($"index must be between 0 and {instanceCount - 1}, but was {instanceIndex}");
                 return Internal_instanceAlbedoEmissiveIndex(instanceIndex);
             }
-            public Int32 instanceToEmissiveIndex(UInt32 instanceIndex)
+            public int instanceToEmissiveIndex(uint instanceIndex)
             {
                 if (instanceIndex >= instanceCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (instanceCount - 1) + ", but was {0}", instanceIndex));
+                    throw new ArgumentException($"index must be between 0 and {instanceCount - 1}, but was {instanceIndex}");
                 return Internal_instanceAlbedoEmissiveIndex(instanceIndex);
             }
-            public Int32 instanceToTransmissiveIndex(UInt32 instanceIndex, UInt32 submeshIndex)
+            public int instanceToTransmissiveIndex(uint instanceIndex, uint submeshIndex)
             {
                 if (instanceIndex >= instanceCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (instanceCount - 1) + ", but was {0}", instanceIndex));
+                    throw new ArgumentException($"index must be between 0 and {instanceCount - 1}, but was {instanceIndex}");
                 Instance inst = instance(instanceIndex);
                 int submeshCount = inst.submeshMaterialIndices.Length;
                 if (submeshIndex >= submeshCount)
-                    throw new ArgumentException(string.Format("submeshIndex must be between 0 and " + (submeshCount - 1) + ", but was {0}", submeshIndex));
+                    throw new ArgumentException($"submeshIndex must be between 0 and {submeshCount - 1}, but was {submeshIndex}");
                 int materialIndex = inst.submeshMaterialIndices[submeshIndex];
                 if (materialIndex == -1)
-                    throw new ArgumentException(string.Format("material for submesh {0} did not exist.", submeshIndex));
+                    throw new ArgumentException($"material for submesh {submeshIndex} did not exist.");
 
                 return Internal_instanceTransmissiveIndex(instanceIndex, submeshIndex);
             }
 
-            extern public UInt32 albedoTextureCount { get; }
-            extern TextureData Internal_GetAlbedoTextureData(UInt32 index);
-            extern void Internal_SetAlbedoTextureData(UInt32 index, TextureData textureData);
+            public extern uint albedoTextureCount { get; }
+            extern TextureData Internal_GetAlbedoTextureData(uint index);
+            extern void Internal_SetAlbedoTextureData(uint index, TextureData textureData);
 
-            public TextureData GetAlbedoTextureData(UInt32 index)
+            public TextureData GetAlbedoTextureData(uint index)
             {
                 if (index >= albedoTextureCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (albedoTextureCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {albedoTextureCount - 1}, but was {index}");
                 return Internal_GetAlbedoTextureData(index);
             }
-            public void SetAlbedoTextureData(UInt32 index, TextureData textureData)
+            public void SetAlbedoTextureData(uint index, TextureData textureData)
             {
                 if (index >= albedoTextureCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (albedoTextureCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {albedoTextureCount - 1}, but was {index}");
                 Internal_SetAlbedoTextureData(index, textureData);
             }
 
-            extern public UInt32 emissiveTextureCount { get; }
-            extern public UInt32 transmissiveTextureCount { get; }
-            extern public UInt32 transmissiveTexturePropertiesCount { get; }
-            extern TextureData Internal_GetEmissiveTextureData(UInt32 index);
-            extern void Internal_SetEmissiveTextureData(UInt32 index, TextureData textureData);
-            public TextureData GetEmissiveTextureData(UInt32 index)
+            public extern uint emissiveTextureCount { get; }
+            public extern uint transmissiveTextureCount { get; }
+            public extern uint transmissiveTexturePropertiesCount { get; }
+            extern TextureData Internal_GetEmissiveTextureData(uint index);
+            extern void Internal_SetEmissiveTextureData(uint index, TextureData textureData);
+            public TextureData GetEmissiveTextureData(uint index)
             {
                 if (index >= emissiveTextureCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (emissiveTextureCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {emissiveTextureCount - 1}, but was {index}");
                 return Internal_GetEmissiveTextureData(index);
             }
-            public void SetEmissiveTextureData(UInt32 index, TextureData textureData)
+            public void SetEmissiveTextureData(uint index, TextureData textureData)
             {
                 if (index >= emissiveTextureCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (emissiveTextureCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {emissiveTextureCount - 1}, but was {index}");
                 Internal_SetEmissiveTextureData(index, textureData);
             }
 
-            extern TextureData Internal_GetTransmissiveTextureData(UInt32 index);
-            extern void Internal_SetTransmissiveTextureData(UInt32 index, TextureData textureData);
-            public TextureData GetTransmissiveTextureData(UInt32 index)
+            extern TextureData Internal_GetTransmissiveTextureData(uint index);
+            extern void Internal_SetTransmissiveTextureData(uint index, TextureData textureData);
+            public TextureData GetTransmissiveTextureData(uint index)
             {
                 if (index >= transmissiveTextureCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (transmissiveTextureCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {transmissiveTextureCount - 1}, but was {index}");
                 return Internal_GetTransmissiveTextureData(index);
             }
-            public void SetTransmissiveTextureData(UInt32 index, TextureData textureData)
+            public void SetTransmissiveTextureData(uint index, TextureData textureData)
             {
                 if (index >= emissiveTextureCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (transmissiveTextureCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {transmissiveTextureCount - 1}, but was {index}");
                 Internal_SetTransmissiveTextureData(index, textureData);
             }
-            extern TextureProperties Internal_GetTransmissiveTextureProperties(UInt32 index);
-            public TextureProperties GetTransmissiveTextureProperties(UInt32 index)
+            extern TextureProperties Internal_GetTransmissiveTextureProperties(uint index);
+            public TextureProperties GetTransmissiveTextureProperties(uint index)
             {
                 if (index >= transmissiveTexturePropertiesCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (transmissiveTexturePropertiesCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {transmissiveTexturePropertiesCount - 1}, but was {index}");
                 return Internal_GetTransmissiveTextureProperties(index);
             }
 
-            extern public UInt32 GetCookieCount();
-            extern CookieData Internal_GetCookieData(UInt32 index);
-            extern void Internal_SetCookieData(UInt32 index, CookieData cookieData);
-            public CookieData GetCookieData(UInt32 index)
+            public extern uint GetCookieCount();
+            extern CookieData Internal_GetCookieData(uint index);
+            extern void Internal_SetCookieData(uint index, CookieData cookieData);
+            public CookieData GetCookieData(uint index)
             {
                 if (index >= GetCookieCount())
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (GetCookieCount() - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {GetCookieCount() - 1}, but was {index}");
                 return Internal_GetCookieData(index);
             }
-            public void SetCookieData(UInt32 index, CookieData cookieData)
+            public void SetCookieData(uint index, CookieData cookieData)
             {
                 if (index >= GetCookieCount())
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (GetCookieCount() - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {GetCookieCount() - 1}, but was {index}");
                 Internal_SetCookieData(index, cookieData);
             }
 
-            extern public UInt32 lightmapCount { get; }
-            public Resolution lightmapResolution(UInt32 index)
+            public extern uint lightmapCount { get; }
+            public Resolution lightmapResolution(uint index)
             {
                 if (index >= lightmapCount)
-                    throw new ArgumentException(string.Format("index must be between 0 and " + (lightmapCount - 1) + ", but was {0}", index));
+                    throw new ArgumentException($"index must be between 0 and {lightmapCount - 1}, but was {index}");
                 Resolution resolution;
                 resolution.width = Internal_LightmapWidth(index);
                 resolution.height = Internal_LightmapHeight(index);
                 return resolution;
             }
-            extern public UInt32 lightProbeCount { get; }
+            public extern uint lightProbeCount { get; }
 
-            extern public void SetLightmapResolution(Resolution resolution);
-            extern public void SetEnvironment(Vector4 color);
-            extern public void SetEnvironmentFromTextures(TextureData posX, TextureData negX, TextureData posY, TextureData negY, TextureData posZ, TextureData negZ);
-            extern public TextureData GetEnvironmentCubeTexture();
+            public extern void SetLightmapResolution(Resolution resolution);
+            public extern void SetEnvironment(Vector4 color);
+            public extern void SetEnvironmentFromTextures(TextureData posX, TextureData negX, TextureData posY, TextureData negY, TextureData posZ, TextureData negZ);
+            public extern TextureData GetEnvironmentCubeTexture();
 
             public extern ProbeRequest[] GetProbeRequests();
             public extern void SetLightProbeRequests(ProbeRequest[] requests);
@@ -607,11 +669,12 @@ namespace UnityEditor.LightBaking
 
             internal static class BindingsMarshaller
             {
-                public static IntPtr ConvertToNative(BakeInput bakeInput) => bakeInput.m_Ptr;
+                public static IntPtr ConvertToNative(BakeInput bakeInput) => bakeInput._ptr;
             }
             public extern bool CheckIntegrity();
         }
 
+        [RequiredByNativeCode]
         [StructLayout(LayoutKind.Sequential)]
         public class DeviceSettings : IDisposable
         {
@@ -619,20 +682,22 @@ namespace UnityEditor.LightBaking
             [NativeMethod(IsThreadSafe = true)]
 
             public extern bool Initialize(Backend backend);
+
+            [NativeMethod(IsThreadSafe = true)]
             static extern void Internal_Destroy(IntPtr ptr);
 
-            internal IntPtr m_Ptr;
-            internal bool m_OwnsPtr;
+            private IntPtr _ptr;
+            private bool _ownsPtr;
 
             public DeviceSettings()
             {
-                m_Ptr = Internal_Create();
-                m_OwnsPtr = true;
+                _ptr = Internal_Create();
+                _ownsPtr = true;
             }
             public DeviceSettings(IntPtr ptr)
             {
-                m_Ptr = ptr;
-                m_OwnsPtr = false;
+                _ptr = ptr;
+                _ownsPtr = false;
             }
             ~DeviceSettings()
             {
@@ -647,35 +712,44 @@ namespace UnityEditor.LightBaking
 
             void Destroy()
             {
-                if (m_OwnsPtr && m_Ptr != IntPtr.Zero)
+                if (_ownsPtr && _ptr != IntPtr.Zero)
                 {
-                    Internal_Destroy(m_Ptr);
-                    m_Ptr = IntPtr.Zero;
+                    Internal_Destroy(_ptr);
+                    _ptr = IntPtr.Zero;
                 }
+            }
+
+            private extern Backend Internal_GetBackend();
+            private extern void Internal_SetBackend(Backend backend);
+
+            internal Backend _backend
+            {
+                get => Internal_GetBackend();
+                set => Internal_SetBackend(value);
             }
 
             internal static class BindingsMarshaller
             {
-                public static IntPtr ConvertToNative(DeviceSettings obj) => obj.m_Ptr;
+                public static IntPtr ConvertToNative(DeviceSettings obj) => obj._ptr;
             }
         }
-        
+
         public static Result PopulateWorld(BakeInput bakeInput, BakeProgressState progress,
             UnityEngine.LightTransport.IDeviceContext context, UnityEngine.LightTransport.IWorld world)
         {
-            Result result = new Result();
-            if (context is RadeonRaysContext)
+            Result result = new ();
+            if (context is RadeonRaysContext radeonRaysContext)
             {
-                IntegrationContext integrationContext = new IntegrationContext();
-                result = PopulateWorldRadeonRays(bakeInput, progress, context as RadeonRaysContext, integrationContext);
+                IntegrationContext integrationContext = new ();
+                result = PopulateWorldRadeonRays(bakeInput, progress, radeonRaysContext, integrationContext);
                 Debug.Assert(world is RadeonRaysWorld);
                 var rrWorld = world as RadeonRaysWorld;
                 rrWorld.SetIntegrationContext(integrationContext);
             }
-            else if (context is WintermuteContext)
+            else if (context is WintermuteContext wintermuteContext)
             {
-                IntegrationContext integrationContext = new IntegrationContext();
-                result = PopulateWorldWintermute(bakeInput, progress, context as WintermuteContext, integrationContext);
+                IntegrationContext integrationContext = new ();
+                result = PopulateWorldWintermute(bakeInput, progress, wintermuteContext, integrationContext);
                 Debug.Assert(world is WintermuteWorld);
                 var wmWorld = world as WintermuteWorld;
                 wmWorld.SetIntegrationContext(integrationContext);
@@ -683,9 +757,15 @@ namespace UnityEditor.LightBaking
             return result;
         }
 
-        extern static public bool Serialize(String path, BakeInput input);
-        extern static public bool Deserialize(String path, BakeInput input);
-        extern static public Result Bake(BakeInput input, DeviceSettings deviceSettings);
-        extern static public Result BakeOutOfProcess(BakeInput input, DeviceSettings deviceSettings);
+        public static extern bool Serialize(string path, BakeInput input);
+        public static extern bool Deserialize(string path, BakeInput input);
+
+        public static extern Result Bake(BakeInput input, DeviceSettings deviceSettings);
+        public static extern Result BakeOutOfProcess(BakeInput input, DeviceSettings deviceSettings);
+        public static extern Result BakeInEditorWorkerProcess(BakeInput input, DeviceSettings deviceSettings);
+        public static extern bool ReportResultToParentProcess(Result result, ExternalProcessConnection connection);
+        [NativeMethod(IsThreadSafe = true)]
+        public static extern bool ReportProgressToParentProcess(float progress, ExternalProcessConnection connection);
+        public static extern ulong ConvertExpectedWorkToWorkSteps(BakeInput bakeInput, ulong sampleCountPerLightmapTexel, ulong sampleCountPerProbe);
     }
 }

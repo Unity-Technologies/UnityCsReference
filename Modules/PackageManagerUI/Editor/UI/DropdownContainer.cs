@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static void ShowDropdown(DropdownContent content)
         {
-            if (content == null)
+            if (instance != null || content == null)
                 return;
 
             instance = CreateInstance<DropdownContainer>();
@@ -37,12 +37,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             content.container = instance;
             instance.m_Content = content;
 
-            // If called from a context menu, without delay this newly created dropdown
-            // content would be treated as a part of contextual menu auxiliary window chain.
-            // In that case, if contextual menu is set to auto close (this is by default and
-            // is the most frequent use case), this content would be instantly destroyed and
-            // not shown at all.
-            EditorApplication.delayCall += ShowDropdownContainer;
+            instance.ShowAsDropDown(content.position, content.windowSize);
+            content.OnDropdownShown();
         }
 
         static void ShowDropdownContainer()

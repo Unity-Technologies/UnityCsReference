@@ -39,14 +39,14 @@ namespace UnityEditor
     namespace TerrainTools
     {
         [MovedFrom("UnityEditor.Experimental.TerrainAPI")]
-        public class TerrainToolShortcutContext : IShortcutToolContext
+        public class TerrainToolShortcutContext : IShortcutContext
         {
             internal TerrainToolShortcutContext(TerrainInspector editor)
             {
                 terrainEditor = editor;
             }
 
-            bool IShortcutToolContext.active
+            bool IShortcutContext.active
             {
                 get { return !(TerrainInspector.s_activeTerrainInspector != 0 && TerrainInspector.s_activeTerrainInspector != terrainEditor.GetInstanceID()); }
             }

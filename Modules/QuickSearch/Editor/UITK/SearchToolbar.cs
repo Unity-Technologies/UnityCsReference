@@ -61,7 +61,7 @@ namespace UnityEditor.Search
             }
 
             // Query builder toggle
-            if (!viewState.flags.HasAny(SearchViewFlags.DisableBuilderModeToggle))
+            if (viewState.hasQueryBuilderToggle)
             {
                 m_QueryBuilderToggle = SearchElement.CreateToolbarToggle("SearchQueryBuilderToggle", queryBuilderIconTooltip, viewState.queryBuilderEnabled, OnToggleQueryBuilder, buttonClassName, queryBuilderButtonClassName);
                 Add(m_QueryBuilderToggle);

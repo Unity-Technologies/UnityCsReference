@@ -610,12 +610,12 @@ namespace UnityEngine.UIElements
         {
             // Any factor greater or equal to 1f eliminates the need for a drag element
             bool needsElement = factor < 1f;
-            dragElement.visible = needsElement;
-
             if (needsElement)
             {
+                // Only visible if parent is as well.
+                dragElement.style.visibility = new StyleEnum<Visibility>(Visibility.Visible, StyleKeyword.Null);
+
                 IStyle inlineStyles = dragElement.style;
-                dragElement.style.visibility = StyleKeyword.Null; // Only visible if parent is as well.
 
                 // Any factor smaller than 1f will necessitate a drag element
                 if (direction == SliderDirection.Horizontal)
@@ -630,6 +630,10 @@ namespace UnityEngine.UIElements
                     float elemMinHeight = resolvedStyle.minHeight == StyleKeyword.Auto ? 0 : resolvedStyle.minHeight.value;
                     inlineStyles.height = Mathf.Round(Mathf.Max(dragContainer.layout.height * factor, elemMinHeight));
                 }
+            }
+            else
+            {
+                dragElement.style.visibility = new StyleEnum<Visibility>(Visibility.Hidden, StyleKeyword.Undefined);
             }
 
             dragBorderElement.visible = dragElement.visible;

@@ -203,9 +203,9 @@ namespace UnityEngine
             settings.fontAsset = settings.textSettings.GetCachedFontAsset(font, TextShaderUtilities.ShaderRef_MobileSDF_IMGUI);
             if (settings.fontAsset == null)
                 return;
-         
+
             settings.material = settings.fontAsset.material;
-            
+
             // We only want to update the sharpness of the text in the editor with those preferences
             settings.fontAsset.material.SetFloat("_Sharpness", settings.textSettings.GetEditorTextSharpness());
 

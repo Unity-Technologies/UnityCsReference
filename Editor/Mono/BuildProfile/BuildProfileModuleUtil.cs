@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using UnityEditor.Modules;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
@@ -25,6 +26,13 @@ namespace UnityEditor.Build.Profile
         static readonly GUIContent k_OpenDownloadPage = EditorGUIUtility.TrTextContent("Open Download Page");
         static readonly GUIContent k_InstallModuleWithHub = EditorGUIUtility.TrTextContent("Install with Unity Hub");
         static Dictionary<string, BuildTargetDiscovery.DiscoveredTargetInfo> s_DiscoveredTargetInfos = InitializeDiscoveredTargetDict();
+        static HashSet<string> s_BuildProfileIconModules = new()
+        {
+            "Switch",
+            "QNX",
+            "PS4",
+            "PS5"
+        };
 
         /// <summary>
         /// Classic platform display name for a given build profile. Matching
@@ -48,9 +56,10 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static Texture2D GetPlatformIcon(string moduleName, StandaloneBuildSubtarget subtarget)
         {
-            return GetBuildProfileIcon();
-            // TODO: Finalize Icon Design https://jira.unity3d.com/browse/PLAT-7379
-            //       return EditorGUIUtility.LoadIcon(GetPlatformIconId(moduleName, subtarget));
+            if (LoadBuildProfileIcon(moduleName, out Texture2D icon))
+                return icon;
+
+            return EditorGUIUtility.LoadIcon(GetPlatformIconId(moduleName, subtarget));
         }
 
         /// <summary>
@@ -58,12 +67,11 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static Texture2D GetPlatformIconSmall(string moduleName, StandaloneBuildSubtarget subtarget)
         {
-            return GetBuildProfileIcon();
-            // TODO: Finalize Icon Design https://jira.unity3d.com/browse/PLAT-7379
-            //       return EditorGUIUtility.LoadIcon(GetPlatformIconId(moduleName, subtarget) + ".Small");
-        }
+            if (LoadBuildProfileIcon(moduleName, out Texture2D icon))
+                return icon;
 
-        public static Texture2D GetBuildProfileIcon() => EditorGUIUtility.FindTexture(typeof(UnityEditor.Build.Profile.BuildProfile));
+            return EditorGUIUtility.LoadIcon(GetPlatformIconId(moduleName, subtarget) + ".Small");
+        }
 
         /// <summary>
         /// Load internal warning icon
@@ -256,6 +264,30 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Check if the user is able to build his VT-enabled Player for a target platform
+        /// </summary>
+        public static bool IsVirtualTexturingSettingsValid(BuildTarget buildTarget)
+        {
+            if (!PlayerSettings.GetVirtualTexturingSupportEnabled())
+            {
+                return true;
+            }
+
+            if (!UnityEngine.Rendering.VirtualTexturingEditor.Building.IsPlatformSupportedForPlayer(buildTarget))
+            {
+                return false;
+            }
+
+            GraphicsDeviceType[] gfxTypes = PlayerSettings.GetGraphicsAPIs(buildTarget);
+            bool supportedAPI = true;
+            foreach (GraphicsDeviceType api in gfxTypes)
+            {
+                supportedAPI &= UnityEngine.Rendering.VirtualTexturingEditor.Building.IsRenderAPISupported(api, buildTarget, false);
+            }
+
+            return supportedAPI;
+        }
+
         /// Retrieve string of filename invalid characters
         /// </summary>
         /// <returns></returns>
@@ -278,6 +310,18 @@ namespace UnityEditor.Build.Profile
                 result.TryAdd(targetString, kvp);
             }
             return result;
+        }
+
+        static bool LoadBuildProfileIcon(string moduleName, out Texture2D icon)
+        {
+            if (s_BuildProfileIconModules.Contains(moduleName))
+            {
+                icon = EditorGUIUtility.FindTexture(typeof(BuildProfile));
+                return true;
+            }
+
+            icon = null;
+            return false;
         }
 
         static string GetPlatformIconId(string moduleName, StandaloneBuildSubtarget subtarget)

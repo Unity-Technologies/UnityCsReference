@@ -110,7 +110,6 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
             var item = visibleItems[i];
             dropdownMenu.AppendAction(item.text, _ => item.action.TriggerAction(version), a =>
             {
-                a.tooltip = item.tooltip;
                 return (item.state & PackageActionState.Disabled) == PackageActionState.None ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
             });
         }

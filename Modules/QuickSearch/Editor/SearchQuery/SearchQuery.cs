@@ -320,13 +320,11 @@ namespace UnityEditor.Search
         public static void ShowQueryIconPicker(Action<Texture2D, bool> selectIcon)
         {
             var pickIconContext = SearchService.CreateContext(new[] { "adb", "asset" }, "", SearchFlags.WantsMore);
-            var viewState = new SearchViewState(pickIconContext,
+            var viewState = SearchViewState.CreatePickerState("Query Icon", pickIconContext,
                 (newIcon, canceled) => selectIcon(newIcon as Texture2D, canceled),
                 null,
                 "Texture",
                 typeof(Texture2D));
-            viewState.title = "Query Icon";
-            viewState.SetSearchViewFlags(SearchViewFlags.GridView);
             SearchService.ShowPicker(viewState);
         }
 

@@ -135,7 +135,7 @@ namespace UnityEngine.UIElements
 
     class DynamicAtlas : AtlasBase
     {
-        class TextureInfo : LinkedPoolItem<TextureInfo>
+        internal class TextureInfo : LinkedPoolItem<TextureInfo>
         {
             public DynamicAtlasPage page;
             public int counter;
@@ -158,9 +158,13 @@ namespace UnityEngine.UIElements
         }
 
         Dictionary<Texture, TextureInfo> m_Database = new Dictionary<Texture, TextureInfo>();
+        internal Dictionary<Texture, TextureInfo> Database => m_Database;
 
         DynamicAtlasPage m_PointPage;
         DynamicAtlasPage m_BilinearPage;
+
+        internal DynamicAtlasPage PointPage => m_PointPage;
+        internal DynamicAtlasPage BilinearPage => m_BilinearPage;
 
         ColorSpace m_ColorSpace;
         List<IPanel> m_Panels = new List<IPanel>(1);

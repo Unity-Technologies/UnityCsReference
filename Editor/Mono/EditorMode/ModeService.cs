@@ -430,7 +430,7 @@ namespace UnityEditor
             FillModeData(builtinModeFile, modesData);
 
             var modeFilePathCache = SessionState.GetString(k_ModePathsCache, "");
-            
+
             if (modeFilePathCache == "")
             {
                 var modeDescriptors = AssetDatabase.EnumerateAllAssets(new SearchFilter
@@ -460,7 +460,7 @@ namespace UnityEditor
                     FillModeData(path, modesData);
                 }
             }
-            
+
             modes = new ModeEntry[modesData.Keys.Count];
             modes[0] = CreateEntry(k_DefaultModeId, (JSONObject)modesData[k_DefaultModeId]);
             var modeIndex = 1;
@@ -555,9 +555,9 @@ namespace UnityEditor
             if (menuDescriptor == null)
                 return;
 
-            var menu = DropdownUtility.CreateDropdown(true);
+            GenericMenu menu = new GenericMenu();
             BuildContextMenu(menuDescriptor, menuId, menu);
-            DropdownUtility.ShowDropdown(menu, Event.current.mousePosition);
+            menu.ShowAsContext();
         }
 
         static private IList GetContextMenu(string menuId)
@@ -585,7 +585,7 @@ namespace UnityEditor
             return GetModeDataSection(modeIndex == -1 ? currentIndex : modeIndex, ModeDescriptor.LayoutKey) as JSONObject;
         }
 
-        private static void BuildContextMenu(IList menus, string menuId, IGenericMenu contextMenu, string prefix = "")
+        private static void BuildContextMenu(IList menus, string menuId, GenericMenu contextMenu, string prefix = "")
         {
             if (menus == null)
                 return;
@@ -621,9 +621,9 @@ namespace UnityEditor
                             {
                                 var @checked = Menu.GetChecked(wi);
                                 if (!Menu.GetEnabled(wi))
-                                    contextMenu.AddDisabledItem(wi.Replace(menuId, ""), @checked);
+                                    contextMenu.AddDisabledItem(new GUIContent(wi.Replace(menuId, "")), @checked);
                                 else
-                                    contextMenu.AddItem(wi.Replace(menuId, ""), @checked, () => EditorApplication.ExecuteMenuItem(wi));
+                                    contextMenu.AddItem(new GUIContent(wi.Replace(menuId, "")), @checked, () => EditorApplication.ExecuteMenuItem(wi));
                             }
                         }
                     }
@@ -635,14 +635,14 @@ namespace UnityEditor
                             // We are re-using a default menu item
                             menuItemId = JsonUtils.JsonReadString(menu, k_MenuKeyItemId, menuItemId);
                             if (EditorApplication.ValidateMenuItem(menuItemId))
-                                contextMenu.AddItem(fullMenuName, false, () => EditorApplication.ExecuteMenuItem(menuItemId));
+                                contextMenu.AddItem(new GUIContent(fullMenuName), false, () => EditorApplication.ExecuteMenuItem(menuItemId));
                             else
-                                contextMenu.AddDisabledItem(fullMenuName, false);
+                                contextMenu.AddDisabledItem(new GUIContent(fullMenuName));
                         }
                         else if (CommandService.Exists(commandId))
                         {
                             // Create a new menu item pointing to a command handler
-                            contextMenu.AddItem(fullMenuName, false, () => CommandService.Execute(commandId, CommandHint.Menu));
+                            contextMenu.AddItem(new GUIContent(fullMenuName), false, () => CommandService.Execute(commandId, CommandHint.Menu));
                         }
                     }
                 }

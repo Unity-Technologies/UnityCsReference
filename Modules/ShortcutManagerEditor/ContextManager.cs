@@ -12,8 +12,8 @@ namespace UnityEditor.ShortcutManagement
     interface IContextManager
     {
         void SetFocusedWindow(EditorWindow window);
-        void RegisterToolContext(IShortcutToolContext context);
-        void DeregisterToolContext(IShortcutToolContext context);
+        void RegisterToolContext(IShortcutContext context);
+        void DeregisterToolContext(IShortcutContext context);
         bool HasAnyPriorityContext();
         bool HasPriorityContextOfType(Type type);
         bool HasActiveContextOfType(Type type);
@@ -55,9 +55,9 @@ namespace UnityEditor.ShortcutManagement
 
         WeakReference m_FocusedWindow = new WeakReference(null);
 
-        List<IShortcutToolContext> m_PriorityContexts = new List<IShortcutToolContext>();
+        List<IShortcutContext> m_PriorityContexts = new List<IShortcutContext>();
 
-        List<IShortcutToolContext> m_ToolContexts = new List<IShortcutToolContext>();
+        List<IShortcutContext> m_ToolContexts = new List<IShortcutContext>();
         static Dictionary<Type, bool> s_IsPriorityContextCache = new Dictionary<Type, bool>();
 
         public static Action onTagChange;
@@ -81,7 +81,7 @@ namespace UnityEditor.ShortcutManagement
             m_FocusedWindow.Target = window;
         }
 
-        static bool IsPriorityContext(IShortcutToolContext context)
+        static bool IsPriorityContext(IShortcutContext context)
         {
             return IsPriorityContext(context.GetType());
         }
@@ -111,7 +111,7 @@ namespace UnityEditor.ShortcutManagement
             return false;
         }
 
-        void RegisterPriorityContext(IShortcutToolContext context)
+        void RegisterPriorityContext(IShortcutContext context)
         {
             if (!m_PriorityContexts.Contains(context))
             {
@@ -119,12 +119,12 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
-        void DeregisterPriorityContext(IShortcutToolContext context)
+        void DeregisterPriorityContext(IShortcutContext context)
         {
             m_PriorityContexts.Remove(context);
         }
 
-        public void RegisterToolContext(IShortcutToolContext context)
+        public void RegisterToolContext(IShortcutContext context)
         {
             if (context == null)
                 return;
@@ -138,7 +138,7 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
-        public void DeregisterToolContext(IShortcutToolContext context)
+        public void DeregisterToolContext(IShortcutContext context)
         {
             if (context == null)
                 return;

@@ -189,29 +189,18 @@ namespace UnityEngine.UIElements
         // Used in tests
         internal void ShowMenu()
         {
-            var isPlayer = elementPanel?.contextType == ContextType.Player;
-
+            IGenericMenu menu;
             if (createMenuCallback != null)
             {
-                m_GenericMenu = createMenuCallback.Invoke();
+                menu = createMenuCallback.Invoke();
             }
             else
             {
-                m_GenericMenu = isPlayer ? new GenericDropdownMenu() : DropdownUtility.CreateDropdown();
+                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownUtility.CreateDropdown();
             }
 
-            AddMenuItems(m_GenericMenu);
-
-            var genericDropdownMenu = m_GenericMenu as GenericDropdownMenu;
-
-            if (isPlayer || genericDropdownMenu == null)
-            {
-                m_GenericMenu.DropDown(visualInput.worldBound, this, true);
-            }
-            else
-            {
-                DropdownUtility.ShowDropdown(genericDropdownMenu, visualInput.worldBound.position + Vector2.up * visualInput.worldBound.size.y, this, false, false, m_AutoCloseMenu);
-            }
+            AddMenuItems(menu);
+            menu.DropDown(visualInput.worldBound, this, true);
         }
 
         private class PopupTextElement : TextElement

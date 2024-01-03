@@ -10,7 +10,7 @@ using UnityEngine;
 namespace UnityEditor
 {
     [PriorityContext, ReserveModifiers(ShortcutModifiers.Shift)]
-    class CameraFlyModeContext : IShortcutToolContext
+    class CameraFlyModeContext : IShortcutContext
     {
         public struct InputSamplingScope : IDisposable
         {

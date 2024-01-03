@@ -72,7 +72,32 @@ namespace UnityEditor.Search
         public SearchViewFlags flags;
         public string group;
 
-        public bool hasQueryPanel => !HasFlag(SearchViewFlags.DisableSavedSearchQuery);
+        internal bool isPicker => HasFlag(SearchViewFlags.ObjectPicker);
+        internal bool isSimplePicker => isPicker && !HasFlag(SearchViewFlags.ObjectPickerAdvancedUI);
+        public bool hasQueryPanel
+        {
+            get
+            {
+                if (HasFlag(SearchViewFlags.DisableSavedSearchQuery))
+                    return false;
+                if (isPicker)
+                    return !isSimplePicker;
+                return true;
+            }
+        }
+
+        internal bool hasQueryBuilderToggle
+        {
+            get
+            {
+                if (HasFlag(SearchViewFlags.DisableBuilderModeToggle))
+                    return false;
+                if (isPicker)
+                    return !isSimplePicker;
+                return true;
+            }
+        }
+
         public bool isQueryPanelVisible => hasQueryPanel && HasFlag(SearchViewFlags.OpenLeftSidePanel);
 
         internal int[] m_SelectedIds;
@@ -140,6 +165,7 @@ namespace UnityEditor.Search
         internal string initialQuery { get; set; }
 
         internal SearchViewState() : this(null, null) {}
+
         public SearchViewState(SearchContext context) : this(context, null) {}
 
         public SearchViewState(SearchContext context, SearchViewFlags flags)
@@ -190,6 +216,33 @@ namespace UnityEditor.Search
             this.tableConfig = tableConfig;
         }
 
+        public static SearchViewState CreatePickerState(string title, SearchContext context,
+                                 Action<UnityEngine.Object, bool> selectObjectHandler,
+                                 Action<UnityEngine.Object> trackingObjectHandler,
+                                 string typeName, Type filterType, SearchViewFlags flags = SearchViewFlags.None)
+        {
+            return new SearchViewState(context, selectObjectHandler, trackingObjectHandler, typeName, filterType)
+            {
+                title = title
+            }.SetSearchViewFlags(flags | SearchViewFlags.ObjectPicker);
+        }
+
+        public static SearchViewState CreatePickerState(
+            string title,
+            SearchContext context,
+            Action<SearchItem, bool> selectHandler,
+            Action<SearchItem> trackingHandler = null,
+            Func<SearchItem, bool> filterHandler = null,
+            SearchViewFlags flags = SearchViewFlags.None)
+        {
+            return new SearchViewState(context, selectHandler)
+            {
+                title = title,
+                trackingHandler = trackingHandler,
+                filterHandler = filterHandler
+            }.SetSearchViewFlags(flags | SearchViewFlags.ObjectPicker);
+        }
+
         internal SearchViewState SetSearchViewFlags(SearchViewFlags flags)
         {
             if (m_Context != null)
@@ -218,8 +271,14 @@ namespace UnityEditor.Search
                 itemSize = (float)DisplayMode.Table;
                 forceViewMode = true;
             }
-            if (flags.HasAny(SearchViewFlags.OpenInBuilderMode)) queryBuilderEnabled = true;
-            if (flags.HasAny(SearchViewFlags.OpenInTextMode)) queryBuilderEnabled = false;
+            if (flags.HasAny(SearchViewFlags.IgnoreSavedSearches))
+            {
+                ignoreSaveSearches = true;
+            }
+            if (flags.HasAny(SearchViewFlags.OpenInBuilderMode) || isSimplePicker)
+                queryBuilderEnabled = true;
+            else if (flags.HasAny(SearchViewFlags.OpenInTextMode))
+                queryBuilderEnabled = false;
             return this;
         }
 
@@ -313,7 +372,7 @@ namespace UnityEditor.Search
             if (!runningTests && flags.HasNone(SearchViewFlags.OpenInBuilderMode) && flags.HasNone(SearchViewFlags.OpenInTextMode))
                 queryBuilderEnabled = SearchSettings.queryBuilder;
 
-            if (context != null)
+            if (hasContext)
             {
                 context.options |= additionalFlags;
                 if (runningTests)

@@ -16,6 +16,7 @@ namespace UnityEngine.UIElements
         public Vector2Int minSize { get; }
         public Vector2Int maxSize { get; }
         public Vector2Int currentSize => m_CurrentSize;
+        internal Allocator2D allocator => m_Allocator; // For debugging purposes
 
         readonly int m_1Padding = 1;
         readonly int m_2Padding = 2;

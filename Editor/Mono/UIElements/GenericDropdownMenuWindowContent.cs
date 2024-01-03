@@ -40,7 +40,7 @@ namespace UnityEditor.UIElements
             {
                 if (editorWindow != null)
                 {
-                    m_GenericDropdownMenu.innerContainer.Focus();
+                    m_GenericDropdownMenu.contentContainer.Focus();
                 }
             });
         }

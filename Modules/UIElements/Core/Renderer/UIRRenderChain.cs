@@ -429,8 +429,12 @@ namespace UnityEngine.UIElements.UIR
 
         void SerializeCommandsForCameras()
         {
+            using var markerScope = k_MarkerSerialize.Auto();
+
             if (m_FirstCommand == null)
                 return;
+
+            k_MarkerSerialize.Begin();
 
             Exception immediateException = null;
             //TODO: Reactivate this guard check once InspectorWindow is fixed to stop adding VEs during OnGUI
@@ -463,8 +467,6 @@ namespace UnityEngine.UIElements.UIR
             }
 
             Debug.Assert(immediateException == null); // Not supported for cameras
-
-            k_MarkerSerialize.End();
         }
 
         public void Render()

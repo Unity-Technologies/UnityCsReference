@@ -616,15 +616,13 @@ namespace UnityEngine.LightTransport
 
             public bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount)
             {
-                Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
-                if (context is not RadeonRaysContext rrContext)
-                    return false;
-
                 // Read back from GPU memory into CPU memory.
                 using var shInputBuffer = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
                 using var shOutputBuffer = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                EventID eventId = rrContext.ReadBuffer(shIn, shInputBuffer);
-                bool waitResult = rrContext.Wait(eventId);
+                EventID eventId = context.ReadBuffer(shIn, shInputBuffer);
+				bool flushResult = context.Flush();
+                Debug.Assert(flushResult, "Failed to flush context.");
+                bool waitResult = context.Wait(eventId);
                 Debug.Assert(waitResult, "Failed to read SH from context.");
 
                 // Currently windowing is done on CPU since the algorithm is not GPU friendly.
@@ -638,8 +636,8 @@ namespace UnityEngine.LightTransport
                 jobHandle.Complete();
 
                 // Write back to GPU.
-                eventId = rrContext.WriteBuffer(shOut, shOutputBuffer);
-                waitResult = rrContext.Wait(eventId);
+                eventId = context.WriteBuffer(shOut, shOutputBuffer);
+                waitResult = context.Wait(eventId);
                 Debug.Assert(waitResult, "Failed to write SH to context.");
                 return true;
             }

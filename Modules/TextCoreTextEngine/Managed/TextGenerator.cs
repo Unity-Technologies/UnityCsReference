@@ -69,6 +69,8 @@ namespace UnityEngine.TextCore.Text
         const int k_MaxCharacters = 8; // Determines the initial allocation and size of the character array / buffer.
 
         static TextGenerator s_TextGenerator;
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static TextGenerator GetTextGenerator()
         {
             if (s_TextGenerator == null)

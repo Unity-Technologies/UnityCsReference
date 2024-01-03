@@ -94,7 +94,7 @@ namespace UnityEditor.ShortcutManagement
             m_DisplayName = displayName ?? id.path;
             m_Priority = ShortcutAttributeUtility.AssignPriority(context, priority);
 
-            if (typeof(IShortcutToolContext).IsAssignableFrom(m_Context))
+            if (typeof(IShortcutContext).IsAssignableFrom(m_Context))
                 foreach (var attribute in m_Context.GetCustomAttributes(typeof(ReserveModifiersAttribute), true))
                     m_ReservedModifier |= (attribute as ReserveModifiersAttribute).Modifiers;
         }

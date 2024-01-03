@@ -246,8 +246,9 @@ namespace Unity.UI.Builder
             template.CloneTree(this);
 
             m_TextGeneratorStyle = this.Q<BuilderStyleRow>(null, "unity-text-generator");
-            UIToolkitProjectSettings.onEnableAdvancedTextChanged += (show => m_TextGeneratorStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None);
-            m_TextGeneratorStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
+            //UIToolkitProjectSettings.onEnableAdvancedTextChanged += (show => m_TextGeneratorStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None);
+            //m_TextGeneratorStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
+            m_TextGeneratorStyle.style.display = DisplayStyle.None;
 
             // Get the scroll view.
             // HACK: ScrollView is not capable of remembering a scroll position for content that changes often.

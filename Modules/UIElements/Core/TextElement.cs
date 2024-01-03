@@ -318,7 +318,7 @@ namespace UnityEngine.UIElements
         public bool isElided { get; private set; }
 
         internal static readonly string k_EllipsisText = @"..."; // Some web standards seem to suggest "\u2026" (horizontal ellipsis Unicode character)
-        internal string elidedText;
+        internal RenderedText elidedText;
 
         private bool m_WasElided;
 
@@ -468,8 +468,9 @@ namespace UnityEngine.UIElements
             }
             else if (shouldElide)
             {
-                elidedText = ElideText(text, k_EllipsisText, contentRect.width, computedStyle.unityTextOverflowPosition);
-                isElided = shouldElide && elidedText != text;
+                // TODO: remove string allocations from ElideText
+                elidedText = new RenderedText(ElideText(text, k_EllipsisText, contentRect.width, computedStyle.unityTextOverflowPosition));
+                isElided = shouldElide && !elidedText.Equals(text);
             }
             else
             {
@@ -495,12 +496,12 @@ namespace UnityEngine.UIElements
         public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height,
             MeasureMode heightMode)
         {
-            return TextUtilities.MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode);
+            return TextUtilities.MeasureVisualElementTextSize(this, new RenderedText(textToMeasure), width, widthMode, height, heightMode);
         }
 
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
-            return MeasureTextSize(renderedText, desiredWidth, widthMode, desiredHeight, heightMode);
+            return TextUtilities.MeasureVisualElementTextSize(this, renderedText, desiredWidth, widthMode, desiredHeight, heightMode);
         }
 
         //INotifyValueChange
@@ -544,7 +545,7 @@ namespace UnityEngine.UIElements
             newValue = ((ITextEdition)this).CullString(newValue);
             if (m_Text != newValue)
             {
-                renderedText = newValue;
+                SetRenderedText(newValue);
                 m_Text = newValue;
 
                 //No need to dirty the layout if the element's size is not affected by the text change
@@ -552,7 +553,7 @@ namespace UnityEngine.UIElements
                     IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                 else
                     IncrementVersion(VersionChangeType.Repaint);
-  
+
 
                 if (!string.IsNullOrEmpty(viewDataKey))
                     SaveViewData();

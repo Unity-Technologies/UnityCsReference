@@ -15,6 +15,8 @@ namespace UnityEngine.UIElements.UIR
         readonly Row[] m_Rows;
         readonly List<Area> m_Areas = new List<Area>();
 
+        internal List<Area> areas => m_Areas; // For debugging purposes only
+
         public class Area
         {
             public RectInt rect;

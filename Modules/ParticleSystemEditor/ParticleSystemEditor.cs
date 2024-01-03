@@ -23,7 +23,7 @@ namespace UnityEditor
 
         static GUIContent m_PlayBackTitle;
 
-        public class ShortcutContext : IShortcutToolContext
+        public class ShortcutContext : IShortcutContext
         {
             public bool active { get; set; }
         }

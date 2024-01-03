@@ -79,7 +79,7 @@ namespace UnityEditor.ShortcutManagement
                 throw new ArgumentException("Context type is valid", nameof(discoveryInfoWithInvalidContext));
 
             var isEditorWindow = typeof(EditorWindow).IsAssignableFrom(context);
-            var isIShortcutToolContext = typeof(IShortcutToolContext).IsAssignableFrom(context);
+            var isIShortcutToolContext = typeof(IShortcutContext).IsAssignableFrom(context);
 
             string detail;
             if (isEditorWindow)
@@ -87,19 +87,19 @@ namespace UnityEditor.ShortcutManagement
                 if (context == typeof(EditorWindow))
                     detail = $"The context type cannot be {typeof(EditorWindow).FullName}.";
                 else if (isIShortcutToolContext)
-                    detail = $"The context type cannot both derive from {typeof(EditorWindow).FullName} and implement {typeof(IShortcutToolContext).FullName}.";
+                    detail = $"The context type cannot both derive from {typeof(EditorWindow).FullName} and implement {typeof(IShortcutContext).FullName}.";
                 else
                     throw new ArgumentException("Context type is valid", nameof(discoveryInfoWithInvalidContext));
             }
             else if (isIShortcutToolContext)
             {
-                if (context == typeof(IShortcutToolContext))
-                    detail = $"The context type cannot be {typeof(IShortcutToolContext).FullName}.";
+                if (context == typeof(IShortcutContext))
+                    detail = $"The context type cannot be {typeof(IShortcutContext).FullName}.";
                 else
                     throw new ArgumentException("Context type is valid", nameof(discoveryInfoWithInvalidContext));
             }
             else
-                detail = $"The context type must either be null, derive from {typeof(EditorWindow).FullName}, or implement {typeof(IShortcutToolContext).FullName}.";
+                detail = $"The context type must either be null, derive from {typeof(EditorWindow).FullName}, or implement {typeof(IShortcutContext).FullName}.";
 
             var fullMemberName = discoveryInfoWithInvalidContext.GetFullMemberName();
             var summary = $"Ignoring shortcut attribute with invalid context type {context.FullName} on {fullMemberName}.";
