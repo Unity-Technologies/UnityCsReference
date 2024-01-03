@@ -3,12 +3,210 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Text;
 using UnityEngine.Bindings;
 using UnityEngine.TextCore.LowLevel;
 
 namespace UnityEngine.TextCore.Text
 {
+    /// <summary>
+    /// Helper structure to generate rendered text without string allocations.
+    /// </summary>
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule", "UnityEditor.GraphToolsFoundationModule")]
+    internal readonly struct RenderedText : IEquatable<RenderedText>, IEquatable<string>
+    {
+        public readonly string value;
+        public readonly int valueStart, valueLength;
+        public readonly string suffix;
+
+        public readonly char repeat;
+        public readonly int repeatCount;
+
+        public RenderedText(string value)
+            : this(value, 0, value?.Length ?? 0)
+        {}
+
+        public RenderedText(string value, string suffix)
+            : this(value, 0, value?.Length ?? 0, suffix)
+        {}
+
+        public RenderedText(string value, int start, int length, string suffix = null)
+        {
+            // clamp value arguments to valid ranges
+            if (string.IsNullOrEmpty(value))
+            {
+                start = 0;
+                length = 0;
+            }
+            else
+            {
+                if (start < 0) start = 0;
+                else if (start >= value.Length)
+                {
+                    start = value.Length;
+                    length = 0;
+                }
+
+                if (length < 0) length = 0;
+                else if (length > value.Length - start)
+                    length = value.Length - start;
+            }
+
+            this.value = value;
+            this.valueStart = start;
+            this.valueLength = length;
+            this.suffix = suffix;
+            this.repeat = (char)0;
+            this.repeatCount = 0;
+        }
+
+        public RenderedText(char repeat, int repeatCount, string suffix = null)
+        {
+            if (repeatCount < 0)
+                repeatCount = 0;
+
+            this.value = null;
+            this.valueStart = 0;
+            this.valueLength = 0;
+            this.suffix = suffix;
+            this.repeat = repeat;
+            this.repeatCount = repeatCount;
+        }
+
+        public int CharacterCount
+        {
+            get
+            {
+                int count = valueLength + repeatCount;
+                if (suffix != null)
+                    count += suffix.Length;
+                return count;
+            }
+        }
+
+        public struct Enumerator
+        {
+            private readonly RenderedText m_Source;
+            private const int k_ValueStage = 0;
+            private const int k_RepeatStage = 1;
+            private const int k_SuffixStage = 2;
+            private int m_Stage;
+            private int m_StageIndex;
+            private char m_Current;
+
+            public char Current => m_Current;
+
+            public Enumerator(in RenderedText source)
+            {
+                m_Source = source;
+                m_Stage = 0;
+                m_StageIndex = 0;
+                m_Current = default;
+            }
+
+            public bool MoveNext()
+            {
+                if (m_Stage == k_ValueStage)
+                {
+                    if (m_Source.value != null)
+                    {
+                        int start = m_Source.valueStart;
+                        int end = m_Source.valueStart + m_Source.valueLength;
+                        if (m_StageIndex < start)
+                            m_StageIndex = start;
+
+                        if (m_StageIndex < end)
+                        {
+                            m_Current = m_Source.value[m_StageIndex];
+                            ++m_StageIndex;
+                            return true;
+                        }
+                    }
+
+                    m_Stage = k_ValueStage + 1;
+                    m_StageIndex = 0;
+                }
+
+                if (m_Stage == k_RepeatStage)
+                {
+                    if (m_StageIndex < m_Source.repeatCount)
+                    {
+                        m_Current = m_Source.repeat;
+                        ++m_StageIndex;
+                        return true;
+                    }
+
+                    m_Stage = k_RepeatStage + 1;
+                    m_StageIndex = 0;
+                }
+
+                if (m_Stage == k_SuffixStage)
+                {
+                    if (m_Source.suffix != null && m_StageIndex < m_Source.suffix.Length)
+                    {
+                        m_Current = m_Source.suffix[m_StageIndex];
+                        ++m_StageIndex;
+                        return true;
+                    }
+
+                    m_Stage = k_SuffixStage + 1;
+                    m_StageIndex = 0;
+                }
+
+                return false;
+            }
+
+            public void Reset()
+            {
+                m_Stage = 0;
+                m_StageIndex = 0;
+                m_Current = default;
+            }
+        }
+
+        public Enumerator GetEnumerator() => new Enumerator(this);
+
+        public string CreateString()
+        {
+            var chars = new char[CharacterCount];
+            int writeIndex = 0;
+            foreach (var c in this)
+                chars[writeIndex++] = c;
+            return new string(chars);
+        }
+
+        public bool Equals(RenderedText other)
+        {
+            return value == other.value && valueStart == other.valueStart && valueLength == other.valueLength && suffix == other.suffix && repeat == other.repeat && repeatCount == other.repeatCount;
+        }
+
+        public bool Equals(string other)
+        {
+            var otherLength = other?.Length ?? 0;
+            var length = this.CharacterCount;
+            if (otherLength != length)
+                return false;
+            if (otherLength == 0) // both empty
+                return true;
+            int compIndex = 0;
+            foreach (var c in this)
+                // ReSharper disable once PossibleNullReferenceException
+                if (c != other[compIndex++])
+                    return false;
+            return true;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return (obj is string otherString && Equals(otherString)) ||
+                   (obj is RenderedText otherRenderedText && Equals(otherRenderedText));
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(value, valueStart, valueLength, suffix, repeat, repeatCount);
+        }
+    }
+
     [Serializable]
     struct MeshExtents
     {

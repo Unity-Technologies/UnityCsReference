@@ -104,7 +104,7 @@ namespace UnityEngine.TextCore.Text
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal NativeTextGenerationSettings nativeSettings;
+        internal NativeTextGenerationSettings nativeSettings = NativeTextGenerationSettings.Default;
 
         ~TextHandle()
         {

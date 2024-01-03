@@ -28,7 +28,7 @@ namespace UnityEngine.TextCore.Text
             ComputeMarginSize(generationSettings.screenRect, generationSettings.margins);
 
             //ParseInputText
-            PopulateTextBackingArray(generationSettings.text);
+            PopulateTextBackingArray(generationSettings.renderedText);
             PopulateTextProcessingArray(generationSettings);
             SetArraySizes(m_TextProcessingArray, generationSettings, textInfo);
 
@@ -58,7 +58,7 @@ namespace UnityEngine.TextCore.Text
             GetSpecialCharacters(generationSettings);
 
             //ParseInputText
-            PopulateTextBackingArray(generationSettings.text);
+            PopulateTextBackingArray(generationSettings.renderedText);
             PopulateTextProcessingArray(generationSettings);
             bool success = PopulateFontAsset(generationSettings, m_TextProcessingArray);
             return success;
@@ -653,44 +653,18 @@ namespace UnityEngine.TextCore.Text
         /// Convert source text to Unicode (uint) and populate internal text backing array.
         /// </summary>
         /// <param name="sourceText">Source text to be converted</param>
-        void PopulateTextBackingArray(string sourceText)
+        void PopulateTextBackingArray(in RenderedText sourceText)
         {
-            int srcLength = sourceText == null ? 0 : sourceText.Length;
-
-            PopulateTextBackingArray(sourceText, 0, srcLength);
-        }
-
-        /// <summary>
-        /// Convert source text to uint and populate internal text backing array.
-        /// </summary>
-        /// <param name="sourceText">string containing the source text to be converted</param>
-        /// <param name="start">Index of the first element of the source array to be converted and copied to the internal text backing array.</param>
-        /// <param name="length">Number of elements in the array to be converted and copied to the internal text backing array.</param>
-        void PopulateTextBackingArray(string sourceText, int start, int length)
-        {
-            int readIndex;
             int writeIndex = 0;
-
-            // Range check
-            if (sourceText == null)
-            {
-                readIndex = 0;
-                length = 0;
-            }
-            else
-            {
-                readIndex = Mathf.Clamp(start, 0, sourceText.Length);
-                length = Mathf.Clamp(length, 0, start + length < sourceText.Length ? length : sourceText.Length - start);
-            }
+            int length = sourceText.CharacterCount;
 
             // Make sure array size is appropriate
             if (length >= m_TextBackingArray.Capacity)
                 m_TextBackingArray.Resize((length));
 
-            int end = readIndex + length;
-            for (; readIndex < end; readIndex++)
+            foreach (var character in sourceText)
             {
-                m_TextBackingArray[writeIndex] = sourceText[readIndex];
+                m_TextBackingArray[writeIndex] = character;
                 writeIndex += 1;
             }
 

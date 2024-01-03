@@ -299,6 +299,10 @@ namespace Unity.UI.Builder
 
         public void Paste()
         {
+            var focused = m_PaneWindow.rootVisualElement.focusController.focusedElement as VisualElement;
+            if (!BuilderEditorUtility.CopyBufferMatchesTarget(focused))
+                return;
+
             var copyBuffer = BuilderEditorUtility.systemCopyBuffer;
 
             if (BuilderEditorUtility.IsUxml(copyBuffer))

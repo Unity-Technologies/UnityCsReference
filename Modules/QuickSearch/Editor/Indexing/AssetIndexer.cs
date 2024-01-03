@@ -79,7 +79,7 @@ namespace UnityEditor.Search
             {
                 if (isPrefabDocument && objType == typeof(GameObject))
                     IndexProperty(documentIndex, name, "prefab", saveKeyword: true, exact: true);
-                if (objType == typeof(MonoScript))
+                else if (objType == typeof(MonoScript))
                     IndexProperty(documentIndex, name, "script", saveKeyword: true, exact: true);
 
                 IndexType(objType, documentIndex);
@@ -142,12 +142,7 @@ namespace UnityEditor.Search
                 IndexNumber(documentIndex, "size", (double)fi.Length);
                 IndexProperty(documentIndex, "ext", fi.Extension.Replace(".", ""), saveKeyword: false, exact: true);
                 IndexNumber(documentIndex, "age", (DateTime.Now - fi.LastWriteTime).TotalDays);
-
-                var dirPath = Paths.ConvertSeparatorsToUnity(Path.GetDirectoryName(path));
-                foreach (var dir in dirPath.Split('/').Skip(1).Reverse().Take(3))
-                    IndexProperty(documentIndex, "dir", dir, saveKeyword: false, exact: true);
-
-                IndexProperty(documentIndex, "dir", dirPath, saveKeyword: false, exact: true);
+                IndexFolder(documentIndex, path);
                 IndexProperty(documentIndex, "t", "file", saveKeyword: true, exact: true);
             }
             else if (Directory.Exists(path))
@@ -272,6 +267,24 @@ namespace UnityEditor.Search
             }
 
             minWordIndexationLength = minIndexationLength;
+        }
+
+        internal void IndexFolder(in int documentIndex, string path)
+        {
+            path = path.ToLowerInvariant();
+            var dirPath = Paths.ConvertSeparatorsToUnity(Path.GetDirectoryName(path));
+            var dirTokens = dirPath.Split('/');
+            for (int i = 0; i < dirTokens.Length; ++i)
+            {
+                var dir = dirTokens[i];
+                AddProperty("dir", dir, dir.Length, dir.Length, 5, documentIndex, saveKeyword: false, exact: false);
+                for (int j = i + 1; j < dirTokens.Length; ++j)
+                {
+                    dir += "/" + dirTokens[j];
+                    AddProperty("dir", dir, dir.Length, dir.Length, 5, documentIndex, saveKeyword: false, exact: false);
+                }
+            }
+            AddProperty("dir", dirPath, dirPath.Length, dirPath.Length, 100, documentIndex, saveKeyword: false, exact: true);
         }
 
         private void IndexProperties(in int documentIndex, in string path, in bool hasCustomIndexers)

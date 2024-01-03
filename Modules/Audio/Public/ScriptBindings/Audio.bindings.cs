@@ -21,6 +21,13 @@ namespace UnityEngine.Audio
     {
         protected internal AudioResource() {}
     }
+
+    [NativeHeader("Modules/Audio/Public/ScriptBindings/Audio.bindings.h")]
+    sealed class AudioManagerTestProxy
+    {
+        [NativeMethod(Name = "AudioManagerTestProxy::ComputeAudibilityConsistency", IsFreeFunction = true)]
+        internal static extern bool ComputeAudibilityConsistency();
+    }
 }
 
 namespace UnityEngine

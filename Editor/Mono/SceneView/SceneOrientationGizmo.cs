@@ -12,7 +12,7 @@ using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 using BlendMode = UnityEngine.Rendering.BlendMode;
 
-[Overlay(typeof(SceneView), "Orientation", true)]
+[Overlay(typeof(SceneView), "Orientation", true, priority = (int)OverlayPriority.Orientation)]
 [Icon("Icons/Overlays/OrientationGizmo.png")]
 sealed class SceneOrientationGizmo : IMGUIOverlay
 {

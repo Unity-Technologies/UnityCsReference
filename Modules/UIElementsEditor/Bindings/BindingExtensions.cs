@@ -654,13 +654,6 @@ namespace UnityEditor.UIElements.Bindings
                 values.Add(t);
             }
 
-            public void Remove(SerializedProperty prop, object cookie)
-            {
-                var hash = prop.hashCodeForPropertyPath;
-
-                Remove(hash, cookie);
-            }
-
             public void Remove(int propertyPathHash, object cookie)
             {
                 if (m_TrackedValues.TryGetValue(propertyPathHash, out var values))
@@ -749,9 +742,9 @@ namespace UnityEditor.UIElements.Bindings
             return true;
         }
 
-        public void UnregisterSerializedPropertyChangeCallback(object cookie, SerializedProperty property)
+        public void UnregisterSerializedPropertyChangeCallback(object cookie, int propertyPathHash)
         {
-            m_ValueTracker.Remove(property, cookie);
+            m_ValueTracker.Remove(propertyPathHash, cookie);
         }
 
         public SerializedObjectBindingContextUpdater AddBindingUpdater(VisualElement element)
@@ -1253,6 +1246,10 @@ namespace UnityEditor.UIElements.Bindings
 
             if (null == bindingContext.serializedObject)
                 return true;
+
+            if (IntPtr.Zero == bindingContext.serializedObject.m_NativeObjectPtr)
+                return true;
+
             return false;
         }
 
@@ -1261,8 +1258,7 @@ namespace UnityEditor.UIElements.Bindings
             if (IsBindingContextUninitialized())
                 return -1;
 
-            var element = boundElement as VisualElement;
-            if (null != element)
+            if (boundElement is VisualElement element)
                 bindingContext.UpdateIfNecessary(element);
 
             // this can be set back to null on update
@@ -1340,6 +1336,12 @@ namespace UnityEditor.UIElements.Bindings
 
         protected internal override BindingResult Update(in BindingContext context)
         {
+            if (IsBindingContextUninitialized())
+            {
+                Unbind();
+                return default;
+            }
+
             var currentTimeMs = GetCurrentTime();
             if (VisualTreeBindingsUpdater.disableBindingsThrottling || (currentTimeMs - m_LastUpdateTime) >= VisualTreeBindingsUpdater.k_MinUpdateDelayMs ||
                 m_LastVersion != bindingContext?.serializedObject?.objectVersion)
@@ -1579,14 +1581,14 @@ namespace UnityEditor.UIElements.Bindings
 
         public SerializedObjectBindingContextUpdater()
         {
-            trackedProperties = new List<SerializedProperty>();
+            trackedPropertiesHash = new List<int>();
         }
 
-        private List<SerializedProperty> trackedProperties { get; }
+        private List<int> trackedPropertiesHash { get; }
 
         public void AddTracking(SerializedProperty prop)
         {
-            trackedProperties.Add(prop);
+            trackedPropertiesHash.Add(prop.hashCodeForPropertyPath);
         }
 
         public override BindingResult OnUpdate(in BindingContext context)
@@ -1619,13 +1621,13 @@ namespace UnityEditor.UIElements.Bindings
 
             if (owner != null && bindingContext != null)
             {
-                foreach (var prop in trackedProperties)
+                foreach (var propHash in trackedPropertiesHash)
                 {
-                    bindingContext.UnregisterSerializedPropertyChangeCallback(owner, prop);
+                    bindingContext.UnregisterSerializedPropertyChangeCallback(owner, propHash);
                 }
             }
 
-            trackedProperties.Clear();
+            trackedPropertiesHash.Clear();
             owner = null;
 
             ResetContext();
@@ -1706,7 +1708,7 @@ namespace UnityEditor.UIElements.Bindings
                     return;
                 }
             }
-            catch
+            catch (NullReferenceException e) when (e.Message.Contains("SerializedObject of SerializedProperty has been Disposed."))
             {
                 //this can happen when serializedObject has been disposed of
             }
@@ -1743,7 +1745,7 @@ namespace UnityEditor.UIElements.Bindings
                     return;
                 }
             }
-            catch (ArgumentNullException)
+            catch (NullReferenceException e) when (e.Message.Contains("SerializedObject of SerializedProperty has been Disposed."))
             {
                 //this can happen when serializedObject has been disposed of
             }
@@ -1794,7 +1796,7 @@ namespace UnityEditor.UIElements.Bindings
 
                 return default;
             }
-            catch (ArgumentNullException)
+            catch (NullReferenceException e) when (e.Message.Contains("SerializedObject of SerializedProperty has been Disposed."))
             {
                 //this can happen when serializedObject has been disposed of
             }
@@ -1811,8 +1813,12 @@ namespace UnityEditor.UIElements.Bindings
         protected internal static string GetUndoMessage(SerializedProperty serializedProperty)
         {
             var undoMessage = $"Modified {serializedProperty.name}";
-            if (serializedProperty.m_SerializedObject.targetObject.name != string.Empty)
+            var target = serializedProperty.m_SerializedObject.targetObject;
+            if (target != null && target.name != string.Empty)
+            {
                 undoMessage += $" in {serializedProperty.m_SerializedObject.targetObject.name}";
+            }
+
             return undoMessage;
         }
 

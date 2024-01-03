@@ -204,7 +204,6 @@ namespace UnityEngine.UIElements
 
                 var cellItem = cellContainer.GetProperty(bindableElementPropertyName) as VisualElement;
                 UnbindCellItem(cellItem, index, column);
-                cellContainer.SetProperty(k_BoundColumnVePropertyName, null);
             }
         }
 
@@ -222,6 +221,7 @@ namespace UnityEngine.UIElements
 
                 var cellItem = cellContainer.GetProperty(bindableElementPropertyName) as VisualElement;
                 column.destroyCell?.Invoke(cellItem);
+                cellContainer.SetProperty(k_BoundColumnVePropertyName, null);
             }
         }
 
@@ -311,7 +311,9 @@ namespace UnityEngine.UIElements
 
         void OnColumnSortingChanged()
         {
-            if (SortIfNeeded())
+            UpdateDragger();
+
+            if (sortingMode == ColumnSortingMode.Default)
             {
                 m_View.RefreshItems();
             }
@@ -319,19 +321,24 @@ namespace UnityEngine.UIElements
             columnSortingChanged?.Invoke();
         }
 
-        internal bool SortIfNeeded()
+        internal void UpdateDragger()
         {
             if (sortingMode == ColumnSortingMode.None)
             {
                 m_View.dragger.enabled = true;
-                return false;
+                return;
             }
 
             m_View.dragger.enabled = header.sortedColumnReadonly.Count == 0;
+        }
 
-            if (sortingMode != ColumnSortingMode.Default || m_View.itemsSource == null)
+        internal void SortIfNeeded()
+        {
+            UpdateDragger();
+
+            if (sortingMode == ColumnSortingMode.None || sortingMode != ColumnSortingMode.Default || m_View.itemsSource == null)
             {
-                return false;
+                return;
             }
 
             var wasSorted = m_SortedIndices?.Count > 0;
@@ -345,7 +352,7 @@ namespace UnityEngine.UIElements
 
             if (header.sortedColumnReadonly.Count == 0)
             {
-                return wasSorted;
+                return;
             }
 
             using var pool = ListPool<int>.Get(out var sortedList);
@@ -358,8 +365,6 @@ namespace UnityEngine.UIElements
 
             m_SortedIndices ??= new List<int>(capacity: m_View.itemsSource.Count);
             m_SortedIndices.AddRange(sortedList);
-
-            return true;
         }
 
         int CombinedComparison(int a, int b)

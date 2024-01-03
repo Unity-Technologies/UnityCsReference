@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.LightBaking;
+
 namespace UnityEngine.LightTransport
 {
     public static class InputExtraction
@@ -18,9 +20,9 @@ namespace UnityEngine.LightTransport
 
         public static bool ExtractFromScene(out BakeInput bakeInput)
         {
-            string outputFolderPath = "unused"; // We are not using disk IO.
-            UnityEditor.LightBaking.LightBaker.BakeInput input = new UnityEditor.LightBaking.LightBaker.BakeInput();
-            UnityEditor.LightBaking.InputExtraction.SourceMap map = new UnityEditor.LightBaking.InputExtraction.SourceMap();
+            const string outputFolderPath = "unused"; // We are not using disk IO.
+            UnityEditor.LightBaking.LightBaker.BakeInput input = new();
+            UnityEditor.LightBaking.InputExtraction.SourceMap map = new();
             bool result = UnityEditor.LightBaking.InputExtraction.ExtractFromScene(outputFolderPath, input, map);
             bakeInput = new BakeInput(input);
             return result;
@@ -30,6 +32,15 @@ namespace UnityEngine.LightTransport
         {
             UnityEditor.LightBaking.LightBaker.Result result = UnityEditor.LightBaking.LightBaker.PopulateWorld(bakeInput.bakeInput, progress, context, world);
             return result.type == UnityEditor.LightBaking.LightBaker.ResultType.Success;
+        }
+
+        internal static bool SerializeBakeInput(string path, InputExtraction.BakeInput bakeInput) => LightBaker.Serialize(path, bakeInput.bakeInput);
+
+        internal static bool DeserializeBakeInput(string path, out InputExtraction.BakeInput bakeInput)
+        {
+            UnityEditor.LightBaking.LightBaker.BakeInput lightBakerBakeInput = new();
+            bakeInput = new BakeInput(lightBakerBakeInput);
+            return LightBaker.Deserialize(path, bakeInput.bakeInput);
         }
     }
 }

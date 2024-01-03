@@ -31,18 +31,17 @@ namespace Unity.Hierarchy
         [RequiredByNativeCode] IntPtr m_Ptr;
         [RequiredByNativeCode] readonly bool m_IsWrapper;
         [RequiredByNativeCode] readonly Hierarchy m_Hierarchy;
-
         [RequiredByNativeCode] readonly IntPtr m_NodesPtr;
         [RequiredByNativeCode] readonly int m_NodesCount;
         [RequiredByNativeCode] readonly int m_Version;
 
-        [FreeFunction("HierarchyFlattenedBindings::Create")]
+        [FreeFunction("HierarchyFlattenedBindings::Create", IsThreadSafe = true)]
         static extern IntPtr Internal_Create(Hierarchy hierarchy);
 
-        [FreeFunction("HierarchyFlattenedBindings::Destroy")]
+        [FreeFunction("HierarchyFlattenedBindings::Destroy", IsThreadSafe = true)]
         static extern void Internal_Destroy(IntPtr ptr);
 
-        [FreeFunction("HierarchyFlattenedBindings::BindScriptingObject", HasExplicitThis = true)]
+        [FreeFunction("HierarchyFlattenedBindings::BindScriptingObject", HasExplicitThis = true, IsThreadSafe = true)]
         extern void Internal_BindScriptingObject([Unmarshalled] HierarchyFlattened self);
 
         /// <summary>
@@ -84,7 +83,7 @@ namespace Unity.Hierarchy
         /// <remarks>
         /// Happens during use of <see cref="UpdateIncremental"/> or <see cref="UpdateIncrementalTimed"/>.
         /// </remarks>
-        public extern bool Updating { [NativeMethod("Updating")] get; }
+        public extern bool Updating { [NativeMethod("Updating", IsThreadSafe = true)] get; }
 
         /// <summary>
         /// Determines if the flattened hierarchy needs an update.
@@ -92,7 +91,7 @@ namespace Unity.Hierarchy
         /// <remarks>
         /// Happens when the underlying hierarchy changes topology.
         /// </remarks>
-        public extern bool UpdateNeeded { [NativeMethod("UpdateNeeded")] get; }
+        public extern bool UpdateNeeded { [NativeMethod("UpdateNeeded", IsThreadSafe = true)] get; }
 
         /// <summary>
         /// Accesses the hierarchy.
@@ -140,7 +139,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>A zero-based index of the node if found, and -1 otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int IndexOf(in HierarchyNode node);
 
         /// <summary>
@@ -148,7 +147,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns><see langword="true"/> if the node is found, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool Contains(in HierarchyNode node);
 
         /// <summary>
@@ -156,7 +155,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>A hierarchy node.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern HierarchyNode GetParent(in HierarchyNode node);
 
         /// <summary>
@@ -164,7 +163,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>A hierarchy node.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern HierarchyNode GetNextSibling(in HierarchyNode node);
 
         /// <summary>
@@ -179,7 +178,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The number of children.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetChildrenCount(in HierarchyNode node);
 
         /// <summary>
@@ -187,7 +186,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The number of child nodes, including children of children.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetChildrenCountRecursive(in HierarchyNode node);
 
         /// <summary>
@@ -195,18 +194,20 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The depth of the hierarchy node.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetDepth(in HierarchyNode node);
 
         /// <summary>
         /// Updates the flattened hierarchy and requests a rebuild of the list of <see cref="HierarchyFlattenedNode"/> from the <see cref="Hierarchy"/> topology.
         /// </summary>
+        [NativeMethod(IsThreadSafe = true)]
         public extern void Update();
 
         /// <summary>
         /// Updates the flattened hierarchy incrementally.
         /// </summary>
         /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
+        [NativeMethod(IsThreadSafe = true)]
         public extern bool UpdateIncremental();
 
         /// <summary>
@@ -214,6 +215,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="milliseconds">The time period in milliseconds.</param>
         /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
+        [NativeMethod(IsThreadSafe = true)]
         public extern bool UpdateIncrementalTimed(double milliseconds);
 
         /// <summary>

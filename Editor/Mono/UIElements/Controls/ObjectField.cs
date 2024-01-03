@@ -191,6 +191,12 @@ namespace UnityEditor.UIElements
                     return;
 
                 var property = m_ObjectField.GetProperty(serializedPropertyKey) as SerializedProperty;
+                // UUM-53334, need to check if property is still valid before updating
+                if (property != null && !property.isValid)
+                {
+                    m_ObjectField.SetProperty(serializedPropertyKey, null);
+                    return;
+                }
                 var content = EditorGUIUtility.ObjectContent(m_ObjectField.value, m_ObjectField.objectType, property);
                 m_ObjectIcon.image = content.image;
                 m_ObjectLabel.text = content.text;

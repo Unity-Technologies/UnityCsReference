@@ -4,14 +4,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEngine.UIElements
 {
     // TODO [GR] Could move some of that stuff to a base CollectionVirtualizationController<T> class (pool, active items, visible items, etc.)
     abstract class VerticalVirtualizationController<T> : CollectionVirtualizationController where T : ReusableCollectionItem, new()
     {
-        readonly UnityEngine.Pool.ObjectPool<T> m_Pool = new (() => new T(), null, i => i.DetachElement());
+        readonly UnityEngine.Pool.ObjectPool<T> m_Pool = new (() => new T(), null, i => i.DetachElement(), i => i.DestroyElement());
 
         protected BaseVerticalCollectionView m_CollectionView;
         protected const int k_ExtraVisibleItems = 2;
@@ -20,6 +19,7 @@ namespace UnityEngine.UIElements
 
         int? m_DeferredScrollToItemIndex;
         readonly Action m_PerformDeferredScrollToItem;
+        private IVisualElementScheduledItem m_ScheduleDeferredScrollToItem;
 
         public override IEnumerable<ReusableCollectionItem> activeItems => m_ActiveItems;
 
@@ -35,10 +35,43 @@ namespace UnityEngine.UIElements
 
         protected virtual bool VisibleItemPredicate(T i)=> i.rootElement.style.display == DisplayStyle.Flex;
 
-        internal T firstVisibleItem => m_ActiveItems.FirstOrDefault(m_VisibleItemPredicateDelegate);
-        internal T lastVisibleItem => m_ActiveItems.LastOrDefault(m_VisibleItemPredicateDelegate);
+        internal T firstVisibleItem
+        {
+            get
+            {
+                foreach (var item in m_ActiveItems)
+                    if (m_VisibleItemPredicateDelegate(item))
+                        return item;
+                return default;
+            }
+        }
 
-        public override int visibleItemCount => m_ActiveItems.Count(m_VisibleItemPredicateDelegate);
+        internal T lastVisibleItem
+        {
+            get
+            {
+                var end = m_ActiveItems.Count;
+                while (end > 0)
+                {
+                    var item = m_ActiveItems[--end];
+                    if (m_VisibleItemPredicateDelegate(item))
+                        return item;
+                }
+                return default;
+            }
+        }
+
+        public override int visibleItemCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (var item in m_ActiveItems)
+                    if (m_VisibleItemPredicateDelegate(item))
+                        ++count;
+                return count;
+            }
+        }
 
         protected SerializedVirtualizationData serializedData => m_CollectionView.serializedVirtualizationData;
 
@@ -86,7 +119,6 @@ namespace UnityEngine.UIElements
                         m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                     }
 
-                    m_CollectionView.viewController.InvokeDestroyItem(recycledItem);
                     m_Pool.Release(recycledItem);
                     continue;
                 }
@@ -104,7 +136,6 @@ namespace UnityEngine.UIElements
                             m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                         }
 
-                        recycledItem.index = ReusableCollectionItem.UndefinedIndex;
                         Setup(recycledItem, index);
                     }
                 }
@@ -225,9 +256,15 @@ namespace UnityEngine.UIElements
         /// </summary>
         protected void ScheduleDeferredScrollToItem()
         {
-            if (m_DeferredScrollToItemIndex != null)
+            if (m_DeferredScrollToItemIndex == null)
+                return;
+
+            if (m_ScheduleDeferredScrollToItem == null)
+                m_ScheduleDeferredScrollToItem = m_CollectionView.schedule.Execute(m_PerformDeferredScrollToItem);
+            else
             {
-                m_CollectionView.schedule.Execute(m_PerformDeferredScrollToItem);
+                m_ScheduleDeferredScrollToItem.Pause();
+                m_ScheduleDeferredScrollToItem.Resume();
             }
         }
 
@@ -407,6 +444,7 @@ namespace UnityEngine.UIElements
             if (item.rootElement == null)
             {
                 m_CollectionView.viewController.InvokeMakeItem(item);
+                item.onDestroy += OnDestroyItem;
             }
 
             item.PreAttachElement();
@@ -442,6 +480,11 @@ namespace UnityEngine.UIElements
 
             m_Pool.Release(item);
             m_ActiveItems.Remove(item);
+        }
+
+        private void OnDestroyItem(ReusableCollectionItem item)
+        {
+            m_CollectionView.viewController.InvokeDestroyItem(item);
         }
 
         protected int GetDraggedIndex()

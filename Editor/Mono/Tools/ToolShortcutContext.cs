@@ -6,7 +6,7 @@ using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.EditorTools
 {
-    class ToolShortcutContext : IShortcutToolContext
+    class ToolShortcutContext : IShortcutContext
     {
         [InitializeOnLoadMethod]
         static void Init()

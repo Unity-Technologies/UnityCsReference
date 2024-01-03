@@ -5,6 +5,7 @@
 using System;
 using Unity.Properties;
 using UnityEngine.Internal;
+using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
 {
@@ -689,7 +690,7 @@ namespace UnityEngine.UIElements
         public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height,
             MeasureMode heightMode)
         {
-            return TextUtilities.MeasureVisualElementTextSize(m_TextInputBase.textElement, textToMeasure, width, widthMode, height, heightMode);
+            return TextUtilities.MeasureVisualElementTextSize(m_TextInputBase.textElement, new RenderedText(textToMeasure), width, widthMode, height, heightMode);
         }
 
         [EventInterest(typeof(NavigationSubmitEvent), typeof(FocusInEvent), typeof(FocusEvent), typeof(FocusOutEvent),

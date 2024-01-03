@@ -14,9 +14,16 @@ namespace UnityEngine
     {
         public static event Action<PhysicsScene, NativeArray<ModifiableContactPair>> ContactModifyEvent;
         public static event Action<PhysicsScene, NativeArray<ModifiableContactPair>> ContactModifyEventCCD;
+        //initially hook contact modification to always be physx specific
+        internal static event Action<PhysicsScene, IntPtr, int, bool> GenericContactModifyEvent = PhysXOnSceneContactModify;
 
         [RequiredByNativeCode]
         private static unsafe void OnSceneContactModify(PhysicsScene scene, IntPtr buffer, int count, bool isCCD)
+        {
+            GenericContactModifyEvent?.Invoke(scene, buffer, count, isCCD);
+        }
+
+        private static unsafe void PhysXOnSceneContactModify(PhysicsScene scene, IntPtr buffer, int count, bool isCCD)
         {
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<ModifiableContactPair>(buffer.ToPointer(), count, Allocator.None);
 

@@ -95,14 +95,14 @@ namespace UnityEditor.ShortcutManagement
                 return true;
 
             var isEditorWindow = typeof(EditorWindow).IsAssignableFrom(context);
-            var isIShortcutToolContext = typeof(IShortcutToolContext).IsAssignableFrom(context);
+            var isIShortcutToolContext = typeof(IShortcutContext).IsAssignableFrom(context);
 
             if (isEditorWindow)
             {
                 if (context != typeof(EditorWindow) && !isIShortcutToolContext)
                     return true;
             }
-            else if (isIShortcutToolContext && context != typeof(IShortcutToolContext))
+            else if (isIShortcutToolContext && context != typeof(IShortcutContext))
                 return true;
 
             return false;

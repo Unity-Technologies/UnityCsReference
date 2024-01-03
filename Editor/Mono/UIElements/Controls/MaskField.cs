@@ -367,7 +367,7 @@ namespace UnityEditor.UIElements
         {
             int valueMask = ValueToMask(value);
 
-            if (maskOfItem == 0)
+            if(maskOfItem == 0)
                 return valueMask == 0;
 
             return (maskOfItem & valueMask) == maskOfItem;
@@ -378,9 +378,7 @@ namespace UnityEditor.UIElements
             var menu = m_GenericMenu as GenericDropdownMenu;
 
             if (menu == null)
-            {
                 return;
-            }
 
             foreach (var item in m_Choices)
             {
@@ -395,7 +393,7 @@ namespace UnityEditor.UIElements
         // This is returning ~0 if all the values are selected...
         int UpdateMaskIfEverything(int currentMask)
         {
-            int newMask = currentMask;
+            var newMask = currentMask;
             // If the mask is full, put back the Everything flag.
             if (m_FullChoiceMask != 0)
             {

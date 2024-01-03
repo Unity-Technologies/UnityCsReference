@@ -25,6 +25,8 @@ namespace UnityEngine.UIElements
 
         protected EventCallback<GeometryChangedEvent> m_GeometryChangedEventCallback;
 
+        internal event Action<ReusableCollectionItem> onDestroy;
+
         public ReusableCollectionItem()
         {
             index = id = UndefinedIndex;
@@ -51,6 +53,11 @@ namespace UnityEngine.UIElements
             SetSelected(false);
             SetDragGhost(false);
             index = id = UndefinedIndex;
+        }
+
+        public virtual void DestroyElement()
+        {
+            onDestroy?.Invoke(this);
         }
 
         public virtual void SetSelected(bool selected)

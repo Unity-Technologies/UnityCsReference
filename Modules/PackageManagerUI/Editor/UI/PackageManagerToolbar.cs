@@ -175,6 +175,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var tooltipText = L10n.Tr("There are no applicable filters to display for this context.");
                 SetEnabledStatusAndTooltip(false, tooltipText, filtersMenu, clearFiltersButton);
             }
+
+            if (clearFiltersButton.enabledSelf)
+                UpdateClearFiltersButtonEnableStatusAndTooltip(page.filters);
+        }
+
+        private void UpdateClearFiltersButtonEnableStatusAndTooltip(PageFilters filters)
+        {
+            clearFiltersButton.enabledSelf = filters.isFilterSet;
+            clearFiltersButton.tooltip = filters.isFilterSet ? string.Empty : L10n.Tr("There are no filters applied.");
         }
 
         private static void SetEnabledStatusAndTooltip(bool enabled, string tooltip, params VisualElement[] elements)
@@ -199,6 +208,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             UpdateFilterMenuText(filters);
             UpdateSortMenuText(filters.sortOption);
+            UpdateClearFiltersButtonEnableStatusAndTooltip(filters);
         }
 
         private void SetupInProgressSpinner()

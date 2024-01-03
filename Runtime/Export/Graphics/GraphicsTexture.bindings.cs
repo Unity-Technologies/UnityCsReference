@@ -13,7 +13,12 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using UnityEngine.Profiling;
+
+// Temporary until UploadData API is made public
+[assembly: InternalsVisibleTo("Unity.Environment.Runtime")]
+[assembly: InternalsVisibleTo("Unity.Environment.Baking")]
 
 namespace UnityEngine.Rendering
 {
@@ -40,6 +45,25 @@ namespace UnityEngine.Rendering
         public int mipCount;
         public int numSamples;
         public GraphicsTextureDescriptorFlags flags;
+
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public GraphicsTextureDescriptor()
+            : this(0, 0, 1, 0, GraphicsFormat.None, TextureDimension.None)
+        {
+        }
+
+        internal GraphicsTextureDescriptor(int width, int height, int depth, int arrayLength, GraphicsFormat format, TextureDimension dimension, int mipCount = 0, int numSamples = 1, GraphicsTextureDescriptorFlags flags = GraphicsTextureDescriptorFlags.None)
+        {
+            this.width = width;
+            this.height = height;
+            this.depth = depth;
+            this.arrayLength = arrayLength;
+            this.format = format;
+            this.dimension = dimension;
+            this.mipCount = mipCount;
+            this.numSamples = numSamples;
+            this.flags = flags;
+        }
     };
 
     // Keep in sync with GraphicsTextureState in GraphicsTexture.bindings.h
@@ -97,6 +121,28 @@ namespace UnityEngine.Rendering
             m_Ptr = InitBuffer(desc);
         }
 
+        internal void UploadData(IntPtr data, int size)
+        {
+            if (data == IntPtr.Zero || size == 0)
+            {
+                Debug.LogError("No texture data provided to GraphicsTexture.UploadData");
+                return;
+            }
+
+            UploadBuffer(data, (ulong)size);
+        }
+
+        internal void UploadData(byte[] data)
+        {
+            if (data == null || data.Length == 0)
+            {
+                Debug.LogError("No texture data provided to GraphicsTexture.UploadData");
+                return;
+            }
+
+            UploadBuffer_Array(data);
+        }
+
         extern public GraphicsTextureDescriptor descriptor
         {
             [FreeFunction("GraphicsTexture_Bindings::GetDescriptor", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
@@ -116,11 +162,17 @@ namespace UnityEngine.Rendering
         // --------------------------------------------------------------------
         // Bindings
 
-        [FreeFunction("GraphicsTexture_Bindings::InitBuffer")]
+        [FreeFunction("GraphicsTexture_Bindings::InitBuffer", ThrowsException = true)]
         extern private static IntPtr InitBuffer(GraphicsTextureDescriptor desc);
 
         [FreeFunction("GraphicsTexture_Bindings::ReleaseBuffer", HasExplicitThis = true, IsThreadSafe = true)]
         extern private void ReleaseBuffer();
+
+        [FreeFunction("GraphicsTexture_Bindings::UploadBuffer", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool UploadBuffer(IntPtr data, ulong size);
+
+        [FreeFunction("GraphicsTexture_Bindings::UploadBuffer", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool UploadBuffer_Array(byte[] data);
 
         internal static class BindingsMarshaller
         {

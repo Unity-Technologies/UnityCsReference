@@ -55,7 +55,7 @@ namespace UnityEditor.UIElements
 
         protected internal override void DoDisplayMenu(DropdownMenu menu, EventBase triggerEvent)
         {
-            menu.DisplayEditorMenu(triggerEvent);
+            menu.DoDisplayEditorMenu(triggerEvent);
         }
     }
 }

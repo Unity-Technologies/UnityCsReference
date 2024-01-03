@@ -981,7 +981,7 @@ namespace UnityEditor
             // correct type. But if not, EditorGUIUtility.ObjectContent is more reliable.
             // It can take a more specific object type specified as argument into account,
             // and it gets the icon at the same time.
-            if (obj == null && type == null && property != null)
+            if (obj == null && type == null && property != null && property.isValid)
             {
                 temp = TempContent(property.objectReferenceStringValue);
             }
@@ -991,13 +991,13 @@ namespace UnityEditor
                 // we need to supply an instanceID. For some reason, getting the instanceID
                 // from property.objectReferenceValue is not reliable, so we have to
                 // explicitly check property.objectReferenceInstanceIDValue if a property exists.
-                if (property != null)
+                if (property != null && property.isValid)
                     temp = ObjectContent(obj, type, property.objectReferenceInstanceIDValue);
                 else
                     temp = ObjectContent(obj, type);
             }
 
-            if (property != null)
+            if (property != null && property.isValid)
             {
                 if (obj != null)
                 {

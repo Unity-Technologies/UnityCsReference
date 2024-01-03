@@ -5,3 +5,4 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("UnityEditor.BuildProfileModule.Tests")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]

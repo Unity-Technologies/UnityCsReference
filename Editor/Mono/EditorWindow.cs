@@ -1360,7 +1360,7 @@ namespace UnityEditor
 
         static OverlayShortcutContext s_ShortcutContext = new OverlayShortcutContext();
 
-        internal class OverlayShortcutContext : IShortcutToolContext
+        internal class OverlayShortcutContext : IShortcutContext
         {
             public EditorWindow editorWindow;
             public bool active

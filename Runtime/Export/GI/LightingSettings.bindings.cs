@@ -44,7 +44,10 @@ namespace UnityEngine
             ProgressiveCPU = 1,
 
             // Lightmaps are baked by the GPU Progressive lightmapper (RadeonRays + OpenCL based).
-            ProgressiveGPU = 2
+            ProgressiveGPU = 2,
+
+            // Lightmaps are baked by the Unified GPU lightmapper (Unity .compute shader based).
+            //UnityComputeGPU = 3141
         }
 
         // Which path tracer sampling scheme is used.

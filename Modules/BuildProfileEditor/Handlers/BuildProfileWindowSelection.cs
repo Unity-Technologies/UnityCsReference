@@ -220,7 +220,7 @@ namespace UnityEditor.Build.Profile.Handlers
         {
             for (int i = 0; i < buildProfiles.Count; ++i)
             {
-                if (BuildProfileWindow.IsActiveBuildProfileOrPlatform(buildProfiles[i]))
+                if (buildProfiles[i].IsActiveBuildProfileOrPlatform())
                 {
                     SelectActiveProfile(i);
                     return true;

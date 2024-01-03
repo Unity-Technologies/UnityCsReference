@@ -13,9 +13,28 @@ namespace UnityEngine.UIElements
 {
     internal class UITKTextHandle : TextHandle
     {
+        private readonly EventCallback<PointerDownEvent> m_LinkTagOnPointerDown;
+        private readonly EventCallback<PointerUpEvent> m_LinkTagOnPointerUp;
+        private readonly EventCallback<PointerMoveEvent> m_LinkTagOnPointerMove;
+        private readonly EventCallback<PointerOutEvent> m_LinkTagOnPointerOut;
+        private readonly EventCallback<PointerUpEvent> m_ATagOnPointerUp;
+        private readonly EventCallback<PointerMoveEvent> m_ATagOnPointerMove;
+        private readonly EventCallback<PointerOverEvent> m_ATagOnPointerOver;
+        private readonly EventCallback<PointerOutEvent> m_ATagOnPointerOut;
+
         public UITKTextHandle(TextElement te)
         {
             m_TextElement = te;
+
+            // allocate and cache callback delegates
+            m_LinkTagOnPointerDown = LinkTagOnPointerDown;
+            m_LinkTagOnPointerUp = LinkTagOnPointerUp;
+            m_LinkTagOnPointerMove = LinkTagOnPointerMove;
+            m_LinkTagOnPointerOut = LinkTagOnPointerOut;
+            m_ATagOnPointerUp = ATagOnPointerUp;
+            m_ATagOnPointerMove = ATagOnPointerMove;
+            m_ATagOnPointerOver = ATagOnPointerOver;
+            m_ATagOnPointerOut = ATagOnPointerOut;
         }
 
         public Vector2 MeasuredSizes { get; set; }
@@ -38,10 +57,10 @@ namespace UnityEngine.UIElements
         }
 
 
-        public Vector2 ComputeTextSize(string textToMeasure, float width, float height)
+        public Vector2 ComputeTextSize(in RenderedText textToMeasure, float width, float height)
         {
             ConvertUssToTextGenerationSettings();
-            settings.text = textToMeasure;
+            settings.renderedText = textToMeasure;
             settings.screenRect = new Rect(0, 0, width, height);
             UpdatePreferredValues(settings);
             return preferredSize;
@@ -93,22 +112,23 @@ namespace UnityEngine.UIElements
                 return;
 
             var link = textInfo.linkInfo[intersectingLink];
-            if (link.hashCode == (int)MarkupTag.HREF)
-            {
-                if (link.linkId != null && link.linkIdLength > 0)
-                {
-                    var href = link.GetLinkId();
-                    if (Uri.IsWellFormedUriString(href, UriKind.Absolute))
-                        Application.OpenURL(href);
-                }
-            }
+            if (link.hashCode != (int)MarkupTag.HREF)
+                return;
+            if (link.linkId == null || link.linkIdLength <= 0)
+                return;
+
+            var href = link.GetLinkId();
+            if (Uri.IsWellFormedUriString(href, UriKind.Absolute))
+                Application.OpenURL(href);
         }
 
-        internal bool isOverridingCursor = false;
+        internal bool isOverridingCursor;
+
         void ATagOnPointerOver(PointerOverEvent _)
         {
             isOverridingCursor = false;
         }
+
         void ATagOnPointerMove(PointerMoveEvent pme)
         {
             var pos = pme.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
@@ -136,12 +156,12 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void ATagOnPointerOut(PointerOutEvent _)
+        void ATagOnPointerOut(PointerOutEvent evt)
         {
             isOverridingCursor = false;
         }
 
-        internal void LinkTagOnPointerDown(PointerDownEvent pde)
+        void LinkTagOnPointerDown(PointerDownEvent pde)
         {
             var pos = pde.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             var intersectingLink = FindIntersectingLink(pos);
@@ -149,20 +169,20 @@ namespace UnityEngine.UIElements
                 return;
 
             var link = textInfo.linkInfo[intersectingLink];
-            if (link.hashCode != (int)MarkupTag.HREF)
+
+            if (link.hashCode == (int)MarkupTag.HREF)
+                return;
+            if (link.linkId == null || link.linkIdLength <= 0)
+                return;
+
+            using (var e = Experimental.PointerDownLinkTagEvent.GetPooled(pde, link.GetLinkId(), link.GetLinkText(textInfo)))
             {
-                if (link.linkId != null && link.linkIdLength > 0)
-                {
-                    using (Experimental.PointerDownLinkTagEvent e = Experimental.PointerDownLinkTagEvent.GetPooled(pde, link.GetLinkId(), link.GetLinkText(textInfo)))
-                    {
-                        e.elementTarget = m_TextElement;
-                        m_TextElement.SendEvent(e);
-                    }
-                }
+                e.elementTarget = m_TextElement;
+                m_TextElement.SendEvent(e);
             }
         }
 
-        internal void LinkTagOnPointerUp(PointerUpEvent pue)
+        void LinkTagOnPointerUp(PointerUpEvent pue)
         {
             var pos = pue.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             var intersectingLink = FindIntersectingLink(pos);
@@ -170,22 +190,23 @@ namespace UnityEngine.UIElements
                 return;
 
             var link = textInfo.linkInfo[intersectingLink];
-            if (link.hashCode != (int)MarkupTag.HREF)
+
+            if (link.hashCode == (int)MarkupTag.HREF)
+                return;
+            if (link.linkId == null || link.linkIdLength <= 0)
+                return;
+
+            using (var e = Experimental.PointerUpLinkTagEvent.GetPooled(pue, link.GetLinkId(), link.GetLinkText(textInfo)))
             {
-                if (link.linkId != null && link.linkIdLength > 0)
-                {
-                    using (Experimental.PointerUpLinkTagEvent e = Experimental.PointerUpLinkTagEvent.GetPooled(pue, link.GetLinkId(), link.GetLinkText(textInfo)))
-                    {
-                        e.elementTarget = m_TextElement;
-                        m_TextElement.SendEvent(e);
-                    }
-                }
+                e.elementTarget = m_TextElement;
+                m_TextElement.SendEvent(e);
             }
         }
 
         // Used in automated test
         internal int currentLinkIDHash = -1;
-        internal void LinkTagOnPointerMove(PointerMoveEvent pme)
+
+        void LinkTagOnPointerMove(PointerMoveEvent pme)
         {
             var pos = pme.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             var intersectingLink = FindIntersectingLink(pos);
@@ -198,7 +219,7 @@ namespace UnityEngine.UIElements
                     if (currentLinkIDHash == -1)
                     {
                         currentLinkIDHash = link.hashCode;
-                        using (Experimental.PointerOverLinkTagEvent e = Experimental.PointerOverLinkTagEvent.GetPooled(pme, link.GetLinkId(), link.GetLinkText(textInfo)))
+                        using (var e = Experimental.PointerOverLinkTagEvent.GetPooled(pme, link.GetLinkId(), link.GetLinkText(textInfo)))
                         {
                             e.elementTarget = m_TextElement;
                             m_TextElement.SendEvent(e);
@@ -209,7 +230,7 @@ namespace UnityEngine.UIElements
                     // PointerMove
                     if (currentLinkIDHash == link.hashCode)
                     {
-                        using (Experimental.PointerMoveLinkTagEvent e = Experimental.PointerMoveLinkTagEvent.GetPooled(pme, link.GetLinkId(), link.GetLinkText(textInfo)))
+                        using (var e = Experimental.PointerMoveLinkTagEvent.GetPooled(pme, link.GetLinkId(), link.GetLinkText(textInfo)))
                         {
                             e.elementTarget = m_TextElement;
                             m_TextElement.SendEvent(e);
@@ -224,7 +245,7 @@ namespace UnityEngine.UIElements
             if (currentLinkIDHash != -1)
             {
                 currentLinkIDHash = -1;
-                using (Experimental.PointerOutLinkTagEvent e = Experimental.PointerOutLinkTagEvent.GetPooled(pme, String.Empty))
+                using (var e = Experimental.PointerOutLinkTagEvent.GetPooled(pme, string.Empty))
                 {
                     e.elementTarget = m_TextElement;
                     m_TextElement.SendEvent(e);
@@ -236,7 +257,7 @@ namespace UnityEngine.UIElements
         {
             if (currentLinkIDHash != -1)
             {
-                using (Experimental.PointerOutLinkTagEvent e = Experimental.PointerOutLinkTagEvent.GetPooled(poe, String.Empty))
+                using (var e = Experimental.PointerOutLinkTagEvent.GetPooled(poe, string.Empty))
                 {
                     e.elementTarget = m_TextElement;
                     m_TextElement.SendEvent(e);
@@ -248,48 +269,48 @@ namespace UnityEngine.UIElements
 
         internal void HandleLinkAndATagCallbacks()
         {
-            if (m_TextElement == null || m_TextElement.panel == null)
+            if (m_TextElement?.panel == null)
                 return;
 
             if (hasLinkTag)
             {
-                m_TextElement.RegisterCallback<PointerDownEvent>(LinkTagOnPointerDown, TrickleDown.TrickleDown);
-                m_TextElement.RegisterCallback<PointerUpEvent>(LinkTagOnPointerUp, TrickleDown.TrickleDown);
-                m_TextElement.RegisterCallback<PointerMoveEvent>(LinkTagOnPointerMove, TrickleDown.TrickleDown);
-                m_TextElement.RegisterCallback<PointerOutEvent>(LinkTagOnPointerOut, TrickleDown.TrickleDown);
+                m_TextElement.RegisterCallback(m_LinkTagOnPointerDown, TrickleDown.TrickleDown);
+                m_TextElement.RegisterCallback(m_LinkTagOnPointerUp, TrickleDown.TrickleDown);
+                m_TextElement.RegisterCallback(m_LinkTagOnPointerMove, TrickleDown.TrickleDown);
+                m_TextElement.RegisterCallback(m_LinkTagOnPointerOut, TrickleDown.TrickleDown);
             }
             else
             {
-                m_TextElement.UnregisterCallback<PointerDownEvent>(LinkTagOnPointerDown, TrickleDown.TrickleDown);
-                m_TextElement.UnregisterCallback<PointerUpEvent>(LinkTagOnPointerUp, TrickleDown.TrickleDown);
-                m_TextElement.UnregisterCallback<PointerMoveEvent>(LinkTagOnPointerMove, TrickleDown.TrickleDown);
-                m_TextElement.UnregisterCallback<PointerOutEvent>(LinkTagOnPointerOut, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback(m_LinkTagOnPointerDown, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback(m_LinkTagOnPointerUp, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback(m_LinkTagOnPointerMove, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback(m_LinkTagOnPointerOut, TrickleDown.TrickleDown);
             }
             if (hasATag)
             {
-                m_TextElement.RegisterCallback<PointerUpEvent>(ATagOnPointerUp, TrickleDown.TrickleDown);
+                m_TextElement.RegisterCallback(m_ATagOnPointerUp, TrickleDown.TrickleDown);
                 // Switching the cursor to the Link cursor has been disable at runtime until OS cursor support is available at runtime.
                 if (m_TextElement.panel.contextType == ContextType.Editor)
                 {
-                    m_TextElement.RegisterCallback<PointerMoveEvent>(ATagOnPointerMove, TrickleDown.TrickleDown);
-                    m_TextElement.RegisterCallback<PointerOverEvent>(ATagOnPointerOver, TrickleDown.TrickleDown);
-                    m_TextElement.RegisterCallback<PointerOutEvent>(ATagOnPointerOut, TrickleDown.TrickleDown);
+                    m_TextElement.RegisterCallback(m_ATagOnPointerMove, TrickleDown.TrickleDown);
+                    m_TextElement.RegisterCallback(m_ATagOnPointerOver, TrickleDown.TrickleDown);
+                    m_TextElement.RegisterCallback(m_ATagOnPointerOut, TrickleDown.TrickleDown);
                 }
             }
             else
             {
-                m_TextElement.UnregisterCallback<PointerUpEvent>(ATagOnPointerUp, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback(m_ATagOnPointerUp, TrickleDown.TrickleDown);
                 if (m_TextElement.panel.contextType == ContextType.Editor)
                 {
-                    m_TextElement.UnregisterCallback<PointerMoveEvent>(ATagOnPointerMove, TrickleDown.TrickleDown);
-                    m_TextElement.UnregisterCallback<PointerOverEvent>(ATagOnPointerOver, TrickleDown.TrickleDown);
-                    m_TextElement.UnregisterCallback<PointerOutEvent>(ATagOnPointerOut, TrickleDown.TrickleDown);
+                    m_TextElement.UnregisterCallback(m_ATagOnPointerMove, TrickleDown.TrickleDown);
+                    m_TextElement.UnregisterCallback(m_ATagOnPointerOver, TrickleDown.TrickleDown);
+                    m_TextElement.UnregisterCallback(m_ATagOnPointerOut, TrickleDown.TrickleDown);
                 }
             }
         }
 
         // Used by our automated tests.
-        internal bool hasLinkTag = false;
+        internal bool hasLinkTag;
         internal void HandleLinkTag()
         {
             for (int i = 0; i < textInfo.linkCount; i++)
@@ -311,7 +332,7 @@ namespace UnityEngine.UIElements
         }
 
         // Used by our automated tests.
-        internal bool hasATag = false;
+        internal bool hasATag;
         internal void HandleATag()
         {
             for (int i = 0; i < textInfo.linkCount; i++)
@@ -360,7 +381,8 @@ namespace UnityEngine.UIElements
                 return false;
             }
             var style = m_TextElement.computedStyle;
-            nativeSettings.text = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedText;
+            var renderedText = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedText;
+            nativeSettings.text = renderedText.CreateString();
             nativeSettings.screenWidth = (int)(m_TextElement.contentRect.width * 64);
             nativeSettings.screenHeight = (int)(m_TextElement.contentRect.height * 64);
             nativeSettings.fontSize = style.fontSize.value > 0
@@ -426,7 +448,7 @@ namespace UnityEngine.UIElements
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             tgs.screenRect = new Rect(0, 0, m_TextElement.contentRect.width, m_TextElement.contentRect.height);
             tgs.extraPadding = GetTextEffectPadding(tgs.fontAsset);
-            tgs.text = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedText;
+            tgs.renderedText = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedText;
             tgs.isPlaceholder = m_TextElement.showPlaceholderText;
 
             tgs.fontSize = style.fontSize.value > 0
@@ -480,6 +502,7 @@ namespace UnityEngine.UIElements
         }
 
         internal static readonly float k_MinPadding = 6.0f;
+
         // Function to determine how much extra padding is required as a result of text effect like outline thickness, shadow etc... (see UUM-9524).
         internal float GetTextEffectPadding(FontAsset fontAsset)
         {
@@ -529,19 +552,18 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static Vector2 MeasureVisualElementTextSize(TextElement te, string textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode)
+        internal static Vector2 MeasureVisualElementTextSize(TextElement te, in RenderedText textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode)
         {
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
 
-            if (textToMeasure == null || !IsFontAssigned(te))
+            if (!IsFontAssigned(te))
                 return new Vector2(measuredWidth, measuredHeight);
 
             float pixelsPerPoint = te.scaledPixelsPerPoint;
 
             if (pixelsPerPoint <= 0)
                 return Vector2.zero;
-
 
             if (widthMode != VisualElement.MeasureMode.Exactly || heightMode != VisualElement.MeasureMode.Exactly)
             {

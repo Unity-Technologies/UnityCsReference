@@ -48,12 +48,6 @@ namespace UnityEditor
         [NativeMethod("MenuController::GetEnabledWithContext", true)]
         internal static extern bool GetEnabledWithContext(string menuPath, UnityEngine.Object[] context);
 
-        [NativeMethod("MenuController::GetIconResource", true)]
-        internal static extern string GetIconResource(string menuPath);
-
-        [NativeMethod("MenuController::GetDisabledTooltip", true)]
-        internal static extern string GetDisabledTooltip(string menuPath);
-
         [FreeFunction("MenuController::GetMenuItemDefaultShortcuts")]
         internal static extern void GetMenuItemDefaultShortcuts(List<string> outItemNames, List<string> outItemDefaultShortcuts);
 

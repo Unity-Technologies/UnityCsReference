@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -19,7 +18,7 @@ namespace UnityEngine.TextCore
     {
         public IntPtr fontAsset;
         public IntPtr[] globalFontAssetFallbacks;
-        public string text;
+        public string text; // TODO: use RenderedText instead of string here
         public int screenWidth;
         public int screenHeight;
         public float fontSize;
@@ -33,8 +32,14 @@ namespace UnityEngine.TextCore
         internal VerticalAlignment verticalAlignment;
 
         public Color32 color;
-        public FontStyles fontStyle = FontStyles.Normal;
-        public TextFontWeight fontWeight = TextFontWeight.Regular;
+        public FontStyles fontStyle;
+        public TextFontWeight fontWeight;
+
+        public static NativeTextGenerationSettings Default => new ()
+        {
+            fontStyle = FontStyles.Normal,
+            fontWeight = TextFontWeight.Regular
+        };
 
         // Used by automated tests
         internal NativeTextGenerationSettings(NativeTextGenerationSettings tgs)
@@ -54,39 +59,6 @@ namespace UnityEngine.TextCore
             languageDirection = tgs.languageDirection;
         }
 
-        public bool Equals(NativeTextGenerationSettings other)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return text == other.text /*&& Equals(fontAsset, other.fontAsset)*/;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
-            return Equals((NativeTextGenerationSettings)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            var hashCode = new HashCode();
-            hashCode.Add(text);
-            hashCode.Add(horizontalAlignment);
-            hashCode.Add(verticalAlignment);
-            hashCode.Add(color);
-            hashCode.Add(fontAsset);
-            hashCode.Add(fontStyle);
-            hashCode.Add(fontWeight);
-            hashCode.Add(screenWidth);
-            hashCode.Add(screenHeight);
-            hashCode.Add(fontSize);
-            hashCode.Add(wrapText);
-            hashCode.Add(languageDirection);
-            return hashCode.ToHashCode();
-        }
-
         public override string ToString()
         {
             string fallbacksString = globalFontAssetFallbacks != null
@@ -101,6 +73,45 @@ namespace UnityEngine.TextCore
                $"{nameof(fontSize)}: {fontSize}\n" +
                $"{nameof(wrapText)}: {wrapText}\n" +
                $"{nameof(languageDirection)}: {languageDirection}\n";
+        }
+
+        public bool Equals(NativeTextGenerationSettings other)
+        {
+            return fontAsset == other.fontAsset &&
+                   text == other.text &&
+                   screenWidth == other.screenWidth &&
+                   screenHeight == other.screenHeight &&
+                   fontSize.Equals(other.fontSize) &&
+                   wrapText == other.wrapText &&
+                   languageDirection == other.languageDirection &&
+                   horizontalAlignment == other.horizontalAlignment &&
+                   verticalAlignment == other.verticalAlignment &&
+                   color.InternalEquals(other.color) &&
+                   fontStyle == other.fontStyle &&
+                   fontWeight == other.fontWeight;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is NativeTextGenerationSettings other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = new HashCode();
+            hashCode.Add(fontAsset);
+            hashCode.Add(text);
+            hashCode.Add(screenWidth);
+            hashCode.Add(screenHeight);
+            hashCode.Add(fontSize);
+            hashCode.Add(wrapText);
+            hashCode.Add((int)languageDirection);
+            hashCode.Add((int)horizontalAlignment);
+            hashCode.Add((int)verticalAlignment);
+            hashCode.Add(color);
+            hashCode.Add((int)fontStyle);
+            hashCode.Add((int)fontWeight);
+            return hashCode.ToHashCode();
         }
     }
 

@@ -448,9 +448,9 @@ namespace UnityEditor
         internal event Action<bool> drawGizmosChanged;
         internal event Action<bool> modeChanged2D;
 
-        private bool m_WasFocused = false;
+        bool m_WasFocused = false;
 
-        internal static int[] s_CachedParentRenderersForOutlining, s_CachedChildRenderersForOutlining;
+        static int[] s_CachedParentRenderersForOutlining, s_CachedChildRenderersForOutlining;
 
         [Serializable]
         public class SceneViewState
@@ -1320,6 +1320,10 @@ namespace UnityEditor
         //Internal for tests
         internal void OnAddedAsTab()
         {
+            var inPlayMode = (EditorApplication.isPlaying || EditorApplication.isPaused);
+            if (inPlayMode && m_Parent.vSyncEnabled) 
+                m_Parent.EnableVSync(false);
+            
             //OnAddedAsTab is called after the lastActiveSceneView has been updated, so m_PreviousScene is there to keep this reference
             if (m_PreviousScene != null && s_SceneViews.Count > 0)
             {
@@ -1999,7 +2003,7 @@ namespace UnityEditor
             {
                 Tools.s_ButtonDown = evt.button;
 
-                if (evt.button == 1 && Application.platform == RuntimePlatform.OSXEditor)
+                if (Application.platform == RuntimePlatform.OSXEditor)
                     Focus();
             }
             // this is necessary because FPS tool won't get is cleanup logic
@@ -2577,7 +2581,6 @@ namespace UnityEditor
             bool hdrDisplayActive = (m_Parent != null && m_Parent.actualView == this && m_Parent.hdrActive);
             if (!UseSceneFiltering() && evt.type == EventType.Repaint && GraphicsFormatUtility.IsIEEE754Format(m_SceneTargetTexture.graphicsFormat) && !hdrDisplayActive)
             {
-                var currentDepthBuffer = Graphics.activeDepthBuffer;
                 var rtDesc = m_SceneTargetTexture.descriptor;
                 rtDesc.graphicsFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
                 rtDesc.depthBufferBits = 0;
@@ -2585,7 +2588,7 @@ namespace UnityEditor
                 ldrSceneTargetTexture.name = "LDRSceneTarget";
                 Graphics.Blit(m_SceneTargetTexture, ldrSceneTargetTexture);
                 Graphics.Blit(ldrSceneTargetTexture, m_SceneTargetTexture);
-                Graphics.SetRenderTarget(m_SceneTargetTexture.colorBuffer, currentDepthBuffer);
+                Graphics.SetRenderTarget(m_SceneTargetTexture.colorBuffer, m_SceneTargetTexture.depthBuffer);
                 RenderTexture.ReleaseTemporary(ldrSceneTargetTexture);
             }
 
@@ -2715,7 +2718,10 @@ namespace UnityEditor
 
             var context = args.context as SceneView;
             if (ve == context.cameraViewVisualElement)
+            {
                 ContextMenuUtility.ShowActionMenu();
+                context.Repaint();
+            }
         }
 
         internal void SwitchToRenderMode(DrawCameraMode mode, bool sceneLighting = true)
@@ -3340,6 +3346,10 @@ namespace UnityEditor
 
         void OnBecameVisible()
         {
+            var inPlayMode = (EditorApplication.isPlaying || EditorApplication.isPaused);
+            if (inPlayMode && m_Parent.vSyncEnabled) 
+                m_Parent.EnableVSync(false);
+            
             EditorApplication.update += UpdateAnimatedMaterials;
         }
 

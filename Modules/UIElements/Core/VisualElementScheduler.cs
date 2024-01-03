@@ -86,93 +86,6 @@ namespace UnityEngine.UIElements
         IVisualElementScheduledItem Execute(Action updateEvent);
     }
 
-    internal interface IVisualElementPanelActivatable
-    {
-        VisualElement element { get; }
-
-        bool CanBeActivated();
-
-        void OnPanelActivate();
-        void OnPanelDeactivate();
-    }
-
-    internal class VisualElementPanelActivator
-    {
-        private IVisualElementPanelActivatable m_Activatable;
-        public bool isActive { get; private set; }
-        public bool isDetaching { get; private set; }
-
-        EventCallback<AttachToPanelEvent> m_OnAttachToPanelCallback;
-        EventCallback<DetachFromPanelEvent> m_OnDetachFromPanelCallback;
-
-        public VisualElementPanelActivator(IVisualElementPanelActivatable activatable)
-        {
-            m_Activatable = activatable;
-            m_OnAttachToPanelCallback = OnEnter;
-            m_OnDetachFromPanelCallback = OnLeave;
-        }
-
-        public void SetActive(bool action)
-        {
-            if (isActive != action)
-            {
-                isActive = action;
-                if (isActive)
-                {
-                    m_Activatable.element.RegisterCallback(m_OnAttachToPanelCallback);
-                    m_Activatable.element.RegisterCallback(m_OnDetachFromPanelCallback);
-                    SendActivation();
-                }
-                else
-                {
-                    m_Activatable.element.UnregisterCallback(m_OnAttachToPanelCallback);
-                    m_Activatable.element.UnregisterCallback(m_OnDetachFromPanelCallback);
-                    SendDeactivation();
-                }
-            }
-        }
-
-        public void SendActivation()
-        {
-            if (m_Activatable.CanBeActivated())
-            {
-                m_Activatable.OnPanelActivate();
-            }
-        }
-
-        public void SendDeactivation()
-        {
-            if (m_Activatable.CanBeActivated())
-            {
-                m_Activatable.OnPanelDeactivate();
-            }
-        }
-
-        void OnEnter(AttachToPanelEvent evt)
-        {
-            if (isActive)
-            {
-                SendActivation();
-            }
-        }
-
-        void OnLeave(DetachFromPanelEvent evt)
-        {
-            if (isActive)
-            {
-                isDetaching = true;
-                try
-                {
-                    SendDeactivation();
-                }
-                finally
-                {
-                    isDetaching = false;
-                }
-            }
-        }
-    }
-
     /// <summary>
     /// Base class for objects that are part of the UIElements visual tree.
     /// </summary>
@@ -190,20 +103,82 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This class is needed in order for its VisualElement to be notified when the scheduler removes an item
         /// </summary>
-        private abstract class BaseVisualElementScheduledItem : ScheduledItem, IVisualElementScheduledItem, IVisualElementPanelActivatable
+        private abstract class BaseVisualElementScheduledItem : ScheduledItem, IVisualElementScheduledItem
         {
             public VisualElement element { get; private set; }
-
-            public bool isActive { get { return m_Activator.isActive; } }
-
             public bool isScheduled = false;
 
+            public bool isActive { get; private set; }
+            public bool isDetaching { get; private set; }
 
-            private VisualElementPanelActivator m_Activator;
+            private readonly EventCallback<AttachToPanelEvent> m_OnAttachToPanelCallback;
+            private readonly EventCallback<DetachFromPanelEvent> m_OnDetachFromPanelCallback;
+
             protected BaseVisualElementScheduledItem(VisualElement handler)
             {
                 element = handler;
-                m_Activator = new VisualElementPanelActivator(this);
+                m_OnAttachToPanelCallback = OnElementAttachToPanelCallback;
+                m_OnDetachFromPanelCallback = OnElementDetachFromPanelCallback;
+            }
+
+            private void SetActive(bool action)
+            {
+                if (isActive != action)
+                {
+                    isActive = action;
+                    if (isActive)
+                    {
+                        element.RegisterCallback(m_OnAttachToPanelCallback);
+                        element.RegisterCallback(m_OnDetachFromPanelCallback);
+                        SendActivation();
+                    }
+                    else
+                    {
+                        element.UnregisterCallback(m_OnAttachToPanelCallback);
+                        element.UnregisterCallback(m_OnDetachFromPanelCallback);
+                        SendDeactivation();
+                    }
+                }
+            }
+
+            private void SendActivation()
+            {
+                if (CanBeActivated())
+                {
+                    OnPanelActivate();
+                }
+            }
+
+            private void SendDeactivation()
+            {
+                if (CanBeActivated())
+                {
+                    OnPanelDeactivate();
+                }
+            }
+
+            private void OnElementAttachToPanelCallback(AttachToPanelEvent evt)
+            {
+                if (isActive)
+                {
+                    SendActivation();
+                }
+            }
+
+            private void OnElementDetachFromPanelCallback(DetachFromPanelEvent evt)
+            {
+                if (!isActive)
+                    return;
+
+                isDetaching = true;
+                try
+                {
+                    SendDeactivation();
+                }
+                finally
+                {
+                    isDetaching = false;
+                }
             }
 
             public IVisualElementScheduledItem StartingIn(long delayMs)
@@ -244,20 +219,20 @@ namespace UnityEngine.UIElements
             {
                 base.OnItemUnscheduled();
                 isScheduled = false;
-                if (!m_Activator.isDetaching)
+                if (!isDetaching)
                 {
-                    m_Activator.SetActive(false);
+                    SetActive(false);
                 }
             }
 
             public void Resume()
             {
-                m_Activator.SetActive(true);
+                SetActive(true);
             }
 
             public void Pause()
             {
-                m_Activator.SetActive(false);
+                SetActive(false);
             }
 
             public void ExecuteLater(long delayMs)

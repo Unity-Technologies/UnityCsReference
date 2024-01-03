@@ -3,20 +3,16 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using UnityEngine.Assertions;
 using UnityEngine.Bindings;
-using UnityEngine.Internal;
 using UnityEngine.Pool;
 using UnityEngine.Scripting;
 
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// A hierarchy view model is a read-only filtering view of a <see cref="HierarchyFlattened"/>. 
+    /// A hierarchy view model is a read-only filtering view of a <see cref="HierarchyFlattened"/>.
     /// </summary>
     [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyViewModel.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyViewModelBindings.h")]
@@ -36,13 +32,13 @@ namespace Unity.Hierarchy
         [RequiredByNativeCode] readonly int m_NodesCount;
         [RequiredByNativeCode] readonly int m_Version;
 
-        [FreeFunction("HierarchyViewModelBindings::Create")]
+        [FreeFunction("HierarchyViewModelBindings::Create", IsThreadSafe = true)]
         static extern IntPtr Internal_Create(HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags);
 
-        [FreeFunction("HierarchyViewModelBindings::Destroy")]
+        [FreeFunction("HierarchyViewModelBindings::Destroy", IsThreadSafe = true)]
         static extern void Internal_Destroy(IntPtr ptr);
 
-        [FreeFunction("HierarchyViewModelBindings::BindScriptingObject", HasExplicitThis = true)]
+        [FreeFunction("HierarchyViewModelBindings::BindScriptingObject", HasExplicitThis = true, IsThreadSafe = true)]
         extern void Internal_BindScriptingObject([Unmarshalled] HierarchyViewModel self);
 
         /// <summary>
@@ -64,7 +60,7 @@ namespace Unity.Hierarchy
         /// <remarks>
         /// This happens when <see cref="UpdateIncremental"/> or <see cref="UpdateIncrementalTimed"/> is used.
         /// </remarks>
-        public extern bool Updating { [NativeMethod("Updating")] get; }
+        public extern bool Updating { [NativeMethod("Updating", IsThreadSafe = true)] get; }
 
         /// <summary>
         /// Whether the hierarchy view model requires an update.
@@ -72,7 +68,7 @@ namespace Unity.Hierarchy
         /// <remarks>
         /// This happens when the underlying hierarchy changes topology.
         /// </remarks>
-        public extern bool UpdateNeeded { [NativeMethod("UpdateNeeded")] get; }
+        public extern bool UpdateNeeded { [NativeMethod("UpdateNeeded", IsThreadSafe = true)] get; }
 
         /// <summary>
         /// Accesses the <see cref="HierarchyFlattened"/>.
@@ -89,7 +85,7 @@ namespace Unity.Hierarchy
         internal extern float UpdateProgress
         {
             [VisibleToOtherModules("UnityEngine.HierarchyModule")]
-            [NativeMethod("UpdateProgress")]
+            [NativeMethod("UpdateProgress", IsThreadSafe = true)]
             get;
         }
 
@@ -104,8 +100,10 @@ namespace Unity.Hierarchy
         internal extern HierarchySearchQueryDescriptor Query
         {
             [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+            [NativeMethod(IsThreadSafe = true)]
             get;
             [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+            [NativeMethod(IsThreadSafe = true)]
             set;
         }
 
@@ -172,7 +170,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>A zero-based index of the node if found, -1 otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int IndexOf(in HierarchyNode node);
 
         /// <summary>
@@ -180,7 +178,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns><see langword="true"/> if the node is found, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool Contains(in HierarchyNode node);
 
         /// <summary>
@@ -188,7 +186,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>A hierarchy node.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern HierarchyNode GetParent(in HierarchyNode node);
 
         /// <summary>
@@ -196,7 +194,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>A hierarchy node.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern HierarchyNode GetNextSibling(in HierarchyNode node);
 
         /// <summary>
@@ -204,7 +202,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The number of children.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetChildrenCount(in HierarchyNode node);
 
         /// <summary>
@@ -212,7 +210,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The number of child nodes, including children of children.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetChildrenCountRecursive(in HierarchyNode node);
 
         /// <summary>
@@ -220,8 +218,16 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The depth of the hierarchy node.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetDepth(in HierarchyNode node);
+
+        /// <summary>
+        /// Gets all the flags set on a given hierarchy node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns>The flags set on the hierarchy node.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern HierarchyNodeFlags GetFlags(in HierarchyNode node);
 
         /// <summary>
         /// Sets the specified flags on all hierarchy nodes.
@@ -260,50 +266,96 @@ namespace Unity.Hierarchy
         public int SetFlags(ReadOnlySpan<int> indices, HierarchyNodeFlags flags) => SetFlagsIndices(indices, flags);
 
         /// <summary>
-        /// Gets whether or not the specified flags is set on any hierarchy node.
+        /// Gets whether or not all of the specified flags are set on any hierarchy node.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
-        /// <returns><see langword="true"/> if any node have the flags set, <see langword="false"/> otherwise.</returns>
-        public bool HasFlags(HierarchyNodeFlags flags) => HasFlagsAny(flags);
+        /// <returns><see langword="true"/> if any node have all of the flags set, <see langword="false"/> otherwise.</returns>
+        public bool HasAllFlags(HierarchyNodeFlags flags) => HasAllFlagsAny(flags);
 
         /// <summary>
-        /// Gets whether or not the specified flags is set on the hierarchy node.
+        /// Gets whether or not any of the specified flags are set on any hierarchy node.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns><see langword="true"/> if any node have any of the flags set, <see langword="false"/> otherwise.</returns>
+        public bool HasAnyFlags(HierarchyNodeFlags flags) => HasAnyFlagsAny(flags);
+
+        /// <summary>
+        /// Gets whether or not all of the specified flags are set on the hierarchy node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="flags">The hierarchy node flags.</param>
-        /// <returns><see langword="true"/> if the flags is set, <see langword="false"/> otherwise.</returns>
-        public bool HasFlags(in HierarchyNode node, HierarchyNodeFlags flags) => HasFlagsNode(in node, flags);
+        /// <returns><see langword="true"/> if all of the flags are set, <see langword="false"/> otherwise.</returns>
+        public bool HasAllFlags(in HierarchyNode node, HierarchyNodeFlags flags) => HasAllFlagsNode(in node, flags);
 
         /// <summary>
-        /// Gets the number of nodes that have the specified flags set.
-        /// </summary>
-        /// <param name="flags">The hierarchy node flags.</param>
-        /// <returns>The number of nodes that have the flags set.</returns>
-        [NativeThrows]
-        public extern int HasFlagsCount(HierarchyNodeFlags flags);
-
-        /// <summary>
-        /// Gets whether or not the specified flags is not set on any hierarchy node.
-        /// </summary>
-        /// <param name="flags">The hierarchy node flags.</param>
-        /// <returns><see langword="true"/> if any node have the flags set, <see langword="false"/> otherwise.</returns>
-        public bool DoesNotHaveFlags(HierarchyNodeFlags flags) => DoesNotHaveFlagsAny(flags);
-
-        /// <summary>
-        /// Gets whether or not the specified flags is not set on the hierarchy node.
+        /// Gets whether or not any of the specified flags are set on the hierarchy node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="flags">The hierarchy node flags.</param>
-        /// <returns><see langword="true"/> if the flags is not set, <see langword="false"/> otherwise.</returns>
-        public bool DoesNotHaveFlags(in HierarchyNode node, HierarchyNodeFlags flags) => DoesNotHaveFlagsNode(in node, flags);
+        /// <returns><see langword="true"/> if any of the flags are set, <see langword="false"/> otherwise.</returns>
+        public bool HasAnyFlags(in HierarchyNode node, HierarchyNodeFlags flags) => HasAnyFlagsNode(in node, flags);
 
         /// <summary>
-        /// Gets the number of nodes that does not have the specified flags set.
+        /// Gets the number of nodes that have all of the specified flags set.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
-        /// <returns>The number of nodes that does not have the flags set.</returns>
-        [NativeThrows]
-        public extern int DoesNotHaveFlagsCount(HierarchyNodeFlags flags);
+        /// <returns>The number of nodes that have all of the flags set.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern int HasAllFlagsCount(HierarchyNodeFlags flags);
+
+        /// <summary>
+        /// Gets the number of nodes that have any of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns>The number of nodes that have any of the flags set.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern int HasAnyFlagsCount(HierarchyNodeFlags flags);
+
+        /// <summary>
+        /// Gets whether or not all of the specified flags are not set on any hierarchy node.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns><see langword="true"/> if none of the node have all of the flags set, <see langword="false"/> otherwise.</returns>
+        public bool DoesNotHaveAllFlags(HierarchyNodeFlags flags) => DoesNotHaveAllFlagsAny(flags);
+
+        /// <summary>
+        /// Gets whether or not any of the specified flags are not set on any hierarchy node.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns><see langword="true"/> if none of the node have any of the flags set, <see langword="false"/> otherwise.</returns>
+        public bool DoesNotHaveAnyFlags(HierarchyNodeFlags flags) => DoesNotHaveAnyFlagsAny(flags);
+
+        /// <summary>
+        /// Gets whether or not all of the specified flags are not set on the hierarchy node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns><see langword="true"/> if all of the flags are not set, <see langword="false"/> otherwise.</returns>
+        public bool DoesNotHaveAllFlags(in HierarchyNode node, HierarchyNodeFlags flags) => DoesNotHaveAllFlagsNode(in node, flags);
+
+        /// <summary>
+        /// Gets whether or not any of the specified flags are not set on the hierarchy node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns><see langword="true"/> if none of the flags are set, <see langword="false"/> otherwise.</returns>
+        public bool DoesNotHaveAnyFlags(in HierarchyNode node, HierarchyNodeFlags flags) => DoesNotHaveAnyFlagsNode(in node, flags);
+
+        /// <summary>
+        /// Gets the number of nodes that do not have all of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns>The number of nodes that do not have all of the flags set.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern int DoesNotHaveAllFlagsCount(HierarchyNodeFlags flags);
+
+        /// <summary>
+        /// Gets the number of nodes that do not have any of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns>The number of nodes that do not have any of the flags set.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern int DoesNotHaveAnyFlagsCount(HierarchyNodeFlags flags);
 
         /// <summary>
         /// Clears the specified flags on all hierarchy nodes.
@@ -378,112 +430,222 @@ namespace Unity.Hierarchy
         public int ToggleFlags(ReadOnlySpan<int> indices, HierarchyNodeFlags flags) => ToggleFlagsIndices(indices, flags);
 
         /// <summary>
-        /// Gets all hierarchy nodes that have the specified flags set.
+        /// Gets all hierarchy nodes that have all of the specified flags set.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
         /// <param name="outNodes">The hierarchy nodes.</param>
         /// <returns>The number of nodes written in the <paramref name="outNodes"/> span.</returns>
-        public int GetNodesWithFlags(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes) => GetNodesWithFlagsSpan(flags, outNodes);
+        public int GetNodesWithAllFlags(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes) => GetNodesWithAllFlagsSpan(flags, outNodes);
 
         /// <summary>
-        /// Gets all hierarchy nodes that have the specified flags set.
+        /// Gets all hierarchy nodes that have any of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <param name="outNodes">The hierarchy nodes.</param>
+        /// <returns>The number of nodes written in the <paramref name="outNodes"/> span.</returns>
+        public int GetNodesWithAnyFlags(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes) => GetNodesWithAnyFlagsSpan(flags, outNodes);
+
+        /// <summary>
+        /// Gets all hierarchy nodes that have all of the specified flags set.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
         /// <returns>The hierarchy nodes.</returns>
-        public HierarchyNode[] GetNodesWithFlags(HierarchyNodeFlags flags)
+        public HierarchyNode[] GetNodesWithAllFlags(HierarchyNodeFlags flags)
         {
-            var count = HasFlagsCount(flags);
+            var count = HasAllFlagsCount(flags);
             if (count == 0)
                 return Array.Empty<HierarchyNode>();
 
             var nodes = new HierarchyNode[count];
-            GetNodesWithFlagsSpan(flags, nodes);
+            GetNodesWithAllFlagsSpan(flags, nodes);
             return nodes;
         }
 
         /// <summary>
-        /// Gets an enumerable of all hierarchy nodes that have the specified flags set.
+        /// Gets all hierarchy nodes that have any of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns>The hierarchy nodes.</returns>
+        public HierarchyNode[] GetNodesWithAnyFlags(HierarchyNodeFlags flags)
+        {
+            var count = HasAnyFlagsCount(flags);
+            if (count == 0)
+                return Array.Empty<HierarchyNode>();
+
+            var nodes = new HierarchyNode[count];
+            GetNodesWithAnyFlagsSpan(flags, nodes);
+            return nodes;
+        }
+
+        /// <summary>
+        /// Gets an enumerable of all hierarchy nodes that have all of the specified flags set.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
         /// <returns>An enumerable of hierarchy node.</returns>
-        public HierarchyViewNodesEnumerable EnumerateNodesWithFlags(HierarchyNodeFlags flags) => new HierarchyViewNodesEnumerable(this, flags, HasFlags);
+        public HierarchyViewNodesEnumerable EnumerateNodesWithAllFlags(HierarchyNodeFlags flags) => new HierarchyViewNodesEnumerable(this, flags, HasAllFlags);
 
         /// <summary>
-        /// Gets all hierarchy node indices that have the specified flags set.
+        /// Gets an enumerable of all hierarchy nodes that have any of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns>An enumerable of hierarchy node.</returns>
+        public HierarchyViewNodesEnumerable EnumerateNodesWithAnyFlags(HierarchyNodeFlags flags) => new HierarchyViewNodesEnumerable(this, flags, HasAnyFlags);
+
+        /// <summary>
+        /// Gets the indices for all hierarchy nodes that have all of the specified flags set.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
         /// <param name="outIndices">The hierarchy node indices.</param>
         /// <returns>The number of indices written in the <paramref name="outIndices"/> span.</returns>
-        public int GetIndicesWithFlags(HierarchyNodeFlags flags, Span<int> outIndices) => GetIndicesWithFlagsSpan(flags, outIndices);
+        public int GetIndicesWithAllFlags(HierarchyNodeFlags flags, Span<int> outIndices) => GetIndicesWithAllFlagsSpan(flags, outIndices);
 
         /// <summary>
-        /// Gets all hierarchy node indices that have the specified flags set.
+        /// Gets the indices for all hierarchy nodes that have any of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <param name="outIndices">The hierarchy node indices.</param>
+        /// <returns>The number of indices written in the <paramref name="outIndices"/> span.</returns>
+        public int GetIndicesWithAnyFlags(HierarchyNodeFlags flags, Span<int> outIndices) => GetIndicesWithAnyFlagsSpan(flags, outIndices);
+
+        /// <summary>
+        /// Gets the indices for all hierarchy nodes that have all of the specified flags set.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
         /// <returns>The hierarchy node indices.</returns>
-        public int[] GetIndicesWithFlags(HierarchyNodeFlags flags)
+        public int[] GetIndicesWithAllFlags(HierarchyNodeFlags flags)
         {
-            var count = HasFlagsCount(flags);
+            var count = HasAllFlagsCount(flags);
             if (count == 0)
                 return Array.Empty<int>();
 
             var indices = new int[count];
-            GetIndicesWithFlagsSpan(flags, indices);
+            GetIndicesWithAllFlagsSpan(flags, indices);
             return indices;
         }
 
         /// <summary>
-        /// Gets all hierarchy nodes that does not have the specified flags set.
-        /// </summary>
-        /// <param name="flags">The hierarchy node flags.</param>
-        /// <param name="outNodes">The hierarchy nodes.</param>
-        /// <returns>The number of nodes written in the <paramref name="outNodes"/> span.</returns>
-        public int GetNodesWithoutFlags(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes) => GetNodesWithoutFlagsSpan(flags, outNodes);
-
-        /// <summary>
-        /// Gets all hierarchy nodes that does not have the specified flags set.
-        /// </summary>
-        /// <param name="flags">The hierarchy node flags.</param>
-        /// <returns>The hierarchy nodes.</returns>
-        public HierarchyNode[] GetNodesWithoutFlags(HierarchyNodeFlags flags)
-        {
-            var count = DoesNotHaveFlagsCount(flags);
-            if (count == 0)
-                return Array.Empty<HierarchyNode>();
-
-            var nodes = new HierarchyNode[count];
-            GetNodesWithoutFlagsSpan(flags, nodes);
-            return nodes;
-        }
-
-        /// <summary>
-        /// Gets an enumerable of all hierarchy nodes that does not have the specified flags set.
-        /// </summary>
-        /// <param name="flags">The hierarchy node flags.</param>
-        /// <returns>An enumerable of hierarchy node.</returns>
-        public HierarchyViewNodesEnumerable EnumerateNodesWithoutFlags(HierarchyNodeFlags flags) => new HierarchyViewNodesEnumerable(this, flags, DoesNotHaveFlags);
-
-        /// <summary>
-        /// Gets all hierarchy node indices that does not have the specified flags set.
-        /// </summary>
-        /// <param name="flags">The hierarchy node flags.</param>
-        /// <param name="outIndices">The hierarchy node indices.</param>
-        /// <returns>The number of indices written in the <paramref name="outIndices"/> span.</returns>
-        public int GetIndicesWithoutFlags(HierarchyNodeFlags flags, Span<int> outIndices) => GetIndicesWithoutFlagsSpan(flags, outIndices);
-
-        /// <summary>
-        /// Gets all hierarchy node indices that does not have the specified flags set.
+        /// Gets the indices for all hierarchy nodes that have any of the specified flags set.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
         /// <returns>The hierarchy node indices.</returns>
-        public int[] GetIndicesWithoutFlags(HierarchyNodeFlags flags)
+        public int[] GetIndicesWithAnyFlags(HierarchyNodeFlags flags)
         {
-            var count = DoesNotHaveFlagsCount(flags);
+            var count = HasAnyFlagsCount(flags);
             if (count == 0)
                 return Array.Empty<int>();
 
             var indices = new int[count];
-            GetIndicesWithoutFlagsSpan(flags, indices);
+            GetIndicesWithAnyFlagsSpan(flags, indices);
+            return indices;
+        }
+
+        /// <summary>
+        /// Gets all hierarchy nodes that do not have all of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <param name="outNodes">The hierarchy nodes.</param>
+        /// <returns>The number of nodes written in the <paramref name="outNodes"/> span.</returns>
+        public int GetNodesWithoutAllFlags(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes) => GetNodesWithoutAllFlagsSpan(flags, outNodes);
+
+        /// <summary>
+        /// Gets all hierarchy nodes that do not have any of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <param name="outNodes">The hierarchy nodes.</param>
+        /// <returns>The number of nodes written in the <paramref name="outNodes"/> span.</returns>
+        public int GetNodesWithoutAnyFlags(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes) => GetNodesWithoutAnyFlagsSpan(flags, outNodes);
+
+        /// <summary>
+        /// Gets all hierarchy nodes that do not have all of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns>The hierarchy nodes.</returns>
+        public HierarchyNode[] GetNodesWithoutAllFlags(HierarchyNodeFlags flags)
+        {
+            var count = DoesNotHaveAllFlagsCount(flags);
+            if (count == 0)
+                return Array.Empty<HierarchyNode>();
+
+            var nodes = new HierarchyNode[count];
+            GetNodesWithoutAllFlagsSpan(flags, nodes);
+            return nodes;
+        }
+
+        /// <summary>
+        /// Gets all hierarchy nodes that do not have any of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns>The hierarchy nodes.</returns>
+        public HierarchyNode[] GetNodesWithoutAnyFlags(HierarchyNodeFlags flags)
+        {
+            var count = DoesNotHaveAnyFlagsCount(flags);
+            if (count == 0)
+                return Array.Empty<HierarchyNode>();
+
+            var nodes = new HierarchyNode[count];
+            GetNodesWithoutAnyFlagsSpan(flags, nodes);
+            return nodes;
+        }
+
+        /// <summary>
+        /// Gets an enumerable of all hierarchy nodes that do not have all of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns>An enumerable of hierarchy node.</returns>
+        public HierarchyViewNodesEnumerable EnumerateNodesWithoutAllFlags(HierarchyNodeFlags flags) => new HierarchyViewNodesEnumerable(this, flags, DoesNotHaveAllFlags);
+
+        /// <summary>
+        /// Gets an enumerable of all hierarchy nodes that do not have any of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns>An enumerable of hierarchy node.</returns>
+        public HierarchyViewNodesEnumerable EnumerateNodesWithoutAnyFlags(HierarchyNodeFlags flags) => new HierarchyViewNodesEnumerable(this, flags, DoesNotHaveAnyFlags);
+
+        /// <summary>
+        /// Gets the indices of all hierarchy nodes that do not have all of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <param name="outIndices">The hierarchy node indices.</param>
+        /// <returns>The number of indices written in the <paramref name="outIndices"/> span.</returns>
+        public int GetIndicesWithoutAllFlags(HierarchyNodeFlags flags, Span<int> outIndices) => GetIndicesWithoutAllFlagsSpan(flags, outIndices);
+
+        /// <summary>
+        /// Gets the indices of all hierarchy nodes that do not have any of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <param name="outIndices">The hierarchy node indices.</param>
+        /// <returns>The number of indices written in the <paramref name="outIndices"/> span.</returns>
+        public int GetIndicesWithoutAnyFlags(HierarchyNodeFlags flags, Span<int> outIndices) => GetIndicesWithoutAnyFlagsSpan(flags, outIndices);
+
+        /// <summary>
+        /// Gets the indices of all hierarchy nodes that do not have all of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns>The hierarchy node indices.</returns>
+        public int[] GetIndicesWithoutAllFlags(HierarchyNodeFlags flags)
+        {
+            var count = DoesNotHaveAllFlagsCount(flags);
+            if (count == 0)
+                return Array.Empty<int>();
+
+            var indices = new int[count];
+            GetIndicesWithoutAllFlagsSpan(flags, indices);
+            return indices;
+        }
+
+        /// <summary>
+        /// Gets the indices of all hierarchy nodes that do not have any of the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns>The hierarchy node indices.</returns>
+        public int[] GetIndicesWithoutAnyFlags(HierarchyNodeFlags flags)
+        {
+            var count = DoesNotHaveAnyFlagsCount(flags);
+            if (count == 0)
+                return Array.Empty<int>();
+
+            var indices = new int[count];
+            GetIndicesWithoutAnyFlagsSpan(flags, indices);
             return indices;
         }
 
@@ -502,12 +664,14 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Updates the hierarchy view model and requests a rebuild of the list of <see cref="HierarchyNode"/> that filters the <see cref="HierarchyFlattened"/>.
         /// </summary>
+        [NativeMethod(IsThreadSafe = true)]
         public extern void Update();
 
         /// <summary>
-        /// Updates the hierarchy view model incrementally. 
+        /// Updates the hierarchy view model incrementally.
         /// </summary>
         /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
+        [NativeMethod(IsThreadSafe = true)]
         public extern bool UpdateIncremental();
 
         /// <summary>
@@ -515,6 +679,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="milliseconds">The time period in milliseconds.</param>
         /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
+        [NativeMethod(IsThreadSafe = true)]
         public extern bool UpdateIncrementalTimed(double milliseconds);
 
         /// <summary>
@@ -595,64 +760,154 @@ namespace Unity.Hierarchy
                 handler.Internal_SearchBegin(Query);
         }
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::SetFlagsAll", HasExplicitThis = true)]
+        [FreeFunction("HierarchyViewModelBindings::SetFlagsAll", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern void SetFlagsAll(HierarchyNodeFlags flags);
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::SetFlagsNode", HasExplicitThis = true)]
+        [FreeFunction("HierarchyViewModelBindings::SetFlagsNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern void SetFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags, bool recurse = false);
 
-        [FreeFunction("HierarchyViewModelBindings::SetFlagsNodes", HasExplicitThis = true)]
+        [FreeFunction("HierarchyViewModelBindings::SetFlagsNodes", HasExplicitThis = true, IsThreadSafe = true)]
         extern int SetFlagsNodes(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags);
 
-        [FreeFunction("HierarchyViewModelBindings::SetFlagsIndices", HasExplicitThis = true)]
+        [FreeFunction("HierarchyViewModelBindings::SetFlagsIndices", HasExplicitThis = true, IsThreadSafe = true)]
         extern int SetFlagsIndices(ReadOnlySpan<int> indices, HierarchyNodeFlags flags);
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::HasFlagsAny", HasExplicitThis = true)]
-        extern bool HasFlagsAny(HierarchyNodeFlags flags);
+        [FreeFunction("HierarchyViewModelBindings::HasAllFlagsAny", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern bool HasAllFlagsAny(HierarchyNodeFlags flags);
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::HasFlagsNode", HasExplicitThis = true)]
-        extern bool HasFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags);
+        [FreeFunction("HierarchyViewModelBindings::HasAnyFlagsAny", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern bool HasAnyFlagsAny(HierarchyNodeFlags flags);
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::DoesNotHaveFlagsAny", HasExplicitThis = true)]
-        extern bool DoesNotHaveFlagsAny(HierarchyNodeFlags flags);
+        [FreeFunction("HierarchyViewModelBindings::HasAllFlagsNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern bool HasAllFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags);
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::DoesNotHaveFlagsNode", HasExplicitThis = true)]
-        extern bool DoesNotHaveFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags);
+        [FreeFunction("HierarchyViewModelBindings::HasAnyFlagsNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern bool HasAnyFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags);
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::ClearFlagsAll", HasExplicitThis = true)]
+        [FreeFunction("HierarchyViewModelBindings::DoesNotHaveAllFlagsAny", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern bool DoesNotHaveAllFlagsAny(HierarchyNodeFlags flags);
+
+        [FreeFunction("HierarchyViewModelBindings::DoesNotHaveAnyFlagsAny", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern bool DoesNotHaveAnyFlagsAny(HierarchyNodeFlags flags);
+
+        [FreeFunction("HierarchyViewModelBindings::DoesNotHaveAllFlagsNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern bool DoesNotHaveAllFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags);
+
+        [FreeFunction("HierarchyViewModelBindings::DoesNotHaveAnyFlagsNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern bool DoesNotHaveAnyFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags);
+
+        [FreeFunction("HierarchyViewModelBindings::ClearFlagsAll", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern void ClearFlagsAll(HierarchyNodeFlags flags);
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::ClearFlagsNode", HasExplicitThis = true)]
+        [FreeFunction("HierarchyViewModelBindings::ClearFlagsNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern void ClearFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags, bool recurse = false);
 
-        [FreeFunction("HierarchyViewModelBindings::ClearFlagsNodes", HasExplicitThis = true)]
+        [FreeFunction("HierarchyViewModelBindings::ClearFlagsNodes", HasExplicitThis = true, IsThreadSafe = true)]
         extern int ClearFlagsNodes(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags);
 
-        [FreeFunction("HierarchyViewModelBindings::ClearFlagsIndices", HasExplicitThis = true)]
+        [FreeFunction("HierarchyViewModelBindings::ClearFlagsIndices", HasExplicitThis = true, IsThreadSafe = true)]
         extern int ClearFlagsIndices(ReadOnlySpan<int> indices, HierarchyNodeFlags flags);
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::ToggleFlagsAll", HasExplicitThis = true)]
+        [FreeFunction("HierarchyViewModelBindings::ToggleFlagsAll", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern void ToggleFlagsAll(HierarchyNodeFlags flags);
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::ToggleFlagsNode", HasExplicitThis = true)]
+        [FreeFunction("HierarchyViewModelBindings::ToggleFlagsNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern void ToggleFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags, bool recurse = false);
 
-        [FreeFunction("HierarchyViewModelBindings::ToggleFlagsNodes", HasExplicitThis = true)]
+        [FreeFunction("HierarchyViewModelBindings::ToggleFlagsNodes", HasExplicitThis = true, IsThreadSafe = true)]
         extern int ToggleFlagsNodes(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags);
 
-        [FreeFunction("HierarchyViewModelBindings::ToggleFlagsIndices", HasExplicitThis = true)]
+        [FreeFunction("HierarchyViewModelBindings::ToggleFlagsIndices", HasExplicitThis = true, IsThreadSafe = true)]
         extern int ToggleFlagsIndices(ReadOnlySpan<int> indices, HierarchyNodeFlags flags);
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::GetNodesWithFlagsSpan", HasExplicitThis = true)]
-        extern int GetNodesWithFlagsSpan(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes);
+        [FreeFunction("HierarchyViewModelBindings::GetNodesWithAllFlagsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern int GetNodesWithAllFlagsSpan(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes);
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::GetIndicesWithFlagsSpan", HasExplicitThis = true)]
-        extern int GetIndicesWithFlagsSpan(HierarchyNodeFlags flags, Span<int> outIndices);
+        [FreeFunction("HierarchyViewModelBindings::GetNodesWithAnyFlagsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern int GetNodesWithAnyFlagsSpan(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes);
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::GetNodesWithoutFlagsSpan", HasExplicitThis = true)]
-        extern int GetNodesWithoutFlagsSpan(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes);
+        [FreeFunction("HierarchyViewModelBindings::GetIndicesWithAllFlagsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern int GetIndicesWithAllFlagsSpan(HierarchyNodeFlags flags, Span<int> outIndices);
 
-        [NativeThrows, FreeFunction("HierarchyViewModelBindings::GetIndicesWithoutFlagsSpan", HasExplicitThis = true)]
-        extern int GetIndicesWithoutFlagsSpan(HierarchyNodeFlags flags, Span<int> outIndices);
+        [FreeFunction("HierarchyViewModelBindings::GetIndicesWithAnyFlagsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern int GetIndicesWithAnyFlagsSpan(HierarchyNodeFlags flags, Span<int> outIndices);
+
+        [FreeFunction("HierarchyViewModelBindings::GetNodesWithoutAllFlagsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern int GetNodesWithoutAllFlagsSpan(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes);
+
+        [FreeFunction("HierarchyViewModelBindings::GetNodesWithoutAnyFlagsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern int GetNodesWithoutAnyFlagsSpan(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes);
+
+        [FreeFunction("HierarchyViewModelBindings::GetIndicesWithoutAllFlagsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern int GetIndicesWithoutAllFlagsSpan(HierarchyNodeFlags flags, Span<int> outIndices);
+
+        [FreeFunction("HierarchyViewModelBindings::GetIndicesWithoutAnyFlagsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern int GetIndicesWithoutAnyFlagsSpan(HierarchyNodeFlags flags, Span<int> outIndices);
+
+        #region Obsolete public APIs to remove in 2024 / Unity 7
+        [Obsolete("HasFlags is obsolete, please use HasAllFlags or HasAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool HasFlags(HierarchyNodeFlags flags) => HasAllFlagsAny(flags);
+
+        [Obsolete("HasFlags is obsolete, please use HasAllFlags or HasAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool HasFlags(in HierarchyNode node, HierarchyNodeFlags flags) => HasAllFlagsNode(in node, flags);
+
+        [Obsolete("HasFlagsCount is obsolete, please use HasAllFlagsCount or HasAnyFlagsCount instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public int HasFlagsCount(HierarchyNodeFlags flags) => HasAllFlagsCount(flags);
+
+        [Obsolete("DoesNotHaveFlags is obsolete, please use DoesNotHaveAllFlags or DoesNotHaveAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool DoesNotHaveFlags(HierarchyNodeFlags flags) => DoesNotHaveAllFlagsAny(flags);
+
+        [Obsolete("DoesNotHaveFlags is obsolete, please use DoesNotHaveAllFlags or DoesNotHaveAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool DoesNotHaveFlags(in HierarchyNode node, HierarchyNodeFlags flags) => DoesNotHaveAllFlagsNode(in node, flags);
+
+        [Obsolete("DoesNotHaveFlagsCount is obsolete, please use DoesNotHaveAllFlagsCount or DoesNotHaveAnyFlagsCount instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public int DoesNotHaveFlagsCount(HierarchyNodeFlags flags) => DoesNotHaveAllFlagsCount(flags);
+
+        [Obsolete("GetNodesWithFlags is obsolete, please use GetNodesWithAllFlags or GetNodesWithAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public int GetNodesWithFlags(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes) => GetNodesWithAllFlagsSpan(flags, outNodes);
+
+        [Obsolete("GetNodesWithFlags is obsolete, please use GetNodesWithAllFlags or GetNodesWithAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public HierarchyNode[] GetNodesWithFlags(HierarchyNodeFlags flags) => GetNodesWithAllFlags(flags);
+
+        [Obsolete("EnumerateNodesWithFlags is obsolete, please use EnumerateNodesWithAllFlags or EnumerateNodesWithAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public HierarchyViewNodesEnumerable EnumerateNodesWithFlags(HierarchyNodeFlags flags) => EnumerateNodesWithAllFlags(flags);
+
+        [Obsolete("GetIndicesWithFlags is obsolete, please use GetIndicesWithAllFlags or GetIndicesWithAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public int GetIndicesWithFlags(HierarchyNodeFlags flags, Span<int> outIndices) => GetIndicesWithAllFlagsSpan(flags, outIndices);
+
+        [Obsolete("GetIndicesWithFlags is obsolete, please use GetIndicesWithAllFlags or GetIndicesWithAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public int[] GetIndicesWithFlags(HierarchyNodeFlags flags) => GetIndicesWithAllFlags(flags);
+
+        [Obsolete("GetNodesWithoutFlags is obsolete, please use GetNodesWithoutAllFlags or GetNodesWithoutAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public int GetNodesWithoutFlags(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes) => GetNodesWithoutAllFlagsSpan(flags, outNodes);
+
+        [Obsolete("GetNodesWithoutFlags is obsolete, please use GetNodesWithoutAllFlags or GetNodesWithoutAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public HierarchyNode[] GetNodesWithoutFlags(HierarchyNodeFlags flags) => GetNodesWithoutAllFlags(flags);
+
+        [Obsolete("EnumerateNodesWithoutFlags is obsolete, please use EnumerateNodesWithoutAllFlags or EnumerateNodesWithoutAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public HierarchyViewNodesEnumerable EnumerateNodesWithoutFlags(HierarchyNodeFlags flags) => EnumerateNodesWithoutAllFlags(flags);
+
+        [Obsolete("GetIndicesWithoutFlags is obsolete, please use GetIndicesWithoutAllFlags or GetIndicesWithoutAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public int GetIndicesWithoutFlags(HierarchyNodeFlags flags, Span<int> outIndices) => GetIndicesWithoutAllFlagsSpan(flags, outIndices);
+
+        [Obsolete("GetIndicesWithoutFlags is obsolete, please use GetIndicesWithoutAllFlags or GetIndicesWithoutAnyFlags instead", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public int[] GetIndicesWithoutFlags(HierarchyNodeFlags flags) => GetIndicesWithoutAllFlags(flags);
+        #endregion
     }
 }

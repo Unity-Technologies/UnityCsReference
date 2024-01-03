@@ -21,7 +21,7 @@ namespace UnityEditor.Search
         public Label groupCountLabel;
 
         private readonly IGroup m_Group;
-        private readonly ISearchView m_ViewModel;
+        private SearchGroupBar m_GroupBar;
 
         public new string name => m_Group.name;
         public string id => m_Group.id;
@@ -32,10 +32,10 @@ namespace UnityEditor.Search
 
         public IEnumerable<SearchItem> items => m_Group.items;
 
-        internal SearchGroupTab(ISearchView viewModel, IGroup group)
+        internal SearchGroupTab(SearchGroupBar groupBar, IGroup group)
         {
             m_Group = group;
-            m_ViewModel = viewModel;
+            m_GroupBar = groupBar;
 
             AddToClassList(TabStyleClassName);
 
@@ -64,53 +64,12 @@ namespace UnityEditor.Search
                 pseudoStates |= PseudoStates.Checked;
 
                 m_Group.Sort();
-                m_ViewModel.currentGroup = id;
+                m_GroupBar.ViewModel.currentGroup = id;
             }
             else if (evt.button == 1)
-                ShowFilters(m_ViewModel);
+                m_GroupBar.ShowVisibilityFilters();
         }
-
-        internal static void ShowFilters(ISearchView viewModel)
-        {
-            var filterMenu = new GenericMenu();
-            if (viewModel is IHasCustomMenu customMenu)
-                customMenu.AddItemsToMenu(filterMenu);
-
-            if (!viewModel.IsPicker())
-            {
-                var dbs = SearchDatabase.EnumerateAll().ToList();
-                if (dbs.Count > 1)
-                {
-                    foreach (var db in dbs)
-                    {
-                        filterMenu.AddItem(new GUIContent($"Indexes/{db.name} ({db.settings.type} index)"),
-                                    !db.settings.options.disabled, () => ToggleIndexEnabled(viewModel, db));
-                    }
-                }
-            }
-
-            filterMenu.AddSeparator(string.Empty);
-            filterMenu.AddDisabledItem(new GUIContent("Search Providers"));
-            filterMenu.AddSeparator(string.Empty);
-            if (viewModel is ISearchWindow searchWindow)
-                searchWindow.AddProvidersToMenu(filterMenu);
-            else
-            {
-                foreach (var p in viewModel.context.GetProviders())
-                {
-                    var filterContent = new GUIContent($"{p.name} ({p.filterId})");
-                    filterMenu.AddDisabledItem(filterContent, viewModel.context.IsEnabled(p.id));
-                }
-            }
-            filterMenu.ShowAsContext();
-        }
-
-        private static void ToggleIndexEnabled(ISearchView viewModel, SearchDatabase db)
-        {
-            db.settings.options.disabled = !db.settings.options.disabled;
-            if (viewModel is SearchWindow window)
-                window.Refresh(RefreshFlags.GroupChanged);
-        }
+        
 
         SearchItem IGroup.ElementAt(int index) => m_Group.ElementAt(index);
         public int IndexOf(SearchItem item) => m_Group.IndexOf(item);
@@ -130,14 +89,18 @@ namespace UnityEditor.Search
         private SearchGroupTab m_HiddenSelectedGroup;
         private readonly Button m_TabMoreButton;
         private readonly VisualElement m_TabsContainer;
-        private readonly List<SearchGroupTab> m_HiddenGroups = new List<SearchGroupTab>();
+        private readonly List<SearchGroupTab> m_HiddenGroups = new();
         private readonly VisualElement m_ShowMoreGroup;
         private readonly VisualElement m_ResultViewButtonContainer;
+        private readonly List<Action> m_SearchEventOffs = new();
+
+        internal ISearchView ViewModel => m_ViewModel;
 
         public static readonly string ussClassName = "search-groupbar";
         public static readonly string groupBarButtonClassName = ussClassName.WithUssElement("button");
         public static readonly string groupBarSortButtonClassName = ussClassName.WithUssElement("sort-button");
         public static readonly string groupBarMoreButtonClassName = ussClassName.WithUssElement("more-button");
+        public static readonly string groupBarVisButtonClassName = ussClassName.WithUssElement("visibility-button");
         public static readonly string tabsContainerClassName = ussClassName.WithUssElement("tabs-container");
         public static readonly string moreGroupTabClassName = ussClassName.WithUssElement("more-group-tab");
         public static readonly string moreGroupTabVisibleClassName = moreGroupTabClassName.WithUssModifier("visible");
@@ -146,7 +109,8 @@ namespace UnityEditor.Search
 
         private static bool s_IsDarkTheme => EditorGUIUtility.isProSkin;
         private readonly string m_SortButtonTooltip = L10n.Tr("Sort current group results");
-        private readonly string m_MoreProviderFiltersTooltip = L10n.Tr("Display search provider filter ids and toggle their activate state.");
+        private readonly string m_VisibilityFiltersTooltip = L10n.Tr("Determine which items should be shown.");
+        private readonly string m_MoreProviderFiltersTooltip = L10n.Tr("Manage search view appearance.");
         private readonly string m_SyncSearchButtonTooltip = L10n.Tr("Synchronize search fields (Ctrl + K)");
         private readonly string m_SyncSearchOnButtonTooltip = L10n.Tr("Synchronize search fields (Ctrl + K)");
         private readonly string m_SyncSearchAllGroupTabTooltip = L10n.Tr("Choose a specific search tab (eg. Project) to enable synchronization.");
@@ -182,14 +146,19 @@ namespace UnityEditor.Search
         private void AttachTabs(AttachToPanelEvent evt)
         {
             BuildGroups();
-            On(SearchEvent.DisplayModeChanged, UpdateResultViewButton);
-            On(SearchEvent.RefreshContent, OnRefreshed);
+            
+            m_SearchEventOffs.AddRange(new []
+            {
+                On(SearchEvent.DisplayModeChanged, UpdateResultViewButton),
+                On(SearchEvent.RefreshContent, OnRefreshed),
+                On(SearchEvent.TogglePackages, HandleTogglePackages),
+                On(SearchEvent.ToggleWantsMore, HandleToggleWantsMore),
+            });
         }
 
         private void DetachTabs(DetachFromPanelEvent evt)
-        {
-            Off(SearchEvent.RefreshContent, OnRefreshed);
-            Off(SearchEvent.DisplayModeChanged, UpdateResultViewButton);
+        {            
+            m_SearchEventOffs?.ForEach(off => off());
 
             // Make sure to remove callbacks when Detaching from panel
             EditorApplication.tick -= AdjustTabs;
@@ -200,7 +169,7 @@ namespace UnityEditor.Search
             m_TabsContainer.Clear();
 
             foreach (var g in m_ViewModel.EnumerateGroups())
-                m_TabsContainer.Add(new SearchGroupTab(m_ViewModel, g));
+                m_TabsContainer.Add(new SearchGroupTab(this, g));
             m_TabsContainer.Add(m_ShowMoreGroup);
 
             AdjustTabs();
@@ -327,7 +296,7 @@ namespace UnityEditor.Search
             if (showMore && m_HiddenGroups.Count > 0)
             {
                 var moreSelectedGroup = hiddenSelectedGroup ?? m_HiddenGroups.FirstOrDefault();
-                var expandedTab = new SearchGroupTab(m_ViewModel, moreSelectedGroup);
+                var expandedTab = new SearchGroupTab(this, moreSelectedGroup);
 
                 expandedTab.groupNameLabel.text = expandedTab.name;
                 if (!context.empty)
@@ -381,11 +350,21 @@ namespace UnityEditor.Search
 
             AddSyncSearchButton();
 
-            var sortButton = CreateButton("SearchSortGroup", m_SortButtonTooltip, ShowSortOptions, groupBarButtonClassName, groupBarSortButtonClassName);
-            Add(sortButton);
+            if (!m_ViewModel.state.isSimplePicker)
+            {
+                var sortButton = CreateButton("SearchSortGroup", m_SortButtonTooltip, ShowSortOptions, groupBarButtonClassName, groupBarSortButtonClassName);
+                Add(sortButton);
+            }
+            
 
-            var moreButton = CreateButton("SearchMoreOptions", m_MoreProviderFiltersTooltip , () => SearchGroupTab.ShowFilters(m_ViewModel), groupBarButtonClassName, groupBarMoreButtonClassName);
-            Add(moreButton);
+            var visButton = CreateButton("SearchVisibilityOptions", m_VisibilityFiltersTooltip, ShowVisibilityFilters, groupBarButtonClassName, groupBarVisButtonClassName);
+            Add(visButton);
+
+            if (!m_ViewModel.state.isSimplePicker)
+            {
+                var moreButton = CreateButton("SearchMoreOptions", m_MoreProviderFiltersTooltip, ShowViewFilters, groupBarButtonClassName, groupBarMoreButtonClassName);
+                Add(moreButton);
+            }
         }
 
         private void ShowSortOptions()
@@ -508,6 +487,123 @@ namespace UnityEditor.Search
             {
                 BuildGroups();
             }
+        }
+
+        internal void ShowVisibilityFilters()
+        {
+            var filterMenu = new GenericMenu();
+
+            var wantsMoreContent = new GUIContent(L10n.Tr($"Show more results"));
+
+            filterMenu.AddItem(new GUIContent(L10n.Tr($"Show Packages results")), context.options.HasAny(SearchFlags.Packages), TogglePackages);
+            filterMenu.AddItem(wantsMoreContent, context?.wantsMore ?? false, ToggleWantsMore);
+
+            if (!m_ViewModel.state.isSimplePicker)
+            {
+                var dbs = SearchDatabase.EnumerateAll().ToList();
+                if (dbs.Count > 1)
+                {
+                    filterMenu.AddSeparator(string.Empty);
+                    filterMenu.AddDisabledItem(new GUIContent("Indexes"));
+                    filterMenu.AddSeparator(string.Empty);
+
+                    foreach (var db in dbs)
+                    {
+                        filterMenu.AddItem(new GUIContent($"{db.name} ({db.settings.type} index)"), !db.settings.options.disabled, () => ToggleIndexEnabled(db));
+                    }
+                }
+            }
+            filterMenu.ShowAsContext();
+        }
+
+        internal void ShowViewFilters()
+        {
+            var filterMenu = new GenericMenu();
+            if (m_ViewModel is IHasCustomMenu customMenu)
+                customMenu.AddItemsToMenu(filterMenu);
+
+            filterMenu.AddSeparator(string.Empty);
+            filterMenu.AddDisabledItem(new GUIContent("Search Providers"));
+            filterMenu.AddSeparator(string.Empty);
+            if (m_ViewModel is ISearchWindow searchWindow)
+                searchWindow.AddProvidersToMenu(filterMenu);
+            else
+            {
+                foreach (var p in context.GetProviders())
+                {
+                    var filterContent = new GUIContent($"{p.name} ({p.filterId})");
+                    filterMenu.AddDisabledItem(filterContent, context.IsEnabled(p.id));
+                }
+            }
+            filterMenu.ShowAsContext();
+        }
+
+        void HandleToggleWantsMore(ISearchEvent evt)
+        {
+            if (evt.sourceViewState != viewState)
+                return;
+            ToggleWantsMore();
+        }
+
+        void HandleTogglePackages(ISearchEvent evt)
+        {
+            if (evt.sourceViewState != viewState)
+                return;
+            TogglePackages();
+        }
+
+        private void TogglePackages()
+        {
+            if (m_ViewModel.context.showPackages)
+            {
+                SearchSettings.defaultFlags &= ~SearchFlags.Packages;
+                m_ViewModel.context.showPackages = false;
+            }
+            else
+            {
+                SearchSettings.defaultFlags |= SearchFlags.Packages;
+                m_ViewModel.context.showPackages = true;
+            }
+            SendEvent(SearchAnalytics.GenericEventType.PreferenceChanged, nameof(SearchFlags.Packages), m_ViewModel.context?.wantsMore.ToString());
+            Refresh(RefreshFlags.StructureChanged);
+        }
+
+        private void ToggleIndexEnabled(SearchDatabase db)
+        {
+            db.settings.options.disabled = !db.settings.options.disabled;
+            if (m_ViewModel is SearchWindow window)
+                window.Refresh(RefreshFlags.GroupChanged);
+        }
+
+        internal void ToggleWantsMore()
+        {
+            if (m_ViewModel.context.wantsMore)
+            {
+                SearchSettings.defaultFlags &= ~SearchFlags.WantsMore;
+                m_ViewModel.context.wantsMore = false;
+            }
+            else
+            {
+                SearchSettings.defaultFlags |= SearchFlags.WantsMore;
+                m_ViewModel.context.wantsMore = true;
+            }
+            SearchSettings.wantsMore = m_ViewModel.context?.wantsMore ?? false;
+            SendEvent(SearchAnalytics.GenericEventType.PreferenceChanged, nameof(m_ViewModel.context.wantsMore), m_ViewModel.context?.wantsMore.ToString());
+            Refresh(RefreshFlags.StructureChanged);
+        }
+
+        internal void Refresh(RefreshFlags flags)
+        {
+            if (m_ViewModel is SearchWindow window)
+                window.Refresh(flags);
+        }
+
+        protected void SendEvent(SearchAnalytics.GenericEventType category, string name = null, string message = null, string description = null)
+        {
+            string id = null;
+            if (m_ViewModel is SearchWindow window)
+                id = window.windowId;
+            SearchAnalytics.SendEvent(id, category, name, message, description);
         }
     }
 }

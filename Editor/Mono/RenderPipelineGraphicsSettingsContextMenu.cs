@@ -17,7 +17,7 @@ namespace UnityEditor.Rendering
     // This version indicates that it will be applied to any IRenderPipelineGraphicsSettings
     public interface IRenderPipelineGraphicsSettingsContextMenu
     {
-        void PopulateContextMenu(IRenderPipelineGraphicsSettings setting, PropertyDrawer drawer, ref GenericDropdownMenu menu);
+        void PopulateContextMenu(IRenderPipelineGraphicsSettings setting, PropertyDrawer drawer, ref GenericMenu menu);
 
         int priority => 0;
     }
@@ -26,8 +26,8 @@ namespace UnityEditor.Rendering
     public interface IRenderPipelineGraphicsSettingsContextMenu<T> : IRenderPipelineGraphicsSettingsContextMenu
         where T : class, IRenderPipelineGraphicsSettings
     {
-        void PopulateContextMenu(T setting, PropertyDrawer drawer, ref GenericDropdownMenu menu);
-        void IRenderPipelineGraphicsSettingsContextMenu.PopulateContextMenu(IRenderPipelineGraphicsSettings setting, PropertyDrawer drawer, ref GenericDropdownMenu menu)
+        void PopulateContextMenu(T setting, PropertyDrawer drawer, ref GenericMenu menu);
+        void IRenderPipelineGraphicsSettingsContextMenu.PopulateContextMenu(IRenderPipelineGraphicsSettings setting, PropertyDrawer drawer, ref GenericMenu menu)
             => PopulateContextMenu(setting as T, drawer, ref menu);
     }
 
@@ -87,7 +87,7 @@ namespace UnityEditor.Rendering
             });
         }
 
-        static internal void PopulateContextMenu<T>(T graphicsSettings, SerializedProperty property, ref GenericDropdownMenu menu)
+        static internal void PopulateContextMenu<T>(T graphicsSettings, SerializedProperty property, ref GenericMenu menu)
             where T : class, IRenderPipelineGraphicsSettings
         {
             var drawer = ScriptAttributeUtility.GetHandler(property).propertyDrawer;
@@ -115,15 +115,15 @@ namespace UnityEditor.Rendering
         // Keeping space in case one want to modify after the Reset
         public int priority => int.MaxValue - 1;
 
-        public void PopulateContextMenu(IRenderPipelineGraphicsSettings setting, PropertyDrawer _, ref GenericDropdownMenu menu)
+        public void PopulateContextMenu(IRenderPipelineGraphicsSettings setting, PropertyDrawer _, ref GenericMenu menu)
         {
-            if (menu.items.Count > 0 && !menu.items[menu.items.Count - 1].isSeparator)
+            if (menu.menuItems.Count > 0 && !menu.menuItems[menu.menuItems.Count - 1].separator)
                 menu.AddSeparator("");
 
             if (EditorApplication.isPlaying)
-                menu.AddDisabledItem(k_Label, false);
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(k_Label), false);
             else
-                menu.AddItem(k_Label, false, () => Reset(setting));
+                menu.AddItem(EditorGUIUtility.TrTextContent(k_Label), false, () => Reset(setting));
         }
 
         static void Reset(IRenderPipelineGraphicsSettings setting)

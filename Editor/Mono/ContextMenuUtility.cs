@@ -15,15 +15,10 @@ namespace UnityEditor.Actions
 {
     public static class ContextMenuUtility
     {
-        static void AddAction(DropdownMenu menu, string path, Action action, bool active = true, Texture2D icon = null, string tooltip = "")
+        static void AddAction(DropdownMenu menu, string path, Action action, bool active = true)
         {
-            menu.AppendAction(path, (item) => action?.Invoke(),
-                statusAction =>
-                {
-                    statusAction.tooltip = tooltip;
-                    return active ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
-                },
-                null, icon);
+            menu.AppendAction(path, _ => action?.Invoke(),
+                _ => active ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
         }
 
         public static void AddMenuItem(DropdownMenu menu, string menuItemPath, string contextMenuPath = "")
@@ -41,15 +36,12 @@ namespace UnityEditor.Actions
         internal static void AddMenuItemWithContext(DropdownMenu menu, IEnumerable<Object> context, bool enabled, string menuItemPath, string contextMenuPath = "")
         {
             var contextArray = ToArray(context);
-            string iconResource = Menu.GetIconResource(menuItemPath);
             string shortcut = Menu.GetHotkey(menuItemPath);
             string path = (string.IsNullOrEmpty(contextMenuPath) ? menuItemPath : contextMenuPath)
                 + (string.IsNullOrEmpty(shortcut) ? "" : " " + shortcut);
 
             AddAction(menu, path,
-                () => { EditorApplication.delayCall += () => ExecuteMenuItem(contextArray, menuItemPath); }, enabled,
-                string.IsNullOrEmpty(iconResource) ? null : EditorGUIUtility.LoadIconRequired(iconResource),
-                enabled ? string.Empty : Menu.GetDisabledTooltip(menuItemPath));
+                () => { EditorApplication.delayCall += () => ExecuteMenuItem(contextArray, menuItemPath); }, enabled);
         }
 
         static void ExecuteMenuItem(Object[] context, string menuItemPath)
@@ -133,8 +125,6 @@ namespace UnityEditor.Actions
                 if (items.Length == 0)
                     continue;
 
-                var icon = EditorGUIUtility.FindTexture(type);
-                AddAction(menu, $"{type.Name}/", null, icon: icon);
                 AddMenuItems(menu, type.Name, items, editor.targets, type.Name);
             }
         }
@@ -196,7 +186,7 @@ namespace UnityEditor.Actions
             if (dropdownMenu.MenuItems().Count == 0)
                 AddAction(dropdownMenu, "No Actions for this Context", null, false);
 
-            dropdownMenu.DisplayEditorMenu(new Rect(Event.current.mousePosition, Vector2.zero));
+            dropdownMenu.DoDisplayEditorMenu(new Rect(Event.current.mousePosition, Vector2.zero));
         }
 
         static T[] ToArray<T>(IEnumerable<T> enumerable) where T : Object

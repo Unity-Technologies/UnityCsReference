@@ -79,6 +79,28 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        /// <summary>
+        /// Returns true if the given <see cref="BuildProfile"/> is the active profile or a classic
+        /// profile for the EditorUserBuildSettings active build target.
+        /// </summary>
+        [VisibleToOtherModules]
+        internal bool IsActiveBuildProfileOrPlatform()
+        {
+            if (BuildProfileContext.instance.activeProfile == this)
+                return true;
+
+            if (BuildProfileContext.instance.activeProfile is not null
+                || !BuildProfileContext.IsClassicPlatformProfile(this))
+                return false;
+
+            if (!BuildProfileModuleUtil.IsStandalonePlatform(buildTarget))
+                return buildTarget == EditorUserBuildSettings.activeBuildTarget;
+
+            var profileModuleName = BuildProfileModuleUtil.GetModuleName(buildTarget);
+            var activeModuleName = BuildProfileModuleUtil.GetModuleName(EditorUserBuildSettings.activeBuildTarget);
+            return profileModuleName == activeModuleName && subtarget == EditorUserBuildSettings.standaloneBuildSubtarget;
+        }
+
         void OnEnable()
         {
             // Check if the platform support module has been installed,

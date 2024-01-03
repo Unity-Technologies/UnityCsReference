@@ -14,7 +14,7 @@ namespace UnityEditor
 {
     public class SceneVisibilityManager : ScriptableSingleton<SceneVisibilityManager>
     {
-        internal class ShortcutContext : IShortcutToolContext
+        internal class ShortcutContext : IShortcutContext
         {
             public bool active
             {

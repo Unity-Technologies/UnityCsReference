@@ -15,7 +15,7 @@ using UnityEngine.UIElements.Experimental;
 
 namespace Unity.UI.Builder
 {
-    internal class BuilderViewport : BuilderPaneContent, IBuilderSelectionNotifier, IShortcutToolContext
+    internal class BuilderViewport : BuilderPaneContent, IBuilderSelectionNotifier, IShortcutContext
     {
         static readonly string s_PreviewModeClassName = "unity-builder-viewport--preview";
         static readonly float s_CanvasViewportMinWidthDiff = 30;
@@ -168,7 +168,7 @@ namespace Unity.UI.Builder
         public BuilderBindingsCache bindingsCache { get; set; }
         public bool isPreviewEnabled { get; private set; }
 
-        bool IShortcutToolContext.active => true;
+        bool IShortcutContext.active => true;
 
         public BuilderViewport(BuilderPaneWindow paneWindow, BuilderSelection selection, BuilderElementContextMenu contextMenuManipulator, BuilderBindingsCache bindingsCache = null)
         {

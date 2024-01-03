@@ -18,8 +18,6 @@ namespace UnityEngine.UIElements
     {
         class ManagedJobData
         {
-            public GCHandle selfHandle;
-
             public TextElement visualElement;
             public MeshGenerationNode node;
             public List<Material> materials;
@@ -46,15 +44,15 @@ namespace UnityEngine.UIElements
         static readonly ProfilerMarker k_PrepareMainThreadMarker = new("TextJob.PrepareMainThread");
         static readonly ProfilerMarker k_PrepareJobifiedMarker = new("TextJob.PrepareJobified");
 
+        private GCHandle textJobDatasHandle;
         List<ManagedJobData> textJobDatas = new List<ManagedJobData>();
         bool hasPendingTextWork;
 
         static UnityEngine.Pool.ObjectPool<ManagedJobData> s_JobDataPool = new(() =>
         {
             var inst = new ManagedJobData();
-            inst.selfHandle = GCHandle.Alloc(inst);
             return inst;
-        }, OnGetManagedJob, inst => { inst.visualElement = null; }, inst => { inst.selfHandle.Free(); }, false);
+        }, OnGetManagedJob, inst => { inst.visualElement = null; }, null, false);
 
         static UnityEngine.Pool.ObjectPool<List<Material>> s_MaterialPool = new(() =>
         {
@@ -80,6 +78,17 @@ namespace UnityEngine.UIElements
             return inst;
         }, null, list => list.Clear(), null, false);
 
+        private readonly MeshGenerationCallback m_PrepareTextJobifiedCallback;
+        private readonly MeshGenerationCallback m_GenerateTextJobifiedCallback;
+        private readonly MeshGenerationCallback m_AddDrawEntriesCallback;
+
+        public UITKTextJobSystem()
+        {
+            m_PrepareTextJobifiedCallback = PrepareTextJobified;
+            m_GenerateTextJobifiedCallback = GenerateTextJobified;
+            m_AddDrawEntriesCallback = AddDrawEntries;
+        }
+
         private static void OnGetManagedJob(ManagedJobData managedJobData)
         {
             managedJobData.vertices = null;
@@ -102,30 +111,36 @@ namespace UnityEngine.UIElements
             if (hasPendingTextWork)
                 return;
 
-            hasPendingTextWork = true;
+            // schedule the batch only once
+            // textJobDatas will be filled when the callback is invoked
 
-            mgc.AddMeshGenerationCallback(PrepareTextJobified, textJobDatas, MeshGenerationCallbackType.WorkThenFork, false);
+            hasPendingTextWork = true;
+            textJobDatasHandle = GCHandle.Alloc(textJobDatas);
+
+            mgc.AddMeshGenerationCallback(m_PrepareTextJobifiedCallback, null, MeshGenerationCallbackType.WorkThenFork, false);
         }
 
-        void PrepareTextJobified(MeshGenerationContext mgc, object data)
+        private void PrepareTextJobified(MeshGenerationContext mgc, object _)
         {
-            var textDatas = (List<ManagedJobData>)data;
             TextHandle.InitThreadArrays();
             TextHandle.currentTime = Time.realtimeSinceStartup;
 
             k_PrepareMainThreadMarker.Begin();
+
+            // ensure the text generator is initialized on the main thread
+            UnityEngine.TextCore.Text.TextGenerator.GetTextGenerator();
+
             hasPendingTextWork = false;
 
-            GCHandle managedJobsHandle = GCHandle.Alloc(textDatas);
             var prepareJob = new PrepareTextJobData
             {
-                managedJobDataHandle = managedJobsHandle
+                managedJobDataHandle = textJobDatasHandle
             };
 
             k_PrepareMainThreadMarker.End();
-            JobHandle jobHandle = prepareJob.Schedule(textDatas.Count, 1);
+            JobHandle jobHandle = prepareJob.Schedule(textJobDatas.Count, 1);
             mgc.AddMeshGenerationJob(jobHandle);
-            mgc.AddMeshGenerationCallback(GenerateTextJobified, managedJobsHandle, MeshGenerationCallbackType.Work, true);
+            mgc.AddMeshGenerationCallback(m_GenerateTextJobifiedCallback, null, MeshGenerationCallbackType.Work, true);
         }
 
         struct PrepareTextJobData : IJobParallelFor
@@ -145,12 +160,10 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void GenerateTextJobified(MeshGenerationContext mgc, object data)
+        private void GenerateTextJobified(MeshGenerationContext mgc, object _)
         {
             k_UpdateMainThreadMarker.Begin();
-            var managedJobsHandle = (GCHandle)data;
-            List<ManagedJobData> managedJobDatas = (List<ManagedJobData>)managedJobsHandle.Target;
-            foreach (var textData in managedJobDatas)
+            foreach (var textData in textJobDatas)
             {
                 if (!textData.prepareSuccess)
                 {
@@ -171,13 +184,13 @@ namespace UnityEngine.UIElements
 
             var textJob = new GenerateTextJobData
             {
-                managedJobDataHandle = managedJobsHandle,
+                managedJobDataHandle = textJobDatasHandle,
                 alloc = allocator
             };
-            JobHandle jobHandle = textJob.Schedule(managedJobDatas.Count, 1);
+            JobHandle jobHandle = textJob.Schedule(textJobDatas.Count, 1);
 
             mgc.AddMeshGenerationJob(jobHandle);
-            mgc.AddMeshGenerationCallback(AddDrawEntries, textJob, MeshGenerationCallbackType.Work, true);
+            mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, true);
         }
 
         struct GenerateTextJobData : IJobParallelFor
@@ -188,7 +201,7 @@ namespace UnityEngine.UIElements
             public void Execute(int index)
             {
                 k_ExecuteMarker.Begin();
-                List<ManagedJobData> managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
+                var managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
                 ManagedJobData managedJobData = managedJobDatas[index];
                 var visualElement = managedJobData.visualElement;
                 visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings();
@@ -285,11 +298,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void AddDrawEntries(MeshGenerationContext mgc, object data)
+        void AddDrawEntries(MeshGenerationContext mgc, object _)
         {
-            var textData = (GenerateTextJobData)data;
-            var managedJobDatas = (List<ManagedJobData>)textData.managedJobDataHandle.Target;
-            foreach (var managedJobData in managedJobDatas)
+            foreach (var managedJobData in textJobDatas)
             {
                 mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.visualElement);
 
@@ -301,8 +312,9 @@ namespace UnityEngine.UIElements
                 managedJobData.Release();
             }
 
-            managedJobDatas.Clear();
-            textData.managedJobDataHandle.Free();
+            // get ready for next batch
+            textJobDatas.Clear();
+            textJobDatasHandle.Free();
         }
     }
 }

@@ -26,17 +26,17 @@ namespace Unity.Hierarchy
         }
 
         [RequiredByNativeCode] IntPtr m_Ptr;
-#pragma warning disable CS0649
         [RequiredByNativeCode] readonly bool m_IsWrapper;
-#pragma warning restore CS0649
+        [RequiredByNativeCode] readonly IntPtr m_VersionPtr;
+        [RequiredByNativeCode] readonly IntPtr m_RootPtr;
 
-        [FreeFunction("HierarchyBindings::Create")]
+        [FreeFunction("HierarchyBindings::Create", IsThreadSafe = true)]
         static extern IntPtr Internal_Create();
 
-        [FreeFunction("HierarchyBindings::Destroy")]
+        [FreeFunction("HierarchyBindings::Destroy", IsThreadSafe = true)]
         static extern void Internal_Destroy(IntPtr ptr);
 
-        [FreeFunction("HierarchyBindings::BindScriptingObject", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::BindScriptingObject", HasExplicitThis = true, IsThreadSafe = true)]
         extern void Internal_BindScriptingObject([Unmarshalled] Hierarchy self);
 
         /// <summary>
@@ -50,8 +50,7 @@ namespace Unity.Hierarchy
         /// <remarks>
         /// The root node does not need to be created, and it cannot be modified.
         /// </remarks>
-        [NativeProperty("Root", TargetType.Field)]
-        public extern HierarchyNode Root { get; }
+        public ref readonly HierarchyNode Root { get { unsafe { return ref UnsafeUtility.AsRef<HierarchyNode>(m_RootPtr.ToPointer()); } } }
 
         /// <summary>
         /// The total number of nodes.
@@ -59,7 +58,7 @@ namespace Unity.Hierarchy
         /// <remarks>
         /// This total count does not include the <see cref="Root"/> node.
         /// </remarks>
-        public extern int Count { [NativeMethod("Count")] get; }
+        public extern int Count { [NativeMethod("Count", IsThreadSafe = true)] get; }
 
         /// <summary>
         /// Whether the hierarchy is currently updating.
@@ -67,7 +66,7 @@ namespace Unity.Hierarchy
         /// <remarks>
         /// Updating happens during the use of <see cref="UpdateIncremental"/> or <see cref="UpdateIncrementalTimed"/>.
         /// </remarks>
-        public extern bool Updating { [NativeMethod("Updating")] get; }
+        public extern bool Updating { [NativeMethod("Updating", IsThreadSafe = true)] get; }
 
         /// <summary>
         /// Whether the hierarchy requires an update.
@@ -75,9 +74,9 @@ namespace Unity.Hierarchy
         /// <remarks>
         /// An update is required when changes in registered hierarchy node handlers are pending.
         /// </remarks>
-        public extern bool UpdateNeeded { [NativeMethod("UpdateNeeded")] get; }
+        public extern bool UpdateNeeded { [NativeMethod("UpdateNeeded", IsThreadSafe = true)] get; }
 
-        internal int Version => GetVersion();
+        internal unsafe int Version => UnsafeUtility.AsRef<int>(m_VersionPtr.ToPointer());
 
         /// <summary>
         /// Constructs a new <see cref="Hierarchy"/>.
@@ -146,7 +145,7 @@ namespace Unity.Hierarchy
         /// Gets all the node type handlers that this hierarchy uses.
         /// </summary>
         /// <param name="handlers">The list of node type handlers to populate.</param>
-        [FreeFunction("HierarchyBindings::GetAllNodeTypeHandlersBase", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::GetAllNodeTypeHandlersBase", HasExplicitThis = true, IsThreadSafe = true)]
         public extern void GetAllNodeTypeHandlersBase(List<HierarchyNodeTypeHandlerBase> handlers);
 
         /// <summary>
@@ -160,14 +159,14 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The hierarchy node type.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern HierarchyNodeType GetNodeType(in HierarchyNode node);
 
         /// <summary>
         /// Reserves memory for nodes to use. Use this to avoid memory allocation hits when you add batches of nodes.    
         /// </summary>
         /// <param name="count">The number of nodes to reserve memory for.</param>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern void Reserve(int count);
 
         /// <summary>
@@ -175,7 +174,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns><see langword="true"/> if the node exists, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool Exists(in HierarchyNode node);
 
         /// <summary>
@@ -183,7 +182,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The next sibling of the hierarchy node.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern HierarchyNode GetNextSibling(in HierarchyNode node);
 
         /// <summary>
@@ -191,7 +190,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The depth of the hierarchy node. A value of -1 indicates the root node. A value of 0 indicates direct child nodes of the root node. A value of 1 indicates child nodes of the root node's direct children, and then their children have a value of 2 and so on. </returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetDepth(in HierarchyNode node);
 
         /// <summary>
@@ -226,19 +225,20 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node to remove from the hierarchy.</param>
         /// <returns><see langword="true"/> if the node was removed, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool Remove(in HierarchyNode node);
 
         /// <summary>
         /// Recursively removes all children of a node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern void RemoveChildren(in HierarchyNode node);
 
         /// <summary>
         /// Removes all nodes from the hierarchy.
         /// </summary>
+        [NativeMethod(IsThreadSafe = true)]
         public extern void Clear();
 
         /// <summary>
@@ -250,7 +250,7 @@ namespace Unity.Hierarchy
         /// <param name="node">The hierarchy node.</param>
         /// <param name="parent">The hierarchy node to set as a parent.</param>
         /// <returns><see langword="true"/> if the parent was set, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool SetParent(in HierarchyNode node, in HierarchyNode parent);
 
         /// <summary>
@@ -258,7 +258,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>A hierarchy node.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern HierarchyNode GetParent(in HierarchyNode node);
 
         /// <summary>
@@ -267,7 +267,7 @@ namespace Unity.Hierarchy
         /// <param name="node">The hierarchy node.</param>
         /// <param name="index">The child index.</param>
         /// <returns>An hierarchy node.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern HierarchyNode GetChild(in HierarchyNode node, int index);
 
         /// <summary>
@@ -275,7 +275,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>An array of hierarchy nodes.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern HierarchyNode[] GetChildren(in HierarchyNode node);
 
         /// <summary>
@@ -298,7 +298,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The number of child nodes.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetChildrenCount(in HierarchyNode node);
 
         /// <summary>
@@ -306,7 +306,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The number of child nodes, including children of children.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetChildrenCountRecursive(in HierarchyNode node);
 
         /// <summary>
@@ -314,7 +314,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="sortIndex">The sorting index.</param>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern void SetSortIndex(in HierarchyNode node, int sortIndex);
 
         /// <summary>
@@ -322,7 +322,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The sorting index.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetSortIndex(in HierarchyNode node);
 
         /// <summary>
@@ -330,7 +330,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="recurse">Whether to sort the child nodes recursively.</param>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern void SortChildren(in HierarchyNode node, bool recurse = false);
 
         /// <summary>
@@ -338,7 +338,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns><see langword="true"/> if the child nodes of a hierarchy node need to be sorted, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool DoesChildrenNeedsSorting(in HierarchyNode node);
 
         /// <summary>
@@ -387,7 +387,7 @@ namespace Unity.Hierarchy
         /// <param name="node">The hierarchy node.</param>
         /// <param name="name">The name of the node.</param>
         /// <returns><see langword="true"/> if the name was set, <see langword="false"/> otherwise.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool SetName(in HierarchyNode node, string name);
 
         /// <summary>
@@ -395,18 +395,20 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The name of the node.</returns>
-        [NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern string GetName(in HierarchyNode node);
 
         /// <summary>
         /// Updates the hierarchy and requests that every registered hierarchy node type handler integrates their changes into the hierarchy.
         /// </summary>
+        [NativeMethod(IsThreadSafe = true)]
         public extern void Update();
 
         /// <summary>
         /// Updates the hierarchy incrementally.
         /// </summary>
         /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
+        [NativeMethod(IsThreadSafe = true)]
         public extern bool UpdateIncremental();
 
         /// <summary>
@@ -414,61 +416,59 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="milliseconds">The time period in milliseconds.</param>
         /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
+        [NativeMethod(IsThreadSafe = true)]
         public extern bool UpdateIncrementalTimed(double milliseconds);
 
-        [FreeFunction("HierarchyBindings::GetVersion", HasExplicitThis = true)]
-        extern int GetVersion();
-
         [return: Unmarshalled]
-        [NativeThrows, FreeFunction("HierarchyBindings::RegisterNodeTypeHandler", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::RegisterNodeTypeHandler", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern HierarchyNodeTypeHandlerBase RegisterNodeTypeHandler(Type type);
 
-        [FreeFunction("HierarchyBindings::UnregisterNodeTypeHandler", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::UnregisterNodeTypeHandler", HasExplicitThis = true, IsThreadSafe = true)]
         extern void UnregisterNodeTypeHandler(Type type);
 
         [return: Unmarshalled]
-        [FreeFunction("HierarchyBindings::GetNodeTypeHandlerFromType", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::GetNodeTypeHandlerFromType", HasExplicitThis = true, IsThreadSafe = true)]
         extern HierarchyNodeTypeHandlerBase GetNodeTypeHandlerFromType(Type type);
 
         [return: Unmarshalled]
-        [NativeThrows, FreeFunction("HierarchyBindings::GetNodeTypeHandlerFromNode", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::GetNodeTypeHandlerFromNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern HierarchyNodeTypeHandlerBase GetNodeTypeHandlerFromNode(in HierarchyNode node);
 
         [return: Unmarshalled]
-        [NativeThrows, FreeFunction("HierarchyBindings::GetNodeTypeHandlerFromName", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::GetNodeTypeHandlerFromName", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern HierarchyNodeTypeHandlerBase GetNodeTypeHandlerFromName(string nodeTypeName);
 
-        [FreeFunction("HierarchyBindings::GetNodeTypeFromType", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::GetNodeTypeFromType", HasExplicitThis = true, IsThreadSafe = true)]
         extern HierarchyNodeType GetNodeTypeFromType(Type type);
 
-        [NativeThrows, FreeFunction("HierarchyBindings::AddNode", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::AddNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern HierarchyNode AddNode(in HierarchyNode parent);
 
-        [NativeThrows, FreeFunction("HierarchyBindings::AddNodeSpan", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::AddNodeSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern void AddNodeSpan(in HierarchyNode parent, Span<HierarchyNode> nodes);
 
-        [NativeThrows, FreeFunction("HierarchyBindings::GetNodeChildrenSpan", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::GetNodeChildrenSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern int GetNodeChildrenSpan(in HierarchyNode node, Span<HierarchyNode> outChildren);
 
-        [NativeThrows, FreeFunction("HierarchyBindings::EnumerateChildrenPtr", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::EnumerateChildrenPtr", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern IntPtr EnumerateChildrenPtr(in HierarchyNode node);
 
-        [NativeThrows, FreeFunction("HierarchyBindings::GetOrCreateProperty", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::GetOrCreateProperty", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern HierarchyPropertyId GetOrCreateProperty(string name, in HierarchyPropertyDescriptor descriptor);
 
-        [NativeThrows, FreeFunction("HierarchyBindings::SetPropertyRaw", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::SetPropertyRaw", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         internal extern unsafe void SetPropertyRaw(in HierarchyPropertyId property, in HierarchyNode node, void* ptr, int size);
 
-        [NativeThrows, FreeFunction("HierarchyBindings::GetPropertyRaw", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::GetPropertyRaw", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         internal extern unsafe void* GetPropertyRaw(in HierarchyPropertyId property, in HierarchyNode node, out int size);
 
-        [NativeThrows, FreeFunction("HierarchyBindings::SetPropertyString", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::SetPropertyString", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         internal extern void SetPropertyString(in HierarchyPropertyId property, in HierarchyNode node, string value);
 
-        [NativeThrows, FreeFunction("HierarchyBindings::GetPropertyString", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::GetPropertyString", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         internal extern string GetPropertyString(in HierarchyPropertyId property, in HierarchyNode node);
 
-        [NativeThrows, FreeFunction("HierarchyBindings::ClearProperty", HasExplicitThis = true)]
+        [FreeFunction("HierarchyBindings::ClearProperty", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         internal extern void ClearProperty(in HierarchyPropertyId property, in HierarchyNode node);
     }
 }

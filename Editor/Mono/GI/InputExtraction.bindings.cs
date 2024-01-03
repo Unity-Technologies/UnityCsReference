@@ -58,6 +58,8 @@ namespace UnityEditor.LightBaking
             public extern int GetLightInstanceID(int lightIndex);
 
             static extern IntPtr Internal_Create();
+
+            [NativeMethod(IsThreadSafe = true)]
             static extern void Internal_Destroy(IntPtr ptr);
 
             internal static class BindingsMarshaller

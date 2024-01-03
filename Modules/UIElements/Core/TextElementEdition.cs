@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
+using System.Text;
 using Unity.Properties;
-using UnityEngine.UIElements.UIR;
+using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
 {
@@ -539,24 +539,30 @@ namespace UnityEngine.UIElements
             set => edition.autoCorrection = value;
         }
 
-        string m_RenderedText;
-        internal string renderedText
+        private const string ZeroWidthSpace = "\u200B";
+        private string m_RenderedText;
+
+        internal RenderedText renderedText
         {
             get
             {
                 if (showPlaceholderText)
-                    return m_PlaceholderText + "\u200B";
+                {
+                    return new RenderedText(m_PlaceholderText, ZeroWidthSpace);
+                }
 
-                // Handles password fields.
-                if (effectiveMaskChar != Char.MinValue)
-                    return "".PadLeft(text.Length, effectiveMaskChar) + "\u200B";
+                if (effectiveMaskChar != char.MinValue)
+                {
+                    return new RenderedText(effectiveMaskChar, m_RenderedText.Length, ZeroWidthSpace);
+                }
 
-                return string.IsNullOrEmpty(m_RenderedText) ? "\u200B" : m_RenderedText;
+                return new RenderedText(m_RenderedText, ZeroWidthSpace);
             }
-            set =>
+        }
 
-                //The NoWidthSpace unicode is added at the end of the string to make sure LineFeeds update the layout of the text.
-                m_RenderedText = value + "\u200B";
+        private void SetRenderedText(string value)
+        {
+            m_RenderedText = value;
         }
 
         string m_OriginalText;

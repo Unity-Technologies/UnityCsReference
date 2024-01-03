@@ -67,6 +67,10 @@ namespace UnityEditor.ShortcutManagement
         public static void UnregisterTag(string tag) => ShortcutIntegration.instance.contextManager.UnregisterTag(tag);
 
         public static void UnregisterTag(Enum e) => ShortcutIntegration.instance.contextManager.UnregisterTag(e);
+
+        public static void RegisterContext(IShortcutContext context) => ShortcutIntegration.instance.contextManager.RegisterToolContext(context);
+
+        public static void UnregisterContext(IShortcutContext context) => ShortcutIntegration.instance.contextManager.DeregisterToolContext(context);
     }
 
     class ShortcutManagerImplementation : IShortcutManager

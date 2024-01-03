@@ -80,7 +80,7 @@ namespace UnityEditor
         };
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
-        internal class SceneViewViewport : IShortcutToolContext
+        internal class SceneViewViewport : IShortcutContext
         {
             public SceneView window => EditorWindow.focusedWindow as SceneView;
 
@@ -99,7 +99,7 @@ namespace UnityEditor
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
-        class SceneViewViewport2D : IShortcutToolContext
+        class SceneViewViewport2D : IShortcutContext
         {
             public SceneView window => EditorWindow.focusedWindow as SceneView;
 
@@ -108,7 +108,7 @@ namespace UnityEditor
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
-        class SceneViewViewport3D : IShortcutToolContext
+        class SceneViewViewport3D : IShortcutContext
         {
             public SceneView window => EditorWindow.focusedWindow as SceneView;
 
@@ -118,7 +118,7 @@ namespace UnityEditor
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
-        class SceneViewViewportLockedPanTool : IShortcutToolContext
+        class SceneViewViewportLockedPanTool : IShortcutContext
         {
             public SceneView window => EditorWindow.focusedWindow as SceneView;
 

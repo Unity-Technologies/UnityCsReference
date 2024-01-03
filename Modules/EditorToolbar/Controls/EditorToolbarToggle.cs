@@ -131,30 +131,6 @@ namespace UnityEditor.Toolbars
             }
         }
 
-        static EditorToolbarToggle()
-        {
-            // Setup toggle button usage for editor contextual menu header items
-            GenericDropdownMenu.CreateHeaderItem = (icon, tooltip, isEnabled, isChecked) =>
-            {
-                var button = new EditorToolbarToggle()
-                {
-                    name = tooltip,
-                    tooltip = tooltip,
-                    onIcon = icon,
-                    offIcon = icon,
-                    value = !isChecked,
-                };
-                button.SetEnabled(isEnabled);
-                return button;
-            };
-
-            GenericDropdownMenu.SetupHeaderStrip = (e) =>
-            {
-                e.AddStyleSheetPath("StyleSheets/Toolbars/EditorToolbarCommon.uss");
-                EditorToolbarUtility.SetupChildrenAsButtonStrip(e);
-            };
-        }
-
         public EditorToolbarToggle() : this(string.Empty, null, null) {}
         public EditorToolbarToggle(string text) : this(text, null, null) {}
 

@@ -79,8 +79,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected float GetTotalWidthForTabHeader(string tabId)
         {
             var headerButton = m_HeaderButtons[tabId];
-
-            return TextUtilities.MeasureVisualElementTextSize(headerButton, headerButton.text, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).x + m_CalculatedTabHorizontalMarginAndPadding;
+            return headerButton.MeasureTextSize(headerButton.text, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).x + m_CalculatedTabHorizontalMarginAndPadding;
         }
 
         protected void AddTabDropdownAction(Button tabHeader)

@@ -18,8 +18,6 @@ namespace UnityEditor.Build.Profile
     /// <summary>
     /// Build Settings window in 'File > Build Settings'.
     /// Handles creating and editing of <see cref="BuildProfile"/> assets.
-    ///
-    /// TODO EPIC: https://jira.unity3d.com/browse/PLAT-5878
     /// </summary>
     [EditorWindowTitle(title = "Build Settings")]
     internal class BuildProfileWindow : EditorWindow
@@ -260,6 +258,21 @@ namespace UnityEditor.Build.Profile
             m_BuildProfilesListView.Rebuild();
         }
 
+        void Update()
+        {
+            // We need to detect when a build profile asset that is selected in inspector
+            // gets deleted. Since we want to avoid using asset post processors for performance
+            // reason, we check it in update
+            if (buildProfileEditor?.buildProfile == null &&
+                m_BuildProfileSelection?.IsMultipleSelection() == false &&
+                m_InspectorHeader?.style.display != DisplayStyle.None)
+            {
+                DestroyImmediate(buildProfileEditor);
+                m_BuildProfileDataSource?.DeleteNullProfiles();
+                RepaintAndClearSelection();
+            }
+        }
+
         /// <summary>
         /// Build Profile Workflow state change callback. Invoked when <see cref="m_WindowState"/> is refreshed
         /// by this class or changes are attempted by an embedded <see cref="BuildProfileEditor"/>.
@@ -429,22 +442,26 @@ namespace UnityEditor.Build.Profile
                 return;
 
             BuildProfile activateProfile = m_BuildProfileSelection.Get(0);
-            if (IsActiveBuildProfileOrPlatform(activateProfile))
+            if (activateProfile.IsActiveBuildProfileOrPlatform())
                 return;
-
-            // Apply current asset import overrides if switching profile
-            // without applying
-            m_AssetImportWindow?.ApplyCurrentAssetImportOverrides();
-            UpdateToolbarButtonState();
 
             // Classic profiles should not be set as active, they are identified
             // by the state of EditorUserBuildSettings active build target.
             BuildProfileContext.instance.activeProfile = !BuildProfileContext.IsClassicPlatformProfile(activateProfile)
                 ? activateProfile : null;
+
+            buildProfileEditor.OnActivateClicked();
+
             BuildProfileModuleUtil.SwitchLegacyActiveFromBuildProfile(activateProfile);
 
             UpdateFormButtonState(activateProfile);
             RebuildProfileListViews();
+
+            // Apply current asset import overrides if switching profile
+            // without applying. It should be called lastly since it can
+            // trigger a reimport.
+            m_AssetImportWindow?.ApplyCurrentAssetImportOverrides();
+            UpdateToolbarButtonState();
         }
 
         void OnBuildButtonClicked(BuildOptions optionFlags)
@@ -452,7 +469,7 @@ namespace UnityEditor.Build.Profile
             if (!m_BuildProfileSelection.HasSelection())
                 return;
 
-            if (!IsActiveBuildProfileOrPlatform(m_BuildProfileSelection.Get(0)))
+            if (!m_BuildProfileSelection.Get(0).IsActiveBuildProfileOrPlatform())
             {
                 Debug.LogWarning("[BuildProfile] Attempted to build with a non-active build profile.");
                 return;
@@ -470,7 +487,7 @@ namespace UnityEditor.Build.Profile
                 m_WindowState.buildAndRunAction = ActionState.Hidden;
                 m_WindowState.Refresh();
             }
-            else if (IsActiveBuildProfileOrPlatform((profile)))
+            else if (profile.IsActiveBuildProfileOrPlatform())
             {
                 m_WindowState.activateAction = ActionState.Hidden;
                 m_WindowState.buildAction = ActionState.Enabled;
@@ -549,7 +566,7 @@ namespace UnityEditor.Build.Profile
                 var icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.moduleName, profile.subtarget);
                 editableBuildProfileLabel.Set(platformDisplayName, icon);
 
-                if (IsActiveBuildProfileOrPlatform(profile))
+                if (profile.IsActiveBuildProfileOrPlatform())
                 {
                     editableBuildProfileLabel.SetActiveIndicator(true);
                     m_ActiveProfileListIndex = index;
@@ -594,27 +611,6 @@ namespace UnityEditor.Build.Profile
         {
             if (m_WarningIcon == null)
                 m_WarningIcon = Background.FromTexture2D(BuildProfileModuleUtil.GetWarningIcon());
-        }
-
-        /// <summary>
-        /// Returns true if the given <see cref="BuildProfile"/> is the active profile or a classic
-        /// profile for the EditorUserBuildSettings active build target.
-        /// </summary>
-        internal static bool IsActiveBuildProfileOrPlatform(BuildProfile profile)
-        {
-            if (BuildProfileContext.instance.activeProfile == profile)
-                return true;
-
-            if (BuildProfileContext.instance.activeProfile is not null
-                || !BuildProfileContext.IsClassicPlatformProfile(profile))
-                return false;
-
-            if (!BuildProfileModuleUtil.IsStandalonePlatform(profile.buildTarget))
-                return profile.buildTarget == EditorUserBuildSettings.activeBuildTarget;
-
-            string profileModuleName = BuildProfileModuleUtil.GetModuleName(profile.buildTarget);
-            string activeModuleName = BuildProfileModuleUtil.GetModuleName(EditorUserBuildSettings.activeBuildTarget);
-            return profileModuleName == activeModuleName && profile.subtarget == EditorUserBuildSettings.standaloneBuildSubtarget;
         }
     }
 }

@@ -2023,6 +2023,11 @@ namespace UnityEditor
                 GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
                 gfxJobModesSupported = (gfxAPIs[0] == GraphicsDeviceType.Direct3D12) || (gfxAPIs[0] == GraphicsDeviceType.Vulkan);
             }
+            else if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Android)
+            {
+                GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                gfxJobModesSupported = (gfxAPIs[0] == GraphicsDeviceType.Vulkan);
+            }
 
             // GPU Skinning toggle (only show on relevant platforms)
             if (!BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.GPUSkinningNotSupported))
@@ -2152,7 +2157,7 @@ namespace UnityEditor
                     PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, newGraphicsJobs);
                 }
             }
-            if (gfxJobModesSupported)
+            if (gfxJobModesSupported && newGraphicsJobs)
             {
                 // For a platform extension to support a gfx job mode, it means it wouldn't modify it. So we check if it's the same after adjustments.
                 var checkGfxJobModeSupport = (Enum value) => { return settingsExtension != null ? settingsExtension.AdjustGfxJobMode((GraphicsJobMode)value) == (GraphicsJobMode)value : true; };

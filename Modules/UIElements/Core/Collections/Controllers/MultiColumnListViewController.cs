@@ -35,9 +35,18 @@ namespace UnityEngine.UIElements
             itemsSourceChanged += SortIfNeeded;
         }
 
+        internal override void PreRefresh()
+        {
+            base.PreRefresh();
+
+            m_ColumnController.SortIfNeeded();
+        }
+
         void SortIfNeeded()
         {
-            if (m_ColumnController.SortIfNeeded())
+            m_ColumnController.UpdateDragger();
+
+            if (m_ColumnController.sortingMode == ColumnSortingMode.Default)
             {
                 view.RefreshItems();
             }

@@ -66,16 +66,11 @@ namespace UnityEngine
         // Creates a context menu item that invokes the non-static method when selected
         public ContextMenu(string itemName) : this(itemName, false) {}
         public ContextMenu(string itemName, bool isValidateFunction) : this(itemName, isValidateFunction, 1000000) {}
-        public ContextMenu(string itemName, bool isValidateFunction, int priority) : this(itemName, isValidateFunction, priority, string.Empty) {}
-        public ContextMenu(string itemName, bool isValidateFunction, int priority, string disabledTooltip) : this(itemName, isValidateFunction, priority, disabledTooltip, null) {}
-
-        internal ContextMenu(string itemName, bool isValidateFunction, int priority, string disabledTooltip, string iconResource)
+        public ContextMenu(string itemName, bool isValidateFunction, int priority)
         {
             menuItem = itemName;
             validate = isValidateFunction;
             this.priority = priority;
-            this.disabledTooltip = disabledTooltip;
-            this.iconResource = iconResource;
         }
 
         //*undocumented*
@@ -84,10 +79,6 @@ namespace UnityEngine
         public readonly bool validate;
         //*undocumented*
         public readonly int priority;
-        //*undocumented*
-        public readonly string disabledTooltip;
-        //*undocumented*
-        internal readonly string iconResource;
     }
 
     // Makes a script execute in edit mode.

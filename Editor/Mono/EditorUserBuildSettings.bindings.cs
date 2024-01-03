@@ -590,13 +590,14 @@ namespace UnityEditor
         [Obsolete("androidUseLegacySdkTools has been deprecated. It does not have any effect.")]
         public static extern bool androidUseLegacySdkTools { get; set; }
 
-        [Obsolete("androidCreateSymbolsZip has been deprecated. Use androidCreateSymbols property")]
+        [Obsolete("androidCreateSymbolsZip has been deprecated. Use UnityEditor.Android.DebugSymbols.level property")]
         public static bool androidCreateSymbolsZip
         {
             get => androidCreateSymbols != AndroidCreateSymbols.Disabled;
             set => androidCreateSymbols = value ? AndroidCreateSymbols.Public : AndroidCreateSymbols.Disabled;
         }
 
+        [Obsolete("androidCreateSymbols has been deprecated. Use UnityEditor.Android.DebugSymbols.level property")]
         public static extern AndroidCreateSymbols androidCreateSymbols { get; set; }
 
         // *undocumented*
@@ -699,11 +700,22 @@ namespace UnityEditor
 
             set
             {
-                var profile = BuildProfileContext.GetClassicProfileAndResetActive(BuildTarget.NoTarget, StandaloneBuildSubtarget.Default, SharedPlatformSettings.k_SettingWindowsDevicePortalPassword);
-                if (profile != null)
+                var profile = BuildProfileContext.GetActiveOrClassicBuildProfile(BuildTarget.NoTarget, StandaloneBuildSubtarget.Default, SharedPlatformSettings.k_SettingWindowsDevicePortalPassword);
+                if (profile == null)
+                    return;
+
+                if (profile.buildTarget == BuildTarget.NoTarget)
                 {
                     var sharedPlatformSettings = profile.platformBuildProfile as SharedPlatformSettings;
+                    // This will sync the value to applicable classic profiles through the shared profile.
                     sharedPlatformSettings.windowsDevicePortalPassword = value;
+                }
+                else
+                {
+                    var settings = profile.platformBuildProfile;
+                    // SetSharedSetting() is used to avoid having to cast the active custom profile to platform profiles.
+                    // This only changes the value in the active custom profile and has no effect on syncing.
+                    settings.SetSharedSetting(SharedPlatformSettings.k_SettingWindowsDevicePortalPassword, value);
                 }
             }
         }
@@ -929,6 +941,15 @@ namespace UnityEditor
             set;
         }
 
+        // Enable shader debugging using NVN Graphics Debugger
+        public static extern bool switchNVNAftermath
+        {
+            [NativeMethod("GetNVNAftermath")]
+            get;
+            [NativeMethod("SetNVNAftermath")]
+            set;
+        }
+
         // Enable debug validation of NVN drawcalls
         [Obsolete("switchNVNDrawValidation is deprecated, use switchNVNDrawValidation_Heavy instead.")]
         public static bool switchNVNDrawValidation
@@ -1049,12 +1070,7 @@ namespace UnityEditor
             }
         }
 
+        internal static extern bool IsBuildProfileScriptingAvailable();
         internal static extern void CopyToBuildProfile(ScriptableObject buildProfile);
-
-        /// <summary>
-        /// Get if build profile workflow diagnostics flag is set.
-        /// TODO: Temporary method to be removed when build profile workflow is enabled by default.
-        /// </summary>
-        internal static extern bool IsBuildProfileWorkflowEnabled();
     }
 }

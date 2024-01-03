@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.Toolbars;
 using UnityEngine;
@@ -18,7 +19,7 @@ namespace UnityEditor.Overlays
         public OverlayPresetDropdown(EditorWindow targetWindow)
         {
             m_TargetWindow = targetWindow;
-            createMenuCallback = () => DropdownUtility.CreateDropdown(true);
+            createMenuCallback = DropdownUtility.CreateDropdown;
             SetValueWithoutNotify(m_TargetWindow.overlayCanvas.lastAppliedPresetName);
         }
 
@@ -49,6 +50,8 @@ namespace UnityEditor.Overlays
             VisualElement m_TransientToolbar;
             VisualElement m_Separator;
 
+            List<(Overlay overlay, int priority)> m_Overlays;
+
             public Toolbar(OverlayMenu menu, bool horizontal)
             {
                 m_Menu = menu;
@@ -62,6 +65,7 @@ namespace UnityEditor.Overlays
                 Add(m_TransientToolbar = new VisualElement());
                 m_TransientToolbar.style.flexDirection = horizontal ? FlexDirection.Row : FlexDirection.Column;
 
+                m_Overlays = new List<(Overlay, int)>();
                 RebuildContent();
             }
 
@@ -82,22 +86,29 @@ namespace UnityEditor.Overlays
             public void RebuildContent()
             {
                 m_GlobalToolbar.Clear();
+                m_Overlays.Clear();
+
                 foreach (var overlay in m_Menu.canvas.overlays)
                 {
                     if (!m_Menu.ShouldShowOverlay(overlay) || overlay is OverlayMenu)
                         continue;
 
-                    m_GlobalToolbar.Add(CreateToggle(overlay));
+                    var attrib = OverlayUtilities.GetAttribute(m_Menu.containerWindow.GetType(), overlay.GetType());
+                    m_Overlays.Add((overlay, attrib.priority));
                 }
+                m_Overlays.Sort((a, b) => a.priority.CompareTo(b.priority));
+
+                foreach(var tuple in m_Overlays)
+                    m_GlobalToolbar.Add(CreateToggle(tuple.overlay));
+
                 EditorToolbarUtility.SetupChildrenAsButtonStrip(m_GlobalToolbar);
 
                 m_Separator.style.display = m_Menu.canvas.HasTransientOverlays() ? DisplayStyle.Flex : DisplayStyle.None;
 
                 m_TransientToolbar.Clear();
                 foreach (var overlay in m_Menu.canvas.transientOverlays)
-                {
                     m_TransientToolbar.Add(CreateToggle(overlay));
-                }
+
                 EditorToolbarUtility.SetupChildrenAsButtonStrip(m_TransientToolbar);
             }
         }
@@ -218,12 +229,19 @@ namespace UnityEditor.Overlays
 
             m_ListRoot.Clear();
 
+            var overlays = new List<(Overlay overlay, int priority)>();
             foreach (var overlay in canvas.overlays)
             {
                 if (!ShouldShowOverlay(overlay))
                     continue;
-                m_ListRoot.Add(new OverlayMenuItem() { overlay = overlay });
+
+                var attrib = OverlayUtilities.GetAttribute(containerWindow.GetType(), overlay.GetType());
+                overlays.Add((overlay, attrib.priority));
             }
+            overlays.Sort((a, b) => a.priority.CompareTo(b.priority));
+
+            foreach(var sortedOverlay in overlays)
+                m_ListRoot.Add(new OverlayMenuItem() { overlay = sortedOverlay.overlay });
 
             if (canvas.HasTransientOverlays())
             {

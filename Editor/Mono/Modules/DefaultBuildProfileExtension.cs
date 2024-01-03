@@ -88,7 +88,7 @@ namespace UnityEditor.Modules
             SerializedObject serializedObject, SerializedProperty rootProperty, BuildProfileWorkflowState workflowState)
         {
             var platformWarningsGUI = CreatePlatformBuildWarningsGUI(serializedObject, rootProperty);
-            var commonSettingsGUI = CreateCommonSettingsGUI(serializedObject, rootProperty);
+            var commonSettingsGUI = CreateCommonSettingsGUI(serializedObject, rootProperty, workflowState);
             var platformSettingsGUI = CreatePlatformSettingsGUI(serializedObject, rootProperty, workflowState);
 
             var settingsGUI = new VisualElement();
@@ -131,7 +131,7 @@ namespace UnityEditor.Modules
             return property;
         }
 
-        public VisualElement CreateCommonSettingsGUI(SerializedObject serializedObject, SerializedProperty rootProperty)
+        public VisualElement CreateCommonSettingsGUI(SerializedObject serializedObject, SerializedProperty rootProperty, BuildProfileWorkflowState workflowState)
         {
             m_Development = FindPlatformSettingsPropertyAssert(rootProperty, "m_Development");
             m_ConnectProfiler = FindPlatformSettingsPropertyAssert(rootProperty, "m_ConnectProfiler");
@@ -160,7 +160,7 @@ namespace UnityEditor.Modules
                     var oldLabelWidth = EditorGUIUtility.labelWidth;
                     EditorGUIUtility.labelWidth = labelWidth;
                     serializedObject.UpdateIfRequiredOrScript();
-                    ShowCommonBuildOptions();
+                    ShowCommonBuildOptions(workflowState);
                     serializedObject.ApplyModifiedProperties();
                     EditorGUIUtility.labelWidth = oldLabelWidth;
                 });
@@ -178,7 +178,7 @@ namespace UnityEditor.Modules
                 });
         }
 
-        public void ShowCommonBuildOptions()
+        public void ShowCommonBuildOptions(BuildProfileWorkflowState workflowState)
         {
             if (ShouldDrawDevelopmentPlayerCheckbox())
             {
@@ -265,6 +265,9 @@ namespace UnityEditor.Modules
             {
                 m_SharedSettings.installInBuildFolder = m_InstallInBuildFolder.boolValue;
             }
+
+            ActionState buildAndRunState = (m_InstallInBuildFolder != null && m_InstallInBuildFolder.boolValue) ? ActionState.Disabled : workflowState.buildAndRunAction;
+            workflowState.UpdateBuildActionStates(workflowState.buildAction, buildAndRunState);
 
             if (Unsupported.IsSourceBuild())
                 ShowInternalPlatformBuildOptions();

@@ -18,6 +18,10 @@ namespace UnityEditor.Build.Profile.Handlers
 
         List<BuildProfile> m_DuplicatedProfiles;
 
+        const string k_AssetFolderPath = "Assets/Settings/BuildProfiles";
+
+        static string GetNewProfileName(string displayName) => $"{k_AssetFolderPath}/{displayName}.asset";
+
         internal BuildProfileDataSource(BuildProfileWindow window)
         {
             this.m_Window = window;
@@ -79,6 +83,17 @@ namespace UnityEditor.Build.Profile.Handlers
         }
 
         /// <summary>
+        /// Create a custom build profile asset, making sure to create the folders
+        /// if needed
+        /// </summary>
+        internal static void CreateAsset(string moduleName, StandaloneBuildSubtarget subtarget, string displayName)
+        {
+            CheckCreateCustomBuildProfileFolders();
+
+            BuildProfile.CreateInstance(moduleName, subtarget, GetNewProfileName(displayName));
+        }
+
+        /// <summary>
         /// Clone build profile and create new build profile asset based on it. The
         /// build profile will be added to the custom build profile list on enable
         /// </summary>
@@ -92,11 +107,18 @@ namespace UnityEditor.Build.Profile.Handlers
                 return null;
 
             BuildProfile duplicatedProfile = UnityEngine.Object.Instantiate(buildProfile);
+
+            // If it's a classic profile we need to copy the scenes from the editor build settings
+            // since classic profiles share scenes
+            if (isClassic)
+                duplicatedProfile.scenes = EditorBuildSettings.GetEditorBuildSettingsSceneIgnoreProfile();
+
+            CheckCreateCustomBuildProfileFolders();
+
             string uniqueFilePath = AssetDatabase.GenerateUniqueAssetPath(path);
             AssetDatabase.CreateAsset(duplicatedProfile, uniqueFilePath);
             return duplicatedProfile;
         }
-
 
         /// <summary>
         /// Delete build profile asset and remove from the list of
@@ -113,6 +135,15 @@ namespace UnityEditor.Build.Profile.Handlers
             if (!string.IsNullOrEmpty(assetPath))
             {
                 AssetDatabase.DeleteAsset(assetPath);
+            }
+        }
+
+        internal void DeleteNullProfiles()
+        {
+            for (int i = customBuildProfiles.Count - 1; i >= 0; i--)
+            {
+                if (customBuildProfiles[i] == null)
+                    customBuildProfiles.RemoveAt(i);
             }
         }
 
@@ -242,7 +273,16 @@ namespace UnityEditor.Build.Profile.Handlers
         static string GetDuplicatedBuilProfilePathForClassic(BuildProfile buildProfile)
         {
             string name = BuildProfileModuleUtil.GetClassicPlatformDisplayName(buildProfile.moduleName, buildProfile.subtarget);
-            return Path.Combine(PlatformDiscoveryWindow.customBuildProfilePath, $"{name}.asset");
+            return Path.Combine(k_AssetFolderPath, $"{name}.asset");
+        }
+
+        static void CheckCreateCustomBuildProfileFolders()
+        {
+            if (!AssetDatabase.IsValidFolder("Assets/Settings"))
+                AssetDatabase.CreateFolder("Assets", "Settings");
+
+            if (!AssetDatabase.IsValidFolder(k_AssetFolderPath))
+                AssetDatabase.CreateFolder("Assets/Settings", "BuildProfiles");
         }
     }
 }

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using UnityEditor.EditorTools;
 using UnityEditor.Overlays;
 using UnityEditor.Toolbars;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -17,7 +16,7 @@ namespace UnityEditor
      // - UIServiceEditor/SceneView/SceneViewToolbarElements.cs
      // - UIServiceEditor/EditorToolbar/ToolbarElements/BuiltinTools.cs
 
-    [Overlay(typeof(SceneView), k_Id, "Tools", true)]
+    [Overlay(typeof(SceneView), k_Id, "Tools", true, priority = (int)OverlayPriority.Tools)]
     [Icon("Icons/Overlays/ToolsToggle.png")]
     class TransformToolsOverlayToolBar : ToolbarOverlay
     {
@@ -72,7 +71,7 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), k_Id, "View Options", true)]
+    [Overlay(typeof(SceneView), k_Id, "View Options", true, priority = (int)OverlayPriority.ViewOptions)]
     [Icon("Icons/Overlays/ViewOptions.png")]
     class SceneViewToolBar : ToolbarOverlay
     {
@@ -88,7 +87,7 @@ namespace UnityEditor
             "SceneView/Gizmos") {}
     }
 
-    [Overlay(typeof(SceneView), k_Id, "Draw Modes", true, defaultDockIndex = 1, defaultDockPosition = DockPosition.Bottom, defaultLayout = Layout.HorizontalToolbar, defaultDockZone = DockZone.TopToolbar)]
+    [Overlay(typeof(SceneView), k_Id, "Draw Modes", true, priority = (int)OverlayPriority.DrawModes, defaultDockIndex = 1, defaultDockPosition = DockPosition.Bottom, defaultLayout = Layout.HorizontalToolbar, defaultDockZone = DockZone.TopToolbar)]
     [Icon("Icons/Overlays/ViewOptions.png")]
     class SceneViewCameraModeToolbar : ToolbarOverlay
     {
@@ -134,7 +133,7 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), k_Id, "Search", true)]
+    [Overlay(typeof(SceneView), k_Id, "Search", true, priority = (int)OverlayPriority.Search)]
     [Icon("Icons/Overlays/SearchOverlay.png")]
     class SearchToolBar : Overlay, ICreateHorizontalToolbar
     {
@@ -156,7 +155,7 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), k_Id, "Grid and Snap", true)]
+    [Overlay(typeof(SceneView), k_Id, "Grid and Snap", true, priority = (int)OverlayPriority.GridAndSnap)]
     [Icon("Icons/Overlays/GridAndSnap.png")]
     class GridAndSnapToolBar : ToolbarOverlay
     {

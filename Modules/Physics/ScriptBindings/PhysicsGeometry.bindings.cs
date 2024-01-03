@@ -127,23 +127,15 @@ namespace UnityEngine.LowLevelPhysics
     public unsafe struct GeometryHolder
     {
                                                 //   32  |   64
-        private GeometryType m_Type;            //  0-4  |  0-4
+        private int m_Type;                     //  0-4  |  0-4
         private UInt32 m_DataStart;             //  4-8  |  4-8
         private IntPtr m_FakePointer0;          //  8-12 |  8-16
         private IntPtr m_FakePointer1;          // 12-16 | 16-24
         private fixed UInt32 m_Blob[6];         // 16-40 | 24-48
 
-        public GeometryHolder()
-        {
-            m_DataStart = 0;
-            m_Type = GeometryType.Invalid;
-            m_FakePointer0 = new IntPtr(0xDEADBEEF);
-            m_FakePointer1 = new IntPtr(0xDEADBEEF);
-        }
-
         private void SetGeometry<T>(T geometry) where T : struct, IGeometry
         {
-            m_Type = geometry.GeometryType;
+            m_Type = (int)geometry.GeometryType;
             UnsafeUtility.CopyStructureToPtr(ref geometry, UnsafeUtility.AddressOf(ref m_DataStart));
         }
 
@@ -151,7 +143,7 @@ namespace UnityEngine.LowLevelPhysics
         {
             T geometry = default(T);
 
-            if (geometry.GeometryType != m_Type)
+            if ((int)geometry.GeometryType != m_Type)
                 throw new InvalidOperationException($"Unable to get geometry of type {geometry.GeometryType} from a geometry holder that stores {m_Type}.");
 
             UnsafeUtility.CopyPtrToStructure(UnsafeUtility.AddressOf(ref m_DataStart), out geometry);
@@ -161,11 +153,17 @@ namespace UnityEngine.LowLevelPhysics
 
         public static GeometryHolder Create<T>(T geometry) where T : struct, IGeometry
         {
-            GeometryHolder holder = new GeometryHolder();
+            GeometryHolder holder = new GeometryHolder()
+            {
+                m_DataStart = 0,
+                m_Type = (int)GeometryType.Invalid,
+                m_FakePointer0 = new IntPtr(0xDEADBEEF),
+                m_FakePointer1 = new IntPtr(0xDEADBEEF)
+            };
             holder.SetGeometry<T>(geometry);
             return holder;
         }
 
-        public GeometryType Type { get { return m_Type; } }
+        public GeometryType Type { get { return (GeometryType)m_Type; } }
     }
 }

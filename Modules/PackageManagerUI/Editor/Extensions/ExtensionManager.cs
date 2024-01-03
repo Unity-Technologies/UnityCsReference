@@ -222,7 +222,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!extension.visibleDropdownItems.Any())
                     newDropdownMenu.AppendAction(packageActionText, a => { extension.action?.Invoke(m_Window.activeSelection); }, a =>
                     {
-                        a.tooltip = packageActionTooltip;
                         return extension.enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
                     });
                 else
@@ -230,7 +229,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (extension.action != null)
                         newDropdownMenu.AppendAction($"{packageActionText}/{packageActionText}", a => { extension.action?.Invoke(m_Window.activeSelection); },a =>
                         {
-                            a.tooltip = packageActionTooltip;
                             return extension.enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
                         });
                     foreach (var item in extension.visibleDropdownItems)

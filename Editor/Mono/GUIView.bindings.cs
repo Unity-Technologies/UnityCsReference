@@ -29,6 +29,8 @@ namespace UnityEditor
         public extern void CaptureRenderDocFullContent();
         public extern void BeginCaptureRenderDoc();
         public extern void EndCaptureRenderDoc();
+        
+        internal extern bool vSyncEnabled {[NativeMethod("IsVSyncEnabled")] get; }
 
         internal extern void RenderCurrentSceneForCapture();
 

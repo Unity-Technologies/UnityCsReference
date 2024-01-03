@@ -1578,8 +1578,12 @@ namespace UnityEngine.TextCore.Text
                     int lastCharacterIndex = m_LastVisibleCharacterOfLine;
                     if (generationSettings.textWrappingMode == TextWrappingMode.PreserveWhitespace || generationSettings.textWrappingMode == TextWrappingMode.PreserveWhitespaceNoWrap)
                     {
-                        firstCharacterIndex = m_FirstCharacterOfLine;
-                        lastCharacterIndex = m_LastCharacterOfLine;
+                        // If last non visible character is /n it will have a xAdvance of 0
+                        if (textInfo.textElementInfo[m_LastCharacterOfLine].xAdvance != 0)
+                        {
+                            firstCharacterIndex = m_FirstCharacterOfLine;
+                            lastCharacterIndex = m_LastCharacterOfLine;
+                        }
                     }
 
                     textInfo.lineInfo[m_LineNumber].characterCount = textInfo.lineInfo[m_LineNumber].lastCharacterIndex - textInfo.lineInfo[m_LineNumber].firstCharacterIndex + 1;
@@ -1587,7 +1591,7 @@ namespace UnityEngine.TextCore.Text
                     textInfo.lineInfo[m_LineNumber].lineExtents.min = new Vector2(textInfo.textElementInfo[firstCharacterIndex].bottomLeft.x, lineDescender);
                     textInfo.lineInfo[m_LineNumber].lineExtents.max = new Vector2(textInfo.textElementInfo[lastCharacterIndex].topRight.x, lineAscender);
                     // UUM-46147: For IMGUI line length should include xAdvance for backward compatibility
-                    textInfo.lineInfo[m_LineNumber].length = generationSettings.isIMGUI ? textInfo.textElementInfo[m_LastVisibleCharacterOfLine].xAdvance : textInfo.lineInfo[m_LineNumber].lineExtents.max.x - (padding * currentElementScale);
+                    textInfo.lineInfo[m_LineNumber].length = generationSettings.isIMGUI ? textInfo.textElementInfo[lastCharacterIndex].xAdvance : textInfo.lineInfo[m_LineNumber].lineExtents.max.x - (padding * currentElementScale);
                     textInfo.lineInfo[m_LineNumber].width = widthOfTextArea;
 
                     if (textInfo.lineInfo[m_LineNumber].characterCount == 1)
