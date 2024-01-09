@@ -33,9 +33,16 @@ namespace UnityEditor
         }
 
         [Serializable]
+        internal struct AndroidBuildFeature
+        {
+            public string name;
+            public bool required;
+        }
+
+        [Serializable]
         internal struct AndroidBuildPermissions
         {
-            public string[] features;
+            public AndroidBuildFeature[] features;
             public string[] permissions;
         }
 
@@ -53,7 +60,7 @@ namespace UnityEditor
             ReportBuildPackageIds(report.files);
             if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android)
             {
-                ReportBuildTargetPermissions();
+                ReportBuildTargetPermissions(report.summary.options);
             }
         }
 
@@ -101,23 +108,31 @@ namespace UnityEditor
             }
         }
 
-        private void ReportBuildTargetPermissions()
+        internal static string GetMergedManifestPath(BuildOptions buildOptions)
         {
-            List<string> permissionsList = new List<string>();
-            List<string> featuresList = new List<string>();
             string manifestFilePath = Path.Combine(s_StagingArea, s_AndroidManifest);
             if (EditorUserBuildSettings.androidBuildSystem == AndroidBuildSystem.Gradle)
             {
-                manifestFilePath = (EditorUserBuildSettings.androidBuildType == AndroidBuildType.Release)
-                    ? Paths.Combine(s_GradlePath, "release/processReleaseManifest/merged", s_AndroidManifest)
-                    : Paths.Combine(s_GradlePath, "debug/processDebugManifest/merged", s_AndroidManifest);
+                var path = $"Library/Bee/Android/Prj/{PlayerSettings.GetScriptingBackend(NamedBuildTarget.Android)}/Gradle/launcher/build/intermediates/merged_manifests";
+                manifestFilePath = (buildOptions & BuildOptions.Development) == 0
+                    ? Paths.Combine(path, "release", s_AndroidManifest)
+                    : Paths.Combine(path, "debug", s_AndroidManifest);
             }
+            return manifestFilePath;
+        }
+
+        private void ReportBuildTargetPermissions(BuildOptions buildOptions)
+        {
+            List<string> permissionsList = new List<string>();
+            List<AndroidBuildFeature> featuresList = new List<AndroidBuildFeature>();
+            string manifestFilePath = GetMergedManifestPath(buildOptions);
 
             XmlDocument manifestFile = new XmlDocument();
             if (File.Exists(manifestFilePath))
             {
                 manifestFile.Load(manifestFilePath);
                 XmlNodeList permissions = manifestFile.GetElementsByTagName("uses-permission");
+                XmlNodeList permissionsSdk23 = manifestFile.GetElementsByTagName("uses-permission-sdk-23");
                 XmlNodeList features = manifestFile.GetElementsByTagName("uses-feature");
                 foreach (XmlNode permission in permissions)
                 {
@@ -125,12 +140,27 @@ namespace UnityEditor
                     if (attribute != null)
                         permissionsList.Add(attribute.Value);
                 }
+                if (permissionsSdk23 != null)
+                {
+                    foreach (XmlNode permission in permissionsSdk23)
+                    {
+                        XmlNode attribute = permission.Attributes?["android:name"];
+                        if (attribute != null)
+                            permissionsList.Add(attribute.Value);
+                    }
+                }
 
                 foreach (XmlNode feature in features)
                 {
                     XmlNode attribute = feature.Attributes ? ["android:name"];
                     if (attribute != null)
-                        featuresList.Add(attribute.Value);
+                    {
+                        if (!bool.TryParse(feature.Attributes?["android:required"]?.Value, out bool featureRequired))
+                        {
+                            featureRequired = true;
+                        }
+                        featuresList.Add(new AndroidBuildFeature() { name = attribute.Value, required = featureRequired });
+                    }
                 }
 
                 EditorAnalytics.SendEventBuildTargetPermissions(new AndroidBuildPermissions()

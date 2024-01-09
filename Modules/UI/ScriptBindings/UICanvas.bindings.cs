@@ -43,6 +43,7 @@ namespace UnityEngine
         public extern float scaleFactor { get; set; }
         public extern float referencePixelsPerUnit { get; set; }
         public extern bool overridePixelPerfect { get; set; }
+        public extern bool vertexColorAlwaysGammaSpace { get; set; }
         public extern bool pixelPerfect { get; set; }
         public extern float planeDistance { get; set; }
         public extern int renderOrder { get; }
