@@ -20,11 +20,8 @@ namespace UnityEngine.UIElements
         internal static CustomStyleAccess s_CustomStyleAccess = new CustomStyleAccess();
         internal InlineStyleAccess inlineStyleAccess;
         /// <summary>
-        /// Reference to the style object of this element.
+        /// Sets the <see cref="VisualElement"/> style values.
         /// </summary>
-        /// <remarks>
-        /// Contains data computed from USS files or inline styles written to this object in C#.
-        /// </remarks>
         public IStyle style
         {
             get

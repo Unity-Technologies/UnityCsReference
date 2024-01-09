@@ -207,7 +207,7 @@ namespace UnityEngine.UIElements.UIR
             var cornerCenter = rect.position + radius;
             var subRect = Rect.zero;
 
-            if (radius == Vector2.zero)
+            if (radius.x < kEpsilon || radius.y < kEpsilon)
             {
                 // Without radius, we use a single quad to fill the section
                 // -------

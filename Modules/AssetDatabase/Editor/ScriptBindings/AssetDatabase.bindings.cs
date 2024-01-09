@@ -243,6 +243,9 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         extern internal static Object LoadMainAssetAtGUID(GUID assetGUID);
 
+        [FreeFunction("AssetDatabase::ReserveMonoScriptInstanceID")]
+        extern internal static int ReserveMonoScriptInstanceID(GUID guid);
+
         extern public static System.Type GetMainAssetTypeAtPath(string assetPath);
 
         extern public static System.Type GetTypeFromPathAndFileID(string assetPath, long localIdentifierInFile);

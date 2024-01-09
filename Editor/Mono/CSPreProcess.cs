@@ -27,7 +27,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             const int logIdentifierForUnityEditorCompilationMessages = 2345;
             UnityEngine.Debug.RemoveLogEntriesByIdentifier(logIdentifierForUnityEditorCompilationMessages);
             foreach (var message in messages)
-                UnityEngine.Debug.LogCompilerMessage(message.message, message.file, message.line, message.column, true, message.type == CompilerMessageType.Error, logIdentifierForUnityEditorCompilationMessages);
+            {
+                UnityEngine.Debug.LogCompilerMessage(message.message, message.file, message.line, message.column, true, message.type == CompilerMessageType.Error, logIdentifierForUnityEditorCompilationMessages, 0);
+            }
 
             return exitcode == 0;
         }
