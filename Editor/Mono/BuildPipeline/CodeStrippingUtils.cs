@@ -225,6 +225,11 @@ namespace UnityEditor
                 {
                     targetAssemblyNames[allTargetAssemblies.Length + i] = s_TreatedAsUserAssemblies[i];
                 }
+                for (int i=0; i<targetAssemblyNames.Length; ++i)
+                {
+                    if (!targetAssemblyNames[i].EndsWith(".dll"))
+                        targetAssemblyNames[i] += ".dll";
+                }
                 return targetAssemblyNames;
             }
         }

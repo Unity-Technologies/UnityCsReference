@@ -21,7 +21,7 @@ namespace UnityEditor.Search.Providers
             public LogType logType;
         }
 
-        private const string type = "log";
+        internal const string type = "log";
         private const string displayName = "Logs";
 
         private static int s_LogIndex = 0;

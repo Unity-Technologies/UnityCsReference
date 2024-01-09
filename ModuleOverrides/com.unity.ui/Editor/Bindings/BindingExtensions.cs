@@ -639,13 +639,6 @@ namespace UnityEditor.UIElements.Bindings
                 values.Add(t);
             }
 
-            public void Remove(SerializedProperty prop, object cookie)
-            {
-                var hash = prop.hashCodeForPropertyPath;
-
-                Remove(hash, cookie);
-            }
-
             public void Remove(int propertyPathHash, object cookie)
             {
                 if (m_TrackedValues.TryGetValue(propertyPathHash, out var values))
@@ -735,9 +728,9 @@ namespace UnityEditor.UIElements.Bindings
             return true;
         }
 
-        public void UnregisterSerializedPropertyChangeCallback(object cookie, SerializedProperty property)
+        public void UnregisterSerializedPropertyChangeCallback(object cookie, int propertyPathHash)
         {
-            m_ValueTracker.Remove(property, cookie);
+            m_ValueTracker.Remove(propertyPathHash, cookie);
         }
 
         public SerializedObjectBindingContextUpdater AddBindingUpdater(VisualElement element)
@@ -1525,14 +1518,14 @@ namespace UnityEditor.UIElements.Bindings
 
         public SerializedObjectBindingContextUpdater()
         {
-            trackedProperties = new List<SerializedProperty>();
+            trackedPropertiesHash = new List<int>();
         }
 
-        private List<SerializedProperty> trackedProperties { get; }
+        private List<int> trackedPropertiesHash { get; }
 
         public void AddTracking(SerializedProperty prop)
         {
-            trackedProperties.Add(prop);
+            trackedPropertiesHash.Add(prop.hashCodeForPropertyPath);
         }
 
         public override void Update()
@@ -1540,6 +1533,11 @@ namespace UnityEditor.UIElements.Bindings
             if (isReleased)
                 return;
 
+            if (!bindingContext.IsValid())
+            {
+                Release();
+                return;
+            }
 
             if (bindingContext != null)
             {
@@ -1562,13 +1560,13 @@ namespace UnityEditor.UIElements.Bindings
 
             if (owner != null && bindingContext != null)
             {
-                foreach (var prop in trackedProperties)
+                foreach (var propHash in trackedPropertiesHash)
                 {
-                    bindingContext.UnregisterSerializedPropertyChangeCallback(owner, prop);
+                    bindingContext.UnregisterSerializedPropertyChangeCallback(owner, propHash);
                 }
             }
 
-            trackedProperties.Clear();
+            trackedPropertiesHash.Clear();
             owner = null;
 
             ResetContext();
@@ -1647,7 +1645,7 @@ namespace UnityEditor.UIElements.Bindings
                     return;
                 }
             }
-            catch
+            catch (NullReferenceException e) when (e.Message.Contains("SerializedObject of SerializedProperty has been Disposed."))
             {
                 //this can happen when serializedObject has been disposed of
             }
@@ -1685,7 +1683,7 @@ namespace UnityEditor.UIElements.Bindings
                     return;
                 }
             }
-            catch (ArgumentNullException)
+            catch (NullReferenceException e) when (e.Message.Contains("SerializedObject of SerializedProperty has been Disposed."))
             {
                 //this can happen when serializedObject has been disposed of
             }
@@ -1701,6 +1699,13 @@ namespace UnityEditor.UIElements.Bindings
         {
             if (isReleased)
                 return;
+
+            if (!bindingContext.IsValid())
+            {
+                Release();
+                return;
+            }
+
             try
             {
                 ResetUpdate();
@@ -1725,7 +1730,7 @@ namespace UnityEditor.UIElements.Bindings
                     return;
                 }
             }
-            catch (ArgumentNullException)
+            catch (NullReferenceException e) when (e.Message.Contains("SerializedObject of SerializedProperty has been Disposed."))
             {
                 //this can happen when serializedObject has been disposed of
             }

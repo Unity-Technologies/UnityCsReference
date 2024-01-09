@@ -51,8 +51,16 @@ namespace UnityEditor
 
         public void SetUsedTypesInUserAssembly(string[] typeNames, string assemblyName)
         {
-            if (!m_UsedTypesPerUserAssembly.TryGetValue(assemblyName, out HashSet<string> types))
-                m_UsedTypesPerUserAssembly[assemblyName] = types = new HashSet<string>();
+            string assemblyFileName = assemblyName;
+            if (!assemblyFileName.EndsWith(".dll"))
+            {
+                assemblyFileName = assemblyName + ".dll";
+            }
+
+            if (!m_UsedTypesPerUserAssembly.TryGetValue(assemblyFileName, out HashSet<string> types))
+            {
+                m_UsedTypesPerUserAssembly[assemblyFileName] = types = new HashSet<string>();
+            }
 
             foreach (var typeName in typeNames)
                 types.Add(typeName);
@@ -142,11 +150,23 @@ namespace UnityEditor
                 engineModuleTypes.Add(managedName);
             }
 
-            items.Add("UnityEngine.dll", engineModuleTypes.ToArray());
+            bool engineModuleTypesAdded = false;
 
             foreach (var userAssembly in m_UsedTypesPerUserAssembly)
+            {
+                if (userAssembly.Key == "UnityEngine.dll" && !engineModuleTypesAdded)
+                {
+                    engineModuleTypes.UnionWith(userAssembly.Value);
+                    items.Add(userAssembly.Key, engineModuleTypes.ToArray());
+                    engineModuleTypesAdded = true;
+                    continue;
+                }
                 items.Add(userAssembly.Key, userAssembly.Value.ToArray());
-
+            }
+            if (!engineModuleTypesAdded)
+            {
+                items.Add("UnityEngine.dll", engineModuleTypes.ToArray());
+            }
             return items;
         }
 
@@ -253,7 +273,7 @@ namespace UnityEditor
 
         internal string[] GetUserAssemblies()
         {
-            return m_UserAssemblies.ToArray();
+            return m_UserAssemblies.Where(s => IsDLLUsed(s)).ToArray();
         }
     }
 }

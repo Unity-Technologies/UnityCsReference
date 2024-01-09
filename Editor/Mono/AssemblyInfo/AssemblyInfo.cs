@@ -113,6 +113,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.XR.Remoting.Editor")]
 [assembly: InternalsVisibleTo("UnityEngine.Common")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.Editor")]
+[assembly: InternalsVisibleTo("UnityEditor.UIElements.Tests.Tests")] // for UI Test Framework
 [assembly: InternalsVisibleTo("UnityEditor.UIBuilderModule")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.GraphViewTestUtilities.Editor")]
