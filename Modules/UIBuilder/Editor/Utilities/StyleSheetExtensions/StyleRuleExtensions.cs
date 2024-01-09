@@ -83,7 +83,7 @@ namespace Unity.UI.Builder
         {
             foreach (var property in styleRule.properties)
             {
-                if (StylePropertyUtil.s_NameToId.ContainsKey(property.name))
+                if (StylePropertyUtil.propertyNameToStylePropertyId.ContainsKey(property.name))
                     yield return property.name;
             }
         }

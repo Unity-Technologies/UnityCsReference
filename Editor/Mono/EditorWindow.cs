@@ -13,6 +13,7 @@ using UnityEngine.Internal;
 using SerializableJsonDictionary = UnityEditor.UIElements.SerializableJsonDictionary;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -52,7 +53,11 @@ namespace UnityEditor
 
         private VisualElement m_UIRootElement;
 
-        internal VisualElement baseRootVisualElement => m_UIRootElement ??= CreateRoot();
+        internal VisualElement baseRootVisualElement
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => m_UIRootElement ??= CreateRoot();
+        }
 
         public VisualElement rootVisualElement
         {
@@ -140,6 +145,7 @@ namespace UnityEditor
             m_EnableViewDataPersistence = false;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void ClearPersistentViewData()
         {
             string editorPrefFileName = this.GetType().ToString();
@@ -158,6 +164,7 @@ namespace UnityEditor
         bool m_DisableInputEvents;
 
         // Dockarea we're inside.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [NonSerialized]
         internal HostView m_Parent;
 
@@ -181,6 +188,7 @@ namespace UnityEditor
             GUI.EndWindows();
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal virtual void OnResized()  {}
 
         internal virtual void OnBackgroundViewResized(Rect pos) {}
@@ -242,6 +250,7 @@ namespace UnityEditor
 
         internal CustomYieldInstruction WaitUntilPresented() => new WaitUntil(() => m_IsPresented);
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal GUIContent GetLocalizedTitleContent()
         {
             return GetLocalizedTitleContentFromType(GetType());
@@ -635,6 +644,7 @@ namespace UnityEditor
         // 'windowSize' is used for setting up initial size
         // 'locationPriorityOrder' is for manual popup direction, if null it uses default order: down, up, left or right
         // 'giveFocus' is for whether the window should immediately be given focus (default true)
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void ShowAsDropDown(Rect buttonRect, Vector2 windowSize, PopupLocation[] locationPriorityOrder, ShowMode mode, bool giveFocus)
         {
             // Setup position before bringing window live (otherwise the dropshadow on Windows will be placed in 0,0 first frame)
@@ -1069,6 +1079,7 @@ namespace UnityEditor
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void RepaintImmediately()
         {
             if (m_Parent && m_Parent.actualView == this)

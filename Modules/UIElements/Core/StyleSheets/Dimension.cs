@@ -5,6 +5,7 @@
 using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
@@ -12,6 +13,7 @@ namespace UnityEngine.UIElements.StyleSheets
     // https://developer.mozilla.org/en-US/docs/Web/CSS/dimension
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal struct Dimension : IEquatable<Dimension>
     {
         public enum Unit

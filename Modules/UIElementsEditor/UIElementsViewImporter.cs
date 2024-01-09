@@ -14,6 +14,7 @@ using Unity.Profiling;
 using UnityEditor.AssetImporters;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using Object = UnityEngine.Object;
 
@@ -73,6 +74,7 @@ namespace UnityEditor.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UXMLImporterImpl : StyleValueImporter
     {
         internal struct Error
@@ -278,6 +280,7 @@ namespace UnityEditor.UIElements
 
         static UxmlAssetAttributeCache s_UxmlAssetAttributeCache = new();
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal UXMLImporterImpl()
         {
         }
@@ -315,6 +318,7 @@ namespace UnityEditor.UIElements
                 asset.importedWithErrors = true;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Hash128 GenerateHash(string uxmlPath)
         {
             var h = new Hash128();
@@ -357,6 +361,7 @@ namespace UnityEditor.UIElements
             TryCreateInlineStyleSheet(vta);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void ImportXmlFromString(string xml, out VisualTreeAsset vta)
         {
             byte[] b = Encoding.UTF8.GetBytes(xml);

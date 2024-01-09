@@ -388,7 +388,7 @@ namespace Unity.UI.Builder
                     fieldElement.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
 
                 if (!string.IsNullOrEmpty(styleName) &&
-                    StylePropertyUtil.s_NameToId.TryGetValue(styleName, out var id) &&
+                    StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(styleName, out var id) &&
                     id.IsTransitionId())
                 {
                     var transitionsListView = fieldElement.GetFirstAncestorOfType<TransitionsListView>();
@@ -746,7 +746,7 @@ namespace Unity.UI.Builder
                 var styleName =
                     field.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
 
-                StylePropertyUtil.s_NameToId.TryGetValue(styleName, out var id);
+                StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(styleName, out var id);
 
                 if (id.IsTransitionId())
                 {

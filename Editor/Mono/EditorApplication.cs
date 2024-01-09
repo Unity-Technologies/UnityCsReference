@@ -16,6 +16,7 @@ using Unity.Profiling;
 using UnityEditor.Profiling;
 using UnityEditor.SceneManagement;
 using UnityEditor.VersionControl;
+using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 
 namespace UnityEditor
@@ -245,6 +246,7 @@ namespace UnityEditor
 
         internal static CallbackFunction assetBundleNameChanged;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static CallbackFunction fileMenuSaved;
 
         // Delegate for changed keyboard modifier keys.
@@ -353,7 +355,7 @@ namespace UnityEditor
                    activeSceneName,
                    BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)),
                    Coverage.enabled
-                );                
+                );
             }
             else
             {

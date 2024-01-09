@@ -744,7 +744,7 @@ namespace UnityEditor.Search.Providers
                     }
                     else
                     {
-                        
+
                         // Use score Index as an unofficial ids for items:
                         var scoreIndex = 0;
                         foreach (var doc in response.response.docs)
@@ -1044,12 +1044,12 @@ namespace UnityEditor.Search.Providers
                 trackSelection = OnTrackSelection,
                 showDetailsOptions = ShowDetailsOptions.Preview | ShowDetailsOptions.Inspector | ShowDetailsOptions.InspectorWithoutHeader,
                 toObject = (item, type) =>
-                {            
+                {
                     var wrapper = AssetDocumentWrapper.CreateInstance<AssetDocumentWrapper>();
                     wrapper.item = item;
                     return wrapper;
                 },
-            
+
                 tableConfig = GetDefaultTableConfig
             };
         }
@@ -1656,7 +1656,8 @@ namespace UnityEditor.Search.Providers
 
         static void RequestPurchases(string accessToken, Action<PurchaseResponse, string> done, int offset = 0, int limit = 50)
         {
-            var url = $"https://packages-v2.unity.com/-/api/purchases?offset={offset}&limit={limit}&query=";
+            var host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesApi);
+            var url = $"{host}/-/api/purchases?offset={offset}&limit={limit}&query=";
             var request = UnityWebRequest.Get(url);
             request.SetRequestHeader("Content-Type", "application/json");
             request.SetRequestHeader("Authorization", $"Bearer {accessToken}");

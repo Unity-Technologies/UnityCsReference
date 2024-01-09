@@ -5,10 +5,12 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal interface IPrefixLabel
     {
         string label { get; }
@@ -23,9 +25,13 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for all editable elements.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal interface IEditableElement
     {
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Action editingStarted { get; set; }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Action editingEnded { get; set; }
     }
 
@@ -143,6 +149,7 @@ namespace UnityEngine.UIElements
 
         private VisualElement m_VisualInput;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal VisualElement visualInput
         {
             get { return m_VisualInput; }
@@ -308,6 +315,7 @@ namespace UnityEngine.UIElements
         Action IEditableElement.editingStarted { get; set; }
         Action IEditableElement.editingEnded { get; set; }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal BaseField(string label)
         {
             isCompositeRoot = true;

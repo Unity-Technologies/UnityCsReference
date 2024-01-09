@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -29,7 +30,7 @@ namespace UnityEngine.UIElements
 
         internal Translate(Vector3 v):this(v.x, v.y, v.z)
         {
-            
+
         }
 
         /// <summary>
@@ -67,6 +68,7 @@ namespace UnityEngine.UIElements
         private float m_Z;
         private bool m_isNone;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool IsNone() => m_isNone;
 
         /// <undoc/>

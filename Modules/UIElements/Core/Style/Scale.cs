@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -34,6 +35,7 @@ namespace UnityEngine.UIElements
             m_IsNone = false;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Scale Initial()
         {
             return new Scale(Vector3.one);

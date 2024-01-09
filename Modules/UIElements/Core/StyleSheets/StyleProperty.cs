@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements
 {
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class StyleProperty
     {
         [SerializeField]
@@ -19,6 +20,7 @@ namespace UnityEngine.UIElements
             {
                 return m_Name;
             }
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set
             {
                 m_Name = value;
@@ -49,6 +51,7 @@ namespace UnityEngine.UIElements
             {
                 return m_Values;
             }
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set
             {
                 m_Values = value;

@@ -13,7 +13,7 @@ namespace Unity.UI.Builder
         const string k_EditorExtensionModeKey = "UIBuilder.EditorExtensionModeKey";
         const string k_DisableMouseWheelZooming = "UIBuilder.DisableMouseWheelZooming";
         const string k_EnableAbsolutePositionPlacement = "UIBuilder.EnableAbsolutePositionPlacement";
-        const string k_BlockedNotifications = "UIBuilder.BlockedNotifications";
+        const string k_BlockedNotifications = "UIBuilder.ProjectBlockedNotifications";
 
         public static bool enableEditorExtensionModeByDefault
         {
@@ -57,14 +57,15 @@ namespace Unity.UI.Builder
         public static void BlockNotification(string notificationKey)
         {
             var blockedNotifications = EditorUserSettings.GetConfigValue(k_BlockedNotifications);
-            var blockedNotificationsList = string.IsNullOrEmpty(blockedNotifications) ? new List<object>() : Json.Deserialize(blockedNotifications) as IList<object>;
+
+            var blockedNotificationsList = string.IsNullOrEmpty(blockedNotifications) ? new List<string>() : new List<string>(blockedNotifications.Split(","));
 
             if (!blockedNotificationsList.Contains(notificationKey))
             {
                 blockedNotificationsList.Add(notificationKey);
             }
 
-            var newStringArray = Json.Serialize(blockedNotificationsList);
+            var newStringArray = string.Join(",", blockedNotificationsList);
             EditorUserSettings.SetConfigValue(k_BlockedNotifications, newStringArray);
         }
 
@@ -78,8 +79,8 @@ namespace Unity.UI.Builder
             var blockedNotifications = EditorUserSettings.GetConfigValue(k_BlockedNotifications);
             if (!string.IsNullOrEmpty(blockedNotifications))
             {
-                var blockedNotificationsList = Json.Deserialize(blockedNotifications) as IList<object>;
-                return blockedNotificationsList != null && blockedNotificationsList.Count > 0;
+                var blockedNotificationsList = new List<string>(blockedNotifications.Split(","));
+                return blockedNotificationsList.Count > 0;
             }
 
             return false;
@@ -91,8 +92,8 @@ namespace Unity.UI.Builder
 
             if (!string.IsNullOrEmpty(blockedNotifications))
             {
-                var blockedNotificationsList = Json.Deserialize(blockedNotifications) as IList<object>;
-                return blockedNotificationsList?.Contains(notificationKey) ?? false;
+                var blockedNotificationsList = new List<string>(blockedNotifications.Split(","));
+                return blockedNotificationsList.Contains(notificationKey);
             }
 
             return false;

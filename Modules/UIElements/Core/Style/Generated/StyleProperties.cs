@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
 {
     public partial class VisualElement
     {
+        [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static partial class StyleProperties
         {
             internal static readonly BindingId alignContentProperty = "style." + nameof(IStyle.alignContent);
@@ -72,9 +73,13 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId textShadowProperty = "style." + nameof(IStyle.textShadow);
             internal static readonly BindingId topProperty = "style." + nameof(IStyle.top);
             internal static readonly BindingId transformOriginProperty = "style." + nameof(IStyle.transformOrigin);
+            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal static readonly BindingId transitionDelayProperty = "style." + nameof(IStyle.transitionDelay);
+            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal static readonly BindingId transitionDurationProperty = "style." + nameof(IStyle.transitionDuration);
+            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal static readonly BindingId transitionPropertyProperty = "style." + nameof(IStyle.transitionProperty);
+            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal static readonly BindingId transitionTimingFunctionProperty = "style." + nameof(IStyle.transitionTimingFunction);
             internal static readonly BindingId translateProperty = "style." + nameof(IStyle.translate);
             internal static readonly BindingId unityBackgroundImageTintColorProperty = "style." + nameof(IStyle.unityBackgroundImageTintColor);

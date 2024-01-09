@@ -6,10 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class VisualElementFactoryRegistry
     {
         #pragma warning disable CS0618 // Type or member is obsolete
@@ -31,6 +33,7 @@ namespace UnityEngine.UIElements
 
         internal static Dictionary<string, List<IUxmlFactory>> factories
         {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get
             {
                 if (s_Factories == null)
@@ -74,6 +77,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static bool TryGetValue(string fullTypeName, out List<IUxmlFactory> factoryList)
         {
             var ret = factories.TryGetValue(fullTypeName, out factoryList);

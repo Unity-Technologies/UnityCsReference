@@ -6,6 +6,7 @@ using System;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -128,6 +129,7 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool TryGetValueFromBagAsString(IUxmlAttributes bag, CreationContext cc, out string value)
         {
             return TryGetValueFromBagAsString(bag, cc, out value, out _);

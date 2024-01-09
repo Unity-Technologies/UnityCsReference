@@ -5,9 +5,11 @@
 using System;
 using System.Globalization;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     static class StyleSheetExtensions
     {
         public static string ReadAsString(this StyleSheet sheet, StyleValueHandle handle)

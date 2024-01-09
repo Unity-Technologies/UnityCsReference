@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Attribute = System.Attribute;
 using Event = UnityEngine.Event;
@@ -24,11 +25,12 @@ namespace UnityEditor.ShortcutManagement
     }
 
     [InitializeOnLoad]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     static class ShortcutIntegration
     {
         const string k_DeleteID = "Main Menu/Edit/Delete";
         const string k_IgnoreWhenPlayModeFocused = "GameView.IgnoreWhenPlayModeFocused";
-        
+
         class LastUsedProfileIdProvider : ILastUsedProfileIdProvider
         {
             static string lastUsedProfileIdEditorPrefKey => $"ShortcutManagement_LastUsedShortcutProfileId_{ModeService.currentId}";
@@ -172,6 +174,7 @@ namespace UnityEditor.ShortcutManagement
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class ShortcutController : IAvailableShortcutsChangedNotifier
     {
         const string k_MigratedProfileId = "UserProfile";

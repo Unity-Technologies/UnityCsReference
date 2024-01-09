@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -16,7 +17,7 @@ namespace UnityEditor.UIElements
     /// An option for the value 0 with name "Nothing" and an option for the value ~0 (that is, all bits set) with the
     /// name "Everything" are always displayed at the top of the menu. The names for the values 0 and ~0 can be
     /// overriden by defining these values in the enum type.
-    /// 
+    ///
     /// For more information, refer to [[wiki:UIE-uxml-element-EnumFlagsField|UXML element EnumFlagsField]].
     /// </remarks>
     public class EnumFlagsField : BaseMaskField<Enum>
@@ -116,12 +117,23 @@ namespace UnityEditor.UIElements
 
 
         // These properties exist so that the UIBuilder can read them.
-        internal Type type => m_EnumType;
-        internal bool includeObsoleteValues { get => m_IncludeObsoleteValues; set => m_IncludeObsoleteValues = value; }
+        internal Type type
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => m_EnumType;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal bool includeObsoleteValues
+        {
+            get => m_IncludeObsoleteValues;
+            set => m_IncludeObsoleteValues = value;
+        }
 
         internal string typeAsString
         {
             get => UxmlUtility.TypeToString(m_EnumType);
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             set
             {
                 m_EnumType = UxmlUtility.ParseType(value);
@@ -136,6 +148,7 @@ namespace UnityEditor.UIElements
         internal string valueAsString
         {
             get => value?.ToString();
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             set
             {
                 if (type != null)
@@ -260,6 +273,8 @@ namespace UnityEditor.UIElements
 
             return EnumDataUtility.EnumFlagsToInt(m_EnumData, value);
         }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void PopulateDataFromType(Type enumType)
         {
             m_EnumType = enumType;

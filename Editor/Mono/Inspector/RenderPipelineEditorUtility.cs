@@ -39,7 +39,7 @@ namespace UnityEditor.Rendering
 
         private static Dictionary<Type, Type> s_RenderPipelineAssetToRenderPipelineType = new ();
 
-        internal static Type GetPipelineTypeFromPipelineAssetType(Type pipelineAssetType)
+        public static Type GetPipelineTypeFromPipelineAssetType(Type pipelineAssetType)
         {
             if (!typeof(RenderPipelineAsset).IsAssignableFrom(pipelineAssetType))
                 return null;

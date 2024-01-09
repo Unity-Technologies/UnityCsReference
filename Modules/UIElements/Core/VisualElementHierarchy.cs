@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -93,7 +94,12 @@ namespace UnityEngine.UIElements
 
         // each element has a ref to the root panel for internal bookkeeping
         // this will be null until a visual tree is added to a panel
-        internal BaseVisualElementPanel elementPanel { get; private set; }
+        internal BaseVisualElementPanel elementPanel
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get;
+            private set;
+        }
 
         /// <summary>
         /// The panel onto which this VisualElement is attached.
@@ -897,6 +903,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="predicate">The predicate to be satisfied by the ancestor to find.</param>
         /// <returns>The first ancestor satisfying the predicate or null otherwise.</returns>
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal VisualElement GetFirstAncestorWhere(Predicate<VisualElement> predicate)
         {
             VisualElement ancestor = hierarchy.parent;
@@ -1009,6 +1016,7 @@ namespace UnityEngine.UIElements
             return thisSide;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal VisualElement GetRoot()
         {
             if (panel != null)
@@ -1025,6 +1033,7 @@ namespace UnityEngine.UIElements
             return root;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal VisualElement GetRootVisualContainer()
         {
             VisualElement topMostRootContainer = null;

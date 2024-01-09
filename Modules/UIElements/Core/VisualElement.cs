@@ -11,6 +11,7 @@ using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.UIR;
 using System.Runtime.CompilerServices;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -18,6 +19,7 @@ namespace UnityEngine.UIElements
     // pseudo states are used for common states of a widget
     // they are addressable from CSS via the pseudo state syntax ":selected" for example
     // while css class list can solve the same problem, pseudo states are a fast commonly agreed upon path for common cases.
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [Flags]
     internal enum PseudoStates
     {
@@ -157,6 +159,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class ObjectListPool<T>
     {
         static ObjectPool<List<T>> pool = new ObjectPool<List<T>>(() => new List<T>(),20);
@@ -235,6 +238,7 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindings_UxmlAttributeFlags;
             #pragma warning restore 649
 
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal bool HasBindingInternal(string property)
             {
                 if (bindings == null)
@@ -968,6 +972,7 @@ namespace UnityEngine.UIElements
 
         internal Rect rect
         {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get
             {
                 var l = layout;
@@ -1085,6 +1090,7 @@ namespace UnityEngine.UIElements
         private bool m_WorldClipIsInfinite = false;
         internal Rect worldClip
         {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get
             {
                 if (isWorldClipDirty)
@@ -1230,6 +1236,8 @@ namespace UnityEngine.UIElements
         internal PseudoStates dependencyPseudoMask;
 
         private PseudoStates m_PseudoStates;
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal PseudoStates pseudoStates
         {
             get { return m_PseudoStates; }
@@ -1366,6 +1374,7 @@ namespace UnityEngine.UIElements
 
         internal List<string> classList
         {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get
             {
                 if (ReferenceEquals(m_ClassList, s_EmptyClassList))
@@ -1377,8 +1386,17 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal string fullTypeName => typeData.fullTypeName;
-        internal string typeName => typeData.typeName;
+        internal string fullTypeName
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => typeData.fullTypeName;
+        }
+
+        internal string typeName
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => typeData.typeName;
+        }
 
         // TODO: Make sure we do not use new native layout before we fix android 32bit (arm v7) failing test.
         // VisualNode m_VisualNode;
@@ -1394,8 +1412,14 @@ namespace UnityEngine.UIElements
         }
 
         internal ComputedStyle m_Style = InitialStyle.Acquire();
-        internal ref ComputedStyle computedStyle => ref m_Style;
 
+        internal ref ComputedStyle computedStyle
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => ref m_Style;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         // Variables that children inherit
         internal StyleVariableContext variableContext = StyleVariableContext.none;
 
@@ -1484,6 +1508,7 @@ namespace UnityEngine.UIElements
             LayoutManager.SharedManager.DestroyNode(ref m_LayoutNode);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal virtual Rect GetTooltipRect()
         {
             return this.worldBound;
@@ -1675,6 +1700,7 @@ namespace UnityEngine.UIElements
             EventDispatchUtilities.HandleEvent(e, this);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void IncrementVersion(VersionChangeType changeType)
         {
             elementPanel?.OnVersionChanged(this, changeType);
@@ -1939,6 +1965,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal string GetFullHierarchicalViewDataKey()
         {
             StringBuilder key = new StringBuilder();
@@ -1996,6 +2023,7 @@ namespace UnityEngine.UIElements
             return viewData.GetScriptable<T>(keyWithType);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void OverwriteFromViewData(object obj, string key)
         {
             if (obj == null)
@@ -2025,6 +2053,7 @@ namespace UnityEngine.UIElements
             viewDataPersistentData.Overwrite(obj, keyWithType);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void SaveViewData()
         {
             if (elementPanel != null
@@ -2059,8 +2088,8 @@ namespace UnityEngine.UIElements
             OnViewDataReady();
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal virtual void OnViewDataReady() {}
-
 
         /// <summary>
         /// Checks if the specified point intersects with this VisualElement's layout.
@@ -2173,6 +2202,7 @@ namespace UnityEngine.UIElements
         }
 
         // Used by the builder to apply the inline styles without passing by SetComputedStyle
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void UpdateInlineRule(StyleSheet sheet, StyleRule rule)
         {
             var oldStyle = computedStyle.Acquire();
@@ -2388,6 +2418,7 @@ namespace UnityEngine.UIElements
             return null;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal object GetProperty(PropertyName key)
         {
             CheckUserKeyArgument(key);
@@ -2399,12 +2430,14 @@ namespace UnityEngine.UIElements
             return null;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void SetProperty(PropertyName key, object value)
         {
             CheckUserKeyArgument(key);
             SetPropertyInternal(key, value);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool HasProperty(PropertyName key)
         {
             CheckUserKeyArgument(key);

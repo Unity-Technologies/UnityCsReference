@@ -12,9 +12,11 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.StyleSheets;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class SettingsWindow : EditorWindow, IHasCustomMenu
     {
         [SerializeField] private Vector2 m_PosLeft;
@@ -98,6 +100,7 @@ namespace UnityEditor
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void SelectProviderByName(string name, bool ignoreLastSelected = true)
         {
             if (m_TreeView == null)
@@ -628,6 +631,7 @@ namespace UnityEditor
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class ProjectSettingsWindow : SettingsWindow
     {
         public ProjectSettingsWindow()

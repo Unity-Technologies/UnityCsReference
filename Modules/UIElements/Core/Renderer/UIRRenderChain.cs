@@ -531,7 +531,6 @@ namespace UnityEngine.UIElements.UIR
             UIEOnClippingChanged(ve, true);
             UIEOnOpacityChanged(ve);
             UIEOnVisualsChanged(ve, true);
-            ve.MarkRenderHintsClean();
 
             m_StatsElementsAdded += addedCount;
         }
@@ -570,8 +569,18 @@ namespace UnityEngine.UIElements.UIR
                 if (m_BlockDirtyRegistration)
                     throw new InvalidOperationException("Render Hints cannot change under an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
-                UIEOnChildRemoving(ve);
-                UIEOnChildAdded(ve);
+                bool onlyDynamicColorIsDirty = (ve.renderHints & RenderHints.DirtyAll) == RenderHints.DirtyDynamicColor;
+                if (onlyDynamicColorIsDirty)
+                {
+                    UIEOnVisualsChanged(ve, false);
+                }
+                else
+                {
+                    UIEOnChildRemoving(ve);
+                    UIEOnChildAdded(ve);
+                }
+
+                ve.MarkRenderHintsClean();
             }
         }
 

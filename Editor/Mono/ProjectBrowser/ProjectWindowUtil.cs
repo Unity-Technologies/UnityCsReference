@@ -21,6 +21,7 @@ using UnityEngine;
 using UnityEditor.U2D;
 using UnityEngine.Internal;
 using UnityEngine.Audio;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
 using UnityEngine.U2D;
@@ -182,6 +183,7 @@ namespace UnityEditor
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal class DoCreateAssetWithContent : EndNameEditAction
         {
             public string filecontent;

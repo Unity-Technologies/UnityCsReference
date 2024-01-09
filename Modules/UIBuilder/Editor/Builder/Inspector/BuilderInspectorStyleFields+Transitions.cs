@@ -736,7 +736,7 @@ namespace Unity.UI.Builder
                         content.AppendValue(new CategoryDropdownContent.ValueItem
                         {
                             value = overriddenProperty,
-                            displayName =  ObjectNames.NicifyVariableName(StylePropertyUtil.s_NameToId[overriddenProperty].ToString()),
+                            displayName =  ObjectNames.NicifyVariableName(StylePropertyUtil.propertyNameToStylePropertyId[overriddenProperty].ToString()),
                             categoryName = TransitionConstants.CurrentOverrides
                         });
                     }

@@ -1318,6 +1318,11 @@ namespace Unity.UI.Builder
 
             for (int i = 0; i < pathParts.Length; ++i)
             {
+                if (currentUxmlSerializedData == null)
+                {
+                    continue;
+                }
+
                 // Is the current value a list?
                 if (currentUxmlSerializedData is IList serializedDataList)
                 {
@@ -1405,6 +1410,12 @@ namespace Unity.UI.Builder
             {
                 var currentSerializedData = uxmlSerializedData[j] as UxmlSerializedData;
 
+                // Avoid adding null uxml objects when attribute description is not a list
+                if (!attributeDescription.isList && currentSerializedData == null)
+                {
+                    continue;
+                }
+
                 if (currentSerializedData != null && currentSerializedData.uxmlAssetId != 0)
                 {
                     // When a list element is copied it may also copy the id of the original element.
@@ -1426,11 +1437,31 @@ namespace Unity.UI.Builder
                 s_UxmlAssets.Add(foundUxmlAsset);
             }
 
-            // If we uxml assets remnaining then the serialized data must have been removed and we should do the same.
+            var acceptedTypes = attributeDescription.uxmlObjectAcceptedTypes;
+
+            // If we have uxml assets remaining then the serialized data must have been removed and we should do the same.
             for (int j = 0; j < collectedUxmlAssets.Count; ++j)
             {
                 if (collectedUxmlAssets[j] == null)
                     continue;
+
+                var isAcceptedType = false;
+                foreach (var acceptedType in acceptedTypes)
+                {
+                    if (acceptedType.DeclaringType.FullName == collectedUxmlAssets[j].fullTypeName)
+                    {
+                        isAcceptedType = true;
+                        break;
+                    }
+                }
+
+                // Do not delete the asset if it's not an accepted type.
+                // This avoid deleting other objects of different types when having multiple UxmlObjectReferences with no name like in MultiColumnListView/TreeView
+                if (!isAcceptedType)
+                {
+                    s_UxmlAssets.Add(collectedUxmlAssets[j]);
+                    continue;
+                }
 
                 contentsChanged = true;
                 RecordDocumentUndoOnce();
@@ -1538,7 +1569,12 @@ namespace Unity.UI.Builder
                     else
                     {
                         var serializedData = attribute.GetSerializedValue(uxmlSerializedData) as UxmlSerializedData;
-                        CreateUxmlObjectAsset(attributeUxmlObjectDescription, serializedData, uxmlAsset);
+
+                        // Avoid creating null objects when attribute description is not a list
+                        if (serializedData != null)
+                        {
+                            CreateUxmlObjectAsset(attributeUxmlObjectDescription, serializedData, uxmlAsset);
+                        }
                     }
                 }
                 else

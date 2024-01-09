@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -381,8 +382,11 @@ namespace UnityEngine.UIElements
         }
 
         // Always return a valid selecting manipulator and rely on isSelectable to use it/not
-        internal TextSelectingManipulator selectingManipulator =>
-            m_SelectingManipulator ??= new TextSelectingManipulator(this);
+        internal TextSelectingManipulator selectingManipulator
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => m_SelectingManipulator ??= new TextSelectingManipulator(this);
+        }
 
         private void DrawHighlighting(MeshGenerationContext mgc)
         {

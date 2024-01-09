@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Hierarchy;
 using Unity.Profiling;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -749,6 +750,7 @@ namespace UnityEngine.UIElements
         }
 
         // Helps to determine which expandedItemsIds set to use (the serialized or the view model one).
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void GetExpandedItemIds(List<int> list)
         {
             // This is just in case the function receives a list that contains old data. If so, we will clear the list

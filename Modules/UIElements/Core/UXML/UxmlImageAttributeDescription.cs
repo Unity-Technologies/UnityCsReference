@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -10,6 +11,7 @@ namespace UnityEngine.UIElements
     /// Describes an XML <c>Object</c> attribute referencing an asset of a chosen type in the project. In UXML, this is
     /// referenced as a string URI.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UxmlImageAttributeDescription : UxmlAttributeDescription, IUxmlAssetAttributeDescription
     {
         // Stores the value of the asset type being interacted with or saved. Defaults to an empty Texture if none is provided

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Pool;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -370,6 +371,7 @@ namespace UnityEngine.UIElements
             return null;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Focusable GetLeafFocusedElement()
         {
             if (m_FocusedElements.Count > 0)
@@ -389,6 +391,8 @@ namespace UnityEngine.UIElements
         }
 
         private Focusable m_LastFocusedElement;
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Focusable m_LastPendingFocusedElement;
         private int m_PendingFocusCount = 0;
 
@@ -427,6 +431,7 @@ namespace UnityEngine.UIElements
                 m_LastFocusedElement.Focus();
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void BlurLastFocusedElement()
         {
             // Unselect selected TextElement when panel loses focus
@@ -442,6 +447,7 @@ namespace UnityEngine.UIElements
         }
 
         // Do the focus change for real, no questions asked. This will not trigger any events.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void DoFocusChange(Focusable f)
         {
             m_FocusedElements.Clear();

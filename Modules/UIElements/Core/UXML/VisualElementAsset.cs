@@ -5,11 +5,13 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class VisualElementAsset : UxmlAsset, ISerializationCallbackReceiver
     {
         [SerializeField]
@@ -96,6 +98,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal virtual VisualElement Instantiate(CreationContext cc)
         {
             var ve = (VisualElement) serializedData.CreateInstance();

@@ -7,10 +7,12 @@ using System.Collections.Generic;
 using Unity.Properties;
 using Unity.Collections;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.Bindings
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class SerializedObjectBindingContext
     {
         public ulong lastRevision {get; private set; }
@@ -492,6 +494,7 @@ namespace UnityEditor.UIElements.Bindings
 
         private static readonly PropertyName FindContextPropertyKey = "__UnityBindingContext";
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static SerializedObjectBindingContext GetBindingContextFromElement(VisualElement element)
         {
             if (element is IBindable && element.GetBinding(BindingExtensions.s_SerializedBindingId) is SerializedObjectBindingBase bindingBase)
@@ -526,6 +529,7 @@ namespace UnityEditor.UIElements.Bindings
 
         #region SerializedObject Version Update
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void UpdateRevision()
         {
             var previousRevision = lastRevision;
@@ -804,6 +808,8 @@ namespace UnityEditor.UIElements.Bindings
 
         HashSet<long> visited = new HashSet<long>();
         List<(object cookie, SerializedProperty p, Action<object, SerializedProperty> onChange)> m_PendingCallbacks = new();
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Action PostProcessTrackedPropertyChanges;
         void UpdateTrackedProperties()
         {
@@ -1225,6 +1231,7 @@ namespace UnityEditor.UIElements.Bindings
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSourceProvider, IDataSourceViewHashProvider
     {
         private long m_LastUpdateTime;
@@ -2043,8 +2050,8 @@ namespace UnityEditor.UIElements.Bindings
             if (isReleased)
                 return;
 
-            base.OnRelease();
             RemoveClickedManipulator();
+            base.OnRelease();
             s_Pool.Release(this);
         }
 
@@ -2063,8 +2070,21 @@ namespace UnityEditor.UIElements.Bindings
         static bool GetValue(SerializedProperty property) => property.isExpanded;
         static void SetValue(SerializedProperty property, bool value) => property.isExpanded = value;
 
-        void AddClickedManipulator() => ((Foldout)field).toggle.AddManipulator(m_ClickedWithAlt);
-        void RemoveClickedManipulator() => ((Foldout)field).RemoveManipulator(m_ClickedWithAlt);
+        void AddClickedManipulator()
+        {
+            if (m_ClickedWithAlt != null)
+            {
+                m_ClickedWithAlt.target = ((Foldout)field)?.toggle;
+            }
+        }
+
+        void RemoveClickedManipulator()
+        {
+            if (m_ClickedWithAlt != null)
+            {
+                m_ClickedWithAlt.target = null;
+            }
+        }
 
         void OnClickWithAlt()
         {

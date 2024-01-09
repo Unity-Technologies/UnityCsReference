@@ -1557,11 +1557,11 @@ namespace UnityEditor.TextCore.Text
 
                     uint firstCharacter = m_SerializedPropertyHolder.firstCharacter;
                     if (!m_fontAsset.characterLookupTable.ContainsKey(firstCharacter))
-                        m_fontAsset.TryAddCharacterInternal(firstCharacter, out character);
+                        m_fontAsset.TryAddCharacterInternal(firstCharacter, FontStyles.Normal, TextFontWeight.Regular, out character);
 
                     uint secondCharacter = m_SerializedPropertyHolder.secondCharacter;
                     if (!m_fontAsset.characterLookupTable.ContainsKey(secondCharacter))
-                        m_fontAsset.TryAddCharacterInternal(secondCharacter, out character);
+                        m_fontAsset.TryAddCharacterInternal(secondCharacter, FontStyles.Normal, TextFontWeight.Regular, out character);
 
                     // Sort Kerning Pairs & Reload Font Asset if new kerning pair was added.
                     if (errorCode != -1)

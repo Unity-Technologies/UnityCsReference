@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -15,7 +16,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Generates an instance of the declaring element when the <see cref="UxmlElementAttribute"/> is used in a custom control. 
+    /// Generates an instance of the declaring element when the <see cref="UxmlElementAttribute"/> is used in a custom control.
     /// </summary>
     [Serializable]
     public abstract class UxmlSerializedData
@@ -45,6 +46,7 @@ namespace UnityEngine.UIElements
             DefaultValue = 2,
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField, UxmlIgnore, HideInInspector]
         internal int uxmlAssetId;
 
@@ -81,6 +83,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="obj"></param>
         /// <param name="flags"></param>
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void Deserialize(object obj, UxmlAttributeFlags flags)
         {
             try

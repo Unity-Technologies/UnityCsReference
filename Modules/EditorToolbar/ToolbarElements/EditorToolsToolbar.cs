@@ -26,7 +26,7 @@ namespace UnityEditor.Toolbars
         public BuiltinToolsStrip()
         {
             name = "BuiltinTools";
-
+            ToolButton.LoadBuiltinToolsIcons();
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
 
             // Only show the contexts dropdown if there are non-builtin contexts available

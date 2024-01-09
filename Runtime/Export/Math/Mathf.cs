@@ -465,7 +465,7 @@ namespace UnityEngine
             return (float)value;
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
         internal static int ClampToInt(long value)
         {
             if (value < int.MinValue)

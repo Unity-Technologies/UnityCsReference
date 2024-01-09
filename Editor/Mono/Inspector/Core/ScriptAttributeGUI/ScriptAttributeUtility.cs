@@ -8,11 +8,13 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Unity.Collections;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class ScriptAttributeUtility
     {
         readonly struct CustomPropertyDrawerContainer
@@ -625,6 +627,7 @@ namespace UnityEditor
             return fieldInfo;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static PropertyHandler GetHandler(SerializedProperty property)
         {
             if (property == null)

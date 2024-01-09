@@ -5,11 +5,13 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class TemplateAsset : VisualElementAsset //<TemplateContainer>
     {
         [SerializeField]
@@ -100,6 +102,7 @@ namespace UnityEngine.UIElements
 
         internal List<VisualTreeAsset.SlotUsageEntry> slotUsages
         {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get { return m_SlotUsages; }
             set { m_SlotUsages = value; }
         }

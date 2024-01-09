@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements
 {
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal struct StyleValueHandle
     {
         [SerializeField]
@@ -26,9 +27,11 @@ namespace UnityEngine.UIElements
         }
 
         // Which index to read from in the value array for the corresponding type
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal int valueIndex;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal StyleValueHandle(int valueIndex, StyleValueType valueType)
         {
             this.valueIndex = valueIndex;

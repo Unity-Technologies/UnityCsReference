@@ -8,10 +8,12 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
     [System.Serializable]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class SearchFilter
     {
         public enum SearchArea

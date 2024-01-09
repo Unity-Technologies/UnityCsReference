@@ -6,6 +6,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal enum StyleSelectorType
     {
         Unknown,

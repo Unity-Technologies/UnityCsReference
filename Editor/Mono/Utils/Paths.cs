@@ -8,9 +8,11 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Utils
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class Paths
     {
         static char[] invalidFilenameChars;

@@ -102,7 +102,7 @@ namespace UnityEditor
         // internal
         SerializedProperty m_BounceScale;
         SerializedProperty m_ExportTrainingData;
-        SerializedProperty m_DisableWorkerProcessBaking;
+        SerializedProperty m_EnableWorkerProcessBaking;
         SerializedProperty m_TrainingDataDestination;
         SerializedProperty m_ForceWhiteAlbedo;
         SerializedProperty m_ForceUpdates;
@@ -215,7 +215,7 @@ namespace UnityEditor
             public static readonly GUIContent padding = EditorGUIUtility.TrTextContent("Lightmap Padding", "Sets the separation in texels between shapes in the baked lightmap.");
             public static readonly GUIContent lightmapMaxSize = EditorGUIUtility.TrTextContent("Max Lightmap Size", "Sets the max size of the full lightmap Texture in pixels. Values are squared, so a setting of 1024 can produce a 1024x1024 pixel sized lightmap.");
             public static readonly GUIContent lightmapSizeFixed = EditorGUIUtility.TrTextContent("Fixed Lightmap Size", "Forces all lightmap textures to use the same size. These can be no larger than Max Lightmap Size.");
-            public static readonly GUIContent disableWorkerProcessBaking = EditorGUIUtility.TrTextContent("Disable worker process baking", "Forces bakes that would otherwise be run in a worker process to be run in-process and blocking.");
+            public static readonly GUIContent enableWorkerProcessBaking = EditorGUIUtility.TrTextContent("Enable worker process baking", "Leaving this unchecked will force bakes that would otherwise be run in a worker process to be run in-process and blocking.");
             public static readonly GUIContent useMipmapLimits = EditorGUIUtility.TrTextContent("Use Mipmap Limits", "Whether lightmap textures use the Global Mipmap limit defined in Quality Settings. Disable this to ensure lightmaps are available at the full mipmap resolution.");
             public static readonly GUIContent lightmapCompression = EditorGUIUtility.TrTextContent("Lightmap Compression", "Compresses baked lightmaps created using this Lighting Settings Asset. Lower quality compression reduces memory and storage requirements, at the cost of more visual artifacts. Higher quality compression requires more memory and storage, but provides better visual results.");
             public static readonly GUIContent ambientOcclusion = EditorGUIUtility.TrTextContent("Ambient Occlusion", "Specifies whether to include ambient occlusion or not in the baked lightmap result. Enabling this results in simulating the soft shadows that occur in cracks and crevices of objects when light is reflected onto them.");
@@ -336,7 +336,7 @@ namespace UnityEditor
 
             //dev debug properties
             m_ExportTrainingData = lightingSettingsObject.FindProperty("m_ExportTrainingData");
-            m_DisableWorkerProcessBaking = lightingSettingsObject.FindProperty("m_DisableWorkerProcessBaking");
+            m_EnableWorkerProcessBaking = lightingSettingsObject.FindProperty("m_EnableWorkerProcessBaking");
             m_TrainingDataDestination = lightingSettingsObject.FindProperty("m_TrainingDataDestination");
             m_ForceWhiteAlbedo = lightingSettingsObject.FindProperty("m_ForceWhiteAlbedo");
             m_ForceUpdates = lightingSettingsObject.FindProperty("m_ForceUpdates");
@@ -697,7 +697,7 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_ForceUpdates, Styles.forceUpdates);
                 }
 
-                EditorGUILayout.PropertyField(m_DisableWorkerProcessBaking, Styles.disableWorkerProcessBaking);
+                EditorGUILayout.PropertyField(m_EnableWorkerProcessBaking, Styles.enableWorkerProcessBaking);
 
                 EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.exportTrainingData);
 

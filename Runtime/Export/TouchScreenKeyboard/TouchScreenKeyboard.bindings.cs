@@ -96,7 +96,8 @@ namespace UnityEngine
                     case RuntimePlatform.WebGLPlayer:
                     case RuntimePlatform.GameCoreXboxSeries:
                     case RuntimePlatform.GameCoreXboxOne:
-
+                    case RuntimePlatform.VisionOS:
+                    
                     // The OnScreen keyboard is ALWAYS supported in UWP
                     // Whether or not it can be used is determined automatically by the OS at runtime
                     case RuntimePlatform.WSAPlayerX86:

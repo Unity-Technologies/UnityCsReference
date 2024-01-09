@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Properties;
 using UnityEngine.Assertions;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 
 [assembly:GeneratePropertyBagsForTypesQualifiedWith(typeof(UnityEngine.UIElements.IDataSourceViewHashProvider))]
@@ -136,6 +137,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// This event does not bubble up or trickle down.
     /// </remarks>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class PropertyChangedEvent : EventBase<PropertyChangedEvent>, IChangeEvent
     {
         static PropertyChangedEvent()

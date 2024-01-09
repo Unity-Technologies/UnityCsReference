@@ -5,16 +5,19 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal struct StylePropertyValue
     {
         public StyleSheet sheet;
         public StyleValueHandle handle;
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal struct ImageSource
     {
         public Texture2D texture;
@@ -28,6 +31,7 @@ namespace UnityEngine.UIElements.StyleSheets
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class StylePropertyReader
     {
         // Strategy to create default cursor must be provided in the context of Editor or Runtime

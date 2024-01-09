@@ -4,16 +4,19 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
     [Flags]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal enum LiveReloadTrackers
     {
         Document = 1 << 0,
         Text = 1 << 1,
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal interface ILiveReloadSystem
     {
         bool enable { get; set; }

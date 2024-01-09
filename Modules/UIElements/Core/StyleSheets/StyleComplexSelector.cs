@@ -25,6 +25,7 @@ namespace UnityEngine.UIElements
     }
 
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class StyleComplexSelector : ISerializationCallbackReceiver
     {
         // Hash keys for the most relevant parts of a complex selector to use against the style sheet's Bloom filter.
@@ -40,6 +41,7 @@ namespace UnityEngine.UIElements
             {
                 return m_Specificity;
             }
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set
             {
                 m_Specificity = value;
@@ -47,7 +49,12 @@ namespace UnityEngine.UIElements
         }
 
         // This reference is set at runtime as convenience, but is not serialized
-        public StyleRule rule { get; internal set; }
+        public StyleRule rule
+        {
+            get;
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            internal set;
+        }
 
         // A complex selector can be considered simple if it's made of only one selector
         [NonSerialized]
@@ -70,6 +77,7 @@ namespace UnityEngine.UIElements
             {
                 return m_Selectors;
             }
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set
             {
                 m_Selectors = value;
@@ -84,9 +92,11 @@ namespace UnityEngine.UIElements
             m_isSimple = m_Selectors.Length == 1;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal int ruleIndex;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [NonSerialized]
         // Points to the possible next selector that indexes to the same lookup table in StyleSheet
         internal StyleComplexSelector nextInTable;

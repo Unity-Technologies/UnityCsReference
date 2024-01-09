@@ -4,10 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
     [Obsolete("UxmlObjectFactoryRegistry is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UxmlObjectFactoryRegistry
     {
         internal const string uieCoreModule = "UnityEngine.UIElementsModule";
@@ -16,6 +18,7 @@ namespace UnityEngine.UIElements
 
         internal static Dictionary<string, List<IBaseUxmlObjectFactory>> factories
         {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get
             {
                 if (s_Factories == null)

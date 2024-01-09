@@ -9,7 +9,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEngine
 {
     [MovedFrom("UnityEditor")]
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
     internal class NumericFieldDraggerUtility
     {
         public static float Acceleration(bool shiftPressed, bool altPressed)

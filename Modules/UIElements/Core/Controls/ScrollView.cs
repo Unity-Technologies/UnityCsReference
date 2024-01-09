@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -45,7 +46,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <remarks>
     /// The default is <see cref="ScrollViewMode.Vertical"/>.
-    /// 
+    ///
     /// For more information, refer to [[wiki:UIE-uxml-element-ScrollView|UXML element ScrollView]].
     /// </remarks>
     public enum ScrollViewMode
@@ -383,9 +384,16 @@ namespace UnityEngine.UIElements
 
         internal bool needsHorizontal => mode != ScrollViewMode.Vertical && horizontalScrollerVisibility == ScrollerVisibility.AlwaysVisible || (horizontalScrollerVisibility == ScrollerVisibility.Auto && scrollableWidth > k_SizeThreshold);
 
-        internal bool needsVertical => mode != ScrollViewMode.Horizontal &&
-            verticalScrollerVisibility == ScrollerVisibility.AlwaysVisible ||
-            (verticalScrollerVisibility == ScrollerVisibility.Auto && scrollableHeight > k_SizeThreshold);
+        internal bool needsVertical
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get
+            {
+                return mode != ScrollViewMode.Horizontal &&
+                       verticalScrollerVisibility == ScrollerVisibility.AlwaysVisible ||
+                       (verticalScrollerVisibility == ScrollerVisibility.Auto && scrollableHeight > k_SizeThreshold);
+            }
+        }
 
         internal bool isVerticalScrollDisplayed
         {

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Properties;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
@@ -19,7 +20,14 @@ namespace UnityEditor.UIElements
         internal static readonly BindingId objectTypeProperty = nameof(objectType);
         internal static readonly BindingId allowSceneObjectsProperty = nameof(allowSceneObjects);
 
-        internal event Action onObjectSelectorShow;
+        private event Action m_OnObjectSelectorShow = () => { };
+
+        internal event Action onObjectSelectorShow
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            add => m_OnObjectSelectorShow += value;
+            remove => m_OnObjectSelectorShow -= value;
+        }
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<Object>.UxmlSerializedData
@@ -137,11 +145,13 @@ namespace UnityEditor.UIElements
             m_ObjectFieldDisplay?.ShowMixedValue(showMixedValue);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal virtual void UpdateDisplay()
         {
             UpdateMixedValueContent();
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal class ObjectFieldDisplay : VisualElement
         {
             private readonly ObjectField m_ObjectField;
@@ -447,7 +457,7 @@ namespace UnityEditor.UIElements
             // Since we have nothing useful to do on the object selector closing action, we just do not assign any callback
             // All the object changes will be notified through the OnObjectChanged and a "cancellation" (Escape key) on the ObjectSelector is calling the closing callback without any good object
             ObjectSelector.get.Show(value, objectType, null, allowSceneObjects, null, null, OnObjectChanged);
-            onObjectSelectorShow?.Invoke();
+            m_OnObjectSelectorShow?.Invoke();
         }
 
         private Object TryReadComponentFromGameObject(Object obj, Type type)

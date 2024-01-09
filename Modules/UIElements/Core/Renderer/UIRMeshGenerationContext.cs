@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Profiling;
+using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
 
@@ -235,7 +236,10 @@ namespace UnityEngine.UIElements
 
         internal NativeSlice<Vertex> m_Vertices;
         internal NativeSlice<UInt16> m_Indices;
-        internal int currentIndex, currentVertex;
+
+        internal int currentIndex;
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal int currentVertex;
     }
 
     internal struct ColorPage

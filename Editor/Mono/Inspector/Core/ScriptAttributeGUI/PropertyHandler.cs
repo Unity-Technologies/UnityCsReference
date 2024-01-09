@@ -8,9 +8,11 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class PropertyHandler : IDisposable
     {
         List<PropertyDrawer> m_PropertyDrawers;

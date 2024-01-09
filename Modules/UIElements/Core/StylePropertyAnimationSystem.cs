@@ -13,6 +13,7 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal interface IStylePropertyAnimationSystem
     {
         bool StartTransition(VisualElement owner, StylePropertyId prop, float startValue, float endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
@@ -41,6 +42,7 @@ namespace UnityEngine.UIElements
         void Update();
     }
 
+    [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class StylePropertyAnimationSystem : IStylePropertyAnimationSystem
     {
         [Flags]
@@ -1537,6 +1539,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class EmptyStylePropertyAnimationSystem : IStylePropertyAnimationSystem
     {
         public bool StartTransition(VisualElement owner, StylePropertyId prop, float startValue, float endValue, int durationMs, int delayMs, Func<float, float> easingCurve)

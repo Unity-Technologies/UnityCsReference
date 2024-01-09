@@ -767,7 +767,7 @@ namespace Unity.UI.Builder
             {
                 // Transitions are made from 4 different properties and does not have a dedicated C# property on ComputedStyle.
                 if (!string.IsNullOrEmpty(styleName) &&
-                    StylePropertyUtil.s_NameToId.TryGetValue(styleName, out var id) &&
+                    StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(styleName, out var id) &&
                     id.IsTransitionId() &&
                     fieldElement is TransitionsListView listView)
                     RefreshStyleField(listView);
@@ -1610,7 +1610,7 @@ namespace Unity.UI.Builder
                 property = manipulator.styleProperty;
 
                 if (index >= manipulator.GetValuesCount()
-                    && StylePropertyUtil.s_NameToId.TryGetValue(styleName, out var id)
+                    && StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(styleName, out var id)
                     && id.IsTransitionId())
                 {
                     var transitionData = m_Inspector.currentVisualElement.computedStyle.transitionData.Read();

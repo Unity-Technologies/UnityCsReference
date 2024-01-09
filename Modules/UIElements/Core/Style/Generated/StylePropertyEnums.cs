@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements.StyleSheets
         Visual = 7
     }
 
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal enum StyleEnumType
     {
         Align,
@@ -52,6 +53,7 @@ namespace UnityEngine.UIElements.StyleSheets
         Wrap
     }
 
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal enum StylePropertyId
     {
         Unknown = 0,

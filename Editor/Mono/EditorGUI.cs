@@ -25,6 +25,8 @@ using System.Reflection;
 using Unity.Profiling;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -4501,6 +4503,7 @@ namespace UnityEditor
             return property.ValidateObjectReferenceValue(obj);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Object ValidateObjectFieldAssignment(Object[] references, Type objType, SerializedProperty property, ObjectFieldValidatorOptions options)
         {
             if (references.Length > 0)

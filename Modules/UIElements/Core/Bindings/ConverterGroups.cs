@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -129,6 +130,7 @@ namespace UnityEngine.UIElements
         /// Returns all existing converter groups.
         /// </summary>
         /// <param name="result">The resulting list of converter groups.</param>
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void GetAllConverterGroups(List<ConverterGroup> result)
         {
             foreach (var group in s_BindingConverterGroups.Values)

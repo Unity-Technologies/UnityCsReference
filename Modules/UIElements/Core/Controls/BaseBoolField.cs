@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -19,7 +20,11 @@ namespace UnityEngine.UIElements
         internal Clickable m_Clickable;
 
         // Needed by the UIBuilder for authoring in the viewport
-        internal Label boolFieldLabelElement => m_Label;
+        internal Label boolFieldLabelElement
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => m_Label;
+        }
 
         /// <summary>
         /// Creates a <see cref="BaseBoolField"/> with a Label and a default manipulator.
@@ -32,7 +37,7 @@ namespace UnityEngine.UIElements
             : base(label, null)
         {
             // Allocate and add the checkmark to the hierarchy
-            m_CheckMark = new VisualElement() { name = "unity-checkmark", pickingMode = PickingMode.Ignore };
+            m_CheckMark = new VisualElement() {name = "unity-checkmark", pickingMode = PickingMode.Ignore};
             visualInput.Add(m_CheckMark);
 
             // The picking mode needs to be Position in order to have the Pseudostate Hover applied...
@@ -83,6 +88,7 @@ namespace UnityEngine.UIElements
                     m_Label.RemoveFromHierarchy();
                     m_Label = null;
                 }
+
                 NotifyPropertyChanged(textProperty);
             }
         }
@@ -136,6 +142,7 @@ namespace UnityEngine.UIElements
                 visualInput.pseudoStates &= ~PseudoStates.Checked;
                 pseudoStates &= ~PseudoStates.Checked;
             }
+
             base.SetValueWithoutNotify(newValue);
         }
 
@@ -143,16 +150,16 @@ namespace UnityEngine.UIElements
         {
             if (evt.eventTypeId == MouseUpEvent.TypeId())
             {
-                var ce = (IMouseEvent)evt;
-                if (ce.button == (int)MouseButton.LeftMouse)
+                var ce = (IMouseEvent) evt;
+                if (ce.button == (int) MouseButton.LeftMouse)
                 {
                     ToggleValue();
                 }
             }
             else if (evt.eventTypeId == PointerUpEvent.TypeId() || evt.eventTypeId == ClickEvent.TypeId())
             {
-                var ce = (IPointerEvent)evt;
-                if (ce.button == (int)MouseButton.LeftMouse)
+                var ce = (IPointerEvent) evt;
+                if (ce.button == (int) MouseButton.LeftMouse)
                 {
                     ToggleValue();
                 }
@@ -202,6 +209,5 @@ namespace UnityEngine.UIElements
             UnregisterCallback<PointerUpEvent>(StartEditing);
             UnregisterCallback<FocusOutEvent>(EndEditing);
         }
-
     }
 }

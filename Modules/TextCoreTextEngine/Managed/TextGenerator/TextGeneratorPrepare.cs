@@ -565,7 +565,7 @@ namespace UnityEngine.TextCore.Text
             if (character != null)
             {
                 // Add character to font asset lookup cache
-                fontAsset.AddCharacterToLookupCache(unicode, character);
+                fontAsset.AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
 
                 return character;
             }
@@ -584,7 +584,7 @@ namespace UnityEngine.TextCore.Text
                     m_CurrentMaterial = m_MaterialReferences[0].material;
 
                     // Add character to font asset lookup cache
-                    fontAsset.AddCharacterToLookupCache(unicode, character);
+                    fontAsset.AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
 
                     return character;
                 }
@@ -596,7 +596,7 @@ namespace UnityEngine.TextCore.Text
                 if (character != null)
                 {
                     // Add character to font asset lookup cache
-                    fontAsset.AddCharacterToLookupCache(unicode, character);
+                    fontAsset.AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
 
                     return character;
                 }
@@ -618,7 +618,7 @@ namespace UnityEngine.TextCore.Text
             if (character != null)
             {
                 // Add character to font asset lookup cache
-                fontAsset.AddCharacterToLookupCache(unicode, character);
+                fontAsset.AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
 
                 return character;
             }
@@ -630,7 +630,7 @@ namespace UnityEngine.TextCore.Text
             if (character != null)
             {
                 // Add character to font asset lookup cache
-                fontAsset.AddCharacterToLookupCache(unicode, character);
+                fontAsset.AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
 
                 return character;
             }

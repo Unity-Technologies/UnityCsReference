@@ -11,10 +11,12 @@ using System.Text;
 using UnityEngine.Pool;
 using UnityEngine.Scripting;
 using UnityEditorInternal;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
     [StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class ContainerWindow : ScriptableObject
     {
         [SerializeField] MonoReloadableIntPtr m_WindowPtr;

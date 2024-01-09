@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor
 {
     // How ContainerWindows are visualized. Used with ContainerWindow.Show
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal enum ShowMode
     {
         // Show as a normal window with max, min & close buttons.

@@ -12,11 +12,13 @@ using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Scripting;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UXMLImporterImpl = UnityEditor.UIElements.UXMLImporterImpl;
 
 namespace UnityEditor
 {
     [InitializeOnLoad]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class RetainedMode
     {
         static RetainedMode()

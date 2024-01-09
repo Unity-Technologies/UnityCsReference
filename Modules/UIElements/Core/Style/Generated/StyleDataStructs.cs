@@ -382,6 +382,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal struct TransitionData : IStyleDataGroup<TransitionData>, IEquatable<TransitionData>
     {
         public List<TimeValue> transitionDelay;

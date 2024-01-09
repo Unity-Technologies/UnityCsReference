@@ -7,10 +7,12 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEditor.Experimental;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class UIElementsEditorUtility
     {
         internal static readonly string s_DefaultCommonDarkStyleSheetPath = "StyleSheets/Generated/DefaultCommonDark.uss.asset";
@@ -36,11 +38,13 @@ namespace UnityEditor.UIElements
             return EditorGUIUtility.Load(GetStyleSheetPathForFont(skin == EditorResources.darkSkinIndex ? s_DefaultCommonDarkStyleSheetPath : s_DefaultCommonLightStyleSheetPath, fontName)) as StyleSheet;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static bool IsCommonDarkStyleSheetLoaded()
         {
             return s_DefaultCommonDarkStyleSheet != null;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static StyleSheet GetCommonDarkStyleSheet()
         {
             if (s_DefaultCommonDarkStyleSheet == null)
@@ -53,11 +57,13 @@ namespace UnityEditor.UIElements
             return s_DefaultCommonDarkStyleSheet;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static bool IsCommonLightStyleSheetLoaded()
         {
             return s_DefaultCommonLightStyleSheet != null;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static StyleSheet GetCommonLightStyleSheet()
         {
             if (s_DefaultCommonLightStyleSheet == null)
