@@ -328,7 +328,9 @@ namespace UnityEditor.Search
 
             if ((evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter) && m_ListView.selectedIndex != -1)
             {
-                m_ViewModel.ExecuteAction(null, m_ListView.selectedItems.Cast<SearchItem>().ToArray(), !SearchSettings.keepOpen);
+                var items = m_ListView.selectedItems.Cast<SearchItem>().ToArray();
+                var action = evt.altKey ? SearchView.GetSecondaryAction(m_ViewModel.selection, items) : SearchView.GetDefaultAction(m_ViewModel.selection, items);
+                m_ViewModel.ExecuteAction(action, items, !SearchSettings.keepOpen);
                 return true;
             }
 

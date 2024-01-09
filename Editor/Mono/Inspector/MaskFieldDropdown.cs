@@ -227,7 +227,7 @@ namespace UnityEditor
                     property.intValue = 0;
                     for (int j = 0; j < m_OptionMaskValues.Length; j++)
                     {
-                        var slotsToShift = (int)Math.Log(m_OptionMaskValues[j], 2);
+                        var slotsToShift = (int)Math.Log((uint)m_OptionMaskValues[j], 2);
                         property.intValue |= 1 << slotsToShift;
                     }
                 }

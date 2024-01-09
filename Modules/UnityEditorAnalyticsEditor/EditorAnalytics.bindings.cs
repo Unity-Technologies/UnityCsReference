@@ -263,7 +263,7 @@ namespace UnityEditor
 
         extern private static AnalyticsResult SendEvent(string eventName, object parameters, SendEventOptions sendEventOptions = SendEventOptions.kAppendNone);
 
-        extern private static AnalyticsResult SendEventWithVersion(string eventName, object parameters, int ver, SendEventOptions sendEventOptions = SendEventOptions.kAppendNone);
+        extern internal static AnalyticsResult SendEventWithVersion(string eventName, object parameters, int ver, SendEventOptions sendEventOptions = SendEventOptions.kAppendNone);
 
 
         const string DeprecatedApiMsg = "Editor Analytics APIs have changed significantly, please see: https://docs.editor-data.unity3d.com/Contribute/EditorAnalytics/cs_guide/";

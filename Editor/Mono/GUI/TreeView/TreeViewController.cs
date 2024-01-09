@@ -514,6 +514,7 @@ namespace UnityEditor.IMGUI.Controls
                 case EventType.ContextClick:
                     if (rect.Contains(evt.mousePosition))
                     {
+                        SelectionClick(item, false);
                         // Do not use the event so the client can react to the context click (here we just handled the treeview selection)
                         if (contextClickItemCallback != null)
                             contextClickItemCallback(item.id);
@@ -726,7 +727,7 @@ namespace UnityEditor.IMGUI.Controls
             if (lastRow >= 0)
             {
                 int numVisibleRows = lastRow - firstRow + 1;
-                float rowWidth = Mathf.Max(GUIClip.visibleRect.width, m_ContentRect.width);
+                float rowWidth = Mathf.Max(GUIClip.visibleRect.width, m_ContentRect.width);   //here
 
                 IterateVisibleItems(firstRow, numVisibleRows, rowWidth, HasFocus());
             }

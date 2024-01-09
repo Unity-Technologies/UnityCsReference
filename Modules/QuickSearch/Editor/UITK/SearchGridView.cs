@@ -298,7 +298,9 @@ namespace UnityEditor.Search
             // Key handling when GridView is not in focus.
             if ((evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter) && m_GridView.selectedIndex != -1)
             {
-                m_ViewModel.ExecuteAction(null, m_GridView.selectedItems.Cast<SearchItem>().ToArray(), !SearchSettings.keepOpen);
+                var items = m_GridView.selectedItems.Cast<SearchItem>().ToArray();
+                var action = evt.altKey ? SearchView.GetSecondaryAction(m_ViewModel.selection, items) : SearchView.GetDefaultAction(m_ViewModel.selection, items);
+                m_ViewModel.ExecuteAction(action, items, !SearchSettings.keepOpen);
                 return true;
             }
 

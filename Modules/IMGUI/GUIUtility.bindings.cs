@@ -27,7 +27,11 @@ namespace UnityEngine
         }
 
         [NativeProperty("GetGUIState().m_OnGUIDepth", true, TargetType.Field)]
-        internal static extern int guiDepth { get; }
+        internal static extern int guiDepth
+        {
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            get;
+        }
 
         internal static extern Vector2 s_EditorScreenPointOffset
         {

@@ -1999,7 +1999,7 @@ namespace UnityEditor
             {
                 Tools.s_ButtonDown = evt.button;
 
-                if (evt.button == 1 && Application.platform == RuntimePlatform.OSXEditor)
+                if (Application.platform == RuntimePlatform.OSXEditor)
                     Focus();
             }
             // this is necessary because FPS tool won't get is cleanup logic

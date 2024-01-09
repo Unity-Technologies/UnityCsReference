@@ -65,9 +65,7 @@ namespace Unity.UI.Builder
             }
             else if (fieldElement.HasLinkedAttributeDescription())
             {
-                var uxmlAttr = fieldElement.GetLinkedAttributeDescription();
-                var propertyName = uxmlAttr.name;
-                bindingProperty =  inspector.attributeSection.GetRemapAttributeNameToCSProperty(propertyName);
+                bindingProperty = fieldElement.GetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName) as string;
             }
 
             return bindingProperty;

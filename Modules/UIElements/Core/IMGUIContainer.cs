@@ -300,6 +300,7 @@ namespace UnityEngine.UIElements
 
             // Save the GUIClip count to make sanity checks after calling the OnGUI handler
             int guiClipCount = GUIClip.Internal_GetCount();
+            int guiDepthBeforeOnGUI = GUIUtility.guiDepth;
 
             SaveGlobals();
 
@@ -382,6 +383,7 @@ namespace UnityEngine.UIElements
             EventType originalEventType = Event.current.type;
 
             bool isExitGUIException = false;
+            bool restoreContainerGUIDepth = true;
             int guiClipFinalCount = 0;
 
             try
@@ -407,6 +409,11 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
+                    // UUM-47254: don't restore ContainerGUI depth if we are in an ExitGUI process that came from a
+                    // lower layer of GUIView::OnInputEvent. Depth restoration is already handled from there.
+                    if (guiDepthBeforeOnGUI > 0)
+                        restoreContainerGUIDepth = false;
+
                     // rethrow event if not in layout
                     throw;
                 }
@@ -496,11 +503,15 @@ namespace UnityEngine.UIElements
                     hasFocusableControls = GUIUtility.HasFocusableControls();
                 }
 
-                // This will copy Event.current into evt. End the container by now since the container
-                // should end at this point no matter an exception occured or not. Not ending the container will make the GUIDepth off by 1.
-                UIElementsUtility.EndContainerGUI(evt, layoutSize);
+                if (restoreContainerGUIDepth)
+                {
+                    // This will copy Event.current into evt. End the container by now since the container
+                    // should end at this point no matter an exception occured or not.
+                    // Not ending the container will make the GUIDepth off by 1.
+                    UIElementsUtility.EndContainerGUI(evt, layoutSize);
 
-                RestoreGlobals();
+                    RestoreGlobals();
+                }
 
                 guiClipFinalCount = GUIClip.Internal_GetCount();
 

@@ -569,8 +569,8 @@ namespace Unity.UI.Builder
                 return serializedAttribute.serializedField.Name;
             }
 
-            var desc = visualElement.GetLinkedAttributeDescription();
-            return GetRemapAttributeNameToCSProperty(desc.name);
+            var name = visualElement.GetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName) as string;
+            return name;
         }
 
         internal static BuilderStyleRow GetLinkedStyleRow(VisualElement visualElement)
@@ -905,6 +905,19 @@ namespace Unity.UI.Builder
 
             // Link the PropertyField to the UxmlSerializedAttributeDescription.
             fieldElement.SetLinkedAttributeDescription(attribute);
+
+            // Save the property name.
+            var propertyName = attribute.name;
+
+            if (attribute is UxmlSerializedAttributeDescription serializedAttributeDescription)
+            {
+                fieldElement.SetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName, serializedAttributeDescription.serializedField.Name);
+            }
+            else
+            {
+                var bindingProperty = GetRemapAttributeNameToCSProperty(propertyName);
+                fieldElement.SetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName, bindingProperty);
+            }
 
             // Set initial value.
             UpdateAttributeField(fieldElement);

@@ -80,12 +80,29 @@ namespace UnityEditor.EditorTools
             string displayName,
             Type componentToolTarget,
             Type editorToolContext,
+            Type variantGroup)
+            : this(displayName, componentToolTarget, editorToolContext, defaultPriority, variantGroup, defaultPriority) {}
+
+        public EditorToolAttribute(
+            string displayName,
+            Type componentToolTarget,
+            Type editorToolContext,
             int toolPriority,
             Type variantGroup)
+            : this(displayName, componentToolTarget, editorToolContext, toolPriority, variantGroup, defaultPriority) {}
+
+        public EditorToolAttribute(
+            string displayName,
+            Type componentToolTarget,
+            Type editorToolContext,
+            int toolPriority,
+            Type variantGroup,
+            int variantPriority)
             : base(displayName, componentToolTarget, editorToolContext)
         {
             this.toolPriority = toolPriority;
             this.variantGroup = variantGroup;
+            this.variantPriority = variantPriority;
         }
     }
 

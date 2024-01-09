@@ -125,6 +125,7 @@ namespace Unity.UI.Builder
 
         // Inspector Style VE Property Names
         public static readonly string InspectorStylePropertyNameVEPropertyName = "__unity-ui-builder-style-property-name";
+        public static readonly string InspectorAttributeBindingPropertyNameVEPropertyName = "__unity-ui-builder-attribute-binding-property-name";
         public static readonly string InspectorClassPillLinkedSelectorElementVEPropertyName = "__unity-ui-builder-class-linked-pill-selector-element";
 
         // Inspector Style Property and Class Names

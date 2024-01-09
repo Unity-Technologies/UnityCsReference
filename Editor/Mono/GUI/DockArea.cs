@@ -362,8 +362,9 @@ namespace UnityEditor
 
             Rect dockAreaRect = new Rect(0, 0, position.width, position.height);
             Rect containerWindowPosition = window.position;
-            containerWindowPosition.width = GUIUtility.RoundToPixelGrid(containerWindowPosition.width);
-            containerWindowPosition.height = GUIUtility.RoundToPixelGrid(containerWindowPosition.height);
+            float scale = GetBackingScaleFactor();
+            containerWindowPosition.width = GUIUtility.RoundToPixelGrid(containerWindowPosition.width, scale);
+            containerWindowPosition.height = GUIUtility.RoundToPixelGrid(containerWindowPosition.height, scale);
 
             DrawDockAreaBackground(dockAreaRect);
 
@@ -1185,8 +1186,9 @@ namespace UnityEditor
                 return m_BorderSize;
 
             Rect containerWindowPosition = window.position;
-            containerWindowPosition.width = GUIUtility.RoundToPixelGrid(containerWindowPosition.width);
-            containerWindowPosition.height = GUIUtility.RoundToPixelGrid(containerWindowPosition.height);
+            float scale = GetBackingScaleFactor();
+            containerWindowPosition.width = GUIUtility.RoundToPixelGrid(containerWindowPosition.width, scale);
+            containerWindowPosition.height = GUIUtility.RoundToPixelGrid(containerWindowPosition.height, scale);
 
             bool customBorder = floatingWindow && windowPosition.y == 0;
             bool isBottomTab = Mathf.Abs(windowPosition.yMax - containerWindowPosition.height) < 0.02f;
@@ -1197,7 +1199,7 @@ namespace UnityEditor
             Rect r = windowPosition;
             if (r.xMin != 0)
                 m_BorderSize.left += (int)kSideBorders;
-            if (Mathf.Abs(r.xMax - GUIUtility.RoundToPixelGrid(window.position.width)) > 0.02f)
+            if (Mathf.Abs(r.xMax - GUIUtility.RoundToPixelGrid(window.position.width, scale)) > 0.02f)
                 m_BorderSize.right += (int)kSideBorders;
 
             m_BorderSize.top = (int)kTabHeight + (customBorder ? kFloatingWindowTopBorderWidth : 0);

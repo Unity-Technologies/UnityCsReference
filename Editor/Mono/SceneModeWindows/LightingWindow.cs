@@ -75,6 +75,7 @@ namespace UnityEditor
             void OnGUI();
             void OnSummaryGUI();
             void OnSelectionChange();
+            bool HasHelpGUI();
         }
 
         enum BakeMode
@@ -379,7 +380,7 @@ namespace UnityEditor
             EditorGUILayout.Space();
             EditorGUILayout.BeginHorizontal();
 
-            if (selectedMode == Mode.LightingSettings || selectedMode == Mode.EnvironmentSettings)
+            if (m_Tabs[selectedMode].HasHelpGUI())
                 GUILayout.Space(EditorStyles.iconButton.CalcSize(EditorGUI.GUIContents.helpIcon).x);
 
             GUILayout.FlexibleSpace();
