@@ -156,5 +156,7 @@ namespace UnityEditor.Modules
         {
             return false;
         }
+
+        public virtual void AutoRotationSectionGUI() {}
     }
 }

@@ -591,7 +591,10 @@ namespace UnityEditor
         {
             if (Tools.s_LockedViewTool == ViewTool.FPS)
             {
-                float scrollWheelDelta = Event.current.delta.y * m_FPSScrollWheelMultiplier;
+                // On some OSs, macOS for example, holding Shift while scrolling is interpreted as horizontal scroll at the system level
+                // and that would cause the scroll delta to be set on the x coord instead of y. Therefore here we're taking the magnitude instead of specific component's value.
+                var inputScrollWheelDelta = Event.current.delta.magnitude * Mathf.Sign(Mathf.Min(Event.current.delta.x,  Event.current.delta.y));
+                float scrollWheelDelta = inputScrollWheelDelta * m_FPSScrollWheelMultiplier;
                 view.cameraSettings.speedNormalized -= scrollWheelDelta;
                 float cameraSettingsSpeed = view.cameraSettings.speed;
                 string cameraSpeedDisplayValue = cameraSettingsSpeed.ToString(

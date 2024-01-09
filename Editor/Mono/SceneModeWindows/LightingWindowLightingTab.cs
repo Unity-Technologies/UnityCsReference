@@ -127,5 +127,10 @@ namespace UnityEditor
                 --EditorGUI.indentLevel;
             }
         }
+
+        public bool HasHelpGUI()
+        {
+            return true;
+        }
     }
 } // namespace

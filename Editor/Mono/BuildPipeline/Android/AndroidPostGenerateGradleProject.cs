@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace UnityEditor.Android
 {
+    [Obsolete("IPostGenerateGradleAndroidProject is deprecated. Use AndroidProjectFilesModifier instead.")]
     public interface IPostGenerateGradleAndroidProject : IOrderedCallback
     {
         [Obsolete("OnPostGenerateGradleAndroidProject is deprecated. Use AndroidProjectFilesModifier.OnModifyAndroidProjectFiles instead.")]

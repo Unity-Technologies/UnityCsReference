@@ -42,7 +42,8 @@ namespace UnityEditor.Search
         // 23- Improve keyword type encoding
         // 24- Optimize asset path indexing in size
         // 25- Fix SearchDocument concurrency
-        internal const int version = 0x025;
+        // 26- Index all dir tokens in combination for dir: filter.
+        internal const int version = 0x026;
 
         public enum Type : byte
         {

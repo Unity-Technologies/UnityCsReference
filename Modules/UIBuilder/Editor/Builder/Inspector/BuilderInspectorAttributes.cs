@@ -93,8 +93,7 @@ namespace Unity.UI.Builder
                 if (m_Selection.selectionType != BuilderSelectionType.ElementInTemplateInstance)
                 {
                     var fieldElement = styleRow.GetLinkedFieldElements()[0]; // Assume default case of only 1 field per row.
-                    var attribute = fieldElement.GetLinkedAttributeDescription();
-                    var csPropertyName = GetRemapAttributeNameToCSProperty(attribute.name);
+                    var csPropertyName = fieldElement.GetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName) as string;
                     var container = currentElement;
                     var isBindableElement = UxmlSerializedDataRegistry.GetDescription(attributesUxmlOwner.fullTypeName) != null;
                     var isBindableProperty = PropertyContainer.IsPathValid(ref container, csPropertyName);

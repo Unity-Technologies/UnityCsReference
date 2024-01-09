@@ -91,9 +91,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             private Node WithDifferentOffsetFromParent(int offsetFromParent)
-            {
-                return new Node(Value, FullPrefix, offsetFromParent, ChildNodes);
-            }
+                => IsLeaf ? new Node(Value, FullPrefix, offsetFromParent, ChildNodes)
+                          : new Node(FullPrefix, offsetFromParent, ChildNodes);
 
             private bool IsMatch(ReadOnlySpan<char> span)
             {

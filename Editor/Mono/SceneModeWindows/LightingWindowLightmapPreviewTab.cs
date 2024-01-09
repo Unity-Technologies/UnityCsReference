@@ -166,6 +166,11 @@ namespace UnityEditor
             LightingWindow.Summary();
         }
 
+        public bool HasHelpGUI()
+        {
+            return false;
+        }
+
         private void InitSettings()
         {
             if (m_LightmapSettings == null || m_LightmapSettings.targetObject == null || m_LightmapSettings.targetObject != LightmapEditorSettings.GetLightmapSettings())

@@ -548,13 +548,34 @@ namespace UnityEditor.Search
               menu.DropDown(contextualActionPosition);
         }
 
-        private SearchAction GetDefaultAction(IEnumerable<SearchItem> items = null)
+        internal static SearchAction GetSelectAction(SearchSelection selection, IEnumerable<SearchItem> items)
         {
             var provider = (items ?? selection).First().provider;
-            return provider.actions.FirstOrDefault(a => string.Equals(a.id, "select", StringComparison.Ordinal)) ?? provider.actions.FirstOrDefault();
+            var selectAction = provider.actions.FirstOrDefault(a => string.Equals(a.id, "select", StringComparison.Ordinal));
+            if (selectAction == null)
+            {
+                selectAction = GetDefaultAction(selection, items);
+            }
+            return selectAction;
         }
 
-        void ISearchView.ExecuteSelection() => ExecuteAction(GetDefaultAction(selection), selection.ToArray(), endSearch: false);
+        internal static SearchAction GetDefaultAction(SearchSelection selection, IEnumerable<SearchItem> items)
+        {
+            var provider = (items ?? selection).First().provider;
+            return provider.actions.FirstOrDefault();
+        }
+
+        internal static SearchAction GetSecondaryAction(SearchSelection selection, IEnumerable<SearchItem> items)
+        {
+            var provider = (items ?? selection).First().provider;
+            return provider.actions.Count > 1 ? provider.actions[1] : GetDefaultAction(selection, items);
+        }
+
+        void ISearchView.ExecuteSelection()
+        {
+            ExecuteAction(GetDefaultAction(selection, selection), selection.ToArray(), endSearch: false);
+        }
+
         public void ExecuteAction(SearchAction action, SearchItem[] items, bool endSearch = false)
         {
             var item = items.LastOrDefault();
@@ -571,7 +592,7 @@ namespace UnityEditor.Search
             else
             {
                 if (action == null)
-                    action = GetDefaultAction(items);
+                    action = GetDefaultAction(selection, items);
 
                 SendSearchEvent(item, action);
                 if (endSearch)

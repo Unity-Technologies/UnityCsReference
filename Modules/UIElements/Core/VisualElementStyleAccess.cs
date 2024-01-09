@@ -23,11 +23,8 @@ namespace UnityEngine.UIElements
         internal ResolvedStyleAccess resolvedStyleAccess;
 
         /// <summary>
-        /// Reference to the style object of this element.
+        /// Sets the <see cref="VisualElement"/> style values.
         /// </summary>
-        /// <remarks>
-        /// Contains data computed from USS files or inline styles written to this object in C#.
-        /// </remarks>
         [CreateProperty]
         public IStyle style
         {

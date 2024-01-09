@@ -115,7 +115,15 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Offers a set of values that describe the intended usage patterns of a specific <see cref="VisualElement"/>.
+    /// Offers a set of options that describe the intended usage patterns of a <see cref="VisualElement"/>.
+    /// These options serve as guidance for optimizations. You can set multiple
+    /// usage hints on an element. For example, if both position and color change, you can set both
+    /// <see cref="DynamicTransform"/> and <see cref="DynamicColor"/>.\\
+    /// \\
+    /// __Note__: Set the usage hints at edit time or before you add the <see cref="VisualElement"/> to a panel.
+    /// In the case of transition, when it starts, the system might automatically add missing relevant
+    /// usage hints to avoid regenerating geometry in every frame. However, this causes a one-frame performance penalty
+    /// because the rendering data for the VisualElement and its descendants is regenerated.
     /// </summary>
     [Flags]
     public enum UsageHints
@@ -125,35 +133,85 @@ namespace UnityEngine.UIElements
         /// </summary>
         None = 0,
         /// <summary>
-        /// Marks a <see cref="VisualElement"/> that changes its transformation often (i.e. position, rotation or scale).
-        /// When specified, this flag hints the system to optimize rendering of the <see cref="VisualElement"/> for recurring transformation changes. The VisualElement's vertex transformation will be done by the GPU when possible on the target platform.
-        /// Please note that the number of VisualElements to which this hint effectively applies can be limited by target platform capabilities. For such platforms, it is recommended to prioritize use of this hint to only the VisualElements with the highest frequency of transformation changes.
-        /// </summary>
-        DynamicTransform = 1 << 0,
-        /// <summary>
-        /// Marks a <see cref="VisualElement"/> that hosts many children with <see cref="DynamicTransform"/> applied on them.
-        /// A common use-case of this hint is a VisualElement that represents a "viewport" within which there are many <see cref="DynamicTransform"/> VisualElements that can move individually in addition to the "viewport" element also often changing its transformation. However, if the contents of the aforementioned "viewport" element are mostly static (not moving) then it is enough to use the <see cref="DynamicTransform"/> hint on that element instead of <see cref="GroupTransform"/>.
-        /// Internally, an element hinted with <see cref="GroupTransform"/> will force a separate draw batch with its world transformation value, but in the same time it will avoid changing the transforms of all its descendants whenever a transformation change occurs on the <see cref="GroupTransform"/> element.
-        /// </summary>
-        GroupTransform = 1 << 1,
-        /// <summary>
-        /// Marks a <see cref="VisualElement"/> that hosts non-rectangular descendants using the "overflow: hidden;"
-        /// style. Non-rectangular masks are implemented with the stencil. If applicable, the renderer breaks the batch
-        /// to preemptively set the stencil state, before and after drawing the descendants, so that the descendants
-        /// won't have to set them at the next masking level. When using this flag, consecutive stencil push/pop
-        /// operations are cheap and don't require modifying the stencil reference. As a result, the batch doesn't need
-        /// to be broken for each push/pop operation. Consecutive push/push or pop/pop operations are still expensive.
-        /// Avoid cases that involve many subtrees, where each subtree uses 2 or more levels of masking, to avoid
-        /// consecutive push/push or pop/pop operations.
+        /// Optimizes rendering of a <see cref="VisualElement"/> for frequent position and
+        /// transformation changes. 
         /// </summary>
         /// <remarks>
-        /// This flag is implicitly set on the root VisualElement, making single-level masks non-batch-breaking by default.
+        /// This option uses the GPU instead of CPU to perform the VisualElement's vertex transformation.\\
+        /// \\
+        /// Use this option on a VisualElement that changes any of the following style properties:
+        /// 
+        ///- `left`
+        ///- `top`
+        ///- `right`
+        ///- `bottom`
+        ///- `position`
+        ///- `transform-origin`
+        ///- `rotate`
+        ///- `scale`
+        ///- `translate`
+        /// </remarks>
+        DynamicTransform = 1 << 0,
+        /// <summary>
+        /// Optimizes rendering of a <see cref="VisualElement"/> that changes its transformation and position
+        /// frequently, and has many descendants that have their hints set to <see cref="DynamicTransform"/>.
+        /// </summary>
+        /// <remarks>
+        /// This option is similar to <see cref="DynamicTransform"/> in that it allows GPU transformation of the vertices of
+        /// the descendants. However it breaks the batch, and adds an extra draw call. The purpose of this hint is to
+        /// avoid having to update the stored matrix of many elements that have <see cref="DynamicTransform"/> set
+        /// when a common ancestor changes its transformation or position. In other words, this is an optimisation for
+        /// <see cref="DynamicTransform"/>.\\
+        /// \\
+        /// An example use case is that in Shader Graph, you can
+        /// set individual nodes with <see cref="DynamicTransform"/>, and set the ancestor
+        /// panner/zoomer with `GroupTransform`, so that when you pan/zoom, you avoid the
+        /// need to update hundreds of dynamic transforms.\\
+        /// \\
+        /// __Note__: Don't use both <see cref="DynamicTransform"/> and GroupTransform at the same time on a single VisualElement.
+        /// </remarks>
+        GroupTransform = 1 << 1,
+        /// <summary>
+        /// Optimizes rendering of a <see cref="VisualElement"/> that has multiple descendants with nested masks.
+        /// </summary>
+        /// <remarks>
+        /// This option reduces stencil state changes and capitalizes on consecutive 
+        /// mask push/pop operations for efficiency.\\ 
+        /// \\
+        /// Apply this option to a VisualElement with multiple nested masks among its descendants. For example, a child element
+        /// has the `overflow: hidden;` style with rounded corners or SVG background.\\
+        /// \\
+        /// The following image shows the difference among single-level masking, nested masking, and nested masking with MaskContainer:
+        /// 
+        /// {img MaskContainer.png}\\
+        /// A: Single-level masking (1 batch)\\
+        /// B: Nested masking (5 batches)\\
+        /// C: Nested masking with MaskContainer (2 batches)\\
+        /// \\
+        /// __Note__: Don't use GroupTransform in scenarios with many subtrees, where each
+        /// subtree uses two or more levels of masking. This helps minimize consecutive
+        /// push/push or pop/pop operations.
         /// </remarks>
         MaskContainer = 1 << 2,
         /// <summary>
-        /// Marks a <see cref="VisualElement"/> that changes its color often (background-color, border-color, etc.).
-        /// This will store the element's colors in an optimized storage suitable for frequent changes, such as animation.
+        /// Optimizes rendering of a <see cref="VisualElement"/> for frequent color changes, such as a built-in style color being animated.
         /// </summary>
+        /// <remarks>
+        /// This option fetches color from a GPU buffer to prevent re-tessellating geometry or CPU updates when colors change.
+        /// 
+        /// Apply this option on a VisualElement that changes any of the following style properties:
+        /// 
+        ///- `background-color`
+        ///- `border-color`
+        ///- `color`
+        ///- `border-bottom-color`
+        ///- `border-left-color`
+        ///- `border-right-color`
+        ///- `border-top-color`
+        ///- `text-color`
+        ///- `unity-background-image-tint-color`
+        ///
+        /// </remarks>
         DynamicColor = 1 << 3,
     }
 
@@ -176,7 +234,8 @@ namespace UnityEngine.UIElements
         DirtyBoneTransform = BoneTransform << DirtyOffset,
         DirtyClipWithScissors = ClipWithScissors << DirtyOffset,
         DirtyMaskContainer = MaskContainer << DirtyOffset,
-        DirtyAll = DirtyGroupTransform | DirtyBoneTransform | DirtyClipWithScissors | DirtyMaskContainer,
+        DirtyDynamicColor = DynamicColor << DirtyOffset,
+        DirtyAll = DirtyGroupTransform | DirtyBoneTransform | DirtyClipWithScissors | DirtyMaskContainer | DirtyDynamicColor,
     }
 
     // For backwards compatibility with debugger in 2020.1

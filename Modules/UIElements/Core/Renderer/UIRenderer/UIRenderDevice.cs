@@ -963,6 +963,8 @@ namespace UnityEngine.UIElements.UIR
                         if (shaderInfo != null)
                             st.constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
                         Utility.SetPropertyBlock(st.constantProps);
+
+                        m_TextureSlotManager.Reset();
                     }
 
                     if (head.type != CommandType.Draw)
