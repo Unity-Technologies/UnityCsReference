@@ -54,7 +54,7 @@ namespace UnityEditor.Search
             {
                 var areaPropositions = QueryAreaBlock.FetchPropositions(context);
                 var allOtherPropositions = new[] { SearchProposition.CreateSeparator() }.Concat(SearchProposition.Fetch(context, options).OrderBy(p => p));
-                return areaPropositions.Count() > 1 ?
+                return areaPropositions.Count() > 0 ?
                     areaPropositions.Concat(allOtherPropositions) :
                     allOtherPropositions;
             }

@@ -25,14 +25,12 @@ namespace UnityEditor.UIElements.Bindings
         SerializedProperty m_ArraySize;
         int m_ListViewArraySize;
 
-        bool m_IsBinding;
         Func<VisualElement> m_DefaultMakeItem;
         Action<VisualElement, int> m_DefaultBindItem;
         Action<VisualElement, int> m_DefaultUnbindItem;
         EventCallback<DragUpdatedEvent> m_DragUpdatedCallback;
         EventCallback<DragPerformEvent> m_DragPerformCallback;
         EventCallback<SerializedObjectBindEvent> m_SerializedObjectBindEventCallback;
-        EventCallback<SerializedPropertyBindEvent> m_SerializedPropertyBindEventCallback;
 
         public static void CreateBind(ListView listView,
             SerializedObjectBindingContext context,
@@ -51,7 +49,6 @@ namespace UnityEditor.UIElements.Bindings
             m_DragUpdatedCallback = OnDragUpdated;
             m_DragPerformCallback = OnDragPerform;
             m_SerializedObjectBindEventCallback = SerializedObjectBindEventCallback;
-            m_SerializedPropertyBindEventCallback = SerializedPropertyBindEventCallback;
         }
 
         protected void SetBinding(ListView targetList, SerializedObjectBindingContext context,
@@ -97,7 +94,6 @@ namespace UnityEditor.UIElements.Bindings
 
             // We prevent hierarchy binding under the contentContainer.
             listView.scrollView.contentContainer.RegisterCallback(m_SerializedObjectBindEventCallback);
-            listView.scrollView.contentContainer.RegisterCallback(m_SerializedPropertyBindEventCallback);
 
             // ListViews instantiated by users are driven by users. We only change the reordering options if the user
             // has used a PropertyField to display the list. (Cases UUM-33402 and UUM-27687)
@@ -152,7 +148,6 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             listView.scrollView.contentContainer.UnregisterCallback(m_SerializedObjectBindEventCallback);
-            listView.scrollView.contentContainer.UnregisterCallback(m_SerializedPropertyBindEventCallback);
 
             listView.SetViewController(null);
 
@@ -194,10 +189,8 @@ namespace UnityEditor.UIElements.Bindings
             var item = m_DataList[index];
             var itemProp = item as SerializedProperty;
 
-            m_IsBinding = true;
             field.bindingPath = itemProp.propertyPath;
             bindingContext.ContinueBinding(ve, null);
-            m_IsBinding = false;
         }
 
         void UnbindListViewItem(VisualElement ve, int index)
@@ -226,18 +219,8 @@ namespace UnityEditor.UIElements.Bindings
 
         void SerializedObjectBindEventCallback(SerializedObjectBindEvent evt)
         {
-            if (m_IsBinding || listView.bindItem != m_DefaultBindItem)
-                return;
-
-            evt.PreventDefault();
-            evt.StopPropagation();
-        }
-
-        void SerializedPropertyBindEventCallback(SerializedPropertyBindEvent evt)
-        {
-            if (m_IsBinding || listView.bindItem != m_DefaultBindItem)
-                return;
-
+            // Prevents list view items to be bound to the parent's serialized object.
+            // Binding is happening on a per item basis, either from Unity or from users, so we want to stop binding the hierarchy tree from here.
             evt.PreventDefault();
             evt.StopPropagation();
         }
@@ -324,7 +307,7 @@ namespace UnityEditor.UIElements.Bindings
                 isUpdating = true;
                 UpdateArraySize();
             }
-            catch (ArgumentNullException)
+            catch (NullReferenceException e) when (e.Message.Contains("SerializedObject of SerializedProperty has been Disposed."))
             {
                 //this can happen when serializedObject has been disposed of
             }
@@ -338,6 +321,12 @@ namespace UnityEditor.UIElements.Bindings
         {
             if (isReleased)
             {
+                return;
+            }
+
+            if (!bindingContext.IsValid())
+            {
+                Release();
                 return;
             }
 
@@ -364,7 +353,7 @@ namespace UnityEditor.UIElements.Bindings
 
                 return;
             }
-            catch (ArgumentNullException)
+            catch (NullReferenceException e) when (e.Message.Contains("SerializedObject of SerializedProperty has been Disposed."))
             {
                 //this can happen when serializedObject has been disposed of
             }

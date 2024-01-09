@@ -147,7 +147,7 @@ namespace UnityEngine.UIElements
                 if (!textElement.edition.AcceptCharacter(c))
                     return;
 
-                if (c >= k_Space || evt.keyCode == KeyCode.Tab || c == '\n' || c == '\r' || c == k_LineFeed)
+                if (c >= k_Space || evt.keyCode == KeyCode.Tab || (textElement.edition.multiline && !evt.altKey && (c == '\n' || c == '\r' || c == k_LineFeed)))
                 {
                     editingUtilities.Insert(c);
                     m_Changed = true;

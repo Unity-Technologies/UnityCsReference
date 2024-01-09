@@ -263,6 +263,8 @@ namespace UnityEditor.Modules
         void SerializedObjectUpdated();
 
         bool SupportsStaticSplashScreenBackgroundColor();
+
+        void AutoRotationSectionGUI();
     }
 
 
