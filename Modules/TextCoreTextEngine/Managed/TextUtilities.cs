@@ -283,5 +283,32 @@ namespace UnityEngine.TextCore.Text
 
             return new string(chars);
         }
+
+        internal static int GetTextFontWeightIndex(TextFontWeight fontWeight)
+        {
+            switch (fontWeight)
+            {
+                case TextFontWeight.Thin:
+                    return 1;       
+                case TextFontWeight.ExtraLight:
+                    return 2;   
+                case TextFontWeight.Light:
+                    return 3;  
+                case TextFontWeight.Regular:
+                    return 4; 
+                case TextFontWeight.Medium:
+                    return 5;
+                case TextFontWeight.SemiBold:
+                    return 6;
+                case TextFontWeight.Bold:
+                    return 7;
+                case TextFontWeight.Heavy:
+                    return 8;
+                case TextFontWeight.Black:
+                    return 9;
+                default:
+                    return 4;
+            }
+        }
     }
 }

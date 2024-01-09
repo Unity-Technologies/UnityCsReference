@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 using static UnityEngine.EnumDataUtility;
 
@@ -141,12 +142,23 @@ namespace UnityEngine.UIElements
         private EnumData m_EnumData;
 
         // These properties exist so that the UIBuilder can read them.
-        internal Type type => m_EnumType;
-        internal bool includeObsoleteValues {  get => m_IncludeObsoleteValues; set => m_IncludeObsoleteValues = value; }
+        internal Type type
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => m_EnumType;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal bool includeObsoleteValues
+        {
+            get => m_IncludeObsoleteValues;
+            set => m_IncludeObsoleteValues = value;
+        }
 
         internal string typeAsString
         {
             get => UxmlUtility.TypeToString(m_EnumType);
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             set
             {
                 m_EnumType = UxmlUtility.ParseType(value);
@@ -158,6 +170,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal string valueAsString
         {
             get => value?.ToString();
@@ -309,6 +322,7 @@ namespace UnityEngine.UIElements
                 UpdateValueLabel(defaultValue);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void PopulateDataFromType(Type enumType)
         {
             m_EnumType = enumType;

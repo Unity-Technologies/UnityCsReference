@@ -6,10 +6,12 @@ using System;
 using UnityEditor.UIElements.Experimental.Debugger;
 using UnityEditor.UIElements.Experimental.UILayoutDebugger;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.UIElements
 {
     [FilePath("ProjectSettings/UIToolkitProjectSettings.asset", FilePathAttribute.Location.ProjectFolder)]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UIToolkitProjectSettings : ScriptableSingleton<UIToolkitProjectSettings>
     {
         const string k_EditorExtensionModeKey = "UIBuilder.EditorExtensionModeKey";
@@ -25,6 +27,7 @@ namespace UnityEditor.UIElements
 
         internal static bool enableAdvancedText
         {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get => instance.m_EnableAdvancedText;
             set
             {
@@ -35,6 +38,8 @@ namespace UnityEditor.UIElements
                 instance.Save();
             }
         }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Action<bool> onEnableAdvancedTextChanged;
 
         public void Save()

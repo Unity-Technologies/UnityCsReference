@@ -99,12 +99,31 @@ namespace UnityEngine.iOS
         iPodTouchUnknown    = 10003,
     }
 
+    // "Show Loading Indicator" enums for the user script API
+    // Keep in sync with PlayerSettingsIOS.bindings.cs iOSShowActivityIndicatorOnLoading
+    // These map directly to Apple ones https://developer.apple.com/documentation/uikit/uiactivityindicatorviewstyle
     public enum ActivityIndicatorStyle
     {
-        DontShow = -1,  // Do not show ActivityIndicator
-        WhiteLarge = 0, // The large white style of indicator (UIActivityIndicatorViewStyleWhiteLarge).
-        White = 1,      // The standard white style of indicator (UIActivityIndicatorViewStyleWhite).
-        Gray = 2,       // The standard gray style of indicator (UIActivityIndicatorViewStyleGray).
+        // Do not show ActivityIndicator
+        DontShow = -1,
+
+        // Deprecated. The large white style of indicator (UIActivityIndicatorViewStyleWhiteLarge).
+        [Obsolete("WhiteLarge Activity Indicator has been deprecated by Apple. Use Large instead (UnityUpgradable) -> Large", true)]
+        WhiteLarge = 0,
+
+        // Deprecated. The standard white style of indicator (UIActivityIndicatorViewStyleWhite).
+        [Obsolete("White Activity Indicator has been deprecated by Apple. Use Medium instead (UnityUpgradable) -> Medium", true)]
+        White = 1,
+
+        // Deprecated. The standard gray style of indicator (UIActivityIndicatorViewStyleGray).
+        [Obsolete("Gray Activity Indicator has been deprecated by Apple. Use Medium instead (UnityUpgradable) -> Medium", true)]
+        Gray = 2,
+
+        // The default style of indicator (UIActivityIndicatorViewStyleMedium)
+        Medium = 100,
+
+        // The large style of indicator (UIActivityIndicatorViewStyleLarge)
+        Large = 101,
     }
 
     [NativeHeader("PlatformDependent/iPhonePlayer/IOSScriptBindings.h")]

@@ -9,6 +9,7 @@ using System.Linq;
 using Unity.Profiling;
 using UnityEngine.Pool;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
@@ -67,6 +68,7 @@ namespace UnityEngine.UIElements
     }
 
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class SerializedVirtualizationData
     {
         public Vector2 scrollOffset;
@@ -287,7 +289,14 @@ namespace UnityEngine.UIElements
         /// </summary>
         public event Action itemsSourceChanged;
 
-        internal event Action selectionNotChanged;
+        private event Action m_SelectionNotChanged = () => { };
+
+        internal event Action selectionNotChanged
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            add => m_SelectionNotChanged += value;
+            remove => m_SelectionNotChanged -= value;
+        }
 
         /// <summary>
         /// Called when a drag operation wants to start in this collection view.
@@ -475,10 +484,22 @@ namespace UnityEngine.UIElements
 
         static readonly List<ReusableCollectionItem> k_EmptyItems = new();
         internal IEnumerable<ReusableCollectionItem> activeItems => m_VirtualizationController?.activeItems ?? k_EmptyItems;
-        internal ScrollView scrollView => m_ScrollView;
-        internal ListViewDragger dragger => m_Dragger;
-        internal CollectionVirtualizationController virtualizationController => GetOrCreateVirtualizationController();
 
+        internal ScrollView scrollView
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => m_ScrollView;
+        }
+
+        internal ListViewDragger dragger => m_Dragger;
+
+        internal CollectionVirtualizationController virtualizationController
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => GetOrCreateVirtualizationController();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool allowSingleClickChoice = false;
 
         /// <summary>
@@ -679,6 +700,7 @@ namespace UnityEngine.UIElements
         KeyboardNavigationManipulator m_NavigationManipulator;
 
         [SerializeField, DontCreateProperty]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal SerializedVirtualizationData serializedVirtualizationData = new SerializedVirtualizationData();
 
         // Persisted. It's why this can't be a HashSet(). :(
@@ -1436,13 +1458,13 @@ namespace UnityEngine.UIElements
                     {
                         // Do nothing, selection will be processed OnPointerUp.
                         // If drag and drop will be started ListViewDragger will capture the mouse and ListView will not receive the mouse up event.
-                        selectionNotChanged?.Invoke();
+                        m_SelectionNotChanged?.Invoke();
                     }
                     else // single
                     {
                         if (selectionType == SelectionType.Single && m_SelectedIndices.Contains(clickedIndex))
                         {
-                            selectionNotChanged?.Invoke();
+                            m_SelectionNotChanged?.Invoke();
                         }
 
                         SetSelection(clickedIndex);

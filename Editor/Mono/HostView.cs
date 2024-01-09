@@ -18,6 +18,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class HostView : GUIView, IEditorWindowModel
     {
         static class Styles
@@ -110,6 +111,7 @@ namespace UnityEditor
 
         internal EditorWindow actualView
         {
+            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get { return m_ActualView; }
             set { SetActualViewInternal(value, sendEvents: true); }
         }
@@ -903,6 +905,7 @@ namespace UnityEditor
             Selection.activeObject = (Object)userData;
         }
 
+        [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void Reload(object userData)
         {
             EditorWindow window = userData as EditorWindow;

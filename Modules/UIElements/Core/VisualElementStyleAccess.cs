@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -70,6 +71,7 @@ namespace UnityEngine.UIElements
         [CreateProperty(ReadOnly = true)]
         public VisualElementStyleSheetSet styleSheets => new VisualElementStyleSheetSet(this);
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal List<StyleSheet> styleSheetList;
 
         private static readonly Regex s_InternalStyleSheetPath = new Regex("^instanceId:[-0-9]+$", RegexOptions.Compiled);
@@ -78,7 +80,7 @@ namespace UnityEngine.UIElements
         {
             // getting the scaling is impossible when the asset is not in a panel, and this is often the case when loading the assets.
             // instead the scaling of imgui will be used, witch could be anything. It is still better than notting.
-            // TODO: fix this at some point. 
+            // TODO: fix this at some point.
 #pragma warning disable CS0618
             StyleSheet sheetAsset = Panel.LoadResource(sheetPath, typeof(StyleSheet), scaledPixelsPerPoint_noChecks) as StyleSheet;
 #pragma warning restore CS0618 // Type or member is obsolete
@@ -99,7 +101,7 @@ namespace UnityEngine.UIElements
         {
             // getting the scaling is impossible when the asset is not in a panel, and this is often the case when loading the assets.
             // instead the scaling of imgui will be used, witch could be anything. It is still better than notting.
-            // TODO: fix this at some point. 
+            // TODO: fix this at some point.
 #pragma warning disable CS0618
             StyleSheet sheetAsset = Panel.LoadResource(sheetPath, typeof(StyleSheet), scaledPixelsPerPoint_noChecks) as StyleSheet;
 #pragma warning restore CS0618 // Type or member is obsolete
@@ -117,7 +119,7 @@ namespace UnityEngine.UIElements
         {
             // getting the scaling is impossible when the asset is not in a panel, and this is often the case when loading the assets.
             // instead the scaling of imgui will be used, witch could be anything. It is still better than notting.
-            // TODO: fix this at some point. 
+            // TODO: fix this at some point.
 #pragma warning disable CS0618
             StyleSheet sheetAsset = Panel.LoadResource(sheetPath, typeof(StyleSheet), scaledPixelsPerPoint_noChecks) as StyleSheet;
 #pragma warning restore CS0618 // Type or member is obsolete

@@ -4,9 +4,11 @@
 
 using System;
 using Unity.Profiling;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal struct StyleDataRef<T> : IEquatable<StyleDataRef<T>> where T : struct, IEquatable<T>, IStyleDataGroup<T>
     {
         private class RefCounted

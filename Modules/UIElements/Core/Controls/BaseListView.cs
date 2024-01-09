@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
@@ -468,7 +469,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal Foldout headerFoldout => m_Foldout;
+        internal Foldout headerFoldout
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => m_Foldout;
+        }
 
         void EnableFooter(bool enabled)
         {

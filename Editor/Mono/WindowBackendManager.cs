@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor
@@ -23,6 +24,7 @@ namespace UnityEditor
         IWindowBackend windowBackend { get; set; }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal interface IEditorWindowModel : IWindowModel
     {
         EditorWindow window { get; }

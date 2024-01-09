@@ -61,37 +61,7 @@ namespace UnityEngine.TextCore.Text
                 // Get reference to the font weight pairs of the given font asset.
                 FontWeightPair[] fontWeights = sourceFontAsset.fontWeightTable;
 
-                int fontWeightIndex = 4;
-                switch (fontWeight)
-                {
-                    case TextFontWeight.Thin:
-                        fontWeightIndex = 1;
-                        break;
-                    case TextFontWeight.ExtraLight:
-                        fontWeightIndex = 2;
-                        break;
-                    case TextFontWeight.Light:
-                        fontWeightIndex = 3;
-                        break;
-                    case TextFontWeight.Regular:
-                        fontWeightIndex = 4;
-                        break;
-                    case TextFontWeight.Medium:
-                        fontWeightIndex = 5;
-                        break;
-                    case TextFontWeight.SemiBold:
-                        fontWeightIndex = 6;
-                        break;
-                    case TextFontWeight.Bold:
-                        fontWeightIndex = 7;
-                        break;
-                    case TextFontWeight.Heavy:
-                        fontWeightIndex = 8;
-                        break;
-                    case TextFontWeight.Black:
-                        fontWeightIndex = 9;
-                        break;
-                }
+                int fontWeightIndex = TextUtilities.GetTextFontWeightIndex(fontWeight);
 
                 FontAsset temp = isItalic ? fontWeights[fontWeightIndex].italicTypeface : fontWeights[fontWeightIndex].regularTypeface;
 
@@ -100,7 +70,7 @@ namespace UnityEngine.TextCore.Text
                     if (!isMainThread && temp.m_CharacterLookupDictionary == null)
                         return null;
 
-                    if (temp.characterLookupTable.TryGetValue(unicode, out character))
+                    if (temp.GetCharacterInLookupCache(unicode, fontStyle, fontWeight, out character))
                     {
                         if (character.textAsset != null)
                         {
@@ -109,7 +79,7 @@ namespace UnityEngine.TextCore.Text
                         }
 
                         // Remove character from lookup table
-                        temp.characterLookupTable.Remove(unicode);
+                        temp.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
                     }
 
                     if (temp.atlasPopulationMode == AtlasPopulationMode.Dynamic || temp.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
@@ -121,7 +91,7 @@ namespace UnityEngine.TextCore.Text
                         }
                             
 
-                        else if (temp.TryAddCharacterInternal(unicode, out character))
+                        else if (temp.TryAddCharacterInternal(unicode, fontStyle, fontWeight, out character))
                         {
                             isAlternativeTypeface = true;
                             return character;
@@ -141,6 +111,17 @@ namespace UnityEngine.TextCore.Text
                         // We assume the font atlas has room otherwise this font asset should not be marked as dynamic.
                         // Alternatively, we could also add multiple pages of font atlas textures (feature consideration).
                     }
+                    // Search the source font asset for the requested character, removing bold and italic status
+                    else if (temp.GetCharacterInLookupCache(unicode, FontStyles.Normal, TextFontWeight.Regular, out character))
+                    {
+                        if (character.textAsset != null)
+                        {
+                            isAlternativeTypeface = true;
+                            return character;
+                        }
+
+                        temp.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
+                    }
 
                     // At this point, we were not able to find the requested character in the alternative typeface
                     // so we check the source font asset and its potential fallbacks.
@@ -152,12 +133,12 @@ namespace UnityEngine.TextCore.Text
                 return null;
 
             // Search the source font asset for the requested character.
-            if (sourceFontAsset.characterLookupTable.TryGetValue(unicode, out character))
+            if (sourceFontAsset.GetCharacterInLookupCache(unicode, fontStyle, fontWeight, out character))
             {
                 if (character.textAsset != null)
                     return character;
 
-                sourceFontAsset.characterLookupTable.Remove(unicode);
+                sourceFontAsset.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
             }
 
             if (sourceFontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || sourceFontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
@@ -165,8 +146,16 @@ namespace UnityEngine.TextCore.Text
                 if (!isMainThread)
                     return null;
 
-                if (sourceFontAsset.TryAddCharacterInternal(unicode, out character))
+                if (sourceFontAsset.TryAddCharacterInternal(unicode, fontStyle, fontWeight, out character))
                     return character;
+            }
+            // Search the source font asset for the requested character, removing bold and italic status
+            else if (sourceFontAsset.GetCharacterInLookupCache(unicode, FontStyles.Normal, TextFontWeight.Regular, out character))
+            {
+                if (character.textAsset != null)
+                    return character;
+
+                sourceFontAsset.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
             }
 
             if (character == null && !isMainThread)

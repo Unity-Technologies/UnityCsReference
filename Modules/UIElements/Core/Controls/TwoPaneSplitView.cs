@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -175,6 +176,7 @@ namespace UnityEngine.UIElements
             ? m_FixedPaneInitialDimension
             : m_FixedPaneDimension;
 
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             set
             {
                 if (value == m_FixedPaneDimension)
@@ -184,6 +186,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal TwoPaneSplitViewResizer m_Resizer;
 
         public TwoPaneSplitView()

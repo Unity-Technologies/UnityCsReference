@@ -989,7 +989,7 @@ namespace UnityEditor
             GUI.changed = true;
         }
 
-        void Cancel()
+        internal void Cancel()
         {
             // Undo changes we have done in the ObjectSelector
             Undo.RevertAllDownToGroup(m_ModalUndoGroup);

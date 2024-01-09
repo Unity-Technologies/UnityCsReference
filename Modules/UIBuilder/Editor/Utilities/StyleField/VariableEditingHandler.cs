@@ -352,7 +352,7 @@ namespace Unity.UI.Builder
         {
             var valueCount = manipulator.GetValuesCount();
             if (index < valueCount ||
-                !StylePropertyUtil.s_NameToId.TryGetValue(manipulator.propertyName, out var id) ||
+                !StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(manipulator.propertyName, out var id) ||
                 !id.IsTransitionId())
                 return index;
 

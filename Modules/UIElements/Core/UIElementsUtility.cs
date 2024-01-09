@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -21,6 +22,7 @@ namespace UnityEngine.UIElements
         void RequestRepaintForPanels(Action<ScriptableObject> repaintCallback);
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class UIEventRegistration
     {
         private static List<IUIElementsUtility> s_Utilities = new List<IUIElementsUtility>();
@@ -102,6 +104,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void UpdateSchedulers()
         {
             foreach (var uiElementsUtility in s_Utilities)
@@ -118,6 +121,8 @@ namespace UnityEngine.UIElements
             }
         }
     }
+
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UIElementsUtility : IUIElementsUtility
     {
         private static Stack<IMGUIContainer> s_ContainerStack = new Stack<IMGUIContainer>();
@@ -558,10 +563,13 @@ namespace UnityEngine.UIElements
         internal static int m_InMemoryAssetsHierarchyVersion { get; private set; } = 0;
         internal static int m_InMemoryAssetsStyleVersion { get; private set; } = 0;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void InMemoryAssetsHierarchyHaveBeenChanged()
         {
             m_InMemoryAssetsHierarchyVersion++;
         }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void InMemoryAssetsStyleHaveBeenChanged()
         {
             m_InMemoryAssetsStyleVersion++;

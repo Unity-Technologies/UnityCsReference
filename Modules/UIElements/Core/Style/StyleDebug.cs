@@ -5,10 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static partial class StyleDebug
     {
         internal const int UnitySpecificity = -1;

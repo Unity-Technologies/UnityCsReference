@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine.Pool;
 using Unity.Profiling;
 using UnityEngine.Assertions;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
@@ -26,6 +27,7 @@ namespace UnityEngine.UIElements.StyleSheets
     }
 
     // Each struct represents on match for a visual element against a complex
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal struct SelectorMatchRecord
     {
         public StyleSheet sheet;

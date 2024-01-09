@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -45,6 +46,8 @@ namespace UnityEditor.UIElements
         internal static readonly string livePropertyBarUssClassName = "unity-binding__live-property-bar";
 
         internal static readonly PropertyName s_DataSourceProperty = new PropertyName("unity-data-source");
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static readonly string s_SerializedBindingId = "--unity-serialized-object-bindings";
         internal static readonly string s_SerializedBindingContextUpdaterId = "--unity-serialized-object-bindings-context-updater";
 
@@ -107,6 +110,7 @@ namespace UnityEditor.UIElements
             bindingImpl.TrackPropertyValue(element, property, callback == null ? null : (e, p) => callback(p));
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void TrackPropertyValue(this VisualElement element, SerializedProperty property, Action<object, SerializedProperty> callback)
         {
             bindingImpl.TrackPropertyValue(element, property, callback);

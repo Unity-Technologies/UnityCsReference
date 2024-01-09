@@ -650,9 +650,25 @@ namespace UnityEditor.UIElements
 
             m_ChildrenContainer = foldout;
 
-            RefreshChildrenProperties(property, false);
+            if (property.isExpanded)
+            {
+                RefreshChildrenProperties(property, false);
+            }
+            else
+            {
+                foldout.RegisterValueChangedCallback(RefreshOnlyWhenExpanded);
+            }
 
             return foldout;
+        }
+
+        void RefreshOnlyWhenExpanded(ChangeEvent<bool> evt)
+        {
+            if (evt.newValue && evt.target is Foldout foldout && object.ReferenceEquals(evt.target, m_ChildField))
+            {
+                foldout.UnregisterCallback<ChangeEvent<bool>>(RefreshOnlyWhenExpanded);
+                RefreshChildrenProperties(m_SerializedProperty, true);
+            }
         }
 
         void OnFieldValueChanged(EventBase evt)

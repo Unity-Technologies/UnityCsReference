@@ -5,6 +5,7 @@
 using System;
 using Unity.Properties;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -202,6 +203,7 @@ namespace UnityEditor.UIElements
         /// </summary>
         public static readonly string gradientContainerUssClassName = ussClassName + "__gradient-container";
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static readonly string internalColorFieldName = "unity-internal-color-field";
 
         /// <summary>

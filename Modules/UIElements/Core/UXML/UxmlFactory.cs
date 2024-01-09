@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEngine.Bindings;
 
 
 namespace UnityEngine.UIElements
@@ -72,7 +73,7 @@ namespace UnityEngine.UIElements
     /// Describes a <see cref="VisualElement"/> derived class for the parsing of UXML files and the generation of UXML schema definition.
     /// </summary>
     /// <remarks>
-    /// UxmlTraits describes the UXML attributes and children elements of a class deriving from <see cref="VisualElement"/>. It is used by <see cref="UxmlFactory"/> to map UXML attributes to the C# class properties when reading UXML documents. It is also used to generate UXML schema definitions.
+    /// UxmlTraits describes the UXML attributes and children elements of a class deriving from <see cref="VisualElement"/>. It is used by <see cref="BindableElement.UxmlFactory"/> to map UXML attributes to the C# class properties when reading UXML documents. It is also used to generate UXML schema definitions.
     /// </remarks>
     [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public abstract class UxmlTraits : BaseUxmlTraits
@@ -203,6 +204,7 @@ namespace UnityEngine.UIElements
     /// Base interface for UxmlObject factories. While it is not strictly required, concrete factories should derive from the generic class <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/>.
     /// </summary>
     [Obsolete("IBaseUxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal interface IBaseUxmlObjectFactory : IBaseUxmlFactory
     {
         // Intentionally left blank.

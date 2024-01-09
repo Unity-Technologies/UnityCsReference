@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements.Internal;
 
@@ -14,6 +15,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Type result of a binding visitation.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal readonly struct BindingTypeResult
     {
         /// <summary>
@@ -89,6 +91,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Provides information about the resolved type of a property.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal readonly struct PropertyPathInfo
     {
         /// <summary>
@@ -110,6 +113,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Provides a subset of helper methods for the data binding system.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class DataBindingUtility
     {
         static readonly Pool.ObjectPool<TypePathVisitor> k_TypeVisitors = new(() => new TypePathVisitor(), v => v.Reset(), defaultCapacity: 1);
@@ -199,6 +203,7 @@ namespace UnityEngine.UIElements
         /// <param name="dataSourceType">The data source type found</param>
         /// <param name="fullPath">The chain of paths found</param>
         /// <returns>Returns true if at least the data source, the data source type or a binding path is inherited</returns>
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static bool TryGetDataSourceOrDataSourceTypeFromHierarchy(VisualElement element, out object dataSourceObject, out Type dataSourceType, out PropertyPath fullPath)
         {
             var sourceElement = element;
@@ -264,6 +269,7 @@ namespace UnityEngine.UIElements
         /// <param name="element">The element to start from.</param>
         /// <param name="type">The data source type found.</param>
         /// <returns>True if the resolved data source type is found.</returns>
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static bool TryGetRelativeDataSourceTypeFromHierarchy(VisualElement element, out Type type)
         {
             type = null;
@@ -306,6 +312,7 @@ namespace UnityEngine.UIElements
         /// <param name="path">The original path</param>
         /// <param name="newText">The text to replace the indices</param>
         /// <returns>The new path with replaced indices</returns>
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static string ReplaceAllIndicesInPath(string path, string newText)
         {
             return path.Contains('[') ? s_ReplaceIndices.Replace(path, $"[{newText}]") : path;

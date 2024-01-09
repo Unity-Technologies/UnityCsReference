@@ -6,6 +6,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -49,6 +50,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class StringUtilsExtensions
     {
         private static readonly char NoDelimiter = '\0'; //invalid character

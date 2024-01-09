@@ -148,8 +148,8 @@ namespace Unity.UI.Builder
             m_Viewport.SetTargetZoomScale(CalculateNewZoom(m_Viewport.targetZoomScale, delta, zoomScaleValues), (_, v) =>
             {
                 var oldScale = m_Viewport.zoomScale;
-                m_Viewport.zoomScale = v;
-                m_Viewport.contentOffset = (zoomCenter + (v / oldScale) * (m_Viewport.contentOffset - zoomCenter));
+                m_Viewport.targetZoomScale = v;
+                m_Viewport.targetContentOffset = (zoomCenter + (v / oldScale) * (m_Viewport.contentOffset - zoomCenter));
             });
         }
     }

@@ -5,10 +5,12 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class StyleCache
     {
         // hash of a set of rules to a specified style data
@@ -62,6 +64,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class VisualTreeStyleUpdater : BaseVisualTreeUpdater
     {
         private HashSet<VisualElement> m_ApplyStyleUpdateList = new HashSet<VisualElement>();
@@ -171,6 +174,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class StyleMatchingContext
     {
         private List<StyleSheet> m_StyleSheetStack;
@@ -209,6 +213,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class VisualTreeStyleUpdaterTraversal : HierarchyTraversal
     {
         private StyleVariableContext m_ProcessVarContext = new StyleVariableContext();

@@ -4,11 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial struct ComputedStyle
     {
         public int customPropertiesCount => customProperties?.Count ?? 0;

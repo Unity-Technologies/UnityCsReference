@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Pool;
 
@@ -18,6 +19,8 @@ namespace UnityEngine.UIElements
     public abstract class BaseTreeView : BaseVerticalCollectionView
     {
         internal static readonly BindingId autoExpandProperty = nameof(autoExpand);
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static readonly int invalidId = -1;
 
         /// <summary>
@@ -505,6 +508,7 @@ namespace UnityEngine.UIElements
             return viewController.GetIndexForId(id);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void CopyExpandedStates(int sourceId, int targetId)
         {
             if (IsExpanded(sourceId))

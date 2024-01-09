@@ -5,9 +5,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class IEnumerableExtensions
     {
         internal static bool HasValues(this IEnumerable<string> collection)
@@ -24,7 +26,7 @@ namespace UnityEngine.UIElements
 
             return false;
         }
-        
+
         internal static bool NoElementOfTypeMatchesPredicate<T>(this IEnumerable collection, Func<T, bool> predicate)
         {
             foreach (var item in collection)
@@ -36,6 +38,7 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static int GetCount(this IEnumerable collection)
         {
             var count = 0;

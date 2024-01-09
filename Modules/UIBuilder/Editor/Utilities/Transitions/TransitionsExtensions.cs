@@ -48,7 +48,7 @@ namespace Unity.UI.Builder
 
         public static string UssName(this StylePropertyId id)
         {
-            return StylePropertyUtil.s_IdToName.TryGetValue(id, out var name) ? name : id.ToString();
+            return StylePropertyUtil.stylePropertyIdToPropertyName.TryGetValue(id, out var name) ? name : id.ToString();
         }
 
         // TODO: Move this to codegen

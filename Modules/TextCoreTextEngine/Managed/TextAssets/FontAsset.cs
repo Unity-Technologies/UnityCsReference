@@ -330,6 +330,19 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
+        private void CharacterLookupTable_TryRemove(uint key)
+        {
+            characterLookupLock.EnterWriteLock();
+            try
+            {
+                m_CharacterLookupDictionary.Remove(key);
+            }
+            finally
+            {
+                characterLookupLock.ExitWriteLock();
+            }
+        }
+
         /// <summary>
         /// Determines if the font asset is using a shared atlas texture(s)
         /// </summary>
@@ -1332,6 +1345,7 @@ namespace UnityEngine.TextCore.Text
                 return;
 
             Glyph glyph;
+            Character character;
 
             if (isFontFaceLoaded)
             {
@@ -1348,7 +1362,14 @@ namespace UnityEngine.TextCore.Text
                         : GlyphLoadFlags.LOAD_NO_BITMAP;
 
                     if (FontEngine.TryGetGlyphWithUnicodeValue(unicode, glyphLoadFlags, out glyph))
-                        m_CharacterLookupDictionary.Add(unicode, new Character(unicode, this, glyph));
+                    {
+                        character = new Character(unicode, this, glyph);
+                        foreach (TextFontWeight fontWeight in Enum.GetValues(typeof(TextFontWeight)))
+                        {
+                            m_CharacterLookupDictionary.Add(CreateCompositeKey(unicode, FontStyles.Normal, fontWeight), character);
+                            m_CharacterLookupDictionary.Add(CreateCompositeKey(unicode, FontStyles.Italic, fontWeight), character);
+                        }
+                    }  
 
                     return;
                 }
@@ -1358,17 +1379,62 @@ namespace UnityEngine.TextCore.Text
 
             // Synthesize and add missing glyph and character
             glyph = new Glyph(0, new GlyphMetrics(0, 0, 0, 0, 0), GlyphRect.zero, 1.0f, 0);
-            m_CharacterLookupDictionary.Add(unicode, new Character(unicode, this, glyph));
+            character = new Character(unicode, this, glyph);
+            foreach (TextFontWeight fontWeight in Enum.GetValues(typeof(TextFontWeight)))
+            {
+                m_CharacterLookupDictionary.Add(CreateCompositeKey(unicode, FontStyles.Normal, fontWeight), character);
+                m_CharacterLookupDictionary.Add(CreateCompositeKey(unicode, FontStyles.Italic, fontWeight), character);
+            }
         }
 
         //internal HashSet<int> FallbackSearchQueryLookup = new HashSet<int>();
 
-        internal void AddCharacterToLookupCache(uint unicode, Character character)
+        internal void AddCharacterToLookupCache(uint unicode, Character character, FontStyles fontStyle, TextFontWeight fontWeight)
         {
-            CharacterLookupTable_TryAdd(unicode, character);
+            if (m_CharacterLookupDictionary == null)
+                ReadFontAssetDefinition();
+            CharacterLookupTable_TryAdd(CreateCompositeKey(unicode, fontStyle, fontWeight), character);
+        }
 
-            // Add font asset to fallback references.
-            //FallbackSearchQueryLookup.Add(character.textAsset.instanceID);
+        internal bool GetCharacterInLookupCache(uint unicode, FontStyles fontStyle, TextFontWeight fontWeight, out Character character)
+        {
+            if (m_CharacterLookupDictionary == null)
+                ReadFontAssetDefinition();
+            return CharacterLookupTable_TryGet(CreateCompositeKey(unicode, fontStyle, fontWeight), out character);
+        }
+
+        internal void RemoveCharacterInLookupCache(uint unicode, FontStyles fontStyle, TextFontWeight fontWeight)
+        {
+            if (m_CharacterLookupDictionary == null)
+                ReadFontAssetDefinition();
+            CharacterLookupTable_TryRemove(CreateCompositeKey(unicode, fontStyle, fontWeight));
+        }
+
+        // Function to create a composite key based on Unicode, fontWeight, and italic
+        private uint CreateCompositeKey(uint unicode, FontStyles fontStyle = FontStyles.Normal, TextFontWeight fontWeight = TextFontWeight.Regular)
+        {
+            bool isItalic = (fontStyle & FontStyles.Italic) == FontStyles.Italic;
+
+            int fontWeightIndex = 0;
+            // We want Regular to stay at 0 for backward compatibility before this change: UUM-46002
+            if (fontWeight != TextFontWeight.Regular)
+            {
+                fontWeightIndex = TextUtilities.GetTextFontWeightIndex(fontWeight);
+            }
+
+            // Ensure unicode uses the first 21 bits (since 21 bytes are required)
+            uint unicodeMasked = unicode & 0x1FFFFF; // 0x1FFFFF represents 21 bits set to 1
+
+            // Encode fontWeight in the next 4 bits (assuming fontWeight fits within 4 bits)
+            uint fontWeightShifted = (uint)(fontWeightIndex & 0xF) << 21; // 0xF represents 4 bits set to 1
+
+            // Encode italic information in the next bit after fontWeight
+            uint italicBit = isItalic ? 1U << 25 : 0U; // 25th bit represents italic
+
+            // Combine the encoded values into a single uint key
+            uint compositeKey = unicodeMasked | fontWeightShifted | italicBit;
+
+            return compositeKey;
         }
 
         /// <summary>
@@ -1492,7 +1558,7 @@ namespace UnityEngine.TextCore.Text
             {
                 Character returnedCharacter;
 
-                if (TryAddCharacterInternal(character, out returnedCharacter))
+                if (TryAddCharacterInternal(character, FontStyles.Normal, TextFontWeight.Regular, out returnedCharacter))
                     return true;
             }
 
@@ -1518,7 +1584,7 @@ namespace UnityEngine.TextCore.Text
                         // Search fallback if not already contained in lookup
                         if (k_SearchedFontAssetLookup.Add(fallbackID))
                         {
-                            if (fallback.HasCharacter_Internal(character, true, tryAddCharacter))
+                            if (fallback.HasCharacter_Internal(character, FontStyles.Normal, TextFontWeight.Regular, true, tryAddCharacter))
                                 return true;
                         }
                     }
@@ -1560,6 +1626,19 @@ namespace UnityEngine.TextCore.Text
         }
 
         /// <summary>
+        /// Function to check if a character is contained in a font asset with the option to also check through fallback font assets. This also verifies that the weight and style of the character is the good one in the cache.
+        /// This private implementation does not search the fallback font asset in the TMP Settings file.
+        /// </summary>
+        /// <param name="character"></param>
+        /// <param name="searchFallbacks"></param>
+        /// <param name="tryAddCharacter"></param>
+        /// <returns></returns>
+        bool HasCharacterWithStyle_Internal(uint character, FontStyles fontStyle, TextFontWeight fontWeight, bool searchFallbacks = false, bool tryAddCharacter = false)
+        {
+            return HasCharacter_Internal(character, fontStyle, fontWeight, searchFallbacks, tryAddCharacter);
+        }
+
+        /// <summary>
         /// Function to check if a character is contained in a font asset with the option to also check through fallback font assets.
         /// This private implementation does not search the fallback font asset in the TMP Settings file.
         /// </summary>
@@ -1567,7 +1646,7 @@ namespace UnityEngine.TextCore.Text
         /// <param name="searchFallbacks"></param>
         /// <param name="tryAddCharacter"></param>
         /// <returns></returns>
-        bool HasCharacter_Internal(uint character, bool searchFallbacks = false, bool tryAddCharacter = false)
+        bool HasCharacter_Internal(uint character, FontStyles fontStyle = FontStyles.Normal, TextFontWeight fontWeight = TextFontWeight.Regular, bool searchFallbacks = false, bool tryAddCharacter = false)
         {
             // Read font asset definition if it hasn't already been done.
             if (m_CharacterLookupDictionary == null)
@@ -1587,7 +1666,7 @@ namespace UnityEngine.TextCore.Text
             {
                 Character returnedCharacter;
 
-                if (TryAddCharacterInternal(character, out returnedCharacter))
+                if (TryAddCharacterInternal(character, fontStyle, fontWeight, out returnedCharacter))
                     return true;
             }
 
@@ -1605,7 +1684,7 @@ namespace UnityEngine.TextCore.Text
                     // Search fallback if it has not already been searched
                     if (k_SearchedFontAssetLookup.Add(fallbackID))
                     {
-                        if (fallback.HasCharacter_Internal(character, true, tryAddCharacter))
+                        if (fallback.HasCharacter_Internal(character, fontStyle, fontWeight, true, tryAddCharacter))
                             return true;
                     }
                 }
@@ -1674,7 +1753,7 @@ namespace UnityEngine.TextCore.Text
                 {
                     Character returnedCharacter;
 
-                    if (TryAddCharacterInternal(character, out returnedCharacter))
+                    if (TryAddCharacterInternal(character, FontStyles.Normal, TextFontWeight.Regular, out returnedCharacter))
                         continue;
                 }
 
@@ -1700,7 +1779,7 @@ namespace UnityEngine.TextCore.Text
                             // Search fallback if it has not already been searched
                             if (k_SearchedFontAssetLookup.Add(fallbackID))
                             {
-                                if (fallback.HasCharacter_Internal(character, true, tryAddCharacter) == false)
+                                if (fallback.HasCharacter_Internal(character, FontStyles.Normal, TextFontWeight.Regular, true, tryAddCharacter) == false)
                                     continue;
 
                                 isMissingCharacter = false;
@@ -1831,7 +1910,7 @@ namespace UnityEngine.TextCore.Text
         {
             success = true;
             // Check if glyph already exists in font asset.
-            if (CharacterLookupTable_TryGet(unicode, out Character character))
+            if (m_CharacterLookupDictionary.TryGetValue(unicode, out Character character))
                 return character.glyphIndex;
 
             if (JobsUtility.IsExecutingJob)
@@ -2689,7 +2768,7 @@ namespace UnityEngine.TextCore.Text
         /// <param name="unicode">The Unicode value of the character.</param>
         /// <param name="character">The character data if successfully added to the font asset. Null otherwise.</param>
         /// <returns>Returns true if the character has been added. False otherwise.</returns>
-        internal bool TryAddCharacterInternal(uint unicode, out Character character)
+        internal bool TryAddCharacterInternal(uint unicode, FontStyles fontStyle, TextFontWeight fontWeight, out Character character)
         {
             k_TryAddCharacterMarker.Begin();
 
@@ -2741,7 +2820,7 @@ namespace UnityEngine.TextCore.Text
             {
                 character = new Character(unicode, this, m_GlyphLookupDictionary[glyphIndex]);
                 m_CharacterTable.Add(character);
-                m_CharacterLookupDictionary.Add(unicode, character);
+                AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
 
                 // Makes the changes to the font asset persistent.
                 RegisterResourceForUpdate?.Invoke(this);

@@ -82,7 +82,7 @@ namespace Unity.UI.Builder
 
                     foreach (var property in rule.properties)
                     {
-                        StylePropertyUtil.s_NameToId.TryGetValue(property.name, out var id);
+                        StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(property.name, out var id);
                         if (id.IsTransitionId())
                         {
                             features |= Features.Transitions;

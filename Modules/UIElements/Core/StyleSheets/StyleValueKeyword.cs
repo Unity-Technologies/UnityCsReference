@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal enum StyleValueKeyword
     {
         Inherit,
@@ -17,6 +19,7 @@ namespace UnityEngine.UIElements
         None
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class StyleValueKeywordExtension
     {
         public static string ToUssString(this StyleValueKeyword svk)

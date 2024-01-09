@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.Layout;
 
 namespace UnityEngine.UIElements
@@ -134,13 +135,13 @@ namespace UnityEngine.UIElements
         None = 0,
         /// <summary>
         /// Optimizes rendering of a <see cref="VisualElement"/> for frequent position and
-        /// transformation changes. 
+        /// transformation changes.
         /// </summary>
         /// <remarks>
         /// This option uses the GPU instead of CPU to perform the VisualElement's vertex transformation.\\
         /// \\
         /// Use this option on a VisualElement that changes any of the following style properties:
-        /// 
+        ///
         ///- `left`
         ///- `top`
         ///- `right`
@@ -175,14 +176,14 @@ namespace UnityEngine.UIElements
         /// Optimizes rendering of a <see cref="VisualElement"/> that has multiple descendants with nested masks.
         /// </summary>
         /// <remarks>
-        /// This option reduces stencil state changes and capitalizes on consecutive 
-        /// mask push/pop operations for efficiency.\\ 
+        /// This option reduces stencil state changes and capitalizes on consecutive
+        /// mask push/pop operations for efficiency.\\
         /// \\
         /// Apply this option to a VisualElement with multiple nested masks among its descendants. For example, a child element
         /// has the `overflow: hidden;` style with rounded corners or SVG background.\\
         /// \\
         /// The following image shows the difference among single-level masking, nested masking, and nested masking with MaskContainer:
-        /// 
+        ///
         /// {img MaskContainer.png}\\
         /// A: Single-level masking (1 batch)\\
         /// B: Nested masking (5 batches)\\
@@ -198,9 +199,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// This option fetches color from a GPU buffer to prevent re-tessellating geometry or CPU updates when colors change.
-        /// 
+        ///
         /// Apply this option on a VisualElement that changes any of the following style properties:
-        /// 
+        ///
         ///- `background-color`
         ///- `border-color`
         ///- `color`
@@ -234,7 +235,8 @@ namespace UnityEngine.UIElements
         DirtyBoneTransform = BoneTransform << DirtyOffset,
         DirtyClipWithScissors = ClipWithScissors << DirtyOffset,
         DirtyMaskContainer = MaskContainer << DirtyOffset,
-        DirtyAll = DirtyGroupTransform | DirtyBoneTransform | DirtyClipWithScissors | DirtyMaskContainer,
+        DirtyDynamicColor = DynamicColor << DirtyOffset,
+        DirtyAll = DirtyGroupTransform | DirtyBoneTransform | DirtyClipWithScissors | DirtyMaskContainer | DirtyDynamicColor,
     }
 
     // For backwards compatibility with debugger in 2020.1
@@ -378,6 +380,7 @@ namespace UnityEngine.UIElements
         public void OnVisualElementChange(VisualElement element, VersionChangeType changeType);
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     abstract class BaseVisualElementPanel : IPanel, IGroupBox
     {
     	// TODO: Make sure we do not use new native layout before we fix android 32bit (arm v7) failing test.
@@ -611,13 +614,20 @@ namespace UnityEngine.UIElements
         }
 
         internal abstract IScheduler scheduler { get; }
-        internal abstract IStylePropertyAnimationSystem styleAnimationSystem { get; set; }
+
+        internal abstract IStylePropertyAnimationSystem styleAnimationSystem
+        {
+            get;
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            set;
+        }
         public abstract ContextType contextType { get; protected set; }
         public abstract VisualElement Pick(Vector2 point);
         public abstract VisualElement PickAll(Vector2 point, List<VisualElement> picked);
 
         internal bool disposed { get; private set; }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal abstract IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase);
 
         internal abstract IVisualTreeUpdater GetEditorUpdater(VisualTreeEditorUpdatePhase phase);
@@ -772,6 +782,7 @@ namespace UnityEngine.UIElements
     internal delegate void SavePersistentViewData();
 
     // Default panel implementation
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class Panel : BaseVisualElementPanel
     {
         private VisualElement m_RootContainer;
@@ -816,6 +827,7 @@ namespace UnityEngine.UIElements
             get { return m_VisualTreeUpdater; }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal override IStylePropertyAnimationSystem styleAnimationSystem
         {
             get => m_StylePropertyAnimationSystem;
@@ -845,6 +857,7 @@ namespace UnityEngine.UIElements
 
         internal static InitEditorUpdaterFunction initEditorUpdaterFunc { private get; set; }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Object LoadResource(string pathName, Type type, float dpiScaling)
         {
             // TODO make the LoadResource function non-static.
@@ -1035,6 +1048,7 @@ namespace UnityEngine.UIElements
         }
 
         // For tests only.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static VisualElement PickAllWithoutValidatingLayout(VisualElement root, Vector2 point)
         {
             return PickAll(root, point);

@@ -333,9 +333,14 @@ namespace UnityEngine.UIElements
                 SetScaleMode((ScaleMode)intValue);
             }
 
-            if (!m_TintColorIsInline && customStyleProvider.TryGetValue(s_TintColorProperty, out var tintValue))
+            if (!m_TintColorIsInline )
             {
-                SetTintColor(tintValue);
+                if( customStyleProvider.TryGetValue(s_TintColorProperty, out var tintValue) )
+                    SetTintColor(tintValue);
+                else
+                {
+                    SetTintColor(Color.white);
+                }
             }
         }
 

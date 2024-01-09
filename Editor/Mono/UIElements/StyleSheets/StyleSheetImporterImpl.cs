@@ -15,6 +15,7 @@ using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using ExCSS;
 using UnityEditor.AssetImporters;
+using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
 using Object = UnityEngine.Object;
 
@@ -791,6 +792,7 @@ namespace UnityEditor.UIElements.StyleSheets
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class StyleSheetImporterImpl : StyleValueImporter
     {
         static readonly Parser s_Parser = new Parser();

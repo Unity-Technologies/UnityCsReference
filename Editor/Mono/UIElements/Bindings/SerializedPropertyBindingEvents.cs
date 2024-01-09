@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -158,6 +159,7 @@ namespace UnityEditor.UIElements
     }
 
     [EventCategory(EventCategory.Bind)]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class SerializedPropertyBindEvent : EventBase<SerializedPropertyBindEvent>
     {
         static SerializedPropertyBindEvent()

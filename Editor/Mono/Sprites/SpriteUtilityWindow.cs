@@ -5,10 +5,12 @@
 using System;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
     [UIFramework(UIFrameworkUsage.IMGUI)]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class SpriteUtilityWindow : EditorWindow
     {
         protected class Styles
@@ -413,6 +415,7 @@ namespace UnityEditor
                 applySpriteEditorWindow = () => {};
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static bool ShowSpriteEditorWindow(UnityEngine.Object obj = null)
         {
             if (showSpriteEditorWindow == null)

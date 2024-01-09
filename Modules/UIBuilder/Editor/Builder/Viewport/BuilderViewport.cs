@@ -90,14 +90,10 @@ namespace Unity.UI.Builder
             get { return m_ZoomScale; }
             set
             {
-                if (m_ZoomScale == value)
-                    return;
+                if (m_ZoomAnimation?.isRunning == true)
+                    m_ZoomAnimation.Stop();
 
-                m_ZoomScale = value;
-                if (m_PaneWindow.document)
-                    m_PaneWindow.document.viewportZoomScale = value;
-                m_Canvas.zoomScale = value;
-                m_PaneWindow.document.RefreshStyle(m_DocumentRootElement);
+                targetZoomScale = value;
             }
         }
 
@@ -109,6 +105,23 @@ namespace Unity.UI.Builder
                     return m_ZoomAnimation.to;
                 return zoomScale;
             }
+            internal set
+            {
+                if (m_ZoomScale == value)
+                    return;
+
+                if (value < Mathf.Epsilon)
+                {
+                    Debug.LogError("UIBuilder: Invalid zoom value was provided. The value must be strictly positive.");
+                    return;
+                }
+
+                m_ZoomScale = value;
+                if (m_PaneWindow.document)
+                    m_PaneWindow.document.viewportZoomScale = value;
+                m_Canvas.zoomScale = value;
+                m_PaneWindow.document.RefreshStyle(m_DocumentRootElement);
+            }
         }
 
         private Vector2 m_ContentOffset = Vector2.zero;
@@ -118,14 +131,10 @@ namespace Unity.UI.Builder
             get { return m_ContentOffset; }
             set
             {
-                if (m_ContentOffset == value)
-                    return;
+                if (m_ContentOffsetAnimation?.isRunning == true)
+                    m_ContentOffsetAnimation.Stop();
 
-                m_ContentOffset = value;
-                if (m_PaneWindow.document)
-                    m_PaneWindow.document.viewportContentOffset = value;
-
-                UpdateSurface();
+                targetContentOffset = value;
             }
         }
 
@@ -136,6 +145,17 @@ namespace Unity.UI.Builder
                 if (m_ContentOffsetAnimation?.isRunning == true)
                     return m_ContentOffsetAnimation.to;
                 return contentOffset;
+            }
+            internal set
+            {
+                if (m_ContentOffset == value)
+                    return;
+
+                m_ContentOffset = value;
+                if (m_PaneWindow.document)
+                    m_PaneWindow.document.viewportContentOffset = value;
+
+                UpdateSurface();
             }
         }
 
@@ -176,8 +196,8 @@ namespace Unity.UI.Builder
             m_Selection = selection;
             m_ContextMenuManipulator = contextMenuManipulator;
             this.bindingsCache = bindingsCache;
-            m_ZoomAnimationAction = (_, v) => zoomScale = v;
-            m_ContentOffsetAnimationAction = (_, v) => contentOffset = v;
+            m_ZoomAnimationAction = (_, v) => targetZoomScale = v;
+            m_ContentOffsetAnimationAction = (_, v) => targetContentOffset = v;
 
             AddToClassList("unity-builder-viewport");
 
@@ -293,6 +313,12 @@ namespace Unity.UI.Builder
         {
             if (m_ZoomAnimation?.isRunning == true)
                 m_ZoomAnimation.Stop();
+
+            if (targetZoomScale < Mathf.Epsilon)
+            {
+                Debug.LogError("UIBuilder: Invalid zoom value was provided. The value must be strictly positive.");
+                return;
+            }
 
             m_ZoomAnimation = m_Viewport.experimental.animation.Start(zoomScale, targetZoomScale, animationDuration, updateAction ?? m_ZoomAnimationAction);
         }

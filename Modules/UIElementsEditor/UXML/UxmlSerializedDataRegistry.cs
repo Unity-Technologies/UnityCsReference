@@ -7,11 +7,13 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class UxmlSerializedDataRegistry
     {
         const string k_DefaultDependencyPrefix = "UxmlSerializedData/";

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using TableType = System.Collections.Generic.Dictionary<string, UnityEngine.UIElements.StyleComplexSelector>;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -59,6 +60,7 @@ namespace UnityEngine.UIElements
         [SerializeField]
         StyleRule[] m_Rules;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal StyleRule[] rules
         {
             get { return m_Rules; }
@@ -72,6 +74,7 @@ namespace UnityEngine.UIElements
         [SerializeField]
         StyleComplexSelector[] m_ComplexSelectors;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal StyleComplexSelector[] complexSelectors
         {
             get { return m_ComplexSelectors; }
@@ -84,28 +87,35 @@ namespace UnityEngine.UIElements
 
         // Only the importer should write to these fields
         // Normal usage should only go through ReadXXX methods
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal float[] floats;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal Dimension[] dimensions;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal Color[] colors;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal string[] strings;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal Object[] assets;
 
         [Serializable]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal struct ImportStruct
         {
             public StyleSheet styleSheet;
             public string[] mediaQueries;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal ImportStruct[] imports;
 
@@ -113,6 +123,7 @@ namespace UnityEngine.UIElements
         List<StyleSheet> m_FlattenedImportedStyleSheets;
         internal List<StyleSheet> flattenedRecursiveImports
         {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get { return m_FlattenedImportedStyleSheets; }
         }
 
@@ -143,6 +154,7 @@ namespace UnityEngine.UIElements
         [NonSerialized]
         private bool m_IsDefaultStyleSheet;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool isDefaultStyleSheet
         {
             get { return m_IsDefaultStyleSheet; }
@@ -317,11 +329,13 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal StyleValueKeyword ReadKeyword(StyleValueHandle handle)
         {
             return (StyleValueKeyword)handle.valueIndex;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal float ReadFloat(StyleValueHandle handle)
         {
             // Handle dimension for properties with optional unit
@@ -345,6 +359,7 @@ namespace UnityEngine.UIElements
             return isDimension;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Dimension ReadDimension(StyleValueHandle handle)
         {
             // If the value is 0 (without unit) it's stored as a float
@@ -368,6 +383,7 @@ namespace UnityEngine.UIElements
             return isFloat;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Color ReadColor(StyleValueHandle handle)
         {
             return CheckAccess(colors, StyleValueType.Color, handle);
@@ -378,6 +394,7 @@ namespace UnityEngine.UIElements
             return TryCheckAccess(colors, StyleValueType.Color, handle, out value);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal string ReadString(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.String, handle);
@@ -388,6 +405,7 @@ namespace UnityEngine.UIElements
             return TryCheckAccess(strings, StyleValueType.String, handle, out value);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal string ReadEnum(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.Enum, handle);
@@ -398,6 +416,7 @@ namespace UnityEngine.UIElements
             return TryCheckAccess(strings, StyleValueType.Enum, handle, out value);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal string ReadVariable(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.Variable, handle);
@@ -408,6 +427,7 @@ namespace UnityEngine.UIElements
             return TryCheckAccess(strings, StyleValueType.Variable, handle, out value);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal string ReadResourcePath(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.ResourcePath, handle);
@@ -418,11 +438,13 @@ namespace UnityEngine.UIElements
             return TryCheckAccess(strings, StyleValueType.ResourcePath, handle, out value);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Object ReadAssetReference(StyleValueHandle handle)
         {
             return CheckAccess(assets, StyleValueType.AssetReference, handle);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal string ReadMissingAssetReferenceUrl(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.MissingAssetReference, handle);
@@ -433,11 +455,13 @@ namespace UnityEngine.UIElements
             return TryCheckAccess(assets, StyleValueType.AssetReference, handle, out value);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal StyleValueFunction ReadFunction(StyleValueHandle handle)
         {
             return (StyleValueFunction)handle.valueIndex;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal string ReadFunctionName(StyleValueHandle handle)
         {
             if (handle.valueType != StyleValueType.Function)
@@ -450,6 +474,7 @@ namespace UnityEngine.UIElements
             return svf.ToUssString();
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal ScalableImage ReadScalableImage(StyleValueHandle handle)
         {
             return CheckAccess(scalableImages, StyleValueType.ScalableImage, handle);

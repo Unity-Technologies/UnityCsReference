@@ -38,6 +38,7 @@ These states should be tested when changing the behavior when entering playmode.
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Game", useTypeNameAsIconName = true)]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class GameView : PlayModeView, IHasCustomMenu, IGameViewSizeMenuUser
     {
         const int kScaleSliderMinWidth = 30;
@@ -350,6 +351,7 @@ namespace UnityEditor
         }
 
         [UsedImplicitly] // This is here because NGUI uses it via reflection (noted in https://confluence.hq.unity3d.com/display/DEV/Game+View+Bucket)
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Vector2 GetSizeOfMainGameView()
         {
             return GetMainPlayModeViewTargetSize();

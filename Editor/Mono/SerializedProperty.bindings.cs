@@ -122,6 +122,7 @@ namespace UnityEditor
         }
 
         // This is so the garbage collector won't clean up SerializedObject behind the scenes.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal SerializedObject m_SerializedObject;
         internal string m_CachedLocalizedDisplayName = "";
         string m_CachedTooltip;
@@ -196,6 +197,7 @@ namespace UnityEditor
 
         internal string localizedDisplayName
         {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get
             {
                 if (!this.isValidDisplayNameCache)
@@ -1366,6 +1368,7 @@ namespace UnityEditor
         internal extern object GetStructValueInternal(string assemblyName, string nameSpace, string className);
 
         // exposed for public access via boxedValue
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal object structValue
         {
             get

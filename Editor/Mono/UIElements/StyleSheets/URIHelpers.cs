@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements.StyleSheets
@@ -16,6 +17,7 @@ namespace UnityEditor.UIElements.StyleSheets
         InvalidURIProjectAssetPath
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     static class URIHelpers
     {
         private const string k_ProjectScheme = "project";

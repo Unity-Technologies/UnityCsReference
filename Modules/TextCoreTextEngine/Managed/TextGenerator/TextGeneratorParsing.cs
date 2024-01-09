@@ -410,6 +410,10 @@ namespace UnityEngine.TextCore.Text
                 textInfo.textElementInfo[m_CharacterCount].strikethroughColor = m_StrikethroughColor;
                 textInfo.textElementInfo[m_CharacterCount].highlightState = m_HighlightState;
                 textInfo.textElementInfo[m_CharacterCount].style = m_FontStyleInternal;
+                if (m_FontWeightInternal == TextFontWeight.Bold)
+                {
+                    textInfo.textElementInfo[m_CharacterCount].style |= FontStyles.Bold;
+                }
 
                 // Cache glyph metrics
                 Glyph altGlyph = textInfo.textElementInfo[m_CharacterCount].alternativeGlyph;
@@ -579,7 +583,7 @@ namespace UnityEngine.TextCore.Text
                 float boldSpacingAdjustment;
                 float stylePadding;
                 bool hasGradientScale = m_CurrentFontAsset.atlasRenderMode != GlyphRenderMode.SMOOTH && m_CurrentFontAsset.atlasRenderMode != GlyphRenderMode.COLOR;
-                if (m_TextElementType == TextElementType.Character && !isUsingAltTypeface && ((m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold)) // Checks for any combination of Bold Style.
+                if (m_TextElementType == TextElementType.Character && !isUsingAltTypeface && ((textInfo.textElementInfo[m_CharacterCount].style & FontStyles.Bold) == FontStyles.Bold)) // Checks for any combination of Bold Style.
                 {
                     if (hasGradientScale)
                     {

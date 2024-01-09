@@ -15,6 +15,7 @@ using UnityObject = UnityEngine.Object;
 using System.Linq;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -1565,6 +1566,7 @@ namespace UnityEditor
         }
 
         [ExcludeFromDocs]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void ApplyWireMaterial()
         {
             CompareFunction zTest = CompareFunction.Always;

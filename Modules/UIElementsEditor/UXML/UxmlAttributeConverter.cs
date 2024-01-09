@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Reflection;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -20,6 +21,7 @@ namespace UnityEditor.UIElements
         public string ToString(object value); // One value
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class UxmlAttributeConverter
     {
         private static readonly Dictionary<Type, Type> s_RegisteredConverterTypes = new();

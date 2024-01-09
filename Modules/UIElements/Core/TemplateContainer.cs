@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Serialization;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -163,6 +164,7 @@ namespace UnityEngine.UIElements
             get { return m_ContentContainer; }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void SetContentContainer(VisualElement content)
         {
             m_ContentContainer = content;

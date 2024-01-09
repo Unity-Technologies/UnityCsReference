@@ -3,11 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.StyleSheets.Syntax;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal struct StyleVariable
     {
         public readonly string name;
@@ -33,6 +35,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class StyleVariableContext
     {
         public static readonly StyleVariableContext none = new StyleVariableContext();

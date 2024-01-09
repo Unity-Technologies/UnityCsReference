@@ -2,10 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UIToolkitSettingsProvider : SettingsProvider
     {
         const string k_EditorExtensionsModeToggleName = "editor-extensions-mode-toggle";

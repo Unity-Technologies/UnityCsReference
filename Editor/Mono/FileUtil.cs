@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -384,6 +385,7 @@ namespace UnityEditor
             return WriteTextFileToDisk(path, content, out string message);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static bool WriteTextFileToDisk(string path, string content, out string message)
         {
             if (AssetDatabase.IsOpenForEdit(path, out message) || AssetDatabase.MakeEditable(path))

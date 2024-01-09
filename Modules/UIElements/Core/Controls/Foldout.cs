@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -86,7 +87,12 @@ namespace UnityEngine.UIElements
         }
 
         Toggle m_Toggle;
-        internal Toggle toggle => m_Toggle;
+
+        internal Toggle toggle
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => m_Toggle;
+        }
 
         VisualElement m_Container;
 

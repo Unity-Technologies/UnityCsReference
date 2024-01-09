@@ -8,11 +8,13 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements
 {
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class StyleRule
     {
         [SerializeField]
         StyleProperty[] m_Properties;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal int line;
 
@@ -22,12 +24,14 @@ namespace UnityEngine.UIElements
             {
                 return m_Properties;
             }
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set
             {
                 m_Properties = value;
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [NonSerialized]
         internal int customPropertiesCount;
     }

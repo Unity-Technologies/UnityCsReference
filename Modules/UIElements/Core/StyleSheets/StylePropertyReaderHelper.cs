@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements.StyleSheets
@@ -186,7 +187,7 @@ namespace UnityEngine.UIElements.StyleSheets
             }
 
             var rot = Rotate.Initial();
-            
+
             switch (valCount)
             {
                 case 1: // If only one argument, the only argument is an angle and the rotation is in Z
@@ -391,7 +392,7 @@ namespace UnityEngine.UIElements.StyleSheets
             return BackgroundSize;
         }
 
-
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static bool TryGetImageSourceFromValue(StylePropertyValue propertyValue, float dpiScaling, out ImageSource source)
         {
             source = new ImageSource();

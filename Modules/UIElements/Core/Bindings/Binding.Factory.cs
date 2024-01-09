@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
@@ -20,6 +21,7 @@ namespace UnityEngine.UIElements
         public abstract class UxmlSerializedData : UIElements.UxmlSerializedData
         {
             #pragma warning disable 649
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             [SerializeField, HideInInspector] internal string property;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags property_UxmlAttributeFlags;
             [Tooltip(k_UpdateTriggerTooltip)]

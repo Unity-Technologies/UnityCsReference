@@ -12,11 +12,13 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using IntPtr = System.IntPtr;
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
     [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class View : ScriptableObject
     {
         internal virtual void Reflow()

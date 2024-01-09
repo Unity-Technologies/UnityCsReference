@@ -4,9 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets.Syntax
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class StyleSyntaxParser
     {
         private List<Expression> m_ProcessExpressionList = new List<Expression>();

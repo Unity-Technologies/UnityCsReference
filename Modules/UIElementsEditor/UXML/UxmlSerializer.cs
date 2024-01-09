@@ -7,12 +7,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UxmlSerializedAttributeDescription : UxmlAttributeDescription
     {
         static readonly Dictionary<Type, string> k_BaseTypes = new()
@@ -239,7 +241,7 @@ namespace UnityEditor.UIElements
                         // We try to use the old data so that we can preserve the uxml asset id.
                         var previousList = previousValue as IList;
 
-                        var serializedList = serializedField.FieldType.IsArray ? Array.CreateInstance(serializedField.FieldType.GetElementType(), list.Count) : Activator.CreateInstance(serializedField.FieldType) as IList; 
+                        var serializedList = serializedField.FieldType.IsArray ? Array.CreateInstance(serializedField.FieldType.GetElementType(), list.Count) : Activator.CreateInstance(serializedField.FieldType) as IList;
                         for (int i = 0; i < list.Count; i++)
                         {
                             var item = list[i];
@@ -329,7 +331,7 @@ namespace UnityEditor.UIElements
             }
             catch (Exception e)
             {
-                
+
                 Debug.LogException(new Exception($"Failed to extract {name} value from {dataDescription.uxmlFullName}", e));
                 value = default;
                 return false;
@@ -445,6 +447,7 @@ namespace UnityEditor.UIElements
         public override string ToString() => $"{serializedField.DeclaringType.ReflectedType.Name}.{serializedField.Name} ({serializedField.FieldType})";
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UxmlSerializedUxmlObjectAttributeDescription : UxmlSerializedAttributeDescription
     {
         internal static readonly string k_MultipleUxmlObjectsWarning = "Multiple UxmlObjects Found for UxmlObjectReference Field {0}. " +
@@ -572,6 +575,7 @@ namespace UnityEditor.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class UxmlSerializer
     {
         /// <summary>

@@ -170,7 +170,12 @@ namespace UnityEngine.UIElements
 
         internal bool bubblesOrTricklesDown => (propagation & EventPropagation.BubblesOrTricklesDown) != 0;
 
-        internal VisualElement elementTarget { get; set; }
+        [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal VisualElement elementTarget
+        {
+            get;
+            set;
+        }
 
         /// <summary>
         /// The target visual element that received this event. Unlike currentTarget, this target does not change when

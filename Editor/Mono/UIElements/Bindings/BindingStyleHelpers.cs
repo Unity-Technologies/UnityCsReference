@@ -5,10 +5,12 @@
 using System;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class BindingsStyleHelpers
     {
         internal static event Action<VisualElement, SerializedProperty> updateBindingStateStyle;
@@ -18,6 +20,7 @@ namespace UnityEditor.UIElements
         static Action<VisualElement, SerializedProperty> s_UpdatePrefabStateStyleFromProperty;
 
         // Lets us bypass the default right click menu to show our own.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Func<VisualElement, bool> HandleRightClickMenu;
 
         static BindingsStyleHelpers()

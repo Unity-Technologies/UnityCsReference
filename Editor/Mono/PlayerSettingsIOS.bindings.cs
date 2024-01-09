@@ -52,20 +52,30 @@ namespace UnityEditor
         iPhoneAndiPad = 2,
     }
 
-    // Activity Indicator on loading
+    // "Show Loading Indicator" enums for the Player Settings
+    // Keep in sync with iOSDevice.bindings.cs ActivityIndicatorStyle which is the user script API
     public enum iOSShowActivityIndicatorOnLoading
     {
-        // White Large
+        // Don't Show
+        DontShow = -1,
+
+        // WhiteLarge - Deprecated
+        [Obsolete("WhiteLarge Activity Indicator has been deprecated by Apple. Use Large instead (UnityUpgradable) -> Large", true)]
         WhiteLarge = 0,
 
-        // White
+        // White - Deprecated
+        [Obsolete("White Activity Indicator has been deprecated by Apple. Use Medium instead (UnityUpgradable) -> Medium", true)]
         White = 1,
 
-        // Gray
+        // Gray - Deprecated
+        [Obsolete("Gray Activity Indicator has been deprecated by Apple. Use Medium instead (UnityUpgradable) -> Medium", true)]
         Gray = 2,
 
-        // Don't Show
-        DontShow = -1
+        // Medium (Old White and Gray)
+        Medium = 100,
+
+        // Large (Old WhiteLarge)
+        Large = 101,
     }
 
     // iOS status bar style

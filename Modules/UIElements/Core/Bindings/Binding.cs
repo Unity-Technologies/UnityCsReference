@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -70,7 +71,12 @@ namespace UnityEngine.UIElements
         private bool m_Dirty;
         private BindingUpdateTrigger m_UpdateTrigger;
 
-        internal string property { get; set; }
+        internal string property
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get;
+            set;
+        }
 
         /// <summary>
         /// When set to <see langword="true"/>, the binding instance updates during the next update cycle.

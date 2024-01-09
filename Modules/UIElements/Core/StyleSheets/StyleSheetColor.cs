@@ -4,9 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class StyleSheetColor
     {
         public static bool TryGetColor(string name, out Color color)

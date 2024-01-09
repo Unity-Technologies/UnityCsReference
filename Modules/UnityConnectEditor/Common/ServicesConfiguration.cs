@@ -239,7 +239,7 @@ namespace UnityEditor.Connect
                 ""build_upload_api_url"":""https://build-artifact-api.cloud.unity3d.com"",
                 ""hub_installer_location"":""https://public-cdn.cloud.unity3d.com/hub/prod/"",
                 ""hub-disable-marketing-tips"":false,
-                ""asset_store_api"":""https://packages-v2.unity.com"",
+                ""asset_store_api"":""https://packages.unity.com"",
                 ""asset_store_url"":""https://assetstore.unity.com"",
                 ""packman_key"":""6357C523886E813D1500408F05B0D7A6""}";
             LoadJsonConfiguration(hardCodedConfigs);

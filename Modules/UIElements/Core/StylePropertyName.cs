@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -15,6 +16,7 @@ namespace UnityEngine.UIElements
         internal StylePropertyId id { get; }
         private string name { get; }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static StylePropertyId StylePropertyIdFromString(string name)
         {
             if (StylePropertyUtil.s_NameToId.TryGetValue(name, out StylePropertyId id))

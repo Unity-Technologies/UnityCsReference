@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.Layout;
 
 namespace UnityEngine.UIElements
@@ -36,6 +37,7 @@ namespace UnityEngine.UIElements
         Hidden = LayoutOverflow.Hidden
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal enum OverflowInternal
     {
         Visible = LayoutOverflow.Visible,
@@ -307,6 +309,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Defines the position of an element.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal enum PositionProperty
     {
         /// <summary>

@@ -4,10 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UxmlAsset : IUxmlAttributes
     {
         public const string NullNodeType = "null";
@@ -156,6 +158,7 @@ namespace UnityEngine.UIElements
     }
 
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UxmlObjectAsset : UxmlAsset
     {
         [SerializeField]

@@ -18,6 +18,7 @@ using UnityEngineInternal;
 using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
 using UnityEditor.SceneManagement;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
@@ -783,6 +784,7 @@ namespace UnityEditor
 
         // Automatically loads version of icon that matches current skin.
         // Equivalent to Texture2DNamed in ObjectImages.cpp
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Texture2D LoadIcon(string name)
         {
             return LoadIconForSkin(name, skinIndex);

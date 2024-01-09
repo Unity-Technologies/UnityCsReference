@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -37,7 +38,7 @@ namespace UnityEngine.UIElements
             m_Axis = axis;
             m_IsNone = false;
         }
-        
+
 
         internal static Rotate Initial()
         {
@@ -72,6 +73,7 @@ namespace UnityEngine.UIElements
         private Vector3 m_Axis;
         private bool m_IsNone;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool IsNone() => m_IsNone;
 
         /// <undoc/>

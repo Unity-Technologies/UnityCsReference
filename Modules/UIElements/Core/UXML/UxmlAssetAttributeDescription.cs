@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -63,6 +64,7 @@ namespace UnityEngine.UIElements
     }
 
     // The sole purpose of this interface is to easily access the generic type without using reflection
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     interface IUxmlAssetAttributeDescription
     {
         Type assetType { get; }

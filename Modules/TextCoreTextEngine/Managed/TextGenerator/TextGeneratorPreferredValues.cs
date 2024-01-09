@@ -92,6 +92,9 @@ namespace UnityEngine.TextCore.Text
             float fontSizeDelta = 0;
 
             m_FontStyleInternal = generationSettings.fontStyle; // Set the default style.
+            m_FontWeightInternal = (m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold ? TextFontWeight.Bold : generationSettings.fontWeight;
+            m_FontWeightStack.SetDefault(m_FontWeightInternal);
+            m_FontStyleStack.Clear();
 
             m_LineJustification = generationSettings.textAlignment; // m_textAlignment; // Sets the line justification mode to match editor alignment.
             m_LineJustificationStack.SetDefault(m_LineJustification);
@@ -398,6 +401,11 @@ namespace UnityEngine.TextCore.Text
 
                 // Store some of the text object's information
                 m_InternalTextElementInfo[m_CharacterCount].character = (char)charCode;
+                m_InternalTextElementInfo[m_CharacterCount].style = m_FontStyleInternal;
+                if (m_FontWeightInternal == TextFontWeight.Bold)
+                {
+                    m_InternalTextElementInfo[m_CharacterCount].style |= FontStyles.Bold;
+                }
 
                 // Cache glyph metrics
                 Glyph altGlyph = textInfo.textElementInfo[m_CharacterCount].alternativeGlyph;
@@ -567,7 +575,7 @@ namespace UnityEngine.TextCore.Text
                 #region Handle Style Padding
 
                 float boldSpacingAdjustment = 0;
-                if (m_TextElementType == TextElementType.Character && !isUsingAltTypeface && ((m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold)) // Checks for any combination of Bold Style.
+                if (m_TextElementType == TextElementType.Character && !isUsingAltTypeface && ((m_InternalTextElementInfo[m_CharacterCount].style & FontStyles.Bold) == FontStyles.Bold)) // Checks for any combination of Bold Style.
                     boldSpacingAdjustment = m_CurrentFontAsset.boldStyleSpacing;
 
                 #endregion Handle Style Padding

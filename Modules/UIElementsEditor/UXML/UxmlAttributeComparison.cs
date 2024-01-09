@@ -5,10 +5,12 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class UxmlAttributeComparison
     {
         public static bool ObjectEquals(object a, object b)
@@ -34,7 +36,7 @@ namespace UnityEditor.UIElements
             if (a is IList aList && b is IList bList)
                 return ListEquals(aList, bList);
             if (a is not string &&
-                a is not UnityEngine.Object && 
+                a is not UnityEngine.Object &&
                 a.GetType().IsClass &&
                 UxmlAttributeConverter.TryConvertToString(a, null, out var aString) &&
                 UxmlAttributeConverter.TryConvertToString(b, null, out var bString))

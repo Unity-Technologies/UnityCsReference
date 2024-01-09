@@ -409,7 +409,7 @@ namespace Unity.UI.Builder
 
                                 if (shorthandId != StylePropertyId.Unknown)
                                 {
-                                    if (StylePropertyUtil.s_IdToName.TryGetValue(shorthandId, out var shorthandName))
+                                    if (StylePropertyUtil.stylePropertyIdToPropertyName.TryGetValue(shorthandId, out var shorthandName))
                                     {
                                         ruleProperty = matchRecord.sheet.FindProperty(matchRecord.complexSelector, shorthandName);
                                     }
@@ -433,7 +433,7 @@ namespace Unity.UI.Builder
                                 inspector.matchingSelectors.matchedRulesExtractor.matchRecords, result);
 
                             StylePropertyId id;
-                            if (StylePropertyUtil.s_NameToId.TryGetValue(propName, out id))
+                            if (StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(propName, out id))
                             {
                                 if (result.TryGetValue(id, out var spec))
                                 {

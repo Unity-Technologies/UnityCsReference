@@ -10,7 +10,7 @@ using static UnityEngine.TextEditor;
 
 namespace UnityEngine
 {
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
     internal class TextSelectingUtilities
     {
         public DblClickSnapping dblClickSnap = DblClickSnapping.WORDS;

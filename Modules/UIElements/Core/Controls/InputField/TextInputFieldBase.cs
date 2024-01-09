@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.TextCore.Text;
 
@@ -234,6 +235,7 @@ namespace UnityEngine.UIElements
         internal string placeholderText
         {
             get => textEdition.placeholder;
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             set => textEdition.placeholder = value;
         }
 
@@ -759,7 +761,12 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal bool hasFocus => textInputBase.textElement.hasFocus;
+        internal bool hasFocus
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => textInputBase.textElement.hasFocus;
+        }
+
         internal void OnPlaceholderChanged()
         {
             if (!string.IsNullOrEmpty(textEdition.placeholder))

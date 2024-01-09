@@ -7,10 +7,12 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UxmlSerializedDataDescription
     {
         private readonly List<UxmlSerializedAttributeDescription> m_SerializedAttributes = new();

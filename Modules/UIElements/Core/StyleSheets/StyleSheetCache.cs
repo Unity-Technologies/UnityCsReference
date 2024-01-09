@@ -4,9 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class StyleSheetCache
     {
         struct SheetHandleKey
@@ -42,6 +44,7 @@ namespace UnityEngine.UIElements.StyleSheets
         // cache of ordered propertyIDs for properties of a given rule
         static Dictionary<SheetHandleKey, StylePropertyId[]> s_RulePropertyIdsCache = new Dictionary<SheetHandleKey, StylePropertyId[]>(s_Comparer);
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void ClearCaches()
         {
             s_RulePropertyIdsCache.Clear();

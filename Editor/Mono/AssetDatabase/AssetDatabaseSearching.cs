@@ -7,6 +7,7 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEditor.Utils;
 using UnityEngine;
+using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -36,6 +37,7 @@ namespace UnityEditor
             return FindAllAssets(searchFilter).Select(property => property.guid).Distinct().ToArray();
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static IEnumerable<HierarchyProperty> FindAllAssets(SearchFilter searchFilter)
         {
             var enumerator = EnumerateAllAssets(searchFilter);

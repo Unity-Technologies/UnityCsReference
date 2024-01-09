@@ -72,7 +72,7 @@ namespace Unity.UI.Builder
 
         public static string ConvertStyleCSharpNameToUssName(string csharpName)
         {
-            if (StylePropertyUtil.s_CSharpNameToUssName.TryGetValue(csharpName, out var ussName))
+            if (StylePropertyUtil.cSharpNameToUssName.TryGetValue(csharpName, out var ussName))
                 return ussName;
 
             var dashCasedName = ConvertCamelToDash(csharpName);
@@ -84,7 +84,7 @@ namespace Unity.UI.Builder
 
         public static string ConvertStyleUssNameToCSharpName(string ussName)
         {
-            if (StylePropertyUtil.s_UssNameToCSharpName.TryGetValue(ussName, out var cSharpStyleName))
+            if (StylePropertyUtil.ussNameToCSharpName.TryGetValue(ussName, out var cSharpStyleName))
                 return cSharpStyleName;
 
             if (ussName.StartsWith("-unity"))

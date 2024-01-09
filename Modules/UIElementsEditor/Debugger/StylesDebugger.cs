@@ -11,6 +11,7 @@ using Unity.Properties;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements;
 using Cursor = UnityEngine.UIElements.Cursor;
@@ -415,6 +416,7 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal struct MatchedRule
     {
         public readonly SelectorMatchRecord matchRecord;
@@ -469,10 +471,14 @@ namespace UnityEditor.UIElements.Debugger
         public static IEqualityComparer<MatchedRule> lineNumberFullPathComparer = new LineNumberFullPathEqualityComparer();
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class MatchedRulesExtractor
     {
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal HashSet<MatchedRule> selectedElementRules = new HashSet<MatchedRule>(MatchedRule.lineNumberFullPathComparer);
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal HashSet<string> selectedElementStylesheets = new HashSet<string>();
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal List<SelectorMatchRecord> matchRecords = new List<SelectorMatchRecord>();
 
         public IEnumerable<MatchedRule> GetMatchedRules() => selectedElementRules;

@@ -12,44 +12,29 @@ namespace UnityEditor.Toolbars
 {
     class ToolButton : EditorToolbarToggle
     {
-        static readonly Texture2D s_PanViewIcon;
-        static readonly Texture2D s_PanViewOnIcon;
-        static readonly Texture2D s_OrbitViewIcon;
-        static readonly Texture2D s_OrbitViewOnIcon;
-        static readonly Texture2D s_FpsViewIcon;
-        static readonly Texture2D s_FpsViewOnIcon;
-        static readonly Texture2D s_ZoomViewIcon;
-        static readonly Texture2D s_ZoomViewOnIcon;
+        static Texture2D s_PanViewIcon;
+        static Texture2D s_PanViewOnIcon;
+        static Texture2D s_OrbitViewIcon;
+        static Texture2D s_OrbitViewOnIcon;
+        static Texture2D s_FpsViewIcon;
+        static Texture2D s_FpsViewOnIcon;
+        static Texture2D s_ZoomViewIcon;
+        static Texture2D s_ZoomViewOnIcon;
 
-        static readonly Texture2D s_DefaultMoveIcon;
-        static readonly Texture2D s_DefaultMoveOnIcon;
-        static readonly Texture2D s_DefaultRotateIcon;
-        static readonly Texture2D s_DefaultRotateOnIcon;
-        static readonly Texture2D s_DefaultScaleIcon;
-        static readonly Texture2D s_DefaultScaleOnIcon;
-        static readonly Texture2D s_DefaultTransformIcon;
-        static readonly Texture2D s_DefaultTransformOnIcon;
-        static readonly Texture2D s_DefaultRectIcon;
-        static readonly Texture2D s_DefaultRectOnIcon;
+        static Texture2D s_DefaultMoveIcon;
+        static Texture2D s_DefaultMoveOnIcon;
+        static Texture2D s_DefaultRotateIcon;
+        static Texture2D s_DefaultRotateOnIcon;
+        static Texture2D s_DefaultScaleIcon;
+        static Texture2D s_DefaultScaleOnIcon;
+        static Texture2D s_DefaultTransformIcon;
+        static Texture2D s_DefaultTransformOnIcon;
+        static Texture2D s_DefaultRectIcon;
+        static Texture2D s_DefaultRectOnIcon;
 
         static ToolButton()
         {
-            s_PanViewIcon = EditorGUIUtility.LoadIconRequired("ViewToolMove");
-            s_PanViewOnIcon = EditorGUIUtility.LoadIconRequired("ViewToolMove On");
-            s_FpsViewIcon = s_OrbitViewIcon = EditorGUIUtility.LoadIconRequired("ViewToolOrbit");
-            s_FpsViewOnIcon = s_OrbitViewOnIcon = EditorGUIUtility.LoadIconRequired("ViewToolOrbit On");
-            s_ZoomViewIcon = EditorGUIUtility.LoadIconRequired("ViewToolZoom");
-            s_ZoomViewOnIcon = EditorGUIUtility.LoadIconRequired("ViewToolZoom On");
-            s_DefaultMoveIcon = EditorGUIUtility.LoadIconRequired("MoveTool");
-            s_DefaultMoveOnIcon = EditorGUIUtility.LoadIconRequired("MoveTool On");
-            s_DefaultRotateIcon = EditorGUIUtility.LoadIconRequired("RotateTool");
-            s_DefaultRotateOnIcon = EditorGUIUtility.LoadIconRequired("RotateTool On");
-            s_DefaultScaleIcon = EditorGUIUtility.LoadIconRequired("ScaleTool");
-            s_DefaultScaleOnIcon = EditorGUIUtility.LoadIconRequired("ScaleTool On");
-            s_DefaultTransformIcon = EditorGUIUtility.LoadIconRequired("TransformTool");
-            s_DefaultTransformOnIcon = EditorGUIUtility.LoadIconRequired("TransformTool On");
-            s_DefaultRectIcon = EditorGUIUtility.FindTexture("RectTool");
-            s_DefaultRectOnIcon = EditorGUIUtility.FindTexture("RectTool On");
+            LoadBuiltinToolsIcons();
         }
 
         // in milliseconds
@@ -401,6 +386,26 @@ namespace UnityEditor.Toolbars
                 if (m_Variants[i]?.GetType() == pref)
                     return i;
             return 0;
+        }
+
+        internal static void LoadBuiltinToolsIcons()
+        {
+            s_PanViewIcon = EditorGUIUtility.LoadIconRequired("ViewToolMove");
+            s_PanViewOnIcon = EditorGUIUtility.LoadIconRequired("ViewToolMove On");
+            s_FpsViewIcon = s_OrbitViewIcon = EditorGUIUtility.LoadIconRequired("ViewToolOrbit");
+            s_FpsViewOnIcon = s_OrbitViewOnIcon = EditorGUIUtility.LoadIconRequired("ViewToolOrbit On");
+            s_ZoomViewIcon = EditorGUIUtility.LoadIconRequired("ViewToolZoom");
+            s_ZoomViewOnIcon = EditorGUIUtility.LoadIconRequired("ViewToolZoom On");
+            s_DefaultMoveIcon = EditorGUIUtility.LoadIconRequired("MoveTool");
+            s_DefaultMoveOnIcon = EditorGUIUtility.LoadIconRequired("MoveTool On");
+            s_DefaultRotateIcon = EditorGUIUtility.LoadIconRequired("RotateTool");
+            s_DefaultRotateOnIcon = EditorGUIUtility.LoadIconRequired("RotateTool On");
+            s_DefaultScaleIcon = EditorGUIUtility.LoadIconRequired("ScaleTool");
+            s_DefaultScaleOnIcon = EditorGUIUtility.LoadIconRequired("ScaleTool On");
+            s_DefaultTransformIcon = EditorGUIUtility.LoadIconRequired("TransformTool");
+            s_DefaultTransformOnIcon = EditorGUIUtility.LoadIconRequired("TransformTool On");
+            s_DefaultRectIcon = EditorGUIUtility.FindTexture("RectTool");
+            s_DefaultRectOnIcon = EditorGUIUtility.FindTexture("RectTool On");
         }
     }
 }

@@ -11,6 +11,7 @@ using System.Text;
 using UnityEditor.Experimental;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using Object = UnityEngine.Object;
@@ -47,6 +48,7 @@ namespace UnityEditor.StyleSheets
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class ConverterUtils
     {
         public const string k_TextAlignment = "-unity-text-align";

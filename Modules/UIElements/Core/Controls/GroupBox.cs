@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -85,7 +86,11 @@ namespace UnityEngine.UIElements
         Label m_TitleLabel;
 
         // Needed by the UIBuilder for authoring in the viewport
-        internal Label titleLabel => m_TitleLabel;
+        internal Label titleLabel
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => m_TitleLabel;
+        }
 
         /// <summary>
         /// The title text of the box.

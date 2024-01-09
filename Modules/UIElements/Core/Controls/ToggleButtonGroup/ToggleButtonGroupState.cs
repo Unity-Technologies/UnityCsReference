@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -50,6 +51,7 @@ namespace UnityEngine.UIElements
         public int length
         {
             get => m_Length;
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set => m_Length = value;
         }
 

@@ -9,8 +9,10 @@ namespace UnityEditor
 {
     [StaticAccessor("UnityEditorAnalytics", StaticAccessorType.DoubleColon)]
     [NativeHeader("Modules/UnityEditorAnalyticsEditor/UnityEditorAnalytics.h")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static partial class UsabilityAnalytics
     {
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void SendEvent(string subType, DateTime startTime, TimeSpan duration, bool isBlocking, object parameters)
         {
             if (startTime.Kind == DateTimeKind.Local)
