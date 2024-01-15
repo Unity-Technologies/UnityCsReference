@@ -35,7 +35,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.CoreModule")]
 [assembly: InternalsVisibleTo("UnityEditor.EditorToolbarModule")]
 [assembly: InternalsVisibleTo("UnityEditor.GraphViewModule")]
-[assembly: InternalsVisibleTo("UnityEditor.GraphToolsFoundationModule")]
 [assembly: InternalsVisibleTo("UnityEditor.Graphs")]
 [assembly: InternalsVisibleTo("UnityEditor.GridAndSnapModule")] // ButtonStripField
 [assembly: InternalsVisibleTo("UnityEditor.PresetsModule")]

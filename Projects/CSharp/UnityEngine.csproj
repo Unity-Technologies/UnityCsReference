@@ -374,6 +374,12 @@
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\ExposeVivox.cs">
       <Link>Modules\Audio\Public\ScriptBindings\ExposeVivox.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\MovieTexture.deprecated.cs">
+      <Link>Modules\Audio\Public\ScriptBindings\MovieTexture.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\UnityEngineWebCamTexture.bindings.cs">
+      <Link>Modules\Audio\Public\ScriptBindings\UnityEngineWebCamTexture.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Cloth\Cloth.bindings.cs">
       <Link>Modules\Cloth\Cloth.bindings.cs</Link>
     </Compile>
@@ -385,99 +391,6 @@
     </Compile>
     <Compile Include="..\..\Modules\ClusterRenderer\ClusterSerialization.bindings.cs">
       <Link>Modules\ClusterRenderer\ClusterSerialization.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\AssemblyInfo.cs">
-      <Link>Modules\CommandStateObserver\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\CommandHandlerFunctor.cs">
-      <Link>Modules\CommandStateObserver\Commands\CommandHandlerFunctor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\CommandTargetExtensions.cs">
-      <Link>Modules\CommandStateObserver\Commands\CommandTargetExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\HierarchicalCommandTargetExtensions.cs">
-      <Link>Modules\CommandStateObserver\Commands\HierarchicalCommandTargetExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\ICommand.cs">
-      <Link>Modules\CommandStateObserver\Commands\ICommand.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\ICommandTarget.cs">
-      <Link>Modules\CommandStateObserver\Commands\ICommandTarget.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\IHierarchicalCommandTarget.cs">
-      <Link>Modules\CommandStateObserver\Commands\IHierarchicalCommandTarget.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\ModelCommand.cs">
-      <Link>Modules\CommandStateObserver\Commands\ModelCommand.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\UndoableCommand.cs">
-      <Link>Modules\CommandStateObserver\Commands\UndoableCommand.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\CsoTool.cs">
-      <Link>Modules\CommandStateObserver\CsoTool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Dispatcher.cs">
-      <Link>Modules\CommandStateObserver\Dispatcher.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\ListUtilities.cs">
-      <Link>Modules\CommandStateObserver\ListUtilities.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\ObserverManager.cs">
-      <Link>Modules\CommandStateObserver\ObserverManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\IInternalStateObserver_Internal.cs">
-      <Link>Modules\CommandStateObserver\Observers\IInternalStateObserver_Internal.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\IStateObserver.cs">
-      <Link>Modules\CommandStateObserver\Observers\IStateObserver.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\Observation.cs">
-      <Link>Modules\CommandStateObserver\Observers\Observation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\StateComponentVersion.cs">
-      <Link>Modules\CommandStateObserver\Observers\StateComponentVersion.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\StateObserver.cs">
-      <Link>Modules\CommandStateObserver\Observers\StateObserver.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\StateObserverExtensions.cs">
-      <Link>Modules\CommandStateObserver\Observers\StateObserverExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\UpdateType.cs">
-      <Link>Modules\CommandStateObserver\Observers\UpdateType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\UpdateTypeExtensions.cs">
-      <Link>Modules\CommandStateObserver\Observers\UpdateTypeExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Serialization\SerializedReferenceDictionary.cs">
-      <Link>Modules\CommandStateObserver\Serialization\SerializedReferenceDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Serialization\SerializedValueDictionary.cs">
-      <Link>Modules\CommandStateObserver\Serialization\SerializedValueDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\ChangesetManager.cs">
-      <Link>Modules\CommandStateObserver\States\ChangesetManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\IChangeset.cs">
-      <Link>Modules\CommandStateObserver\States\IChangeset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\IState.cs">
-      <Link>Modules\CommandStateObserver\States\IState.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\IStateComponent.cs">
-      <Link>Modules\CommandStateObserver\States\IStateComponent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\IStateComponentUpdater.cs">
-      <Link>Modules\CommandStateObserver\States\IStateComponentUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\State.cs">
-      <Link>Modules\CommandStateObserver\States\State.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\StateComponent.cs">
-      <Link>Modules\CommandStateObserver\States\StateComponent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Undo\IUndoableStateComponent.cs">
-      <Link>Modules\CommandStateObserver\Undo\IUndoableStateComponent.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ContentLoad\Public\ContentLoad.bindings.cs">
       <Link>Modules\ContentLoad\Public\ContentLoad.bindings.cs</Link>
@@ -547,75 +460,6 @@
     </Compile>
     <Compile Include="..\..\Modules\GameCenter\Public\GameCenterServices.bindings.cs">
       <Link>Modules\GameCenter\Public\GameCenterServices.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\AssemblyInfo.cs">
-      <Link>Modules\GraphToolsFoundation\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Extensions\IEnumerableExtensions_Internal.cs">
-      <Link>Modules\GraphToolsFoundation\Extensions\IEnumerableExtensions_Internal.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Extensions\StringExtensions_Internal.cs">
-      <Link>Modules\GraphToolsFoundation\Extensions\StringExtensions_Internal.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Hash128Extensions.cs">
-      <Link>Modules\GraphToolsFoundation\Hash128Extensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\SerializableGUID.cs">
-      <Link>Modules\GraphToolsFoundation\SerializableGUID.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\TypeSystem\EnumValueReference.cs">
-      <Link>Modules\GraphToolsFoundation\TypeSystem\EnumValueReference.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\TypeSystem\TypeExtensions.cs">
-      <Link>Modules\GraphToolsFoundation\TypeSystem\TypeExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\TypeSystem\TypeHandle.cs">
-      <Link>Modules\GraphToolsFoundation\TypeSystem\TypeHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\TypeSystem\TypeHandleHelpers.cs">
-      <Link>Modules\GraphToolsFoundation\TypeSystem\TypeHandleHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\TypeSystem\TypeMetadata.cs">
-      <Link>Modules\GraphToolsFoundation\TypeSystem\TypeMetadata.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\TypeSystem\TypeMetadataBase.cs">
-      <Link>Modules\GraphToolsFoundation\TypeSystem\TypeMetadataBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\TypeSystem\TypeMetadataResolver.cs">
-      <Link>Modules\GraphToolsFoundation\TypeSystem\TypeMetadataResolver.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\CollectionExtensions.cs">
-      <Link>Modules\GraphToolsFoundation\Utility\CollectionExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\Enumeration.cs">
-      <Link>Modules\GraphToolsFoundation\Utility\Enumeration.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\MathExpressionParsing\BinaryOperation.cs">
-      <Link>Modules\GraphToolsFoundation\Utility\MathExpressionParsing\BinaryOperation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\MathExpressionParsing\ExpressionValue.cs">
-      <Link>Modules\GraphToolsFoundation\Utility\MathExpressionParsing\ExpressionValue.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\MathExpressionParsing\FunctionCall.cs">
-      <Link>Modules\GraphToolsFoundation\Utility\MathExpressionParsing\FunctionCall.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\MathExpressionParsing\MathExpressionParser.cs">
-      <Link>Modules\GraphToolsFoundation\Utility\MathExpressionParsing\MathExpressionParser.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\MathExpressionParsing\MathExpressionReader_Internal.cs">
-      <Link>Modules\GraphToolsFoundation\Utility\MathExpressionParsing\MathExpressionReader_Internal.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\MathExpressionParsing\Operator_Internal.cs">
-      <Link>Modules\GraphToolsFoundation\Utility\MathExpressionParsing\Operator_Internal.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\MathExpressionParsing\UnaryOperation.cs">
-      <Link>Modules\GraphToolsFoundation\Utility\MathExpressionParsing\UnaryOperation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\MathExpressionParsing\Variable.cs">
-      <Link>Modules\GraphToolsFoundation\Utility\MathExpressionParsing\Variable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\StringUtilsExtensions.cs">
-      <Link>Modules\GraphToolsFoundation\Utility\StringUtilsExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Grid\Managed\Grid.cs">
       <Link>Modules\Grid\Managed\Grid.cs</Link>
@@ -4721,9 +4565,6 @@
     <Compile Include="..\..\Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs">
       <Link>Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Scripting\ManagedAttributeManagerTests.cs">
-      <Link>Runtime\Scripting\ManagedAttributeManagerTests.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\ArrayHandleOnStack.cs">
       <Link>Runtime\Scripting\Marshalling\ArrayHandleOnStack.cs</Link>
     </Compile>
@@ -4756,12 +4597,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs">
       <Link>Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Video\ScriptBindings\MovieTexture.deprecated.cs">
-      <Link>Runtime\Video\ScriptBindings\MovieTexture.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Video\ScriptBindings\UnityEngineWebCamTexture.bindings.cs">
-      <Link>Runtime\Video\ScriptBindings\UnityEngineWebCamTexture.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\artifacts\generated\UnityEvent\UnityEvent_0.cs">
       <Link>artifacts\generated\UnityEvent\UnityEvent_0.cs</Link>

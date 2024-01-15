@@ -364,6 +364,15 @@ namespace Unity.UI.Builder
                             }
                         }
 
+                        // If the UXML file has been modified, the element may no longer be in the asset so we will ignore it. (UUM-59305)
+                        if (index == -1)
+                        {
+                            m_CurrentElement = null;
+                            m_CurrentUxmlElement = null;
+                            m_SerializedDataDescription = null;
+                            return;
+                        }
+
                         var arrayPath = isTemplateInstance
                             ? nameof(VisualTreeAsset.m_TemplateAssets)
                             : nameof(VisualTreeAsset.m_VisualElementAssets);

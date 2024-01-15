@@ -51,25 +51,25 @@ namespace UnityEditor
         [ClutchShortcut(k_RectSelectionNormal, typeof(SceneViewPickingShortcutContext), KeyCode.Mouse0)]
         static void OnNormalRectSelection(ShortcutArguments args)
         {
-            var context = args.context as SceneViewPickingShortcutContext;
-            context.window?.rectSelection.OnRectSelection(args, SelectionType.Normal, context.window);
+            if (args.context is SceneViewPickingShortcutContext ctx && ctx.window != null && ctx.window.rectSelection != null)
+                ctx.window.rectSelection.OnRectSelection(args, SelectionType.Normal, ctx.window);
         }
 
         [ClutchShortcut(k_RectSelectionAdditive, typeof(SceneViewPickingShortcutContext), KeyCode.Mouse0, ShortcutModifiers.Shift)]
         static void OnAdditiveRectSelection(ShortcutArguments args)
         {
-            var context = args.context as SceneViewPickingShortcutContext;
-            context.window?.rectSelection.OnRectSelection(args, SelectionType.Additive, context.window);
+            if (args.context is SceneViewPickingShortcutContext ctx && ctx.window != null && ctx.window.rectSelection != null)
+                ctx.window.rectSelection.OnRectSelection(args, SelectionType.Additive, ctx.window);
         }
 
         [ClutchShortcut(k_RectSelectionSubtractive, typeof(SceneViewPickingShortcutContext), KeyCode.Mouse0, ShortcutModifiers.Action)]
         static void OnSubtractiveRectSelection(ShortcutArguments args)
         {
-            var context = args.context as SceneViewPickingShortcutContext;
-            context.window?.rectSelection.OnRectSelection(args, SelectionType.Subtractive, context.window);
+            if (args.context is SceneViewPickingShortcutContext ctx && ctx.window != null && ctx.window.rectSelection != null)
+                ctx.window.rectSelection.OnRectSelection(args, SelectionType.Subtractive, ctx.window);
         }
 
-        public void OnRectSelection(ShortcutArguments args, SelectionType selectionType, SceneView view)
+        void OnRectSelection(ShortcutArguments args, SelectionType selectionType, SceneView view)
         {
             // Validating that the hotControl is either equal to 0 or k_RectSelectionID allows to only start the rect selection
             // when no other tool overrides the shortcut key and to change modifiers while rect selecting.
@@ -87,22 +87,22 @@ namespace UnityEditor
         [Shortcut(k_PickingNormal, typeof(SceneViewPickingShortcutContext), KeyCode.Mouse0)]
         static void OnNormalPicking(ShortcutArguments args)
         {
-            var context = args.context as SceneViewPickingShortcutContext;
-            context.window?.rectSelection.DelayPicking(context.window, SelectionType.Normal);
+            if (args.context is SceneViewPickingShortcutContext ctx && ctx.window != null && ctx.window.rectSelection != null)
+                ctx.window.rectSelection.DelayPicking(ctx.window, SelectionType.Normal);
         }
 
         [Shortcut(k_PickingAdditive, typeof(SceneViewPickingShortcutContext), KeyCode.Mouse0, ShortcutModifiers.Shift)]
         static void OnAdditivePicking(ShortcutArguments args)
         {
-            var context = args.context as SceneViewPickingShortcutContext;
-            context.window?.rectSelection.DelayPicking(context.window, SelectionType.Additive);
+            if (args.context is SceneViewPickingShortcutContext ctx && ctx.window != null && ctx.window.rectSelection != null)
+                ctx.window.rectSelection.DelayPicking(ctx.window, SelectionType.Additive);
         }
 
         [Shortcut(k_PickingSubtractive, typeof(SceneViewPickingShortcutContext), KeyCode.Mouse0, ShortcutModifiers.Action)]
         static void OnSubtractivePicking(ShortcutArguments args)
         {
-            var context = args.context as SceneViewPickingShortcutContext;
-            context.window?.rectSelection.DelayPicking(context.window, SelectionType.Subtractive);
+            if (args.context is SceneViewPickingShortcutContext ctx && ctx.window != null && ctx.window.rectSelection != null)
+                ctx.window.rectSelection.DelayPicking(ctx.window, SelectionType.Subtractive);
         }
 
         // Delaying the picking to a command event is necessary because some HandleUtility methods

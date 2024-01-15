@@ -14,7 +14,7 @@ namespace UnityEditor
         {
             get
             {
-                if (!(EditorWindow.focusedWindow is SceneView view))
+                if (!(EditorWindow.focusedWindow is SceneView view) || view.sceneViewMotion == null)
                     return false;
 
                 return view.sceneViewMotion.viewportsUnderMouse && Tools.current != Tool.View;

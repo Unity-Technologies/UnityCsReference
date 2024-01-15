@@ -148,6 +148,20 @@ namespace UnityEditor.Rendering
                 action?.Invoke(Internal_GetSettingsForRenderPipelineAt(i) as RenderPipelineGlobalSettings);
         }
 
+        public static TSettingsInterfaceType[] GetRenderPipelineSettingsFromInterface<TSettingsInterfaceType>()
+            where TSettingsInterfaceType : class, IRenderPipelineGraphicsSettings
+        {
+            if (!GraphicsSettings.TryGetCurrentRenderPipelineGlobalSettings(out RenderPipelineGlobalSettings asset))
+                return new TSettingsInterfaceType[] {};
+
+            if (asset.GetSettingsImplementingInterface<TSettingsInterfaceType>(out var baseSettings))
+            {
+                return baseSettings.ToArray();
+            }
+
+            return new TSettingsInterfaceType[] {};
+        }
+
         public static bool TryGetFirstRenderPipelineSettingsFromInterface<TSettingsInterfaceType>(out TSettingsInterfaceType settings)
             where TSettingsInterfaceType : class, IRenderPipelineGraphicsSettings
         {
@@ -165,18 +179,40 @@ namespace UnityEditor.Rendering
             return false;
         }
 
-        public static TSettingsInterfaceType[] GetRenderPipelineSettingsFromInterface<TSettingsInterfaceType>()
+        public static bool TryGetRenderPipelineSettingsFromInterface<TSettingsInterfaceType>(out TSettingsInterfaceType[] settings)
             where TSettingsInterfaceType : class, IRenderPipelineGraphicsSettings
         {
+            settings = null;
+
             if (!GraphicsSettings.TryGetCurrentRenderPipelineGlobalSettings(out RenderPipelineGlobalSettings asset))
-                return new TSettingsInterfaceType[] {};
+                return false;
 
             if (asset.GetSettingsImplementingInterface<TSettingsInterfaceType>(out var baseSettings))
-            {
-                return baseSettings.ToArray();
-            }
+                settings = baseSettings.ToArray();
 
-            return new TSettingsInterfaceType[] {};
+            return settings != null;
+        }
+
+        public static bool TryGetRenderPipelineSettingsFromInterfaceForPipeline<TSettingsInterfaceType, TPipeline>(out TSettingsInterfaceType[] settings)
+            where TSettingsInterfaceType : class, IRenderPipelineGraphicsSettings
+            where TPipeline : RenderPipeline
+        {
+            return TryGetRenderPipelineSettingsFromInterfaceForPipeline(typeof(TPipeline), out settings);
+        }
+
+        public static bool TryGetRenderPipelineSettingsFromInterfaceForPipeline<TSettingsInterfaceType>(Type renderPipelineType, out TSettingsInterfaceType[] settings)
+            where TSettingsInterfaceType : class, IRenderPipelineGraphicsSettings
+        {
+            settings = null;
+
+            var pipelineGlobalSettings = GraphicsSettings.GetSettingsForRenderPipeline(renderPipelineType);
+            if (pipelineGlobalSettings == null)
+                return false;
+
+            if (pipelineGlobalSettings.GetSettingsImplementingInterface<TSettingsInterfaceType>(out var baseSettings))
+                settings = baseSettings.ToArray();
+
+            return settings != null;
         }
     }
 }

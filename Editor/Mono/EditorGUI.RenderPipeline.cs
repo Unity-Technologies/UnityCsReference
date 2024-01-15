@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using UnityEditor.Rendering;
 using UnityEngine;
 
 namespace UnityEditor
@@ -49,8 +51,7 @@ namespace UnityEditor
             if (label != null)
                 position = PrefixLabel(position, id, label);
 
-            var names = RenderingLayerMask.GetDefinedRenderingLayerNames();
-            var values = RenderingLayerMask.GetDefinedRenderingLayerValues();
+            var (names, values) = RenderPipelineEditorUtility.GetRenderingLayerNamesAndValuesForMask(layers);
 
             using var scope = new MixedValueScope();
 
@@ -62,6 +63,11 @@ namespace UnityEditor
                 Debug.Assert(bits != null, $"Property for RenderingLayerMask doesn't contain m_Bits. You should use new {nameof(RenderingLayerMask)} type with this drawer.");
                 bits.uintValue = (uint)newValue;
             }
+
+            var currentLimit = RenderPipelineEditorUtility.GetActiveMaxRenderingLayers();
+            var newValueUint = unchecked((uint)newValue);
+            if (currentLimit != 32 && newValueUint != uint.MaxValue && newValueUint >= 1u << currentLimit)
+                EditorGUILayout.HelpBox($"Current mask contains layers outside of a supported range by active Render Pipeline. The active Render Pipeline only supports up to {currentLimit} layers. Rendering Layers above {currentLimit} are ignored.", MessageType.Warning);
 
             return unchecked((uint)newValue);
         }

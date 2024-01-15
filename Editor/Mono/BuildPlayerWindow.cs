@@ -572,11 +572,11 @@ namespace UnityEditor
         static Dictionary<string, string> s_ModuleNames = new Dictionary<string, string>()
         {
             { "tvOS", "AppleTV" },
-            { "OSXStandalone", "Mac" },
+            { "OSXStandalone", "Mac-Mono" },
             { "OSXDedicatedServer", "Mac-Server" },
-            { "WindowsStandalone", "Windows" },
+            { "WindowsStandalone", "Windows-Mono" },
             { "WindowsDedicatedServer", "Windows-Server" },
-            { "LinuxStandalone", "Linux" },
+            { "LinuxStandalone", "Linux-Mono" },
             { "LinuxDedicatedServer", "Linux-Server" },
             { "UWP", "Universal-Windows-Platform"}
         };
@@ -624,7 +624,7 @@ namespace UnityEditor
             }
             else if (Application.platform == RuntimePlatform.LinuxEditor)
             {
-                if (moduleName == "Android" || moduleName == "Mac" || moduleName == "Windows")
+                if (moduleName == "Android" || moduleName == "Mac-Mono" || moduleName == "Windows-Mono")
                 {
                     folder = "MacEditorTargetInstaller";
                     extension = ".pkg";
