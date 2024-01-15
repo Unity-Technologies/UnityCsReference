@@ -116,5 +116,8 @@ namespace UnityEngine
 
         [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
         public static extern int[] GetDefinedRenderingLayerValues();
+
+        [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
+        public static extern int GetRenderingLayerCount();
     }
 }

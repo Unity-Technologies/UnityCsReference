@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEditor.Presets;
+using UnityEditor.Rendering;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.ProjectSettings;
 using UnityEditorInternal;
@@ -46,6 +47,9 @@ namespace UnityEditor
 
             public static float elementHeight = EditorGUIUtility.singleLineHeight + 2;
             public const float headerListHeight = 3;
+
+            public const string tagListElement = "tags-and-layer-list__element";
+            public const string helperBox = "tags-and-layer-list__helper-box";
         }
 
         public TagManager tagManager => target as TagManager;
@@ -125,7 +129,7 @@ namespace UnityEditor
             tagsList.headerTitle = Styles.tags.text;
             tagsList.makeItem = () =>
             {
-                var tagListElement = new VisualElement { classList = { "tag-list__element" } };
+                var tagListElement = new VisualElement { classList = { Styles.tagListElement } };
                 tagListElement.Add(new Label()
                 {
                     name = "Title",
@@ -190,7 +194,10 @@ namespace UnityEditor
             var sortingLayers = content.Q<ListView>("SortingLayers");
             sortingLayers.fixedItemHeight = Styles.elementHeight;
             sortingLayers.headerTitle = Styles.sortingLayers.text;
-            sortingLayers.makeItem = () => new TextField();
+            sortingLayers.makeItem = () => new TextField
+            {
+                classList = { Styles.tagListElement }
+            };
 
             void SortingLayersChanged(ChangeEvent<string> evt)
             {
@@ -258,7 +265,10 @@ namespace UnityEditor
             var layers = content.Q<ListView>("Layers");
             layers.fixedItemHeight = Styles.elementHeight;
             layers.headerTitle = Styles.layers.text;
-            layers.makeItem = () => new TextField();
+            layers.makeItem = () => new TextField
+            {
+                classList = { Styles.tagListElement }
+            };
 
             void LayersChanged(ChangeEvent<string> evt)
             {
@@ -300,12 +310,65 @@ namespace UnityEditor
             return layers;
         }
 
+        void UpdateAllowanceAndMessages(BaseListView listView)
+        {
+            var renderingLayerCount = tagManager.GetRenderingLayerCount();
+            var currentMaxRenderingLayerIndex = RenderPipelineEditorUtility.GetActiveMaxRenderingLayers();
+            listView.allowAdd = renderingLayerCount < currentMaxRenderingLayerIndex;
+            listView.allowRemove = !tagManager.IsIndexReservedForDefaultRenderingLayer(renderingLayerCount - 1);
+
+            var viewport = listView.Q<VisualElement>("unity-content-viewport");
+            viewport.Query<HelpBox>().Where(h => h.name == "MaximumSupportedRenderingLayers").ForEach(h => viewport.Remove(h));
+
+            var maxRenderingLayers = RenderPipelineEditorUtility.GetMaxRenderingLayersFromSettings();
+            AddInfoBoxesForMaximumValueRestriction(viewport, maxRenderingLayers);
+            AddWarningMessageForUnsupportedLayers(viewport, maxRenderingLayers);
+        }
+
+        void AddInfoBoxesForMaximumValueRestriction(VisualElement viewport, List<(int, string)> maxRenderingLayers)
+        {
+            for (var i = 0; i < maxRenderingLayers.Count; i++)
+            {
+                if (maxRenderingLayers[i].Item1 >= 32)
+                    continue;
+
+                var message = $"Maximum supported rendering layers on {maxRenderingLayers[i].Item2} is {maxRenderingLayers[i].Item1}.";
+                AddHelperBoxToViewport(viewport, maxRenderingLayers, message, HelpBoxMessageType.Info);
+            }
+        }
+
+        void AddWarningMessageForUnsupportedLayers(VisualElement viewport, List<(int, string)> maxRenderingLayers)
+        {
+            for (var i = 0; i < maxRenderingLayers.Count; i++)
+            {
+                if (tagManager.GetRenderingLayerCount() <= maxRenderingLayers[i].Item1)
+                    continue;
+
+                var message = $"One of the used Render Pipelines doesn't supports all defined Rendering Layers. Additional layers added due to other Render Pipelines will be ignored.";
+                AddHelperBoxToViewport(viewport, maxRenderingLayers, message, HelpBoxMessageType.Warning);
+                break;
+            }
+        }
+
+        static void AddHelperBoxToViewport(VisualElement viewport, List<(int, string)> maxRenderingLayers, string message, HelpBoxMessageType type)
+        {
+            var supportedLabel = new HelpBox(message, type)
+            {
+                name = "MaximumSupportedRenderingLayers",
+                classList = { Styles.helperBox }
+            };
+            viewport.Insert(0, supportedLabel);
+        }
+
         VisualElement SetupRenderingLayers(VisualElement content, SerializedProperty renderingLayersProperty)
         {
             var renderingLayers = content.Q<ListView>("RenderingLayers");
             renderingLayers.fixedItemHeight = Styles.elementHeight;
             renderingLayers.headerTitle = Styles.renderingLayers.text;
-            renderingLayers.makeItem = () => new TextField();
+            renderingLayers.makeItem = () => new TextField
+            {
+                classList = { Styles.tagListElement }
+            };
 
             void RenderingLayersChanged(ChangeEvent<string> evt)
             {
@@ -319,8 +382,12 @@ namespace UnityEditor
 
             renderingLayers.bindItem = (ve, index) =>
             {
+                var renderingLayerCount = tagManager.GetRenderingLayerCount();
+                if (index >= renderingLayerCount)
+                    return;
+
                 var textField = ve as TextField;
-                textField.label = $" Rendering Layer {index}";
+                textField.label = $"Layer {index}";
                 textField.SetValueWithoutNotify(tagManager.RenderingLayerToString(index));
 
                 var isEnabled = isEditable && !tagManager.IsIndexReservedForDefaultRenderingLayer(index);
@@ -334,6 +401,41 @@ namespace UnityEditor
                 var textField = ve as TextField;
                 textField.UnregisterValueChangedCallback(RenderingLayersChanged);
             };
+            renderingLayers.onAdd += (listView) =>
+            {
+                var newIndex = tagManager.GetRenderingLayerCount();
+
+                tagManager.TryAddRenderingLayerName($"Layer {newIndex}");
+                serializedObject.ApplyModifiedProperties();
+
+                listView.selectedIndex = newIndex; // select just added one
+
+                UpdateAllowanceAndMessages(listView);
+            };
+
+            renderingLayers.selectionChanged += (item) =>
+            {
+                var index = renderingLayers.selectedIndex;
+                var lastIndex = tagManager.GetRenderingLayerCount() - 1;
+                renderingLayers.allowRemove = !tagManager.IsIndexReservedForDefaultRenderingLayer(index) && lastIndex == index;
+            };
+
+            renderingLayers.onRemove += (listView) =>
+            {
+                var lastIndex = tagManager.GetRenderingLayerCount() - 1;
+                if (tagManager.IsIndexReservedForDefaultRenderingLayer(lastIndex))
+                    return;
+
+                listView.viewController.RemoveItem(lastIndex);
+                serializedObject.ApplyModifiedProperties();
+
+                listView.selectedIndex = lastIndex - 1; // select just added one
+
+                UpdateAllowanceAndMessages(listView);
+            };
+
+            UpdateAllowanceAndMessages(renderingLayers);
+
             //TextFields in Array are not bind correctly so we need to refresh them manually
             content.TrackPropertyValue(renderingLayersProperty, sp => renderingLayers.RefreshItems());
             return renderingLayers;

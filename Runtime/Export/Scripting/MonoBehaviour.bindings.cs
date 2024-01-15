@@ -66,7 +66,7 @@ namespace UnityEngine
         public void InvokeRepeating(string methodName, float time, float repeatRate)
         {
             if (repeatRate <= 0.00001f && repeatRate != 0.0f)
-                throw new UnityException("Invoke repeat rate has to be larger than 0.00001F)");
+                throw new UnityException("Invoke repeat rate has to be larger than 0.00001F");
 
             InvokeDelayed(this, methodName, time, repeatRate);
         }

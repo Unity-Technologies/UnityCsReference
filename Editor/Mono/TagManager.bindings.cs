@@ -82,8 +82,20 @@ namespace UnityEditor
         [NativeMethod]
         internal extern bool IsIndexReservedForDefaultRenderingLayer(int index);
 
+        [NativeMethod]
+        internal extern bool TryAddRenderingLayerName(string name);
+
+        [NativeMethod]
+        internal extern int GetRenderingLayerCount();
+
+        [NativeMethod]
+        internal extern bool TryRemoveLastRenderingLayerName();
+
         [FreeFunction("GetTagManager().TrySetRenderingLayerName")]
-        internal static extern bool TrySetRenderingLayerName(int index, string name);
+        internal static extern bool Internal_TrySetRenderingLayerName(int index, string name);
+
+        [FreeFunction("GetTagManager().TryAddRenderingLayerName")]
+        internal static extern bool Internal_TryAddRenderingLayerName(string name);
 
         [NativeMethod]
         internal extern int StringToRenderingLayer(string name);

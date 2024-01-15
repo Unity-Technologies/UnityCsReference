@@ -4,8 +4,10 @@
 
 ﻿using System;
 using System.Collections.Generic;
+using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -47,12 +49,9 @@ namespace UnityEditor.UIElements
             set => this.value = value.value;
         }
 
-        void UpdateLayersInfo()
-        {
-            // Create the appropriate lists...
-            choices = new List<string>(RenderingLayerMask.GetDefinedRenderingLayerNames());
-            choicesMasks = new List<int>(RenderingLayerMask.GetDefinedRenderingLayerValues());
-        }
+        SerializedObject m_TagManagerSerializedObject;
+
+        HelpBox m_HelpBox;
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -68,7 +67,6 @@ namespace UnityEditor.UIElements
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
-
 
         /// <summary>
         /// Constructor of the field.
@@ -98,7 +96,6 @@ namespace UnityEditor.UIElements
         {
         }
 
-
         /// <summary>
         /// Constructor of the field.
         /// </summary>
@@ -110,6 +107,42 @@ namespace UnityEditor.UIElements
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
 
+            m_HelpBox = new HelpBox("", HelpBoxMessageType.Warning)
+            {
+                style = { display = DisplayStyle.Flex }
+            };
+
+            UpdateLayersInfo();
+
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            this.RegisterValueChangedCallback(evt => UpdateLayersInfo());
+        }
+
+        void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            RenderPipelineManager.activeRenderPipelineTypeChanged += OnActiveRenderPipelineTypeChanged;
+
+            var tagManager = AssetDatabase.LoadMainAssetAtPath("ProjectSettings/TagManager.asset");
+            m_TagManagerSerializedObject = new SerializedObject(tagManager);
+
+            this.TrackSerializedObjectValue(m_TagManagerSerializedObject, so =>  UpdateLayersInfo());
+
+            parent?.Add(m_HelpBox);
+        }
+
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            RenderPipelineManager.activeRenderPipelineTypeChanged -= OnActiveRenderPipelineTypeChanged;
+
+            m_TagManagerSerializedObject.Dispose();
+            m_TagManagerSerializedObject = null;
+
+            parent?.Remove(m_HelpBox);
+        }
+
+        void OnActiveRenderPipelineTypeChanged()
+        {
             UpdateLayersInfo();
         }
 
@@ -120,6 +153,27 @@ namespace UnityEditor.UIElements
 
             // Create the menu the usual way...
             base.AddMenuItems(menu);
+        }
+
+        protected void UpdateLayersInfo()
+        {
+            // Create the appropriate lists...
+            var (names, values) = RenderPipelineEditorUtility.GetRenderingLayerNamesAndValuesForMask(layerMask);
+
+            choices = new List<string>(names);
+            choicesMasks = new List<int>(values);
+
+            var currentLimit = RenderPipelineEditorUtility.GetActiveMaxRenderingLayers();
+            if (currentLimit != 32 && layerMask != uint.MaxValue && layerMask >= 1u << currentLimit)
+            {
+                m_HelpBox.style.display = DisplayStyle.Flex;
+                m_HelpBox.text =
+                    $"Current mask contains layers outside of a supported range by active Render Pipeline. The active Render Pipeline only supports up to {currentLimit} layers. Rendering Layers above {currentLimit} are ignored.";
+            }
+            else
+            {
+                m_HelpBox.style.display = DisplayStyle.None;
+            }
         }
     }
 }
