@@ -170,7 +170,6 @@ namespace UnityEngine.UIElements
 
                 var cellItem = cellContainer.GetProperty(bindableElementPropertyName) as VisualElement;
                 UnbindCellItem(cellItem, index, column);
-                cellContainer.SetProperty(k_BoundColumnVePropertyName, null);
             }
         }
 
@@ -188,6 +187,7 @@ namespace UnityEngine.UIElements
 
                 var cellItem = cellContainer.GetProperty(bindableElementPropertyName) as VisualElement;
                 column.destroyCell?.Invoke(cellItem);
+                cellContainer.SetProperty(k_BoundColumnVePropertyName, null);
             }
         }
 
