@@ -41,6 +41,9 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void ShowDropdownFromNative(Vector2 position, MenuItemData[] items, string menuRoot)
         {
+            if (EditorMenuExtensions.isEditorContextMenuActive)
+                CloseAllContextMenus();
+
             var menu = new DropdownMenu();
             var rectPosition = positionOverride == EditorMenuExtensions.k_InvalidRect ?
                 new Rect(GUIUtility.ScreenToGUIPoint(position), Vector2.zero) : GUIUtility.ScreenToGUIRect(positionOverride);

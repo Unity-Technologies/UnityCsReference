@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     // TODO [GR] Could move some of that stuff to a base CollectionVirtualizationController<T> class (pool, active items, visible items, etc.)
     abstract class VerticalVirtualizationController<T> : CollectionVirtualizationController where T : ReusableCollectionItem, new()
     {
-        readonly UnityEngine.Pool.ObjectPool<T> m_Pool = new (() => new T(), null, i => i.DetachElement());
+        readonly UnityEngine.Pool.ObjectPool<T> m_Pool = new (() => new T(), null, i => i.DetachElement(), i => i.DestroyElement());
 
         protected BaseVerticalCollectionView m_CollectionView;
         protected const int k_ExtraVisibleItems = 2;
@@ -86,7 +86,6 @@ namespace UnityEngine.UIElements
                         m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                     }
 
-                    m_CollectionView.viewController.InvokeDestroyItem(recycledItem);
                     m_Pool.Release(recycledItem);
                     continue;
                 }
@@ -104,7 +103,6 @@ namespace UnityEngine.UIElements
                             m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                         }
 
-                        recycledItem.index = ReusableCollectionItem.UndefinedIndex;
                         Setup(recycledItem, index);
                     }
                 }
@@ -395,6 +393,7 @@ namespace UnityEngine.UIElements
             if (item.rootElement == null)
             {
                 m_CollectionView.viewController.InvokeMakeItem(item);
+                item.onDestroy += OnDestroyItem;
             }
 
             item.PreAttachElement();
@@ -430,6 +429,12 @@ namespace UnityEngine.UIElements
 
             m_Pool.Release(item);
             m_ActiveItems.Remove(item);
+        }
+
+        private void OnDestroyItem(ReusableCollectionItem item)
+        {
+            m_CollectionView.viewController.InvokeDestroyItem(item);
+            item.onDestroy -= OnDestroyItem;
         }
 
         protected int GetDraggedIndex()

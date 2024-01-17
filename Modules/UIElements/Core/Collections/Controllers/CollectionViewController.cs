@@ -176,6 +176,7 @@ namespace UnityEngine.UIElements
         internal virtual void InvokeUnbindItem(ReusableCollectionItem reusableItem, int index)
         {
             UnbindItem(reusableItem.bindableElement, index);
+            reusableItem.index = ReusableCollectionItem.UndefinedIndex;
         }
 
         internal virtual void InvokeDestroyItem(ReusableCollectionItem reusableItem)
