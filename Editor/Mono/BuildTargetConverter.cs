@@ -40,6 +40,8 @@ namespace UnityEditor
                     return RuntimePlatform.IPhonePlayer;
                 case BuildTarget.tvOS:
                     return RuntimePlatform.tvOS;
+                case BuildTarget.VisionOS:
+                    return RuntimePlatform.VisionOS;
                 case BuildTarget.WebGL:
                     return RuntimePlatform.WebGLPlayer;
                 case BuildTarget.GameCoreXboxSeries:

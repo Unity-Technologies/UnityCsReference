@@ -77,5 +77,10 @@ namespace UnityEngine.UIElements
             m_Clickable = new Clickable(clickEvent, delay, interval);
             this.AddManipulator(m_Clickable);
         }
+
+        internal void AddAction(Action clickEvent)
+        {
+            m_Clickable.clicked += clickEvent;
+        }
     }
 }

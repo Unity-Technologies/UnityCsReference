@@ -134,7 +134,10 @@ namespace UnityEditor
                 if ((m_SelectionMaskValues[0] != 0 && i == 0) || m_SelectionMaskValues[0] != -1 && i == 1)
                     toggleVal = false;
 
-               if((m_SelectionMaskValues[0] == m_AllLayersMask) && i == 1)
+                // Check for m_AllLayerMask != 0 was added to cover a case when we have only the first defined Layer, Everything and Nothing.
+                // In this case optionMaskValues when Everything select it will contain [0, -1, 0] and m_AllLayerMask will be 0 when we populate it in the constructor.
+                // So when we click on Nothing we will get 0 but we will continue to show Everything as checked.
+                if ((m_SelectionMaskValues[0] == m_AllLayersMask) && i == 1 && m_AllLayersMask != 0)
                     toggleVal = true;
 
                 var guiRect = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight);
@@ -151,7 +154,11 @@ namespace UnityEditor
                     MaskFieldGUI.CalculateMaskValues(m_SelectionMaskValues[0], m_flagValues, ref m_OptionMaskValues);
 
                     // If all flag options are selected the mask becomes everythingValue to be consistent with the "Everything" option
-                    if (oldMaskValues[i] == (uint)m_AllLayersMask)
+                    // oldMaskValues[i] == (uint)m_AllLayersMask && i == 0 && m_OptionNames[0] != "Nothing" is for case when we clicked nothing and only have the first layer defined.
+                    // It will invert Nothing to Everything if we don't double-check it for Nothing separately.
+                    // Check comment above to see the math why we need it separately.
+                    if (oldMaskValues[i] == (uint)m_AllLayersMask && i != 0
+                        || oldMaskValues[i] == (uint)m_AllLayersMask && i == 0 && m_OptionNames[0] != "Nothing")
                         oldMaskValues[i] = ~0u;
 
                     m_MaskChangeCallback.Invoke(oldMaskValues, null, i);
@@ -227,7 +234,7 @@ namespace UnityEditor
                     property.intValue = 0;
                     for (int j = 0; j < m_OptionMaskValues.Length; j++)
                     {
-                        var slotsToShift = (int)Math.Log(m_OptionMaskValues[j], 2);
+                        var slotsToShift = (int)Math.Log((uint)m_OptionMaskValues[j], 2);
                         property.intValue |= 1 << slotsToShift;
                     }
                 }

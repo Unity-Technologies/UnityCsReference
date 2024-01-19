@@ -124,6 +124,10 @@ namespace UnityEditor
                     m_RootView.SetWindowRecurse(this);
                 Internal_SetTitle(m_Title);
                 Save();
+
+                // System windows that come from the OS (like a context menu from search) need theming
+                SetBackgroundColor(skinBackgroundColor);
+
                 //  only set focus if mode is a popupMenu.
                 Internal_BringLiveAfterCreation(true, giveFocus, false);
 

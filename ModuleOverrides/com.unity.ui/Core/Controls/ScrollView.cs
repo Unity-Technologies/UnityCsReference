@@ -816,7 +816,6 @@ namespace UnityEngine.UIElements
                 (value) =>
                 {
                     scrollOffset = new Vector2(value, scrollOffset.y);
-                    UpdateElasticBehaviour();
                     UpdateContentViewTransform();
                 }, SliderDirection.Horizontal)
             { viewDataKey = "HorizontalScroller" };
@@ -828,10 +827,18 @@ namespace UnityEngine.UIElements
                 (value) =>
                 {
                     scrollOffset = new Vector2(scrollOffset.x, value);
-                    UpdateElasticBehaviour();
                     UpdateContentViewTransform();
                 }, SliderDirection.Vertical)
             { viewDataKey = "VerticalScroller" };
+
+            horizontalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
+            verticalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
+
+            horizontalScroller.lowButton.AddAction(UpdateElasticBehaviour);
+            horizontalScroller.highButton.AddAction(UpdateElasticBehaviour);
+            verticalScroller.lowButton.AddAction(UpdateElasticBehaviour);
+            verticalScroller.highButton.AddAction(UpdateElasticBehaviour);
+
             verticalScroller.AddToClassList(vScrollerUssClassName);
             verticalScroller.style.display = DisplayStyle.None;
             m_ContentAndVerticalScrollContainer.Add(verticalScroller);

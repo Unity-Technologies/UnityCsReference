@@ -878,10 +878,11 @@ namespace UnityEngine.UIElements
         {
             foreach (var recycledItem in activeItems)
             {
-                if (recycledItem.index == index)
+                var recycledItemIndex = recycledItem.index;
+                if (recycledItemIndex == index)
                 {
-                    viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
-                    viewController.InvokeBindItem(recycledItem, recycledItem.index);
+                    viewController.InvokeUnbindItem(recycledItem, recycledItemIndex);
+                    viewController.InvokeBindItem(recycledItem, recycledItemIndex);
                     break;
                 }
             }

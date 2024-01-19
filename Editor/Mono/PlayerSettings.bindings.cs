@@ -1448,6 +1448,14 @@ namespace UnityEditor
             }
         }
 
+        // Application bundle version for the VisionOS platform
+        [NativeProperty("VisionOSApplicationVersion")]
+        public static extern string visionOSBundleVersion { get; set; }
+        
+        // Application bundle version for the TVOS platform
+        [NativeProperty("TVOSApplicationVersion")]
+        public static extern string tvOSBundleVersion { get; set; }
+
         // Application bundle version shared between iOS & Android platforms
         [NativeProperty("ApplicationVersion")]
         public static extern string bundleVersion { get; set; }

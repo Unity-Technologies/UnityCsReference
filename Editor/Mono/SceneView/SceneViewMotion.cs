@@ -540,6 +540,7 @@ namespace UnityEditor
             var near = camera.nearClipPlane;
             var far = camera.farClipPlane;
             var pos = camera.transform.position;
+            var rotation = camera.transform.rotation;
             var size = view.size;
 
             // set camera transform and clip values to safe values
@@ -550,12 +551,18 @@ namespace UnityEditor
             view.camera.nearClipPlane = clip.x;
             view.camera.farClipPlane = clip.y;
             view.camera.transform.position = Vector3.zero;
-
+            view.camera.transform.rotation = Quaternion.identity;
+            
             // do the distance calculation
-            Vector3 pivot = camera.transform.rotation * new Vector3(0f, 0f, view.cameraDistance);
-            Vector3 screenPos = camera.WorldToScreenPoint(pivot);
-            screenPos += new Vector3(delta.x, delta.y, 0);
-            Vector3 worldDelta = camera.ScreenToWorldPoint(screenPos) - pivot;
+            Vector3 pivotWorld = camera.transform.rotation * new Vector3(0f, 0f, view.cameraDistance);
+            Vector3 pivotScreen = camera.WorldToScreenPoint(pivotWorld);
+            pivotScreen += new Vector3(delta.x, delta.y, 0);
+            
+            Vector3 worldDelta = camera.ScreenToWorldPoint(pivotScreen) - pivotWorld;
+            // We're clearing z here as ScreenToWorldPoint(WorldToScreenPoint(worldPoint)) does not result in the exact same worldPoint that was inputed.
+            // https://jira.unity3d.com/browse/UUM-56425
+            worldDelta.z = 0f;
+            worldDelta = rotation * worldDelta;
             worldDelta *= EditorGUIUtility.pixelsPerPoint * scale;
 
             // restore original cam and scene values
@@ -563,6 +570,7 @@ namespace UnityEditor
             view.camera.nearClipPlane = near;
             view.camera.farClipPlane = far;
             view.camera.transform.position = pos;
+            view.camera.transform.rotation = rotation;
 
             return worldDelta;
         }
@@ -581,7 +589,10 @@ namespace UnityEditor
         {
             if (Tools.s_LockedViewTool == ViewTool.FPS)
             {
-                float scrollWheelDelta = Event.current.delta.y * m_FPSScrollWheelMultiplier;
+                // On some OSs, macOS for example, holding Shift while scrolling is interpreted as horizontal scroll at the system level
+                // and that would cause the scroll delta to be set on the x coord instead of y. Therefore here we're taking the magnitude instead of specific component's value.
+                var inputScrollWheelDelta = Event.current.delta.magnitude * Mathf.Sign(Mathf.Min(Event.current.delta.x,  Event.current.delta.y));
+                float scrollWheelDelta = inputScrollWheelDelta * m_FPSScrollWheelMultiplier;
                 view.cameraSettings.speedNormalized -= scrollWheelDelta;
                 float cameraSettingsSpeed = view.cameraSettings.speed;
                 string cameraSpeedDisplayValue = cameraSettingsSpeed.ToString(

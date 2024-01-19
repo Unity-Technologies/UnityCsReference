@@ -5,7 +5,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -25,24 +24,6 @@ namespace UnityEditor
         public virtual void OnEnable()
         {
             m_Shaders = serializedObject.FindProperty("m_Shaders");
-        }
-
-        public override VisualElement CreateInspectorGUI()
-        {
-            if (serializedObject == null)
-                return null;
-            var root = new VisualElement();
-            var monoBehaviour = target as MonoBehaviour;
-            var scriptableObject = target as ScriptableObject;
-            if ((monoBehaviour != null || scriptableObject != null) && SerializationUtility.HasManagedReferencesWithMissingTypes(target))
-            {
-                string missingSerializeMessage = L10n.Tr("This object contains SerializeReference types which are missing.\nFor more information see SerializationUtility.HasManagedReferencesWithMissingTypes.");
-                root.Add(new HelpBox(missingSerializeMessage, HelpBoxMessageType.Warning));
-            }
-
-            UIElements.InspectorElement.FillDefaultInspector(root, serializedObject, this);
-
-            return root;
         }
 
         static Rect GetAddRemoveButtonRect(Rect r)
