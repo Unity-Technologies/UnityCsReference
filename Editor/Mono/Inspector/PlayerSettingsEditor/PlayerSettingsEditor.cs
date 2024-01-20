@@ -1530,6 +1530,7 @@ namespace UnityEditor
             { BuildTargetGroup.Standalone, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } },
             { BuildTargetGroup.iOS, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } },
             { BuildTargetGroup.tvOS, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } },
+            { BuildTargetGroup.VisionOS, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } },
             { BuildTargetGroup.Android, new List<ColorGamut> {ColorGamut.sRGB, ColorGamut.DisplayP3 } }
         };
 
@@ -1537,8 +1538,7 @@ namespace UnityEditor
         {
             if (gamut == ColorGamut.sRGB)
                 return true;
-            if (s_SupportedColorGamuts.ContainsKey(targetGroup) &&
-                s_SupportedColorGamuts[targetGroup].Contains(gamut))
+            if (s_SupportedColorGamuts.ContainsKey(targetGroup) && s_SupportedColorGamuts[targetGroup].Contains(gamut))
                 return true;
             return false;
         }

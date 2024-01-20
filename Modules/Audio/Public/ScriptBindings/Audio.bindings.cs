@@ -13,6 +13,16 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 
 [assembly: InternalsVisibleTo("Unity.AudioMixer.Tests")]
 
+namespace UnityEngine.Audio
+{
+    [NativeHeader("Modules/Audio/Public/ScriptBindings/Audio.bindings.h")]
+    sealed class AudioManagerTestProxy
+    {
+        [NativeMethod(Name = "AudioManagerTestProxy::ComputeAudibilityConsistency", IsFreeFunction = true)]
+        internal static extern bool ComputeAudibilityConsistency();
+    }
+}
+
 namespace UnityEngine
 {
     // These are speaker types defined for use with [[AudioSettings.speakerMode]].

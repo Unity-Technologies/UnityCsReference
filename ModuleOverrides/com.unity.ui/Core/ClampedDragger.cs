@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements
         }
 
         public event System.Action dragging;
+        public event System.Action draggingEnded;
 
         public DragDirection dragDirection { get; set; }
 
@@ -47,6 +48,12 @@ namespace UnityEngine.UIElements
 
             // First click should behave like dragging immediately & ensure that the cursor is clamped on first touch
             dragging?.Invoke();
+        }
+
+        protected override void ProcessUpEvent(EventBase evt, Vector2 localPosition, int pointerId)
+        {
+            base.ProcessUpEvent(evt, localPosition, pointerId);
+            draggingEnded?.Invoke();
         }
 
         protected override void ProcessMoveEvent(EventBase evt, Vector2 localPosition)
