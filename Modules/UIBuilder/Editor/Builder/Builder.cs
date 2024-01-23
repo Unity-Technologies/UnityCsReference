@@ -96,6 +96,9 @@ namespace Unity.UI.Builder
 
         public static GUIContent lastWarning => s_WarningContent;
 
+        bool m_IsInUndoRedo;
+        internal bool isInUndoRedo => m_IsInUndoRedo;
+
         public static void ShowWarning(string message)
         {
             if (s_WarningContent == null)
@@ -229,6 +232,13 @@ namespace Unity.UI.Builder
             // want the document hasUnsavedChanges flag to be set at this time.
             m_Selection.NotifyOfStylingChange(document);
             m_Selection.NotifyOfHierarchyChange(document);
+        }
+
+        internal override void OnUndoRedo()
+        {
+            m_IsInUndoRedo = true;
+            OnEnableAfterAllSerialization();
+            m_IsInUndoRedo = false;
         }
 
         public override bool LoadDocument(VisualTreeAsset asset, bool unloadAllSubdocuments = true)

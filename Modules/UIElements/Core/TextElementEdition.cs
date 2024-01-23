@@ -256,6 +256,8 @@ namespace UnityEngine.UIElements
             set => edition.isReadOnly = value;
         }
 
+        internal bool displayingContextMenu { get; set; }
+
         void ProcessMenuCommand(string command)
         {
             Focus();
@@ -344,6 +346,8 @@ namespace UnityEngine.UIElements
 
                 if (evt?.eventTypeId == ContextualMenuPopulateEvent.TypeId())
                 {
+                    displayingContextMenu = true;
+
                     ContextualMenuPopulateEvent e = evt as ContextualMenuPopulateEvent;
                     int count = e.menu.MenuItems().Count;
                     BuildContextualMenu(e);

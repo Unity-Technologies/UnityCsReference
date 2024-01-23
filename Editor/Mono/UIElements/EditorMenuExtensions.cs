@@ -181,9 +181,6 @@ namespace UnityEditor.UIElements
 
                     s_Shortcuts.Remove(menu);
                     s_MaxShortcutLength.Remove(menu);
-
-                    if (EditorGUI.IsEditingTextField())
-                        EditorGUI.EndEditingActiveTextField();
                 });
                 menu.m_OnBeforePerformAction = (submenu, autoClose) =>
                 {
@@ -199,7 +196,8 @@ namespace UnityEditor.UIElements
                         // closed as soon as they are created.
                         InternalEditorUtility.RetainAuxWindows();
 
-                        CloseAllContextMenus();
+                        // close menu and all its parents
+                        CloseContextMenuAndItsParents(menuWindow);
                     }
                 };
                 menu.m_OnBack = () =>
@@ -242,6 +240,19 @@ namespace UnityEditor.UIElements
         {
             for (int i = s_ActiveMenuWindows.Count - 1; i >= 0; i--)
                 s_ActiveMenuWindows[i].m_Parent.window.Close();
+        }
+
+        internal static void CloseContextMenuAndItsParents(ContextMenu menuWindow)
+        {
+            var i = s_ActiveMenuWindows.IndexOf(menuWindow);
+            var menu = s_ActiveMenus[i];
+            if (menu.m_Parent != null && menu.m_Parent is GenericDropdownMenu parentMenu)
+            {
+                var j = s_ActiveMenus.IndexOf(parentMenu);
+                var parentMenuWindow = s_ActiveMenuWindows[j] as ContextMenu;
+                CloseContextMenuAndItsParents(parentMenuWindow);
+            }
+            menuWindow.Close();
         }
 
         static void AuxCleanup(GUIView view)

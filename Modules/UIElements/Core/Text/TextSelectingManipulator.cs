@@ -141,7 +141,9 @@ namespace UnityEngine.UIElements
                 m_TextElement.panel.contextType == ContextType.Editor && Event.current == null)
                 selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp;
 
-            m_SelectingUtilities.OnFocus(m_TextElement.selection.selectAllOnFocus && !isClicking);
+            m_SelectingUtilities.OnFocus(m_TextElement.selection.selectAllOnFocus && !isClicking && !m_TextElement.displayingContextMenu);
+
+            m_TextElement.displayingContextMenu = false;
         }
 
         void OnBlurEvent()

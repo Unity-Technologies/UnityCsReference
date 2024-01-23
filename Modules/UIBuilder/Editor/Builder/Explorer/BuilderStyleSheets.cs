@@ -146,7 +146,7 @@ namespace Unity.UI.Builder
                     {
                         PostEnterRefocus();
                     }
-                    else if (string.IsNullOrEmpty(field.text) || field.text == BuilderConstants.UssSelectorClassNameSymbol)
+                    else if (!EditorMenuExtensions.isEditorContextMenuActive && (string.IsNullOrEmpty(field.text) || field.text == BuilderConstants.UssSelectorClassNameSymbol))
                     {
                         field.SetValueWithoutNotify(BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage);
                         m_PseudoStatesMenu.SetEnabled(false);

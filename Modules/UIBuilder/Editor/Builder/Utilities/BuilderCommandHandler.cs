@@ -103,7 +103,7 @@ namespace Unity.UI.Builder
 
         void OnUndoRedo(in UndoRedoInfo info)
         {
-            m_PaneWindow.OnEnableAfterAllSerialization();
+            m_PaneWindow.OnUndoRedo();
         }
 
         void OnDelete(KeyDownEvent evt)

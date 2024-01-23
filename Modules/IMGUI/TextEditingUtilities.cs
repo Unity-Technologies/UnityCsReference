@@ -563,10 +563,11 @@ namespace UnityEngine
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal void OnBlur()
+        internal void OnBlur(bool removeSelection = true)
         {
             revealCursor = false;
-            m_TextSelectingUtility.SelectNone();
+            if (removeSelection)
+                m_TextSelectingUtility.SelectNone();
         }
 
         // Returns true if the TouchScreenKeyboard should be used. On Android and Chrome OS, we only want to use the

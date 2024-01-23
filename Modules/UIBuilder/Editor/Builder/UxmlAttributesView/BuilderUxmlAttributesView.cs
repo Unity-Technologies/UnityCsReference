@@ -1947,14 +1947,8 @@ namespace Unity.UI.Builder
             {
                 var prop = m_CurrentElementSerializedObject.FindProperty(serializedRootPath + field.bindingPath);
 
-                var undoMessage = $"Modified {prop.name}";
-                if (prop.m_SerializedObject.targetObject.name != string.Empty)
-                    undoMessage += $" in {prop.m_SerializedObject.targetObject.name}";
-
-                Undo.RegisterCompleteObjectUndo(prop.m_SerializedObject.targetObject, undoMessage);
-
                 prop.stringValue = evt.newValue;
-                m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
+                m_CurrentElementSerializedObject.ApplyModifiedProperties();
                 CallDeserializeOnElement();
             }
 

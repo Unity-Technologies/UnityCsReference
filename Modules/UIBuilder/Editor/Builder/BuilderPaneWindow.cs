@@ -196,6 +196,11 @@ namespace Unity.UI.Builder
             // Nothing to do by default.
         }
 
+        internal virtual void OnUndoRedo()
+        {
+            // Nothing to do by default.
+        }
+
         public virtual bool LoadDocument(VisualTreeAsset asset, bool unloadAllSubdocuments = true)
         {
             return false;

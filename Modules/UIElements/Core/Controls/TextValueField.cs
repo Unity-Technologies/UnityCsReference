@@ -255,8 +255,8 @@ namespace UnityEngine.UIElements
         internal override void UnregisterEditingCallbacks()
         {
             base.UnregisterEditingCallbacks();
-            labelElement.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
-            labelElement.RegisterCallback<PointerUpEvent>(EndEditing);
+            labelElement.UnregisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+            labelElement.UnregisterCallback<PointerUpEvent>(EndEditing);
         }
 
         // Implements a control with a value of type T backed by a text.

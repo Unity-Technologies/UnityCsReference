@@ -195,6 +195,8 @@ namespace Unity.UI.Builder
             }
         }
 
+        public VisualElement selectedVisualElement => m_CurrentVisualElement;
+
         public VisualElement currentVisualElement
         {
             get
