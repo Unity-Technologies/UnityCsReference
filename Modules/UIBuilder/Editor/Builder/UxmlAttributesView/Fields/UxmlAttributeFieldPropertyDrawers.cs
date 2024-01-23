@@ -134,23 +134,17 @@ namespace UnityEditor.UIElements
         {
             var field = evt.currentTarget as IntegerField;
 
-            var undoMessage = $"Modified {m_ValueProperty.name}";
-            if (m_ValueProperty.m_SerializedObject.targetObject.name != string.Empty)
-                undoMessage += $" in {m_ValueProperty.m_SerializedObject.targetObject.name}";
-
-            Undo.RegisterCompleteObjectUndo(m_ValueProperty.m_SerializedObject.targetObject, undoMessage);
-
             if (evt.newValue < 1)
             {
                 SetNegativeFixedItemHeightHelpBoxEnabled(true, field);
                 field.SetValueWithoutNotify(1);
                 m_ValueProperty.floatValue = 1f;
-                m_ValueProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                m_ValueProperty.serializedObject.ApplyModifiedProperties();
                 return;
             }
 
             m_ValueProperty.floatValue = evt.newValue;
-            m_ValueProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            m_ValueProperty.serializedObject.ApplyModifiedProperties();
         }
 
         void OnFixedHeightValueChangedImmediately(InputEvent evt)
@@ -242,17 +236,10 @@ namespace UnityEditor.UIElements
 
         protected void EnumValueChanged(ChangeEvent<Enum> evt)
         {
-            // simplify undo message
-            var undoMessage = $"Modified {m_ValueProperty.name}";
-            if (m_ValueProperty.m_SerializedObject.targetObject.name != string.Empty)
-                undoMessage += $" in {m_ValueProperty.m_SerializedObject.targetObject.name}";
-
-            Undo.RegisterCompleteObjectUndo(m_ValueProperty.m_SerializedObject.targetObject, undoMessage);
-
             m_ValueProperty.stringValue = evt.newValue?.ToString();
 
             // Because we are bypassing the binding system we must save the modified SerializedObject.
-            m_ValueProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            m_ValueProperty.serializedObject.ApplyModifiedProperties();
         }
 
         protected virtual void UpdateField(SerializedProperty property, VisualElement element)

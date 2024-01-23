@@ -171,6 +171,7 @@ namespace UnityEngine.UIElements
             BindItem(reusableItem.bindableElement, index);
             reusableItem.SetSelected(m_View.selectedIndices.Contains(index));
             reusableItem.rootElement.pseudoStates &= ~PseudoStates.Hover;
+            reusableItem.index = index;
         }
 
         internal virtual void InvokeUnbindItem(ReusableCollectionItem reusableItem, int index)

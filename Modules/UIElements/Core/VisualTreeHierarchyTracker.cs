@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine.UIElements
 {
     //Keep in sync with HierarchyChangeType in HierarchyChangeType.h
@@ -27,6 +29,8 @@ namespace UnityEngine.UIElements
         private VisualElement m_CurrentChangeParent;
 
         protected abstract void OnHierarchyChange(VisualElement ve, HierarchyChangeType type);
+
+        internal abstract void PollElementsWithBindings(Action<VisualElement, IBinding> callback);
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {

@@ -314,7 +314,7 @@ namespace UnityEngine.UIElements
 
         internal void OnGenerateTextOver(MeshGenerationContext mgc)
         {
-            if (selection.HasSelection() && selectingManipulator.HasFocus())
+            if (selection.HasSelection() && (selectingManipulator.HasFocus() || displayingContextMenu))
                 DrawHighlighting(mgc);
             else if (!edition.isReadOnly && selection.isSelectable && selectingManipulator.RevealCursor())
                 DrawCaret(mgc);

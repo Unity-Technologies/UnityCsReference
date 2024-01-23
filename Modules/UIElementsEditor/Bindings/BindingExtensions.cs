@@ -1685,10 +1685,10 @@ namespace UnityEditor.UIElements.Bindings
                         bindingContext.ResetUpdate();
                     }
 
-                    BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
-
                     var fieldUndoGroup = (int?)(field as VisualElement)?.GetProperty(UndoGroupPropertyKey);
                     Undo.CollapseUndoOperations(fieldUndoGroup ?? undoGroup);
+
+                    BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
 
                     return;
                 }
@@ -1787,18 +1787,6 @@ namespace UnityEditor.UIElements.Bindings
             return new BindingResult(BindingStatus.Pending);
         }
 
-        protected internal static string GetUndoMessage(SerializedProperty serializedProperty)
-        {
-            var undoMessage = $"Modified {serializedProperty.name}";
-            var target = serializedProperty.m_SerializedObject.targetObject;
-            if (target != null && target.name != string.Empty)
-            {
-                undoMessage += $" in {serializedProperty.m_SerializedObject.targetObject.name}";
-            }
-
-            return undoMessage;
-        }
-
         // Read the value from the ui field and save it.
         protected abstract void UpdateLastFieldValue();
 
@@ -1830,13 +1818,8 @@ namespace UnityEditor.UIElements.Bindings
         {
             if (!propCompareValues(lastFieldValue, boundProperty, propGetValue))
             {
-                if (boundProperty.m_SerializedObject.targetObject != null)
-                {
-                    Undo.RegisterCompleteObjectUndo(boundProperty.m_SerializedObject.targetObject, GetUndoMessage(boundProperty));
-                }
-
                 propSetValue(boundProperty, lastFieldValue);
-                boundProperty.m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
+                boundProperty.m_SerializedObject.ApplyModifiedProperties();
                 // Force the field to update its display as its label is dependent on having an up to date SerializedProperty. (UUM-27629)
                 if (field is ObjectField objectField)
                 {
@@ -2219,8 +2202,6 @@ namespace UnityEditor.UIElements.Bindings
             if (lastEnumValue == boundProperty.intValue)
                 return false;
 
-            Undo.RegisterCompleteObjectUndo(boundProperty.m_SerializedObject.targetObject, GetUndoMessage(boundProperty));
-
             // When the value is a negative we need to convert it or it will be clamped.
             var underlyingType = managedType.GetEnumUnderlyingType();
             if (lastEnumValue < 0 && (underlyingType == typeof(uint) || underlyingType == typeof(ushort) || underlyingType == typeof(byte)))
@@ -2231,7 +2212,7 @@ namespace UnityEditor.UIElements.Bindings
             {
                 boundProperty.intValue = lastEnumValue;
             }
-            boundProperty.m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
+            boundProperty.m_SerializedObject.ApplyModifiedProperties();
             return true;
         }
 
@@ -2429,15 +2410,14 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
-            if(boundProperty.hasMultipleDifferentValues)
+            if (boundProperty.hasMultipleDifferentValues)
                 lastFieldValueIndex = default;
 
             if (lastFieldValueIndex >= 0 && lastFieldValueIndex < displayIndexToEnumIndex.Count
                 && boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])
             {
-                Undo.RegisterCompleteObjectUndo(boundProperty.m_SerializedObject.targetObject, GetUndoMessage(boundProperty));
                 boundProperty.enumValueIndex = displayIndexToEnumIndex[lastFieldValueIndex];
-                boundProperty.m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
+                boundProperty.m_SerializedObject.ApplyModifiedProperties();
                 return true;
             }
             return false;

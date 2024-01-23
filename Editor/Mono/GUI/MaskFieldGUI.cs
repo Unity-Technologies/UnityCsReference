@@ -84,7 +84,7 @@ namespace UnityEditor
                     m_SourceView.SendEvent(EditorGUIUtility.CommandEvent(kMaskMenuChangedMessage));
             }
 
-            public void UpdateFlagChanges(int mask, int[] optionMaskValues)
+            public void UpdateFlagChanges(int controlID, int mask, int[] optionMaskValues)
             {
                 var evt = Event.current;
 
@@ -102,7 +102,7 @@ namespace UnityEditor
                         return;
                     }
 
-                    if (mask != m_NewMask)
+                    if (mask != m_NewMask && m_ControlID == controlID)
                         m_DropDown.UpdateMaskValues(mask, optionMaskValues);
 
                     m_Validate = false;
@@ -150,7 +150,7 @@ namespace UnityEditor
 
             // This checks and update flags changes that are modified out of dropdown menu
             if (MaskCallbackInfo.m_Instance != null)
-                MaskCallbackInfo.m_Instance.UpdateFlagChanges(mask, optionMaskValues);
+                MaskCallbackInfo.m_Instance.UpdateFlagChanges(controlID, mask, optionMaskValues);
 
             Event evt = Event.current;
             if (evt.type == EventType.Repaint)
@@ -294,13 +294,13 @@ namespace UnityEditor
             var flagEndIndex = flagStartIndex + optionMaskValues.Length - 2;
 
             for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
-            {
-                uint flagValue = (uint)flagValues[flagIndex];
+                {
+                    uint flagValue = (uint)flagValues[flagIndex];
 
-                bool flagSet = ((selectedValue & flagValue) == flagValue);
+                    bool flagSet = ((selectedValue & flagValue) == flagValue);
 
-                optionMaskValues[flagIndex-flagStartIndex+2] = (int)(flagSet ? selectedValue & ~flagValue : selectedValue | flagValue);
-            }
+                    optionMaskValues[flagIndex - flagStartIndex + 2] = (int)(flagSet ? selectedValue & ~flagValue : selectedValue | flagValue);
+                }
         }
 
         internal static void GetMenuOptions(int mask, string[] flagNames, int[] flagValues,

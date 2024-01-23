@@ -822,9 +822,9 @@ namespace UnityEngine.UIElements
         internal override void UnregisterEditingCallbacks()
         {
             labelElement.UnregisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
-            dragContainer.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+            dragContainer.UnregisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
 
-            dragContainer.RegisterCallback<PointerUpEvent>(EndEditing);
+            dragContainer.UnregisterCallback<PointerUpEvent>(EndEditing);
         }
     }
 }

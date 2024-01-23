@@ -115,7 +115,7 @@ namespace UnityEngine.UIElements
         void OnFocusOutEvent()
         {
             m_HardwareKeyboardPoller?.Pause();
-            editingUtilities.OnBlur();
+            editingUtilities.OnBlur(!m_TextElement.displayingContextMenu);
         }
     }
 }

@@ -13,6 +13,7 @@ using UnityEditor.AssetImporters;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.PackageManager;
 using UnityEditor.TreeViewExamples;
+using UnityEditor.UIElements;
 using UnityEditorInternal;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
@@ -1254,7 +1255,8 @@ namespace UnityEditor
         {
             isFolderTreeViewContextClicked = false;
             // Added because this window uses RenameOverlay
-            EndRenaming();
+            if (!EditorMenuExtensions.isEditorContextMenuActive)
+                EndRenaming();
         }
 
         bool CanFrameAsset(int instanceID)

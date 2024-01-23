@@ -189,7 +189,7 @@ namespace UnityEngine.UIElements
 
         void ITextSelection.SelectNone()
         {
-            if (selection.isSelectable)
+            if (selection.isSelectable && !displayingContextMenu)
                 selectingManipulator.m_SelectingUtilities.SelectNone();
         }
 

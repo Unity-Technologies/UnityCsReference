@@ -129,6 +129,9 @@ namespace UnityEditor.UIElements
                     value = evt.newValue;
                 else
                     m_ObjectField.SetValueWithoutNotify(value);
+
+                if (EditorWindow.HasOpenInstances<ObjectSelector>())
+                    ObjectSelector.get.Cancel();
             });
             Add(m_ObjectField);
         }

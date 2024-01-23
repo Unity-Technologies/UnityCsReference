@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.Assertions;
@@ -108,6 +109,9 @@ namespace UnityEditor
 
         public void EndRename(bool acceptChanges)
         {
+            if (EditorMenuExtensions.isEditorContextMenuActive)
+                return;
+
             EditorGUIUtility.editingTextField = false;
             if (!m_IsRenaming)
                 return;

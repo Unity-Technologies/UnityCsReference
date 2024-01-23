@@ -199,8 +199,8 @@ namespace UnityEngine.UIElements
 
         internal override void UnregisterEditingCallbacks()
         {
-            RegisterCallback<PointerUpEvent>(StartEditing);
-            RegisterCallback<FocusOutEvent>(EndEditing);
+            UnregisterCallback<PointerUpEvent>(StartEditing);
+            UnregisterCallback<FocusOutEvent>(EndEditing);
         }
 
     }
