@@ -338,7 +338,7 @@ namespace UnityEngine.UIElements
             s_MarkerUpdate.End();
         }
 
-        internal void PollElementsWithBindings(Action<VisualElement, IBinding> callback)
+        internal override void PollElementsWithBindings(Action<VisualElement, IBinding> callback)
         {
             s_MarkerPoll.Begin();
 

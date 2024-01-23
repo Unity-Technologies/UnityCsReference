@@ -28,7 +28,7 @@ namespace UnityEditor
     public partial class EditorUserBuildSettings
     {
         #pragma warning disable 0618
-        [Obsolete("EditorUserBuildSettings.selectedEmbeddedLinuxArchitecture is deprecated. EmbeddedLinux.Settings.architecture instead. (UnityUpgradable) -> UnityEditor.EmbeddedLinux.Settings.architecture", false)]
+        [Obsolete("EditorUserBuildSettings.selectedEmbeddedLinuxArchitecture is deprecated. EmbeddedLinux.Settings.architecture instead. (UnityUpgradable) -> [UnityEditor.EmbeddedLinux.Extensions] UnityEditor.EmbeddedLinux.Settings.architecture", false)]
         public static extern EmbeddedLinuxArchitecture selectedEmbeddedLinuxArchitecture
         {
             [NativeMethod("GetSelectedEmbeddedLinuxArchitecture")]

@@ -354,7 +354,7 @@ namespace UnityEngine.UIElements
             {
                 var scrollOffset = targetScrollView.scrollOffset;
                 targetScrollView.ScrollTo(recycledItem.rootElement);
-                if (scrollOffset != targetScrollView.scrollOffset)
+                if (!Mathf.Approximately(scrollOffset.x, targetScrollView.scrollOffset.x) || !Mathf.Approximately(scrollOffset.y, targetScrollView.scrollOffset.y))
                 {
                     return TryGetDragPosition(pointerPosition, ref dragPosition);
                 }

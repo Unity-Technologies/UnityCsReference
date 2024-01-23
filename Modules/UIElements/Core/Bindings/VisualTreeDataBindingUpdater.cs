@@ -420,5 +420,19 @@ namespace UnityEngine.UIElements
 
             data.Clear();
         }
+
+        internal override void PollElementsWithBindings(Action<VisualElement, IBinding> callback)
+        {
+            if (bindingManager.GetBoundElementsCount() > 0)
+            {
+                foreach (var element in bindingManager.GetUnorderedBoundElements())
+                {
+                    if (element.elementPanel == panel)
+                    {
+                        callback(element, null);
+                    }
+                }
+            }
+        }
     }
 }

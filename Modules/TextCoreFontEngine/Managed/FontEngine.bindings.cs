@@ -1357,7 +1357,7 @@ namespace UnityEngine.TextCore.LowLevel
             SetMarshallingArraySize(ref s_SingleSubstitutionRecords_MarshallingArray, recordCount);
 
             // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
-            GetSingleSubstitutionRecordsFromMarshallingArray(s_SingleSubstitutionRecords_MarshallingArray);
+            GetSingleSubstitutionRecordsFromMarshallingArray(s_SingleSubstitutionRecords_MarshallingArray.AsSpan());
 
             // Terminate last record to zero
             s_SingleSubstitutionRecords_MarshallingArray[recordCount] = new SingleSubstitutionRecord();
@@ -1369,7 +1369,7 @@ namespace UnityEngine.TextCore.LowLevel
         extern static int PopulateSingleSubstitutionRecordMarshallingArray_from_GlyphIndexes(uint[] glyphIndexes, int lookupIndex, out int recordCount);
 
         [NativeMethod(Name = "TextCore::FontEngine::GetSingleSubstitutionRecordsFromMarshallingArray", IsFreeFunction = true)]
-        extern static int GetSingleSubstitutionRecordsFromMarshallingArray([Out] SingleSubstitutionRecord[] singleSubstitutionRecords);
+        extern static int GetSingleSubstitutionRecordsFromMarshallingArray(Span<SingleSubstitutionRecord> singleSubstitutionRecords);
         #endregion
 
         #region MULTIPLE SUBSTITUTION
@@ -1901,7 +1901,7 @@ namespace UnityEngine.TextCore.LowLevel
             SetMarshallingArraySize(ref s_SingleAdjustmentRecords_MarshallingArray, recordCount);
 
             // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
-            GetSingleAdjustmentRecordsFromMarshallingArray(s_SingleAdjustmentRecords_MarshallingArray);
+            GetSingleAdjustmentRecordsFromMarshallingArray(s_SingleAdjustmentRecords_MarshallingArray.AsSpan());
 
             // Terminate last record to zero
             s_SingleAdjustmentRecords_MarshallingArray[recordCount] = new GlyphAdjustmentRecord();
@@ -1913,7 +1913,7 @@ namespace UnityEngine.TextCore.LowLevel
         extern static int PopulateSingleAdjustmentRecordMarshallingArray_from_GlyphIndexes(uint[] glyphIndexes, int lookupIndex, out int recordCount);
 
         [NativeMethod(Name = "TextCore::FontEngine::GetSingleAdjustmentRecordsFromMarshallingArray", IsFreeFunction = true)]
-        extern static int GetSingleAdjustmentRecordsFromMarshallingArray([Out] GlyphAdjustmentRecord[] singleSubstitutionRecords);
+        extern static int GetSingleAdjustmentRecordsFromMarshallingArray(Span<GlyphAdjustmentRecord> singleSubstitutionRecords);
         #endregion
 
         #region PAIR ADJUSTMENTS
@@ -2028,7 +2028,7 @@ namespace UnityEngine.TextCore.LowLevel
         extern static int PopulatePairAdjustmentRecordMarshallingArray_for_LookupIndex(uint[] glyphIndexes, int lookupIndex, out int recordCount);
 
         [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentRecordsFromMarshallingArray", IsFreeFunction = true)]
-        extern static int GetPairAdjustmentRecordsFromMarshallingArray([Out] GlyphPairAdjustmentRecord[] glyphPairAdjustmentRecords);
+        extern static int GetPairAdjustmentRecordsFromMarshallingArray(Span<GlyphPairAdjustmentRecord> glyphPairAdjustmentRecords);
         #endregion
 
         #region MARK TO BASE
@@ -2130,7 +2130,7 @@ namespace UnityEngine.TextCore.LowLevel
         extern static int PopulateMarkToBaseAdjustmentRecordMarshallingArray_for_LookupIndex(uint[] glyphIndexes, int lookupIndex, out int recordCount);
 
         [NativeMethod(Name = "TextCore::FontEngine::GetMarkToBaseAdjustmentRecordsFromMarshallingArray", IsFreeFunction = true)]
-        extern static int GetMarkToBaseAdjustmentRecordsFromMarshallingArray([Out] MarkToBaseAdjustmentRecord[] adjustmentRecords);
+        extern static int GetMarkToBaseAdjustmentRecordsFromMarshallingArray(Span<MarkToBaseAdjustmentRecord> adjustmentRecords);
         #endregion
 
         #region MARK TO MARK
@@ -2230,7 +2230,7 @@ namespace UnityEngine.TextCore.LowLevel
         extern static int PopulateMarkToMarkAdjustmentRecordMarshallingArray_for_LookupIndex(uint[] glyphIndexes, int lookupIndex, out int recordCount);
 
         [NativeMethod(Name = "TextCore::FontEngine::GetMarkToMarkAdjustmentRecordsFromMarshallingArray", IsFreeFunction = true)]
-        extern static int GetMarkToMarkAdjustmentRecordsFromMarshallingArray([Out] MarkToMarkAdjustmentRecord[] adjustmentRecords);
+        extern static int GetMarkToMarkAdjustmentRecordsFromMarshallingArray(Span<MarkToMarkAdjustmentRecord> adjustmentRecords);
         #endregion
 
 

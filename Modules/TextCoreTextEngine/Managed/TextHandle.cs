@@ -175,7 +175,11 @@ namespace UnityEngine.TextCore.Text
 
                 m_IsCached = true;
                 SetDirty();
-                Update(settings);
+                
+                if (isMainThread)
+                    Update(settings);
+                else
+                    UpdateFontAssetPrepared();
             }
         }
 

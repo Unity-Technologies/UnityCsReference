@@ -28,8 +28,6 @@ namespace UnityEditor
             internal const string helpBoxesTemplateForSRP = "UXML/ProjectSettings/GraphicsSettingsEditor-HelpBoxes.uxml";
             internal const string builtInTabContent = "UXML/ProjectSettings/GraphicsSettingsEditor-BuiltInTab.uxml";
 
-            internal const string persistentViewKey = $"{nameof(GraphicsSettingsInspector)}_ScrollPosition";
-
             internal static GUIContent builtInWarningText =
                 EditorGUIUtility.TrTextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.");
         }
@@ -52,20 +50,8 @@ namespace UnityEditor
             m_VisibilityController.Clear();
             m_VisibilityController.Dispose();
 
-            if (m_CurrentRoot != null && Unsupported.IsDeveloperMode())
-            {
-                var mainScrollView = m_CurrentRoot.Q<ScrollView>("MainScrollView");
-                var tabbedView = m_CurrentRoot.Q<TabbedView>("PipelineSpecificSettings");
-                if(mainScrollView == null || tabbedView == null)
-                    return;
-                var persistentViewValues = new PersistentViewValues
-                {
-                    vertical = mainScrollView.verticalScroller.value,
-                    horizontal = mainScrollView.horizontalScroller.value,
-                    tabIndex = tabbedView?.ActiveTabIndex ?? -1
-                };
-                EditorUserSettings.SetConfigValue(GraphicsSettingsData.persistentViewKey, JsonUtility.ToJson(persistentViewValues));
-            }
+            UserSettings.ToConfig(m_CurrentRoot);
+
             Undo.undoRedoEvent -= OnUndoRedoPerformed;
         }
 
@@ -93,27 +79,13 @@ namespace UnityEditor
                 .Query<ProjectSettingsElementWithSO>()
                 .ForEach(d => d.Initialize(serializedObject));
 
-            BindEnumFieldWithFadeGroup(m_CurrentRoot,
-                "LightmapModes",
-                "LightmapModesGroup",
-                "m_LightmapStripping",
-                "ImportLightmapFromCurrentScene",
-                ShaderUtil.CalculateLightmapStrippingFromCurrentScene);
-            BindEnumFieldWithFadeGroup(m_CurrentRoot,
-                "FogModes",
-                "FogModesGroup",
-                "m_FogStripping",
-                "ImportFogFromCurrentScene",
-                ShaderUtil.CalculateFogStrippingFromCurrentScene);
-
-            PersistentViewValues persistantViewValues = null;
-            if (Unsupported.IsDeveloperMode())
-                persistantViewValues = LoadPersistantViewValues();
+            BindEnumFieldWithFadeGroup(m_CurrentRoot, "Lightmap", ShaderUtil.CalculateLightmapStrippingFromCurrentScene);
+            BindEnumFieldWithFadeGroup(m_CurrentRoot, "Fog", ShaderUtil.CalculateFogStrippingFromCurrentScene);
 
             if (globalSettingsExist)
             {
                 m_TabbedView = m_CurrentRoot.MandatoryQ<TabbedView>("PipelineSpecificSettings");
-                GenerateTabs(persistantViewValues);
+                GenerateTabs();
             }
             else
             {
@@ -127,19 +99,16 @@ namespace UnityEditor
                 SetupTransparencySortMode(m_CurrentRoot);
             }
 
-            ApplyPersistentView(m_CurrentRoot, persistantViewValues);
-
             GraphicsSettingsInspectorUtility.LocalizeVisualTree(m_CurrentRoot);
+
+            // Register a callback on the Geometry Change event of the content container.It will be called when the size of all children will be known.
+            var mainScrollView = m_CurrentRoot.Q<ScrollView>("MainScrollView");
+            mainScrollView.RegisterCallbackOnce<GeometryChangedEvent>(OnMainScrollViewGeometryChanged);
+
             m_CurrentRoot.Bind(serializedObject);
         }
 
-        static PersistentViewValues LoadPersistantViewValues()
-        {
-            var serializedScrollValues = EditorUserSettings.GetConfigValue(GraphicsSettingsData.persistentViewKey);
-            return string.IsNullOrEmpty(serializedScrollValues) ? null : JsonUtility.FromJson<PersistentViewValues>(serializedScrollValues);
-        }
-
-        void GenerateTabs(PersistentViewValues persistantViewValues)
+        void GenerateTabs()
         {
             //Add BuiltInTab
             var builtInAsset = EditorGUIUtility.Load(GraphicsSettingsData.builtInTabContent) as VisualTreeAsset;
@@ -157,19 +126,24 @@ namespace UnityEditor
 
             SetupTransparencySortMode(builtInTemplate);
 
-            var builtInSettingsContainer = builtInTemplate.MandatoryQ<VisualElement>("Built-InSettingsContainer");
+            const string builtIn = "Built-In";
+
+            var builtInSettingsContainer = builtInTemplate.MandatoryQ<VisualElement>($"{builtIn}SettingsContainer");
             var builtInHelpBoxes = GraphicsSettingsInspectorUtility.CreateRPHelpBox(m_VisibilityController, null);
             builtInSettingsContainer.Insert(0, builtInHelpBoxes);
             builtInHelpBoxes.MandatoryQ<HelpBox>("CurrentPipelineWarningHelpBox").text = GraphicsSettingsData.builtInWarningText.text;
 
-            var builtinActive = persistantViewValues == null || persistantViewValues.tabIndex <= 0;
-            var tabButton = GraphicsSettingsInspectorUtility.CreateNewTab(m_TabbedView, "Built-In", builtInSettingsContainer, builtinActive);
-            tabButton.userData = null;
+            // If we open the settings page for the first time we check the current render pipeline.
+            var settingsPipelineFullTypeName = UserSettings.FromConfig().pipelineFullTypeName;
+            var selectedTab  = string.IsNullOrEmpty(settingsPipelineFullTypeName) ? GraphicsSettings.currentRenderPipelineAssetType?.ToString() : settingsPipelineFullTypeName ;
+
+            var builtinActive = string.IsNullOrEmpty(selectedTab) || selectedTab.Equals(builtIn);
+            var tabButton = GraphicsSettingsInspectorUtility.CreateNewTab(m_TabbedView, builtIn, builtInSettingsContainer, builtinActive);
+            tabButton.userData = builtIn;
 
             //Add SRP tabs
-            for (var i = 0; i < m_GlobalSettings.Count; i++)
+            foreach (var globalSettingsContainer in m_GlobalSettings)
             {
-                var globalSettingsContainer = m_GlobalSettings[i];
                 var globalSettingsElement = new VisualElement();
                 var rpHelpBoxes = GraphicsSettingsInspectorUtility.CreateRPHelpBox(m_VisibilityController, globalSettingsContainer.renderPipelineAssetType);
                 globalSettingsElement.Add(rpHelpBoxes);
@@ -179,35 +153,34 @@ namespace UnityEditor
                 propertyEditor.AddToClassList(InspectorElement.uIEInspectorVariantUssClassName);
                 globalSettingsElement.Add(propertyEditor);
 
-                var rpActive = persistantViewValues != null && persistantViewValues.tabIndex != -1
-                    ? persistantViewValues.tabIndex == i + 1
-                    : GraphicsSettings.currentRenderPipelineAssetType == globalSettingsContainer.renderPipelineAssetType;
-
-                var srpTabButton = GraphicsSettingsInspectorUtility.CreateNewTab(m_TabbedView, globalSettingsContainer.name, globalSettingsElement, rpActive);
+                var srpTabButton = GraphicsSettingsInspectorUtility.CreateNewTab(m_TabbedView, globalSettingsContainer.name, globalSettingsElement,
+                    !builtinActive && selectedTab.Equals(globalSettingsContainer.renderPipelineAssetType.ToString()));
                 srpTabButton.userData = globalSettingsContainer.renderPipelineAssetType;
             }
         }
 
-        static void ApplyPersistentView(VisualElement content, PersistentViewValues persistantViewValues)
+        void OnMainScrollViewGeometryChanged(GeometryChangedEvent evt)
         {
-            if (persistantViewValues == null)
-                return;
+            if (evt.elementTarget is not ScrollView mainScrollView)
+                throw new InvalidCastException();
 
-            var mainScrollView = content.Q<ScrollView>("MainScrollView");
-            mainScrollView.verticalScroller.value = persistantViewValues.vertical;
-            mainScrollView.horizontalScroller.value = persistantViewValues.horizontal;
+            var userSettings = UserSettings.FromConfig();
+
+            mainScrollView.scrollOffset = userSettings.scrollOffset;
             mainScrollView.UpdateContentViewTransform();
+
+            // Unregister the callback so that it run only on the first frame.
         }
 
-        void BindEnumFieldWithFadeGroup(VisualElement content, string enumFieldName, string fadeGroupName, string propertyName, string buttonName, Action buttonCallback)
+        void BindEnumFieldWithFadeGroup(VisualElement content, string id, Action buttonCallback)
         {
-            var enumMode = content.MandatoryQ<EnumField>(enumFieldName);
-            var enumModeGroup = content.MandatoryQ<VisualElement>(fadeGroupName);
-            var enumModeProperty = serializedObject.FindProperty(propertyName);
+            var enumMode = content.MandatoryQ<EnumField>($"{id}Modes");
+            var enumModeGroup = content.MandatoryQ<VisualElement>($"{id}ModesGroup");
+            var enumModeProperty = serializedObject.FindProperty($"m_{id}Stripping");
             var lightmapModesUpdate = UIElementsEditorUtility.BindSerializedProperty<StrippingModes>(enumMode, enumModeProperty,
                 mode => UIElementsEditorUtility.SetVisibility(enumModeGroup, mode == StrippingModes.Custom));
             lightmapModesUpdate?.Invoke();
-            content.MandatoryQ<Button>(buttonName).clicked += buttonCallback;
+            content.MandatoryQ<Button>($"Import{id}FromCurrentScene").clicked += buttonCallback;
         }
 
         void SetupTransparencySortMode(VisualElement root)
@@ -219,11 +192,41 @@ namespace UnityEditor
         }
 
         [Serializable]
-        class PersistentViewValues
+        class UserSettings
         {
-            public float vertical;
-            public float horizontal;
-            public int tabIndex;
+            internal const string s_Key = $"{nameof(GraphicsSettingsInspector)}_{nameof(UserSettings)}";
+
+            public Vector2 scrollOffset = Vector2.zero;
+            public string pipelineFullTypeName = "";
+
+            public static UserSettings FromConfig()
+            {
+                var serializedScrollValues = EditorUserSettings.GetConfigValue(s_Key);
+                return string.IsNullOrEmpty(serializedScrollValues) ? new UserSettings() : JsonUtility.FromJson<UserSettings>(serializedScrollValues);
+            }
+
+            public static void ToConfig(VisualElement root)
+            {
+                var userSettings = new UserSettings();
+
+                var mainScrollView = root.Q<ScrollView>("MainScrollView");
+                if (mainScrollView != null)
+                {
+                    userSettings.scrollOffset = mainScrollView.scrollOffset;
+                }
+
+                var tabbedView = root.Q<TabbedView>("PipelineSpecificSettings");
+                if (tabbedView != null && tabbedView.ActiveTab != null)
+                {
+                    userSettings.pipelineFullTypeName = tabbedView.ActiveTab.userData.ToString();
+                }
+                else
+                {
+                    userSettings.pipelineFullTypeName = "Built-In";
+                }
+
+                EditorUserSettings.SetConfigValue(s_Key, JsonUtility.ToJson(userSettings));
+            }
         }
 
         //internal for tests

@@ -284,7 +284,7 @@ namespace UnityEditor
                     hasStarted = true;
                 }
 
-                if (hasTransitioned || currentTime >= maxDuration)
+                if (hasTransitioned && currentTime >= maxDuration)
                 {
                     hasFinished = true;
                 }

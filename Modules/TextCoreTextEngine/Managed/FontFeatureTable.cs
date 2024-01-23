@@ -37,11 +37,7 @@ namespace UnityEngine.TextCore.Text
         /// <summary>
         /// List that contains the glyph pair adjustment records.
         /// </summary>
-        internal List<GlyphPairAdjustmentRecord> glyphPairAdjustmentRecords
-        {
-            get { return m_GlyphPairAdjustmentRecords; }
-            set { m_GlyphPairAdjustmentRecords = value; }
-        }
+        internal List<GlyphPairAdjustmentRecord> glyphPairAdjustmentRecords => m_GlyphPairAdjustmentRecords;
 
         /// <summary>
         ///
@@ -72,7 +68,7 @@ namespace UnityEngine.TextCore.Text
         internal List<LigatureSubstitutionRecord> m_LigatureSubstitutionRecords;
 
         [SerializeField]
-        internal List<GlyphPairAdjustmentRecord> m_GlyphPairAdjustmentRecords;
+        private List<GlyphPairAdjustmentRecord> m_GlyphPairAdjustmentRecords;
 
         [SerializeField]
         internal List<MarkToBaseAdjustmentRecord> m_MarkToBaseAdjustmentRecords;
@@ -122,7 +118,7 @@ namespace UnityEngine.TextCore.Text
         public void SortGlyphPairAdjustmentRecords()
         {
             // Sort List of Kerning Info
-            if (m_GlyphPairAdjustmentRecords.Count > 0)
+            if (m_GlyphPairAdjustmentRecords.Count > 1)
                 m_GlyphPairAdjustmentRecords = m_GlyphPairAdjustmentRecords.OrderBy(s => s.firstAdjustmentRecord.glyphIndex).ThenBy(s => s.secondAdjustmentRecord.glyphIndex).ToList();
         }
 

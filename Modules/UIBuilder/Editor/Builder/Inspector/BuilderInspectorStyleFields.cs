@@ -1907,17 +1907,13 @@ namespace Unity.UI.Builder
             {
                 var styleName = fieldElement.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
 
-                // Skip elements that don't have a proper style name associated to them, as there is nothing to unset.
-                if (string.IsNullOrEmpty(styleName))
-                    continue;
-
                 // TODO: The computed style still has the old (set) value at this point.
                 // We need to reset the field with the value after styling has been
                 // recomputed.
 
                 styleSheet.RemoveProperty(currentRule, styleName);
 
-                if (fieldElement is not TransitionsListView && !BuilderSharedStyles.IsSelectorElement(currentVisualElement))
+                if (!string.IsNullOrEmpty(styleName) && fieldElement is not TransitionsListView && !BuilderSharedStyles.IsSelectorElement(currentVisualElement))
                 {
                     var cSharpStyleName = BuilderNameUtilities.ConvertStyleUssNameToCSharpName(styleName);
                     var bindingProperty = $"style.{cSharpStyleName}";

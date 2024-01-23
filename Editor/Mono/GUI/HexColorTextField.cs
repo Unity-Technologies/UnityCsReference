@@ -46,6 +46,7 @@ namespace UnityEditor
 
             if (EndChangeCheck())
             {
+                newHex = newHex.Trim();
                 s_RecycledEditor.text = s_RecycledEditor.text.ToUpper();
                 if (newHex.Length > 0)
                 {

@@ -402,7 +402,7 @@ namespace UnityEditor
 
             UIElements.InspectorElement.FillDefaultInspector(root, serializedObject, this);
 
-            if (target is MonoBehaviour behaviour && AudioUtil.HasAudioCallback(behaviour))
+            if (target is MonoBehaviour behaviour && behaviour != null && AudioUtil.HasAudioCallback(behaviour))
             {
                 root.Add(new OnAudioFilterReadLevelMeter(behaviour));
             }
