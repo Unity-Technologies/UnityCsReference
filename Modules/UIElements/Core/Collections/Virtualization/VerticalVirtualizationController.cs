@@ -485,6 +485,7 @@ namespace UnityEngine.UIElements
         private void OnDestroyItem(ReusableCollectionItem item)
         {
             m_CollectionView.viewController.InvokeDestroyItem(item);
+            item.onDestroy -= OnDestroyItem;
         }
 
         protected int GetDraggedIndex()

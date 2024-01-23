@@ -26,7 +26,7 @@ namespace UnityEngine.UIElements
             public override void Deserialize(object obj)
             {
                 base.Deserialize(obj);
-                    
+
                 if (ShouldWriteAttributeValue(delay_UxmlAttributeFlags) || ShouldWriteAttributeValue(interval_UxmlAttributeFlags))
                 {
                     var e = (RepeatButton)obj;
@@ -102,6 +102,11 @@ namespace UnityEngine.UIElements
             this.RemoveManipulator(m_Clickable);
             m_Clickable = new Clickable(clickEvent, delay, interval);
             this.AddManipulator(m_Clickable);
+        }
+
+        internal void AddAction(Action clickEvent)
+        {
+            m_Clickable.clicked += clickEvent;
         }
     }
 }

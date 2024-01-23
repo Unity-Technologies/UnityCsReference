@@ -28,7 +28,7 @@ namespace UnityEditor
 
     public partial class EditorUserBuildSettings
     {
-        [Obsolete("EditorUserBuildSettings.selectedQnxOsVersion is deprecated. Use QNX.Settings.osVersion instead. (UnityUpgradable) -> UnityEditor.QNX.Settings.osVersion", false)]
+        [Obsolete("EditorUserBuildSettings.selectedQnxOsVersion is deprecated. Use QNX.Settings.osVersion instead. (UnityUpgradable) -> [UnityEditor.QNX.Extensions] UnityEditor.QNX.Settings.osVersion", false)]
         public static extern QNXOsVersion selectedQnxOsVersion
         {
             [NativeMethod("GetSelectedQNXOsVersion")]
@@ -38,7 +38,7 @@ namespace UnityEditor
         }
 
         #pragma warning disable 0618
-        [Obsolete("EditorUserBuildSettings.selectedQnxArchitecture is deprecated. Use QNX.Settings.architecture instead. (UnityUpgradable) -> UnityEditor.QNX.Settings.architecture", false)]
+        [Obsolete("EditorUserBuildSettings.selectedQnxArchitecture is deprecated. Use QNX.Settings.architecture instead. (UnityUpgradable) -> [UnityEditor.QNX.Extensions] UnityEditor.QNX.Settings.architecture", false)]
         public static extern QNXArchitecture selectedQnxArchitecture
         {
             [NativeMethod("GetSelectedQNXArchitecture")]

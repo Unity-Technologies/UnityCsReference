@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
     <AssemblyName>ScriptCompilationBuildProgram.Data</AssemblyName>
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -13,4 +14,5 @@
     <Compile Include="Data.cs" />
     <ProjectReference Include="../BeeBuildProgramCommon.Data/BeeBuildProgramCommon.Data.gen.csproj" />
   </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>

@@ -35,8 +35,8 @@ public static partial class AccessibilitySettings
     /// For all the supported platforms, refer to
     /// <see cref="AccessibilitySettings"/>.
     ///
-    /// This requires at least Android 12 (API level 31). However, it might not
-    /// be supported on non-stock Android 12. Here, non-stock refers to versions
+    /// For Android, this requires at least API level 31. However, it might not
+    /// be supported on non-stock Android. Here, non-stock refers to versions
     /// of Android that have been modified by the device manufacturer.
     /// </remarks>
     public static bool isBoldTextEnabled => IsBoldTextEnabled();

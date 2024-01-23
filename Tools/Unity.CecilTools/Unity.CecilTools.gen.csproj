@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
     <AssemblyName>Unity.CecilTools</AssemblyName>
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -23,4 +24,5 @@
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.Mdb.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.Rocks.dll" />
   </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>

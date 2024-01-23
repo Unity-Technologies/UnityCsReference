@@ -41,21 +41,20 @@ namespace UnityEngine.UIElements
         public Vector2 RoundedSizes { get; set; }
 
         TextElement m_TextElement;
-        static TextLib m_TextLib;
+        static TextLib s_TextLib;
 
         static TextLib TextLib
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (m_TextLib == null)
+                if (s_TextLib == null)
                 {
-                    m_TextLib = new TextLib();
+                    s_TextLib = new TextLib();
                 }
-                return m_TextLib;
+                return s_TextLib;
             }
         }
-
 
         public Vector2 ComputeTextSize(in RenderedText textToMeasure, float width, float height)
         {

@@ -1707,10 +1707,10 @@ namespace UnityEditor.UIElements.Bindings
                         bindingContext.ResetUpdate();
                     }
 
-                    BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
-
                     var fieldUndoGroup = (int?)(field as VisualElement)?.GetProperty(UndoGroupPropertyKey);
                     Undo.CollapseUndoOperations(fieldUndoGroup ?? undoGroup);
+
+                    BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
 
                     return;
                 }

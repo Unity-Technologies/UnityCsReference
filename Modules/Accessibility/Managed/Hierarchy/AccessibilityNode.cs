@@ -275,6 +275,9 @@ namespace UnityEngine.Accessibility
         /// Provides additional information about the accessibility node.
         /// For example, the result of performing an action on the node.
         /// </summary>
+        /// <remarks>
+        /// For Android, this requires at least API level 26.
+        /// </remarks>
         public string hint
         {
             get => m_Hint;

@@ -526,11 +526,12 @@ namespace UnityEditor.UIElements
             if (panel == null)
                 return;
 
-            var updater = panel.GetUpdater(VisualTreeUpdatePhase.Bindings) as VisualTreeBindingsUpdater;
-            if (updater == null)
-                return;
+            var bindingsUpdater = panel.GetUpdater(VisualTreeUpdatePhase.Bindings) as VisualTreeBindingsUpdater;
+            bindingsUpdater?.PollElementsWithBindings((e, b) => BindingExtensions.HandleStyleUpdate(e));
 
-            updater.PollElementsWithBindings((e, b) => BindingExtensions.HandleStyleUpdate(e));
+            var dataBindingsUpdater = panel.GetUpdater(VisualTreeUpdatePhase.DataBinding) as VisualTreeDataBindingsUpdater;
+            dataBindingsUpdater?.PollElementsWithBindings((e, b) => BindingExtensions.HandleStyleUpdate(e));
+
         }
 
         private void RecreateWindow()

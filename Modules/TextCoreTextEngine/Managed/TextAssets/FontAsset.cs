@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -103,11 +104,24 @@ namespace UnityEngine.TextCore.Text
     /// <summary>
     ///
     /// </summary>
-    [Serializable][ExcludeFromPresetAttribute]
+    [Serializable][ExcludeFromPreset]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/TextCoreTextEngine/Native/FontAsset.h")]
     public class FontAsset : TextAsset
     {
+        static void EnsureAdditionalCapacity<T>(List<T> container, int additionalCapacity)
+        {
+            var desiredCapacity = container.Count + additionalCapacity;
+            if (container.Capacity < desiredCapacity)
+                container.Capacity = desiredCapacity;
+        }
+
+        static void EnsureAdditionalCapacity<TKey,TValue>(Dictionary<TKey,TValue> container, int additionalCapacity)
+        {
+            var desiredCapacity = container.Count + additionalCapacity;
+            container.EnsureCapacity(desiredCapacity);
+        }
+
         private static Dictionary<int, FontAsset> kFontAssetByInstanceId = new Dictionary<int, FontAsset>();
         /// <summary>
         /// This field is set when the font asset is first created.
@@ -133,12 +147,12 @@ namespace UnityEngine.TextCore.Text
                 m_SourceFontFile_EditorRef = value;
                 m_SourceFontFileGUID = SetSourceFontGUID?.Invoke(m_SourceFontFile_EditorRef);
 
-                if (m_AtlasPopulationMode == AtlasPopulationMode.Static || m_AtlasPopulationMode == AtlasPopulationMode.DynamicOS)
+                if (m_AtlasPopulationMode is AtlasPopulationMode.Static or AtlasPopulationMode.DynamicOS)
                     m_SourceFontFile = null;
                 else
                     m_SourceFontFile = m_SourceFontFile_EditorRef;
 
-                if (m_NativeFontAsset != null)
+                if (m_NativeFontAsset != IntPtr.Zero)
                     UpdateFontEditorRef();
             }
         }
@@ -738,15 +752,12 @@ namespace UnityEngine.TextCore.Text
         private static extern void UpdateWeightFallbacks(IntPtr ptr, IntPtr[] regularFallbacks, IntPtr[] italicFallbacks);
 
         private static extern IntPtr Create(FaceInfo faceInfo, Font sourceFontFile, Font sourceFont_EditorRef, string sourceFontFilePath, int fontInstanceID, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks);
+
+        [FreeFunction("FontAsset::Destroy")]
         private static extern void Destroy(IntPtr ptr);
 
         ~FontAsset()
         {
-            if (m_NativeFontAsset != IntPtr.Zero)
-            {
-                Destroy(m_NativeFontAsset);
-                m_NativeFontAsset = IntPtr.Zero;
-            }
             GC.SuppressFinalize(this);
         }
 
@@ -792,7 +803,7 @@ namespace UnityEngine.TextCore.Text
             return CreateFontAsset(fontFilePath, faceIndex, samplingPointSize, atlasPadding, renderMode, atlasWidth, atlasHeight, AtlasPopulationMode.Dynamic, true);
         }
 
-        static FontAsset CreateFontAsset(string fontFilePath, int faceIndex, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode = AtlasPopulationMode.DynamicOS, bool enableMultiAtlasSupport = true)
+        static FontAsset CreateFontAsset(string fontFilePath, int faceIndex, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode, bool enableMultiAtlasSupport = true)
         {
             // Load Font Face
             if (FontEngine.LoadFontFace(fontFilePath, samplingPointSize, faceIndex) != FontEngineError.Success)
@@ -801,7 +812,7 @@ namespace UnityEngine.TextCore.Text
                 return null;
             }
 
-            FontAsset fontAsset = CreateFontAssetInstance(null, atlasPadding, renderMode, atlasWidth, atlasHeight, atlasPopulationMode, enableMultiAtlasSupport);
+            var fontAsset = CreateFontAssetInstance(null, atlasPadding, renderMode, atlasWidth, atlasHeight, atlasPopulationMode, enableMultiAtlasSupport);
 
             // Set font file path
             fontAsset.m_SourceFontFilePath = fontFilePath;
@@ -905,39 +916,39 @@ namespace UnityEngine.TextCore.Text
             int packingModifier;
             if (((GlyphRasterModes)renderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP)
             {
-                Material tmp_material = null;
+                Material tmpMaterial;
                 packingModifier = 0;
 
                 if (texFormat == TextureFormat.Alpha8)
-                    tmp_material = new Material(TextShaderUtilities.ShaderRef_MobileBitmap);
+                    tmpMaterial = new Material(TextShaderUtilities.ShaderRef_MobileBitmap);
                 else
-                    tmp_material = new Material(TextShaderUtilities.ShaderRef_Sprite);
+                    tmpMaterial = new Material(TextShaderUtilities.ShaderRef_Sprite);
 
                 //tmp_material.name = texture.name + " Material";
-                tmp_material.SetTexture(TextShaderUtilities.ID_MainTex, texture);
-                tmp_material.SetFloat(TextShaderUtilities.ID_TextureWidth, atlasWidth);
-                tmp_material.SetFloat(TextShaderUtilities.ID_TextureHeight, atlasHeight);
+                tmpMaterial.SetTexture(TextShaderUtilities.ID_MainTex, texture);
+                tmpMaterial.SetFloat(TextShaderUtilities.ID_TextureWidth, atlasWidth);
+                tmpMaterial.SetFloat(TextShaderUtilities.ID_TextureHeight, atlasHeight);
 
-                fontAsset.material = tmp_material;
+                fontAsset.material = tmpMaterial;
             }
             else
             {
                 packingModifier = 1;
 
                 // Optimize by adding static ref to shader.
-                Material tmp_material = new Material(TextShaderUtilities.ShaderRef_MobileSDF);
+                var tmpMaterial = new Material(TextShaderUtilities.ShaderRef_MobileSDF);
 
                 //tmp_material.name = texture.name + " Material";
-                tmp_material.SetTexture(TextShaderUtilities.ID_MainTex, texture);
-                tmp_material.SetFloat(TextShaderUtilities.ID_TextureWidth, atlasWidth);
-                tmp_material.SetFloat(TextShaderUtilities.ID_TextureHeight, atlasHeight);
+                tmpMaterial.SetTexture(TextShaderUtilities.ID_MainTex, texture);
+                tmpMaterial.SetFloat(TextShaderUtilities.ID_TextureWidth, atlasWidth);
+                tmpMaterial.SetFloat(TextShaderUtilities.ID_TextureHeight, atlasHeight);
 
-                tmp_material.SetFloat(TextShaderUtilities.ID_GradientScale, atlasPadding + packingModifier);
+                tmpMaterial.SetFloat(TextShaderUtilities.ID_GradientScale, atlasPadding + packingModifier);
 
-                tmp_material.SetFloat(TextShaderUtilities.ID_WeightNormal, fontAsset.regularStyleWeight);
-                tmp_material.SetFloat(TextShaderUtilities.ID_WeightBold, fontAsset.boldStyleWeight);
+                tmpMaterial.SetFloat(TextShaderUtilities.ID_WeightNormal, fontAsset.regularStyleWeight);
+                tmpMaterial.SetFloat(TextShaderUtilities.ID_WeightBold, fontAsset.boldStyleWeight);
 
-                fontAsset.material = tmp_material;
+                fontAsset.material = tmpMaterial;
             }
 
             fontAsset.freeGlyphRects = new List<GlyphRect>(8) { new GlyphRect(0, 0, atlasWidth - packingModifier, atlasHeight - packingModifier) };
@@ -996,7 +1007,17 @@ namespace UnityEngine.TextCore.Text
 
             DestroyAtlasTextures();
 
-            DestroyImmediate(m_Material);
+            if (m_Material)
+            {
+                DestroyImmediate(m_Material);
+            }
+            m_Material = null;
+
+            if (m_NativeFontAsset != IntPtr.Zero)
+            {
+                Destroy(m_NativeFontAsset);
+                m_NativeFontAsset = IntPtr.Zero;
+            }
         }
 
         private void OnValidate()
@@ -1104,7 +1125,7 @@ namespace UnityEngine.TextCore.Text
             InitializeLigatureSubstitutionLookupDictionary();
 
             // Initialize and populate glyph pair adjustment records
-            InitializeGlyphPaidAdjustmentRecordsLookupDictionary();
+            InitializeGlyphPairAdjustmentRecordsLookupDictionary();
 
             // Initialize and populate mark to base adjustment records
             InitializeMarkToBaseAdjustmentRecordsLookupDictionary();
@@ -1113,40 +1134,46 @@ namespace UnityEngine.TextCore.Text
             InitializeMarkToMarkAdjustmentRecordsLookupDictionary();
         }
 
+        private static void InitializeLookup<T>(ICollection source, ref Dictionary<uint, T> lookup, int defaultCapacity = 16)
+        {
+            var desiredCapacity = source?.Count ?? defaultCapacity;
+
+            if (lookup == null)
+                lookup = new Dictionary<uint, T>(capacity: desiredCapacity);
+            else
+            {
+                lookup.Clear();
+                lookup.EnsureCapacity(desiredCapacity);
+            }
+        }
+
+        private static void InitializeList<T>(ICollection source, ref List<T> list, int defaultCapacity = 16)
+        {
+            var desiredCapacity = source?.Count ?? defaultCapacity;
+            if (list == null)
+                list = new List<T>(capacity: desiredCapacity);
+            else
+            {
+                list.Clear();
+                list.Capacity = desiredCapacity;
+            }
+        }
+
         internal void InitializeGlyphLookupDictionary()
         {
             // Create new instance of the glyph lookup dictionary or clear the existing one.
-            if (m_GlyphLookupDictionary == null)
-                m_GlyphLookupDictionary = new Dictionary<uint, Glyph>();
-            else
-                m_GlyphLookupDictionary.Clear();
+            InitializeLookup(m_GlyphTable, ref m_GlyphLookupDictionary);
 
             // Initialize or clear list of glyph indexes.
-            if (m_GlyphIndexList == null)
-                m_GlyphIndexList = new List<uint>();
-            else
-                m_GlyphIndexList.Clear();
-
-            // Initialize or clear list of glyph indexes.
-            if (m_GlyphIndexListNewlyAdded == null)
-                m_GlyphIndexListNewlyAdded = new List<uint>();
-            else
-                m_GlyphIndexListNewlyAdded.Clear();
-
-            //
-            int glyphCount = m_GlyphTable.Count;
+            InitializeList(m_GlyphTable, ref m_GlyphIndexList);
+            InitializeList(null, ref m_GlyphIndexListNewlyAdded);
 
             // Add glyphs contained in the glyph table to dictionary for faster lookup.
-            for (int i = 0; i < glyphCount; i++)
+            foreach (var glyph in m_GlyphTable)
             {
-                Glyph glyph = m_GlyphTable[i];
-
-                uint index = glyph.index;
-
-                // TODO: Not sure it is necessary to check here.
-                if (m_GlyphLookupDictionary.ContainsKey(index) == false)
+                var index = glyph.index;
+                if (m_GlyphLookupDictionary.TryAdd(index, glyph))
                 {
-                    m_GlyphLookupDictionary.Add(index, glyph);
                     m_GlyphIndexList.Add(index);
                 }
             }
@@ -1154,128 +1181,95 @@ namespace UnityEngine.TextCore.Text
 
         internal void InitializeCharacterLookupDictionary()
         {
-            // Create new instance of the character lookup dictionary or clear the existing one.
-            if (m_CharacterLookupDictionary == null)
-                m_CharacterLookupDictionary = new Dictionary<uint, Character>();
-            else
-                m_CharacterLookupDictionary.Clear();
+            InitializeLookup(m_CharacterTable, ref m_CharacterLookupDictionary);
 
             // Add the characters contained in the character table to the dictionary for faster lookup.
-            for (int i = 0; i < m_CharacterTable.Count; i++)
+            foreach (var character in m_CharacterTable)
             {
-                Character character = m_CharacterTable[i];
-
-                uint unicode = character.unicode;
-                uint glyphIndex = character.glyphIndex;
+                var unicode = character.unicode;
+                var glyphIndex = character.glyphIndex;
 
                 // Add character along with reference to text asset and glyph
-                if (m_CharacterLookupDictionary.ContainsKey(unicode) == false)
+                if (m_CharacterLookupDictionary.TryAdd(unicode, character))
                 {
-                    m_CharacterLookupDictionary.Add(unicode, character);
                     character.textAsset = this;
                     character.glyph = m_GlyphLookupDictionary[glyphIndex];
                 }
             }
 
             // Clear missing unicode lookup
-            if (m_MissingUnicodesFromFontFile != null)
-                m_MissingUnicodesFromFontFile.Clear();
+            m_MissingUnicodesFromFontFile?.Clear();
         }
 
         internal void InitializeLigatureSubstitutionLookupDictionary()
         {
-            if (m_FontFeatureTable.m_LigatureSubstitutionRecordLookup == null)
-                m_FontFeatureTable.m_LigatureSubstitutionRecordLookup = new Dictionary<uint, List<LigatureSubstitutionRecord>>();
-            else
-                m_FontFeatureTable.m_LigatureSubstitutionRecordLookup.Clear();
+            var substitutionRecords = m_FontFeatureTable.m_LigatureSubstitutionRecords;
 
-            List<LigatureSubstitutionRecord> substitutionRecords = m_FontFeatureTable.m_LigatureSubstitutionRecords;
-            if (substitutionRecords != null)
+            InitializeLookup(substitutionRecords, ref m_FontFeatureTable.m_LigatureSubstitutionRecordLookup);
+
+            if (substitutionRecords == null)
+                return;
+
+            foreach (var record in substitutionRecords)
             {
-                for (int i = 0; i < substitutionRecords.Count; i++)
-                {
-                    LigatureSubstitutionRecord record = substitutionRecords[i];
+                // Skip newly added records
+                if (record.componentGlyphIDs == null || record.componentGlyphIDs.Length == 0)
+                    continue;
 
-                    // Skip newly added records
-                    if (record.componentGlyphIDs == null || record.componentGlyphIDs.Length == 0)
-                        continue;
-
-                    uint keyGlyphIndex = record.componentGlyphIDs[0];
-
-                    if (!m_FontFeatureTable.m_LigatureSubstitutionRecordLookup.ContainsKey(keyGlyphIndex))
-                        m_FontFeatureTable.m_LigatureSubstitutionRecordLookup.Add(keyGlyphIndex, new List<LigatureSubstitutionRecord> {record});
-                    else
-                        m_FontFeatureTable.m_LigatureSubstitutionRecordLookup[keyGlyphIndex].Add(record);
-                }
+                var keyGlyphIndex = record.componentGlyphIDs[0];
+                if (m_FontFeatureTable.m_LigatureSubstitutionRecordLookup.TryGetValue(keyGlyphIndex, out var existingSubstitutionList))
+                    existingSubstitutionList.Add(record);
+                else
+                    m_FontFeatureTable.m_LigatureSubstitutionRecordLookup.Add(keyGlyphIndex, new List<LigatureSubstitutionRecord> {record});
             }
         }
 
-        internal void InitializeGlyphPaidAdjustmentRecordsLookupDictionary()
+        internal void InitializeGlyphPairAdjustmentRecordsLookupDictionary()
         {
             // Read Font Features which will include kerning data.
-            if (m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup == null)
-                m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup = new Dictionary<uint, GlyphPairAdjustmentRecord>();
-            else
-                m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup.Clear();
 
-            List<GlyphPairAdjustmentRecord> glyphPairAdjustmentRecords = m_FontFeatureTable.m_GlyphPairAdjustmentRecords;
-            if (glyphPairAdjustmentRecords != null)
+            var source = m_FontFeatureTable.glyphPairAdjustmentRecords;
+            InitializeLookup(source, ref m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup);
+
+            if (source == null)
+                return;
+
+            foreach (var record in source)
             {
-                for (int i = 0; i < glyphPairAdjustmentRecords.Count; i++)
-                {
-                    GlyphPairAdjustmentRecord record = glyphPairAdjustmentRecords[i];
-
-                    uint key = record.secondAdjustmentRecord.glyphIndex << 16 | record.firstAdjustmentRecord.glyphIndex;
-
-                    if (!m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup.ContainsKey(key))
-                        m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup.Add(key, record);
-                }
+                var key = record.secondAdjustmentRecord.glyphIndex << 16 | record.firstAdjustmentRecord.glyphIndex;
+                m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup.TryAdd(key, record);
             }
         }
 
         internal void InitializeMarkToBaseAdjustmentRecordsLookupDictionary()
         {
             // Read Mark to Base adjustment records
-            if (m_FontFeatureTable.m_MarkToBaseAdjustmentRecordLookup == null)
-                m_FontFeatureTable.m_MarkToBaseAdjustmentRecordLookup = new Dictionary<uint, MarkToBaseAdjustmentRecord>();
-            else
-                m_FontFeatureTable.m_MarkToBaseAdjustmentRecordLookup.Clear();
+            var source = m_FontFeatureTable.m_MarkToBaseAdjustmentRecords;
+            InitializeLookup(source, ref m_FontFeatureTable.m_MarkToBaseAdjustmentRecordLookup);
 
-            List<MarkToBaseAdjustmentRecord> adjustmentRecords = m_FontFeatureTable.m_MarkToBaseAdjustmentRecords;
-            if (adjustmentRecords != null)
+            if (source == null)
+                return;
+
+            foreach (var record in source)
             {
-                for (int i = 0; i < adjustmentRecords.Count; i++)
-                {
-                    MarkToBaseAdjustmentRecord record = adjustmentRecords[i];
-
-                    uint key = record.markGlyphID << 16 | record.baseGlyphID;
-
-                    if (!m_FontFeatureTable.m_MarkToBaseAdjustmentRecordLookup.ContainsKey(key))
-                        m_FontFeatureTable.m_MarkToBaseAdjustmentRecordLookup.Add(key, record);
-                }
+                var key = record.markGlyphID << 16 | record.baseGlyphID;
+                m_FontFeatureTable.m_MarkToBaseAdjustmentRecordLookup.TryAdd(key, record);
             }
         }
 
         internal void InitializeMarkToMarkAdjustmentRecordsLookupDictionary()
         {
             // Read Mark to Base adjustment records
-            if (m_FontFeatureTable.m_MarkToMarkAdjustmentRecordLookup == null)
-                m_FontFeatureTable.m_MarkToMarkAdjustmentRecordLookup = new Dictionary<uint, MarkToMarkAdjustmentRecord>();
-            else
-                m_FontFeatureTable.m_MarkToMarkAdjustmentRecordLookup.Clear();
+            var source = m_FontFeatureTable.m_MarkToMarkAdjustmentRecords;
+            InitializeLookup(source, ref m_FontFeatureTable.m_MarkToMarkAdjustmentRecordLookup);
 
-            List<MarkToMarkAdjustmentRecord> adjustmentRecords = m_FontFeatureTable.m_MarkToMarkAdjustmentRecords;
-            if (adjustmentRecords != null)
+            if (source == null)
+                return;
+
+            foreach (var record in source)
             {
-                for (int i = 0; i < adjustmentRecords.Count; i++)
-                {
-                    MarkToMarkAdjustmentRecord record = adjustmentRecords[i];
-
-                    uint key = record.combiningMarkGlyphID << 16 | record.baseMarkGlyphID;
-
-                    if (!m_FontFeatureTable.m_MarkToMarkAdjustmentRecordLookup.ContainsKey(key))
-                        m_FontFeatureTable.m_MarkToMarkAdjustmentRecordLookup.Add(key, record);
-                }
+                var key = record.combiningMarkGlyphID << 16 | record.baseMarkGlyphID;
+                m_FontFeatureTable.m_MarkToMarkAdjustmentRecordLookup.TryAdd(key, record);
             }
         }
 
@@ -1897,20 +1891,20 @@ namespace UnityEngine.TextCore.Text
         /// <returns>The glyph index for the given Unicode.</returns>
         internal uint GetGlyphIndex(uint unicode)
         {
-            bool success;
-            return GetGlyphIndex(unicode, out success);
+            return GetGlyphIndex(unicode, out _);
         }
 
         /// <summary>
         /// Internal function used to get the glyph index for the given Unicode.
         /// </summary>
         /// <param name="unicode"></param>
+        /// <param name="success"></param>
         /// <returns></returns>
         internal uint GetGlyphIndex(uint unicode, out bool success)
         {
             success = true;
             // Check if glyph already exists in font asset.
-            if (m_CharacterLookupDictionary.TryGetValue(unicode, out Character character))
+            if (CharacterLookupTable_TryGet(unicode, out var character))
                 return character.glyphIndex;
 
             if (JobsUtility.IsExecutingJob)
@@ -2017,11 +2011,6 @@ namespace UnityEngine.TextCore.Text
         }
 
         /// <summary>
-        ///
-        /// </summary>
-        //private bool m_IsAlreadyRegisteredForUpdate;
-
-        /// <summary>
         /// List of glyphs that need to be rendered and added to an atlas texture.
         /// </summary>
         private List<Glyph> m_GlyphsToRender = new List<Glyph>();
@@ -2079,9 +2068,7 @@ namespace UnityEngine.TextCore.Text
         /// <returns>Returns true if all the characters were successfully added to the font asset. Return false otherwise.</returns>
         public bool TryAddCharacters(uint[] unicodes, bool includeFontFeatures = false)
         {
-            uint[] missingUnicodes;
-
-            return TryAddCharacters(unicodes, out missingUnicodes, includeFontFeatures);
+            return TryAddCharacters(unicodes, out _, includeFontFeatures);
         }
 
         /// <summary>
@@ -2093,7 +2080,7 @@ namespace UnityEngine.TextCore.Text
         /// <returns>Returns true if all the characters were successfully added to the font asset. Return false otherwise.</returns>
         public bool TryAddCharacters(uint[] unicodes, out uint[] missingUnicodes, bool includeFontFeatures = false)
         {
-            k_TryAddCharactersMarker.Begin();
+            using var profilerScope = k_TryAddCharactersMarker.Auto();
 
             // Make sure font asset is set to dynamic and that we have a valid list of characters.
             if (unicodes == null || unicodes.Length == 0 || m_AtlasPopulationMode == AtlasPopulationMode.Static)
@@ -2104,7 +2091,6 @@ namespace UnityEngine.TextCore.Text
                     Debug.LogWarning("Unable to add characters to font asset [" + this.name + "] because the provided Unicode list is Null or Empty.", this);
 
                 missingUnicodes = null;
-                k_TryAddCharactersMarker.End();
                 return false;
             }
 
@@ -2112,13 +2098,16 @@ namespace UnityEngine.TextCore.Text
             if (LoadFontFace() != FontEngineError.Success)
             {
                 missingUnicodes = unicodes.ToArray();
-                k_TryAddCharactersMarker.End();
                 return false;
             }
 
             // Make sure font asset has been initialized
             if (m_CharacterLookupDictionary == null || m_GlyphLookupDictionary == null)
                 ReadFontAssetDefinition();
+
+            // guaranteed to be non-null at this point
+            var characterLookupDictionary = m_CharacterLookupDictionary!;
+            var glyphLookupDictionary = m_GlyphLookupDictionary!;
 
             // Clear lists used to track which character and glyphs were added or missing.
             m_GlyphsToAdd.Clear();
@@ -2127,19 +2116,19 @@ namespace UnityEngine.TextCore.Text
             m_CharactersToAddLookup.Clear();
             s_MissingCharacterList.Clear();
 
-            bool isMissingCharacters = false;
-            int unicodeCount = unicodes.Length;
+            var isMissingCharacters = false;
+            var unicodeCount = unicodes.Length;
 
             for (int i = 0; i < unicodeCount; i++)
             {
                 uint unicode = unicodes[i];
 
                 // Check if character is already contained in the character table.
-                if (m_CharacterLookupDictionary.ContainsKey(unicode))
+                if (characterLookupDictionary.ContainsKey(unicode))
                     continue;
 
                 // Get the index of the glyph for this Unicode value.
-                uint glyphIndex = FontEngine.GetGlyphIndex(unicode);
+                var glyphIndex = FontEngine.GetGlyphIndex(unicode);
 
                 // Skip missing glyphs
                 if (glyphIndex == 0)
@@ -2169,17 +2158,17 @@ namespace UnityEngine.TextCore.Text
                     }
                 }
 
-                Character character = new Character(unicode, glyphIndex);
+                var character = new Character(unicode, glyphIndex);
 
                 // Check if glyph is already contained in the font asset as the same glyph might be referenced by multiple characters.
-                if (m_GlyphLookupDictionary.ContainsKey(glyphIndex))
+                if (glyphLookupDictionary.TryGetValue(glyphIndex, out var value))
                 {
                     // Add a reference to the source text asset and glyph
-                    character.glyph = m_GlyphLookupDictionary[glyphIndex];
+                    character.glyph = value;
                     character.textAsset = this;
 
                     m_CharacterTable.Add(character);
-                    m_CharacterLookupDictionary.Add(unicode, character);
+                    characterLookupDictionary.Add(unicode, character);
                     continue;
                 }
 
@@ -2196,7 +2185,6 @@ namespace UnityEngine.TextCore.Text
             {
                 //Debug.LogWarning("No characters will be added to font asset [" + this.name + "] either because they are already present in the font asset or missing from the font file.");
                 missingUnicodes = unicodes;
-                k_TryAddCharactersMarker.End();
                 return false;
             }
 
@@ -2208,19 +2196,29 @@ namespace UnityEngine.TextCore.Text
             }
 
             Glyph[] glyphs;
-            bool allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
+            var allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
 
             // Add new glyphs to relevant font asset data structure
-            for (int i = 0; i < glyphs.Length && glyphs[i] != null; i++)
             {
-                Glyph glyph = glyphs[i];
-                uint glyphIndex = glyph.index;
+                var additionalCapacity = glyphs.Length;
+                EnsureAdditionalCapacity(m_GlyphTable, additionalCapacity);
+                EnsureAdditionalCapacity(glyphLookupDictionary, additionalCapacity);
+                EnsureAdditionalCapacity(m_GlyphIndexListNewlyAdded, additionalCapacity);
+                EnsureAdditionalCapacity(m_GlyphIndexList, additionalCapacity);
+            }
+
+            foreach (var glyph in glyphs)
+            {
+                if (glyph == null)
+                    continue;
+
+                var glyphIndex = glyph.index;
 
                 glyph.atlasIndex = m_AtlasTextureIndex;
 
                 // Add new glyph to glyph table.
                 m_GlyphTable.Add(glyph);
-                m_GlyphLookupDictionary.Add(glyphIndex, glyph);
+                glyphLookupDictionary.Add(glyphIndex, glyph);
 
                 m_GlyphIndexListNewlyAdded.Add(glyphIndex);
                 m_GlyphIndexList.Add(glyphIndex);
@@ -2230,12 +2228,17 @@ namespace UnityEngine.TextCore.Text
             m_GlyphsToAdd.Clear();
 
             // Add new characters to relevant data structures as well as track glyphs that could not be added to the current atlas texture.
-            for (int i = 0; i < m_CharactersToAdd.Count; i++)
             {
-                Character character = m_CharactersToAdd[i];
-                Glyph glyph;
+                var additionalCapacity = m_CharactersToAdd.Count;
+                EnsureAdditionalCapacity(m_GlyphsToAdd, additionalCapacity);
+                EnsureAdditionalCapacity(m_CharacterTable, additionalCapacity);
+                EnsureAdditionalCapacity(characterLookupDictionary, additionalCapacity);
+            }
 
-                if (m_GlyphLookupDictionary.TryGetValue(character.glyphIndex, out glyph) == false)
+            for (var i = m_CharactersToAdd.Count - 1; i >= 0; --i)
+            {
+                var character = m_CharactersToAdd[i];
+                if (glyphLookupDictionary.TryGetValue(character.glyphIndex, out var glyph) == false)
                 {
                     m_GlyphsToAdd.Add(character.glyphIndex);
                     continue;
@@ -2246,11 +2249,11 @@ namespace UnityEngine.TextCore.Text
                 character.textAsset = this;
 
                 m_CharacterTable.Add(character);
-                m_CharacterLookupDictionary.Add(character.unicode, character);
+                characterLookupDictionary.Add(character.unicode, character);
 
                 // Remove character from list to add
                 m_CharactersToAdd.RemoveAt(i);
-                i -= 1;
+                i += 1;
             }
 
             // Try adding missing glyphs to
@@ -2270,9 +2273,8 @@ namespace UnityEngine.TextCore.Text
             RegisterResourceForUpdate?.Invoke(this);
 
             // Populate list of missing characters
-            for (int i = 0; i < m_CharactersToAdd.Count; i++)
+            foreach (var character in m_CharactersToAdd)
             {
-                Character character = m_CharactersToAdd[i];
                 s_MissingCharacterList.Add(character.unicode);
             }
 
@@ -2280,8 +2282,6 @@ namespace UnityEngine.TextCore.Text
 
             if (s_MissingCharacterList.Count > 0)
                 missingUnicodes = s_MissingCharacterList.ToArray();
-
-            k_TryAddCharactersMarker.End();
 
             return allGlyphsAddedToTexture && !isMissingCharacters;
         }
@@ -3302,22 +3302,22 @@ namespace UnityEngine.TextCore.Text
                 return;
 
             // Get Pair Adjustment records
-            GlyphPairAdjustmentRecord[] pairAdjustmentRecords = FontEngine.GetAllPairAdjustmentRecords();
+            var pairAdjustmentRecords = FontEngine.GetAllPairAdjustmentRecords();
             if (pairAdjustmentRecords != null)
                 AddPairAdjustmentRecords(pairAdjustmentRecords);
 
             // Get Mark-to-Base adjustment records
-            UnityEngine.TextCore.LowLevel.MarkToBaseAdjustmentRecord[] markToBaseRecords = FontEngine.GetAllMarkToBaseAdjustmentRecords();
+            var markToBaseRecords = FontEngine.GetAllMarkToBaseAdjustmentRecords();
             if (markToBaseRecords != null)
                 AddMarkToBaseAdjustmentRecords(markToBaseRecords);
 
             // Get Mark-to-Mark adjustment records
-            UnityEngine.TextCore.LowLevel.MarkToMarkAdjustmentRecord[] markToMarkRecords = FontEngine.GetAllMarkToMarkAdjustmentRecords();
+            var markToMarkRecords = FontEngine.GetAllMarkToMarkAdjustmentRecords();
             if (markToMarkRecords != null)
                 AddMarkToMarkAdjustmentRecords(markToMarkRecords);
 
             // Get Ligature Substitution records
-            UnityEngine.TextCore.LowLevel.LigatureSubstitutionRecord[] records = FontEngine.GetAllLigatureSubstitutionRecords();
+            var records = FontEngine.GetAllLigatureSubstitutionRecords();
             if (records != null)
                 AddLigatureSubstitutionRecords(records);
 
@@ -3329,7 +3329,7 @@ namespace UnityEngine.TextCore.Text
 
         void UpdateGSUBFontFeaturesForNewGlyphIndex(uint glyphIndex)
         {
-            UnityEngine.TextCore.LowLevel.LigatureSubstitutionRecord[] records = FontEngine.GetLigatureSubstitutionRecords(glyphIndex);
+            var records = FontEngine.GetLigatureSubstitutionRecords(glyphIndex);
 
             if (records != null)
                 AddLigatureSubstitutionRecords(records);
@@ -3342,7 +3342,7 @@ namespace UnityEngine.TextCore.Text
         {
             k_UpdateLigatureSubstitutionRecordsMarker.Begin();
 
-            UnityEngine.TextCore.LowLevel.LigatureSubstitutionRecord[] records = FontEngine.GetLigatureSubstitutionRecords(m_GlyphIndexListNewlyAdded);
+            var records = FontEngine.GetLigatureSubstitutionRecords(m_GlyphIndexListNewlyAdded);
 
             if (records != null)
                 AddLigatureSubstitutionRecords(records);
@@ -3352,35 +3352,38 @@ namespace UnityEngine.TextCore.Text
 
         void AddLigatureSubstitutionRecords(UnityEngine.TextCore.LowLevel.LigatureSubstitutionRecord[] records)
         {
-            for (int i = 0; i < records.Length; i++)
-            {
-                UnityEngine.TextCore.LowLevel.LigatureSubstitutionRecord record = records[i];
+            var destinationLookup = m_FontFeatureTable.m_LigatureSubstitutionRecordLookup;
+            var destinationList = m_FontFeatureTable.m_LigatureSubstitutionRecords;
 
-                if (records[i].componentGlyphIDs == null || records[i].ligatureGlyphID == 0)
+            EnsureAdditionalCapacity(destinationLookup, records.Length);
+            EnsureAdditionalCapacity(destinationList, records.Length);
+
+            foreach (var record in records)
+            {
+                if (record.componentGlyphIDs == null || record.ligatureGlyphID == 0)
                     return;
 
-                uint firstComponentGlyphIndex = record.componentGlyphIDs[0];
-
-                LigatureSubstitutionRecord newRecord = new LigatureSubstitutionRecord { componentGlyphIDs = record.componentGlyphIDs, ligatureGlyphID = record.ligatureGlyphID };
+                var firstComponentGlyphIndex = record.componentGlyphIDs[0];
+                var newRecord = new LigatureSubstitutionRecord { componentGlyphIDs = record.componentGlyphIDs, ligatureGlyphID = record.ligatureGlyphID };
 
                 // Check if we already have a record for this new Ligature
-                if (m_FontFeatureTable.m_LigatureSubstitutionRecordLookup.TryGetValue(firstComponentGlyphIndex, out List<LigatureSubstitutionRecord> existingRecords))
+                if (destinationLookup.TryGetValue(firstComponentGlyphIndex, out var existingRecords))
                 {
-                    foreach (LigatureSubstitutionRecord ligature in existingRecords)
+                    foreach (var ligature in existingRecords)
                     {
                         if (newRecord == ligature)
                             return;
                     }
 
                     // Add new record to lookup
-                    m_FontFeatureTable.m_LigatureSubstitutionRecordLookup[firstComponentGlyphIndex].Add(newRecord);
+                    destinationLookup[firstComponentGlyphIndex].Add(newRecord);
                 }
                 else
                 {
-                    m_FontFeatureTable.m_LigatureSubstitutionRecordLookup.Add(firstComponentGlyphIndex, new List<LigatureSubstitutionRecord> { newRecord });
+                    destinationLookup.Add(firstComponentGlyphIndex, new List<LigatureSubstitutionRecord> { newRecord });
                 }
 
-                m_FontFeatureTable.m_LigatureSubstitutionRecords.Add(newRecord);
+                destinationList.Add(newRecord);
             }
         }
 
@@ -3401,32 +3404,35 @@ namespace UnityEngine.TextCore.Text
 
         void AddPairAdjustmentRecords(GlyphPairAdjustmentRecord[] records)
         {
-            float emScale = (float)m_FaceInfo.pointSize / m_FaceInfo.unitsPerEM;
+            var emScale = (float)m_FaceInfo.pointSize / m_FaceInfo.unitsPerEM;
 
-            for (int i = 0; i < records.Length; i++)
+            var destinationList = m_FontFeatureTable.glyphPairAdjustmentRecords;
+            var destinationLookup = m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup;
+
+            EnsureAdditionalCapacity(destinationLookup, records.Length);
+            EnsureAdditionalCapacity(destinationList, records.Length);
+
+            foreach (var record in records)
             {
-                GlyphPairAdjustmentRecord record = records[i];
-                GlyphAdjustmentRecord first = record.firstAdjustmentRecord;
-                GlyphAdjustmentRecord second = record.secondAdjustmentRecord;
+                var first = record.firstAdjustmentRecord;
+                var second = record.secondAdjustmentRecord;
 
-                uint firstIndex = first.glyphIndex;
-                uint secondIndexIndex = second.glyphIndex;
+                var firstIndex = first.glyphIndex;
+                var secondIndexIndex = second.glyphIndex;
 
                 if (firstIndex == 0 && secondIndexIndex == 0)
                     return;
 
-                uint key = secondIndexIndex << 16 | firstIndex;
-
-                if (m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup.ContainsKey(key))
-                    continue;
+                var key = secondIndexIndex << 16 | firstIndex;
 
                 // Adjust values currently in Units per EM to make them relative to Sampling Point Size.
-                GlyphValueRecord valueRecord = first.glyphValueRecord;
+                var newRecord = record;
+                var valueRecord = first.glyphValueRecord;
                 valueRecord.xAdvance *= emScale;
-                record.firstAdjustmentRecord = new GlyphAdjustmentRecord(firstIndex, valueRecord);
+                newRecord.firstAdjustmentRecord = new GlyphAdjustmentRecord(firstIndex, valueRecord);
 
-                m_FontFeatureTable.m_GlyphPairAdjustmentRecords.Add(record);
-                m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup.Add(key, record);
+                if (destinationLookup.TryAdd(key, newRecord))
+                    destinationList.Add(newRecord);
             }
         }
 
@@ -3459,9 +3465,9 @@ namespace UnityEngine.TextCore.Text
                     if (m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup.ContainsKey(pairKey))
                         continue;
 
-                    GlyphPairAdjustmentRecord record = pairAdjustmentRecords[i];
+                    var record = pairAdjustmentRecords[i];
 
-                    m_FontFeatureTable.m_GlyphPairAdjustmentRecords.Add(record);
+                    m_FontFeatureTable.glyphPairAdjustmentRecords.Add(record);
                     m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup.Add(pairKey, record);
                 }
             }
@@ -3564,12 +3570,12 @@ namespace UnityEngine.TextCore.Text
             using (k_UpdateDiacriticalMarkAdjustmentRecordsMarker.Auto())
             {
                 // Get Mark-to-Base adjustment records
-                MarkToBaseAdjustmentRecord[] markToBaseRecords = FontEngine.GetMarkToBaseAdjustmentRecords(m_GlyphIndexListNewlyAdded);
+                var markToBaseRecords = FontEngine.GetMarkToBaseAdjustmentRecords(m_GlyphIndexListNewlyAdded);
                 if (markToBaseRecords != null)
                     AddMarkToBaseAdjustmentRecords(markToBaseRecords);
 
                 // Get Mark-to-Mark adjustment records
-                MarkToMarkAdjustmentRecord[] markToMarkRecords = FontEngine.GetMarkToMarkAdjustmentRecords(m_GlyphIndexListNewlyAdded);
+                var markToMarkRecords = FontEngine.GetMarkToMarkAdjustmentRecords(m_GlyphIndexListNewlyAdded);
                 if (markToMarkRecords != null)
                     AddMarkToMarkAdjustmentRecords(markToMarkRecords);
             }
@@ -3581,20 +3587,19 @@ namespace UnityEngine.TextCore.Text
         /// <param name="records"></param>
         void AddMarkToBaseAdjustmentRecords(MarkToBaseAdjustmentRecord[] records)
         {
-            float emScale = (float)m_FaceInfo.pointSize / m_FaceInfo.unitsPerEM;
+            var emScale = (float)m_FaceInfo.pointSize / m_FaceInfo.unitsPerEM;
 
-            for (int i = 0; i < records.Length; i++)
+            foreach (var record in records)
             {
-                MarkToBaseAdjustmentRecord record = records[i];
-                if (records[i].baseGlyphID == 0 || records[i].markGlyphID == 0)
+                if (record.baseGlyphID == 0 || record.markGlyphID == 0)
                     return;
 
-                uint key = record.markGlyphID << 16 | record.baseGlyphID;
+                var key = record.markGlyphID << 16 | record.baseGlyphID;
 
                 if (m_FontFeatureTable.m_MarkToBaseAdjustmentRecordLookup.ContainsKey(key))
                     continue;
 
-                MarkToBaseAdjustmentRecord newRecord = new MarkToBaseAdjustmentRecord {
+                var newRecord = new MarkToBaseAdjustmentRecord {
                     baseGlyphID = record.baseGlyphID,
                     baseGlyphAnchorPoint = new GlyphAnchorPoint() { xCoordinate = record.baseGlyphAnchorPoint.xCoordinate * emScale, yCoordinate = record.baseGlyphAnchorPoint.yCoordinate * emScale },
                     markGlyphID = record.markGlyphID,
@@ -3787,8 +3792,8 @@ namespace UnityEngine.TextCore.Text
                 m_FontFeatureTable.m_LigatureSubstitutionRecords.Clear();
 
                 // Clear Glyph Adjustment Table
-                if (m_FontFeatureTable != null && m_FontFeatureTable.m_GlyphPairAdjustmentRecords != null)
-                    m_FontFeatureTable.m_GlyphPairAdjustmentRecords.Clear();
+                if (m_FontFeatureTable != null && m_FontFeatureTable.glyphPairAdjustmentRecords != null)
+                    m_FontFeatureTable.glyphPairAdjustmentRecords.Clear();
 
                 // Clear Mark-to-Base Adjustment Table
                 if (m_FontFeatureTable != null && m_FontFeatureTable.m_MarkToBaseAdjustmentRecords != null)
@@ -3819,11 +3824,10 @@ namespace UnityEngine.TextCore.Text
             {
                 texture = m_AtlasTextures[i];
 
-                if (texture == null)
+                if (!texture)
                     continue;
 
                 DestroyImmediate(texture, true);
-
                 RegisterResourceForReimport?.Invoke(this);
             }
 
@@ -3856,16 +3860,21 @@ namespace UnityEngine.TextCore.Text
 
         void DestroyAtlasTextures()
         {
+            m_AtlasTexture = null;
+            m_AtlasTextureIndex = -1;
+
             if (m_AtlasTextures == null)
                 return;
 
-            for (int i = 0; i < m_AtlasTextures.Length; i++)
+            foreach (var tex in m_AtlasTextures)
             {
-                Texture2D tex = m_AtlasTextures[i];
-
                 if (tex != null)
-                    DestroyImmediate(tex);
+                {
+                    DestroyImmediate(tex, true);
+                }
             }
+
+            m_AtlasTextures = null;
         }
     }
 }

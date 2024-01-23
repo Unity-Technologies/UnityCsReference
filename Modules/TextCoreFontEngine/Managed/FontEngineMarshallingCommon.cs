@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
@@ -9,6 +10,23 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine.TextCore.LowLevel
 {
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct OTL_Tag
+    {
+        public byte c0, c1, c2, c3, c4;
+
+        public override unsafe string ToString()
+        {
+            var chars = stackalloc char[4];
+            chars[0] = (char)c0;
+            chars[1] = (char)c1;
+            chars[2] = (char)c2;
+            chars[3] = (char)c3;
+            return new string(chars);
+        }
+    }
+
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     internal struct OTL_Table
@@ -23,7 +41,7 @@ namespace UnityEngine.TextCore.LowLevel
     [DebuggerDisplay("Script = {tag},  Language Count = {languages.Length}")]
     internal struct OTL_Script
     {
-        public string tag;
+        public OTL_Tag tag;
         public OTL_Language[] languages;
     }
 
@@ -32,7 +50,7 @@ namespace UnityEngine.TextCore.LowLevel
     [DebuggerDisplay("Language = {tag},  Feature Count = {featureIndexes.Length}")]
     internal struct OTL_Language
     {
-        public string tag;
+        public OTL_Tag tag;
         public uint[] featureIndexes;
     }
 
@@ -41,7 +59,7 @@ namespace UnityEngine.TextCore.LowLevel
     [DebuggerDisplay("Feature = {tag},  Lookup Count = {lookupIndexes.Length}")]
     internal struct OTL_Feature
     {
-        public string tag;
+        public OTL_Tag tag;
         public uint[] lookupIndexes;
     }
 

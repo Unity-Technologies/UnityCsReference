@@ -127,9 +127,6 @@ namespace UnityEngine.UIElements
 
             k_PrepareMainThreadMarker.Begin();
 
-            // ensure the text generator is initialized on the main thread
-            UnityEngine.TextCore.Text.TextGenerator.GetTextGenerator();
-
             hasPendingTextWork = false;
 
             var prepareJob = new PrepareTextJobData

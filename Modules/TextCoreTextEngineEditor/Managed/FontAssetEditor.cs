@@ -1547,7 +1547,7 @@ namespace UnityEditor.TextCore.Text
                     if (m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup.ContainsKey(pairKey) == false)
                     {
                         GlyphPairAdjustmentRecord adjustmentRecord = new GlyphPairAdjustmentRecord(new GlyphAdjustmentRecord(firstGlyphIndex, firstValueRecord), new GlyphAdjustmentRecord(secondGlyphIndex, secondValueRecord));
-                        m_FontFeatureTable.m_GlyphPairAdjustmentRecords.Add(adjustmentRecord);
+                        m_FontFeatureTable.glyphPairAdjustmentRecords.Add(adjustmentRecord);
                         m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup.Add(pairKey, adjustmentRecord);
                         errorCode = 0;
                     }

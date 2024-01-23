@@ -3996,7 +3996,8 @@ namespace UnityEditor
             }
             else
             {
-                buttonContent = popupValues[selected];
+                buttonContent = new GUIContent(popupValues[selected]);
+                buttonContent.text = EditorUtility.ParseMenuName(buttonContent.text);
             }
 
             Event evt = Event.current;
@@ -4025,7 +4026,7 @@ namespace UnityEditor
                         }
 
                         PopupCallbackInfo.instance = new PopupCallbackInfo(controlID);
-                        EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null);
+                        EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null, true);
                         GUIUtility.keyboardControl = controlID;
                         evt.Use();
                     }

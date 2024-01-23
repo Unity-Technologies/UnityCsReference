@@ -14,26 +14,15 @@ namespace UnityEngine.TextCore.Text
     [VisibleToOtherModules("UnityEngine.UIElementsModule","Unity.UIElements.PlayModeTests")]
     internal class TextLib
     {
-        private IntPtr m_Ptr;
-
-        ~TextLib()
-        {
-            if (m_Ptr != IntPtr.Zero)
-            {
-                Destroy(m_Ptr);
-                m_Ptr = IntPtr.Zero;
-            }
-            GC.SuppressFinalize(this);
-        }
+        private readonly IntPtr m_Ptr;
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal TextLib()
         {
-            m_Ptr = Create();
+            m_Ptr = GetInstance();
         }
 
-        private static extern IntPtr Create();
-        private static extern void Destroy(IntPtr ptr);
+        private static extern IntPtr GetInstance();
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal NativeTextInfo GenerateText(NativeTextGenerationSettings settings)

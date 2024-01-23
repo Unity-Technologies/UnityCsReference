@@ -132,8 +132,7 @@ namespace UnityEngine.Rendering
             var materialIndex = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.materialIndex, nativeData.materialIndexCount, Allocator.Invalid);
 
             var materialID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.materialID, nativeData.materialCount, Allocator.Invalid);
-            var isTransparent = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<bool>(nativeData.isTransparent, nativeData.materialCount, Allocator.Invalid);
-            var isMotionVectorsPassEnabled = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<bool>(nativeData.isMotionVectorsPassEnabled, nativeData.materialCount, Allocator.Invalid);
+            var packedMaterialData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<GPUDrivenPackedMaterialData>(nativeData.packedMaterialData, nativeData.materialCount, Allocator.Invalid);
             var materialFilterFlags = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.materialFilterFlags, nativeData.materialCount, Allocator.Invalid);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref rendererGroupID, AtomicSafetyHandle.Create());
@@ -161,8 +160,7 @@ namespace UnityEngine.Rendering
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref subMeshDesc, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref materialIndex, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref materialID, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref isTransparent, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref isMotionVectorsPassEnabled, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref packedMaterialData, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref materialFilterFlags, AtomicSafetyHandle.Create());
             GPUDrivenRendererGroupData data = new GPUDrivenRendererGroupData
             {
@@ -191,8 +189,7 @@ namespace UnityEngine.Rendering
                 subMeshDesc = subMeshDesc,
                 materialIndex = materialIndex,
                 materialID = materialID,
-                isTransparent = isTransparent,
-                isMotionVectorsPassEnabled = isMotionVectorsPassEnabled,
+                packedMaterialData = packedMaterialData,
                 materialFilterFlags = materialFilterFlags
             };
 
@@ -223,8 +220,7 @@ namespace UnityEngine.Rendering
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(subMeshDesc));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(materialIndex));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(materialID));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(isTransparent));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(isMotionVectorsPassEnabled));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(packedMaterialData));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(materialFilterFlags));
         };
 
@@ -443,8 +439,7 @@ namespace UnityEngine.Rendering
         public int materialIndexCount;
 
         public int* materialID;
-        public bool* isTransparent;
-        public bool* isMotionVectorsPassEnabled;
+        public GPUDrivenPackedMaterialData* packedMaterialData;
         public int* materialFilterFlags;
         public int materialCount;
     }
@@ -537,6 +532,29 @@ namespace UnityEngine.Rendering
         }
     }
 
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct GPUDrivenPackedMaterialData
+    {
+        uint data;
+
+        public bool isTransparent => (data & 1) != 0;
+        public bool isMotionVectorsPassEnabled => (data & 1 << 1) != 0;
+        public bool isIndirectSupported => (data & 1 << 2) != 0;
+
+        public GPUDrivenPackedMaterialData()
+        {
+            data = 0;
+        }
+
+        public GPUDrivenPackedMaterialData(bool isTransparent, bool isMotionVectorsPassEnabled, bool isIndirectSupported)
+        {
+            data = isTransparent ? 1u : 0u;
+            data |= isMotionVectorsPassEnabled ? 1u << 1 : 0u;
+            data |= isIndirectSupported ? 1u << 2 : 0u;
+        }
+    }
+
     internal enum GPUDrivenBitOpType
     {
         And,
@@ -615,8 +633,7 @@ namespace UnityEngine.Rendering
         /// Material data. Indexed by materialIndex.
         /// </summary>
         public NativeArray<int> materialID;
-        public NativeArray<bool> isTransparent;
-        public NativeArray<bool> isMotionVectorsPassEnabled;
+        public NativeArray<GPUDrivenPackedMaterialData> packedMaterialData;
         public NativeArray<int> materialFilterFlags;
     }
 

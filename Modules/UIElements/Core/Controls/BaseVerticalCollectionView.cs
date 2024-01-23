@@ -1037,7 +1037,7 @@ namespace UnityEngine.UIElements
             foreach (var recycledItem in activeItems)
             {
                 var recycledItemIndex = recycledItem.index;
-                if (recycledItem.index == index)
+                if (recycledItemIndex == index)
                 {
                     viewController.InvokeUnbindItem(recycledItem, recycledItemIndex);
                     viewController.InvokeBindItem(recycledItem, recycledItemIndex);
