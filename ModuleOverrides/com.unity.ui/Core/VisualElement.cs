@@ -225,6 +225,7 @@ namespace UnityEngine.UIElements
                 ve.viewDataKey = m_ViewDataKey.GetValueFromBag(bag, cc);
                 ve.pickingMode = m_PickingMode.GetValueFromBag(bag, cc);
                 ve.usageHints = m_UsageHints.GetValueFromBag(bag, cc);
+                ve.tooltip = m_Tooltip.GetValueFromBag(bag, cc);
 
                 int index = 0;
                 if (focusIndex.TryGetValueFromBag(bag, cc, ref index))
@@ -234,23 +235,8 @@ namespace UnityEngine.UIElements
                 }
 
                 // tabIndex and focusable overrides obsolete focusIndex.
-                if (m_TabIndex.TryGetValueFromBag(bag, cc, ref index))
-                {
-                    ve.tabIndex = index;
-                }
-
-                var focus = false;
-
-                if (focusable.TryGetValueFromBag(bag, cc, ref focus))
-                {
-                    ve.focusable = focus;
-                }
-
-                string tooltip = null;
-                if (m_Tooltip.TryGetValueFromBag(bag, cc, ref tooltip))
-                {
-                    ve.tooltip = tooltip;
-                }
+                ve.tabIndex = m_TabIndex.GetValueFromBag(bag, cc);
+                ve.focusable = focusable.GetValueFromBag(bag, cc);
 
                 // We ignore m_Class, it was processed in UIElementsViewImporter.
                 // We ignore m_ContentContainer, it was processed in UIElementsViewImporter.

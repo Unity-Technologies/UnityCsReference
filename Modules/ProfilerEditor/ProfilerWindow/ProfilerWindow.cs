@@ -680,7 +680,8 @@ namespace UnityEditor
                 module.SaveViewSettings();
             }
 
-            EditorPrefs.SetFloat(k_MainSplitViewFixedPaneSizePreferenceKey, MainSplitView.fixedPane.resolvedStyle.height);
+            if (MainSplitView.fixedPane != null)
+                EditorPrefs.SetFloat(k_MainSplitViewFixedPaneSizePreferenceKey, MainSplitView.fixedPane.resolvedStyle.height);
             SessionState.SetInt(k_SelectedModuleIndexPreferenceKey, m_SelectedModuleIndex);
         }
 

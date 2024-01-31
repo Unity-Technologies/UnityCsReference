@@ -7,7 +7,7 @@ namespace Unity.UI.Builder
     class CheckerboardBackground : VisualElement
     {
         [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<CheckerboardBackground, UxmlTraits> {}
+        protected new class UxmlFactory : UxmlFactory<CheckerboardBackground, UxmlTraits> {}
 
         static readonly CustomStyleProperty<int> k_CellSizeProperty = new CustomStyleProperty<int>("--cell-size");
         static readonly CustomStyleProperty<Color> k_OddCellColorProperty = new CustomStyleProperty<Color>("--odd-cell-color");
@@ -24,6 +24,24 @@ namespace Unity.UI.Builder
         Color m_EvenCellColor = k_DefaultEvenCellColor;
 
         Texture2D m_Texture;
+
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="CheckerboardBackground"/>.
+        /// </summary>
+        /// <remarks>
+        /// This class defines the properties of a CheckerboardBackground element that you can
+        /// use in a UXML asset.
+        /// </remarks>
+        protected new class UxmlTraits : VisualElement.UxmlTraits
+        {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            public UxmlTraits()
+            {
+                m_PickingMode.defaultValue = PickingMode.Ignore;
+            }
+        }
 
         public CheckerboardBackground()
         {

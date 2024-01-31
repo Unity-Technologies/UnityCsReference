@@ -424,7 +424,8 @@ namespace Unity.UI.Builder
         public void OnAfterDeserialize()
             => activeOpenUXMLFile.OnAfterDeserialize();
 
-        void LoadFromDisk()
+        // internal because it's used in tests
+        internal void LoadFromDisk()
         {
             var path = BuilderConstants.builderDocumentDiskJsonFileAbsolutePath;
 

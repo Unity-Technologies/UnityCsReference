@@ -21,9 +21,6 @@ namespace Unity.UI.Builder
         List<BuilderDocumentOpenUSS> m_OpenUSSFiles = new List<BuilderDocumentOpenUSS>();
 
         [SerializeField]
-        VisualTreeAsset m_VisualTreeAssetBackup;
-
-        [SerializeField]
         string m_OpenendVisualTreeAssetOldPath;
 
         [SerializeField]
@@ -50,10 +47,14 @@ namespace Unity.UI.Builder
         BuilderUXMLFileSettings m_FileSettings;
         BuilderDocument m_Document;
         VisualElement m_CurrentDocumentRootElement;
+        VisualTreeAsset m_VisualTreeAssetBackup;
 
         //
         // Getters
         //
+
+        // Used in tests
+        internal bool isBackupSet => m_VisualTreeAssetBackup != null;
 
         public BuilderUXMLFileSettings fileSettings => m_FileSettings ?? (m_FileSettings = new BuilderUXMLFileSettings(visualTreeAsset));
 
@@ -802,9 +803,14 @@ namespace Unity.UI.Builder
 
         public void OnAfterLoadFromDisk()
         {
-            // Very important we convert asset references to paths here after a restore.
             if (m_VisualTreeAsset != null)
+            {
+                // Very important we convert asset references to paths here after a restore.
                 m_VisualTreeAsset.UpdateUsingEntries();
+
+                // Make sure we have a backup after loading from disk
+                m_VisualTreeAssetBackup = m_VisualTreeAsset.DeepCopy();
+            }
         }
 
         //
@@ -822,7 +828,8 @@ namespace Unity.UI.Builder
             hasUnsavedChanges = false;
         }
 
-        void ClearBackups()
+        // internal because it's used in tests
+        internal void ClearBackups()
         {
             m_VisualTreeAssetBackup.Destroy();
             m_VisualTreeAssetBackup = null;

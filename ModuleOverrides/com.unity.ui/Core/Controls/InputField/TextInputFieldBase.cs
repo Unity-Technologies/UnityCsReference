@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
         {
             UxmlIntAttributeDescription m_MaxLength = new UxmlIntAttributeDescription { name = "max-length", obsoleteNames = new[] { "maxLength" }, defaultValue = kMaxLengthNone };
             UxmlBoolAttributeDescription m_Password = new UxmlBoolAttributeDescription { name = "password" };
-            UxmlStringAttributeDescription m_MaskCharacter = new UxmlStringAttributeDescription { name = "mask-character", obsoleteNames = new[] { "maskCharacter" }, defaultValue = kMaskCharDefault.ToString()};
+            UxmlStringAttributeDescription m_MaskCharacter = new UxmlStringAttributeDescription { name = "mask-character", obsoleteNames = new[] { "maskCharacter" }, defaultValue = kMaskCharDefault.ToString() };
             UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
             UxmlBoolAttributeDescription m_IsDelayed = new UxmlBoolAttributeDescription {name = "is-delayed"};
             UxmlBoolAttributeDescription m_HideMobileInput = new UxmlBoolAttributeDescription { name = "hide-mobile-input" };
@@ -51,10 +51,7 @@ namespace UnityEngine.UIElements
                 field.keyboardType = m_KeyboardType.GetValueFromBag(bag, cc);
                 field.autoCorrection = m_AutoCorrection.GetValueFromBag(bag, cc);
                 string maskCharacter = m_MaskCharacter.GetValueFromBag(bag, cc);
-                if (!string.IsNullOrEmpty(maskCharacter))
-                {
-                    field.maskChar = maskCharacter[0];
-                }
+                field.maskChar = (string.IsNullOrEmpty(maskCharacter)) ? kMaskCharDefault : maskCharacter[0];
             }
         }
 

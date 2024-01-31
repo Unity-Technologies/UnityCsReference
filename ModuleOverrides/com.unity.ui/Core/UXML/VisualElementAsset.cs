@@ -59,6 +59,14 @@ namespace UnityEngine.UIElements
 
         public bool hasStylesheets => m_Stylesheets != null;
 
+        [SerializeField] private bool m_SkipClone;
+
+        internal bool skipClone
+        {
+            get => m_SkipClone;
+            set => m_SkipClone = value;
+        }
+
         public VisualElementAsset(string fullTypeName)
             : base(fullTypeName)
         {

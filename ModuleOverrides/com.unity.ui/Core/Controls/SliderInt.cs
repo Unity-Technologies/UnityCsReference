@@ -15,12 +15,12 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Instantiates a <see cref="SliderInt"/> using the data read from a UXML file.
         /// </summary>
-        public new class UxmlFactory : UxmlFactory<SliderInt, UxmlTraits> {}
+        protected internal new class UxmlFactory : UxmlFactory<SliderInt, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="SliderInt"/>.
         /// </summary>
-        public new class UxmlTraits : BaseFieldTraits<int, UxmlIntAttributeDescription>
+        protected internal new class UxmlTraits : BaseSlider<int>.UxmlTraits
         {
             UxmlIntAttributeDescription m_LowValue = new UxmlIntAttributeDescription { name = "low-value" };
             UxmlIntAttributeDescription m_HighValue = new UxmlIntAttributeDescription { name = "high-value", defaultValue = kDefaultHighValue };

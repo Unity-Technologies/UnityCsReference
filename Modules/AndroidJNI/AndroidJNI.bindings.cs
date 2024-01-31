@@ -107,7 +107,7 @@ namespace UnityEngine
             var handle = GCHandle.Alloc(proxy);
             try
             {
-                return _AndroidJNIHelper.CreateJavaProxy(Permission.GetActivity().Get<AndroidJavaObject>("mUnityPlayer").GetRawObject(), GCHandle.ToIntPtr(handle), proxy);
+                return _AndroidJNIHelper.CreateJavaProxy(AndroidApp.UnityPlayerRaw, GCHandle.ToIntPtr(handle), proxy);
             }
             catch
             {

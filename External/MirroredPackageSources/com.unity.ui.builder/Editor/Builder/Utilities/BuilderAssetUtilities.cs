@@ -480,7 +480,9 @@ namespace Unity.UI.Builder
 
                 var vta = ve.GetVisualTreeAsset();
                 var vtaRoot = vta.GetRootUXMLElement();
-                vta.AddElement(vtaRoot, BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName);
+                var vea = vta.AddElement(vtaRoot, BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName);
+                // We don't want this element to be cloned.
+                vea.skipClone = true;
             }
             else if (ve.GetVisualElementAsset() != null)
             {

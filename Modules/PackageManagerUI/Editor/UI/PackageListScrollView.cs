@@ -14,7 +14,25 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private const string k_UnityPackageGroupDisplayName = "Unity Technologies";
 
-        internal new class UxmlFactory : UxmlFactory<PackageListScrollView> { }
+        protected new class UxmlFactory : UxmlFactory<PackageListScrollView, UxmlTraits> { }
+
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="PackageListScrollView"/>.
+        /// </summary>
+        /// <remarks>
+        /// This class defines the properties of a PackageListScrollView element that you can
+        /// use in a UXML asset.
+        /// </remarks>
+        protected new class UxmlTraits : ScrollView.UxmlTraits
+        {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            public UxmlTraits()
+            {
+                focusable.defaultValue = true;
+            }
+        }
 
         private Dictionary<string, PackageItem> m_PackageItemsLookup;
 

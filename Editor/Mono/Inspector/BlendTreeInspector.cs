@@ -1856,11 +1856,7 @@ namespace UnityEditor
 
         public override bool HasPreviewGUI()
         {
-            if (m_PreviewBlendTree != null)
-            {
-                return m_PreviewBlendTree.HasPreviewGUI();
-            }
-            return false;
+            return true;
         }
 
         public override void OnPreviewSettings()
@@ -2194,11 +2190,6 @@ namespace UnityEditor
             {
                 ResetStateMachine();
             }
-        }
-
-        public bool HasPreviewGUI()
-        {
-            return true;
         }
 
         public void OnPreviewSettings()

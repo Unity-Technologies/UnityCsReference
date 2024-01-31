@@ -6,7 +6,25 @@ namespace Unity.UI.Builder
     {
         BaseOverlayPainter m_Painter;
 
-        public new class UxmlFactory : UxmlFactory<OverlayPainterHelperElement> { }
+        protected new class UxmlFactory : UxmlFactory<OverlayPainterHelperElement, UxmlTraits> { }
+
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="OverlayPainterHelperElement"/>.
+        /// </summary>
+        /// <remarks>
+        /// This class defines the properties of a OverlayPainterHelperElement element that you can
+        /// use in a UXML asset.
+        /// </remarks>
+        protected new class UxmlTraits : ImmediateModeElement.UxmlTraits
+        {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            public UxmlTraits()
+            {
+                m_PickingMode.defaultValue = PickingMode.Ignore;
+            }
+        }
 
         public BaseOverlayPainter painter { set { m_Painter = value; } }
 

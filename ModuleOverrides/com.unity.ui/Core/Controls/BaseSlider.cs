@@ -29,6 +29,24 @@ namespace UnityEngine.UIElements
     public abstract class BaseSlider<TValueType> : BaseField<TValueType>, IValueField<TValueType>
         where TValueType : System.IComparable<TValueType>
     {
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseSlider"/>.
+        /// </summary>
+        /// <remarks>
+        /// This class defines the properties of a BaseSlider element that you can
+        /// use in a UXML asset.
+        /// </remarks>
+        protected internal new class UxmlTraits : BaseField<TValueType>.UxmlTraits
+        {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            public UxmlTraits()
+            {
+                m_PickingMode.defaultValue = PickingMode.Ignore;
+            }
+        }
+
         internal VisualElement dragContainer { get; private set; }
         internal VisualElement dragElement { get; private set; }
         internal VisualElement trackElement { get; private set; }

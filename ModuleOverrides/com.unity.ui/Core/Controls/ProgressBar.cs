@@ -52,8 +52,9 @@ namespace UnityEngine.UIElements
                 var bar = ve as AbstractProgressBar;
                 bar.lowValue = m_LowValue.GetValueFromBag(bag, cc);
                 bar.highValue = m_HighValue.GetValueFromBag(bag, cc);
+                var title = m_Title.GetValueFromBag(bag, cc);
+                bar.title = (string.IsNullOrEmpty(title)) ? string.Empty : title;
                 bar.value = m_Value.GetValueFromBag(bag, cc);
-                bar.title = m_Title.GetValueFromBag(bag, cc);
             }
         }
 

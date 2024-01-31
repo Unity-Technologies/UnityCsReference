@@ -96,6 +96,14 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
+            /// Constructor.
+            /// </summary>
+            public UxmlTraits()
+            {
+                focusable.defaultValue = true;
+            }
+
+            /// <summary>
             /// Initializes <see cref="BaseVerticalCollectionView"/> properties using values from the attribute bag.
             /// </summary>
             /// <param name="ve">The object to initialize.</param>
