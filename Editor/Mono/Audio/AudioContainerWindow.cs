@@ -94,6 +94,8 @@ sealed class AudioContainerWindow : EditorWindow
     Texture2D m_DiceIconOff;
     Texture2D m_DiceIconOn;
 
+    bool m_IsVisible;
+    bool m_IsSubscribedToGUICallbacksAndEvents;
     bool m_IsInitializing;
     bool m_Day0ElementsInitialized;
     bool m_ContainerElementsInitialized;
@@ -120,10 +122,6 @@ sealed class AudioContainerWindow : EditorWindow
     {
         Instance = this;
 
-        State.TargetChanged += OnTargetChanged;
-        State.TransportStateChanged += OnTransportStateChanged;
-        State.EditorPauseStateChanged += EditorPauseStateChanged;
-
         m_DiceIconOff = EditorGUIUtility.IconContent("AudioRandomContainer On Icon").image as Texture2D;
         m_DiceIconOn = EditorGUIUtility.IconContent("AudioRandomContainer Icon").image as Texture2D;
 
@@ -137,27 +135,16 @@ sealed class AudioContainerWindow : EditorWindow
     void OnDisable()
     {
         Instance = null;
-
-        UnsubscribeFromPreviewCallbacksAndEvents();
-        UnsubscribeFromVolumeCallbacksAndEvents();
-        UnsubscribeFromPitchCallbacksAndEvents();
-        UnsubscribeFromClipListCallbacksAndEvents();
-        UnsubscribeFromAutomaticTriggerCallbacksAndEvents();
-
-        EditorApplication.update -= OneTimeEditorApplicationUpdate;
-
-        State.TargetChanged -= OnTargetChanged;
-        State.TransportStateChanged -= OnTransportStateChanged;
-        State.EditorPauseStateChanged -= EditorPauseStateChanged;
-
         State.OnDestroy();
-
         m_CachedElements.Clear();
         m_AddedElements.Clear();
     }
 
     void Update()
     {
+        if (!m_IsVisible)
+            return;
+
         if (State.IsPlayingOrPaused()) { UpdateClipFieldProgressBars(); }
         else if (!m_ClipFieldProgressBarsAreCleared) { ClearClipFieldProgressBars(); }
 
@@ -173,12 +160,6 @@ sealed class AudioContainerWindow : EditorWindow
                 if (m_Meter.Value != -80.0f) { m_Meter.Value = -80.0f; }
             }
         }
-    }
-
-    void OnBecameInvisible()
-    {
-        State.Stop();
-        ClearClipFieldProgressBars();
     }
 
     void SetTitle()
@@ -222,6 +203,9 @@ sealed class AudioContainerWindow : EditorWindow
                 Assert.IsNotNull(m_Day0RootVisualElement);
             }
 
+            if (m_ContainerElementsInitialized)
+                root.Unbind();
+
             if (State.AudioContainer == null)
             {
                 if (!m_Day0ElementsInitialized)
@@ -235,14 +219,15 @@ sealed class AudioContainerWindow : EditorWindow
             }
             else
             {
-                if (m_ContainerElementsInitialized)
-                    root.Unbind();
-                else
+                if (!m_ContainerElementsInitialized)
                 {
-                    InitializeElements();
-                    SubscribeToCallbacksAndEvents();
+                    InitializeContainerElements();
                     m_ContainerElementsInitialized = true;
+                    EditorApplication.update += OneTimeEditorApplicationUpdate;
                 }
+
+                if (!m_IsSubscribedToGUICallbacksAndEvents)
+                    SubscribeToGUICallbacksAndEvents();
 
                 BindAndTrackObjectAndProperties();
 
@@ -257,6 +242,15 @@ sealed class AudioContainerWindow : EditorWindow
         }
     }
 
+    bool IsDisplayingTarget()
+    {
+        return
+            m_Day0RootVisualElement != null
+            && m_Day0RootVisualElement.style.display == DisplayStyle.None
+            && m_ContainerRootVisualElement != null
+            && m_ContainerRootVisualElement.style.display == DisplayStyle.Flex;
+    }
+
     void InitializeDay0Elements()
     {
         var createButtonLabel = UIToolkitUtilities.GetChildByName<Label>(m_Day0RootVisualElement, "CreateButtonLabel");
@@ -265,7 +259,7 @@ sealed class AudioContainerWindow : EditorWindow
         createButtonLabel.text = "Select an existing Audio Random Container asset in the project browser or create a new one using the button below.";
     }
 
-    void InitializeElements()
+    void InitializeContainerElements()
     {
         InitializePreviewElements();
         InitializeVolumeElements();
@@ -273,6 +267,26 @@ sealed class AudioContainerWindow : EditorWindow
         InitializeClipListElements();
         InitializeTriggerAndPlayModeElements();
         InitializeAutomaticTriggerElements();
+    }
+
+    void SubscribeToGUICallbacksAndEvents()
+    {
+        SubscribeToPreviewCallbacksAndEvents();
+        SubscribeToVolumeCallbacksAndEvents();
+        SubscribeToPitchCallbacksAndEvents();
+        SubscribeToClipListCallbacksAndEvents();
+        SubscribeToAutomaticTriggerCallbacksAndEvents();
+        m_IsSubscribedToGUICallbacksAndEvents = true;
+    }
+
+    void UnsubscribeFromGUICallbacksAndEvents()
+    {
+        UnsubscribeFromPreviewCallbacksAndEvents();
+        UnsubscribeFromVolumeCallbacksAndEvents();
+        UnsubscribeFromPitchCallbacksAndEvents();
+        UnsubscribeFromClipListCallbacksAndEvents();
+        UnsubscribeFromAutomaticTriggerCallbacksAndEvents();
+        m_IsSubscribedToGUICallbacksAndEvents = false;
     }
 
     void BindAndTrackObjectAndProperties()
@@ -287,23 +301,17 @@ sealed class AudioContainerWindow : EditorWindow
         BindAndTrackAutomaticTriggerProperties();
     }
 
-    void SubscribeToCallbacksAndEvents()
-    {
-        SubscribeToPreviewCallbacksAndEvents();
-        SubscribeToVolumeCallbacksAndEvents();
-        SubscribeToPitchCallbacksAndEvents();
-        SubscribeToClipListCallbacksAndEvents();
-        SubscribeToAutomaticTriggerCallbacksAndEvents();
-        EditorApplication.update += OneTimeEditorApplicationUpdate;
-    }
-
     void OnTargetChanged(object sender, EventArgs e)
     {
         SetTitle();
         CreateGUI();
 
-        if (State.AudioContainer != null)
+        if (State.AudioContainer == null)
+            m_CachedElements.Clear();
+        else
             m_CachedElements = State.AudioContainer.elements.ToList();
+
+        m_AddedElements.Clear();
     }
 
     void OnSerializedObjectChanged(SerializedObject obj)
@@ -1196,15 +1204,49 @@ sealed class AudioContainerWindow : EditorWindow
 
     #region GlobalEditorCallbackHandlers
 
+    void OnBecameVisible()
+    {
+        m_IsVisible = true;
+        State.TargetChanged += OnTargetChanged;
+        State.TransportStateChanged += OnTransportStateChanged;
+        State.EditorPauseStateChanged += EditorPauseStateChanged;
+        State.Resume();
+
+        if (!m_IsSubscribedToGUICallbacksAndEvents
+            && m_ContainerElementsInitialized
+            && IsDisplayingTarget())
+        {
+            SubscribeToGUICallbacksAndEvents();
+        }
+    }
+
+    void OnBecameInvisible()
+    {
+        m_IsVisible = false;
+        State.TargetChanged -= OnTargetChanged;
+        State.TransportStateChanged -= OnTransportStateChanged;
+        State.EditorPauseStateChanged -= EditorPauseStateChanged;
+        State.Suspend();
+
+        if (m_IsSubscribedToGUICallbacksAndEvents
+            && m_ContainerElementsInitialized
+            && IsDisplayingTarget())
+        {
+            UnsubscribeFromGUICallbacksAndEvents();
+        }
+
+        EditorApplication.update -= OneTimeEditorApplicationUpdate;
+        ClearClipFieldProgressBars();
+    }
+
     void OnWillSaveAssets(IEnumerable<string> paths)
     {
+        // If there is no target we are in day 0 state.
         if (State.AudioContainer == null)
             return;
 
-        var currentSelectionPath = AssetDatabase.GetAssetPath(State.AudioContainer);
-
         foreach (var path in paths)
-            if (path == currentSelectionPath)
+            if (path == State.TargetPath)
             {
                 SetTitle();
                 return;
@@ -1213,27 +1255,32 @@ sealed class AudioContainerWindow : EditorWindow
 
     void OnAssetsImported(IEnumerable<string> paths)
     {
-        if (State.AudioContainer == null) return;
+        // If there is no target we are in day 0 state.
+        if (State.AudioContainer == null)
+            return;
 
         foreach (var path in paths)
-            if (AssetDatabase.GetMainAssetTypeAtPath(path) == typeof(AudioRandomContainer) &&
-                AssetDatabase.GetMainAssetInstanceID(path) == State.AudioContainer.GetInstanceID())
+            if (path == State.TargetPath)
             {
                 State.SerializedObject.Update();
                 OnTargetChanged(this, EventArgs.Empty);
+                return;
             }
     }
 
     void OnAssetsDeleted(IEnumerable<string> paths)
     {
+        // The target reference will already be invalid at this point if it's been deleted.
+        if (State.AudioContainer != null)
+            return;
+
+        // ...but we still have the target path available for the check.
         foreach (var path in paths)
             if (path == State.TargetPath)
             {
                 State.Reset();
-                SetTitle();
-                CreateGUI();
-                m_CachedElements.Clear();
-                break;
+                OnTargetChanged(this, EventArgs.Empty);
+                return;
             }
     }
 

@@ -94,7 +94,7 @@ namespace UnityEditor
             {
                 get
                 {
-                    if (!(EditorWindow.focusedWindow is SceneView view))
+                    if (!(EditorWindow.focusedWindow is SceneView view) || view.sceneViewMotion == null)
                         return false;
 
                     return view.sceneViewMotion.viewportsUnderMouse && Tools.s_LockedViewTool == ViewTool.None;
@@ -105,38 +105,47 @@ namespace UnityEditor
         [ReserveModifiers(ShortcutModifiers.Shift)]
         class SceneViewViewport2D : ISceneViewContext
         {
-            public bool active => SceneViewViewport.IsActive
-                && ((SceneView.lastActiveSceneView?.in2DMode ?? false) || (SceneView.lastActiveSceneView?.isRotationLocked ?? false));
+            public bool active
+            {
+                get
+                {
+                    if (SceneView.lastActiveSceneView == null)
+                        return false;
+
+                    return SceneViewViewport.IsActive && (SceneView.lastActiveSceneView.in2DMode || SceneView.lastActiveSceneView.isRotationLocked);
+                }
+            }
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
         class SceneViewViewport3D : ISceneViewContext
         {
-            public bool active => SceneViewViewport.IsActive
-                                  && ((!SceneView.lastActiveSceneView?.in2DMode ?? false)
-                                  && (!SceneView.lastActiveSceneView?.isRotationLocked ?? false));
+            public bool active
+            {
+                get
+                {
+                    if (SceneView.lastActiveSceneView == null)
+                        return false;
+
+                    return SceneViewViewport.IsActive && !SceneView.lastActiveSceneView.in2DMode && !SceneView.lastActiveSceneView.isRotationLocked;
+                }
+            }
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
         class SceneViewViewportLockedPanTool : ISceneViewContext
         {
-            public bool active => IsActive;
-
-            public static bool IsActive
-            {
-                get => SceneViewViewport.IsActive && Tools.current == Tool.View;
-            }
+            public bool active => SceneViewViewport.IsActive && Tools.current == Tool.View;
         }
 
         [Shortcut(k_PanFocusTool, typeof(SceneViewViewport), KeyCode.Mouse2)]
         [Shortcut(k_LockedPanFocusTool, typeof(SceneViewViewportLockedPanTool), KeyCode.Mouse0)]
         static void PanFocus(ShortcutArguments args)
         {
-            var window = ((ISceneViewContext)args.context).window;
-
             // Delaying the picking to a command event is necessary because some HandleUtility methods
             // need to be called in an OnGUI.
-            window?.SendEvent(EditorGUIUtility.CommandEvent(k_PanFocusEventCommandName));
+            if (args.context is ISceneViewContext ctx && ctx.window != null)
+                ctx.window.SendEvent(EditorGUIUtility.CommandEvent(k_PanFocusEventCommandName));
         }
 
         void PanFocus(Vector2 mousePos, SceneView currentSceneView, Event evt)
@@ -165,24 +174,23 @@ namespace UnityEditor
         [ClutchShortcut(k_LockedPanTool, typeof(SceneViewViewportLockedPanTool), KeyCode.Mouse0)]
         static void TemporaryPan(ShortcutArguments args)
         {
-            var window = ((ISceneViewContext)args.context).window;
-
-            window?.sceneViewMotion.HandleSceneViewMotionTool(args, ViewTool.Pan, window);
+            if (args.context is ISceneViewContext ctx && ctx.window != null && ctx.window.sceneViewMotion != null)
+                ctx.window.sceneViewMotion.HandleSceneViewMotionTool(args, ViewTool.Pan, ctx.window);
         }
 
         [ClutchShortcut(k_TemporaryZoomTool1, typeof(SceneViewViewport), KeyCode.Mouse1, ShortcutModifiers.Alt)]
         [ClutchShortcut(k_TemporaryZoomTool2, typeof(SceneViewViewport), KeyCode.Mouse1, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
         static void TemporaryZoom(ShortcutArguments args)
         {
-            var context = args.context as ISceneViewContext;
-            context.window?.sceneViewMotion.HandleSceneViewMotionTool(args, ViewTool.Zoom, context.window);
+            if (args.context is ISceneViewContext ctx && ctx.window != null && ctx.window.sceneViewMotion != null)
+                ctx.window.sceneViewMotion.HandleSceneViewMotionTool(args, ViewTool.Zoom, ctx.window);
         }
 
         [ClutchShortcut(k_TemporaryOrbitTool, typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Alt)]
         static void TemporaryOrbit(ShortcutArguments args)
         {
-            var context = args.context as ISceneViewContext;
-            context.window?.sceneViewMotion.HandleSceneViewMotionTool(args, ViewTool.Orbit, context.window);
+            if (args.context is ISceneViewContext ctx && ctx.window != null && ctx.window.sceneViewMotion != null)
+                ctx.window.sceneViewMotion.HandleSceneViewMotionTool(args, ViewTool.Orbit, ctx.window);
         }
 
         void HandleSceneViewMotionTool(ShortcutArguments args, ViewTool viewTool, SceneView view)
@@ -197,7 +205,7 @@ namespace UnityEditor
         static void TemporaryFPS(ShortcutArguments args)
         {
             var context = args.context as ISceneViewContext;
-            if (context.window == null)
+            if (context == null || context.window == null || context.window.sceneViewMotion == null)
                 return;
 
             if (args.stage == ShortcutStage.Begin && GUIUtility.hotControl == 0)
@@ -236,7 +244,9 @@ namespace UnityEditor
         {
             Tools.viewTool = ViewTool.Pan;
             Tools.s_LockedViewTool = ViewTool.None;
-            viewToolActiveChanged?.Invoke();
+
+            if (viewToolActiveChanged != null)
+                viewToolActiveChanged.Invoke();
 
             Tools.s_ButtonDown = -1;
 
@@ -320,7 +330,9 @@ namespace UnityEditor
             if (shouldBeActive != s_ViewToolIsActive)
             {
                 s_ViewToolIsActive = shouldBeActive;
-                viewToolActiveChanged?.Invoke();
+
+                if (viewToolActiveChanged != null)
+                    viewToolActiveChanged.Invoke();
             }
 
             return s_ViewToolIsActive;
@@ -555,12 +567,12 @@ namespace UnityEditor
             view.camera.farClipPlane = clip.y;
             view.camera.transform.position = Vector3.zero;
             view.camera.transform.rotation = Quaternion.identity;
-            
+
             // do the distance calculation
             Vector3 pivotWorld = camera.transform.rotation * new Vector3(0f, 0f, view.cameraDistance);
             Vector3 pivotScreen = camera.WorldToScreenPoint(pivotWorld);
             pivotScreen += new Vector3(delta.x, delta.y, 0);
-            
+
             Vector3 worldDelta = camera.ScreenToWorldPoint(pivotScreen) - pivotWorld;
             // We're clearing z here as ScreenToWorldPoint(WorldToScreenPoint(worldPoint)) does not result in the exact same worldPoint that was inputed.
             // https://jira.unity3d.com/browse/UUM-56425

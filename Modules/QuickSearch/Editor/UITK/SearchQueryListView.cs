@@ -263,6 +263,7 @@ namespace UnityEditor.Search
             {
                 Rename();
                 evt.StopImmediatePropagation();
+                focusController.IgnoreEvent(evt);
             }
         }
     }

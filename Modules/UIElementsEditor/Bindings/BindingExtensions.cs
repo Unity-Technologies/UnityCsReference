@@ -2410,11 +2410,8 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
-            if (boundProperty.hasMultipleDifferentValues)
-                lastFieldValueIndex = default;
-
-            if (lastFieldValueIndex >= 0 && lastFieldValueIndex < displayIndexToEnumIndex.Count
-                && boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])
+            var validIndex = lastFieldValueIndex >= 0 && lastFieldValueIndex < displayIndexToEnumIndex.Count;
+            if (validIndex && (boundProperty.hasMultipleDifferentValues || boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex]))
             {
                 boundProperty.enumValueIndex = displayIndexToEnumIndex[lastFieldValueIndex];
                 boundProperty.m_SerializedObject.ApplyModifiedProperties();
