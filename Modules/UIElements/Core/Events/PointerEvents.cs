@@ -1078,10 +1078,13 @@ namespace UnityEngine.UIElements
             {
                 modifiers |= EventModifiers.Alt;
             }
-            if (pointerEvent.eventModifiers.isFunctionKeyPressed)
+            if (pointerEvent.eventModifiers.isMetaPressed)
             {
-                modifiers |= EventModifiers.FunctionKey;
+                modifiers |= EventModifiers.Command;
             }
+
+            // As stated in documentation, e.modifiers indicate whether (Alt, Ctrl, Shift, Windows/Cmd) are pressed.
+            // Also, Editor-side IMGUI Events of type MouseUp/Down/Move don't seem to set the other modifiers either.
             e.modifiers = modifiers;
 
             ((IPointerEventInternal)e).triggeredByOS = true;

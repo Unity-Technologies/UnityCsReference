@@ -1239,9 +1239,11 @@ namespace UnityEditor
                     EditorWindow.focusedWindow.maximized = maximize;
                     InternalEditorUtility.RepaintAllViews();
                 }
+                return EditorWindow.focusedWindow.maximized;
             }
 
-            return EditorWindow.focusedWindow.maximized;
+            // Return false in case there is no current focused window
+            return false;
         }
     }
 

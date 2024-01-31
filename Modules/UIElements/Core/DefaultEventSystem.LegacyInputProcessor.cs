@@ -20,6 +20,7 @@ namespace UnityEngine.UIElements
             private bool m_SendingTouchEvents;
             private bool m_SendingPenEvent;
             private EventModifiers m_CurrentModifiers;
+            private EventModifiers m_CurrentPointerModifiers => m_CurrentModifiers & (EventModifiers.Control | EventModifiers.Shift | EventModifiers.Alt | EventModifiers.Command);
 
             private int m_LastMousePressButton = -1;
             private float m_NextMousePressTime = 0f;
@@ -132,7 +133,7 @@ namespace UnityEngine.UIElements
 
                         m_EventSystem.SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
                             (panelPosition, _, t) => WheelEvent.GetPooled(t.scrollDelta, panelPosition, t.modifiers),
-                            (modifiers: m_CurrentModifiers, scrollDelta));
+                            (modifiers: m_CurrentPointerModifiers, scrollDelta));
                     }
                     else if (!m_SendingTouchEvents && !m_SendingPenEvent && m_Event.pointerType != UnityEngine.PointerType.Mouse ||
                              m_Event.type == EventType.MouseEnterWindow || m_Event.type == EventType.MouseLeaveWindow)
@@ -178,7 +179,7 @@ namespace UnityEngine.UIElements
                         m_EventSystem.SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
                             (panelPosition, panelDelta, t) => PointerMoveEvent.GetPooled(EventType.MouseMove,
                                 panelPosition, panelDelta, -1, 0, t.modifiers, t.targetDisplay ?? 0),
-                            (modifiers:m_CurrentModifiers, targetDisplay));
+                            (modifiers: m_CurrentPointerModifiers, targetDisplay));
                     }
                 }
 
@@ -200,7 +201,7 @@ namespace UnityEngine.UIElements
                         m_EventSystem.SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
                             (panelPosition, panelDelta, t) => PointerEventHelper.GetPooled(EventType.MouseDown,
                                 panelPosition, panelDelta, t.button, t.clickCount, t.modifiers, t.targetDisplay ?? 0),
-                            (button, clickCount, modifiers: m_CurrentModifiers, targetDisplay), deselectIfNoTarget:true);
+                            (button, clickCount, modifiers: m_CurrentPointerModifiers, targetDisplay), deselectIfNoTarget:true);
                     }
 
                     if (input.GetMouseButtonUp(button))
@@ -210,7 +211,7 @@ namespace UnityEngine.UIElements
                         m_EventSystem.SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
                             (panelPosition, panelDelta, t) => PointerEventHelper.GetPooled(EventType.MouseUp,
                                 panelPosition, panelDelta, t.button, t.clickCount, t.modifiers, t.targetDisplay ?? 0),
-                            (button, clickCount, modifiers: m_CurrentModifiers, targetDisplay));
+                            (button, clickCount, modifiers: m_CurrentPointerModifiers, targetDisplay));
                     }
                 }
             }
@@ -284,7 +285,6 @@ namespace UnityEngine.UIElements
                 input.ClearLastPenContactEvent();
                 return true;
             }
-
 
             private Vector2 GetRawMoveVector()
             {
