@@ -38,15 +38,8 @@ namespace UnityEngine.UIElements
             {
                 base.Init(ve, bag, cc);
                 string propPath = m_PropertyPath.GetValueFromBag(bag, cc);
-
-                if (!string.IsNullOrEmpty(propPath))
-                {
-                    var field = ve as IBindable;
-                    if (field != null)
-                    {
-                        field.bindingPath = propPath;
-                    }
-                }
+                if (ve is IBindable field)
+                    field.bindingPath = (string.IsNullOrEmpty(propPath)) ? string.Empty : propPath;
             }
         }
 

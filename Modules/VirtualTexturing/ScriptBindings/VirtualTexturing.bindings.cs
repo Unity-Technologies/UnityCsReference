@@ -23,8 +23,11 @@ namespace UnityEngine.Rendering
 
             [NativeThrows] extern public static void Update();
 
-            [NativeThrows] internal static void SetDebugFlag(Guid guid, bool enabled) { SetDebugFlag(guid.ToByteArray(), enabled); }
-            [NativeThrows] extern private static void SetDebugFlag(byte[] guid, bool enabled);
+            [NativeThrows] internal static void SetDebugFlag(Guid guid, bool enabled) { SetDebugFlagInteger(guid.ToByteArray(), enabled ? 1 : 0); }
+            [NativeThrows] internal static void SetDebugFlagInteger(Guid guid, long value) { SetDebugFlagInteger(guid.ToByteArray(), value); }
+            [NativeThrows] internal static void SetDebugFlagDouble(Guid guid, double value) { SetDebugFlagDouble(guid.ToByteArray(), value); }
+            [NativeThrows] extern private static void SetDebugFlagInteger(byte[] guid, long value);
+            [NativeThrows] extern private static void SetDebugFlagDouble(byte[] guid, double value);
 
             public const int AllMips = int.MaxValue;
         }
@@ -206,6 +209,9 @@ namespace UnityEngine.Rendering
         [Obsolete("Procedural Virtual Texturing is experimental, not ready for production use and Unity does not currently support it. The feature might be changed or removed in the future.", false)]
         public static class Procedural
         {
+            [NativeThrows] public static void SetDebugFlagInteger(Guid guid, long value) { System.SetDebugFlagInteger(guid, value); }
+            [NativeThrows] public static void SetDebugFlagDouble(Guid guid, double value) { System.SetDebugFlagDouble(guid, value); }
+
             // Set the size of the CPU cache(s). All PVT Stacks must have been freed before calling this.
             [NativeThrows] extern public static void SetCPUCacheSize(int sizeInMegabytes);
             [NativeThrows] extern public static int GetCPUCacheSize();
@@ -213,6 +219,13 @@ namespace UnityEngine.Rendering
             // Apply settings to the streaming GPU caches. All PVT Stacks must have been freed before calling this.
             [NativeThrows] extern public static void SetGPUCacheSettings(GPUCacheSetting[] cacheSettings);
             [NativeThrows] extern public static GPUCacheSetting[] GetGPUCacheSettings();
+
+            // Set GPU cache upload staging resources area size. All PVT Stacks must have been freed before calling this.
+            // Default is 128 tiles; internally 3x number of that is created to avoid stalls due to frame latency.
+            // If you expect to upload much less than 128 tiles per frame, or your tiles are large then you might want
+            // to decrease this setting. An editor/game restart is needed for the change to actually take effect.
+            [NativeThrows] extern public static void SetGPUCacheStagingAreaCapacity(uint tilesPerFrame);
+            [NativeThrows] extern public static uint GetGPUCacheStagingAreaCapacity();
 
             [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
             [StaticAccessor("VirtualTexturing::Procedural", StaticAccessorType.DoubleColon)]

@@ -4138,22 +4138,22 @@ namespace UnityEngine.TextCore.Text
                                 textInfo.linkInfo[index].linkIdFirstCharacterIndex = startIndex + m_XmlAttribute[1].valueStartIndex;
                                 textInfo.linkInfo[index].SetLinkId(m_HtmlTag, m_XmlAttribute[1].valueStartIndex, m_XmlAttribute[1].valueLength);
                             }
+                            textInfo.linkCount += 1;
                         }
                         return true;
 
                     case MarkupTag.SLASH_A:
                         if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues)
                         {
-                            if (textInfo.linkInfo.Length <= 0)
+                            if (textInfo.linkInfo.Length <= 0 || textInfo.linkCount <= 0)
                             {
                                 if (generationSettings.textSettings.displayWarnings)
                                     Debug.LogWarning($"There seems to be an issue with the formatting of the <a> tag. Possible issues include: missing or misplaced closing '>', missing or incorrect attribute, or unclosed quotes for attribute values. Please review the tag syntax.");
                             }
                             else
                             {
-                                int index = textInfo.linkCount;
+                                int index = textInfo.linkCount - 1;
                                 textInfo.linkInfo[index].linkTextLength = m_CharacterCount - textInfo.linkInfo[index].linkTextfirstCharacterIndex;
-                                textInfo.linkCount += 1;
                             }
                         }
                         return true;

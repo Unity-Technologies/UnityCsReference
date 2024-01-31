@@ -26,6 +26,20 @@ namespace UnityEditor
         SerializedProperty m_StaticEditorFlags;
         SerializedProperty m_Icon;
         string m_GOPreviousName;
+        bool m_SerializedObjectInitialized;
+
+        internal override void PostSerializedObjectCreation()
+        {
+            if (m_SerializedObjectInitialized)
+            {
+                m_Name = serializedObject.FindProperty("m_Name");
+                m_IsActive = serializedObject.FindProperty("m_IsActive");
+                m_Layer = serializedObject.FindProperty("m_Layer");
+                m_Tag = serializedObject.FindProperty("m_TagString");
+                m_StaticEditorFlags = serializedObject.FindProperty("m_StaticEditorFlags");
+                m_Icon = serializedObject.FindProperty("m_Icon");
+            }
+        }
 
         static class Styles
         {
@@ -233,6 +247,7 @@ namespace UnityEditor
             m_Tag = serializedObject.FindProperty("m_TagString");
             m_StaticEditorFlags = serializedObject.FindProperty("m_StaticEditorFlags");
             m_Icon = serializedObject.FindProperty("m_Icon");
+            m_SerializedObjectInitialized = true;
 
             SetSelectedObjectCountLabelContent();
             CalculatePrefabStatus();

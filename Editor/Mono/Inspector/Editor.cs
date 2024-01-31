@@ -578,6 +578,8 @@ namespace UnityEditor
             }
         }
 
+        internal virtual void PostSerializedObjectCreation() {}
+
         internal bool isInspectorDirty
         {
             get { return m_IsDirty != 0; }
@@ -691,6 +693,7 @@ namespace UnityEditor
 
                 AssignCachedProperties(this, m_SerializedObject.GetIterator());
                 m_EnabledProperty = m_SerializedObject.FindProperty("m_Enabled");
+                PostSerializedObjectCreation();
             }
             catch (ArgumentException e)
             {

@@ -95,6 +95,8 @@ namespace UnityEngine.UIElements
             m_LastMouseClickCount = 0;
             m_LastMousePosition = Vector2.zero;
             m_MouseProcessedAtLeastOnce = false;
+            m_ConsecutiveMoveCount = 0;
+            m_IsMoveFromKeyboard = false;
         }
 
         public enum UpdateMode
@@ -275,7 +277,7 @@ namespace UnityEngine.UIElements
             {
                 SendFocusBasedEvent(
                     self => NavigationMoveEvent.GetPooled(self.GetRawMoveVector(),
-                        self.input.anyKey ? NavigationDeviceType.Keyboard : NavigationDeviceType.NonKeyboard,
+                        self.m_IsMoveFromKeyboard ? NavigationDeviceType.Keyboard : NavigationDeviceType.NonKeyboard,
                         self.m_CurrentModifiers), this);
             }
 
@@ -543,6 +545,7 @@ namespace UnityEngine.UIElements
         private int m_ConsecutiveMoveCount;
         private Vector2 m_LastMoveVector;
         private float m_PrevActionTime;
+        private bool m_IsMoveFromKeyboard;
 
         private bool ShouldSendMoveFromInput()
         {
@@ -552,6 +555,7 @@ namespace UnityEngine.UIElements
             if (Mathf.Approximately(movement.x, 0f) && Mathf.Approximately(movement.y, 0f))
             {
                 m_ConsecutiveMoveCount = 0;
+                m_IsMoveFromKeyboard = false;
                 return false;
             }
 
@@ -582,10 +586,12 @@ namespace UnityEngine.UIElements
                 m_ConsecutiveMoveCount++;
                 m_PrevActionTime = time;
                 m_LastMoveVector = movement;
+                m_IsMoveFromKeyboard |= input.anyKey;
             }
             else
             {
                 m_ConsecutiveMoveCount = 0;
+                m_IsMoveFromKeyboard = false;
             }
 
             return moveDirection != NavigationMoveEvent.Direction.None;

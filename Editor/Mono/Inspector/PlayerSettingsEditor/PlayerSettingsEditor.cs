@@ -2843,9 +2843,11 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_ForceIOSSpeakersWhenRecording, SettingsContent.forceIOSSpeakersWhenRecording);
                     }
                     EditorGUILayout.PropertyField(m_UIRequiresPersistentWiFi, SettingsContent.UIRequiresPersistentWiFi);
-                    EditorGUILayout.PropertyField(m_IOSURLSchemes, SettingsContent.iOSURLSchemes, true);
                 }
             }
+
+            if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS || platform.namedBuildTarget == NamedBuildTarget.VisionOS)
+                EditorGUILayout.PropertyField(m_IOSURLSchemes, SettingsContent.iOSURLSchemes, true);
 
             if (settingsExtension != null)
                 settingsExtension.ConfigurationSectionGUI();

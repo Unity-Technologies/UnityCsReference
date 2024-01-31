@@ -22,6 +22,14 @@ namespace Unity.UI.Builder
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            public UxmlTraits()
+            {
+                focusable.defaultValue = true;
+            }
+
             UxmlStringAttributeDescription m_Title = new UxmlStringAttributeDescription { name = "title" };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription

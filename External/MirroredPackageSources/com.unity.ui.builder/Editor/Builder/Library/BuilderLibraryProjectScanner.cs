@@ -46,6 +46,12 @@ namespace Unity.UI.Builder
             }
         }
         static readonly List<string> s_NameSpacesToAvoid = new List<string> { "Unity", "UnityEngine", "UnityEditor" };
+        
+        private static readonly HashSet<string> s_PermittedPackagesSet = new HashSet<string>()
+        {
+            "com.unity.dt.app-ui",
+        };
+        
         readonly SearchFilter m_SearchFilter;
 
         public BuilderLibraryProjectScanner()
@@ -57,6 +63,14 @@ namespace Unity.UI.Builder
             };
         }
 
+        static bool AllowPackageType(Type type)
+        {
+            var packageInfo = PackageInfo.FindForAssembly(type.Assembly);
+            return
+                null != packageInfo &&
+                s_PermittedPackagesSet.Contains(packageInfo.name);
+        }
+        
         bool ProcessFactory(IUxmlFactory factory, FactoryProcessingHelper processingData)
         {
             if (!string.IsNullOrEmpty(factory.substituteForTypeName))
@@ -128,7 +142,10 @@ namespace Unity.UI.Builder
 
                 // Avoid adding UI Builder's own types, even in internal mode.
                 if (split.Length >= 3 && split[0] == "Unity" && split[1] == "UI" && split[2] == "Builder")
-                    continue;
+                {
+                    if (!AllowPackageType(known.uxmlType))
+                        continue;
+                }
 
                 var asset = new VisualElementAsset(known.uxmlQualifiedName);
                 var slots = new Dictionary<string, VisualElement>();

@@ -12,7 +12,7 @@ namespace UnityEditor.UIElements
 {
     internal class MinMaxGradientField : BaseField<ParticleSystem.MinMaxGradient>
     {
-        public new class UxmlFactory : UxmlFactory<MinMaxGradientField> { }
+        protected new class UxmlFactory : UxmlFactory<MinMaxGradientField, UxmlTraits> { }
 
         public new static readonly string ussClassName = "unity-min-max-gradient-field";
         public static readonly string visualInputUssClass = ussClassName + "__visual-input";
@@ -21,6 +21,15 @@ namespace UnityEditor.UIElements
         public static readonly string gradientContainerUssClass = ussClassName + "__gradient-container";
         public static readonly string colorFieldUssClass = ussClassName + "__color-field";
         public static readonly string multipleValuesLabelUssClass = ussClassName + "__multiple-values-label";
+
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="MinMaxGradientField"/>.
+        /// </summary>
+        /// <remarks>
+        /// This class defines the properties of a MinMaxGradientField element that you can
+        /// use in a UXML asset.
+        /// </remarks>
+        protected new class UxmlTraits : BaseField<ParticleSystem.MinMaxGradient>.UxmlTraits {}
 
         public readonly string[] stringModes = new[]
         {

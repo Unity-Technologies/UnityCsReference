@@ -253,48 +253,48 @@ namespace UnityEditor
 
         private void ShowMaterialError()
         {
-            if (IsMaterialTextureAtlasConflict())
-                ShowError("Material has CanUseSpriteAtlas=False tag. Sprite texture has atlasHint set. Rendering artifacts possible.");
+            bool materialHasMainTex = DoesMaterialHaveSpriteTexture("_MainTex");
+            bool materialHasBaseMap = DoesMaterialHaveSpriteTexture("_BaseMap");
 
-            bool isTextureTiled;
-            if (!DoesMaterialHaveSpriteTexture(out isTextureTiled))
-                ShowError("Material does not have a _MainTex texture property. It is required for SpriteRenderer.");
+            if (!materialHasMainTex && !materialHasBaseMap)
+            {
+                ShowWarning("Material does not have a _MainTex or _BaseMap texture property. Having one of them is required for SpriteRenderer.");
+            }
             else
             {
-                if (isTextureTiled)
-                    ShowError("Material texture property _MainTex has offset/scale set. It is incompatible with SpriteRenderer.");
+                if(materialHasMainTex)
+                    CheckPropertyForScaleAndOffset("_MainTex");
+                else if(materialHasBaseMap)
+                    CheckPropertyForScaleAndOffset("_BaseMap");
             }
         }
 
-        private bool IsMaterialTextureAtlasConflict()
+        private void CheckPropertyForScaleAndOffset(string propertyName)
         {
-            return false;
+            Material material = (target as SpriteRenderer).sharedMaterial;
+            if (material != null)
+            {
+                Vector2 offset = material.GetTextureOffset(propertyName);
+                Vector2 scale = material.GetTextureScale(propertyName);
+                if (offset.x != 0 || offset.y != 0 || scale.x != 1 || scale.y != 1)
+                {
+                    ShowWarning("Material texture property " + propertyName + " has offset/scale set. It is incompatible with SpriteRenderer.");
+                }
+            }
         }
 
-        private bool DoesMaterialHaveSpriteTexture(out bool tiled)
+        private bool DoesMaterialHaveSpriteTexture(string propertyName)
         {
-            tiled = false;
-
             Material material = (target as SpriteRenderer).sharedMaterial;
             if (material == null)
                 return true;
 
-
-            bool has = material.HasProperty("_MainTex");
-            if (has)
-            {
-                Vector2 offset = material.GetTextureOffset("_MainTex");
-                Vector2 scale = material.GetTextureScale("_MainTex");
-                if (offset.x != 0 || offset.y != 0 || scale.x != 1 || scale.y != 1)
-                    tiled = true;
-            }
-
-            return material.HasProperty("_MainTex");
+            return material.HasProperty(propertyName);
         }
 
-        private static void ShowError(string error)
+        private static void ShowWarning(string message)
         {
-            var c = new GUIContent(error) {image = Styles.warningIcon};
+            var c = new GUIContent(message) {image = Styles.warningIcon};
 
             GUILayout.Space(5);
             GUILayout.BeginVertical(EditorStyles.helpBox);

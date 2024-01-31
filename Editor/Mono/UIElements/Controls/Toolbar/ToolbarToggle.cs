@@ -18,7 +18,16 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="ToolbarToggle"/>.
         /// </summary>
-        public new class UxmlTraits : Toggle.UxmlTraits {}
+        public new class UxmlTraits : Toggle.UxmlTraits
+        {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            public UxmlTraits()
+            {
+                focusable.defaultValue = false;
+            }
+        }
 
         /// <summary>
         /// USS class name of elements of this type.
