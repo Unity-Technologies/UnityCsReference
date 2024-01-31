@@ -77,7 +77,6 @@ namespace UnityEngine.TextCore.Text
             {
                 s_TextGenerator = new TextGenerator();
                 s_DefaultSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
-                UnicodeLineBreakingRules.LoadLineBreakingRules();
             }
 
             return s_TextGenerator;

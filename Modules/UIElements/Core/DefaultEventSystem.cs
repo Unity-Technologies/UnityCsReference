@@ -51,6 +51,7 @@ namespace UnityEngine.UIElements
         {
             m_LegacyInputProcessor?.Reset();
             m_InputForUIProcessor?.Reset();
+            m_FocusedPanel = null;
         }
 
         public enum UpdateMode
@@ -164,6 +165,14 @@ namespace UnityEngine.UIElements
                 UnityEngine.InputForUI.EventProvider.SetEnabled(true);
                 UnityEngine.InputForUI.EventProvider.Subscribe(inputForUIProcessor.OnEvent);
             }
+        }
+
+        // Change focused panel to reflect an element being focused by code. However
+        // - Do not modify the target of any ongoing focus-based event sequence
+        // - Do not unfocus the current focused panel if its element loses focus
+        internal void OnFocusEvent(RuntimePanel panel, FocusEvent evt)
+        {
+            focusedPanel = panel;
         }
 
         // Internal for Unit Tests

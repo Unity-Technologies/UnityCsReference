@@ -53,20 +53,6 @@ namespace Unity.UI.Builder
         }
     }
 
-    [CustomPropertyDrawer(typeof(DataSourceTypeDrawerAttribute))]
-    class BuilderDataSourceTypePropertyDrawer : UxmlTypeReferencePropertyDrawer
-    {
-        public override VisualElement CreatePropertyGUI(SerializedProperty property)
-        {
-            var field = base.CreatePropertyGUI(property);
-            var textField = field.Q<TextField>();
-            textField.AddToClassList(TextField.alignedFieldUssClassName);
-            textField.label = " ";
-            textField.isDelayed = true;
-            return field;
-        }
-    }
-
     [CustomPropertyDrawer(typeof(ConverterDrawerAttribute))]
     class BuilderConverterPropertyDrawer : PropertyDrawer
     {

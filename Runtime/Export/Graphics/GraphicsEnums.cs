@@ -1396,6 +1396,17 @@ namespace UnityEngine.Rendering
         VeryHigh = 3
     }
 
+    // Match LightUnit on C++ side
+    [MovedFrom(true, "UnityEngine.Rendering.HighDefinition", "Unity.RenderPipelines.HighDefinition.Runtime")]
+    public enum LightUnit
+    {
+        Lumen = 0,
+        Candela = 1,
+        Lux = 2,
+        Nits = 3,
+        Ev100 = 4
+    };
+
     // Match GfxDeviceRenderer enum on C++ side
     [UsedByNativeCode]
     public enum GraphicsDeviceType

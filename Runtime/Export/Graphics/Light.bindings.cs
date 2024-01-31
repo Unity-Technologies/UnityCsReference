@@ -86,7 +86,7 @@ namespace UnityEngine
         [Obsolete("warning bakedIndex has been removed please use bakingOutput.isBaked instead.", true)]
         public int bakedIndex { get { return m_BakedIndex; } set { m_BakedIndex = value; } }
 
-        // The size of the area light. Editor only.
+        // The size of the area light.
         extern public Vector2 areaSize { get; set; }
 
         // Lightmapping mode. Editor only.

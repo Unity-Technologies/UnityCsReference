@@ -849,6 +849,7 @@ namespace UnityEditor
                 { "Compute Shader", new [] { "ComputeShader" } },
                 { "Font", new [] { "Font" } },
                 { "GUI Skin", new [] { "GUISkin" } },
+                { "Graph", new [] { "GraphAsset", "VisualEffectAsset", "ScriptGraphAsset" } },
                 { "Material", new [] { "Material" } },
                 { "Mesh", new [] { "Mesh" } },
                 { "Model", new [] { "Model" } },

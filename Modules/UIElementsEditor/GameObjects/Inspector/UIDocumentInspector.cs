@@ -4,6 +4,8 @@
 
 using UnityEngine.UIElements;
 using UnityEngine;
+using System;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements.Inspector
 {
@@ -25,6 +27,11 @@ namespace UnityEditor.UIElements.Inspector
         private ObjectField m_ParentField;
         private ObjectField m_SourceAssetField;
 
+        private Foldout m_WorldSpaceDimensionsFoldout;
+        private EnumField m_WorldSpaceSizeField;
+        private VisualElement m_WorldSpaceWidthField;
+        private VisualElement m_WorldSpaceHeightField;
+
         private HelpBox m_DrivenByParentWarning;
         private HelpBox m_MissingPanelSettings;
 
@@ -44,12 +51,19 @@ namespace UnityEditor.UIElements.Inspector
 
             m_SourceAssetField = m_RootVisualElement.MandatoryQ<ObjectField>("source-asset-field");
             m_SourceAssetField.objectType = typeof(VisualTreeAsset);
+
+            m_WorldSpaceDimensionsFoldout = m_RootVisualElement.MandatoryQ<Foldout>("world-space-dimensions");
+            m_WorldSpaceSizeField = m_RootVisualElement.MandatoryQ<EnumField>("size-mode");
+            m_WorldSpaceWidthField = m_RootVisualElement.MandatoryQ<VisualElement>("width-field");
+            m_WorldSpaceHeightField = m_RootVisualElement.MandatoryQ<VisualElement>("height-field");
+            m_WorldSpaceDimensionsFoldout.style.display = DisplayStyle.None;
         }
 
         private void BindFields()
         {
             m_ParentField.RegisterCallback<ChangeEvent<Object>>(evt => UpdateValues());
             m_PanelSettingsField.RegisterCallback<ChangeEvent<Object>>(evt => UpdateValues());
+            m_WorldSpaceSizeField.RegisterCallback<ChangeEvent<Enum>>(evt => UpdateValues());
         }
 
         private void UpdateValues()
@@ -64,6 +78,13 @@ namespace UnityEditor.UIElements.Inspector
             m_MissingPanelSettings.EnableInClassList(k_StyleClassPanelMissing, displayPanelMissing);
 
             m_PanelSettingsField.SetEnabled(isNotDrivenByParent);
+
+            m_WorldSpaceDimensionsFoldout.style.display = (uiDocument.panelSettings?.renderMode == PanelRenderMode.WorldSpace) ? DisplayStyle.Flex : DisplayStyle.None;
+
+            bool isFixedSize = (uiDocument.worldSpaceSizeMode == UIDocument.WorldSpaceSizeMode.Fixed);
+            var display = isFixedSize ? DisplayStyle.Flex : DisplayStyle.None;
+            m_WorldSpaceWidthField.style.display = display;
+            m_WorldSpaceHeightField.style.display = display;
         }
 
         public override VisualElement CreateInspectorGUI()

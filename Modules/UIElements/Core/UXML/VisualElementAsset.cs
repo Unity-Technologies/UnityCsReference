@@ -72,8 +72,17 @@ namespace UnityEngine.UIElements
             set => m_SerializedData = value;
         }
 
-        public VisualElementAsset(string fullTypeName)
-            : base(fullTypeName)
+        [SerializeField] private bool m_SkipClone;
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal bool skipClone
+        {
+            get => m_SkipClone;
+            set => m_SkipClone = value;
+        }
+
+        public VisualElementAsset(string fullTypeName, UxmlNamespaceDefinition xmlNamespace = default)
+            : base(fullTypeName, xmlNamespace)
         {
         }
 

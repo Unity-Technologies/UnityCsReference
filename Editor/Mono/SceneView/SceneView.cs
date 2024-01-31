@@ -448,7 +448,8 @@ namespace UnityEditor
         internal event Action<bool> drawGizmosChanged;
         internal event Action<bool> modeChanged2D;
 
-        bool m_WasFocused = false;
+        // used by tests
+        internal bool m_WasFocused = false;
 
         static int[] s_CachedParentRenderersForOutlining, s_CachedChildRenderersForOutlining;
 
@@ -641,7 +642,8 @@ namespace UnityEditor
         internal bool usesInteractiveLightBakingData => this.debugDrawModesUseInteractiveLightBakingData && this.currentDrawModeMayUseInteractiveLightBakingData;
 
         [SerializeField]
-        AnimVector3 m_Position = new AnimVector3(kDefaultPivot);
+        // used by Tests/EditModeAndPlayModeTests/SceneView/CameraFlyModeContextTests
+        internal AnimVector3 m_Position = new AnimVector3(kDefaultPivot);
 
 #pragma warning disable 618
         [Obsolete("OnSceneFunc() has been deprecated. Use System.Action instead.")]
@@ -1321,9 +1323,9 @@ namespace UnityEditor
         internal void OnAddedAsTab()
         {
             var inPlayMode = (EditorApplication.isPlaying || EditorApplication.isPaused);
-            if (inPlayMode && m_Parent.vSyncEnabled) 
+            if (inPlayMode && m_Parent.vSyncEnabled)
                 m_Parent.EnableVSync(false);
-            
+
             //OnAddedAsTab is called after the lastActiveSceneView has been updated, so m_PreviousScene is there to keep this reference
             if (m_PreviousScene != null && s_SceneViews.Count > 0)
             {
@@ -1338,10 +1340,6 @@ namespace UnityEditor
             rootVisualElement.Add(cameraViewVisualElement);
 
             m_SceneViewMotion = new SceneViewMotion();
-
-            rootVisualElement.RegisterCallback<MouseEnterEvent>(e => m_SceneViewMotion.viewportsUnderMouse = true);
-            rootVisualElement.RegisterCallback<MouseLeaveEvent>(e => m_SceneViewMotion.viewportsUnderMouse = false);
-
             m_OrientationGizmo = overlayCanvas.overlays.FirstOrDefault(x => x is SceneOrientationGizmo) as SceneOrientationGizmo;
 
             titleContent = GetLocalizedTitleContent();
@@ -1622,7 +1620,6 @@ namespace UnityEditor
             CleanupEditorDragFunctions();
             if (m_StageHandling != null)
                 m_StageHandling.OnDisable();
-            m_SceneViewMotion.DeactivateFlyModeContext();
             ObjectFactory.componentWasAdded -= OnComponentWasAdded;
 
             base.OnDisable();
@@ -2701,7 +2698,7 @@ namespace UnityEditor
             if (m_StageHandling != null)
                 m_StageHandling.EndOnGUI();
         }
-
+        
         [Shortcut("Scene View/Show Scene View Context Menu", typeof(SceneView), KeyCode.Mouse1)]
         static void OpenActionMenu(ShortcutArguments args)
         {
@@ -3347,9 +3344,9 @@ namespace UnityEditor
         void OnBecameVisible()
         {
             var inPlayMode = (EditorApplication.isPlaying || EditorApplication.isPaused);
-            if (inPlayMode && m_Parent.vSyncEnabled) 
+            if (inPlayMode && m_Parent.vSyncEnabled)
                 m_Parent.EnableVSync(false);
-            
+
             EditorApplication.update += UpdateAnimatedMaterials;
         }
 
@@ -3962,7 +3959,6 @@ namespace UnityEditor
             HandleUtility.handleMaterial.SetColor("_GroundColor", kSceneViewDownLight * 1.5f);
             HandleUtility.handleMaterial.SetColor("_Color", kSceneViewFrontLight * 1.5f);
         }
-
 
         struct EditorActionCache
         {

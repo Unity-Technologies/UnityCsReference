@@ -318,7 +318,7 @@ namespace UnityEngine.UIElements
         public bool isElided { get; private set; }
 
         internal static readonly string k_EllipsisText = @"..."; // Some web standards seem to suggest "\u2026" (horizontal ellipsis Unicode character)
-        internal RenderedText elidedText;
+        internal string elidedText;
 
         private bool m_WasElided;
 
@@ -468,9 +468,8 @@ namespace UnityEngine.UIElements
             }
             else if (shouldElide)
             {
-                // TODO: remove string allocations from ElideText
-                elidedText = new RenderedText(ElideText(text, k_EllipsisText, contentRect.width, computedStyle.unityTextOverflowPosition));
-                isElided = shouldElide && !elidedText.Equals(text);
+                elidedText = ElideText(text, k_EllipsisText, contentRect.width, computedStyle.unityTextOverflowPosition);
+                isElided = shouldElide && !string.Equals(elidedText, text, StringComparison.Ordinal);
             }
             else
             {

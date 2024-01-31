@@ -12,21 +12,36 @@ namespace UnityEngine.Android
     [NativeConditional("PLATFORM_ANDROID")]
     internal static class AndroidApp
     {
+        private static AndroidJavaObject m_Context;
         private static AndroidJavaObject m_Activity;
+
+        public static AndroidJavaObject Context
+        {
+            get
+            {
+                AcquireContextAndActivity();
+                return m_Context;
+            }
+        }
 
         public static AndroidJavaObject Activity
         {
             get
             {
-                if (m_Activity != null)
-                    return m_Activity;
+                AcquireContextAndActivity();
+                return m_Activity; // can be null if context is not an activity
+            }
+        }
 
-                using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-                {
-                    m_Activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
-                }
+        private static void AcquireContextAndActivity()
+        {
+            if (m_Context != null)
+                return;
 
-                return m_Activity;
+            using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            {
+                m_Context = unityPlayer.GetStatic<AndroidJavaObject>("currentContext");
+                m_Activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
             }
         }
 

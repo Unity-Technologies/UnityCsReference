@@ -113,6 +113,10 @@ namespace UnityEngine.UIElements
         /// The data source of the element was changed
         /// </summary>
         DataSource = 1 << 19,
+        /// <summary>
+        /// Some property changed that potentially invalidates cached Picking results
+        /// </summary>
+        Picking = 1 << 20,
     }
 
     /// <summary>
@@ -729,7 +733,9 @@ namespace UnityEngine.UIElements
                 if (PointerDeviceState.GetPanel(pointerId, contextType) != this ||
                     PointerDeviceState.HasLocationFlag(pointerId, contextType, PointerDeviceState.LocationFlag.OutsidePanel))
                 {
-                    m_TopElementUnderPointers.SetElementUnderPointer(null, pointerId, new Vector2(float.MinValue, float.MinValue));
+                    //UUM-58503: In some code paths the mousePosition is converted to a Vector2Int, which causes undefined behavior
+                    //           when the x,y coords are float.MinValue()
+                    m_TopElementUnderPointers.SetElementUnderPointer(null, pointerId, new Vector2((float)int.MinValue, (float)int.MinValue));
                 }
                 else
                 {
@@ -785,6 +791,8 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class Panel : BaseVisualElementPanel
     {
+        internal const int k_DefaultPixelsPerUnit = 100;
+
         private VisualElement m_RootContainer;
         private VisualTreeUpdater m_VisualTreeUpdater;
         private IStylePropertyAnimationSystem m_StylePropertyAnimationSystem;
@@ -1411,7 +1419,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        float m_PixelsPerUnit;
+        float m_PixelsPerUnit = k_DefaultPixelsPerUnit;
         internal float pixelsPerUnit {
             get { return m_PixelsPerUnit; }
             set { m_PixelsPerUnit = value; }

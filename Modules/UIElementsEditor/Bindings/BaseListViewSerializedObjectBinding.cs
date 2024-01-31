@@ -40,13 +40,13 @@ namespace UnityEditor.UIElements.Bindings
 
         List<SerializedProperty> properties;
 
-        public SerializedObjectList(SerializedProperty parentProperty, bool includeArraySize)
+        public SerializedObjectList(SerializedProperty parentProperty)
         {
             ArrayProperty = parentProperty.Copy();
-            RefreshProperties(includeArraySize);
+            RefreshProperties();
         }
 
-        public void RefreshProperties(bool includeArraySize)
+        public void RefreshProperties()
         {
             var property = ArrayProperty.Copy();
             var endProperty = property.GetEndProperty();
@@ -62,10 +62,6 @@ namespace UnityEditor.UIElements.Bindings
                 if (property.propertyType == SerializedPropertyType.ArraySize)
                 {
                     ArraySize = property.Copy();
-                    if (includeArraySize)
-                    {
-                        properties.Add(ArraySize);
-                    }
                 }
                 else
                 {
@@ -161,7 +157,7 @@ namespace UnityEditor.UIElements.Bindings
 
             ArrayProperty.MoveArrayElement(srcIndex, destIndex);
             EditorGUIUtility.MoveArrayExpandedState(ArrayProperty, srcIndex, destIndex);
-            RefreshProperties(properties.Count > 0 && properties[0] == ArraySize);
+            RefreshProperties();
         }
 
         public int minArraySize => ArrayProperty.minArraySize;
@@ -224,7 +220,6 @@ namespace UnityEditor.UIElements.Bindings
 
         SerializedProperty m_ArraySize;
         int m_ListViewArraySize;
-        bool m_LastSourceIncludesArraySize;
 
         BaseListView baseListView
         {
@@ -318,13 +313,10 @@ namespace UnityEditor.UIElements.Bindings
 
                 var currentArraySize = m_ArraySize.intValue;
                 var listViewShowsMixedValue = baseListView.arraySizeField is {showMixedValue: true};
-                if (listViewShowsMixedValue ||
-                    (baseListView.arraySizeField == null || int.Parse(baseListView.arraySizeField.value) == currentArraySize) &&
-                    baseListView.sourceIncludesArraySize == m_LastSourceIncludesArraySize)
+                if (listViewShowsMixedValue || baseListView.arraySizeField == null)
                     return default;
 
-                if (currentArraySize != m_ListViewArraySize ||
-                    baseListView.sourceIncludesArraySize != m_LastSourceIncludesArraySize)
+                if (currentArraySize != m_ListViewArraySize)
                 {
                     UpdateArraySize();
                 }
@@ -375,10 +367,9 @@ namespace UnityEditor.UIElements.Bindings
 
         private void UpdateArraySize()
         {
-            m_DataList.RefreshProperties(baseListView.sourceIncludesArraySize);
+            m_DataList.RefreshProperties();
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_ArraySize.intValue;
-            m_LastSourceIncludesArraySize = baseListView.sourceIncludesArraySize;
 
             var isOverMaxMultiEditLimit = m_DataList.IsOverMaxMultiEditLimit;
             baseListView.footer?.SetEnabled(!isOverMaxMultiEditLimit);
@@ -415,10 +406,9 @@ namespace UnityEditor.UIElements.Bindings
         private void SetBinding(BaseListView targetList, SerializedObjectBindingContext context,
             SerializedProperty prop)
         {
-            m_DataList = new SerializedObjectList(prop, targetList.sourceIncludesArraySize);
+            m_DataList = new SerializedObjectList(prop);
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_DataList.ArraySize.intValue;
-            m_LastSourceIncludesArraySize = targetList.sourceIncludesArraySize;
 
             SetView(targetList);
             SetContext(context, m_ArraySize);

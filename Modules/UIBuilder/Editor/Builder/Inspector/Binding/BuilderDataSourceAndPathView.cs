@@ -27,7 +27,7 @@ namespace Unity.UI.Builder
         internal struct TestAccess
         {
             public BuilderObjectField dataSourceField;
-            public TextField dataSourceTypeField;
+            public BaseField<string> dataSourceTypeField;
             public TextField dataSourcePathField;
             public BuilderDataSourcePathCompleter dataSourcePathCompleter;
             public UIEHelpBox dataSourceWarningBox;
@@ -53,7 +53,7 @@ namespace Unity.UI.Builder
         VisualElement m_PathFieldContainer;
 
         protected BuilderObjectField m_DataSourceField;
-        protected TextField m_DataSourceTypeField;
+        protected BaseField<string> m_DataSourceTypeField;
         protected TextField m_DataSourcePathField;
         BuilderDataSourcePathCompleter m_DataSourcePathCompleter;
         UIEHelpBox m_DataSourceWarningBox;
@@ -195,7 +195,7 @@ namespace Unity.UI.Builder
                     UpdateFoldoutOverride();
                     break;
                 case k_BindingAttr_DataSourceType:
-                    m_DataSourceTypeField = target.Q<TextField>();
+                    m_DataSourceTypeField = target.Q<BaseField<string>>();
                     if (string.IsNullOrEmpty(m_DataSourceTypeField.value))
                     {
                         var type = inheritedDataSourceType;

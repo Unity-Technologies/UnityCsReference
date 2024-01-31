@@ -278,7 +278,6 @@ namespace UnityEngine.Rendering
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct ScriptableCullingParameters : IEquatable<ScriptableCullingParameters>
     {
-        int m_IsOrthographic;
         LODParameters m_LODParameters;
 
         // can't make fixed types private, because then the compiler generates different code which BindinsgGenerator does not handle yet.
@@ -355,8 +354,8 @@ namespace UnityEngine.Rendering
 
         public bool isOrthographic
         {
-            get { return Convert.ToBoolean(m_IsOrthographic); }
-            set { m_IsOrthographic = Convert.ToInt32(value); }
+            get { return m_LODParameters.isOrthographic; }
+            set { m_LODParameters.isOrthographic = value; }
         }
 
         public LODParameters lodParameters
@@ -514,8 +513,7 @@ namespace UnityEngine.Rendering
                     return false;
             }
 
-            return m_IsOrthographic == other.m_IsOrthographic
-                && m_LODParameters.Equals(other.m_LODParameters)
+            return m_LODParameters.Equals(other.m_LODParameters)
                 && m_CullingPlaneCount == other.m_CullingPlaneCount
                 && m_CullingMask == other.m_CullingMask
                 && m_SceneMask == other.m_SceneMask
@@ -547,8 +545,7 @@ namespace UnityEngine.Rendering
         {
             unchecked
             {
-                var hashCode = m_IsOrthographic;
-                hashCode = (hashCode * 397) ^ m_LODParameters.GetHashCode();
+                var hashCode = m_LODParameters.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_CullingPlaneCount;
                 hashCode = (hashCode * 397) ^ (int)m_CullingMask;
                 hashCode = (hashCode * 397) ^ m_SceneMask.GetHashCode();

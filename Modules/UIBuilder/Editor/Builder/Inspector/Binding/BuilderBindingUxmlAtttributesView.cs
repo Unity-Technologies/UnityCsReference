@@ -24,7 +24,7 @@ namespace Unity.UI.Builder
         internal new struct TestAccess
         {
             public BuilderObjectField dataSourceField;
-            public TextField dataSourceTypeField;
+            public BaseField<string> dataSourceTypeField;
             public TextField dataSourcePathField;
             public BuilderDataSourcePathCompleter dataSourcePathCompleter;
             public UIEHelpBox dataSourceWarningBox;

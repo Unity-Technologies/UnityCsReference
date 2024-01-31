@@ -6,9 +6,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class UxmlUtility
     {
         public static List<string> ParseStringListAttribute(string itemList)
@@ -92,6 +94,40 @@ namespace UnityEngine.UIElements
                 Debug.LogException(e);
             }
             return defaultType;
+        }
+
+        /// <summary>
+        /// Checks that the name conforms to the `XML Naming Rules` https://www.w3schools.com/xml/xml_elements.asp
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns>null or an error message.</returns>
+        public static string ValidateUxmlName(string name)
+        {
+            // Element names must start with a letter or underscore.
+            if (!char.IsLetter(name[0]) && name[0] != '_')
+                return "Element names must start with a letter or underscore";
+
+            // Element names cannot start with the letters xml (or XML, or Xml, etc).
+            if (name.StartsWith("xml", StringComparison.OrdinalIgnoreCase))
+                return "Element names cannot start with the letters xml (or XML, or Xml, etc)";
+
+            // Element names cannot contain spaces.
+            // Element names can contain letters, digits, hyphens, underscores, and periods.
+            // We can skip the first character since we already checked it earlier.
+            for(int i = 1; i < name.Length; ++i)
+            {
+                var c = name[i];
+                if (char.IsWhiteSpace(c) ||
+                    (!char.IsLetterOrDigit(c) &&
+                    c != '-' &&
+                    c != '_' &&
+                    c != '.'))
+                {
+                    return $"The character '{c}' is invalid. Element names can contain letters, digits, hyphens, underscores, and periods.";
+                }
+            }
+
+            return null;
         }
 
         public static string TypeToString(Type value)

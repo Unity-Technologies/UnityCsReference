@@ -13,28 +13,18 @@ namespace UnityEngine.UIElements
 {
     internal class UITKTextHandle : TextHandle
     {
-        private readonly EventCallback<PointerDownEvent> m_LinkTagOnPointerDown;
-        private readonly EventCallback<PointerUpEvent> m_LinkTagOnPointerUp;
-        private readonly EventCallback<PointerMoveEvent> m_LinkTagOnPointerMove;
-        private readonly EventCallback<PointerOutEvent> m_LinkTagOnPointerOut;
-        private readonly EventCallback<PointerUpEvent> m_ATagOnPointerUp;
-        private readonly EventCallback<PointerMoveEvent> m_ATagOnPointerMove;
-        private readonly EventCallback<PointerOverEvent> m_ATagOnPointerOver;
-        private readonly EventCallback<PointerOutEvent> m_ATagOnPointerOut;
+        private EventCallback<PointerDownEvent> m_LinkTagOnPointerDown;
+        private EventCallback<PointerUpEvent> m_LinkTagOnPointerUp;
+        private EventCallback<PointerMoveEvent> m_LinkTagOnPointerMove;
+        private EventCallback<PointerOutEvent> m_LinkTagOnPointerOut;
+        private EventCallback<PointerUpEvent> m_ATagOnPointerUp;
+        private EventCallback<PointerMoveEvent> m_ATagOnPointerMove;
+        private EventCallback<PointerOverEvent> m_ATagOnPointerOver;
+        private EventCallback<PointerOutEvent> m_ATagOnPointerOut;
 
         public UITKTextHandle(TextElement te)
         {
             m_TextElement = te;
-
-            // allocate and cache callback delegates
-            m_LinkTagOnPointerDown = LinkTagOnPointerDown;
-            m_LinkTagOnPointerUp = LinkTagOnPointerUp;
-            m_LinkTagOnPointerMove = LinkTagOnPointerMove;
-            m_LinkTagOnPointerOut = LinkTagOnPointerOut;
-            m_ATagOnPointerUp = ATagOnPointerUp;
-            m_ATagOnPointerMove = ATagOnPointerMove;
-            m_ATagOnPointerOver = ATagOnPointerOver;
-            m_ATagOnPointerOut = ATagOnPointerOut;
         }
 
         public Vector2 MeasuredSizes { get; set; }
@@ -54,6 +44,38 @@ namespace UnityEngine.UIElements
                 }
                 return s_TextLib;
             }
+        }
+
+        private bool HasAllocatedLinkCallbacks()
+        {
+            return m_LinkTagOnPointerDown != null;
+        }
+
+        private void AllocateLinkCallbacks()
+        {
+            if (HasAllocatedLinkCallbacks())
+                return;
+
+            m_LinkTagOnPointerDown = LinkTagOnPointerDown;
+            m_LinkTagOnPointerUp = LinkTagOnPointerUp;
+            m_LinkTagOnPointerMove = LinkTagOnPointerMove;
+            m_LinkTagOnPointerOut = LinkTagOnPointerOut;
+        }
+
+        private bool HasAllocatedATagCallbacks()
+        {
+            return m_ATagOnPointerUp != null;
+        }
+
+        private void AllocateATagCallbacks()
+        {
+            if (HasAllocatedATagCallbacks())
+                return;
+
+            m_ATagOnPointerUp = ATagOnPointerUp;
+            m_ATagOnPointerMove = ATagOnPointerMove;
+            m_ATagOnPointerOver = ATagOnPointerOver;
+            m_ATagOnPointerOut = ATagOnPointerOut;
         }
 
         public Vector2 ComputeTextSize(in RenderedText textToMeasure, float width, float height)
@@ -273,20 +295,23 @@ namespace UnityEngine.UIElements
 
             if (hasLinkTag)
             {
+                AllocateLinkCallbacks();
                 m_TextElement.RegisterCallback(m_LinkTagOnPointerDown, TrickleDown.TrickleDown);
                 m_TextElement.RegisterCallback(m_LinkTagOnPointerUp, TrickleDown.TrickleDown);
                 m_TextElement.RegisterCallback(m_LinkTagOnPointerMove, TrickleDown.TrickleDown);
                 m_TextElement.RegisterCallback(m_LinkTagOnPointerOut, TrickleDown.TrickleDown);
             }
-            else
+            else if (HasAllocatedLinkCallbacks())
             {
                 m_TextElement.UnregisterCallback(m_LinkTagOnPointerDown, TrickleDown.TrickleDown);
                 m_TextElement.UnregisterCallback(m_LinkTagOnPointerUp, TrickleDown.TrickleDown);
                 m_TextElement.UnregisterCallback(m_LinkTagOnPointerMove, TrickleDown.TrickleDown);
                 m_TextElement.UnregisterCallback(m_LinkTagOnPointerOut, TrickleDown.TrickleDown);
             }
+
             if (hasATag)
             {
+                AllocateATagCallbacks();
                 m_TextElement.RegisterCallback(m_ATagOnPointerUp, TrickleDown.TrickleDown);
                 // Switching the cursor to the Link cursor has been disable at runtime until OS cursor support is available at runtime.
                 if (m_TextElement.panel.contextType == ContextType.Editor)
@@ -296,7 +321,7 @@ namespace UnityEngine.UIElements
                     m_TextElement.RegisterCallback(m_ATagOnPointerOut, TrickleDown.TrickleDown);
                 }
             }
-            else
+            else if (HasAllocatedATagCallbacks())
             {
                 m_TextElement.UnregisterCallback(m_ATagOnPointerUp, TrickleDown.TrickleDown);
                 if (m_TextElement.panel.contextType == ContextType.Editor)
@@ -380,7 +405,8 @@ namespace UnityEngine.UIElements
                 return false;
             }
             var style = m_TextElement.computedStyle;
-            var renderedText = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedText;
+            var renderedText = m_TextElement.isElided && !TextLibraryCanElide() ? 
+                new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
             nativeSettings.text = renderedText.CreateString();
             nativeSettings.screenWidth = (int)(m_TextElement.contentRect.width * 64);
             nativeSettings.screenHeight = (int)(m_TextElement.contentRect.height * 64);
@@ -447,7 +473,8 @@ namespace UnityEngine.UIElements
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             tgs.screenRect = new Rect(0, 0, m_TextElement.contentRect.width, m_TextElement.contentRect.height);
             tgs.extraPadding = GetTextEffectPadding(tgs.fontAsset);
-            tgs.renderedText = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedText;
+            tgs.renderedText = m_TextElement.isElided && !TextLibraryCanElide() ? 
+                new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
             tgs.isPlaceholder = m_TextElement.showPlaceholderText;
 
             tgs.fontSize = style.fontSize.value > 0

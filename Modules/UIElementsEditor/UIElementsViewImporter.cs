@@ -17,14 +17,13 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using Object = UnityEngine.Object;
-
 using UnityEngine.UIElements;
 using StyleSheet = UnityEngine.UIElements.StyleSheet;
 
 namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
-    [ScriptedImporter(version: 16, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 17, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -40,8 +39,9 @@ namespace UnityEditor.UIElements
             catch (Exception)
             {
                 // We want to be silent here, all XML syntax errors will be reported during the actual import
-                return new string[] {};
+                return new string[] { };
             }
+
             var dependencies = new List<string>();
             UXMLImporterImpl.PopulateDependencies(assetPath, doc.Root, dependencies);
 
@@ -93,7 +93,7 @@ namespace UnityEditor.UIElements
             }
 
             public Error(ImportErrorType error, ImportErrorCode code, object context, Level level, string filePath,
-                         IXmlLineInfo xmlLineInfo)
+                IXmlLineInfo xmlLineInfo)
             {
                 this.xmlLineInfo = xmlLineInfo;
                 this.error = error;
@@ -113,16 +113,16 @@ namespace UnityEditor.UIElements
                         return "Expected the XML Root element name to be '" + k_RootNode + "', found '{0}'";
                     case ImportErrorCode.TemplateHasEmptyName:
                         return "'" + k_TemplateNode + "' declaration requires a non-empty '" + k_TemplateNameAttr +
-                            "' attribute";
+                               "' attribute";
                     case ImportErrorCode.TemplateInstanceHasEmptySource:
                         return "'" + k_TemplateInstanceNode + "' declaration requires a non-empty '" +
-                            k_TemplateInstanceSourceAttr + "' attribute";
+                               k_TemplateInstanceSourceAttr + "' attribute";
                     case ImportErrorCode.TemplateMissingPathOrSrcAttribute:
                         return "'" + k_TemplateNode + "' declaration requires a '" + k_GenericPathAttr + "' or '" + k_GenericSrcAttr +
-                            "' attribute referencing another UXML file";
+                               "' attribute referencing another UXML file";
                     case ImportErrorCode.TemplateSrcAndPathBothSpecified:
                         return "'" + k_TemplateNode + "' declaration does not accept both '" + k_GenericSrcAttr + "' and '" + k_GenericPathAttr +
-                            "' attributes";
+                               "' attributes";
                     case ImportErrorCode.DuplicateTemplateName:
                         return "Duplicate name '{0}'";
                     case ImportErrorCode.UnknownTemplate:
@@ -135,10 +135,10 @@ namespace UnityEditor.UIElements
                         return "USS in 'style' attribute is invalid: {0}";
                     case ImportErrorCode.StyleReferenceEmptyOrMissingPathOrSrcAttr:
                         return "'" + k_StyleReferenceNode + "' declaration requires a '" + k_GenericPathAttr + "' or '" + k_GenericSrcAttr +
-                            "' attribute referencing a USS file";
+                               "' attribute referencing a USS file";
                     case ImportErrorCode.StyleReferenceSrcAndPathBothSpecified:
                         return "'" + k_StyleReferenceNode + "' declaration does not accept both '" + k_GenericSrcAttr + "' and '" + k_GenericPathAttr +
-                            "' attributes";
+                               "' attributes";
                     case ImportErrorCode.SlotsAreExperimental:
                         return "Slot are an experimental feature. Syntax and semantic may change in the future.";
                     case ImportErrorCode.DuplicateSlotDefinition:
@@ -332,6 +332,7 @@ namespace UnityEditor.UIElements
                     {
                         b[i] = 0;
                     }
+
                     h.Append(b);
                 }
             }
@@ -430,7 +431,11 @@ namespace UnityEditor.UIElements
         void LoadXmlRoot(XDocument doc, VisualTreeAsset vta)
         {
             XElement elt = doc.Root;
-            if (!string.Equals(elt.Name.LocalName, k_RootNode, k_Comparison))
+
+            // Check UXML as a local name (this was kept to ensure we're not breaking any existing uxml files) or as a fully
+            // resolved type name. When the local name is not UXML, the fully resolved namespace must be UnityEngine.UIElements.
+            if (!string.Equals(elt.Name.LocalName, k_RootNode, k_Comparison) &&
+                !string.Equals(ResolveFullType(elt).fullName, "UnityEngine.UIElements.UXML", k_Comparison))
             {
                 LogError(vta,
                     ImportErrorType.Semantic,
@@ -491,6 +496,7 @@ namespace UnityEditor.UIElements
                                 child
                             );
                         }
+
                         break;
                     default:
                         LogError(vta,
@@ -606,6 +612,7 @@ namespace UnityEditor.UIElements
                     {
                         logger.LogError(ImportErrorType.Semantic, ImportErrorCode.TemplateHasCircularDependency, projectRelativePath, Error.Level.Warning, templateNode);
                     }
+
                     break;
                 default:
                     dependencies.Add(projectRelativePath);
@@ -719,6 +726,7 @@ namespace UnityEditor.UIElements
                         {
                             AddAssetDependency(assetPath, child.Attribute(assetAttribute)?.Value, dependencies);
                         }
+
                         PopulateDependencies(assetPath, child, dependencies);
                         continue;
                 }
@@ -874,6 +882,7 @@ namespace UnityEditor.UIElements
                                 // Force loading using correct attribute type to support cases like Texture2D vs Sprite,
                                 asset = AssetDatabase.LoadAssetAtPath(response.resolvedProjectRelativePath, assetType);
                             }
+
                             vta.RegisterAssetEntry(attribute.Value, assetType, asset);
                         }
                     }
@@ -892,7 +901,7 @@ namespace UnityEditor.UIElements
             ListPool<VisualElementAsset>.Release(resolvedVisualElementAssetsInTemplate);
         }
 
-        static (string elementNamespaceName, string fullName) ResolveFullType(XElement elt)
+        static (string elementNamespaceName, string fullName, UxmlNamespaceDefinition prefix) ResolveFullType(XElement elt)
         {
             var elementNamespaceName = elt.Name.NamespaceName;
 
@@ -906,24 +915,29 @@ namespace UnityEditor.UIElements
                 ? elt.Name.LocalName
                 : elementNamespaceName + "." + elt.Name.LocalName;
 
-            return (elementNamespaceName, fullName);
+            var prefix = elt.GetPrefixOfNamespace(elt.Name.Namespace);
+
+            if (string.IsNullOrEmpty(prefix))
+                return (elementNamespaceName, fullName, new UxmlNamespaceDefinition{ resolvedNamespace = elementNamespaceName });
+
+            return (elementNamespaceName, fullName, new UxmlNamespaceDefinition{ prefix = prefix, resolvedNamespace = elt.GetNamespaceOfPrefix(prefix)?.NamespaceName});
         }
 
         UxmlAsset ResolveType(XElement elt, UxmlAsset parent, VisualTreeAsset visualTreeAsset)
         {
-            var (elementNamespaceName, fullName) = ResolveFullType(elt);
+            var (elementNamespaceName, fullName, xmlns) = ResolveFullType(elt);
 
             // Is this a null element?
             if (fullName == UxmlAsset.NullNodeType)
             {
-                return new UxmlObjectAsset(UxmlAsset.NullNodeType, false);
+                return new UxmlObjectAsset(UxmlAsset.NullNodeType, false, xmlns);
             }
 
             // Is the element a UxmlObject?
             if (UxmlSerializedDataRegistry.GetDescription(fullName) is UxmlSerializedDataDescription desc &&
                 desc.isUxmlObject)
             {
-                return new UxmlObjectAsset(fullName, false);
+                return new UxmlObjectAsset(fullName, false, xmlns);
             }
 
             // Does the element contain values for a field marked with the UxmlObjectAttribute?
@@ -931,14 +945,14 @@ namespace UnityEditor.UIElements
                 UxmlSerializedDataRegistry.GetDescription(parent.fullTypeName) is UxmlSerializedDataDescription descParent &&
                 descParent.IsUxmlObjectField(fullName))
             {
-                return new UxmlObjectAsset(fullName, true);
+                return new UxmlObjectAsset(fullName, true, xmlns);
             }
 
             #pragma warning disable CS0618 // Type or member is obsolete
             // Check for "legacy" UxmlObject
             if (UxmlObjectFactoryRegistry.factories.ContainsKey(fullName))
             {
-                return new UxmlObjectAsset(fullName, false);
+                return new UxmlObjectAsset(fullName, false, xmlns);
             }
             #pragma warning restore CS0618 // Type or member is obsolete
 
@@ -966,10 +980,10 @@ namespace UnityEditor.UIElements
                     return null;
                 }
 
-                return new TemplateAsset(templateName, fullName);
+                return new TemplateAsset(templateName, fullName, xmlns);
             }
 
-            return new VisualElementAsset(fullName);
+            return new VisualElementAsset(fullName, xmlns);
         }
 
         bool EnsureValidUxmlObjectChild(XElement elt, UxmlAsset uxmlAsset, VisualTreeAsset vta)
@@ -1093,6 +1107,7 @@ namespace UnityEditor.UIElements
                                     }
                                 }
                             }
+
                             vta.RegisterAssetEntry(xattr.Value, assetType, asset);
                         }
                     }
@@ -1115,11 +1130,13 @@ namespace UnityEditor.UIElements
                             if (attrName == "contentContainer")
                             {
                             }
+
                             if (vta.contentContainerId != 0)
                             {
                                 LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateContentContainer, null, elt);
                                 continue;
                             }
+
                             vta.contentContainerId = vea.id;
                             continue;
                         case k_SlotDefinitionAttr:
@@ -1137,11 +1154,13 @@ namespace UnityEditor.UIElements
                                 LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotUsageInNonTemplate, parent, elt);
                                 continue;
                             }
+
                             if (string.IsNullOrEmpty(xattr.Value))
                             {
                                 LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotUsageHasEmptyName, null, elt);
                                 continue;
                             }
+
                             templateAsset.AddSlotUsage(xattr.Value, vea.id);
                             continue;
                         case k_StyleAttr:
@@ -1157,6 +1176,7 @@ namespace UnityEditor.UIElements
                                     xattr);
                                 continue;
                             }
+
                             if (parsed.StyleRules.Count != 1)
                             {
                                 LogWarning(
@@ -1172,7 +1192,7 @@ namespace UnityEditor.UIElements
                             // they don't have selectors and are directly referenced by index
                             // it's then applied during tree cloning
                             m_Builder.BeginRule(-1);
-                            m_CurrentLine = ((IXmlLineInfo)xattr).LineNumber;
+                            m_CurrentLine = ((IXmlLineInfo) xattr).LineNumber;
                             foreach (var prop in parsed.StyleRules[0].Declarations)
                             {
                                 m_Builder.BeginProperty(prop.Name);
@@ -1183,6 +1203,23 @@ namespace UnityEditor.UIElements
                             vea.ruleIndex = m_Builder.EndRule();
                             continue;
                     }
+                }
+
+                // To be able to re-export the xmlns back to .uxml, we need to keep the "xmlns:" part.
+                // If the xmlns is global (i.e. "xmlns=UnityEngine.UIElements"), then we save it as a
+                // normal attribute.
+                if (xattr.IsNamespaceDeclaration)
+                {
+                    // Defining a global namespace
+                    if (attrName == "xmlns")
+                    {
+                        res.AddUxmlNamespace("", xattr.Value);
+                    }
+                    else
+                    {
+                        res.AddUxmlNamespace(attrName, xattr.Value);
+                    }
+                    continue;
                 }
 
                 res.SetAttribute(xattr.Name.LocalName, xattr.Value);

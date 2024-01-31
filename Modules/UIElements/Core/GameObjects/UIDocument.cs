@@ -247,6 +247,22 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private float m_SortingOrder = k_DefaultSortingOrder;
 
+        internal enum WorldSpaceSizeMode
+        {
+            Dynamic,
+            Fixed
+        }
+
+        [SerializeField]
+        private WorldSpaceSizeMode m_WorldSpaceSizeMode = WorldSpaceSizeMode.Fixed;
+        internal WorldSpaceSizeMode worldSpaceSizeMode => m_WorldSpaceSizeMode;
+
+        [SerializeField]
+        private float m_WorldSpaceWidth = 1920;
+
+        [SerializeField]
+        private float m_WorldSpaceHeight = 1080;
+
         /// <summary>
         /// The order in which this UIDocument will show up on the hierarchy in relation to other UIDocuments either
         /// attached to the same PanelSettings, or with the same UIDocument parent.
@@ -367,11 +383,16 @@ namespace UnityEngine.UIElements
             Debug.Assert(rtp.drawsInCameras);
 
             float ppu = m_RuntimePanel == null ? 1.0f : m_RuntimePanel.pixelsPerUnit;
+            if (ppu < UIRUtility.k_Epsilon)
+                ppu = Panel.k_DefaultPixelsPerUnit;
+
             float ppuScale = 1.0f / ppu;
 
             // TODO: Compute actual aabb by accounting for 3D transforms.
-            var layout = rootVisualElement.layout;
-            renderer.localBounds = new Bounds(Vector3.zero, new Vector3(layout.width * ppuScale, layout.height * ppuScale, 0.0f));
+            var rect = rootVisualElement.boundingBox;
+            var center = rect.center;
+            center.y = -center.y;
+            renderer.localBounds = new Bounds(center * ppuScale, new Vector3(rect.width * ppuScale, rect.height * ppuScale, 0.0f));
 
             UpdateCutRenderChainFlag();
         }
@@ -624,8 +645,37 @@ namespace UnityEngine.UIElements
 
         private void SetupRootClassList()
         {
-            // If we're not a child of any other UIDocument stretch to take the full screen.
-            m_RootVisualElement?.EnableInClassList(k_RootStyleClassName, parentUI == null);
+            if (m_RootVisualElement == null)
+                return;
+
+            if (panelSettings == null || panelSettings.renderMode != PanelRenderMode.WorldSpace)
+            {
+                // If we're not a child of any other UIDocument stretch to take the full screen.
+                m_RootVisualElement.EnableInClassList(k_RootStyleClassName, parentUI == null);
+            }
+            else
+            {
+                UpdateWorldSpaceSize();
+            }
+        }
+
+        private void UpdateWorldSpaceSize()
+        {
+            if (m_RootVisualElement == null)
+                return;
+
+            if (m_WorldSpaceSizeMode == WorldSpaceSizeMode.Fixed)
+            {
+                m_RootVisualElement.style.position = Position.Absolute;
+                m_RootVisualElement.style.width = m_WorldSpaceWidth;
+                m_RootVisualElement.style.height = m_WorldSpaceHeight;
+            }
+            else
+            {
+                m_RootVisualElement.style.position = Position.Relative;
+                m_RootVisualElement.style.width = StyleKeyword.Null;
+                m_RootVisualElement.style.height = StyleKeyword.Null;
+            }
         }
 
         private void AddRootVisualElementToTree()
@@ -852,6 +902,11 @@ namespace UnityEngine.UIElements
                 }
 
                 m_OldSortingOrder = m_SortingOrder;
+            }
+
+            if (m_PanelSettings != null && m_PanelSettings.renderMode == PanelRenderMode.WorldSpace)
+            {
+                UpdateWorldSpaceSize();
             }
         }
 

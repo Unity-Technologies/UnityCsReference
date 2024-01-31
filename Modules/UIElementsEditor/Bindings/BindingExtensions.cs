@@ -162,23 +162,39 @@ namespace UnityEditor.UIElements.Bindings
 
         internal SerializedProperty BindPropertyRelative(IBindable field, SerializedProperty parentProperty)
         {
-            var unsafeMode = parentProperty?.unsafeMode ?? false;
+            SerializedProperty property = null;
+            var fieldElement = field as VisualElement;
 
-            // We switch to unsafe mode because we don't care if the parentProperty is valid or not (using
-            // [SerializeReference], you can end up with a property that doesn't exist anymore, which would throw in
-            // "safe mode")
-            if (null != parentProperty)
+            if (parentProperty != null)
+            {
+                var unsafeMode = parentProperty.unsafeMode;
+
+                // We switch to unsafe mode because we don't care if the parentProperty is valid or not (using
+                // [SerializeReference], you can end up with a property that doesn't exist anymore, which would throw in
+                // "safe mode")
                 parentProperty.unsafeMode = true;
 
-            var property = parentProperty?.FindPropertyRelative(field.bindingPath);
+                // If a PropertyField has a type which contains a child field with the same name we may
+                // mistakenly use that instead of the correct SerializedProperty.
+                // To avoid this we check if the PropertyField has already assigned a SerializedProperty
+                // to the field and use that instead. (UUM-27252)
+                if (!EditorGUI.HasVisibleChildFields(parentProperty) &&
+                    fieldElement?.GetProperty(BaseField<string>.serializedPropertyCopyName) is SerializedProperty fieldProperty)
+                {
+                    property = fieldProperty;
+                }
+                else
+                {
+                    property = parentProperty.FindPropertyRelative(field.bindingPath);
+                }
 
-            if (null != parentProperty)
                 parentProperty.unsafeMode = unsafeMode;
+            }
 
             if (property == null)
                 property = serializedObject?.FindProperty(field.bindingPath);
 
-            if (property == null || field is not VisualElement fieldElement)
+            if (property == null || fieldElement == null)
             {
                 // Object is null or property was not found, we have nothing to do here
                 return property;
@@ -2470,11 +2486,8 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
-            if (boundProperty.hasMultipleDifferentValues)
-                lastFieldValueIndex = default;
-
-            if (lastFieldValueIndex >= 0 && lastFieldValueIndex < displayIndexToEnumIndex.Count
-                && boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])
+            var validIndex = lastFieldValueIndex >= 0 && lastFieldValueIndex < displayIndexToEnumIndex.Count;
+            if (validIndex && (boundProperty.hasMultipleDifferentValues || boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex]))
             {
                 boundProperty.enumValueIndex = displayIndexToEnumIndex[lastFieldValueIndex];
                 boundProperty.m_SerializedObject.ApplyModifiedProperties();

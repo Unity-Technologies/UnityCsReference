@@ -78,6 +78,9 @@ namespace UnityEngine.TextCore.Text
                             return character;
                         }
 
+                        if (!isMainThread)
+                            return null;
+
                         // Remove character from lookup table
                         temp.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
                     }
@@ -120,6 +123,9 @@ namespace UnityEngine.TextCore.Text
                             return character;
                         }
 
+                        if (!isMainThread)
+                            return null;
+
                         temp.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
                     }
 
@@ -138,6 +144,9 @@ namespace UnityEngine.TextCore.Text
                 if (character.textAsset != null)
                     return character;
 
+                if (!isMainThread)
+                    return null;
+
                 sourceFontAsset.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
             }
 
@@ -154,6 +163,9 @@ namespace UnityEngine.TextCore.Text
             {
                 if (character.textAsset != null)
                     return character;
+
+                if (!isMainThread)
+                    return null;
 
                 sourceFontAsset.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
             }

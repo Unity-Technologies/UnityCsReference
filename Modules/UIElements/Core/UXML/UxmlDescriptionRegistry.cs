@@ -97,12 +97,17 @@ namespace UnityEngine.UIElements
 
             var cSharpName = fieldInfo.Name;
             var uxmlNames = GetUxmlNames(fieldInfo);
+            if (!uxmlNames.valid)
+            {
+                description = default;
+                return false;
+            }
 
             description = new UxmlDescription(uxmlNames.uxmlName, cSharpName, fieldInfo, uxmlNames.obsoleteNames);
             return true;
         }
 
-        internal static (string uxmlName, string[] obsoleteNames) GetUxmlNames(FieldInfo fieldInfo)
+        internal static (bool valid, string uxmlName, string[] obsoleteNames) GetUxmlNames(FieldInfo fieldInfo)
         {
             using var pooledListHandle = ListPool<string>.Get(out var obsoleteNamesList);
             using var pooledHashSetHandle = HashSetPool<string>.Get(out var obsoleteNamesSet);
@@ -133,14 +138,31 @@ namespace UnityEngine.UIElements
                     }
                 }
                 if (!string.IsNullOrWhiteSpace(uxmlAttribute.name))
-                    return (uxmlAttribute.name, GetArray(obsoleteNamesList));
+                {
+                    var nameValidationError = UxmlUtility.ValidateUxmlName(uxmlAttribute.name);
+                    if (nameValidationError != null)
+                    {
+                        Debug.LogError($"Invalid UXML name '{uxmlAttribute.name}' for attribute '{fieldInfo.Name}' in type '{fieldInfo.DeclaringType.DeclaringType}'. {nameValidationError}");
+                        return (false, null, null);
+                    }
+                    return (true, uxmlAttribute.name, GetArray(obsoleteNamesList));
+                }
             }
 
             var uxmlObjectAttribute = fieldInfo.GetCustomAttribute<UxmlObjectReferenceAttribute>();
             if (null != uxmlObjectAttribute)
             {
                 if (!string.IsNullOrWhiteSpace(uxmlObjectAttribute.name))
-                    return (uxmlObjectAttribute.name, GetArray(obsoleteNamesList));
+                {
+                    var validName = UxmlUtility.ValidateUxmlName(uxmlObjectAttribute.name);
+                    if (validName != null)
+                    {
+                        Debug.LogError($"Invalid UXML Object name '{uxmlObjectAttribute.name}' for attribute '{fieldInfo.Name}' in type '{fieldInfo.DeclaringType.DeclaringType}'. {validName}");
+                        return (false, null, null);
+                    }
+
+                    return (true, uxmlObjectAttribute.name, GetArray(obsoleteNamesList));
+                }
             }
 
             // Use the name of the field to determine the attribute name
@@ -162,7 +184,7 @@ namespace UnityEngine.UIElements
 
             var result = sb.ToString();
             GenericPool<StringBuilder>.Release(sb.Clear());
-            return (result, GetArray(obsoleteNamesList));
+            return (true, result, GetArray(obsoleteNamesList));
         }
     }
 

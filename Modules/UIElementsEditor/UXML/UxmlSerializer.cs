@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -110,7 +111,7 @@ namespace UnityEditor.UIElements
 
         public object defaultValueClone => UxmlUtility.CloneObject(defaultValue);
 
-        public override string defaultValueAsString => defaultValue?.ToString() ?? "";
+        public override string defaultValueAsString => Convert.ToString(defaultValue, CultureInfo.InvariantCulture) ?? "";
 
         public bool isUnityObject
         {
@@ -427,8 +428,8 @@ namespace UnityEditor.UIElements
                 var attribute = serializedField.GetCustomAttribute<RangeAttribute>();
                 var uxmlValueBoundsRestriction = new UxmlValueBounds
                 {
-                    max = attribute.max.ToString(),
-                    min = attribute.min.ToString()
+                    max = attribute.max.ToString(CultureInfo.InvariantCulture),
+                    min = attribute.min.ToString(CultureInfo.InvariantCulture)
                 };
 
                 restriction = uxmlValueBoundsRestriction;

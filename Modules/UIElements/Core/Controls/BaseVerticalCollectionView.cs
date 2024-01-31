@@ -361,8 +361,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal virtual bool sourceIncludesArraySize => false;
-
         /// <summary>
         /// Obsolete. Use <see cref="ListView.makeItem"/> or <see cref="TreeView.makeItem"/> instead.
         /// </summary>

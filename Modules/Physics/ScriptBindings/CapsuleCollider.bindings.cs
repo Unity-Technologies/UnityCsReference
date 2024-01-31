@@ -14,8 +14,5 @@ namespace UnityEngine
         extern public float radius { get; set; }
         extern public float height { get; set; }
         extern public int direction { get; set; }
-
-        extern internal Vector2 GetGlobalExtents();
-        extern internal Matrix4x4 CalculateTransform();
     }
 }

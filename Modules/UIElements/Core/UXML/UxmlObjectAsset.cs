@@ -10,13 +10,57 @@ namespace UnityEngine.UIElements
 {
     [Serializable]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    struct UxmlNamespaceDefinition : IEquatable<UxmlNamespaceDefinition>
+    {
+        public static UxmlNamespaceDefinition Empty { get; } = default;
+
+        public string prefix;
+        public string resolvedNamespace;
+
+        public string Export()
+        {
+            if (string.IsNullOrEmpty(prefix))
+                return $"xmlns=\"{resolvedNamespace}\"";
+            return $"xmlns:{prefix}=\"{resolvedNamespace}\"";
+        }
+
+        public static bool operator ==(UxmlNamespaceDefinition lhs, UxmlNamespaceDefinition rhs)
+        {
+            return string.Compare(lhs.prefix, rhs.prefix, StringComparison.Ordinal) == 0 &&
+                   string.Compare(lhs.resolvedNamespace, rhs.resolvedNamespace, StringComparison.Ordinal) == 0;
+        }
+
+        public static bool operator !=(UxmlNamespaceDefinition lhs, UxmlNamespaceDefinition rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        public bool Equals(UxmlNamespaceDefinition other)
+        {
+            return this == other;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is UxmlNamespaceDefinition other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(prefix, resolvedNamespace);
+        }
+    }
+
+    [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UxmlAsset : IUxmlAttributes
     {
         public const string NullNodeType = "null";
 
-        public UxmlAsset(string fullTypeName)
+        public UxmlAsset(string fullTypeName, UxmlNamespaceDefinition xmlNamespace = default)
         {
             m_FullTypeName = fullTypeName;
+            m_XmlNamespace = xmlNamespace;
         }
 
         [SerializeField]
@@ -26,6 +70,15 @@ namespace UnityEngine.UIElements
         {
             get => m_FullTypeName;
             set => m_FullTypeName = value;
+        }
+
+        [SerializeField]
+        private UxmlNamespaceDefinition m_XmlNamespace;
+
+        public UxmlNamespaceDefinition xmlNamespace
+        {
+            get => m_XmlNamespace;
+            set => m_XmlNamespace = value;
         }
 
         [SerializeField]
@@ -56,6 +109,9 @@ namespace UnityEngine.UIElements
             get => m_ParentId;
             set => m_ParentId = value;
         }
+
+        [SerializeField] private List<UxmlNamespaceDefinition> m_NamespaceDefinitions;
+        public List<UxmlNamespaceDefinition> namespaceDefinitions => m_NamespaceDefinitions ??= new ();
 
         [SerializeField]
         protected List<string> m_Properties;
@@ -105,6 +161,15 @@ namespace UnityEngine.UIElements
 
             value = null;
             return false;
+        }
+
+        public void AddUxmlNamespace(string prefix, string resolvedNamespace)
+        {
+            namespaceDefinitions.Add(new UxmlNamespaceDefinition
+            {
+                prefix = prefix,
+                resolvedNamespace = resolvedNamespace
+            });
         }
 
         public void SetAttribute(string name, string value)
@@ -170,8 +235,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public bool isField => m_IsField;
 
-        public UxmlObjectAsset(string fullTypeNameOrFieldName, bool isField)
-            : base(fullTypeNameOrFieldName)
+        public UxmlObjectAsset(string fullTypeNameOrFieldName, bool isField, UxmlNamespaceDefinition xmlNamespace = default)
+            : base(fullTypeNameOrFieldName, xmlNamespace)
         {
             m_IsField = isField;
         }

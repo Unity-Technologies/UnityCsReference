@@ -76,8 +76,7 @@ namespace UnityEditor
             }
         }
 
-        bool viewpointContextIsActive => SceneViewMotion.SceneViewViewport.IsActive
-            && hasActiveViewpoint;
+        bool viewpointContextIsActive => SceneViewMotion.SceneViewContext.ViewHasFocus && hasActiveViewpoint;
 
         bool shouldExitViewpoint => m_ActiveViewpoint != null && !m_ActiveViewpoint.TargetObject;
 

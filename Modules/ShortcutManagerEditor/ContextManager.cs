@@ -21,7 +21,7 @@ namespace UnityEditor.ShortcutManagement
         bool HasActiveContextOfType(Type type);
         bool DoContextsConflict(Type context1, Type context2);
         bool playModeContextIsActive { get; }
-        object GetContextInstanceOfType(Type type);
+        object GetContextInstanceOfType(Type type, bool filterActive);
         List<Type> GetActiveContexts();
         List<string> GetActiveTags();
         void RegisterTag(string tag);
@@ -171,25 +171,25 @@ namespace UnityEditor.ShortcutManagement
 
         public bool HasActiveContextOfType(Type type)
         {
-            return GetContextInstanceOfType(type) != null;
+            return GetContextInstanceOfType(type, true) != null;
         }
 
-        internal object GetToolContextOfType(Type type)
+        internal object GetToolContextOfType(Type type, bool filterActive = true)
         {
             foreach (var toolContext in m_ToolContexts)
             {
-                if (toolContext.active && type.IsInstanceOfType(toolContext))
+                if ((!filterActive || toolContext.active) && type.IsInstanceOfType(toolContext))
                     return toolContext;
             }
 
             return null;
         }
 
-        internal object GetPriorityContextOfType(Type type)
+        internal object GetPriorityContextOfType(Type type, bool filterActive = true)
         {
             foreach (var priorityContext in m_PriorityContexts)
             {
-                if (priorityContext.active && type.IsInstanceOfType(priorityContext))
+                if ((!filterActive || priorityContext.active) && type.IsInstanceOfType(priorityContext))
                 {
                     return priorityContext;
                 }
@@ -198,20 +198,24 @@ namespace UnityEditor.ShortcutManagement
             return null;
         }
 
-        public object GetContextInstanceOfType(Type type)
+        public object GetContextInstanceOfType(Type type, bool filterActive = true)
         {
+            if (type == null)
+                return null;
+
             if (type == globalContextType)
                 return globalContext;
+
             if (m_FocusedWindow != null && m_FocusedWindow.IsAlive && type.IsInstanceOfType(m_FocusedWindow.Target))
                 return m_FocusedWindow.Target;
 
-            object priorityContextType = GetPriorityContextOfType(type);
+            object priorityContextType = GetPriorityContextOfType(type, filterActive);
             if (priorityContextType != null)
             {
                 return priorityContextType;
             }
 
-            object toolContextType = GetToolContextOfType(type);
+            object toolContextType = GetToolContextOfType(type, filterActive);
             if (toolContextType != null)
             {
                 return toolContextType;

@@ -18,16 +18,10 @@ namespace UnityEditor.UIElements
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             var desiredType = ((UxmlTypeReferenceAttribute)attribute).baseType ?? typeof(object);
-            var fieldFactory = new BuilderUxmlTypeAttributeFieldFactory();
-
             var uxmlAttribute = fieldInfo.GetCustomAttribute<UxmlAttributeAttribute>();
             var label = uxmlAttribute != null ? BuilderNameUtilities.ConvertDashToHuman(uxmlAttribute.name) : property.localizedDisplayName;
-            var field = fieldFactory.CreateField(desiredType, label, null, null, null, null) as BindableElement;
-            field.AddToClassList(TextField.alignedFieldUssClassName);
-
-            // Move the completer so that it remains accessible after BindProperty has replaced userData.
-            field.SetProperty(typeCompleterPropertyKey, field.userData);
-
+            var field = new BuilderTypeField(label, desiredType);
+            field.AddToClassList(BuilderTypeField.alignedFieldUssClassName);
             field.BindProperty(property);
             return field;
         }

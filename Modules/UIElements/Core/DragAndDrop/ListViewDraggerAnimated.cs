@@ -102,8 +102,7 @@ namespace UnityEngine.UIElements
                 }
 
                 var expectedHeight = targetView.virtualizationController.GetExpectedItemHeight(item.index);
-                var shouldSkip = targetView.sourceIncludesArraySize && item.index == 0;
-                if (!shouldSkip && itemLayout.y <= y + expectedHeight * 0.5f)
+                if (itemLayout.y <= y + expectedHeight * 0.5f)
                 {
                     if (m_CurrentIndex == -1)
                         m_CurrentIndex = item.index;

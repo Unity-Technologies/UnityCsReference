@@ -303,7 +303,7 @@ namespace UnityEditor.Overlays
             }
         }
 
-        internal VisualElement rootVisualElement
+        public VisualElement rootVisualElement
         {
             get
             {
@@ -802,6 +802,25 @@ namespace UnityEditor.Overlays
             m_SnapOffsetDelta = data.snapOffsetDelta;
             m_SizeOverridden = data.sizeOverridden;
             m_Size = data.size;
+        }
+
+        internal void Reset(OverlayAttribute attrib)
+        {
+            if (attrib != null)
+            {
+                if (!float.IsNegativeInfinity(attrib.defaultSize.x) && !float.IsNegativeInfinity(attrib.defaultSize.y))
+                    m_DefaultSize = attrib.defaultSize;
+
+                if (!float.IsNegativeInfinity(attrib.minSize.x) && !float.IsNegativeInfinity(attrib.minSize.y))
+                    m_MinSize = attrib.minSize;
+
+                if (!float.IsNegativeInfinity(attrib.maxSize.x) && !float.IsNegativeInfinity(attrib.maxSize.y))
+                    m_MaxSize = attrib.maxSize;
+
+                m_Floating = attrib.defaultDockZone == DockZone.Floating;
+                m_Collapsed = false;
+                m_Layout = attrib.defaultLayout;
+            }
         }
     }
 }

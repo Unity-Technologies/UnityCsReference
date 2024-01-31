@@ -54,6 +54,12 @@ namespace Unity.UI.Builder
             }
         }
         static readonly List<string> s_NameSpacesToAvoid = new List<string> { "Unity", "UnityEngine", "UnityEditor" };
+
+        private static readonly HashSet<string> s_PermittedPackagesSet = new HashSet<string>()
+        {
+            "com.unity.dt.app-ui",
+        };
+
         readonly SearchFilter m_SearchFilter;
         private static IEnumerable<HierarchyProperty> m_Assets;
         private static readonly Dictionary<string, string> m_AssetIDAndPathPair = new Dictionary<string, string>();
@@ -65,6 +71,14 @@ namespace Unity.UI.Builder
                 searchArea = SearchFilter.SearchArea.AllAssets,
                 classNames = new[] { "VisualTreeAsset" }
             };
+        }
+
+        static bool AllowPackageType(Type type)
+        {
+            var packageInfo = PackageInfo.FindForAssembly(type.Assembly);
+            return
+                null != packageInfo &&
+                s_PermittedPackagesSet.Contains(packageInfo.name);
         }
 
         bool ProcessFactory(IUxmlFactory factory, FactoryProcessingHelper processingData)
@@ -108,7 +122,10 @@ namespace Unity.UI.Builder
 
                     // Avoid adding our own internal factories (like Package Manager templates).
                     if (!Unsupported.IsDeveloperMode() && hasNamespace && s_NameSpacesToAvoid.Any(n => elementType.Namespace.StartsWith(n)))
-                        continue;
+                    {
+                        if (!AllowPackageType(type))
+                            continue;
+                    }
 
                     // Avoid adding UI Builder's own types, even in internal mode.
                     if (hasNamespace && type.Namespace.StartsWith("Unity.UI.Builder"))
@@ -273,7 +290,10 @@ namespace Unity.UI.Builder
 
                 // Avoid adding our own internal factories (like Package Manager templates).
                 if (!Unsupported.IsDeveloperMode() && split.Length > 0 && s_NameSpacesToAvoid.Contains(split[0]))
-                    continue;
+                {
+                    if (!AllowPackageType(known.uxmlType))
+                        continue;
+                }
 
                 // Avoid adding UI Builder's own types, even in internal mode.
                 if (split.Length >= 3 && split[0] == "Unity" && split[1] == "UI" && split[2] == "Builder")

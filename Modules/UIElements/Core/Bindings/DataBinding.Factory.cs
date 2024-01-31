@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSource_UxmlAttributeFlags;
 
             [UxmlAttribute("data-source-type")]
-            [SerializeField, HideInInspector, DataSourceTypeDrawer(typeof(object))]
+            [SerializeField, HideInInspector, UxmlTypeReferenceAttribute(typeof(object))]
             [Tooltip(k_DataSourceTooltip)]
             string dataSourceTypeString;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceTypeString_UxmlAttributeFlags;

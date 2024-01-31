@@ -1406,7 +1406,7 @@ namespace Unity.UI.Builder
                 // We fallback on the BindableElement factory if we don't find any so
                 // we can update the modified attributes. This fixes the TemplateContainer
                 // factory not found.
-                if (!VisualElementFactoryRegistry.TryGetValue(BuilderConstants.UxmlBindableElementTypeName,
+                if (!VisualElementFactoryRegistry.TryGetValue(typeof(BindableElement).FullName,
                         out factoryList))
                 {
                     return null;
