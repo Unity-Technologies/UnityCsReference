@@ -227,7 +227,7 @@ namespace Unity.UI.Builder
                 return leftOrder.CompareTo(rightOrder);
             });
 
-            var rootElement = openUXMLFile.visualTreeAsset.GetRootUXMLElement();
+            var rootElement = openUXMLFile.visualTreeAsset.GetRootUxmlElement();
             if (rootElement != null && rootElement.stylesheets != null)
             {
                 rootElement.stylesheets.Sort((left, right) =>
@@ -266,7 +266,7 @@ namespace Unity.UI.Builder
             }
 
             if (veaParent == null)
-                veaParent = document.visualTreeAsset.GetRootUXMLElement(); // UXML Root Element
+                veaParent = document.visualTreeAsset.GetRootUxmlElement(); // UXML Root Element
 
             var vea = document.visualTreeAsset.AddElement(veaParent, ve);
 
@@ -300,7 +300,7 @@ namespace Unity.UI.Builder
                 veaParent = veParent.GetVisualElementAsset();
 
             if (veaParent == null)
-                veaParent = document.visualTreeAsset.GetRootUXMLElement(); // UXML Root Element
+                veaParent = document.visualTreeAsset.GetRootUxmlElement(); // UXML Root Element
 
             var vea = makeVisualElementAsset(document.visualTreeAsset, veaParent, ve);
             ve.SetVisualElementAsset(vea);
@@ -358,7 +358,7 @@ namespace Unity.UI.Builder
                 veaNewParent = newParent.GetVisualElementAsset();
 
             if (veaNewParent == null)
-                veaNewParent = document.visualTreeAsset.GetRootUXMLElement(); // UXML Root Element
+                veaNewParent = document.visualTreeAsset.GetRootUxmlElement(); // UXML Root Element
 
             document.visualTreeAsset.ReparentElement(veaToReparent, veaNewParent, index);
         }
@@ -491,8 +491,10 @@ namespace Unity.UI.Builder
                     document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
 
                 var vta = ve.GetVisualTreeAsset();
-                var vtaRoot = vta.GetRootUXMLElement();
-                vta.AddElement(vtaRoot, BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName);
+                var vtaRoot = vta.GetRootUxmlElement();
+                var vea = vta.AddElement(vtaRoot, BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName);
+                // We don't want this element to be cloned.
+                vea.skipClone = true;
             }
             else if (ve.GetVisualElementAsset() != null)
             {

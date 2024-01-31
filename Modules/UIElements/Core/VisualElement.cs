@@ -231,7 +231,7 @@ namespace UnityEngine.UIElements
 
             [UxmlAttribute("data-source-type")]
             [Tooltip(DataBinding.k_DataSourceTooltip)]
-            [SerializeField, HideInInspector, DataSourceTypeDrawer(typeof(object))] string dataSourceTypeString;
+            [SerializeField, HideInInspector, UxmlTypeReferenceAttribute(typeof(object))] string dataSourceTypeString;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceTypeString_UxmlAttributeFlags;
 
             [SerializeReference, HideInInspector, UxmlObjectReference("Bindings")] List<Binding.UxmlSerializedData> bindings;
@@ -1347,6 +1347,7 @@ namespace UnityEngine.UIElements
                 if (m_PickingMode == value)
                     return;
                 m_PickingMode = value;
+                IncrementVersion(VersionChangeType.Picking);
                 NotifyPropertyChanged(pickingModeProperty);
             }
         }

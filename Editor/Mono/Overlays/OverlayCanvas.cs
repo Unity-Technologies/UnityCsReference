@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Serialization;
@@ -16,7 +15,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.Overlays
 {
     [Serializable]
-    class SaveData : IEquatable<SaveData>
+    public class SaveData : IEquatable<SaveData>
     {
         // Note on the obsolete fields in this class:
         // Previously, overlays were not serialized in any form. In 2023.2, overlays are serialized via json to the
@@ -27,37 +26,44 @@ namespace UnityEditor.Overlays
         // whatever the next version happens to be), consider removing these. Overlay save data is implicitly updated
         // when closing an editor or window for all overlays known to the window.
 
-        public const int k_InvalidIndex = -1;
-        public DockPosition dockPosition = DockPosition.Bottom;
-        public string containerId = string.Empty;
-        public bool displayed;
-        public string id;
-        public int index = k_InvalidIndex;
-        public string contents;
+        const int k_InvalidIndex = -1;
 
-        [Obsolete]
-        public bool floating;
-        [Obsolete]
-        public bool collapsed;
-        [Obsolete]
-        public Vector2 snapOffset;
-        [Obsolete]
-        public Vector2 snapOffsetDelta;
-        [Obsolete]
-        public SnapCorner snapCorner;
-        [Obsolete]
-        public Layout layout = Layout.Panel;
-        [Obsolete]
-        public Vector2 size;
-        [Obsolete]
+        [SerializeField]
+        internal DockPosition dockPosition = DockPosition.Bottom;
+        [SerializeField]
+        internal string containerId = string.Empty;
+        [SerializeField]
+        internal bool displayed;
+        [SerializeField]
+        internal string id;
+        [SerializeField]
+        internal int index = k_InvalidIndex;
+        [SerializeField]
+        internal string contents;
+
+        [SerializeField, Obsolete]
+        internal bool floating;
+        [SerializeField, Obsolete]
+        internal bool collapsed;
+        [SerializeField, Obsolete]
+        internal Vector2 snapOffset;
+        [SerializeField, Obsolete]
+        internal Vector2 snapOffsetDelta;
+        [SerializeField, Obsolete]
+        internal SnapCorner snapCorner;
+        [SerializeField, Obsolete]
+        internal Layout layout = Layout.Panel;
+        [SerializeField, Obsolete]
+        internal Vector2 size;
+        [SerializeField, Obsolete]
         [FormerlySerializedAs("sizeOverriden")]
-        public bool sizeOverridden;
+        internal bool sizeOverridden;
 
         public SaveData() { }
 
 #pragma warning disable 612
 
-        public SaveData(SaveData other)
+        internal SaveData(SaveData other)
         {
             dockPosition = other.dockPosition;
             containerId = other.containerId;
@@ -77,8 +83,15 @@ namespace UnityEditor.Overlays
             sizeOverridden = other.sizeOverridden;
         }
 
-        public SaveData(Overlay overlay, int indexInContainer = k_InvalidIndex)
+        public SaveData(Overlay overlay)
+            : this(overlay, k_InvalidIndex) { }
+
+        internal SaveData(Overlay overlay, int indexInContainer)
         {
+            if (indexInContainer < 0)
+                if (overlay.container == null || !overlay.container.GetOverlayIndex(overlay, out _, out indexInContainer))
+                    indexInContainer = k_InvalidIndex;
+
             string container = overlay.container != null ? overlay.container.name : "";
             DockPosition dock = overlay.container != null
                                 && overlay.container.ContainsOverlay(overlay, OverlayContainerSection.BeforeSpacer)
@@ -304,7 +317,7 @@ namespace UnityEditor.Overlays
 
         readonly Dictionary<VisualElement, Overlay> m_OverlaysByVE = new Dictionary<VisualElement, Overlay>();
 
-        internal IEnumerable<Overlay> overlays => m_Overlays.AsReadOnly();
+        public IEnumerable<Overlay> overlays => m_Overlays.AsReadOnly();
 
         internal IEnumerable<Overlay> transientOverlays => m_TransientOverlays;
 
@@ -559,10 +572,6 @@ namespace UnityEditor.Overlays
 
         void WriteOrReplaceSaveData(Overlay overlay, int containerIndex = -1)
         {
-            if (containerIndex < 0)
-                if (overlay.container == null || !overlay.container.GetOverlayIndex(overlay, out _, out containerIndex))
-                    containerIndex = SaveData.k_InvalidIndex;
-
             var saveData = new SaveData(overlay, containerIndex);
             int existing = m_SaveData.FindIndex(x => x.id == overlay.id);
 
@@ -846,17 +855,54 @@ namespace UnityEditor.Overlays
 
                     // also apply to obsolete SaveData fields for backwards compatibility (ie, there is no
                     // SaveData.contents but we still want layout and size attribute values to be forwarded)
-                    #pragma warning disable 612
+#pragma warning disable 612
                     data.layout = attrib.defaultLayout;
                     data.floating = attrib.defaultDockZone == DockZone.Floating;
-                    #pragma warning restore 612
+#pragma warning restore 612
                 }
             }
 
             return data;
         }
 
-        void RestoreOverlay(Overlay overlay, SaveData data = null)
+        public void ResetOverlay(Overlay overlay)
+        {
+            overlay.sizeOverridden = false;
+
+            var attrib = overlay.GetType().GetCustomAttribute<OverlayAttribute>();
+            overlay.Reset(attrib);
+
+            var container = GetDockZoneContainer(attrib.defaultDockZone);
+
+            if (attrib.defaultDockPosition == DockPosition.Top)
+            {
+                var index = Mathf.Min(attrib.defaultDockIndex, container.GetSectionCount(OverlayContainerSection.BeforeSpacer));
+                overlay.DockAt(container, OverlayContainerSection.BeforeSpacer, index);
+            }
+            else if (attrib.defaultDockPosition == DockPosition.Bottom)
+            {
+                var index = Mathf.Min(attrib.defaultDockIndex, container.GetSectionCount(OverlayContainerSection.AfterSpacer));
+                overlay.DockAt(container, OverlayContainerSection.AfterSpacer, index);
+            }
+            else
+                throw new Exception("data.dockPosition is not Top or Bottom, did someone add a new one?");
+
+            if(overlay.floating)
+                overlay.Undock();
+
+            if (overlay.displayed != attrib.defaultDisplay)
+            {
+                // start from "not shown" state so that Overlay.displayedChanged is called
+                overlay.rootVisualElement.style.display = DisplayStyle.None;
+                overlay.displayed = attrib.defaultDisplay;
+            }
+            else
+                overlay.RebuildContent();
+
+            overlay.UpdateAbsolutePosition();
+        }
+
+        public void RestoreOverlay(Overlay overlay, SaveData data = null)
         {
             if(data == null)
                 data = FindSaveData(overlay);

@@ -469,7 +469,7 @@ namespace UnityEditor.ShortcutManagement
             KeyCode.Mouse6
         };
 
-        internal static readonly Dictionary<KeyCode, EventModifiers> k_KeyCodeToEventModifiers = new Dictionary<KeyCode, EventModifiers>()
+        internal static readonly Dictionary<KeyCode, EventModifiers> k_KeyCodeToEventModifiers = new()
         {
             { KeyCode.None, EventModifiers.None},
             { KeyCode.LeftAlt, EventModifiers.Alt},

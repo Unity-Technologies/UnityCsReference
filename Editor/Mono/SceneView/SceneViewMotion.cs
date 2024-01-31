@@ -28,16 +28,10 @@ namespace UnityEditor
         internal const string k_SetSceneViewMotionHotControlEventCommandName = "SetSceneViewMotionHotControlEventCommand"; // Also used in tests.
 
         bool m_Moving;
-        bool m_ViewportsUnderMouse;
-        public bool viewportsUnderMouse
-        {
-            get { return m_ViewportsUnderMouse; }
-            set { m_ViewportsUnderMouse = value; }
-        }
+        static readonly CameraFlyModeContext s_CameraFlyModeContext = new CameraFlyModeContext();
 
-        readonly CameraFlyModeContext m_CameraFlyModeContext = new CameraFlyModeContext();
-
-        AnimVector3 m_FlySpeed = new AnimVector3(Vector3.zero);
+        // used by Tests/EditModeAndPlayModeTests/SceneView/CameraFlyModeContextTests
+        internal AnimVector3 m_FlySpeed = new AnimVector3(Vector3.zero);
 
         public static event Action viewToolActiveChanged;
 
@@ -78,64 +72,37 @@ namespace UnityEditor
             ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewViewport2D());
             ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewViewport3D());
             ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewViewportLockedPanTool());
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(s_CameraFlyModeContext);
         };
 
-        interface ISceneViewContext : IShortcutToolContext
+        internal abstract class SceneViewContext : IShortcutToolContext
         {
             public SceneView window => EditorWindow.focusedWindow as SceneView;
+            public virtual bool active => ViewHasFocus;
+            public static bool ViewHasFocus => (EditorWindow.focusedWindow is SceneView view) && view.sceneViewMotion != null;
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
-        internal class SceneViewViewport : ISceneViewContext
+        internal class SceneViewViewport : SceneViewContext
         {
-            public bool active => IsActive;
-
-            public static bool IsActive
-            {
-                get
-                {
-                    if (!(EditorWindow.focusedWindow is SceneView view) || view.sceneViewMotion == null)
-                        return false;
-
-                    return view.sceneViewMotion.viewportsUnderMouse && Tools.s_LockedViewTool == ViewTool.None;
-                }
-            }
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
-        class SceneViewViewport2D : ISceneViewContext
+        class SceneViewViewport2D : SceneViewContext
         {
-            public bool active
-            {
-                get
-                {
-                    if (SceneView.lastActiveSceneView == null)
-                        return false;
-
-                    return SceneViewViewport.IsActive && (SceneView.lastActiveSceneView.in2DMode || SceneView.lastActiveSceneView.isRotationLocked);
-                }
-            }
+            public override bool active => ViewHasFocus && (window.in2DMode || window.isRotationLocked);
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
-        class SceneViewViewport3D : ISceneViewContext
+        class SceneViewViewport3D : SceneViewContext
         {
-            public bool active
-            {
-                get
-                {
-                    if (SceneView.lastActiveSceneView == null)
-                        return false;
-
-                    return SceneViewViewport.IsActive && !SceneView.lastActiveSceneView.in2DMode && !SceneView.lastActiveSceneView.isRotationLocked;
-                }
-            }
+            public override bool active => ViewHasFocus && !window.in2DMode && !window.isRotationLocked;
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
-        class SceneViewViewportLockedPanTool : ISceneViewContext
+        class SceneViewViewportLockedPanTool : SceneViewContext
         {
-            public bool active => SceneViewViewport.IsActive && Tools.current == Tool.View;
+            public override bool active => ViewHasFocus && Tools.current == Tool.View;
         }
 
         [Shortcut(k_PanFocusTool, typeof(SceneViewViewport), KeyCode.Mouse2)]
@@ -144,7 +111,7 @@ namespace UnityEditor
         {
             // Delaying the picking to a command event is necessary because some HandleUtility methods
             // need to be called in an OnGUI.
-            if (args.context is ISceneViewContext ctx && ctx.window != null)
+            if (args.context is SceneViewContext ctx && ctx.window != null)
                 ctx.window.SendEvent(EditorGUIUtility.CommandEvent(k_PanFocusEventCommandName));
         }
 
@@ -174,7 +141,7 @@ namespace UnityEditor
         [ClutchShortcut(k_LockedPanTool, typeof(SceneViewViewportLockedPanTool), KeyCode.Mouse0)]
         static void TemporaryPan(ShortcutArguments args)
         {
-            if (args.context is ISceneViewContext ctx && ctx.window != null && ctx.window.sceneViewMotion != null)
+            if (args.context is SceneViewContext ctx && ctx.window != null && ctx.window.sceneViewMotion != null)
                 ctx.window.sceneViewMotion.HandleSceneViewMotionTool(args, ViewTool.Pan, ctx.window);
         }
 
@@ -182,14 +149,14 @@ namespace UnityEditor
         [ClutchShortcut(k_TemporaryZoomTool2, typeof(SceneViewViewport), KeyCode.Mouse1, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
         static void TemporaryZoom(ShortcutArguments args)
         {
-            if (args.context is ISceneViewContext ctx && ctx.window != null && ctx.window.sceneViewMotion != null)
+            if (args.context is SceneViewContext ctx && ctx.window != null && ctx.window.sceneViewMotion != null)
                 ctx.window.sceneViewMotion.HandleSceneViewMotionTool(args, ViewTool.Zoom, ctx.window);
         }
 
         [ClutchShortcut(k_TemporaryOrbitTool, typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Alt)]
         static void TemporaryOrbit(ShortcutArguments args)
         {
-            if (args.context is ISceneViewContext ctx && ctx.window != null && ctx.window.sceneViewMotion != null)
+            if (args.context is SceneViewContext ctx && ctx.window != null && ctx.window.sceneViewMotion != null)
                 ctx.window.sceneViewMotion.HandleSceneViewMotionTool(args, ViewTool.Orbit, ctx.window);
         }
 
@@ -201,24 +168,94 @@ namespace UnityEditor
                 CompleteSceneViewMotionTool();
         }
 
-        [ClutchShortcut(k_TemporaryFpsTool, typeof(SceneViewViewport3D), KeyCode.Mouse1)]
+        [ClutchShortcut(k_TemporaryFpsTool, typeof(SceneViewViewport3D), typeof(CameraFlyModeContext), KeyCode.Mouse1)]
         static void TemporaryFPS(ShortcutArguments args)
         {
-            var context = args.context as ISceneViewContext;
-            if (context == null || context.window == null || context.window.sceneViewMotion == null)
+            if (!(args.context is SceneViewViewport3D context)
+                || context.window == null
+                || context.window.sceneViewMotion == null)
                 return;
 
             if (args.stage == ShortcutStage.Begin && GUIUtility.hotControl == 0)
             {
+                s_CameraFlyModeContext.window = context.window;
                 context.window.sceneViewMotion.StartSceneViewMotionTool(ViewTool.FPS, context.window);
-                context.window.sceneViewMotion.m_CameraFlyModeContext.active = true;
             }
             else if (args.stage == ShortcutStage.End && Tools.s_LockedViewTool == ViewTool.FPS)
             {
+                s_CameraFlyModeContext.window = null;
                 context.window.sceneViewMotion.CompleteSceneViewMotionTool();
-                context.window.sceneViewMotion.m_CameraFlyModeContext.active = false;
             }
         }
+
+        // slightly different logic for arrow keys - forward and backward axes are swapped for up and down when in
+        // orthographic or 2D mode
+        static void SetCameraMoveDirectionArrow(ShortcutArguments args, SceneInputAxis axis)
+        {
+            if (!(args.context is SceneViewContext ctx) || !(ctx.window is SceneView view))
+                return;
+
+            if (args.stage == ShortcutStage.Begin)
+                view.sceneViewMotion.StartSceneViewMotionTool(ViewTool.FPS, view);
+            else if (args.stage == ShortcutStage.End)
+                view.sceneViewMotion.CompleteSceneViewMotionTool();
+
+            if (view.in2DMode || view.orthographic)
+            {
+                axis = axis switch
+                {
+                    SceneInputAxis.Forward => SceneInputAxis.Up,
+                    SceneInputAxis.Backward => SceneInputAxis.Down,
+                    _ => axis
+                };
+            }
+
+            SceneNavigationInput.input[axis] = args.stage == ShortcutStage.Begin;
+            ctx.window.Repaint();
+        }
+
+        [ClutchShortcut("3D Viewport/Fly Mode Forward (Alt)", typeof(SceneViewViewport), KeyCode.UpArrow)]
+        static void WalkForwardArrow(ShortcutArguments args) => SetCameraMoveDirectionArrow(args, SceneInputAxis.Forward);
+
+        [ClutchShortcut("3D Viewport/Fly Mode Backward (Alt)", typeof(SceneViewViewport), KeyCode.DownArrow)]
+        static void WalkBackwardArrow(ShortcutArguments args) => SetCameraMoveDirectionArrow(args, SceneInputAxis.Backward);
+
+        [ClutchShortcut("3D Viewport/Fly Mode Left (Alt)", typeof(SceneViewViewport), KeyCode.LeftArrow)]
+        static void WalkLeftArrow(ShortcutArguments args) => SetCameraMoveDirectionArrow(args, SceneInputAxis.Left);
+
+        [ClutchShortcut("3D Viewport/Fly Mode Right (Alt)", typeof(SceneViewViewport), KeyCode.RightArrow)]
+        static void WalkRightArrow(ShortcutArguments args) => SetCameraMoveDirectionArrow(args, SceneInputAxis.Right);
+
+        static void SetInputVector(ShortcutArguments args, SceneInputAxis axis)
+        {
+            SceneNavigationInput.input[axis] = args.stage == ShortcutStage.Begin;
+            var context = (CameraFlyModeContext) args.context;
+            context.window.Repaint();
+        }
+
+        [ClutchShortcut("3D Viewport/Fly Mode Forward", typeof(CameraFlyModeContext), KeyCode.W)]
+        [FormerlyPrefKeyAs("View/FPS Forward", "w")]
+        static void WalkForward(ShortcutArguments args) => SetInputVector(args, SceneInputAxis.Forward);
+
+        [ClutchShortcut("3D Viewport/Fly Mode Backward", typeof(CameraFlyModeContext), KeyCode.S)]
+        [FormerlyPrefKeyAs("View/FPS Back", "s")]
+        static void WalkBackward(ShortcutArguments args) => SetInputVector(args, SceneInputAxis.Backward);
+
+        [ClutchShortcut("3D Viewport/Fly Mode Left", typeof(CameraFlyModeContext), KeyCode.A)]
+        [FormerlyPrefKeyAs("View/FPS Strafe Left", "a")]
+        static void WalkLeft(ShortcutArguments args) => SetInputVector(args, SceneInputAxis.Left);
+
+        [ClutchShortcut("3D Viewport/Fly Mode Right", typeof(CameraFlyModeContext), KeyCode.D)]
+        [FormerlyPrefKeyAs("View/FPS Strafe Right", "d")]
+        static void WalkRight(ShortcutArguments args) => SetInputVector(args, SceneInputAxis.Right);
+
+        [ClutchShortcut("3D Viewport/Fly Mode Up", typeof(CameraFlyModeContext), KeyCode.E)]
+        [FormerlyPrefKeyAs("View/FPS Strafe Up", "e")]
+        static void WalkUp(ShortcutArguments args) => SetInputVector(args, SceneInputAxis.Up);
+
+        [ClutchShortcut("3D Viewport/Fly Mode Down", typeof(CameraFlyModeContext), KeyCode.Q)]
+        [FormerlyPrefKeyAs("View/FPS Strafe Down", "q")]
+        static void WalkDown(ShortcutArguments args) => SetInputVector(args, SceneInputAxis.Down);
 
         void StartSceneViewMotionTool(ViewTool viewTool, SceneView view)
         {
@@ -244,6 +281,8 @@ namespace UnityEditor
         {
             Tools.viewTool = ViewTool.Pan;
             Tools.s_LockedViewTool = ViewTool.None;
+            GUIUtility.hotControl = 0;
+
 
             if (viewToolActiveChanged != null)
                 viewToolActiveChanged.Invoke();
@@ -268,14 +307,10 @@ namespace UnityEditor
             if (Tools.s_LockedViewTool == ViewTool.FPS)
                 view.FixNegativeSize();
 
-            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope
-                (m_CameraFlyModeContext, Tools.s_LockedViewTool, k_ViewToolID, view, view.orthographic))
-            {
-                if (inputSamplingScope.currentlyMoving)
-                    view.viewIsLockedToObject = false;
-
-                m_Motion = inputSamplingScope.currentInputVector;
-            }
+            SceneNavigationInput.Update();
+            if (SceneNavigationInput.moving)
+                view.viewIsLockedToObject = false;
+            m_Motion = SceneNavigationInput.currentInputVector;
 
             // If a different mouse button is clicked while the current mouse button is held down,
             // reset the hot control to the correct id.
@@ -341,7 +376,7 @@ namespace UnityEditor
         Vector3 GetMovementDirection(SceneView view)
         {
             m_Moving = m_Motion.sqrMagnitude > 0f;
-            var deltaTime = CameraFlyModeContext.deltaTime;
+            var deltaTime = SceneNavigationInput.deltaTime;
             var speedModifier = view.cameraSettings.speed;
 
             if (Event.current.shift)
@@ -594,20 +629,19 @@ namespace UnityEditor
         private void HandleKeyDown()
         {
             if (Event.current.keyCode == KeyCode.Escape && GUIUtility.hotControl == k_ViewToolID)
-            {
-                GUIUtility.hotControl = 0;
                 CompleteSceneViewMotionTool();
-            }
         }
 
         void HandleScrollWheel(SceneView view, bool zoomTowardsCenter)
         {
+            var evt = Event.current;
+            float scrollDelta = evt.delta.magnitude * Mathf.Sign(Mathf.Min(evt.delta.x,  evt.delta.y));
+
             if (Tools.s_LockedViewTool == ViewTool.FPS)
             {
                 // On some OSs, macOS for example, holding Shift while scrolling is interpreted as horizontal scroll at the system level
                 // and that would cause the scroll delta to be set on the x coord instead of y. Therefore here we're taking the magnitude instead of specific component's value.
-                var inputScrollWheelDelta = Event.current.delta.magnitude * Mathf.Sign(Mathf.Min(Event.current.delta.x,  Event.current.delta.y));
-                float scrollWheelDelta = inputScrollWheelDelta * m_FPSScrollWheelMultiplier;
+                float scrollWheelDelta = scrollDelta * m_FPSScrollWheelMultiplier;
                 view.cameraSettings.speedNormalized -= scrollWheelDelta;
                 float cameraSettingsSpeed = view.cameraSettings.speed;
                 string cameraSpeedDisplayValue = cameraSettingsSpeed.ToString(
@@ -636,12 +670,11 @@ namespace UnityEditor
                     return;
                 }
 
-                float zoomDelta = Event.current.delta.y;
                 float targetSize;
 
                 if (!view.orthographic)
                 {
-                    float relativeDelta = Mathf.Abs(view.size) * zoomDelta * .015f;
+                    float relativeDelta = Mathf.Abs(view.size) * scrollDelta * .015f;
                     const float k_MinZoomDelta = .0001f;
                     if (relativeDelta > 0 && relativeDelta < k_MinZoomDelta)
                         relativeDelta = k_MinZoomDelta;
@@ -652,7 +685,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    targetSize = Mathf.Abs(view.size) * (zoomDelta * .015f + 1.0f);
+                    targetSize = Mathf.Abs(view.size) * (scrollDelta * .015f + 1.0f);
                 }
 
                 var initialDistance = view.cameraDistance;
@@ -676,11 +709,6 @@ namespace UnityEditor
             }
 
             Event.current.Use();
-        }
-
-        public void DeactivateFlyModeContext()
-        {
-            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_CameraFlyModeContext);
         }
     }
 } //namespace

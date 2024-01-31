@@ -10,8 +10,6 @@ using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
 {
-
-
     public abstract class ShortcutBaseAttribute : Attribute
     {
         internal abstract ShortcutEntry CreateShortcutEntry(MethodInfo methodInfo);
@@ -102,9 +100,10 @@ namespace UnityEditor.ShortcutManagement
     }
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    // TODO: Find better name
     public class ClutchShortcutAttribute : ShortcutAttribute
     {
+        internal readonly Type clutchActivatedContext;
+
         public ClutchShortcutAttribute(string id, [DefaultValue("null")] Type context = null)
             : base(id, context)
         {
@@ -130,12 +129,17 @@ namespace UnityEditor.ShortcutManagement
         {
         }
 
+        internal ClutchShortcutAttribute(string id, Type context, Type clutchActivatedContext, KeyCode defaultKeyCode, ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None) : base(id, context, defaultKeyCode, defaultShortcutModifiers)
+        {
+            this.clutchActivatedContext = clutchActivatedContext;
+        }
+
         [RequiredSignature]
         static void ShortcutClutchMethod(ShortcutArguments args) { throw new InvalidOperationException(); }
     }
 
     // We want GameView shortcuts to trigger even in play mode so we declare them as menu shortcuts
-    internal class GameViewShortcutAttribute : ShortcutBaseAttribute
+    class GameViewShortcutAttribute : ShortcutBaseAttribute
     {
         internal string identifier { get; }
         internal ShortcutBinding defaultBinding { get; }
@@ -183,7 +187,6 @@ namespace UnityEditor.ShortcutManagement
             return new ShortcutEntry(new Identifier(identifier), defaultCombination, action, typeof(GameView), null, type, displayName);
         }
     }
-
 
     class ShortcutAttributeUtility
     {

@@ -22,6 +22,7 @@ sealed class AudioContainerWindowState
     // Need this flag to track transport state changes immediately, as there could be a
     // one-frame delay to get the correct value from AudioSource.isContainerPlaying.
     bool m_IsPlayingOrPausedLocalFlag;
+    bool m_IsSuspended;
 
     internal event EventHandler TargetChanged;
     internal event EventHandler TransportStateChanged;
@@ -73,7 +74,6 @@ sealed class AudioContainerWindowState
         return m_ResourceTrackerElement;
     }
 
-
     internal void OnDestroy()
     {
         Stop();
@@ -86,11 +86,29 @@ sealed class AudioContainerWindowState
         EditorApplication.pauseStateChanged -= OnEditorPauseStateChanged;
     }
 
+    internal void Suspend()
+    {
+        m_IsSuspended = true;
+        Stop();
+
+        if (m_PreviewAudioSource != null)
+            Object.DestroyImmediate(m_PreviewAudioSource.gameObject);
+    }
+
+    internal void Resume()
+    {
+        m_IsSuspended = false;
+        UpdateTarget();
+    }
+
     /// <summary>
     /// Updates the current target based on the currently selected object in the editor.
     /// </summary>
-    internal void UpdateTarget()
+    void UpdateTarget()
     {
+        if (m_IsSuspended)
+            return;
+
         AudioRandomContainer newTarget = null;
         AudioSource audioSource = null;
         var selectedObject = Selection.activeObject;
@@ -131,18 +149,18 @@ sealed class AudioContainerWindowState
             newTarget = m_AudioContainer;
         }
 
-        if (m_TrackedSource == audioSource && m_AudioContainer == newTarget)
+        var targetChanged = m_AudioContainer != newTarget;
+        var trackedSourceChanged = m_TrackedSource != audioSource;
+
+        if (!targetChanged && !trackedSourceChanged)
         {
             return;
         }
 
-        var targetChanged = newTarget != m_AudioContainer;
-        var trackedSourceChanged = audioSource != m_TrackedSource;
-
         Reset();
 
-        m_TrackedSource = audioSource;
         m_AudioContainer = newTarget;
+        m_TrackedSource = audioSource;
 
         if (m_AudioContainer != null)
         {
@@ -156,7 +174,10 @@ sealed class AudioContainerWindowState
 
         if (trackedSourceChanged)
         {
-            m_ResourceTrackerElement.Unbind();
+            if (m_ResourceTrackerElement != null)
+            {
+                m_ResourceTrackerElement.Unbind();
+            }
 
             if (m_TrackedSource != null)
             {
@@ -185,7 +206,9 @@ sealed class AudioContainerWindowState
 
     internal void Play()
     {
-        if (IsPlayingOrPaused() || !IsReadyToPlay())
+        var canNotPlay = m_IsSuspended || IsPlayingOrPaused() || !IsReadyToPlay();
+
+        if (canNotPlay)
             return;
 
         if (m_PreviewAudioSource == null)
@@ -196,7 +219,6 @@ sealed class AudioContainerWindowState
             var gameObject = new GameObject
             {
                 name = "PreviewAudioSource595651",
-
                 hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild
             };
 
@@ -213,7 +235,9 @@ sealed class AudioContainerWindowState
 
     internal void Stop()
     {
-        if (!IsPlayingOrPaused())
+        var canNotStop = m_IsSuspended || !IsPlayingOrPaused();
+
+        if (canNotStop)
             return;
 
         m_PreviewAudioSource.Stop();
@@ -225,7 +249,9 @@ sealed class AudioContainerWindowState
 
     internal void Skip()
     {
-        if (!IsPlayingOrPaused())
+        var canNotSkip = m_IsSuspended || !IsPlayingOrPaused();
+
+        if (canNotSkip)
             return;
 
         m_PreviewAudioSource.SkipToNextElementIfHasContainer();

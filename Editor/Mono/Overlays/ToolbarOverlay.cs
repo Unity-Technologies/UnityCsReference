@@ -13,7 +13,7 @@ namespace UnityEditor.Overlays
     public abstract class ToolbarOverlay : Overlay, ICreateToolbar
     {
         readonly string[] m_ToolbarElementIds;
-        public IEnumerable<string> toolbarElements => m_ToolbarElementIds;
+        public virtual IEnumerable<string> toolbarElements => m_ToolbarElementIds;
 
         protected ToolbarOverlay(params string[] toolbarElementIds)
         {

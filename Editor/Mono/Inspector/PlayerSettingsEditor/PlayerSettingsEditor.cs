@@ -1404,6 +1404,58 @@ namespace UnityEditor
                 Application.platform == RuntimePlatform.OSXEditor && targetPlatform == BuildTarget.StandaloneOSX;
         }
 
+        private bool CheckApplyGraphicsJobsModeChange()
+        {
+            bool doRestart = false;
+            
+            // If we have dirty scenes we need to save or discard changes before we restart editor.
+            // Otherwise user will get a dialog later on where they can click cancel and put editor in a bad device state.
+            var dirtyScenes = new List<Scene>();
+            for (int i = 0; i < EditorSceneManager.sceneCount; ++i)
+            {
+                var scene = EditorSceneManager.GetSceneAt(i);
+                if (scene.isDirty)
+                    dirtyScenes.Add(scene);
+            }
+            if (dirtyScenes.Count != 0)
+            {
+                var result = EditorUtility.DisplayDialogComplex("Changing editor graphics jobs mode",
+                    "You've changed the active graphics jobs mode. This requires a restart of the Editor. Do you want to save the Scene when restarting?",
+                    "Save and Restart", "Cancel Changing API", "Discard Changes and Restart");
+                if (result == 1)
+                {
+                    doRestart = false; // Cancel was selected
+                }
+                else
+                {
+                    doRestart = true;
+                    if (result == 0) // Save and Restart was selected
+                    {
+                        for (int i = 0; i < dirtyScenes.Count; ++i)
+                        {
+                            var saved = EditorSceneManager.SaveScene(dirtyScenes[i]);
+                            if (saved == false)
+                            {
+                                doRestart = false;
+                            }
+                        }
+                    }
+                    else // Discard Changes and Restart was selected
+                    {
+                        for (int i = 0; i < dirtyScenes.Count; ++i)
+                            EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
+                    }
+                }
+            }
+            else
+            {
+                doRestart = EditorUtility.DisplayDialog("Changing editor graphics jobs mode",
+                    "You've changed the active graphics josb mode. This requires a restart of the Editor.",
+                    "Restart Editor", "Not now");
+            }
+            return doRestart;
+        }
+
         void OpenGLES31OptionsGUI(BuildTargetGroup targetGroup, BuildTarget targetPlatform)
         {
             // ES3.1 options only applicable on some platforms now
@@ -2155,6 +2207,13 @@ namespace UnityEditor
                 {
                     Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
                     PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, newGraphicsJobs);
+
+                    bool restartEditor = CheckApplyGraphicsJobsModeChange();
+                    if (restartEditor)
+                    {
+                        EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
+                        GUIUtility.ExitGUI();
+                    }
                 }
             }
             if (gfxJobModesSupported && newGraphicsJobs)
@@ -2189,6 +2248,13 @@ namespace UnityEditor
                         PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerJobs);
                     else if (newGfxJobMode == GraphicsJobMode.Split)
                         PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.SplitJobs);
+
+                    bool restartEditor = CheckApplyGraphicsJobsModeChange();
+                    if (restartEditor)
+                    {
+                        EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
+                        GUIUtility.ExitGUI();
+                    }
                 }
             }
 

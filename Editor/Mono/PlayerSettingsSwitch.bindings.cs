@@ -325,10 +325,6 @@ namespace UnityEditor
             [NativeProperty("switchDisableHTCSPlayerConnection", TargetType.Field)]
             extern public static bool disableHTCSPlayerConnection { get; set; }
 
-            // Using the new path style system
-            [NativeProperty("switchUseNewStyleFilepaths", TargetType.Field)]
-            extern public static bool useNewStyleFilepaths { get; set; }
-
             // Forces all FMOD threads to use nn::os::LowestThreadPriority
             [NativeProperty("switchUseLegacyFmodPriorities", TargetType.Field)]
             extern public static bool switchUseLegacyFmodPriorities { get; set; }

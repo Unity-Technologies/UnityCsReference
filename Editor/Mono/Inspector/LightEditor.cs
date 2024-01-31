@@ -27,10 +27,13 @@ namespace UnityEditor
             public SerializedProperty range { get; private set; }
             public SerializedProperty spotAngle { get; private set; }
             public SerializedProperty innerSpotAngle { get; private set; }
+            public SerializedProperty enableSpotReflector { get; private set; }
             public SerializedProperty cookieSize { get; private set; }
             public SerializedProperty color { get; private set; }
             public SerializedProperty intensity { get; private set; }
             public SerializedProperty bounceIntensity { get; private set; }
+            public SerializedProperty lightUnit { get; private set; }
+            public SerializedProperty luxAtDistance { get; private set; }
             public SerializedProperty colorTemperature { get; private set; }
             public SerializedProperty useColorTemperature { get; private set; }
             public SerializedProperty cookieProp { get; private set; }
@@ -203,10 +206,13 @@ namespace UnityEditor
                 range = m_SerializedObject.FindProperty("m_Range");
                 spotAngle = m_SerializedObject.FindProperty("m_SpotAngle");
                 innerSpotAngle = m_SerializedObject.FindProperty("m_InnerSpotAngle");
+                enableSpotReflector = m_SerializedObject.FindProperty("m_EnableSpotReflector");
                 cookieSize = m_SerializedObject.FindProperty("m_CookieSize");
                 color = m_SerializedObject.FindProperty("m_Color");
                 intensity = m_SerializedObject.FindProperty("m_Intensity");
                 bounceIntensity = m_SerializedObject.FindProperty("m_BounceIntensity");
+                lightUnit = m_SerializedObject.FindProperty("m_LightUnit");
+                luxAtDistance = m_SerializedObject.FindProperty("m_LuxAtDistance");
                 colorTemperature = m_SerializedObject.FindProperty("m_ColorTemperature");
                 useColorTemperature = m_SerializedObject.FindProperty("m_UseColorTemperature");
                 cookieProp = m_SerializedObject.FindProperty("m_Cookie");

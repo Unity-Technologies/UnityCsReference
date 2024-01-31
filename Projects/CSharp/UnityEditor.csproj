@@ -8451,6 +8451,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\UxmlAttributesView\BuilderUxmlAttributesView.cs">
       <Link>Modules\UIBuilder\Editor\Builder\UxmlAttributesView\BuilderUxmlAttributesView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\BuilderTypeField.cs">
+      <Link>Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\BuilderTypeField.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlAssetAttributeField.cs">
       <Link>Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlAssetAttributeField.cs</Link>
     </Compile>

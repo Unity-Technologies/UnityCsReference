@@ -2853,6 +2853,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\UXML\VisualTreeAsset.cs">
       <Link>Modules\UIElements\Core\UXML\VisualTreeAsset.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\VisualTreeAssetUtilities.cs">
+      <Link>Modules\UIElements\Core\UXML\VisualTreeAssetUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UpgradeConstants.cs">
       <Link>Modules\UIElements\Core\UpgradeConstants.cs</Link>
     </Compile>

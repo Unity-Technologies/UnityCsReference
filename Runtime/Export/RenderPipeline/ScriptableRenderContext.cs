@@ -288,13 +288,15 @@ namespace UnityEngine.Rendering
         {
             public IntPtr cullResults;
             public ShadowSplitData* splitBuffer;
-            public int splitBufferCount;
+            public int splitBufferLength;
             public LightShadowCasterCullingInfo* perLightInfos;
             public int perLightInfoCount;
         }
 
         unsafe void ValidateCullShadowCastersParameters(in CullingResults cullingResults, in ShadowCastersCullingInfos cullingInfos)
         {
+            const int MaxSplitCount = 6;
+
             if (cullingResults.ptr == null)
             {
                 throw new UnityException("CullingResults is null");
@@ -325,7 +327,7 @@ namespace UnityEngine.Rendering
                     continue;
 
                 bool isBeginValid = begin >= 0 && begin <= cullingInfos.splitBuffer.Length;
-                bool isLengthValid = length >= 0;
+                bool isLengthValid = length >= 0 && length <= MaxSplitCount;
                 bool isEndValid = end >= begin && end <= cullingInfos.splitBuffer.Length;
                 bool isRangeValid = isBeginValid && isLengthValid && isEndValid;
                 if (!isRangeValid)
@@ -352,7 +354,7 @@ namespace UnityEngine.Rendering
             CullShadowCastersContext context = default;
             context.cullResults = cullingResults.ptr;
             context.splitBuffer = (ShadowSplitData*)infos.splitBuffer.GetUnsafePtr();
-            context.splitBufferCount = infos.splitBuffer.Length;
+            context.splitBufferLength = infos.splitBuffer.Length;
             context.perLightInfos = (LightShadowCasterCullingInfo*)infos.perLightInfos.GetUnsafePtr();
             context.perLightInfoCount = infos.perLightInfos.Length;
 

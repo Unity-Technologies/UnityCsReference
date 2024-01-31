@@ -4,6 +4,7 @@
 
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
@@ -88,6 +89,9 @@ namespace UnityEngine
         extern public bool useColorTemperature { get; set; }
         extern public float intensity        { get; set; }
         extern public float bounceIntensity  { get; set; }
+        extern public LightUnit lightUnit { get; set; }
+        extern public float luxAtDistance { get; set; }
+        extern public bool enableSpotReflector { get; set; }
 
         extern public bool useBoundingSphereOverride { get; set; }
         extern public Vector4 boundingSphereOverride { get; set; }

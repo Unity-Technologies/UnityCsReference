@@ -38,7 +38,7 @@ namespace UnityEditor.ShortcutManagement
 
             foreach (var entry in entries)
             {
-                m_Contexts.Add(m_ContextManager.GetContextInstanceOfType(entry.context));
+                m_Contexts.Add(m_ContextManager.GetContextInstanceOfType(entry.context, true));
             }
             m_ConflictResolverView.Show(this, keyCombinationSequence, m_Entries);
         }

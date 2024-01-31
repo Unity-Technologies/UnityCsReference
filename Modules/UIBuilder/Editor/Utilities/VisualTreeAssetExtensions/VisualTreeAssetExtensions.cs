@@ -101,19 +101,14 @@ namespace Unity.UI.Builder
             return vta.visualElementAssets.Count <= 1 && vta.templateAssets.Count <= 0; // Because of the <UXML> tag, there's always one.
         }
 
-        public static VisualElementAsset GetRootUXMLElement(this VisualTreeAsset vta)
-        {
-            return vta.visualElementAssets.Count > 0 ? vta.visualElementAssets[0] : null;
-        }
-
         public static int GetRootUXMLElementId(this VisualTreeAsset vta)
         {
-            return vta.GetRootUXMLElement().id;
+            return vta.GetRootUxmlElement().id;
         }
 
         public static bool IsRootUXMLElement(this VisualTreeAsset vta, VisualElementAsset vea)
         {
-            return vea == vta.GetRootUXMLElement();
+            return vea == vta.GetRootUxmlElement();
         }
 
         public static bool IsRootElement(this VisualTreeAsset vta, VisualElementAsset vea)
@@ -380,7 +375,9 @@ namespace Unity.UI.Builder
                 }
             }
 
-            var templateAsset = new TemplateAsset(templateName, BuilderConstants.UxmlInstanceTypeName);
+            var typeNamespace = BuilderConstants.UxmlInstanceTypeName;
+            var xmlns = vta.FindUxmlNamespaceDefinitionForTypeName(parent, typeNamespace);
+            var templateAsset = new TemplateAsset(templateName, BuilderConstants.UxmlInstanceTypeName, xmlns);
             VisualTreeAssetUtilities.InitializeElement(templateAsset);
 
             templateAsset.SetAttribute("template", templateName);
@@ -391,7 +388,8 @@ namespace Unity.UI.Builder
         internal static VisualElementAsset AddElement(
             this VisualTreeAsset vta, VisualElementAsset parent, string fullTypeName, int index = -1)
         {
-            var vea = new VisualElementAsset(fullTypeName);
+            var xmlns = vta.FindUxmlNamespaceDefinitionForTypeName(parent, fullTypeName);
+            var vea = new VisualElementAsset(fullTypeName, xmlns);
             VisualTreeAssetUtilities.InitializeElement(vea);
             return VisualTreeAssetUtilities.AddElementToDocument(vta, vea, parent);
         }
@@ -399,10 +397,9 @@ namespace Unity.UI.Builder
         internal static VisualElementAsset AddElement(
             this VisualTreeAsset vta, VisualElementAsset parent, VisualElement visualElement, int index = -1)
         {
-            var fullTypeName = visualElement.GetType().ToString();
-
-            var desc = UxmlSerializedDataRegistry.GetDescription(fullTypeName);
-            var vea = new VisualElementAsset(desc != null ? desc.uxmlFullName : fullTypeName);
+            var fullTypeName = visualElement.GetUxmlFullTypeName();
+            var xmlns = vta.FindUxmlNamespaceDefinitionForTypeName(parent, fullTypeName);
+            var vea = new VisualElementAsset(fullTypeName, xmlns);
             VisualTreeAssetUtilities.InitializeElement(vea);
 
             visualElement.SetVisualElementAsset(vea);
@@ -502,7 +499,7 @@ namespace Unity.UI.Builder
             var otherIdToChildren = VisualTreeAssetUtilities.GenerateIdToChildren(other);
 
             if (parent == null)
-                parent = vta.GetRootUXMLElement();
+                parent = vta.GetRootUxmlElement();
 
             var nextOrderInDocument = (vta.visualElementAssets.Count + vta.templateAssets.Count) * BuilderConstants.VisualTreeAssetOrderIncrement;
             var assetsList = new List<VisualElementAsset>();

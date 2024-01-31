@@ -154,9 +154,7 @@ namespace UnityEngine.TextCore.Text
         [FormerlySerializedAs("m_defaultSpriteAssetPath")][SerializeField]
         protected string m_DefaultSpriteAssetPath = "Sprite Assets/";
 
-        /// <summary>
-        /// List of potential sprite assets the text system will search recursively to look for requested characters.
-        /// </summary>
+        [Obsolete("The Fallback Sprite Assets list is now obsolete. Use the emojiFallbackTextAssets instead.", true)]
         public List<SpriteAsset> fallbackSpriteAssets
         {
             get => m_FallbackSpriteAssets;
@@ -225,7 +223,7 @@ namespace UnityEngine.TextCore.Text
                 if (m_UnicodeLineBreakingRules == null)
                 {
                     m_UnicodeLineBreakingRules = new UnicodeLineBreakingRules();
-                    UnicodeLineBreakingRules.LoadLineBreakingRules();
+                    m_UnicodeLineBreakingRules.LoadLineBreakingRules();
                 }
 
                 return m_UnicodeLineBreakingRules;
@@ -258,26 +256,13 @@ namespace UnityEngine.TextCore.Text
         protected bool m_DisplayWarnings = false;
 
         // =============================================
-        //
-        // =============================================
-
-        //private static TextSettings s_Instance;
-        //private static TextSettings s_DefaultTextSettings;
-
-        // public static TextSettings instance
-        // {
-        //     get
-        //     {
-        //         if (s_Instance == null)
-        //             s_Instance = Resources.Load<TextSettings>("Text Settings") ?? CreateInstance<TextSettings>();
-        //
-        //         return s_Instance;
-        //     }
-        // }
-
-        // =============================================
         // Functions
         // =============================================
+
+        void OnEnable()
+        {
+            lineBreakingRules.LoadLineBreakingRules();
+        }
 
         protected void InitializeFontReferenceLookup()
         {

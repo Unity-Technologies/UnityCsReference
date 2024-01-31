@@ -2,23 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.ShortcutManagement;
+
 
 namespace UnityEditor
 {
-    class SceneViewPickingShortcutContext : IShortcutContext
+    class SceneViewPickingShortcutContext : SceneViewMotion.SceneViewContext
     {
-        public SceneView window => EditorWindow.focusedWindow as SceneView;
-
-        public bool active
-        {
-            get
-            {
-                if (!(EditorWindow.focusedWindow is SceneView view) || view.sceneViewMotion == null)
-                    return false;
-
-                return view.sceneViewMotion.viewportsUnderMouse && Tools.current != Tool.View;
-            }
-        }
+        public override bool active => ViewHasFocus && Tools.current != Tool.View;
     }
 }

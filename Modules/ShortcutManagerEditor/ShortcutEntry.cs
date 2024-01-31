@@ -26,7 +26,7 @@ namespace UnityEditor.ShortcutManagement
     {
         Action,
         Clutch,
-        Menu,
+        Menu
     }
 
     [Serializable]
@@ -61,6 +61,7 @@ namespace UnityEditor.ShortcutManagement
 
         readonly Action<ShortcutArguments> m_Action;
         readonly Type m_Context;
+        readonly Type m_ClutchActivatedContext;
         readonly string m_Tag;
         readonly ShortcutType m_Type;
         readonly int m_Priority;
@@ -74,6 +75,7 @@ namespace UnityEditor.ShortcutManagement
 
         public Action<ShortcutArguments> action => m_Action;
         public Type context => m_Context;
+        public Type clutchContext => m_ClutchActivatedContext;
         public string tag => m_Tag;
         public ShortcutType type => m_Type;
         public int priority => m_Priority;
@@ -97,11 +99,16 @@ namespace UnityEditor.ShortcutManagement
             if (typeof(IShortcutContext).IsAssignableFrom(m_Context))
                 foreach (var attribute in m_Context.GetCustomAttributes(typeof(ReserveModifiersAttribute), true))
                     m_ReservedModifier |= (attribute as ReserveModifiersAttribute).Modifiers;
+
+            if(m_Action != null)
+                foreach(var clutch in m_Action.Method.GetCustomAttributes<ClutchShortcutAttribute>())
+                    if (clutch.clutchActivatedContext != null)
+                        m_ClutchActivatedContext = clutch.clutchActivatedContext;
         }
 
         public override string ToString()
         {
-            return $"{string.Join(",", combinations.Select(c => c.ToString()).ToArray())} [{context?.Name}] {(!string.IsNullOrWhiteSpace(tag) ? $"[{tag}]" : "")}";
+            return $"{displayName} {string.Join(",", combinations.Select(c => c.ToString()).ToArray())} [{context?.Name}] {(!string.IsNullOrWhiteSpace(tag) ? $"[{tag}]" : "")}";
         }
 
         List<KeyCombination> activeCombination

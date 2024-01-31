@@ -98,7 +98,8 @@ namespace UnityEditor.AnimatedValues
             get { return m_Animating; }
         }
 
-        void Update()
+        // used by tests to access AnimValue.Update so that we don't have to rely on EditorApplication.Update.
+        internal void Update()
         {
             if (!m_Animating)
             {

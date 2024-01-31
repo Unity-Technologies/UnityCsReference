@@ -1001,12 +1001,19 @@ namespace UnityEditor
             set;
         }
 
-        // Redirect attempts to write to "rom:" mount, to "host:" mount for Nintendo Switch (for debugging and tests only)
-        public static extern bool switchRedirectWritesToHostMount
+        [Obsolete("EditorUserBuildSettings.switchRedirectWritesToHostMount is obsolete. Use EditorUserBuildSettings.switchEnableHostIO instead (UnityUpgradable) -> switchEnableHostIO", false)]
+        public static bool switchRedirectWritesToHostMount
         {
-            [NativeMethod("GetRedirectWritesToHostMountForSwitch")]
+            get => switchEnableHostIO;
+            set => switchEnableHostIO = value;
+        }
+
+        // Redirect attempts to write to "rom:" mount, to "host:" mount for Nintendo Switch (for debugging and tests only)
+        public static extern bool switchEnableHostIO
+        {
+            [NativeMethod("GetEnableHostIOForSwitch")]
             get;
-            [NativeMethod("SetRedirectWritesToHostMountForSwitch")]
+            [NativeMethod("SetEnableHostIOForSwitch")]
             set;
         }
 

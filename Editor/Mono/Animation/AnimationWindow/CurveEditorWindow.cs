@@ -34,7 +34,7 @@ namespace UnityEditor
 
         static CurveEditorWindow s_SharedCurveEditor;
 
-        CurveEditor m_CurveEditor;
+        internal CurveEditor m_CurveEditor;
 
         AnimationCurve m_Curve;
         Color m_Color;

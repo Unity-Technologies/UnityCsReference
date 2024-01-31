@@ -173,7 +173,7 @@ namespace UnityEditor.ShortcutManagement
             IContextManager contextManager = new ContextManager();
 
             s_Instance = new ShortcutController(discovery, contextManager, bindingValidator, new ShortcutProfileStore(), new LastUsedProfileIdProvider());
-            s_Instance.trigger.invokingAction += OnInvokingAction;
+            s_Instance.trigger.beforeShortcutInvoked += OnInvokingAction;
 
             enabled = true;
             ignoreWhenPlayModeFocused = EditorPrefs.GetBool(k_IgnoreWhenPlayModeFocused, false);
@@ -376,16 +376,24 @@ namespace UnityEditor.ShortcutManagement
             var methodsWithFormerlyPrefKeyAs = EditorAssemblies.GetAllMethodsWithAttribute<FormerlyPrefKeyAsAttribute>();
             foreach (var method in methodsWithFormerlyPrefKeyAs)
             {
-                var shortcutAttr = Attribute.GetCustomAttribute(method, typeof(ShortcutAttribute), true) as ShortcutAttribute;
-                if (shortcutAttr == null)
-                    continue;
+                ShortcutEntry entry = null;
 
-                var entry = allShortcuts.Find(e => string.Equals(e.identifier.path, shortcutAttr.identifier));
+                // if there are multiple shortcut attributes available, pick the first one that is not overridden
+                foreach (var attr in Attribute.GetCustomAttributes(method, typeof(ShortcutAttribute), true))
+                {
+                    if (!(attr is ShortcutAttribute shortcutAttr))
+                        continue;
+
+                    var e = allShortcuts.Find(e => string.Equals(e.identifier.path, shortcutAttr.identifier));
+
+                    if (e == null || e.overridden)
+                        continue;
+
+                    entry = e;
+                    break;
+                }
+
                 if (entry == null)
-                    continue;
-
-                // Ignore former PrefKey if it is overriden in existing migrated profile
-                if (entry.overridden)
                     continue;
 
                 // Parse default pref key value from FormerlyPrefKeyAs attribute

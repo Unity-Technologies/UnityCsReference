@@ -94,6 +94,13 @@ namespace UnityEditor.UIElements
                 var uxmlElementAttribute = declaringType.GetCustomAttribute<UxmlElementAttribute>();
                 if (uxmlElementAttribute != null && !string.IsNullOrEmpty(uxmlElementAttribute.name))
                 {
+                    var nameValidationError = UxmlUtility.ValidateUxmlName(uxmlElementAttribute.name);
+                    if (nameValidationError != null)
+                    {
+                        Debug.LogError($"Invalid UXML element name '{uxmlElementAttribute.name}' for type '{declaringType.FullName}'. {nameValidationError}");
+                        continue;
+                    }
+
                     if (string.IsNullOrEmpty(declaringType.Namespace))
                         RegisterType(uxmlElementAttribute.name, serializedDataType);
                     else

@@ -321,7 +321,7 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal UxmlObjectAsset AddUxmlObject(UxmlAsset parent, string fieldUxmlName, string fullTypeName)
+        internal UxmlObjectAsset AddUxmlObject(UxmlAsset parent, string fieldUxmlName, string fullTypeName, UxmlNamespaceDefinition xmlNamespace = default)
         {
             var entry = GetUxmlObjectEntry(parent.id);
             if (entry.uxmlObjectAssets == null)
@@ -333,7 +333,7 @@ namespace UnityEngine.UIElements
 
             if (string.IsNullOrEmpty(fieldUxmlName))
             {
-                var newAsset = new UxmlObjectAsset(fullTypeName, false);
+                var newAsset = new UxmlObjectAsset(fullTypeName, false, xmlNamespace);
                 newAsset.parentId = parent.id;
                 newAsset.id = GetNextUxmlObjectId(parent.parentId);
                 entry.uxmlObjectAssets.Add(newAsset);
@@ -343,13 +343,13 @@ namespace UnityEngine.UIElements
             var fieldAsset = entry.GetField(fieldUxmlName);
             if (fieldAsset == null)
             {
-                fieldAsset = new UxmlObjectAsset(fieldUxmlName, true);
+                fieldAsset = new UxmlObjectAsset(fieldUxmlName, true, xmlNamespace);
                 entry.uxmlObjectAssets.Add(fieldAsset);
                 fieldAsset.parentId = parent.id;
                 fieldAsset.id = GetNextUxmlObjectId(parent.parentId);
             }
 
-            return AddUxmlObject(fieldAsset, null, fullTypeName);
+            return AddUxmlObject(fieldAsset, null, fullTypeName, xmlNamespace);
         }
 
         int GetNextUxmlObjectId(int parentId)
@@ -781,9 +781,12 @@ namespace UnityEngine.UIElements
             foreach (var rootElement in rootAssets)
             {
                 Assert.IsNotNull(rootElement);
+
                 var rootVe = CloneSetupRecursively(rootElement, idToChildren,
                     new CreationContext(cc.slotInsertionPoints, cc.attributeOverrides, cc.serializedDataOverrides, this, target));
 
+                if (rootVe == null)
+                    continue;
                 // Save reference to the visualElementAsset so elements can be reinitialized when
                 // we set their attributes in the editor
                 rootVe.SetProperty(LinkedVEAInTemplatePropertyName, rootElement);
@@ -802,6 +805,9 @@ namespace UnityEngine.UIElements
         private VisualElement CloneSetupRecursively(VisualElementAsset root,
             Dictionary<int, List<VisualElementAsset>> idToChildren, CreationContext context)
         {
+            if (root.skipClone)
+                return null;
+
             var ve = Create(root, context);
 
             if (ve == null)
@@ -1152,6 +1158,12 @@ namespace UnityEngine.UIElements
             {
                 names.Add(asset.fullTypeName);
             }
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal VisualElementAsset GetRootUxmlElement()
+        {
+            return visualElementAssets?.Count > 0 ? visualElementAssets[0] : null;
         }
     }
 

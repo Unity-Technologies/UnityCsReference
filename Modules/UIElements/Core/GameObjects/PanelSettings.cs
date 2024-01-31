@@ -99,6 +99,7 @@ namespace UnityEngine.UIElements
                         var root = m_RuntimePanel.visualTree;
                         root.name = m_Settings.name;
 
+                        m_Settings.ApplyPanelSettings();
                         m_Settings.ApplyThemeStyleSheet(root);
 
                         if (m_Settings.m_TargetTexture != null)
@@ -732,29 +733,35 @@ namespace UnityEngine.UIElements
             else
                 m_ResolvedScale = ResolveScale(m_TargetRect, ScreenDPI); // dpi should be constant across all displays
 
-            if (visualTree.style.width.value == 0 || // TODO is this check valid? This prevents having to resize the game view!
-                m_ResolvedScale != oldResolvedScaling ||
-                m_TargetRect.width != oldTargetRect.width ||
-                m_TargetRect.height != oldTargetRect.height)
-            {
-                panel.scale = m_ResolvedScale == 0.0f ? 0.0f : 1.0f / m_ResolvedScale;
-                visualTree.style.left = 0;
-                visualTree.style.top = 0;
-                visualTree.style.width = m_TargetRect.width * m_ResolvedScale;
-                visualTree.style.height = m_TargetRect.height * m_ResolvedScale;
-            }
-            panel.targetTexture = targetTexture;
-            panel.targetDisplay = targetDisplay;
-            panel.drawsInCameras = renderMode == PanelRenderMode.WorldSpace;
-            panel.pixelsPerUnit = pixelsPerUnit;
-            panel.isFlat = renderMode != PanelRenderMode.WorldSpace;
-            panel.worldSpaceLayer = worldSpaceLayer;
-            panel.clearSettings = new PanelClearSettings {clearColor = m_ClearColor, clearDepthStencil = m_ClearDepthStencil, color = m_ColorClearValue};
-            panel.referenceSpritePixelsPerUnit = referenceSpritePixelsPerUnit;
-            panel.vertexBudget = m_VertexBudget;
-            panel.dataBindingManager.logLevel = m_BindingLogLevel;
+            var p = panel;
 
-            var atlas = panel.atlas as DynamicAtlas;
+            if (renderMode != PanelRenderMode.WorldSpace)
+            {
+                if (visualTree.style.width.value == 0 || // TODO is this check valid? This prevents having to resize the game view!
+                    m_ResolvedScale != oldResolvedScaling ||
+                    m_TargetRect.width != oldTargetRect.width ||
+                    m_TargetRect.height != oldTargetRect.height)
+                {
+                    p.scale = m_ResolvedScale == 0.0f ? 0.0f : 1.0f / m_ResolvedScale;
+                    visualTree.style.left = 0;
+                    visualTree.style.top = 0;
+                    visualTree.style.width = m_TargetRect.width * m_ResolvedScale;
+                    visualTree.style.height = m_TargetRect.height * m_ResolvedScale;
+                }
+            }
+
+            p.targetTexture = targetTexture;
+            p.targetDisplay = targetDisplay;
+            p.drawsInCameras = renderMode == PanelRenderMode.WorldSpace;
+            p.pixelsPerUnit = pixelsPerUnit;
+            p.isFlat = renderMode != PanelRenderMode.WorldSpace;
+            p.worldSpaceLayer = worldSpaceLayer;
+            p.clearSettings = new PanelClearSettings {clearColor = m_ClearColor, clearDepthStencil = m_ClearDepthStencil, color = m_ColorClearValue};
+            p.referenceSpritePixelsPerUnit = referenceSpritePixelsPerUnit;
+            p.vertexBudget = m_VertexBudget;
+            p.dataBindingManager.logLevel = m_BindingLogLevel;
+
+            var atlas = p.atlas as DynamicAtlas;
             if (atlas != null)
             {
                 atlas.minAtlasSize = dynamicAtlasSettings.minAtlasSize;

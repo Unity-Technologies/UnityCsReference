@@ -107,8 +107,8 @@ namespace UnityEngine.UIElements
             set { m_SlotUsages = value; }
         }
 
-        public TemplateAsset(string templateAlias, string fullTypeName)
-            : base(fullTypeName)
+        public TemplateAsset(string templateAlias, string fullTypeName, UxmlNamespaceDefinition xmlNamespace = default)
+            : base(fullTypeName, xmlNamespace)
         {
             Assert.IsFalse(string.IsNullOrEmpty(templateAlias), "Template alias must not be null or empty");
             m_TemplateAlias = templateAlias;

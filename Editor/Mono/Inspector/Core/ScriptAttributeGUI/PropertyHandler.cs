@@ -265,6 +265,11 @@ namespace UnityEditor
                 if (childrenAreExpanded)
                 {
                     SerializedProperty endProperty = prop.GetEndProperty();
+                    // Children need to be indented
+                    int prevIndent = EditorGUI.indentLevel;
+                    EditorGUI.indentLevel++;
+                    position = EditorGUI.IndentedRect(position);
+                    EditorGUI.indentLevel = prevIndent;
                     while (prop.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(prop, endProperty))
                     {
                         if (GUI.isInsideList && prop.depth <= EditorGUI.GetInsideListDepth())

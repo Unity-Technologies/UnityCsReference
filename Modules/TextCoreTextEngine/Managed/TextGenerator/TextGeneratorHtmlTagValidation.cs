@@ -33,6 +33,8 @@ namespace UnityEngine.TextCore.Text
             endIndex = startIndex;
             bool isTagSet = false;
             bool isValidHtmlTag = false;
+            bool startedWithQuotes = false;
+            bool startedWithDoubleQuotes = false;
 
             for (int i = startIndex; i < chars.Length && chars[i].unicode != 0 && tagCharCount < m_HtmlTag.Length && chars[i].unicode != '<'; i++)
             {
@@ -68,11 +70,19 @@ namespace UnityEngine.TextCore.Text
                             m_XmlAttribute[attributeIndex].valueStartIndex = tagCharCount - 1;
                             m_XmlAttribute[attributeIndex].valueLength += 1;
                         }
+                        else if (unicode == '\'')
+                        {
+                            tagUnitType = TagUnitType.Pixels;
+                            tagValueType = m_XmlAttribute[attributeIndex].valueType = TagValueType.StringValue;
+                            m_XmlAttribute[attributeIndex].valueStartIndex = tagCharCount;
+                            startedWithQuotes = true;
+                        }
                         else if (unicode == '"')
                         {
                             tagUnitType = TagUnitType.Pixels;
                             tagValueType = m_XmlAttribute[attributeIndex].valueType = TagValueType.StringValue;
                             m_XmlAttribute[attributeIndex].valueStartIndex = tagCharCount;
+                            startedWithDoubleQuotes = true;
                         }
                         else
                         {
@@ -143,7 +153,8 @@ namespace UnityEngine.TextCore.Text
                         else if (tagValueType == TagValueType.StringValue)
                         {
                             // Compute HashCode value for the named tag.
-                            if (generationSettings.isIMGUI || unicode != '"')
+                            // startedWithQuotes/doubleQuotes is needed to make sure we don't exit the tag if a different type of quotes is used (UUM-59167)
+                            if (!(startedWithDoubleQuotes && unicode == '"') && !(startedWithQuotes && unicode == '\''))
                             {
                                 m_XmlAttribute[attributeIndex].valueHashCode = (m_XmlAttribute[attributeIndex].valueHashCode << 5) + m_XmlAttribute[attributeIndex].valueHashCode ^ TextGeneratorUtilities.ToUpperFast((char)unicode);
                                 m_XmlAttribute[attributeIndex].valueLength += 1;
@@ -798,7 +809,7 @@ namespace UnityEngine.TextCore.Text
 
                                 textInfo.linkInfo[index].linkIdFirstCharacterIndex = 3;
                                 if (m_XmlAttribute[1].valueLength > 0)
-                                    textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, m_XmlAttribute[1].valueLength + m_XmlAttribute[1].valueStartIndex - 2);
+                                    textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, m_XmlAttribute[1].valueLength + m_XmlAttribute[1].valueStartIndex - 1);
                             }
                             else if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.HREF && textInfo != null)
                             {

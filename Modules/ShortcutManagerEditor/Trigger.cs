@@ -15,16 +15,42 @@ namespace UnityEditor.ShortcutManagement
         IContextManager m_CurrentContextManager;
         KeyCombination m_CurrentActiveClutch;
 
+        // the current set of keys used for querying shortcut entry matches against active contexts. cleared frequently.
+        // this is a list because chord support was planned for, but ultimately not implemented. in practice, this is
+        // only ever 1 entry long (key + modifier).
         List<KeyCombination> m_KeyCombinationSequence = new List<KeyCombination>();
         List<ShortcutEntry> m_Entries = new List<ShortcutEntry>();
 
+        // separate lists of action and clutch entries are used to store candidate shortcut entries when a mouse down
+        // is not yet determined to be a clutch or action. clicking, or dragging or invoking a clutch dependent context
+        // shortcut will determine if the mouse event is an action or clutch (respectively).
         List<ShortcutEntry> m_MouseActionEntries = new List<ShortcutEntry>();
         List<ShortcutEntry> m_MouseClutchEntries = new List<ShortcutEntry>();
 
+        // this is a frequently used temporary list kept as a property to avoid gc
+        List<KeyCode> m_ContextClutchKeyRemoveQueue = new List<KeyCode>();
+        // key down events is used to keep track of mismatched key down/up events. ex, external code calls Event.Use()
+        // on key down but not up.
         List<KeyCode> m_KeyDownEvents = new List<KeyCode>();
 
+        internal List<ShortcutEntry> activeEntries => m_Entries;
+        internal List<ShortcutEntry> activeMouseActionEntries => m_MouseActionEntries;
+        internal List<ShortcutEntry> activeMouseClutchEntries => m_MouseClutchEntries;
+
+        // accessed by tests
+        internal Dictionary<KeyCode, ClutchShortcutContext> m_ClutchActivatedContexts = new();
+
+        static readonly Event s_QueuedMouseClutchEvent = new Event(), s_CachedCurrentEvent = new Event();
+
+        struct ActiveClutch
+        {
+            public ShortcutEntry entry;
+            public object context;
+            public ClutchShortcutContext clutchContext;
+        }
+
         // There can be more than one active clutch at a time.
-        readonly Dictionary<KeyCode, KeyValuePair<ShortcutEntry, object>> m_ActiveClutches = new();
+        readonly Dictionary<KeyCode, ActiveClutch> m_ActiveClutches = new();
 
         (KeyCode keyCode, ShortcutEntry entry, object context) m_ActiveMouseActionEntry;
 
@@ -50,7 +76,7 @@ namespace UnityEditor.ShortcutManagement
             set => m_ShowConflictsWindow = value;
         }
 
-        public event Action<ShortcutEntry, ShortcutArguments> invokingAction;
+        public event Action<ShortcutEntry, ShortcutArguments> beforeShortcutInvoked;
 
         public Trigger(IDirectory directory, IConflictResolver conflictResolver)
         {
@@ -63,8 +89,7 @@ namespace UnityEditor.ShortcutManagement
             switch (type)
             {
                 case EventType.MouseDown:
-                    if (m_ActiveMouseActionEntry.entry != null &&
-                        m_ActiveMouseActionEntry.keyCode == keyCode)
+                    if (m_ActiveMouseActionEntry.entry != null && m_ActiveMouseActionEntry.keyCode == keyCode)
                         ResetMouseShortcuts();
                     m_ActiveClutches.Remove(keyCode);
                     break;
@@ -99,21 +124,20 @@ namespace UnityEditor.ShortcutManagement
                     var shortcutEntry = m_ActiveMouseActionEntry.entry;
                     var context = m_ActiveMouseActionEntry.context;
 
-                    ExecuteShortcut(shortcutEntry, ShortcutStage.End, context);
+                    ExecuteShortcut(shortcutEntry, ShortcutStage.End, context, true);
                     evt.Use();
 
                     return;
                 }
 
-                KeyValuePair<ShortcutEntry, object> clutchKeyValuePair;
-                if (m_ActiveClutches.TryGetValue(evt.keyCode, out clutchKeyValuePair))
+                if (m_ActiveClutches.TryGetValue(evt.keyCode, out var active))
                 {
-                    var shortcutEntry = clutchKeyValuePair.Key;
-                    var context = m_ActiveClutches[evt.keyCode].Value;
+                    var shortcutEntry = active.entry;
+                    var context = active.context;
 
+                    DeactivateClutchContext(active.clutchContext);
                     m_ActiveClutches.Remove(evt.keyCode);
-
-                    ExecuteShortcut(shortcutEntry, ShortcutStage.End, context);
+                    ExecuteShortcut(shortcutEntry, ShortcutStage.End, context, true);
                     evt.Use();
 
                     return;
@@ -132,7 +156,7 @@ namespace UnityEditor.ShortcutManagement
                 enumerator.MoveNext();
 
                 var activeClutch = enumerator.Current;
-                if (ModifierKeysChangedWasHandled(activeClutch.Value.Key, evt, newModifier, contextManager))
+                if (ModifierKeysChangedWasHandled(activeClutch.Value.entry, evt, newModifier, contextManager))
                     return;
             }
             else if (!modifierKeysChanged && isKeyUpOrMouseUpEvent)
@@ -155,36 +179,52 @@ namespace UnityEditor.ShortcutManagement
                 return;
 
             List<ShortcutEntry> entries = new List<ShortcutEntry>();
-            if (evt.type == EventType.MouseDrag)
+
+            switch (evt.type)
             {
-                if (m_MouseClutchEntries.Count > 1)
-                {
+                case EventType.MouseDrag when m_MouseClutchEntries.Count > 1:
                     entries = m_MouseClutchEntries;
-                }
-                else if (m_MouseClutchEntries.Count == 1)
+                    break;
+
+                case EventType.MouseDrag when m_MouseClutchEntries.Count == 1:
                 {
                     if ((evt.mousePosition - m_StartPosition).magnitude <= k_DragOffset)
                     {
-                        Reset();
+                        ResetKeyCombo();
                         return;
                     }
 
-                    entries = new List<ShortcutEntry>(m_MouseClutchEntries);
+                    // in some cases the drag can change ShortcutContext.active (ex, mouse down very close to window
+                    // border, then drag outside exceeds k_DragOffset)
+                    var entry = m_MouseClutchEntries[0];
+                    var key = entry.combinations[0].keyCode;
+
+                    if (contextManager.HasActiveContextOfType(entry.context))
+                    {
+                        entries.Add(entry);
+                    }
+                    else if (m_ClutchActivatedContexts.TryGetValue(key, out var clutchCtx))
+                    {
+                        DeactivateClutchContext(clutchCtx);
+                        m_ClutchActivatedContexts.Remove(key);
+                    }
+
                     ResetActiveMouseActionEntry();
                     m_MouseClutchEntries.Clear();
+                    break;
                 }
-                else
-                {
-                    Reset();
+
+                case EventType.MouseDrag:
+                    ResetKeyCombo();
                     return;
-                }
-            }
-            else if (evt.type == EventType.MouseDown ||
-                     evt.type == EventType.KeyDown ||
-                     evt.type == EventType.ScrollWheel)
-            {
-                m_Directory.FindShortcutEntries(m_KeyCombinationSequence, contextManager, m_Entries);
-                entries = m_Entries;
+
+                case EventType.MouseDown:
+                case EventType.KeyDown:
+                case EventType.ScrollWheel:
+                    m_Directory.FindShortcutEntries(m_KeyCombinationSequence, contextManager, m_Entries);
+                    entries = m_Entries;
+                    SetClutchContextActive(contextManager, evt.keyCode, entries);
+                    break;
             }
 
             if (entries.Count > 1)
@@ -201,6 +241,7 @@ namespace UnityEditor.ShortcutManagement
                 if (evt.type == EventType.MouseDown)
                 {
                     ResetMouseShortcuts();
+
                     foreach (var entry in entries)
                     {
                         if (entry.type == ShortcutType.Action)
@@ -208,6 +249,10 @@ namespace UnityEditor.ShortcutManagement
                         else if (entry.type == ShortcutType.Clutch)
                             m_MouseClutchEntries.Add(entry);
                     }
+
+                    s_QueuedMouseClutchEvent.CopyFrom(evt);
+
+                    SetClutchContextActive(contextManager, evt.keyCode, m_MouseClutchEntries);
 
                     if (m_MouseActionEntries.Count > 1)
                     {
@@ -220,11 +265,11 @@ namespace UnityEditor.ShortcutManagement
                         ShortcutArguments args = new ShortcutArguments();
                         if (m_ActiveMouseActionEntry.entry == null || m_ActiveMouseActionEntry.keyCode != evt.keyCode)
                         {
-                            args.context = contextManager.GetContextInstanceOfType(m_MouseActionEntries[0].context);
+                            args.context = contextManager.GetContextInstanceOfType(m_MouseActionEntries[0].context, true);
                             m_ActiveMouseActionEntry = (evt.keyCode, m_MouseActionEntries[0], args.context);
                         }
 
-                        Reset();
+                        ResetKeyCombo();
                         return;
                     }
                 }
@@ -233,7 +278,7 @@ namespace UnityEditor.ShortcutManagement
             switch (entries.Count)
             {
                 case 0:
-                    Reset();
+                    ResetKeyCombo();
                     break;
 
                 case 1:
@@ -243,18 +288,63 @@ namespace UnityEditor.ShortcutManagement
                         if (evt.keyCode != m_KeyCombinationSequence[^1].keyCode)
                             break;
 
-                        var context = contextManager.GetContextInstanceOfType(shortcutEntry.context);
+                        var context = contextManager.GetContextInstanceOfType(shortcutEntry.context, true);
                         if (context == null)
                         {
-                            Reset();
+                            ResetKeyCombo();
                             break;
+                        }
+
+                        // When a clutch key that belongs to a dependent context is invoked while we are waiting to
+                        // determine whether a mouse button is a click or drag, consider that key to be an indication
+                        // that this is a "drag" (clutch).
+                        if(m_MouseActionEntries.Count > 0 && m_MouseClutchEntries.Count == 1)
+                        {
+                            foreach (var kvp in m_ClutchActivatedContexts)
+                            {
+                                if (kvp.Value != context)
+                                    continue;
+
+                                // invoke the queued mouse clutch shortcut first, then allow the current event to be invoked
+                                var queued = m_MouseClutchEntries[0];
+                                var key = queued.combinations[0].keyCode;
+
+                                if (!m_ActiveClutches.ContainsKey(key)
+                                    && contextManager.GetContextInstanceOfType(queued.context, true) is var mouseCtx)
+                                {
+                                    m_ClutchActivatedContexts.Remove(kvp.Key);
+
+                                    // null check because when HandleKeyEvent is invoked from tests the current event is
+                                    // not used.
+                                    if (Event.current != null)
+                                    {
+                                        s_CachedCurrentEvent.CopyFrom(Event.current);
+                                        Event.current.CopyFrom(s_QueuedMouseClutchEvent);
+                                        ExecuteShortcut(queued, ShortcutStage.Begin, mouseCtx, true);
+                                        Event.current.CopyFrom(s_CachedCurrentEvent);
+                                    }
+                                    else
+                                    {
+                                        ExecuteShortcut(queued, ShortcutStage.Begin, mouseCtx, true);
+                                    }
+
+                                    m_ActiveClutches.Add(key, new ActiveClutch()
+                                    {
+                                        entry = queued,
+                                        context = mouseCtx,
+                                        clutchContext = context as ClutchShortcutContext
+                                    });
+
+                                    break;
+                                }
+                            }
                         }
 
                         switch (shortcutEntry.type)
                         {
                             case ShortcutType.Menu:
                             case ShortcutType.Action:
-                                ExecuteShortcut(shortcutEntry, ShortcutStage.End, context);
+                                ExecuteShortcut(shortcutEntry, ShortcutStage.End, context, true);
                                 evt.Use();
                                 break;
 
@@ -262,9 +352,17 @@ namespace UnityEditor.ShortcutManagement
                                 if (!m_ActiveClutches.ContainsKey(evt.keyCode))
                                 {
                                     var evtKeyCode = evt.keyCode;
-                                    var args = ExecuteShortcut(shortcutEntry, ShortcutStage.Begin, context);
-                                    var keyValuePair = new KeyValuePair<ShortcutEntry, object>(shortcutEntry, args.context);
-                                    m_ActiveClutches.Add(evtKeyCode, keyValuePair);
+                                    m_ClutchActivatedContexts.Remove(evtKeyCode);
+                                    var args = ExecuteShortcut(shortcutEntry, ShortcutStage.Begin, context, true);
+                                    m_ActiveClutches.Add(evtKeyCode, new ActiveClutch()
+                                    {
+                                        entry = shortcutEntry,
+                                        context = args.context,
+                                        clutchContext = shortcutEntry.clutchContext == null
+                                            ? null
+                                            : contextManager.GetContextInstanceOfType(shortcutEntry.clutchContext, true) as
+                                                ClutchShortcutContext
+                                    });
                                     evt.Use();
                                 }
                                 break;
@@ -279,9 +377,24 @@ namespace UnityEditor.ShortcutManagement
                             m_ConflictResolver.ResolveConflict(m_KeyCombinationSequence, entries);
 
                         evt.Use();
-                        Reset();
+                        ResetKeyCombo();
                     }
                     break;
+            }
+        }
+
+        void SetClutchContextActive(IContextManager context, KeyCode key, IEnumerable<ShortcutEntry> shortcuts)
+        {
+            foreach (var entry in shortcuts)
+            {
+                if (entry.type != ShortcutType.Clutch || entry.clutchContext == null)
+                    continue;
+
+                if (context.GetContextInstanceOfType(entry.clutchContext, false) is ClutchShortcutContext ctx)
+                {
+                    m_ClutchActivatedContexts[key] = ctx;
+                    ctx.active = true;
+                }
             }
         }
 
@@ -362,7 +475,7 @@ namespace UnityEditor.ShortcutManagement
 
                 case 1:
                     var newShortcutEntry = newEntries[0];
-                    var newContext = contextManager.GetContextInstanceOfType(newShortcutEntry.context);
+                    var newContext = contextManager.GetContextInstanceOfType(newShortcutEntry.context, true);
                     var newContextType = newContext.GetType();
                     var previousContext = activeClutchShortcutEntry.context;
                     if (previousContext != newContextType)
@@ -370,9 +483,16 @@ namespace UnityEditor.ShortcutManagement
 
                     ResetActiveClutches();
 
-                    var newArgs = ExecuteShortcut(newShortcutEntry, ShortcutStage.Begin, newContext);
-                    var newKeyValuePair = new KeyValuePair<ShortcutEntry, object>(newShortcutEntry, newArgs.context);
-                    m_ActiveClutches.Add(newActiveClutchKeyCombination.keyCode, newKeyValuePair);
+                    m_ClutchActivatedContexts.Remove(newActiveClutchKeyCombination.keyCode);
+
+                    var newArgs = ExecuteShortcut(newShortcutEntry, ShortcutStage.Begin, newContext, true);
+
+                    m_ActiveClutches.Add(newActiveClutchKeyCombination.keyCode, new ActiveClutch()
+                    {
+                        entry = newShortcutEntry,
+                        context = newArgs.context,
+                        clutchContext = contextManager.GetContextInstanceOfType(newShortcutEntry.clutchContext, true) as ClutchShortcutContext
+                    });
 
                     evt.Use();
 
@@ -385,7 +505,7 @@ namespace UnityEditor.ShortcutManagement
                             m_ConflictResolver.ResolveConflict(keyCombinationSequence, newEntries);
 
                         evt.Use();
-                        Reset();
+                        ResetKeyCombo();
 
                         return true;
                     }
@@ -396,15 +516,21 @@ namespace UnityEditor.ShortcutManagement
 
         public void ResetActiveClutches()
         {
-            foreach (var clutchKeyValuePair in m_ActiveClutches.Values)
+            // this is done in two passes to ensure that shortcuts enabled by a clutch context are ended before the
+            // parent clutch shortcut ends. it is necessary because the child clutch can be dependent on state managed
+            // by the parent (see scene view fps camera navigation).
+            foreach (var shortcut in m_ActiveClutches.Values)
             {
-                var args = new ShortcutArguments
-                {
-                    context = clutchKeyValuePair.Value,
-                    stage = ShortcutStage.End,
-                };
-                invokingAction?.Invoke(clutchKeyValuePair.Key, args);
-                clutchKeyValuePair.Key.action(args);
+                if (shortcut.clutchContext == null)
+                    ExecuteShortcut(shortcut.entry, ShortcutStage.End, shortcut.context);
+            }
+
+            foreach (var shortcut in m_ActiveClutches.Values)
+            {
+                if (shortcut.clutchContext == null)
+                    continue;
+                ExecuteShortcut(shortcut.entry, ShortcutStage.End, shortcut.context);
+                shortcut.clutchContext.active = false;
             }
 
             m_ActiveClutches.Clear();
@@ -439,17 +565,12 @@ namespace UnityEditor.ShortcutManagement
             return shortcutEntry.FullyMatches(keyCombinationSequence);
         }
 
-        void Reset()
-        {
-            m_KeyCombinationSequence.Clear();
-        }
-
         bool CurrentContextManagerHasPriorityContextFor(ShortcutEntry entry)
         {
             return m_CurrentContextManager.HasPriorityContextOfType(entry.context);
         }
 
-        ShortcutArguments ExecuteShortcut(ShortcutEntry entry, ShortcutStage stage, object context)
+        ShortcutArguments ExecuteShortcut(ShortcutEntry entry, ShortcutStage stage, object context, bool reset = false)
         {
             var args = new ShortcutArguments
             {
@@ -457,17 +578,63 @@ namespace UnityEditor.ShortcutManagement
                 stage = stage
             };
 
-            invokingAction?.Invoke(entry, args);
-            entry.action(args);
-
-            Reset();
-            ResetMouseShortcuts();
+            try
+            {
+                // it is imperative that exception does not derail execution here. after execution active clutches
+                // need to be cleared, otherwise trigger state can be irreparably corrupted.
+                beforeShortcutInvoked?.Invoke(entry, args);
+                entry.action(args);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+            finally
+            {
+                if (reset)
+                {
+                    ResetKeyCombo();
+                    ResetMouseShortcuts();
+                }
+            }
 
             return args;
         }
 
+        void DeactivateClutchContext(ClutchShortcutContext context)
+        {
+            if (context == null)
+                return;
+
+            m_ContextClutchKeyRemoveQueue.Clear();
+
+            // end any active clutches that are subject to this context
+            foreach (var active in m_ActiveClutches)
+            {
+                if (active.Value.context != context)
+                    continue;
+                m_ContextClutchKeyRemoveQueue.Add(active.Key);
+                ExecuteShortcut(active.Value.entry, ShortcutStage.End, context);
+            }
+
+            foreach (var key in m_ContextClutchKeyRemoveQueue)
+                m_ActiveClutches.Remove(key);
+
+            context.active = false;
+        }
+
+        void ResetKeyCombo()
+        {
+            m_KeyCombinationSequence.Clear();
+        }
+
         void ResetMouseShortcuts()
         {
+            foreach (var clutch in m_ClutchActivatedContexts)
+                DeactivateClutchContext(clutch.Value);
+
+            m_ClutchActivatedContexts.Clear();
+
             ResetActiveMouseActionEntry();
             m_MouseClutchEntries.Clear();
             m_MouseActionEntries.Clear();

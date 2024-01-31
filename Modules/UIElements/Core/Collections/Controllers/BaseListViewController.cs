@@ -95,13 +95,6 @@ namespace UnityEngine.UIElements
                 for (var i = indices.Count - 1; i >= 0; i--)
                 {
                     var index = indices[i];
-
-                    if (m_BaseListViewController.view.sourceIncludesArraySize)
-                    {
-                        //we must offset everything by 1
-                        index--;
-                    }
-
                     serializedObjectList.RemoveAt(index, listCount);
                     listCount--;
                 }
@@ -112,12 +105,6 @@ namespace UnityEngine.UIElements
 
             public void RemoveItem(int index)
             {
-                if (m_BaseListViewController.view.sourceIncludesArraySize)
-                {
-                    //we must offset everything by 1
-                    index--;
-                }
-
                 using (ListPool<int>.Get(out var indices))
                 {
                     indices.Add(index);
@@ -141,13 +128,6 @@ namespace UnityEngine.UIElements
 
             public void Move(int srcIndex, int destIndex)
             {
-                if (m_BaseListViewController.view.sourceIncludesArraySize)
-                {
-                    //we must offset everything by 1
-                    srcIndex--;
-                    destIndex--;
-                }
-
                 if (srcIndex == destIndex)
                     return;
 
@@ -225,7 +205,7 @@ namespace UnityEngine.UIElements
         /// <returns>Whether or not the drag handle is needed.</returns>
         public virtual bool NeedsDragHandle(int index)
         {
-            return !baseListView.sourceIncludesArraySize || index != 0;
+            return true;
         }
 
         /// <summary>

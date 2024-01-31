@@ -708,7 +708,7 @@ namespace UnityEditor.U2D
             ITexturePlatformSettingsView view = isSecondary ? m_SecondaryTexturePlatformSettingsView : m_TexturePlatformSettingsView;
             if (shownTextureFormatPage == -1)
             {
-                if (m_TexturePlatformSettingsController.HandleDefaultSettings(defaultPlatformSettings, m_TexturePlatformSettingsView, m_TexturePlatformSettingTextureHelper))
+                if (m_TexturePlatformSettingsController.HandleDefaultSettings(defaultPlatformSettings, view, m_TexturePlatformSettingTextureHelper))
                 {
                     for (var i = 0; i < defaultPlatformSettings.Count; ++i)
                     {
@@ -746,7 +746,7 @@ namespace UnityEditor.U2D
                 }
 
                 m_TexturePlatformSettingsView.buildPlatformTitle = buildPlatform.title.text;
-                if (m_TexturePlatformSettingsController.HandlePlatformSettings(buildPlatform.defaultTarget, platformSettings, m_TexturePlatformSettingsView, m_TexturePlatformSettingTextureHelper))
+                if (m_TexturePlatformSettingsController.HandlePlatformSettings(buildPlatform.defaultTarget, platformSettings, view, m_TexturePlatformSettingTextureHelper))
                 {
                     for (var i = 0; i < platformSettings.Count; ++i)
                     {
