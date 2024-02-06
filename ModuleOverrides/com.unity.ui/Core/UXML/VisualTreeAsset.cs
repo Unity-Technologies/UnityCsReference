@@ -385,6 +385,10 @@ namespace UnityEngine.UIElements
                     // otherwise, if there is a CC, we want to insert in the shadow
                     target.hierarchy.Add(rootVe);
                 }
+                else if (rootElement.fullTypeName == "Unity.UI.Builder.UnityUIBuilderSelectionMarker")
+                {
+                    // Not outputting anything to the console for this particular element.
+                }
                 else
                 {
                     Debug.LogWarning("VisualTreeAsset instantiated an empty UI. Check the syntax of your UXML document.");
@@ -395,6 +399,9 @@ namespace UnityEngine.UIElements
         private VisualElement CloneSetupRecursively(VisualElementAsset root,
             Dictionary<int, List<VisualElementAsset>> idToChildren, CreationContext context)
         {
+            if (root.skipClone)
+                return null;
+
             VisualElement ve = Create(root, context);
             if (ve == null)
             {

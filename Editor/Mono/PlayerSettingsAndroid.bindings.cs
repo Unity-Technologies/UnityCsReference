@@ -184,6 +184,12 @@ namespace UnityEditor
         public Texture2D banner;
     }
 
+    public enum AndroidAutoRotationBehavior
+    {
+        User = 1,
+        Sensor = 2,
+    }
+
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
     public partial class PlayerSettings : UnityEngine.Object
     {
@@ -255,6 +261,14 @@ namespace UnityEditor
                 get;
                 [NativeMethod("SetAndroidFullscreenMode")]
                 set;
+            }
+
+            public static extern AndroidAutoRotationBehavior autoRotationBehavior
+            {
+               [NativeMethod("GetAndroidAutoRotationBehavior")]
+               get;
+               [NativeMethod("SetAndroidAutoRotationBehavior")]
+               set;
             }
 
             // Android bundle version code

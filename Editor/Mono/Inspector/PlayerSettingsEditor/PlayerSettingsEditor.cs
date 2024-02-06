@@ -1064,6 +1064,9 @@ namespace UnityEditor
                             if (namedBuildTarget == NamedBuildTarget.iOS)
                                 EditorGUILayout.PropertyField(m_UseOSAutoRotation, SettingsContent.useOSAutoRotation);
 
+                            if (settingsExtension != null)
+                                settingsExtension.AutoRotationSectionGUI();
+
                             EditorGUI.indentLevel++;
 
                             GUILayout.Label(SettingsContent.allowedOrientationTitle, EditorStyles.boldLabel);

@@ -1242,7 +1242,7 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Visibility:
                     inheritedData.Write().visibility = (Visibility)newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Picking | VersionChangeType.StyleSheet);
                     break;
                 case StylePropertyId.WhiteSpace:
                     inheritedData.Write().whiteSpace = (WhiteSpace)newValue;

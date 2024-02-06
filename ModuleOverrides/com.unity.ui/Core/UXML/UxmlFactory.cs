@@ -156,6 +156,11 @@ namespace UnityEngine.UIElements
         VisualElement Create(IUxmlAttributes bag, CreationContext cc);
     }
 
+    internal interface IUxmlFactoryInternal
+    {
+        Type uxmlType { get; }
+    }
+
     /// <summary>
     /// Generic base class for UXML factories, which instantiate a VisualElement using the data read from a UXML file.
     /// </summary>
@@ -164,7 +169,7 @@ namespace UnityEngine.UIElements
     ///
     /// /T1/ The traits of the element that will be instantiated. It must derive from <see cref="UxmlTraits"/>.
     /// </remarks>
-    public class UxmlFactory<TCreatedType, TTraits> : IUxmlFactory where TCreatedType : VisualElement, new() where TTraits : UxmlTraits, new()
+    public class UxmlFactory<TCreatedType, TTraits> : IUxmlFactory, IUxmlFactoryInternal where TCreatedType : VisualElement, new() where TTraits : UxmlTraits, new()
     {
         // Make private once we get rid of PropertyControl
         internal TTraits m_Traits;
@@ -305,6 +310,8 @@ namespace UnityEngine.UIElements
             m_Traits.Init(ve, bag, cc);
             return ve;
         }
+
+        Type IUxmlFactoryInternal.uxmlType => typeof(TCreatedType);
     }
 
     /// <summary>

@@ -160,6 +160,10 @@ namespace UnityEngine.UIElements
         internal static readonly string ussFoldoutChildDepthClassName = $"{Foldout.ussClassName}__{ussClassName}--depth-";
         internal static readonly List<string> ussFoldoutChildDepthClassNames;
 
+        // A bit of a hack used by UnityEventDrawer to send events directly to the IMGUIContainer that's being drawn.
+        // This hack isn't needed in 2022+ so this static field is only available in 2021 and shouldn't be exposed if not necessary.
+        internal static IMGUIContainer current;
+
         static IMGUIContainer()
         {
             ussFoldoutChildDepthClassNames = new List<string>(Foldout.ussFoldoutMaxDepth + 1);
@@ -345,6 +349,8 @@ namespace UnityEngine.UIElements
 
             try
             {
+                current = this;
+
                 using (new GUIClip.ParentClipScope(parentTransform, clippingRect))
                 {
                     using (k_OnGUIMarker.Auto())
@@ -372,6 +378,8 @@ namespace UnityEngine.UIElements
             }
             finally
             {
+                current = null;
+
                 if (Event.current.type != EventType.Layout && canAffectFocus)
                 {
                     int currentKeyboardFocus = GUIUtility.keyboardControl;

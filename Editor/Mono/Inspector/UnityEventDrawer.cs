@@ -10,6 +10,7 @@ using System.Text;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Events;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 using UnityEngine.Pool;
 
@@ -59,6 +60,7 @@ namespace UnityEditorInternal
         ReorderableList m_ReorderableList;
         int m_LastSelectedIndex;
         Dictionary<string, State> m_States = new Dictionary<string, State>();
+        PopupList m_PopupList;
 
         static string GetEventParams(UnityEventBase evt)
         {
@@ -297,8 +299,22 @@ namespace UnityEditorInternal
                         buttonContent = GUIContent.Temp(buttonLabel.ToString());
                     }
 
+                    var eventType = Event.current.type;
                     if (EditorGUI.DropdownButton(functionRect, buttonContent, FocusType.Passive, EditorStyles.popup))
-                        BuildPopupList(listenerTarget.objectReferenceValue, m_DummyEvent, pListener).DropDown(functionRect);
+                    {
+                        m_PopupList = BuildPopupList(listenerTarget.objectReferenceValue, m_DummyEvent, pListener);
+                        m_PopupList.menu.DropDown(functionRect);
+                    }
+
+                    // UUM-30675: Changes are detected only if they are applied within the BeginProperty/EndProperty block.
+                    // Calling the DropDown method activates an OS-driven GenericMenu that triggers its callback from a
+                    // separate call stack, resulting in the EditorGUI.EndChangeCheck() method missing the changes.
+                    // Hence, we assign the changes to do to a delegate and apply them on the next call to OnGUI.
+                    if (m_PopupList != null && m_PopupList.applyItemSelectedAction != null && eventType != EventType.Layout)
+                    {
+                        m_PopupList.applyItemSelectedAction.Invoke();
+                        m_PopupList.applyItemSelectedAction = null;
+                    }
                 }
                 EditorGUI.EndProperty();
             }
@@ -476,7 +492,20 @@ namespace UnityEditorInternal
             return dummyEvent.FindMethod(methodName, uObject.GetType(), modeEnum, argumentType) != null;
         }
 
-        internal static GenericMenu BuildPopupList(Object target, UnityEventBase dummyEvent, SerializedProperty listener)
+        internal class PopupList
+        {
+            public GenericMenu menu;
+            public Action applyItemSelectedAction;
+            public IMGUIContainer imguiContainer;
+
+            public PopupList(GenericMenu menu)
+            {
+                this.menu = menu;
+                this.imguiContainer = IMGUIContainer.current;
+            }
+        }
+
+        internal static PopupList BuildPopupList(Object target, UnityEventBase dummyEvent, SerializedProperty listener)
         {
             //special case for components... we want all the game objects targets there!
             var targetToUse = target;
@@ -487,13 +516,15 @@ namespace UnityEditorInternal
             var methodName = listener.FindPropertyRelative(kMethodNamePath);
 
             var menu = new GenericMenu();
+            var popupList = new PopupList(menu);
+
             menu.AddItem(new GUIContent(kNoFunctionString),
                 string.IsNullOrEmpty(methodName.stringValue),
-                ClearEventFunction,
+                source => ClearEventFunction(popupList, source),
                 new UnityEventFunction(listener, null, null, PersistentListenerMode.EventDefined));
 
             if (targetToUse == null)
-                return menu;
+                return popupList;
 
             menu.AddSeparator("");
 
@@ -508,7 +539,7 @@ namespace UnityEditorInternal
             var duplicateNames = DictionaryPool<string, int>.Get();
             var duplicateFullNames = DictionaryPool<string, int>.Get();
 
-            GeneratePopUpForType(menu, targetToUse, targetToUse.GetType().Name, listener, delegateArgumentsTypes);
+            GeneratePopUpForType(popupList, targetToUse, targetToUse.GetType().Name, listener, delegateArgumentsTypes);
             duplicateNames[targetToUse.GetType().Name] = 0;
             if (targetToUse is GameObject)
             {
@@ -543,18 +574,19 @@ namespace UnityEditorInternal
                         else
                             targetName = compType.FullName;
                     }
-                    GeneratePopUpForType(menu, comp, targetName, listener, delegateArgumentsTypes);
+                    GeneratePopUpForType(popupList, comp, targetName, listener, delegateArgumentsTypes);
                     duplicateFullNames[compType.FullName] = duplicateIndex + 1;
                 }
 
                 DictionaryPool<string, int>.Release(duplicateNames);
                 DictionaryPool<string, int>.Release(duplicateFullNames);
             }
-            return menu;
+            return popupList;
         }
 
-        private static void GeneratePopUpForType(GenericMenu menu, Object target, string targetName, SerializedProperty listener, Type[] delegateArgumentsTypes)
+        private static void GeneratePopUpForType(PopupList popupList, Object target, string targetName, SerializedProperty listener, Type[] delegateArgumentsTypes)
         {
+            var menu = popupList.menu;
             var methods = new List<ValidMethodMap>();
             bool didAddDynamic = false;
 
@@ -564,8 +596,8 @@ namespace UnityEditorInternal
                 GetMethodsForTargetAndMode(target, delegateArgumentsTypes, methods, PersistentListenerMode.EventDefined);
                 if (methods.Count > 0)
                 {
-                    menu.AddDisabledItem(new GUIContent(targetName + "/Dynamic " + string.Join(", ", delegateArgumentsTypes.Select(e => GetTypeName(e)).ToArray())));
-                    AddMethodsToMenu(menu, listener, methods, targetName);
+                    popupList.menu.AddDisabledItem(new GUIContent(targetName + "/Dynamic " + string.Join(", ", delegateArgumentsTypes.Select(e => GetTypeName(e)).ToArray())));
+                    AddMethodsToMenu(popupList, listener, methods, targetName);
                     didAddDynamic = true;
                 }
             }
@@ -581,19 +613,19 @@ namespace UnityEditorInternal
             {
                 if (didAddDynamic)
                     // AddSeperator doesn't seem to work for sub-menus, so we have to use this workaround instead of a proper separator for now.
-                    menu.AddItem(new GUIContent(targetName + "/ "), false, null);
+                    popupList.menu.AddItem(new GUIContent(targetName + "/ "), false, null);
                 if (delegateArgumentsTypes.Length != 0)
-                    menu.AddDisabledItem(new GUIContent(targetName + "/Static Parameters"));
-                AddMethodsToMenu(menu, listener, methods, targetName);
+                    popupList.menu.AddDisabledItem(new GUIContent(targetName + "/Static Parameters"));
+                AddMethodsToMenu(popupList, listener, methods, targetName);
             }
         }
 
-        private static void AddMethodsToMenu(GenericMenu menu, SerializedProperty listener, List<ValidMethodMap> methods, string targetName)
+        private static void AddMethodsToMenu(PopupList popupList, SerializedProperty listener, List<ValidMethodMap> methods, string targetName)
         {
             // Note: sorting by a bool in OrderBy doesn't seem to work for some reason, so using numbers explicitly.
             IEnumerable<ValidMethodMap> orderedMethods = methods.OrderBy(e => e.methodInfo.Name.StartsWith("set_") ? 0 : 1).ThenBy(e => e.methodInfo.Name);
             foreach (var validMethod in orderedMethods)
-                AddFunctionsForScript(menu, listener, validMethod, targetName);
+                AddFunctionsForScript(popupList, listener, validMethod, targetName);
         }
 
         private static void GetMethodsForTargetAndMode(Object target, Type[] delegateArgumentsTypes, List<ValidMethodMap> methods, PersistentListenerMode mode)
@@ -607,7 +639,7 @@ namespace UnityEditorInternal
             }
         }
 
-        static void AddFunctionsForScript(GenericMenu menu, SerializedProperty listener, ValidMethodMap method, string targetName)
+        static void AddFunctionsForScript(PopupList popupList, SerializedProperty listener, ValidMethodMap method, string targetName)
         {
             PersistentListenerMode mode = method.mode;
 
@@ -638,9 +670,9 @@ namespace UnityEditorInternal
             }
 
             string path = GetFormattedMethodName(targetName, method.methodInfo.Name, args.ToString(), mode == PersistentListenerMode.EventDefined);
-            menu.AddItem(new GUIContent(path),
+            popupList.menu.AddItem(new GUIContent(path),
                 isCurrentlySet,
-                SetEventFunction,
+                source => SetEventFunction(popupList, source),
                 new UnityEventFunction(listener, method.target, method.methodInfo, mode));
         }
 
@@ -675,14 +707,21 @@ namespace UnityEditorInternal
             }
         }
 
-        static void SetEventFunction(object source)
+        static void SetEventFunction(PopupList popupList, object source)
         {
-            ((UnityEventFunction)source).Assign();
+            popupList.applyItemSelectedAction = () => ((UnityEventFunction)source).Assign();
+            Redraw(popupList);
         }
 
-        static void ClearEventFunction(object source)
+        static void ClearEventFunction(PopupList popupList, object source)
         {
-            ((UnityEventFunction)source).Clear();
+            popupList.applyItemSelectedAction = () => ((UnityEventFunction)source).Clear();
+            Redraw(popupList);
+        }
+
+        static void Redraw(PopupList popupList)
+        {
+            popupList.imguiContainer.SendEventToIMGUI(UIElementsUtility.CreateEvent(new Event { type = EventType.Repaint }));
         }
 
         struct UnityEventFunction
@@ -713,6 +752,7 @@ namespace UnityEditorInternal
                 listenerTargetType.stringValue = m_Method.DeclaringType.AssemblyQualifiedName;
                 methodName.stringValue = m_Method.Name;
                 mode.enumValueIndex = (int)m_Mode;
+                GUI.changed = true;
 
                 if (m_Mode == PersistentListenerMode.Object)
                 {
@@ -758,6 +798,7 @@ namespace UnityEditorInternal
 
                 var mode = m_Listener.FindPropertyRelative(kModePath);
                 mode.enumValueIndex = (int)PersistentListenerMode.Void;
+                GUI.changed = true;
 
                 m_Listener.m_SerializedObject.ApplyModifiedProperties();
             }
