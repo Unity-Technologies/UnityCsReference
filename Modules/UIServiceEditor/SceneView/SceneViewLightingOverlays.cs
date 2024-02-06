@@ -127,7 +127,7 @@ namespace UnityEditor
                 case DrawCameraMode.ValidateAlbedo:
                 case DrawCameraMode.ValidateMetalSpecular:
                     displayName = "PBR Validation Settings";
-                    m_AlbedoContent.Q<HelpBox>().EnableInClassList(k_UnityHiddenClass, PlayerSettings.colorSpace != ColorSpace.Gamma);
+                    m_AlbedoContent.Q<HelpBox>()?.EnableInClassList(k_UnityHiddenClass, PlayerSettings.colorSpace != ColorSpace.Gamma);
                     m_SceneView.SetOverlayVisible(k_OverlayID, true);
                     break;
 

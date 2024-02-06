@@ -245,6 +245,8 @@ namespace UnityEditor.Modules
         bool SupportsFrameTimingStatistics();
 
         void SerializedObjectUpdated();
+
+        void AutoRotationSectionGUI();
     }
 
 

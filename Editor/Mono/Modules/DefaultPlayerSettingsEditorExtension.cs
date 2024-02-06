@@ -145,5 +145,7 @@ namespace UnityEditor.Modules
         }
 
         public virtual void VulkanSectionGUI() {}
+
+        public virtual void AutoRotationSectionGUI() {}
     }
 }

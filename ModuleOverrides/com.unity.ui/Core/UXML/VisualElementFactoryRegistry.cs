@@ -56,6 +56,22 @@ namespace UnityEngine.UIElements
             return factories.TryGetValue(fullTypeName, out factoryList);
         }
 
+        internal static bool TryGetValue(Type type, out List<IUxmlFactory> factoryList)
+        {
+            foreach (var fl in factories.Values)
+            {
+                var f = fl[0];
+                if (f is IUxmlFactoryInternal factory && factory.uxmlType == type)
+                {
+                    factoryList = fl;
+                    return true;
+                }
+            }
+
+            factoryList = null;
+            return false;
+        }
+
         // Core UI Toolkit elements must be registered manually for both Editor and Player use cases.
         // For performance in the Player we want to avoid scanning any builtin Unity assembly with reflection.
         // Ideally a mechanism similar to the TypeCache in the Player would exist and remove the need for this.

@@ -120,7 +120,7 @@ namespace UnityEditor
             Rect objectFieldRect = new Rect(rect.x, rect.y, rect.width * 0.6f, EditorGUI.kSingleLineHeight);
             rect.height = EditorGUI.kSingleLineHeight;
 
-            if (m_RendererMeshLists[m_ReorderableListIndex].count != m_ReoderableMeshListCounts[m_ReorderableListIndex])
+            if (m_RendererMeshLists.Length != m_ReoderableMeshListCounts.Length || m_RendererMeshLists[m_ReorderableListIndex].count != m_ReoderableMeshListCounts[m_ReorderableListIndex])
             {
                 CalculatePrimitiveCountForRenderers();
                 UpdateRendererMeshListCounts();

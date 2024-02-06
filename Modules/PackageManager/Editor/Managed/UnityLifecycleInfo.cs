@@ -22,17 +22,23 @@ namespace UnityEditor.PackageManager.UnityLifecycle
 
         [SerializeField]
         [NativeName("nextVersion")]
-        private string m_Nextversion;
+        private string m_NextVersion;
+
+        [SerializeField]
+        [NativeName("recommendedVersion")]
+        private string m_RecommendedVersion;
 
         public string version => m_Version;
-        public string nextVersion => m_Nextversion;
+        public string nextVersion => m_NextVersion;
+        public string recommendedVersion => m_RecommendedVersion;
 
-        internal UnityLifecycleInfo() : this("", "") {}
+        internal UnityLifecycleInfo() : this("", "", "") {}
 
-        internal UnityLifecycleInfo(string version, string nextVersion)
+        internal UnityLifecycleInfo(string version, string nextVersion, string recommendedVersion)
         {
             m_Version = version;
-            m_Nextversion = nextVersion;
+            m_NextVersion = nextVersion;
+            m_RecommendedVersion = recommendedVersion;
         }
     }
 }

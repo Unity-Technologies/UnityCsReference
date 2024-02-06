@@ -155,7 +155,7 @@ namespace UnityEditor
 
                     foreach (var instr in method.Body.Instructions)
                     {
-                        if (OpCodes.Call == instr.OpCode)
+                        if (OpCodes.Call == instr.OpCode || OpCodes.Callvirt == instr.OpCode)
                         {
                             var name = instr.Operand.ToString();
                             if (!isSystem)
@@ -286,6 +286,51 @@ namespace UnityEditor
 
             return null;
         }
+
+        public Dictionary<string, List<string>> WhoReferencesMethods(string[] methods, bool ignoreSystemDlls)
+        {
+            var assembliesReferencingMethods = new Dictionary<string, List<string>>();
+            foreach (var assembly in _assemblyDefinitions)
+            {
+                if (ignoreSystemDlls && IsIgnoredSystemDll(assembly))
+                    continue;
+
+                foreach (var type in assembly.MainModule.Types)
+                {
+                    foreach (var method in type.Methods)
+                    {
+                        try
+                        {
+                            if (!method.HasBody)
+                                continue;
+
+                            foreach (var instr in method.Body.Instructions)
+                            {
+                                if (OpCodes.Call == instr.OpCode || OpCodes.Callvirt == instr.OpCode)
+                                {
+                                    var name = instr.Operand.ToString();
+                                    foreach (var m in methods)
+                                    {
+                                        if (!name.Contains(m))
+                                            continue;
+                                        if (!assembliesReferencingMethods.ContainsKey(m))
+                                            assembliesReferencingMethods[m] = new List<string>();
+                                        assembliesReferencingMethods[m].Add(assembly.Name.Name);
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new InvalidOperationException($"Error while observing opcode in {type.FullName}::{method?.ToString()}", ex);
+                        }
+                    }
+                }
+            }
+
+            return assembliesReferencingMethods;
+        }
+
 
         public static bool IsIgnoredSystemDll(AssemblyDefinition assembly)
         {

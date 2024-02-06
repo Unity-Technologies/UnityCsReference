@@ -1033,10 +1033,22 @@ namespace UnityEngine.UIElements
                 pseudoStates &= ~PseudoStates.Hover;
         }
 
+        private PickingMode m_PickingMode;
+
         /// <summary>
         /// Determines if this element can be pick during mouseEvents or <see cref="IPanel.Pick"/> queries.
         /// </summary>
-        public PickingMode pickingMode { get; set; }
+        public PickingMode pickingMode
+        {
+            get => m_PickingMode;
+            set
+            {
+                if (m_PickingMode == value)
+                    return;
+                m_PickingMode = value;
+                IncrementVersion(VersionChangeType.Picking);
+            }
+        }
 
         /// <summary>
         /// The name of this VisualElement.

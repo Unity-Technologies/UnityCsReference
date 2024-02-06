@@ -81,6 +81,16 @@ namespace UnityEditor.Animations
             AnimatorControllerLayer[] layerVector = this.layers;
             foreach (var layerIndex in layerIndexes)
             {
+                for (var i = 0; i < layerVector.Length; ++i)
+                {
+                    var syncedLayerIndex = layerVector[i].syncedLayerIndex;
+                    if (syncedLayerIndex > layerIndex)
+                    {
+                        // synced layer is after the layer being removed, so it's going to be shifted upon removal
+                        layerVector[i].syncedLayerIndex = syncedLayerIndex - 1;
+                    }
+                }
+
                 RemoveLayerInternal(layerIndex, ref layerVector);
             }
             this.layers = layerVector;

@@ -55,6 +55,8 @@ namespace UnityEngine.UIElements
         RenderHints = 1 << 14,
         // The 'transition-property' style of the element has changed (impacts cancelling of ongoing style transitions)
         TransitionProperty = 1 << 15,
+        // Some property changed that potentially invalidates cached Picking results
+        Picking = 1 << 20,
     }
 
     /// <summary>
@@ -90,7 +92,24 @@ namespace UnityEngine.UIElements
         /// consecutive push/push or pop/pop operations.
         /// </summary>
         /// <remarks>
-        /// This flag is implicitly set on the root VisualElement, making single-level masks non-batch-breaking by default.
+        /// This option reduces stencil state changes and capitalizes on consecutive
+        /// mask push/pop operations for efficiency.\\
+        /// \\
+        /// Apply this option to a VisualElement with multiple nested masks among its descendants. For example, a child element
+        /// has the `overflow: hidden;` style with rounded corners or SVG background.\\
+        /// \\
+        /// The following illustration shows the number of batches in a single-level masking, a nested masking, and a nested masking with MaskContainer. 
+        /// The yellow color indicates the masking elements. The orange color indicates the masking element with MaskContainer applied.
+        /// The numbers indicate the number of batches.\\
+        /// \\
+        /// {img MaskContainer.png}\\
+        /// A: Single-level masking (1 batch)\\
+        /// B: Nested masking (5 batches)\\
+        /// C: Nested masking with MaskContainer (2 batches)\\
+        /// \\
+        /// __Note__: Don't use GroupTransform in scenarios with many subtrees, where each
+        /// subtree uses two or more levels of masking. This helps minimize consecutive
+        /// push/push or pop/pop operations.
         /// </remarks>
         MaskContainer = 1 << 2,
         /// <summary>
@@ -118,7 +137,8 @@ namespace UnityEngine.UIElements
         DirtyBoneTransform = BoneTransform << DirtyOffset,
         DirtyClipWithScissors = ClipWithScissors << DirtyOffset,
         DirtyMaskContainer = MaskContainer << DirtyOffset,
-        DirtyAll = DirtyGroupTransform | DirtyBoneTransform | DirtyClipWithScissors | DirtyMaskContainer,
+        DirtyDynamicColor = DynamicColor << DirtyOffset,
+        DirtyAll = DirtyGroupTransform | DirtyBoneTransform | DirtyClipWithScissors | DirtyMaskContainer | DirtyDynamicColor,
     }
 
     // For backwards compatibility with debugger in 2020.1
