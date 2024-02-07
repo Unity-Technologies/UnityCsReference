@@ -186,8 +186,10 @@ namespace UnityEngine.UIElements
         /// Apply this option to a VisualElement with multiple nested masks among its descendants. For example, a child element
         /// has the `overflow: hidden;` style with rounded corners or SVG background.\\
         /// \\
-        /// The following image shows the difference among single-level masking, nested masking, and nested masking with MaskContainer:
-        ///
+        /// The following illustration shows the number of batches in a single-level masking, a nested masking, and a nested masking with MaskContainer. 
+        /// The yellow color indicates the masking elements. The orange color indicates the masking element with MaskContainer applied.
+        /// The numbers indicate the number of batches.\\
+        /// \\
         /// {img MaskContainer.png}\\
         /// A: Single-level masking (1 batch)\\
         /// B: Nested masking (5 batches)\\
@@ -860,6 +862,29 @@ namespace UnityEngine.UIElements
         public sealed override FocusController focusController { get; set; }
 
         public override EventInterests IMGUIEventInterests { get; set; }
+
+        // UUM-60233: Some panels are very expensive to reset and assets do not impact the UI, so in these cases, it is
+        // preferable to disable the reset.
+        bool m_ResetPanelRenderingOnAssetChange = true;
+        public bool resetPanelRenderingOnAssetChange
+        {
+            get => m_ResetPanelRenderingOnAssetChange;
+            set
+            {
+                if (m_ResetPanelRenderingOnAssetChange != value)
+                {
+                    m_ResetPanelRenderingOnAssetChange = value;
+                    if (m_ResetPanelRenderingOnAssetChange)
+                      ResetRendering();
+                }
+            }
+        }
+
+        public void ResetRendering()
+        {
+            (GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater)?.DestroyRenderChain();
+            atlas?.Reset();
+        }
 
         internal static LoadResourceFunction loadResourceFunc { private get; set; }
 

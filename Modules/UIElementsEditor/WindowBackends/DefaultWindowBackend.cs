@@ -52,6 +52,11 @@ namespace UnityEditor.UIElements
             m_Panel.IMGUIEventInterests = m_Model.eventInterests;
         }
 
+        void IWindowBackend.ResetPanelRenderingOnAssetChangeChanged()
+        {
+            m_Panel.resetPanelRenderingOnAssetChange = m_Model.resetPanelRenderingOnAssetChange;
+        }
+
         public virtual void OnDestroy(IWindowModel model)
         {
             if (imguiContainer != null)

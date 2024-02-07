@@ -573,10 +573,6 @@ namespace UnityEngine.UIElements
 
         [SerializeField]
         [HideInInspector]
-        internal bool m_EnableAdvancedTextGenerator;
-
-        [SerializeField]
-        [HideInInspector]
         internal TextAsset m_ICUDataAsset;
 
         /// <summary>
@@ -609,7 +605,7 @@ namespace UnityEngine.UIElements
             SetPanelSettingsAssetDirty?.Invoke(this);
 
             InitializeShaders();
-            m_EnableAdvancedTextGenerator = IsAdvancedTextEnabled?.Invoke() ?? false;
+            AssignICUData();
         }
 
         private void OnEnable()
@@ -629,7 +625,7 @@ namespace UnityEngine.UIElements
 
             UpdateScreenDPI();
             InitializeShaders();
-            m_EnableAdvancedTextGenerator = IsAdvancedTextEnabled?.Invoke() ?? false;
+            AssignICUData();
         }
 
         private void OnDisable()
@@ -702,6 +698,16 @@ namespace UnityEngine.UIElements
             }
 
             m_OldThemeUss = themeUss;
+        }
+
+        bool AssignICUData()
+        {
+            if (m_ICUDataAsset == null)
+            {
+                s_AssignICUData?.Invoke(this);
+                return true;
+            }
+            return false;
         }
 
         void InitializeShaders()
@@ -896,7 +902,7 @@ namespace UnityEngine.UIElements
         private RenderTexture m_OldTargetTexture;
         private float m_OldSortingOrder;
         private bool m_IsLoaded = false;
-        internal static Action<PanelSettings> s_OnValidateCallback;
+        internal static Action<PanelSettings> s_AssignICUData;
 
         private void OnValidate()
         {
@@ -941,12 +947,15 @@ namespace UnityEngine.UIElements
                     sortingOrder = m_SortingOrder;
                     isDirty = true;
                 }
+
+                if (AssignICUData())
+                {
+                    isDirty = true;
+                }
             }
             else
             {
                 m_IsLoaded = true;
-                if(this!= null)
-                    s_OnValidateCallback?.Invoke(this);
             }
 
             m_OldReferenceDpi = m_ReferenceDpi;

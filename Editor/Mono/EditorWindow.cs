@@ -41,6 +41,9 @@ namespace UnityEditor
         [HideInInspector]
         int m_AntiAliasing = 1;
 
+        [HideInInspector]
+        bool m_ResetPanelRenderingOnAssetChange = true;
+
         [SerializeField]
         [HideInInspector]
         internal Rect m_Pos = new Rect(0, 0, 320, 550);
@@ -519,6 +522,7 @@ namespace UnityEditor
             bool parentChanged =  m_Parent.depthBufferBits != m_DepthBufferBits || m_Parent.antiAliasing != m_AntiAliasing;
             m_Parent.depthBufferBits = m_DepthBufferBits;
             m_Parent.antiAliasing = m_AntiAliasing;
+            m_Parent.resetPanelRenderingOnAssetChange = m_ResetPanelRenderingOnAssetChange;
             m_Parent.SetInternalGameViewDimensions(m_GameViewRect, m_GameViewClippedRect, m_GameViewTargetSize);
             m_Parent.eventInterests = m_EventInterests;
             m_Parent.disableInputEvents = m_DisableInputEvents;
@@ -1152,6 +1156,12 @@ namespace UnityEditor
         {
             get { return m_AntiAliasing; }
             set { m_AntiAliasing = value; }
+        }
+
+        internal bool resetPanelRenderingOnAssetChange
+        {
+            get => m_ResetPanelRenderingOnAssetChange;
+            set => m_ResetPanelRenderingOnAssetChange = value;
         }
 
         internal void SetParentGameViewDimensions(Rect rect, Rect clippedRect, Vector2 targetSize)

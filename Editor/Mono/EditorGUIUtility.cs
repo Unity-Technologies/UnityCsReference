@@ -891,16 +891,27 @@ namespace UnityEditor
         [ExcludeFromDocs]
         public static GUIContent IconContent(string name)
         {
-            return IconContent(name, null);
+            return IconContent(name, null, true);
+        }
+
+        internal static GUIContent IconContent(string name, bool logError)
+        {
+            return IconContent(name, null, logError);
         }
 
         public static GUIContent IconContent(string name, [DefaultValue("null")] string text)
+        {
+            return IconContent(name, text, true);
+        }
+
+        internal static GUIContent IconContent(string name, [DefaultValue("null")] string text, bool logError)
         {
             GUIContent gc = (GUIContent)s_IconGUIContents[name];
             if (gc != null)
             {
                 return gc;
             }
+
             gc = new GUIContent();
 
             if (text != null)
@@ -911,12 +922,13 @@ namespace UnityEditor
                     gc.tooltip = strings[2];
                 }
             }
-            gc.image = LoadIconRequired(name);
+            gc.image = logError ? LoadIconRequired(name) : LoadIcon(name);
+
             s_IconGUIContents[name] = gc;
             return gc;
         }
 
-        private static GUIContent IconContent(Texture icon, string text)
+        static GUIContent IconContent(Texture icon, string text)
         {
             GUIContent gc = text != null ? (GUIContent)s_IconGUIContents[text] : null;
             if (gc != null)

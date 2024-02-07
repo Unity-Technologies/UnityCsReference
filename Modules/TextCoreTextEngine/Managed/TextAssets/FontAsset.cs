@@ -2209,7 +2209,6 @@ namespace UnityEngine.TextCore.Text
 
                 // Remove character from list to add
                 m_CharactersToAdd.RemoveAt(i);
-                i += 1;
             }
 
             // Try adding missing glyphs to

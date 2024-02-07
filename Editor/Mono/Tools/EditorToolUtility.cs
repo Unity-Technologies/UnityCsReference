@@ -245,7 +245,7 @@ namespace UnityEditor.EditorTools
 
             // First check if the tool as an icon attribute
             var iconPath = EditorGUIUtility.GetIconPathFromAttribute(editorToolType);
-            if(!string.IsNullOrEmpty(iconPath) && (res.image = EditorGUIUtility.IconContent(iconPath).image))
+            if(!string.IsNullOrEmpty(iconPath) && (res.image = EditorGUIUtility.IconContent(iconPath, false).image))
                 goto ReturnToolbarIcon;
 
             // Second check for the tool type itself

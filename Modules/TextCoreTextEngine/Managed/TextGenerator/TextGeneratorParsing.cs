@@ -427,12 +427,13 @@ namespace UnityEngine.TextCore.Text
 
                 GlyphValueRecord glyphAdjustments = new GlyphValueRecord();
                 float characterSpacingAdjustment = generationSettings.characterSpacing;
-                if (kerning)
+
+                if (kerning && m_TextElementType == TextElementType.Character)
                 {
                     GlyphPairAdjustmentRecord adjustmentPair;
                     uint baseGlyphIndex = m_CachedTextElement.m_GlyphIndex;
 
-                    if (m_CharacterCount < totalCharacterCount - 1)
+                    if (m_CharacterCount < totalCharacterCount - 1 && textInfo.textElementInfo[m_CharacterCount + 1].elementType == TextElementType.Character)
                     {
                         uint nextGlyphIndex = textInfo.textElementInfo[m_CharacterCount + 1].textElement.m_GlyphIndex;
                         uint key = nextGlyphIndex << 16 | baseGlyphIndex;
@@ -449,7 +450,7 @@ namespace UnityEngine.TextCore.Text
                         uint previousGlyphIndex = textInfo.textElementInfo[m_CharacterCount - 1].textElement.m_GlyphIndex;
                         uint key = baseGlyphIndex << 16 | previousGlyphIndex;
 
-                        if (m_CurrentFontAsset.m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup.TryGetValue(key, out adjustmentPair))
+                        if (textInfo.textElementInfo[m_CharacterCount - 1].elementType == TextElementType.Character && m_CurrentFontAsset.m_FontFeatureTable.m_GlyphPairAdjustmentRecordLookup.TryGetValue(key, out adjustmentPair))
                         {
                             glyphAdjustments += adjustmentPair.secondAdjustmentRecord.glyphValueRecord;
                             characterSpacingAdjustment = (adjustmentPair.featureLookupFlags & FontFeatureLookupFlags.IgnoreSpacingAdjustments) == FontFeatureLookupFlags.IgnoreSpacingAdjustments ? 0 : characterSpacingAdjustment;

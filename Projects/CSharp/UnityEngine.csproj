@@ -189,6 +189,9 @@
     <Compile Include="..\..\Modules\AndroidJNI\AndroidPermissions.cs">
       <Link>Modules\AndroidJNI\AndroidPermissions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\AssemblyInfo.cs">
+      <Link>Modules\AndroidJNI\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Animation\Managed\Animation.deprecated.cs">
       <Link>Modules\Animation\Managed\Animation.deprecated.cs</Link>
     </Compile>
