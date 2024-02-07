@@ -1236,6 +1236,7 @@ namespace UnityEngine.UIElements
                 if (m_PickingMode == value)
                     return;
                 m_PickingMode = value;
+                IncrementVersion(VersionChangeType.Picking);
                 NotifyPropertyChanged(pickingModeProperty);
             }
         }

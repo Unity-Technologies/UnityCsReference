@@ -112,6 +112,10 @@ namespace UnityEngine.UIElements
         /// The data source of the element was changed
         /// </summary>
         DataSource = 1 << 19,
+        /// <summary>
+        /// Some property changed that potentially invalidates cached Picking results
+        /// </summary>
+        Picking = 1 << 20,
     }
 
     /// <summary>
@@ -181,8 +185,10 @@ namespace UnityEngine.UIElements
         /// Apply this option to a VisualElement with multiple nested masks among its descendants. For example, a child element
         /// has the `overflow: hidden;` style with rounded corners or SVG background.\\
         /// \\
-        /// The following image shows the difference among single-level masking, nested masking, and nested masking with MaskContainer:
-        /// 
+        /// The following illustration shows the number of batches in a single-level masking, a nested masking, and a nested masking with MaskContainer. 
+        /// The yellow color indicates the masking elements. The orange color indicates the masking element with MaskContainer applied.
+        /// The numbers indicate the number of batches.\\
+        /// \\
         /// {img MaskContainer.png}\\
         /// A: Single-level masking (1 batch)\\
         /// B: Nested masking (5 batches)\\

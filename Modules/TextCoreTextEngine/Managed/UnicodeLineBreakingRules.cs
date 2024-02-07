@@ -11,8 +11,6 @@ namespace UnityEngine.TextCore.Text
     [Serializable]
     public class UnicodeLineBreakingRules
     {
-        private static UnicodeLineBreakingRules s_Instance = new UnicodeLineBreakingRules();
-
         /// <summary>
         /// Text file that contains the Unicode line breaking rules defined here https://www.unicode.org/reports/tr14/tr14-22.html
         /// </summary>
@@ -22,7 +20,7 @@ namespace UnityEngine.TextCore.Text
         }
         [SerializeField]
         #pragma warning disable 0649
-        private UnityEngine.TextAsset m_UnicodeLineBreakingRules;
+        UnityEngine.TextAsset m_UnicodeLineBreakingRules;
 
         /// <summary>
         /// Text file that contains the leading characters
@@ -33,7 +31,7 @@ namespace UnityEngine.TextCore.Text
         }
         [SerializeField]
         #pragma warning disable 0649
-        private UnityEngine.TextAsset m_LeadingCharacters;
+        UnityEngine.TextAsset m_LeadingCharacters;
 
         /// <summary>
         /// Text file that contains the following characters
@@ -44,7 +42,7 @@ namespace UnityEngine.TextCore.Text
         }
         [SerializeField]
         #pragma warning disable 0649
-        private UnityEngine.TextAsset m_FollowingCharacters;
+        UnityEngine.TextAsset m_FollowingCharacters;
 
         /// <summary>
         ///
@@ -53,12 +51,12 @@ namespace UnityEngine.TextCore.Text
         {
             get
             {
-                if (s_LeadingCharactersLookup == null)
+                if (m_LeadingCharactersLookup == null)
                     LoadLineBreakingRules();
 
-                return s_LeadingCharactersLookup;
+                return m_LeadingCharactersLookup;
             }
-            set => s_LeadingCharactersLookup = value;
+            set => m_LeadingCharactersLookup = value;
         }
 
         /// <summary>
@@ -68,12 +66,12 @@ namespace UnityEngine.TextCore.Text
         {
             get
             {
-                if (s_LeadingCharactersLookup == null)
+                if (m_LeadingCharactersLookup == null)
                     LoadLineBreakingRules();
 
-                return s_FollowingCharactersLookup;
+                return m_FollowingCharactersLookup;
             }
-            set => s_FollowingCharactersLookup = value;
+            set => m_FollowingCharactersLookup = value;
         }
 
         /// <summary>
@@ -91,41 +89,41 @@ namespace UnityEngine.TextCore.Text
         // Private backing fields for public properties.
         // =============================================
 
-        private static HashSet<uint> s_LeadingCharactersLookup;
-        private static HashSet<uint> s_FollowingCharactersLookup;
+        HashSet<uint> m_LeadingCharactersLookup;
+        HashSet<uint> m_FollowingCharactersLookup;
 
         /// <summary>
         ///
         /// </summary>
-        internal static void LoadLineBreakingRules()
+        internal void LoadLineBreakingRules()
         {
-            if (s_LeadingCharactersLookup == null)
+            if (m_LeadingCharactersLookup == null)
             {
-                if (s_Instance.m_LeadingCharacters == null)
-                    s_Instance.m_LeadingCharacters = Resources.Load<UnityEngine.TextAsset>("LineBreaking Leading Characters");
+                if (m_LeadingCharacters == null)
+                    m_LeadingCharacters = Resources.Load<UnityEngine.TextAsset>("LineBreaking Leading Characters");
 
-                s_LeadingCharactersLookup = s_Instance.m_LeadingCharacters != null ? GetCharacters(s_Instance.m_LeadingCharacters) : new HashSet<uint>();
+                m_LeadingCharactersLookup = m_LeadingCharacters != null ? GetCharacters(m_LeadingCharacters) : new HashSet<uint>();
 
-                if (s_Instance.m_FollowingCharacters == null)
-                    s_Instance.m_FollowingCharacters = Resources.Load<UnityEngine.TextAsset>("LineBreaking Following Characters");
+                if (m_FollowingCharacters == null)
+                    m_FollowingCharacters = Resources.Load<UnityEngine.TextAsset>("LineBreaking Following Characters");
 
-                s_FollowingCharactersLookup = s_Instance.m_FollowingCharacters != null ? GetCharacters(s_Instance.m_FollowingCharacters) : new HashSet<uint>();
+                m_FollowingCharactersLookup = m_FollowingCharacters != null ? GetCharacters(m_FollowingCharacters) : new HashSet<uint>();
             }
         }
 
-        internal static void LoadLineBreakingRules(UnityEngine.TextAsset leadingRules, UnityEngine.TextAsset followingRules)
+        internal void LoadLineBreakingRules(UnityEngine.TextAsset leadingRules, UnityEngine.TextAsset followingRules)
         {
-            if (s_LeadingCharactersLookup == null)
+            if (m_LeadingCharactersLookup == null)
             {
                 if (leadingRules == null)
                     leadingRules = Resources.Load<UnityEngine.TextAsset>("LineBreaking Leading Characters");
 
-                s_LeadingCharactersLookup = leadingRules != null ? GetCharacters(leadingRules) : new HashSet<uint>();
+                m_LeadingCharactersLookup = leadingRules != null ? GetCharacters(leadingRules) : new HashSet<uint>();
 
                 if (followingRules == null)
                     followingRules = Resources.Load<UnityEngine.TextAsset>("LineBreaking Following Characters");
 
-                s_FollowingCharactersLookup = followingRules != null ? GetCharacters(followingRules) : new HashSet<uint>();
+                m_FollowingCharactersLookup = followingRules != null ? GetCharacters(followingRules) : new HashSet<uint>();
             }
         }
 

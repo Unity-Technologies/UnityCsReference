@@ -22,6 +22,9 @@ namespace Unity.UI.Builder
         static VisualElement CloneSetupRecursively(VisualTreeAsset vta, VisualElementAsset root,
             Dictionary<int, List<VisualElementAsset>> idToChildren, CreationContext context)
         {
+            if (root.skipClone)
+                return null;
+
             if (root.serializedData == null && UxmlSerializedDataRegistry.GetDescription(root.fullTypeName) is UxmlSerializedDataDescription desc)
             {
                 root.serializedData = UxmlSerializer.Serialize(desc, root, context);
@@ -169,12 +172,11 @@ namespace Unity.UI.Builder
             {
                 Assert.IsNotNull(rootElement);
 
-                // Don't try to instatiate the special selection tracking element.
-                if (rootElement.fullTypeName == BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName)
-                    continue;
-
                 var rootVe = CloneSetupRecursively(vta, rootElement, idToChildren,
                     new CreationContext(slotInsertionPoints, attributeOverridesRanges, vta, target));
+
+                if (rootVe == null)
+                    continue;
 
                 // if contentContainer == this, the shadow and the logical hierarchy are identical
                 // otherwise, if there is a CC, we want to insert in the shadow

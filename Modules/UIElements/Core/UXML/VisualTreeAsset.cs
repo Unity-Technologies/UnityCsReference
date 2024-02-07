@@ -718,9 +718,12 @@ namespace UnityEngine.UIElements
             foreach (var rootElement in rootAssets)
             {
                 Assert.IsNotNull(rootElement);
+
                 var rootVe = CloneSetupRecursively(rootElement, idToChildren,
                     new CreationContext(cc.slotInsertionPoints, cc.attributeOverrides, cc.serializedDataOverrides, this, target));
 
+                if (rootVe == null)
+                    continue;
                 // Save reference to the visualElementAsset so elements can be reinitialized when
                 // we set their attributes in the editor
                 rootVe.SetProperty(LinkedVEAInTemplatePropertyName, rootElement);
@@ -739,6 +742,9 @@ namespace UnityEngine.UIElements
         private VisualElement CloneSetupRecursively(VisualElementAsset root,
             Dictionary<int, List<VisualElementAsset>> idToChildren, CreationContext context)
         {
+            if (root.skipClone)
+                return null;
+
             var ve = Create(root, context);
 
             if (ve == null)
