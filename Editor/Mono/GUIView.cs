@@ -21,6 +21,7 @@ namespace UnityEditor
 
         int m_DepthBufferBits = 0;
         int m_AntiAliasing = 1;
+        bool m_ResetPanelRenderingOnAssetChange = true;
         bool m_AutoRepaintOnSceneChange = false;
         private IWindowBackend m_WindowBackend;
 
@@ -152,6 +153,19 @@ namespace UnityEditor
         {
             get { return 1; }
             set { throw new NotSupportedException("AA is not supported on GUIViews"); }
+        }
+
+        public bool resetPanelRenderingOnAssetChange
+        {
+            get => m_ResetPanelRenderingOnAssetChange;
+            set
+            {
+                if (m_ResetPanelRenderingOnAssetChange != value)
+                {
+                    m_ResetPanelRenderingOnAssetChange = value;
+                    windowBackend?.ResetPanelRenderingOnAssetChangeChanged();
+                }
+            }
         }
 
         internal IWindowBackend windowBackend

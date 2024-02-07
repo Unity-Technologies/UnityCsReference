@@ -37,7 +37,7 @@ namespace UnityEditor.UIElements
                 };
             PanelSettings.SetPanelSettingsAssetDirty = EditorUtility.SetDirty;
             PanelSettings.IsAdvancedTextEnabled = () => UIToolkitProjectSettings.enableAdvancedText;
-            PanelSettings.s_OnValidateCallback += SetICUDataAsset;
+            PanelSettings.s_AssignICUData += SetICUDataAsset;
 
             DropdownUtility.MakeDropdownFunc = CreateGenericOSMenu;
 

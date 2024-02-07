@@ -555,7 +555,7 @@ namespace UnityEngine.TextCore.Text
             if (character != null)
                 return character;
 
-            if (!isMainThread && character == null && fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
+            if (!isMainThread && (fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS))
                 return null;
 
             // Search potential list of fallback font assets assigned to the font asset.
