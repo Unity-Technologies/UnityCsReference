@@ -70,6 +70,14 @@ namespace UnityEngine.UIElements
             set => m_SerializedData = value;
         }
 
+        [SerializeField] private bool m_SkipClone;
+
+        internal bool skipClone
+        {
+            get => m_SkipClone;
+            set => m_SkipClone = value;
+        }
+
         public VisualElementAsset(string fullTypeName)
             : base(fullTypeName)
         {

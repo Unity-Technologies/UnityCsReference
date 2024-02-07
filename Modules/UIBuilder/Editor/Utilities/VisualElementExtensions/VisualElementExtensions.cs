@@ -544,6 +544,44 @@ namespace Unity.UI.Builder
         }
 
         public static IBuilderUxmlAttributeFieldFactory GetFieldFactory(this VisualElement field) => field.GetProperty(BuilderConstants.AttributeFieldFactoryVEPropertyName) as IBuilderUxmlAttributeFieldFactory;
+
+        public static string GetUxmlTypeName(this VisualElement element)
+        {
+            if (null == element)
+                return null;
+
+            var desc = UxmlSerializedDataRegistry.GetDescription(element.fullTypeName);
+
+            if (null != desc)
+                return desc.uxmlName;
+
+            if (VisualElementFactoryRegistry.TryGetValue(element.fullTypeName, out var factories))
+                return factories[0].uxmlName;
+
+            if (VisualElementFactoryRegistry.TryGetValue(element.GetType(), out factories))
+                return factories[0].uxmlName;
+
+            return null;
+        }
+
+        public static string GetUxmlFullTypeName(this VisualElement element)
+        {
+            if (null == element)
+                return null;
+
+            var desc = UxmlSerializedDataRegistry.GetDescription(element.fullTypeName);
+
+            if (null != desc)
+                return desc.uxmlFullName;
+
+            if (VisualElementFactoryRegistry.TryGetValue(element.fullTypeName, out var factories))
+                return factories[0].uxmlQualifiedName;
+
+            if (VisualElementFactoryRegistry.TryGetValue(element.GetType(), out factories))
+                return factories[0].uxmlQualifiedName;
+
+            return null;
+        }
     }
 
     enum BuilderElementStyle

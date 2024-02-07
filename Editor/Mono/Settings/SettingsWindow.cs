@@ -98,11 +98,15 @@ namespace UnityEditor
             }
         }
 
-        internal void SelectProviderByName(string name)
+        internal void SelectProviderByName(string name, bool ignoreLastSelected = true)
         {
             if (m_TreeView == null)
                 Init();
-            m_TreeView.FocusSelection(name.GetHashCode());
+            var currentSelection = m_TreeView.GetSelection();
+            var selectionID = name.GetHashCode();
+            // Check if the section is already selected to avoid the scroll bar to reset at the top of the window.
+            if (ignoreLastSelected || currentSelection.Count != 1 || currentSelection[0] != selectionID)
+                m_TreeView.FocusSelection(selectionID);
         }
 
         internal void OnLostFocus()
@@ -569,13 +573,18 @@ namespace UnityEditor
             else
                 settingsWindow = Create(scopes);
 
-            settingsWindow.Show();
-            settingsWindow.InitProviders();
-            settingsWindow.Focus();
+            bool ignoreLastSelection = false;
+            if (!settingsWindow.hasFocus)
+            {
+                settingsWindow.Show();
+                settingsWindow.InitProviders();
+                settingsWindow.Focus();
+                ignoreLastSelection = true;
+            }
 
             if (settingsPath != null)
             {
-                settingsWindow.SelectProviderByName(settingsPath);
+                settingsWindow.SelectProviderByName(settingsPath, ignoreLastSelection);
             }
 
             EditorApplication.delayCall += () =>

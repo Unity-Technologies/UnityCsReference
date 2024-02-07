@@ -1196,7 +1196,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyId.Visibility, value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Picking | VersionChangeType.Repaint);
                 }
             }
         }

@@ -225,7 +225,7 @@ namespace UnityEngine.TextCore.Text
                 if (m_UnicodeLineBreakingRules == null)
                 {
                     m_UnicodeLineBreakingRules = new UnicodeLineBreakingRules();
-                    UnicodeLineBreakingRules.LoadLineBreakingRules();
+                    m_UnicodeLineBreakingRules.LoadLineBreakingRules();
                 }
 
                 return m_UnicodeLineBreakingRules;
@@ -258,26 +258,13 @@ namespace UnityEngine.TextCore.Text
         protected bool m_DisplayWarnings = false;
 
         // =============================================
-        //
-        // =============================================
-
-        //private static TextSettings s_Instance;
-        //private static TextSettings s_DefaultTextSettings;
-
-        // public static TextSettings instance
-        // {
-        //     get
-        //     {
-        //         if (s_Instance == null)
-        //             s_Instance = Resources.Load<TextSettings>("Text Settings") ?? CreateInstance<TextSettings>();
-        //
-        //         return s_Instance;
-        //     }
-        // }
-
-        // =============================================
         // Functions
         // =============================================
+
+        void OnEnable()
+        {
+            lineBreakingRules.LoadLineBreakingRules();
+        }
 
         protected void InitializeFontReferenceLookup()
         {

@@ -12,45 +12,15 @@ namespace UnityEditor.Toolbars
 {
     class ToolButton : EditorToolbarToggle
     {
-        static readonly Texture2D s_PanViewIcon;
-        static readonly Texture2D s_PanViewOnIcon;
-        static readonly Texture2D s_OrbitViewIcon;
-        static readonly Texture2D s_OrbitViewOnIcon;
-        static readonly Texture2D s_FpsViewIcon;
-        static readonly Texture2D s_FpsViewOnIcon;
-        static readonly Texture2D s_ZoomViewIcon;
-        static readonly Texture2D s_ZoomViewOnIcon;
-
-        static readonly Texture2D s_DefaultMoveIcon;
-        static readonly Texture2D s_DefaultMoveOnIcon;
-        static readonly Texture2D s_DefaultRotateIcon;
-        static readonly Texture2D s_DefaultRotateOnIcon;
-        static readonly Texture2D s_DefaultScaleIcon;
-        static readonly Texture2D s_DefaultScaleOnIcon;
-        static readonly Texture2D s_DefaultTransformIcon;
-        static readonly Texture2D s_DefaultTransformOnIcon;
-        static readonly Texture2D s_DefaultRectIcon;
-        static readonly Texture2D s_DefaultRectOnIcon;
-
-        static ToolButton()
-        {
-            s_PanViewIcon = EditorGUIUtility.LoadIconRequired("ViewToolMove");
-            s_PanViewOnIcon = EditorGUIUtility.LoadIconRequired("ViewToolMove On");
-            s_FpsViewIcon = s_OrbitViewIcon = EditorGUIUtility.LoadIconRequired("ViewToolOrbit");
-            s_FpsViewOnIcon = s_OrbitViewOnIcon = EditorGUIUtility.LoadIconRequired("ViewToolOrbit On");
-            s_ZoomViewIcon = EditorGUIUtility.LoadIconRequired("ViewToolZoom");
-            s_ZoomViewOnIcon = EditorGUIUtility.LoadIconRequired("ViewToolZoom On");
-            s_DefaultMoveIcon = EditorGUIUtility.LoadIconRequired("MoveTool");
-            s_DefaultMoveOnIcon = EditorGUIUtility.LoadIconRequired("MoveTool On");
-            s_DefaultRotateIcon = EditorGUIUtility.LoadIconRequired("RotateTool");
-            s_DefaultRotateOnIcon = EditorGUIUtility.LoadIconRequired("RotateTool On");
-            s_DefaultScaleIcon = EditorGUIUtility.LoadIconRequired("ScaleTool");
-            s_DefaultScaleOnIcon = EditorGUIUtility.LoadIconRequired("ScaleTool On");
-            s_DefaultTransformIcon = EditorGUIUtility.LoadIconRequired("TransformTool");
-            s_DefaultTransformOnIcon = EditorGUIUtility.LoadIconRequired("TransformTool On");
-            s_DefaultRectIcon = EditorGUIUtility.FindTexture("RectTool");
-            s_DefaultRectOnIcon = EditorGUIUtility.FindTexture("RectTool On");
-        }
+        static readonly string s_UssClassName_MoveTool = "builtin-tool-move";
+        static readonly string s_UssClassName_RotateTool = "builtin-tool-rotate";
+        static readonly string s_UssClassName_ScaleTool = "builtin-tool-scale";
+        static readonly string s_UssClassName_TransformTool = "builtin-tool-transform";
+        static readonly string s_UssClassName_RectTool = "builtin-tool-rect";
+        static readonly string s_UssClassName_PanViewTool = "builtin-tool-pan-view";
+        static readonly string s_UssClassName_OrbitViewTool = "builtin-tool-orbit-view";
+        static readonly string s_UssClassName_FpsViewTool = "builtin-tool-fps-view";
+        static readonly string s_UssClassName_ZoomViewTool = "builtin-tool-zoom-view";
 
         // in milliseconds
         const int k_DelayBeforeOpenDropdown = 150;
@@ -297,20 +267,20 @@ namespace UnityEditor.Toolbars
             switch (Tools.viewTool)
             {
                 case ViewTool.Orbit:
-                    onIcon = s_OrbitViewOnIcon;
-                    offIcon = s_OrbitViewIcon;
+                    ClearButtonClassList();
+                    AddToClassList(s_UssClassName_OrbitViewTool);
                     break;
                 case ViewTool.Pan:
-                    onIcon = s_PanViewOnIcon;
-                    offIcon = s_PanViewIcon;
+                    ClearButtonClassList();
+                    AddToClassList(s_UssClassName_PanViewTool);
                     break;
                 case ViewTool.Zoom:
-                    onIcon = s_ZoomViewOnIcon;
-                    offIcon = s_ZoomViewIcon;
+                    ClearButtonClassList();
+                    AddToClassList(s_UssClassName_ZoomViewTool);
                     break;
                 case ViewTool.FPS:
-                    onIcon = s_FpsViewOnIcon;
-                    offIcon = s_FpsViewIcon;
+                    ClearButtonClassList();
+                    AddToClassList(s_UssClassName_FpsViewTool);
                     break;
             }
         }
@@ -324,28 +294,28 @@ namespace UnityEditor.Toolbars
                     break;
                 case Tool.Move:
                     tooltip = L10n.Tr("Move Tool");
-                    offIcon = s_DefaultMoveIcon;
-                    onIcon = s_DefaultMoveOnIcon;
+                    ClearButtonClassList();
+                    AddToClassList(s_UssClassName_MoveTool);
                     break;
                 case Tool.Rotate:
                     tooltip = L10n.Tr("Rotate Tool");
-                    offIcon = s_DefaultRotateIcon;
-                    onIcon = s_DefaultRotateOnIcon;
+                    ClearButtonClassList();
+                    AddToClassList(s_UssClassName_RotateTool);
                     break;
                 case Tool.Scale:
                     tooltip = L10n.Tr("Scale Tool");
-                    offIcon = s_DefaultScaleIcon;
-                    onIcon = s_DefaultScaleOnIcon;
+                    ClearButtonClassList();
+                    AddToClassList(s_UssClassName_ScaleTool);
                     break;
                 case Tool.Transform:
                     tooltip = L10n.Tr("Transform Tool");
-                    offIcon = s_DefaultTransformIcon;
-                    onIcon = s_DefaultTransformOnIcon;
+                    ClearButtonClassList();
+                    AddToClassList(s_UssClassName_TransformTool);
                     break;
                 case Tool.Rect:
                     tooltip = L10n.Tr("Rect Tool");
-                    offIcon = s_DefaultRectIcon;
-                    onIcon = s_DefaultRectOnIcon;
+                    ClearButtonClassList();
+                    AddToClassList(s_UssClassName_RectTool);
                     break;
                 case Tool.Custom:
                     var content = EditorToolUtility.GetToolbarIcon(currentVariant);
@@ -361,6 +331,20 @@ namespace UnityEditor.Toolbars
                     }
                     break;
             }
+        }
+        
+        void ClearButtonClassList()
+        {
+            RemoveFromClassList(s_UssClassName_MoveTool);
+            RemoveFromClassList(s_UssClassName_RotateTool);
+            RemoveFromClassList(s_UssClassName_ScaleTool);
+            RemoveFromClassList(s_UssClassName_TransformTool);
+            RemoveFromClassList(s_UssClassName_RectTool);
+
+            RemoveFromClassList(s_UssClassName_PanViewTool);
+            RemoveFromClassList(s_UssClassName_OrbitViewTool);
+            RemoveFromClassList(s_UssClassName_FpsViewTool);
+            RemoveFromClassList(s_UssClassName_ZoomViewTool);
         }
 
         void UpdateState()

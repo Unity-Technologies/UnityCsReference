@@ -368,6 +368,7 @@ namespace UnityEditorInternal
             if (m_ReorderableList != null)
             {
                 var oldIdentLevel = EditorGUI.indentLevel;
+                position = EditorGUI.IndentedRect(position);
                 EditorGUI.indentLevel = 0;
                 m_ReorderableList.DoList(position);
                 EditorGUI.indentLevel = oldIdentLevel;
