@@ -2,8 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.Properties;
 using UnityEngine.Bindings;
+using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
@@ -13,11 +15,29 @@ namespace UnityEngine.UIElements
     public abstract class BaseBoolField : BaseField<bool>
     {
         internal static readonly BindingId textProperty = nameof(text);
+        internal static readonly BindingId toggleOnLabelClickProperty = nameof(toggleOnLabelClick);
+
+        [ExcludeFromDocs, Serializable]
+        public new abstract class UxmlSerializedData : BaseField<bool>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] bool toggleOnLabelClick;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags toggleOnLabelClick_UxmlAttributeFlags;
+            #pragma warning restore 649
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (BaseBoolField)obj;
+                if (ShouldWriteAttributeValue(toggleOnLabelClick_UxmlAttributeFlags))
+                    e.toggleOnLabelClick = toggleOnLabelClick;
+            }
+        }
 
         protected Label m_Label;
-        protected readonly VisualElement m_CheckMark;
-
-        internal Clickable m_Clickable;
+        internal protected readonly VisualElement m_CheckMark;
+        internal readonly Clickable m_Clickable;
 
         // Needed by the UIBuilder for authoring in the viewport
         internal Label boolFieldLabelElement
@@ -25,6 +45,21 @@ namespace UnityEngine.UIElements
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get => m_Label;
         }
+
+        internal bool acceptClicksIfDisabled
+        {
+            get => m_Clickable.acceptClicksIfDisabled;
+            set => m_Clickable.acceptClicksIfDisabled = value;
+        }
+
+        /// <summary>
+        /// Whether to activate the toggle when the user clicks the label.
+        /// </summary>
+        [CreateProperty]
+        public bool toggleOnLabelClick { get; set; } = true;
+
+        // Used by foldout
+        internal bool toggleOnTextClick { get; set; } = true;
 
         /// <summary>
         /// Creates a <see cref="BaseBoolField"/> with a Label and a default manipulator.
@@ -37,7 +72,7 @@ namespace UnityEngine.UIElements
             : base(label, null)
         {
             // Allocate and add the checkmark to the hierarchy
-            m_CheckMark = new VisualElement() {name = "unity-checkmark", pickingMode = PickingMode.Ignore};
+            m_CheckMark = new VisualElement() { name = "unity-checkmark", pickingMode = PickingMode.Ignore };
             visualInput.Add(m_CheckMark);
 
             // The picking mode needs to be Position in order to have the Pseudostate Hover applied...
@@ -75,18 +110,12 @@ namespace UnityEngine.UIElements
 
                 if (!string.IsNullOrEmpty(value))
                 {
-                    // Lazy allocation of label if needed...
-                    if (m_Label == null)
-                    {
-                        InitLabel();
-                    }
-
+                    InitLabel();
                     m_Label.text = value;
                 }
-                else if (m_Label != null)
+                else
                 {
-                    m_Label.RemoveFromHierarchy();
-                    m_Label = null;
+                    m_Label?.RemoveFromHierarchy();
                 }
 
                 NotifyPropertyChanged(textProperty);
@@ -102,7 +131,10 @@ namespace UnityEngine.UIElements
         /// </remarks>
         protected virtual void InitLabel()
         {
-            m_Label = new Label();
+            if (m_Label == null)
+                m_Label = new Label();
+            else if (m_Label.parent != null)
+                return;
 
             if (m_CheckMark.hierarchy.parent != visualInput)
             {
@@ -151,6 +183,10 @@ namespace UnityEngine.UIElements
             if (evt.eventTypeId == MouseUpEvent.TypeId())
             {
                 var ce = (IMouseEvent) evt;
+
+                if (ShouldIgnoreClick(ce.mousePosition))
+                    return;
+
                 if (ce.button == (int) MouseButton.LeftMouse)
                 {
                     ToggleValue();
@@ -159,11 +195,26 @@ namespace UnityEngine.UIElements
             else if (evt.eventTypeId == PointerUpEvent.TypeId() || evt.eventTypeId == ClickEvent.TypeId())
             {
                 var ce = (IPointerEvent) evt;
+
+                if (ShouldIgnoreClick(ce.position))
+                    return;
+
                 if (ce.button == (int) MouseButton.LeftMouse)
                 {
                     ToggleValue();
                 }
             }
+        }
+
+        bool ShouldIgnoreClick(Vector3 position)
+        {
+            if (!toggleOnLabelClick && labelElement.worldBound.Contains(position))
+                return true;
+
+            if (!toggleOnTextClick && m_Label?.worldBound.Contains(position) == true)
+                return true;
+
+            return false;
         }
 
         /// <summary>

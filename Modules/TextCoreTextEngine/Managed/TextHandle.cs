@@ -150,8 +150,8 @@ namespace UnityEngine.TextCore.Text
         {
             lock (syncRoot)
             {
-                bool isMainThread = !JobsUtility.IsExecutingJob;
-                if (isMainThread)
+                bool canWriteOnAsset = !TextGenerator.IsExecutingJob;
+                if (canWriteOnAsset)
                     currentTime = Time.realtimeSinceStartup;
 
                 if (m_IsCached)
@@ -176,7 +176,7 @@ namespace UnityEngine.TextCore.Text
                 m_IsCached = true;
                 SetDirty();
                 
-                if (isMainThread)
+                if (canWriteOnAsset)
                     Update(settings);
                 else
                     UpdateFontAssetPrepared();
@@ -204,7 +204,7 @@ namespace UnityEngine.TextCore.Text
 
         private void RefreshCaching()
         {
-            if (!JobsUtility.IsExecutingJob)
+            if (!TextGenerator.IsExecutingJob)
                 currentTime = Time.realtimeSinceStartup;
 
             textInfo.lastTimeInCache = currentTime;
@@ -214,7 +214,7 @@ namespace UnityEngine.TextCore.Text
 
         private void RecycleTextInfoFromCache()
         {
-            if (!JobsUtility.IsExecutingJob)
+            if (!TextGenerator.IsExecutingJob)
                 currentTime = Time.realtimeSinceStartup;
 
             m_TextInfoNode = s_TextInfoPool.Last;

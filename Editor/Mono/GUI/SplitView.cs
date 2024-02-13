@@ -209,7 +209,6 @@ namespace UnityEditor
                     Mathf.Lerp(child.position.yMin, child.position.yMax, moveToPos) :
                     Mathf.Lerp(child.position.xMin, child.position.xMax, moveToPos);
 
-
                 if (idx > 0)
                 {
                     View c = (View)children[idx - 1];
@@ -579,7 +578,6 @@ namespace UnityEditor
                     parent.RemoveChild(this);
                     if (sp)
                         sp.Cleanup();
-                    c.position = position;
                     if (!Unsupported.IsDestroyScriptableObject(this))
                         DestroyImmediate(this);
                     return;
@@ -596,11 +594,12 @@ namespace UnityEditor
                 }
             }
 
-            if (sp)
+            if (sp != null)
             {
                 sp.Cleanup();
                 // the parent might have moved US up and gotten rid of itself
                 sp = parent as SplitView;
+
                 if (sp)
                 {
                     // If the parent has the same orientation as us, we can move our views up and kill ourselves
@@ -612,9 +611,21 @@ namespace UnityEditor
                             sp.AddChild(child, idx++);
                             child.position = new Rect(position.x + child.position.x, position.y + child.position.y, child.position.width, child.position.height);
                         }
+
+                        // don't let this fall through to the `children == 0` case because we don't want to be removed
+                        // "nicely." our children have already been merged to the parent with correct positions, so
+                        // there is no need to recalculate sibling dimensions (and may incorrectly resize views that
+                        // have been recursively cleaned up).
+                        sp.RemoveChild(this);
+                        if (!Unsupported.IsDestroyScriptableObject(this))
+                            DestroyImmediate(this, true);
+                        sp.Cleanup();
+
+                        return;
                     }
                 }
             }
+
             if (children.Length == 0)
             {
                 if (parent == null && window != null)

@@ -76,6 +76,7 @@ namespace UnityEditor.Search
         private readonly Label m_SearchPlaceholder;
         private readonly Label m_PressTabPlaceholder;
         private readonly bool m_UseSearchGlobalEventHandler;
+        private Button m_CancelButton;
 
         const float k_PlaceholdersTouchThreshold = 2f;
 
@@ -168,11 +169,17 @@ namespace UnityEditor.Search
             textField.tripleClickSelectsLine = true;
             textField.selectAllOnFocus = false;
 
+            m_CancelButton = new Button(() => { }) { name = "query-builder-unity-cancel" };
+            m_CancelButton.AddToClassList(SearchFieldBase<TextField, string>.cancelButtonUssClassName);
+            m_CancelButton.AddToClassList(SearchFieldBase<TextField, string>.cancelButtonOffVariantUssClassName);
+
+            m_CancelButton.clickable.clicked += OnCancelButtonClick;
+
             if (viewState.queryBuilderEnabled)
             {
                 var queryBuilderView = new SearchQueryBuilderView("SearchQueryBuilder", m_ViewModel, searchField, m_UseSearchGlobalEventHandler);
                 searchField.Insert(1, queryBuilderView);
-                queryBuilderView.RegisterCallback<ChangeEvent<string>>(OnQueryChanged);
+                searchField.RegisterCallback<ChangeEvent<string>>(OnQueryChanged);
                 m_SearchTextInput = queryBuilderView;
             }
             else
@@ -268,6 +275,7 @@ namespace UnityEditor.Search
 
         private void OnQueryChanged(ChangeEvent<string> evt)
         {
+            UpdateCancelButton();
             if (m_SearchTextInput != evt.target)
                 return;
 
@@ -282,6 +290,11 @@ namespace UnityEditor.Search
         {
             FocusSearchField();
             searchField.RegisterCallback<GeometryChangedEvent>(OnSearchFieldReady);
+
+            var cancelButton = searchField.Q<Button>(null, SearchFieldBase<TextField, string>.cancelButtonUssClassName);
+            if (cancelButton != null)
+                HideElements(cancelButton);
+            searchField.Add(m_CancelButton);
         }
 
         private void OnSearchFieldDetachFromPanel(DetachFromPanelEvent evt)
@@ -297,6 +310,8 @@ namespace UnityEditor.Search
             viewState.globalEventManager.UnregisterGlobalEventHandler<KeyDownEvent>(OnGlobalKeyInput);
 
             ClearOnCursorChangedHandlers();
+
+            searchField.Remove(m_CancelButton);
         }
 
         void OnSearchFieldReady(GeometryChangedEvent evt)
@@ -314,6 +329,7 @@ namespace UnityEditor.Search
 
             UpdateQueryErrors();
             UpdateMultiline();
+            UpdateCancelButton();
         }
 
         private static bool IgnoreKey(IKeyboardEvent evt)
@@ -397,6 +413,7 @@ namespace UnityEditor.Search
                 UpdateQueryErrors();
                 UpdateMultiline();
             }
+            UpdateCancelButton();
         }
 
         private void OnSearchContextChanged(ISearchEvent evt)
@@ -407,6 +424,7 @@ namespace UnityEditor.Search
             CreateSearchField(this);
             UpdatePlaceholders();
             FocusSearchField();
+            UpdateCancelButton();
         }
 
         private void OnQueryBuilderStateChanged(ISearchEvent evt)
@@ -630,6 +648,33 @@ namespace UnityEditor.Search
             var hasLineBreak = supportsMultiline && searchField.value.Contains('\n') || searchField.value.Contains('\r') || searchField.value.Contains("\r\n");
             textField.multiline = hasLineBreak;
             searchField.EnableInClassList(searchFieldMultilineClassName, hasLineBreak);
+        }
+
+        void OnCancelButtonClick()
+        {
+            var cancelValue = viewState.isPicker ? viewState.initialQuery : string.Empty;
+            m_SearchTextInput.value = cancelValue;
+            UpdateCancelButton();
+        }
+
+        void UpdateCancelButton()
+        {
+            if (viewState.queryBuilderEnabled && queryBuilder == null)
+                return;
+            // Override the behavior of the ToolbarSearchField that only removes the X if the field is empty.
+            var hideCancelBtn = string.IsNullOrEmpty(queryString);
+            if (m_ViewModel.IsPicker())
+            {
+                var simplifiedQueryString = queryString;
+                var simplifiedInitialQuery = viewState.initialQuery;
+                if (viewState.queryBuilderEnabled)
+                {
+                    simplifiedQueryString = Utils.Simplify(queryString).ToLower();
+                    simplifiedInitialQuery = Utils.Simplify(viewState.initialQuery.Trim()).ToLower();
+                }
+                hideCancelBtn = string.CompareOrdinal(simplifiedQueryString, simplifiedInitialQuery) == 0;
+            }
+            m_CancelButton.EnableInClassList(SearchFieldBase<TextField, string>.cancelButtonOffVariantUssClassName, hideCancelBtn);
         }
 
         internal void UpdateInternalTextData()

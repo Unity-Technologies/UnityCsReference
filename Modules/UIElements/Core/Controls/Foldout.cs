@@ -20,6 +20,7 @@ namespace UnityEngine.UIElements
     public class Foldout : BindableElement, INotifyValueChanged<bool>
     {
         internal static readonly BindingId textProperty = nameof(text);
+        internal static readonly BindingId toggleOnLabelClickProperty = nameof(toggleOnLabelClick);
         internal static readonly BindingId valueProperty = nameof(value);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
@@ -28,6 +29,8 @@ namespace UnityEngine.UIElements
             #pragma warning disable 649
             [SerializeField, MultilineTextField] string text;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
+            [SerializeField] bool toggleOnLabelClick;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags toggleOnLabelClick_UxmlAttributeFlags;
             [SerializeField] bool value;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
             #pragma warning restore 649
@@ -41,6 +44,8 @@ namespace UnityEngine.UIElements
                 var e = (Foldout)obj;
                 if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
                     e.text = text;
+                if (ShouldWriteAttributeValue(toggleOnLabelClick_UxmlAttributeFlags))
+                    e.toggleOnLabelClick = toggleOnLabelClick;
                 if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
                     e.SetValueWithoutNotify(value);
             }
@@ -102,7 +107,24 @@ namespace UnityEngine.UIElements
         public override VisualElement contentContainer => m_Container;
 
         /// <summary>
-        /// This is the text of the toggle's label.
+        /// Whether to toggle the foldout state when the user clicks the label.
+        /// </summary>
+        [CreateProperty]
+        public bool toggleOnLabelClick
+        {
+            get => m_Toggle.toggleOnTextClick;
+            set
+            {
+                if (m_Toggle.toggleOnTextClick == value)
+                    return;
+
+                m_Toggle.toggleOnTextClick = value;
+                NotifyPropertyChanged(toggleOnLabelClickProperty);
+            }
+        }
+
+        /// <summary>
+        /// The label text for the toggle.
         /// </summary>
         [CreateProperty]
         public string text
@@ -152,7 +174,8 @@ namespace UnityEngine.UIElements
         /// This is useful when you want to change the Foldout's Toggle value without triggering events. For example, let's say you
         /// set up a Foldout to trigger an animation, but you only want to trigger the animation when a user clicks the Foldout's Toggle,
         /// not when you change the Toggle's value via code (for example, inside another validation). You could use this method
-        /// change the value "silently".        /// </remarks>
+        /// change the value "silently".
+        /// </remarks>
         /// <param name="newValue">The new value of the foldout</param>
         public void SetValueWithoutNotify(bool newValue)
         {

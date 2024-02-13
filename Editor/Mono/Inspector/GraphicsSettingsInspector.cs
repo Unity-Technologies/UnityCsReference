@@ -31,7 +31,6 @@ namespace UnityEditor
             internal static GUIContent builtInWarningText =
                 EditorGUIUtility.TrTextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.");
         }
-
         internal IEnumerable<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> globalSettings => m_GlobalSettings;
 
         readonly VisibilityControllerBasedOnRenderPipeline m_VisibilityController = new();
@@ -39,36 +38,55 @@ namespace UnityEditor
         VisualElement m_CurrentRoot;
         List<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> m_GlobalSettings;
 
-        void OnEnable()
-        {
-            m_VisibilityController.Initialize();
-            Undo.undoRedoEvent += OnUndoRedoPerformed;
-        }
-
-        public void OnDisable()
-        {
-            m_VisibilityController.Clear();
-            m_VisibilityController.Dispose();
-
-            UserSettings.ToConfig(m_CurrentRoot);
-
-            Undo.undoRedoEvent -= OnUndoRedoPerformed;
-        }
-
-        internal void CreateInspectorUI(VisualElement root, bool globalSettingsExist, List<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> globalSettings)
-        {
-            m_CurrentRoot = root;
-            m_GlobalSettings = globalSettings;
-
-            m_CurrentRoot.Add(ObjectUpdater());
-            Setup(globalSettingsExist);
-        }
+        bool m_FinishedInitialization;
 
         // As we use multiple IMGUI container while porting everything to UITK we will call serializedObject.Update in first separate IMGUI container.
         // This way we don't need to do it in each following containers.
         VisualElement ObjectUpdater()
         {
             return new IMGUIContainer(() => serializedObject.Update());
+        }
+
+        internal void Reload()
+        {
+            if (m_FinishedInitialization)
+            {
+                Dispose();
+
+                Create(m_CurrentRoot);
+            }
+        }
+
+        internal VisualElement Create(VisualElement root)
+        {
+            m_VisibilityController.Initialize();
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
+
+            m_CurrentRoot = root;
+            m_CurrentRoot.Add(ObjectUpdater());
+
+            var globalSettingsExist = GraphicsSettingsInspectorUtility.GatherGlobalSettingsFromSerializedObject(serializedObject, out var settingsContainers);
+            m_GlobalSettings = settingsContainers;
+
+            var visualTreeAsset = EditorGUIUtility.Load(globalSettingsExist ? GraphicsSettingsData.bodyTemplateSRP : GraphicsSettingsData.bodyTemplateBuiltInOnly) as VisualTreeAsset;
+            var content = visualTreeAsset.Instantiate();
+            root.Add(content);
+
+            Setup(globalSettingsExist);
+            return content;
+        }
+
+        internal void Dispose()
+        {
+            UserSettings.ToConfig(m_CurrentRoot);
+
+            m_CurrentRoot.Clear();
+
+            m_VisibilityController.Clear();
+            m_VisibilityController.Dispose();
+
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
+            m_FinishedInitialization = false;
         }
 
         void Setup(bool globalSettingsExist)
@@ -164,12 +182,8 @@ namespace UnityEditor
             if (evt.elementTarget is not ScrollView mainScrollView)
                 throw new InvalidCastException();
 
-            var userSettings = UserSettings.FromConfig();
-
-            mainScrollView.scrollOffset = userSettings.scrollOffset;
-            mainScrollView.UpdateContentViewTransform();
-
-            // Unregister the callback so that it run only on the first frame.
+            mainScrollView.scrollOffset = UserSettings.FromConfig().scrollOffset;
+            m_FinishedInitialization = true;
         }
 
         void BindEnumFieldWithFadeGroup(VisualElement content, string id, Action buttonCallback)
@@ -376,7 +390,7 @@ namespace UnityEditor
 
         internal GraphicsSettingsProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null) : base(path, scopes, keywords)
         {
-            activateHandler = (text, root) =>
+            activateHandler = (_, root) =>
             {
                 var settingsObj = AssetDatabase.LoadAllAssetsAtPath(s_GraphicsSettingsProviderAssetPath);
                 if (settingsObj == null)
@@ -384,30 +398,23 @@ namespace UnityEditor
 
                 inspector = Editor.CreateEditor(settingsObj) as GraphicsSettingsInspector;
 
-                var globalSettingsExist = GraphicsSettingsInspectorUtility.GatherGlobalSettingsFromSerializedObject(inspector.serializedObject, out var globalSettings);
-                var content = CreateGraphicsSettingsUI(globalSettingsExist, inspector, root, globalSettings);
+                var content = inspector.Create(root);
                 this.keywords = CreateKeywordsList(content);
             };
             deactivateHandler = (() =>
             {
                 if (inspector != null)
-                    inspector.OnDisable();
+                    inspector.Dispose();
             });
         }
 
-
-        internal static TemplateContainer CreateGraphicsSettingsUI(bool globalSettingsExist, GraphicsSettingsInspector inspector,  VisualElement root, List<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> globalSettings)
+        internal void Reload()
         {
-            var visualTreeAsset =
-                EditorGUIUtility.Load(globalSettingsExist ? GraphicsSettingsInspector.GraphicsSettingsData.bodyTemplateSRP : GraphicsSettingsInspector.GraphicsSettingsData.bodyTemplateBuiltInOnly) as
-                    VisualTreeAsset;
-            var content = visualTreeAsset.Instantiate();
-            root.Add(content);
-            inspector.CreateInspectorUI(root, globalSettingsExist, globalSettings);
-            return content;
+            if(inspector != null)
+                inspector.Reload();
         }
 
-        List<string> CreateKeywordsList(TemplateContainer content)
+        List<string> CreateKeywordsList(VisualElement content)
         {
             var keywordsList = new List<string>();
             keywordsList.AddRange(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorTierSettings.Styles>());

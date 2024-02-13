@@ -11,15 +11,13 @@ using UnityEngine.Rendering;
 using UnityEditor.AssetImporters;
 
 using STVertex = UnityEditor.SpeedTree.Importer.Vertex;
-using SpeedTreeReader = UnityEditor.SpeedTree.Importer.SpeedTree9Reader;
-using STMaterial = UnityEditor.SpeedTree.Importer.STMaterial;
-using LightingSettings = UnityEditor.SpeedTree.Importer.LightingSettings;
 using Material = UnityEngine.Material;
 using Color = UnityEngine.Color;
 
 using static UnityEditor.SpeedTree.Importer.SpeedTreeImporterCommon;
 using static UnityEditor.SpeedTree.Importer.WindConfigSDK;
 using static UnityEditor.SpeedTree.Importer.SpeedTree9Importer;
+using static UnityEditor.SpeedTree.Importer.SpeedTree9Reader;
 
 namespace UnityEditor.SpeedTree.Importer
 {
@@ -119,7 +117,7 @@ namespace UnityEditor.SpeedTree.Importer
 
         // Cache main objects, created during import process.
         private AssetImportContext m_Context;
-        private SpeedTreeReader m_Tree;
+        private SpeedTree9Reader m_Tree;
         private SpeedTreeImporterOutputData m_OutputImporterData;
         private Shader m_Shader;
         private SpeedTreeWindAsset m_WindAsset;
@@ -144,13 +142,16 @@ namespace UnityEditor.SpeedTree.Importer
         public override void OnImportAsset(AssetImportContext ctx)
         {
             m_Context = ctx;
-            m_Tree = new SpeedTreeReader(ctx.assetPath);
+            m_Tree = new SpeedTree9Reader();
 
-            if (!m_Tree.IsValid)
+            FileStatus status = m_Tree.Initialize(ctx.assetPath);
+            if (status != FileStatus.Valid)
             {
-                ctx.LogImportError("Asset contains invalid data, import failed.");
+                ctx.LogImportError($"Error while initializing the SpeedTree9 reader: {status}.");
                 return;
             }
+
+            m_Tree.ReadContent();
 
             CacheTreeImporterValues(ctx.assetPath);
 
@@ -223,11 +224,11 @@ namespace UnityEditor.SpeedTree.Importer
         private void CacheTreeImporterValues(string assetPath)
         {
             // Variables used a lot are cached, since accessing any Reader array has a non-negligeable cost. 
-            m_HasFacingData = TreeHasFacingData(m_Tree);
+            m_HasFacingData = TreeHasFacingData();
             m_HasBranch2Data = m_Tree.Wind.DoBranch2;
             m_LastLodIsBillboard = m_Tree.BillboardInfo.LastLodIsBillboard;
-            m_LODCount = m_Tree.Lods.Count;
-            m_CollisionObjectsCount = m_Tree.CollisionObjects.Count;
+            m_LODCount = (uint)m_Tree.Lod.Length;
+            m_CollisionObjectsCount = (uint)m_Tree.CollisionObjects.Length;
 
             WindConfigSDK windCfg = m_Tree.Wind;
             m_WindEnabled = (windCfg.DoShared || windCfg.DoBranch1 || windCfg.DoBranch2 || windCfg.DoRipple)
@@ -266,7 +267,7 @@ namespace UnityEditor.SpeedTree.Importer
         private Mesh CreateMeshAndGeometry(Lod lod, int lodIndex)
         {
             bool isBillboard = m_LastLodIsBillboard && (lodIndex == (m_LODCount - 1));
-            int vertexCount = (int)lod.Vertices.Count;
+            int vertexCount = (int)lod.Vertices.Length;
             int numUVs = CalculateNumUVs(isBillboard);
 
             STMeshGeometry sTMeshGeometry = new STMeshGeometry(vertexCount, numUVs, lodIndex);
@@ -277,7 +278,7 @@ namespace UnityEditor.SpeedTree.Importer
             {
                 name = "LOD" + sTMeshGeometry.lodIndex + "_Mesh",
                 indexFormat = (sTMeshGeometry.vertices.Length > 65535) ? IndexFormat.UInt32 : IndexFormat.UInt16,
-                subMeshCount = (int)lod.DrawCalls.Count,
+                subMeshCount = (int)lod.DrawCalls.Length,
                 vertices = sTMeshGeometry.vertices,
                 normals = sTMeshGeometry.normals,
                 tangents = sTMeshGeometry.tangents,
@@ -306,7 +307,7 @@ namespace UnityEditor.SpeedTree.Importer
         {
             int[] indices = new int[draw.IndexCount];
 
-            SpeedTreeDataArray<uint> lodIndices = lod.Indices;
+            uint[] lodIndices = lod.Indices;
 
             for (int index = 0; index < draw.IndexCount; ++index)
             {
@@ -338,7 +339,7 @@ namespace UnityEditor.SpeedTree.Importer
 
         private void CalculateMeshGeometry(STMeshGeometry sTMeshGeometry, Lod lod, bool isBillboard)
         {
-            SpeedTreeDataArray<STVertex> vertices = lod.Vertices;
+            STVertex[] vertices = lod.Vertices;
 
             for (int i = 0; i < sTMeshGeometry.vertices.Length; ++i)
             {
@@ -577,11 +578,11 @@ namespace UnityEditor.SpeedTree.Importer
             // Loop each LOD (mesh) of the asset.
             for (int lodIndex = 0; lodIndex < m_LODCount; ++lodIndex)
             {
-                Lod lod = m_Tree.Lods[lodIndex];
+                Lod lod = m_Tree.Lod[lodIndex];
                 Mesh mesh = CreateMeshAndGeometry(lod, lodIndex);
 
                 // Loop each DrawCall (material) of the current mesh LOD.
-                for (int drawIndex = 0; drawIndex < lod.DrawCalls.Count; ++drawIndex)
+                for (int drawIndex = 0; drawIndex < lod.DrawCalls.Length; ++drawIndex)
                 {
                     DrawCall draw = lod.DrawCalls[drawIndex];
 
@@ -676,10 +677,10 @@ namespace UnityEditor.SpeedTree.Importer
         {
             for (int lodIndex = 0; lodIndex < m_LODCount; lodIndex++)
             {
-                Lod stLOD = m_Tree.Lods[lodIndex];
+                Lod stLOD = m_Tree.Lod[lodIndex];
 
                 // Loop necessary materials for current LOD.
-                for (int drawIndex = 0; drawIndex < stLOD.DrawCalls.Count; ++drawIndex)
+                for (int drawIndex = 0; drawIndex < stLOD.DrawCalls.Length; ++drawIndex)
                 {
                     int matIndex = (int)stLOD.DrawCalls[drawIndex].MaterialIndex;
                     STMaterial stMaterial = m_Tree.Materials[matIndex];
@@ -693,12 +694,16 @@ namespace UnityEditor.SpeedTree.Importer
         {
             // This object could potentially be cached, but this function is rarely triggered (only when bumping the material version)
             // so the cost of caching it is not really interesting.
-            m_Tree = new SpeedTreeReader(assetPath);
-            if (!m_Tree.IsValid)
+            m_Tree = new SpeedTree9Reader();
+
+            FileStatus status = m_Tree.Initialize(assetPath);
+            if (status != FileStatus.Valid)
             {
-                Debug.LogError("Asset contains invalid data, impossible to regenerate materials.");
+                Debug.LogError($"Error while initializing the SpeedTree9 reader: {status}.");
                 return;
             }
+
+            m_Tree.ReadContent();
 
             CacheTreeImporterValues(assetPath);
 
@@ -801,7 +806,7 @@ namespace UnityEditor.SpeedTree.Importer
 
         private bool SetMaterialTexture(Material mat, STMaterial stMaterial, int indexMap, string path, int property)
         {
-            if (stMaterial.Maps.Count > indexMap)
+            if (stMaterial.Maps.Length > indexMap)
             {
                 MaterialMap stMatMap = stMaterial.Maps[indexMap];
                 string mapPath = stMatMap.Path;
@@ -892,8 +897,7 @@ namespace UnityEditor.SpeedTree.Importer
                 {
                     // _Glossiness (== _Smoothness) is multipled in the shader with the texture values if ExtraTex is present.
                     // Set default value 1.0f to override the default value 0.5, otherwise, the original texture values will
-                    // be scaled down to half as much.
-                    // Same goes for _Metallic
+                    // be scaled down to half as much. Same goes for _Metallic
                     mat.SetFloat(MaterialProperties.GlossinessID, 1.0f);
                     mat.SetFloat(MaterialProperties.MetallicID, 1.0f);
                 }
@@ -1091,28 +1095,31 @@ namespace UnityEditor.SpeedTree.Importer
         {
             const bool CHECK_ZERO = true;
             const bool DONT_CHECK_ZERO = false;
-            void CopyCurve(in SpeedTreeDataArray<float> src, float* dst)
+
+            void CopyCurve(in float[] src, float* dst)
             {
                 const int NUM_CURVE_ELEMENTS = 20;
-                Debug.Assert(src.Count == NUM_CURVE_ELEMENTS);
+                Debug.Assert(src.Length == NUM_CURVE_ELEMENTS);
                 for (global::System.Int32 i = 0; i < NUM_CURVE_ELEMENTS; i++)
                 {
                     dst[i] = src[i];
                 }
             }
-            void CopyCurveScale(in SpeedTreeDataArray<float> src, float* dst, float scaleFactor)
+
+            void CopyCurveScale(in float[] src, float* dst, float scaleFactor)
             {
                 const int NUM_CURVE_ELEMENTS = 20;
-                Debug.Assert(src.Count == NUM_CURVE_ELEMENTS);
+                Debug.Assert(src.Length == NUM_CURVE_ELEMENTS);
                 for (global::System.Int32 i = 0; i < NUM_CURVE_ELEMENTS; i++)
                 {
                     dst[i] = src[i] * scaleFactor;
                 }
             }
-            bool ValidCurve(SpeedTreeDataArray<float> curve, bool bCheckZero = CHECK_ZERO)
+
+            bool ValidCurve(float[] curve, bool bCheckZero = CHECK_ZERO)
             {
                 bool bNonZero = false;
-                for (int i = 0; i < curve.Count; ++i)
+                for (int i = 0; i < curve.Length; ++i)
                 {
                     bNonZero |= curve[i] != 0.0f;
                     if (float.IsNaN(curve[i]))
@@ -1127,6 +1134,7 @@ namespace UnityEditor.SpeedTree.Importer
                 }
                 return true;
             }
+
             bool BranchHasAllCurvesValid(in WindBranch b)
             {
                 return ValidCurve(b.Bend)
@@ -1136,6 +1144,7 @@ namespace UnityEditor.SpeedTree.Importer
                     && ValidCurve(b.Flexibility, DONT_CHECK_ZERO
                 );
             }
+
             bool RippleHasAllCurvesValid(in WindRipple r)
             {
                 return ValidCurve(r.Planar)
@@ -1144,6 +1153,7 @@ namespace UnityEditor.SpeedTree.Importer
                     && ValidCurve(r.Flexibility, DONT_CHECK_ZERO
                 );
             }
+
             SpeedTreeWindConfig9 cfg = new SpeedTreeWindConfig9();
 
             // common
@@ -1164,9 +1174,10 @@ namespace UnityEditor.SpeedTree.Importer
             cfg.treeExtentX = (treeBounds.Max.X - treeBounds.Min.X) * scaleFactor;
             cfg.treeExtentY = (treeBounds.Max.Y - treeBounds.Min.Y) * scaleFactor;
             cfg.treeExtentZ = (treeBounds.Max.Z - treeBounds.Min.Z) * scaleFactor;
+
             if (wind.DoShared)
             {
-                WindBranch shared = wind.Shared;
+                WindConfigSDK.WindBranch shared = wind.Shared;
                 CopyCurveScale(shared.Bend, cfg.bendShared, scaleFactor);
                 CopyCurveScale(shared.Oscillation, cfg.oscillationShared, scaleFactor);
                 CopyCurve(shared.Speed, cfg.speedShared);
@@ -1179,9 +1190,10 @@ namespace UnityEditor.SpeedTree.Importer
                     cfg.doShared = 1;
                 }
             }
+
             if (wind.DoBranch1)
             {
-                WindBranch branch1 = wind.Branch1;
+                WindConfigSDK.WindBranch branch1 = wind.Branch1;
                 CopyCurveScale(branch1.Bend, cfg.bendBranch1, scaleFactor);
                 CopyCurveScale(branch1.Oscillation, cfg.oscillationBranch1, scaleFactor);
                 CopyCurve(branch1.Speed, cfg.speedBranch1);
@@ -1193,9 +1205,10 @@ namespace UnityEditor.SpeedTree.Importer
                     cfg.doBranch1 = 1;
                 }
             }
+
             if (wind.DoBranch2)
             {
-                WindBranch branch2 = wind.Branch2;
+                WindConfigSDK.WindBranch branch2 = wind.Branch2;
                 CopyCurveScale(branch2.Bend, cfg.bendBranch2, scaleFactor);
                 CopyCurveScale(branch2.Oscillation, cfg.oscillationBranch2, scaleFactor);
                 CopyCurve(branch2.Speed, cfg.speedBranch2);
@@ -1207,9 +1220,10 @@ namespace UnityEditor.SpeedTree.Importer
                     cfg.doBranch2 = 1;
                 }
             }
+
             if (wind.DoRipple)
             {
-                WindRipple ripple = wind.Ripple;
+                WindConfigSDK.WindRipple ripple = wind.Ripple;
                 CopyCurveScale(ripple.Planar, cfg.planarRipple, scaleFactor);
                 CopyCurveScale(ripple.Directional, cfg.directionalRipple, scaleFactor);
                 CopyCurve(ripple.Speed, cfg.speedRipple);
@@ -1265,12 +1279,13 @@ namespace UnityEditor.SpeedTree.Importer
             m_MeshSettings.scaleFactor = scaleFactor;
         }
 
-        private bool TreeHasFacingData(SpeedTreeReader tree)
+        private bool TreeHasFacingData()
         {
             for (int lodIndex = 0; lodIndex < m_LODCount; ++lodIndex)
             {
-                Lod lod = tree.Lods[lodIndex];
-                for (int drawIndex = 0; drawIndex < lod.DrawCalls.Count; ++drawIndex)
+                Lod lod = m_Tree.Lod[lodIndex];
+
+                for (int drawIndex = 0; drawIndex < lod.DrawCalls.Length; ++drawIndex)
                 {
                     DrawCall draw = lod.DrawCalls[drawIndex];
                     if(draw.ContainsFacingGeometry)
@@ -1386,7 +1401,6 @@ namespace UnityEditor.SpeedTree.Importer
             {
                 if (TryGetHashSpeedTreeAttributeMaterialSettings(out List<string> strToHash))
                 {
-
                     Hash128 hash = new Hash128();
 
                     foreach (string str in strToHash)
@@ -1420,14 +1434,21 @@ namespace UnityEditor.SpeedTree.Importer
             return strToHash.Count > 0;
         }
 
-        private static void ChangeTextureImporterSettingsForSt9Files(string assetFilename)
+        private static void ChangeTextureImporterSettingsForSt9Files(string assetPath)
         {
-            SpeedTreeReader tree = new SpeedTreeReader(assetFilename);
-            if (!tree.IsValid)
+            SpeedTree9Reader tree = new SpeedTree9Reader();
+            
+            FileStatus status = tree.Initialize(assetPath);
+            if (status != FileStatus.Valid)
+            {
+                Debug.LogError($"Error while initializing the SpeedTree9 reader: {status}.");
                 return;
+            }
 
-            string path = Path.GetDirectoryName(assetFilename) + "/";
-            for (int matIndex = 0; matIndex < tree.Materials.Count; ++matIndex)
+            tree.ReadContent();
+
+            string path = Path.GetDirectoryName(assetPath) + "/";
+            for (int matIndex = 0; matIndex < tree.Materials.Length; ++matIndex)
             {
                 STMaterial stMaterial = tree.Materials[matIndex];
 
@@ -1450,7 +1471,7 @@ namespace UnityEditor.SpeedTree.Importer
         {
             textureImporter = null;
 
-            if (stMaterial.Maps.Count <= index)
+            if (stMaterial.Maps.Length <= index)
                 return false;
 
             MaterialMap mat = stMaterial.Maps[index];

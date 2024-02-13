@@ -175,6 +175,9 @@ namespace UnityEditor
         internal static IEnumerable<string> GetSearchKeywordsFromVisualElementTree(VisualElement root, bool includeTooltip = false)
         {
             var keywordList = new HashSet<string>();
+            if (root == null)
+                return keywordList;
+
             var splitterArray = new[] { ' ', '\n' };
             root.Query<VisualElement>().ForEach(ve =>
             {

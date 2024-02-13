@@ -265,7 +265,7 @@ namespace UnityEngine.UIElements
         private string m_Text = String.Empty;
         public override string text
         {
-            get => m_Text;
+            get => m_Text ?? string.Empty;
             set
             {
                 m_Text = value;

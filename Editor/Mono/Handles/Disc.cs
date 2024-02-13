@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
-using UnityEditor.Snap;
 using UnityEngine;
 
 namespace UnityEditorInternal
@@ -100,7 +99,12 @@ namespace UnityEditorInternal
                             Vector3 direction = Vector3.Cross(axis, position - s_StartPosition).normalized;
                             s_CurrentMousePosition += evt.delta;
                             s_RotationDist = HandleUtility.CalcLineTranslation(s_StartMousePosition, s_CurrentMousePosition, s_StartPosition, direction) / size * 30;
-                            s_RotationDist = Handles.SnapValue(s_RotationDist, snap);
+                            // Not using Handles.SnapValue because that checks incrementalSnapEnabled. For rotation we
+                            // don't make any distinction between world snap and incremental. In cases where the tool
+                            // supports grid snapping for translation or scale _and_ rotation, we need to explicitly
+                            // ignore the gridSnapActive check that is implicit in incrementSnapEnabled.
+                            if(EditorSnapSettings.snapEnabled)
+                                s_RotationDist =  Snapping.Snap(s_RotationDist, snap);
                             rotation = Quaternion.AngleAxis(s_RotationDist * -1, s_StartAxis) * s_StartRotation;
                         }
 
@@ -148,7 +152,7 @@ namespace UnityEditorInternal
                         Handles.DrawSolidArc(position, axis, from, d, size);
 
                         // Draw snap markers
-                        if (EditorSnapSettings.incrementalSnapActive && snap > 0)
+                        if (EditorSnapSettings.snapEnabled && snap > 0)
                         {
                             DrawRotationUnitSnapMarkers(position, axis, size, k_RotationUnitSnapMarkerSize, snap, @from);
                             DrawRotationUnitSnapMarkers(position, axis, size, k_RotationUnitSnapMajorMarkerSize, k_RotationUnitSnapMajorMarkerStep, @from);

@@ -116,6 +116,10 @@ namespace UnityEditor.Build.Profile
             m_BuildAndRunButton.text = TrText.buildAndRun;
             m_ClassicSceneListButton.text = TrText.sceneList;
 
+            var sceneListIcon = m_ClassicSceneListButton.Q<Image>();
+            sceneListIcon.AddToClassList("lhs-sidebar-item-icon");
+            sceneListIcon.image = BuildProfileModuleUtil.GetSceneListIcon();
+
             UpdateToolbarButtonState();
 
             // Build dynamic visual elements.

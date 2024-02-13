@@ -9,15 +9,13 @@ namespace UnityEditor.UIElements.Bindings
 {
     class MultiColumnListViewSerializedObjectBinding : BaseListViewSerializedObjectBinding
     {
-        static ObjectPool<MultiColumnListViewSerializedObjectBinding> s_Pool = new (() => new MultiColumnListViewSerializedObjectBinding(), 32);
-
         private bool m_HasDefaultBindItem;
 
         MultiColumnListView multiColumnListView => boundElement as MultiColumnListView;
 
         public static BaseListViewSerializedObjectBinding GetFromPool()
         {
-            return s_Pool.Get();
+            return new MultiColumnListViewSerializedObjectBinding();
         }
 
         protected override void SetEditorViewController()
@@ -89,7 +87,6 @@ namespace UnityEditor.UIElements.Bindings
         protected override void PoolRelease()
         {
             m_HasDefaultBindItem = false;
-            s_Pool.Release(this);
         }
     }
 }

@@ -258,9 +258,7 @@ namespace UnityEngine.LightTransport
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
             using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            BufferSlice<Vector3> offsetPositions = _positions;
-            offsetPositions.Offset = (ulong)positionOffset;
-            EventID eventId = context.ReadBuffer(offsetPositions, positions);
+            EventID eventId = context.ReadBuffer(_positions, positions);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
             void* positionsPtr = NativeArrayUnsafeUtility.GetUnsafePtr(positions);

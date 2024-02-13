@@ -17,8 +17,6 @@ namespace UnityEditor.Search
         private TextField m_TextField;
         private readonly SearchFieldBase<TextField, string> m_SearchField;
         private Action m_RefreshBuilderOff;
-        private readonly Button m_CancelButton;
-        private Button m_SearchFieldCancelButton;
 
         int ISearchField.controlID => (int)m_SearchField.controlid;
         int ISearchField.cursorIndex => m_TextField?.cursorIndex ?? -1;
@@ -59,12 +57,6 @@ namespace UnityEditor.Search
         {
             m_SearchField = searchField;
             m_UseSearchGlobalEventHandler = useSearchGlobalEventHandler;
-
-            m_CancelButton = new Button(() => {}) { name = "query-builder-unity-cancel" };
-            m_CancelButton.AddToClassList(SearchFieldBase<TextField, string>.cancelButtonUssClassName);
-            m_CancelButton.AddToClassList(SearchFieldBase<TextField, string>.cancelButtonOffVariantUssClassName);
-
-            m_CancelButton.clickable.clicked += OnCancelButtonClick;
         }
 
         protected override void OnAttachToPanel(AttachToPanelEvent evt)
@@ -80,7 +72,6 @@ namespace UnityEditor.Search
             }
             On(SearchEvent.RefreshBuilder, RefreshBuilder);
             On(SearchEvent.SearchContextChanged, Rebuild);
-            On(SearchEvent.SearchTextChanged, UpdateCancelButton);
 
             m_TextField = m_SearchField.Q<TextField>();
             m_TextField.RemoveFromHierarchy();
@@ -90,21 +81,10 @@ namespace UnityEditor.Search
             m_SearchField.value = m_QueryBuilder.wordText;
 
             m_TextField.RegisterCallback<ChangeEvent<string>>(OnQueryChanged);
-
-            m_SearchFieldCancelButton = m_SearchField.Q<Button>(null, SearchFieldBase<TextField, string>.cancelButtonUssClassName);
-            if (m_SearchFieldCancelButton != null)
-                HideElements(m_SearchFieldCancelButton);
-
-            m_SearchField.Add(m_CancelButton);
         }
 
         protected override void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            m_SearchField.Remove(m_CancelButton);
-
-            if (m_SearchFieldCancelButton != null)
-                ShowElements(m_SearchFieldCancelButton);
-
             m_TextField?.UnregisterCallback<ChangeEvent<string>>(OnQueryChanged);
             m_TextField = null;
 
@@ -121,7 +101,6 @@ namespace UnityEditor.Search
             
             Off(SearchEvent.RefreshBuilder, RefreshBuilder);
             Off(SearchEvent.SearchContextChanged, Rebuild);
-            Off(SearchEvent.SearchTextChanged, UpdateCancelButton);
 
             base.OnDetachFromPanel(evt);
         }
@@ -139,10 +118,6 @@ namespace UnityEditor.Search
                 m_QueryBuilder.wordText = evt.newValue;
                 m_ViewModel.SetSelection();
             }
-
-            // Don't let SearchToolbar process the ChangeEvent too.
-            evt.StopPropagation();
-            UpdateCancelButton();
         }
 
         private void OnKeyDown(KeyDownEvent evt)
@@ -193,8 +168,6 @@ namespace UnityEditor.Search
 
             m_TextField?.SetValueWithoutNotify(m_QueryBuilder.wordText);
 
-            UpdateCancelButton();
-
             Emit(SearchEvent.BuilderRefreshed);
         }
 
@@ -214,22 +187,6 @@ namespace UnityEditor.Search
                 return;
             m_QueryBuilder.searchText = newValue;
             DeferRefreshBuilder();
-        }
-
-        private void OnCancelButtonClick()
-        {
-            ((INotifyValueChanged<string>) this).value = string.Empty;
-            UpdateCancelButton();
-        }
-
-        private void UpdateCancelButton(ISearchEvent evt)
-        {
-            UpdateCancelButton();
-        }
-
-        private void UpdateCancelButton()
-        {
-            m_CancelButton.EnableInClassList(SearchFieldBase<TextField, string>.cancelButtonOffVariantUssClassName, string.IsNullOrEmpty(m_QueryBuilder.searchText));
         }
     }
 }

@@ -482,7 +482,7 @@ namespace UnityEditor.Build.Profile
             if (!string.IsNullOrEmpty(sharedSetting))
                 return IsSharedSettingEnabledInActiveProfile(sharedSetting);
 
-            var activeProfile = instance.m_ActiveProfile;
+            var activeProfile = instance.activeProfile;
             if (activeProfile == null || buildTarget == BuildTarget.NoTarget || subtarget != activeProfile.subtarget)
                 return false;
 
@@ -497,6 +497,9 @@ namespace UnityEditor.Build.Profile
                 return false;
 
             var platformSettingsBase = activeProfile.platformBuildProfile;
+            if (platformSettingsBase == null)
+                return false;
+
             return platformSettingsBase.IsSharedSettingEnabled(settingName);
         }
 

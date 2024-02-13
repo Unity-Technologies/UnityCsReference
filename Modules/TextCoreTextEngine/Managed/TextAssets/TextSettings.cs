@@ -329,7 +329,7 @@ namespace UnityEngine.TextCore.Text
             if (m_FontLookup.ContainsKey(id))
                 return m_FontLookup[id];
 
-            if (JobsUtility.IsExecutingJob)
+            if (TextGenerator.IsExecutingJob)
                 return null;
 
             FontAsset fontAsset;

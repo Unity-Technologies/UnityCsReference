@@ -24,8 +24,8 @@ namespace Unity.UI.Builder
         public static readonly int VisualTreeAssetOrderHalfIncrement = 5;
         public static readonly float CanvasInitialWidth = 350;
         public static readonly float CanvasInitialHeight = 450; // Making this too large might break tests.
-        public static readonly float CanvasMinWidth = 100;
-        public static readonly float CanvasMinHeight = 100;
+        public static readonly float CanvasMinWidth = 0;
+        public static readonly float CanvasMinHeight = 0;
         public static readonly float ClassNameInPillMinWidth = 180f;
         public static readonly float TooltipPreviewYOffset = 20;
         public static readonly float ViewportInitialZoom = 1.0f;

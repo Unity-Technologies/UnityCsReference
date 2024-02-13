@@ -27,10 +27,11 @@ namespace UnityEditor.Search
         ISearchView ShowWindow(float width, float height, SearchFlags flags);
         IEnumerable<SearchItem> FetchItems();
         void AddProvidersToMenu(GenericMenu menu);
+        void AddItemsToMenu(GenericMenu menu);
     }
 
     [EditorWindowTitle(title="Search")]
-    class SearchWindow : EditorWindow, ISearchView, ISearchQueryView, ISearchElement, IDisposable, IHasCustomMenu, ISearchWindow
+    class SearchWindow : EditorWindow, ISearchView, ISearchQueryView, ISearchElement, IDisposable, ISearchWindow
     {
         internal const float defaultWidth = 700f;
         internal const float defaultHeight = 450f;
@@ -273,7 +274,7 @@ namespace UnityEditor.Search
         {
             var groupBar = !viewState.hideTabs ? new SearchGroupBar("SearchGroupbar", this) : null;
 
-            var resultContainer = SearchElement.Create<VisualElement>("SearchResultContainer", "search-panel", "search-result-container");
+            var resultContainer = SearchElement.Create<VisualElement>("SearchResultContainer", "search-panel", "search-result-container", "search-splitter__flexed-pane");
             if (groupBar != null)
                 resultContainer.Add(groupBar);
             resultContainer.Add(resultView);
@@ -291,6 +292,7 @@ namespace UnityEditor.Search
             m_LeftSplitter = new TwoPaneSplitView(0, EditorPrefs.GetFloat(k_SideBarWidthKey, 120f), TwoPaneSplitViewOrientation.Horizontal) { name = "SearchLeftSidePanels" };
             m_LeftSplitter.viewDataKey = k_LeftSplitterViewDataKey;
             m_LeftSplitter.AddToClassList("search-splitter");
+            m_LeftSplitter.AddToClassList("search-splitter__flexed-pane");
             m_LeftSplitter.Add(m_SearchQueryPanelContainer);
             m_LeftSplitter.Add(resultContainer);
 
@@ -544,6 +546,7 @@ namespace UnityEditor.Search
 
             m_SearchView.syncSearch = false;
             m_SearchView?.Dispose();
+
             m_SearchMonitorView.Dispose();
 
             // End search session
@@ -678,7 +681,7 @@ namespace UnityEditor.Search
             Dispatcher.Emit(SearchEvent.ViewStateUpdated, new SearchEventPayload(this));
         }
 
-        void IHasCustomMenu.AddItemsToMenu(GenericMenu menu)
+        void ISearchWindow.AddItemsToMenu(GenericMenu menu)
         {
             if (m_ViewState.isSimplePicker)
                 return;
@@ -1085,7 +1088,7 @@ namespace UnityEditor.Search
         {
             if (!args.ignoreSaveSearches && args.context != null && string.IsNullOrEmpty(args.context.searchText))
             {
-                args.searchText = SearchSettings.GetScopeValue(k_LastSearchPrefKey, m_ContextHash, "");
+                args.searchText = SearchSettings.GetScopeValue(k_LastSearchPrefKey, m_ContextHash, "").TrimStart();
                 if (args.context != null)
                 {
                     args.context.searchText = args.searchText;
@@ -1096,7 +1099,7 @@ namespace UnityEditor.Search
 
         protected virtual void SaveSessionSettings()
         {
-            SearchSettings.SetScopeValue(k_LastSearchPrefKey, m_ContextHash, context.searchText);
+            SearchSettings.SetScopeValue(k_LastSearchPrefKey, m_ContextHash, context.searchText.TrimStart());
             SearchSettings.SetScopeValue(nameof(SearchViewFlags.OpenInspectorPreview), m_ContextHash, m_ViewState.flags.HasAny(SearchViewFlags.OpenInspectorPreview) ? 1 : 0);
 
             if (m_SearchView != null)
@@ -1301,7 +1304,7 @@ namespace UnityEditor.Search
             SearchAnalytics.SendEvent(window.state.sessionId, SearchAnalytics.GenericEventType.QuickSearchOpen, "NewWindow");
         }
 
-        [MenuItem("Window/Search/Transient Window", priority = 1)]
+        [Shortcut("Help/Search Transient Window")]
         public static void OpenPopupWindow()
         {
             if (SearchService.ShowWindow(defaultWidth: 600, defaultHeight: 400, dockable: false) is SearchWindow window)

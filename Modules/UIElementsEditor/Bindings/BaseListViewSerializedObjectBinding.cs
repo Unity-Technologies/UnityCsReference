@@ -309,8 +309,6 @@ namespace UnityEditor.UIElements.Bindings
                     return new BindingResult(BindingStatus.Pending);
                 }
 
-                isUpdating = true;
-
                 var currentArraySize = m_ArraySize.intValue;
                 var listViewShowsMixedValue = baseListView.arraySizeField is {showMixedValue: true};
                 if (listViewShowsMixedValue || baseListView.arraySizeField == null)
@@ -327,10 +325,6 @@ namespace UnityEditor.UIElements.Bindings
             {
                 //this can happen when serializedObject has been disposed of
             }
-            finally
-            {
-                isUpdating = false;
-            }
 
             // We unbind here
             Unbind();
@@ -346,16 +340,11 @@ namespace UnityEditor.UIElements.Bindings
 
             try
             {
-                isUpdating = true;
                 UpdateArraySize();
             }
             catch (NullReferenceException e) when (e.Message.Contains("SerializedObject of SerializedProperty has been Disposed."))
             {
                 //this can happen when serializedObject has been disposed of
-            }
-            finally
-            {
-                isUpdating = false;
             }
         }
 
@@ -449,6 +438,7 @@ namespace UnityEditor.UIElements.Bindings
             });
 
             baseListView.itemsSource = m_DataList;
+            baseListView.SetupArraySizeField();
 
             var foldoutInput = baseListView.headerFoldout?.toggle?.visualInput;
             if (foldoutInput != null)
@@ -524,6 +514,7 @@ namespace UnityEditor.UIElements.Bindings
 
             baseListView.SetProperty(BaseVerticalCollectionView.internalBindingKey, null);
             baseListView.itemsSource = null;
+            baseListView.SetupArraySizeField();
             baseListView.Rebuild();
 
             ResetCallbacks();

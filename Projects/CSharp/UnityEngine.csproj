@@ -1329,6 +1329,15 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAssetUtilities.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAssetUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetAtlasPopulation.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetAtlasPopulation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetFontFeatures.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetFontFeatures.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\NativeFontAsset.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\NativeFontAsset.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\SpriteAsset.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextAssets\SpriteAsset.cs</Link>
     </Compile>

@@ -52,7 +52,6 @@ namespace UnityEditor.TextCore.Text
     {
         private struct UI_PanelState
         {
-            public static bool faceInfoPanel = true;
             public static bool generationSettingsPanel = true;
             public static bool fontAtlasInfoPanel = true;
             public static bool fontWeightPanel = true;
@@ -2327,14 +2326,13 @@ namespace UnityEditor.TextCore.Text
                     foreach (uint glyphIndex in m_GlyphsToAdd)
                     {
                         if (glyphIndex != 0)
-                            m_fontAsset.AddGlyphInternal(glyphIndex);
+                            m_fontAsset.TryAddGlyphInternal(glyphIndex, out _);
                     }
 
                     break;
             }
 
         }
-
 
         // Check if any of the Style elements were clicked on.
         private bool DoSelectionCheck(Rect selectionArea)

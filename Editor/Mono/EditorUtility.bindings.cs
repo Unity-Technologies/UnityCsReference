@@ -203,6 +203,12 @@ namespace UnityEditor
         internal static extern void ForceReloadInspectors();
         internal static extern void ForceRebuildInspectors();
 
+        [RequiredByNativeCode]
+        internal static void DelayedForceRebuildInspectors()
+        {
+            EditorApplication.CallDelayed(ForceRebuildInspectors);
+        }
+
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("ExtractOggFile has no effect anymore", false)]
         public static bool ExtractOggFile(Object obj, string path)

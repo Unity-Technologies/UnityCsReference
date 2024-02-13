@@ -78,9 +78,9 @@ namespace UnityEngine.UIElements
             return inst;
         }, null, list => list.Clear(), null, false);
 
-        private readonly MeshGenerationCallback m_PrepareTextJobifiedCallback;
-        private readonly MeshGenerationCallback m_GenerateTextJobifiedCallback;
-        private readonly MeshGenerationCallback m_AddDrawEntriesCallback;
+        internal MeshGenerationCallback m_PrepareTextJobifiedCallback;
+        internal MeshGenerationCallback m_GenerateTextJobifiedCallback;
+        internal MeshGenerationCallback m_AddDrawEntriesCallback;
 
         public UITKTextJobSystem()
         {
@@ -120,7 +120,7 @@ namespace UnityEngine.UIElements
             mgc.AddMeshGenerationCallback(m_PrepareTextJobifiedCallback, null, MeshGenerationCallbackType.WorkThenFork, false);
         }
 
-        private void PrepareTextJobified(MeshGenerationContext mgc, object _)
+        internal void PrepareTextJobified(MeshGenerationContext mgc, object _)
         {
             TextHandle.InitThreadArrays();
             TextHandle.currentTime = Time.realtimeSinceStartup;
@@ -135,6 +135,7 @@ namespace UnityEngine.UIElements
             };
 
             k_PrepareMainThreadMarker.End();
+            TextCore.Text.TextGenerator.IsExecutingJob = true;
             JobHandle jobHandle = prepareJob.Schedule(textJobDatas.Count, 1);
             mgc.AddMeshGenerationJob(jobHandle);
             mgc.AddMeshGenerationCallback(m_GenerateTextJobifiedCallback, null, MeshGenerationCallbackType.Work, true);
@@ -159,6 +160,7 @@ namespace UnityEngine.UIElements
 
         private void GenerateTextJobified(MeshGenerationContext mgc, object _)
         {
+            TextCore.Text.TextGenerator.IsExecutingJob = false;
             k_UpdateMainThreadMarker.Begin();
             foreach (var textData in textJobDatas)
             {
@@ -184,8 +186,9 @@ namespace UnityEngine.UIElements
                 managedJobDataHandle = textJobDatasHandle,
                 alloc = allocator
             };
-            JobHandle jobHandle = textJob.Schedule(textJobDatas.Count, 1);
 
+            TextCore.Text.TextGenerator.IsExecutingJob = true;
+            JobHandle jobHandle = textJob.Schedule(textJobDatas.Count, 1);
             mgc.AddMeshGenerationJob(jobHandle);
             mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, true);
         }
@@ -266,7 +269,7 @@ namespace UnityEngine.UIElements
                     renderModes.Add(meshInfo.glyphRenderMode);
 
                     bool hasGradientScale = meshInfo.glyphRenderMode != GlyphRenderMode.SMOOTH && meshInfo.glyphRenderMode != GlyphRenderMode.COLOR;
-                    bool isDynamicColor = !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
+                    bool isDynamicColor = meshInfo.applySDF && !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
 
                     alloc.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 
@@ -297,6 +300,7 @@ namespace UnityEngine.UIElements
 
         void AddDrawEntries(MeshGenerationContext mgc, object _)
         {
+            TextCore.Text.TextGenerator.IsExecutingJob = false;
             foreach (var managedJobData in textJobDatas)
             {
                 mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.visualElement);

@@ -19,7 +19,7 @@ namespace UnityEditor.UIElements.ProjectSettings
         internal void Initialize(SerializedObject serializedObject)
         {
             m_SerializedObject = serializedObject;
-            m_SettingsWindow = EditorWindow.GetWindow<ProjectSettingsWindow>();
+            m_SettingsWindow = EditorWindow.GetWindow<ProjectSettingsWindow>("", false);
 
             Initialize();
         }

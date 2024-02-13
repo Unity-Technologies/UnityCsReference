@@ -40,7 +40,19 @@ namespace UnityEngine.UIElements
                 if (touchKeyboard.status != TouchScreenKeyboard.Status.Visible)
                 {
                     if (touchKeyboard.status == TouchScreenKeyboard.Status.Canceled)
+                    {
                         edition.RestoreValueAndText();
+                    }
+                    else 
+                    {
+                        //Ensure that text is updated after closing the keyboard as some platforms only send input after it is closed
+                        touchKeyboardText = touchKeyboard.text;
+                        if (editingUtilities.text != touchKeyboardText)
+                        {
+                            edition.UpdateText(touchKeyboardText);
+                            textElement.uitkTextHandle.Update();
+                        }
+                    }
 
                     CloseTouchScreenKeyboard();
 

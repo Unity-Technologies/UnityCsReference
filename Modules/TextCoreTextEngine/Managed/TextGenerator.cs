@@ -71,6 +71,9 @@ namespace UnityEngine.TextCore.Text
         static TextGenerator s_TextGenerator;
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static bool IsExecutingJob { get; set; }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static TextGenerator GetTextGenerator()
         {
             if (s_TextGenerator == null)
@@ -84,7 +87,7 @@ namespace UnityEngine.TextCore.Text
 
         public static void GenerateText(TextGenerationSettings settings, TextInfo textInfo)
         {
-            bool isMainThread = !JobsUtility.IsExecutingJob;
+            bool canWriteOnAsset = !IsExecutingJob;
             if (settings.fontAsset == null || settings.fontAsset.characterLookupTable == null)
             {
                 Debug.LogWarning("Can't Generate Mesh, No Font Asset has been assigned.");
@@ -104,7 +107,7 @@ namespace UnityEngine.TextCore.Text
             textGenerator.Prepare(settings, textInfo);
 
             // Update font asset atlas textures and font features.
-            if (isMainThread)
+            if (canWriteOnAsset)
                 FontAsset.UpdateFontAssetsInUpdateQueue();
 
             textGenerator.GenerateTextMesh(settings, textInfo);

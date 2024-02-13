@@ -74,6 +74,14 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Fetch scene list icon for build profiles
+        /// </summary>
+        public static Texture2D GetSceneListIcon()
+        {
+            return EditorGUIUtility.LoadIcon("SceneList Icon");
+        }
+
+        /// <summary>
         /// Load internal warning icon
         /// </summary>
         public static Texture2D GetWarningIcon()

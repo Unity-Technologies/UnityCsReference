@@ -2,15 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.Bindings
 {
     class ListViewSerializedObjectBinding : BaseListViewSerializedObjectBinding
     {
-        static ObjectPool<ListViewSerializedObjectBinding> s_Pool = new (() => new ListViewSerializedObjectBinding(), 32);
-
         ListView listView => boundElement as ListView;
 
         public ListViewSerializedObjectBinding()
@@ -20,7 +17,7 @@ namespace UnityEditor.UIElements.Bindings
 
         public static BaseListViewSerializedObjectBinding GetFromPool()
         {
-            return s_Pool.Get();
+            return new ListViewSerializedObjectBinding();
         }
 
         protected override void SetEditorViewController()
@@ -76,7 +73,6 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override void PoolRelease()
         {
-            s_Pool.Release(this);
         }
     }
 }

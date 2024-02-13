@@ -261,6 +261,15 @@ namespace UnityEditor
             s_SelectionCacheDirty = true;
         }
 
+        static void OnNonSelectedObjectWasDestroyed(int instanceID)
+        {
+            if (s_CachedChildRenderersForOutlining != null && s_CachedChildRenderersForOutlining.Contains(instanceID))
+            {
+                s_ActiveEditorsDirty = true;
+                s_SelectionCacheDirty = true;
+            }
+        }
+
         static void OnEditorTrackerRebuilt()
         {
             s_ActiveEditorsDirty = true;
@@ -1378,6 +1387,7 @@ namespace UnityEditor
             SceneVisibilityManager.currentStageIsIsolated += CurrentStageIsolated;
             ActiveEditorTracker.editorTrackerRebuilt += OnEditorTrackerRebuilt;
             Selection.selectedObjectWasDestroyed += OnSelectedObjectWasDestroyed;
+            Selection.nonSelectedObjectWasDestroyed += OnNonSelectedObjectWasDestroyed;
             Lightmapping.lightingDataUpdated += RepaintAll;
             onCameraModeChanged += delegate
             {
@@ -1594,6 +1604,7 @@ namespace UnityEditor
             Lightmapping.lightingDataUpdated -= RepaintAll;
             ActiveEditorTracker.editorTrackerRebuilt -= OnEditorTrackerRebuilt;
             Selection.selectedObjectWasDestroyed -= OnSelectedObjectWasDestroyed;
+            Selection.nonSelectedObjectWasDestroyed -= OnNonSelectedObjectWasDestroyed;
             sceneViewGrids.gridVisibilityChanged -= GridOnGridVisibilityChanged;
 
             sceneViewGrids.OnDisable(this);
