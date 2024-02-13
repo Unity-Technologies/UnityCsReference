@@ -29,7 +29,7 @@ namespace UnityEngine.TextCore.Text
         /// <param name="isAlternativeTypeface">Indicates if the OUT font asset is an alternative typeface or fallback font asset</param>
         /// <param name="fontAsset">The font asset that contains the requested character</param>
         /// <returns></returns>
-        internal static Character GetCharacterFromFontAsset(uint unicode, FontAsset sourceFontAsset, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface)
+        internal static Character GetCharacterFromFontAsset(uint unicode, FontAsset sourceFontAsset, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface, bool populateLigatures)
         {
             if (includeFallbacks)
             {
@@ -39,16 +39,16 @@ namespace UnityEngine.TextCore.Text
                     k_SearchedAssets.Clear();
             }
 
-            return GetCharacterFromFontAsset_Internal(unicode, sourceFontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface);
+            return GetCharacterFromFontAsset_Internal(unicode, sourceFontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface, populateLigatures);
         }
 
         /// <summary>
         /// Internal function returning the text element character for the given unicode value taking into consideration the font style and weight.
         /// Function searches the source font asset, list of font assets assigned as alternative typefaces and list of fallback font assets.
         /// </summary>
-        private static Character GetCharacterFromFontAsset_Internal(uint unicode, FontAsset sourceFontAsset, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface)
+        private static Character GetCharacterFromFontAsset_Internal(uint unicode, FontAsset sourceFontAsset, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface, bool populateLigatures)
         {
-            bool isMainThread = !JobsUtility.IsExecutingJob;
+            bool canWriteOnAsset = !TextGenerator.IsExecutingJob;
             isAlternativeTypeface = false;
             Character character = null;
 
@@ -67,7 +67,7 @@ namespace UnityEngine.TextCore.Text
 
                 if (temp != null)
                 {
-                    if (!isMainThread && temp.m_CharacterLookupDictionary == null)
+                    if (!canWriteOnAsset && temp.m_CharacterLookupDictionary == null)
                         return null;
 
                     if (temp.GetCharacterInLookupCache(unicode, fontStyle, fontWeight, out character))
@@ -78,7 +78,7 @@ namespace UnityEngine.TextCore.Text
                             return character;
                         }
 
-                        if (!isMainThread)
+                        if (!canWriteOnAsset)
                             return null;
 
                         // Remove character from lookup table
@@ -87,14 +87,14 @@ namespace UnityEngine.TextCore.Text
 
                     if (temp.atlasPopulationMode == AtlasPopulationMode.Dynamic || temp.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
                     {
-                        if (!isMainThread)
+                        if (!canWriteOnAsset)
                         {
                             if (!temp.m_MissingUnicodesFromFontFile.Contains(unicode))
                                 return null;
                         }
-                            
 
-                        else if (temp.TryAddCharacterInternal(unicode, fontStyle, fontWeight, out character))
+
+                        else if (temp.TryAddCharacterInternal(unicode, fontStyle, fontWeight, out character, populateLigatures))
                         {
                             isAlternativeTypeface = true;
                             return character;
@@ -123,7 +123,7 @@ namespace UnityEngine.TextCore.Text
                             return character;
                         }
 
-                        if (!isMainThread)
+                        if (!canWriteOnAsset)
                             return null;
 
                         temp.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
@@ -135,7 +135,7 @@ namespace UnityEngine.TextCore.Text
             }
             #endregion
 
-            if (!isMainThread && sourceFontAsset.m_CharacterLookupDictionary == null)
+            if (!canWriteOnAsset && sourceFontAsset.m_CharacterLookupDictionary == null)
                 return null;
 
             // Search the source font asset for the requested character.
@@ -144,7 +144,7 @@ namespace UnityEngine.TextCore.Text
                 if (character.textAsset != null)
                     return character;
 
-                if (!isMainThread)
+                if (!canWriteOnAsset)
                     return null;
 
                 sourceFontAsset.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
@@ -152,10 +152,10 @@ namespace UnityEngine.TextCore.Text
 
             if (sourceFontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || sourceFontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
             {
-                if (!isMainThread)
+                if (!canWriteOnAsset)
                     return null;
 
-                if (sourceFontAsset.TryAddCharacterInternal(unicode, fontStyle, fontWeight, out character))
+                if (sourceFontAsset.TryAddCharacterInternal(unicode, fontStyle, fontWeight, out character, populateLigatures))
                     return character;
             }
             // Search the source font asset for the requested character, removing bold and italic status
@@ -164,13 +164,13 @@ namespace UnityEngine.TextCore.Text
                 if (character.textAsset != null)
                     return character;
 
-                if (!isMainThread)
+                if (!canWriteOnAsset)
                     return null;
 
                 sourceFontAsset.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
             }
 
-            if (character == null && !isMainThread)
+            if (character == null && !canWriteOnAsset)
                 return null;
 
             // Search fallback font assets if we still don't have a valid character and include fallback is set to true.
@@ -199,7 +199,7 @@ namespace UnityEngine.TextCore.Text
                     // Add reference to this search query
                     //sourceFontAsset.FallbackSearchQueryLookup.Add(id);
 
-                    character = GetCharacterFromFontAsset_Internal(unicode, temp, true, fontStyle, fontWeight, out isAlternativeTypeface);
+                    character = GetCharacterFromFontAsset_Internal(unicode, temp, true, fontStyle, fontWeight, out isAlternativeTypeface, populateLigatures);
 
                     if (character != null)
                         return character;
@@ -224,6 +224,11 @@ namespace UnityEngine.TextCore.Text
         /// <param name="isAlternativeTypeface">Determines if the OUT font asset is an alternative typeface or fallback font asset</param>
         /// <returns></returns>
         public static Character GetCharacterFromFontAssets(uint unicode, FontAsset sourceFontAsset, List<FontAsset> fontAssets, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface)
+        {
+            return GetCharacterFromFontAssetsInternal(unicode, sourceFontAsset, fontAssets, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface);
+        }
+
+        internal static Character GetCharacterFromFontAssetsInternal(uint unicode, FontAsset sourceFontAsset, List<FontAsset> fontAssets, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface, bool populateLigatures = true)
         {
             isAlternativeTypeface = false;
 
@@ -250,7 +255,7 @@ namespace UnityEngine.TextCore.Text
                 // Add reference to this search query
                 //sourceFontAsset.FallbackSearchQueryLookup.Add(fontAsset.instanceID);
 
-                Character character = GetCharacterFromFontAsset_Internal(unicode, fontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface);
+                Character character = GetCharacterFromFontAsset_Internal(unicode, fontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface, populateLigatures);
 
                 if (character != null)
                     return character;
@@ -259,7 +264,8 @@ namespace UnityEngine.TextCore.Text
             return null;
         }
 
-        internal static TextElement GetTextElementFromTextAssets(uint unicode, FontAsset sourceFontAsset, List<TextAsset> textAssets, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface)
+
+        internal static TextElement GetTextElementFromTextAssets(uint unicode, FontAsset sourceFontAsset, List<TextAsset> textAssets, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface, bool populateLigatures)
         {
             isAlternativeTypeface = false;
 
@@ -286,7 +292,7 @@ namespace UnityEngine.TextCore.Text
                 if (textAsset.GetType() == typeof(FontAsset))
                 {
                     FontAsset fontAsset = textAsset as FontAsset;
-                    Character character = GetCharacterFromFontAsset_Internal(unicode, fontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface);
+                    Character character = GetCharacterFromFontAsset_Internal(unicode, fontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface, populateLigatures);
 
                     if (character != null)
                         return character;
@@ -318,7 +324,7 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         public static SpriteCharacter GetSpriteCharacterFromSpriteAsset(uint unicode, SpriteAsset spriteAsset, bool includeFallbacks)
         {
-            bool isMainThread = !JobsUtility.IsExecutingJob;
+            bool canWriteOnAsset = !TextGenerator.IsExecutingJob;
             // Make sure we have a valid sprite asset to search
             if (spriteAsset == null)
                 return null;

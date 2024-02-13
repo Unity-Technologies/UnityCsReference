@@ -66,9 +66,14 @@ namespace UnityEngine.UIElements
             {
                 if (m_AcceptClicksIfDisabled == value)
                     return;
-                UnregisterCallbacksFromTarget();
+
+                if (target != null)
+                    UnregisterCallbacksFromTarget();
+
                 m_AcceptClicksIfDisabled = value;
-                RegisterCallbacksOnTarget();
+
+                if (target != null)
+                    RegisterCallbacksOnTarget();
             }
         }
 

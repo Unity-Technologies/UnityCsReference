@@ -634,7 +634,7 @@ namespace UnityEditor.UIElements
 
             // Make PropertyField foldout react even when disabled, like EditorGUILayout.Foldout.
             var foldoutToggle = foldout.Q<Toggle>(className: Foldout.toggleUssClassName);
-            foldoutToggle.m_Clickable.acceptClicksIfDisabled = true;
+            foldoutToggle.acceptClicksIfDisabled = true;
 
             // Get Foldout label.
             var foldoutLabel = foldoutToggle.Q<Label>(className: Toggle.textUssClassName);
@@ -764,7 +764,7 @@ namespace UnityEditor.UIElements
             // Make list view foldout react even when disabled, like EditorGUILayout.Foldout.
             var toggle = listView.headerFoldout?.toggle;
             if (toggle != null)
-                toggle.m_Clickable.acceptClicksIfDisabled = true;
+                toggle.acceptClicksIfDisabled = true;
 
             return listView;
         }

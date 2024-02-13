@@ -146,7 +146,7 @@ namespace UnityEditor
                 ShowKeywords(s);
 
                 // If any SRP is active, then display the SRP Batcher compatibility status
-                if (RenderPipelineManager.currentPipeline != null)
+                if (GraphicsSettings.currentRenderPipeline != null)
                 {
                     // NOTE: Force the shader compilation to ensure GetSRPBatcherCompatibilityCode will be up to date
                     srpCompatibilityCheckMaterial.SetPass(0);

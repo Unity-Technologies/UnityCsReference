@@ -73,6 +73,13 @@ namespace UnityEditor.Search
         static readonly string k_AddFilterOrKeywordLabel = L10n.Tr("The search query is empty. Try adding some filters or keywords.");
         static readonly string k_TryAQueryLabel = L10n.Tr("The search query is empty. Try one of these queries:");
 
+        Label m_NoResultLabel;
+        VisualElement m_QueryPropositionContainer;
+        Label m_NoResultsHelpLabel;
+        VisualElement m_IndexHelpLabel;
+        VisualElement m_WantsMoreLabel;
+        VisualElement m_ShowPackagesLabel;
+
         public SearchEmptyView(ISearchView viewModel, SearchViewFlags flags)
             : base("SearchEmptyView", viewModel, ussClassName)
         {
@@ -119,24 +126,28 @@ namespace UnityEditor.Search
         {
             var displayMode = GetDisplayMode();
             if (!forceBuild && displayMode == m_DisplayMode)
+            {
+                UpdateView();
                 return;
+            }
             m_DisplayMode = displayMode;
 
+            ClearAllNoResultsTipsHelpers();
             Clear();
 
             switch(m_DisplayMode)
             {
                 case SearchEmptyViewMode.HideHelpersNoResult:
-                    AddNoResultLabel(k_NoResultsLabel);
+                    AddOrUpdateNoResultLabel(ref m_NoResultLabel, k_NoResultsLabel);
                     break;
                 case SearchEmptyViewMode.NoResult:
-                    AddNoResultLabel(k_NoResultsLabel);
+                    AddOrUpdateNoResultLabel(ref m_NoResultLabel, k_NoResultsLabel);
                     break;
                 case SearchEmptyViewMode.NoResultWithTips:
                     BuildNoResultsTips();
                     break;
                 case SearchEmptyViewMode.SearchInProgress:
-                    AddNoResultLabel(k_SearchInProgressLabel);
+                    AddOrUpdateNoResultLabel(ref m_NoResultLabel, k_SearchInProgressLabel);
                     break;
                 default:
                     BuildQueryHelpers();
@@ -144,6 +155,13 @@ namespace UnityEditor.Search
             }
 
             EnableInClassList(helperBackgroundClassName, m_DisplayMode == SearchEmptyViewMode.HideHelpersNoResult || QueryEmpty());
+        }
+
+        void UpdateView()
+        {
+            if (m_DisplayMode != SearchEmptyViewMode.NoResultWithTips)
+                return;
+            BuildNoResultsTips();
         }
 
         private void BuildQueryHelpers()
@@ -416,22 +434,30 @@ namespace UnityEditor.Search
         {
             base.OnAttachToPanel(evt);
 
-            On(SearchEvent.FilterToggled, BuildView);
+            On(SearchEvent.FilterToggled, ForceRebuildView);
             On(SearchEvent.RefreshBuilder, BuildView);
+            On(SearchEvent.SearchIndexesChanged, BuildView);
+            On(SearchEvent.SearchTextChanged, BuildView);
         }
 
         protected override void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            Off(SearchEvent.FilterToggled, BuildView);
+            Off(SearchEvent.FilterToggled, ForceRebuildView);
             Off(SearchEvent.RefreshBuilder, BuildView);
+            Off(SearchEvent.SearchIndexesChanged, BuildView);
+            Off(SearchEvent.SearchTextChanged, BuildView);
 
             base.OnDetachFromPanel(evt);
         }
 
         private void BuildView(ISearchEvent evt)
         {
-            m_DisplayMode = SearchEmptyViewMode.None;
             BuildView();
+        }
+
+        void ForceRebuildView(ISearchEvent evt)
+        {
+            BuildView(true);
         }
 
         private void BuildNoResultsTips()
@@ -456,54 +482,118 @@ namespace UnityEditor.Search
             else
                 allDisabled = false;
 
+            var structureChanged = false;
             if (m_ViewModel.totalCount == 0 || provider == null)
             {
                 if (string.IsNullOrEmpty(context.searchQuery?.Trim()))
                 {
-                    AddNoResultLabel(k_NoResultsFoundLabel);
-                    AddNoResultQueryPropositions(2);
+                    structureChanged |= ClearNoResultsTipsHelper(ref m_NoResultsHelpLabel);
+                    structureChanged |= AddOrUpdateNoResultLabel(ref m_NoResultLabel, k_NoResultsFoundLabel);
+                    structureChanged |= AddOrUpdateNoResultQueryPropositions(ref m_QueryPropositionContainer, 2);
                 }
                 else
                 {
-                    AddNoResultLabel(string.Format(k_NoResultsFoundQueryFormat, context.searchQuery));
+                    structureChanged |= ClearNoResultsTipsHelper(ref m_QueryPropositionContainer);
+                    structureChanged |= AddOrUpdateNoResultLabel(ref m_NoResultLabel, string.Format(k_NoResultsFoundQueryFormat, context.searchQuery));
 
                     if (anyNonReady)
-                        AddNoResultHelpLabel(k_IndexingInProgressLabel);
+                        structureChanged |= AddOrUpdateNoResultHelpLabel(ref m_NoResultsHelpLabel, k_IndexingInProgressLabel);
                     else
-                        AddNoResultHelpLabel(k_TrySomethingElseLabel);
+                        structureChanged |= AddOrUpdateNoResultHelpLabel(ref m_NoResultsHelpLabel, k_TrySomethingElseLabel);
                 }
             }
             else
             {
-                AddNoResultLabel(string.Format(k_NoResultsInProviderFormat, provider.name));
+                structureChanged |= ClearNoResultsTipsHelper(ref m_QueryPropositionContainer);
+                structureChanged |= AddOrUpdateNoResultLabel(ref m_NoResultLabel, string.Format(k_NoResultsInProviderFormat, provider.name));
                 if (anyNonReady)
-                    AddNoResultHelpLabel(k_IndexingInProgressLabel);
+                    structureChanged |= AddOrUpdateNoResultHelpLabel(ref m_NoResultsHelpLabel, k_IndexingInProgressLabel);
                 else
-                    AddNoResultHelpLabel(k_SelectAnotherTabLabel);
+                    structureChanged |= AddOrUpdateNoResultHelpLabel(ref m_NoResultsHelpLabel, k_SelectAnotherTabLabel);
             }
 
             if (!anyNonReady)
             {
                 if (anyWithNoPropertyIndexing)
-                    AddNoResultHelpLabelWithButton(k_IndexesPropertiesLabel, k_OpenIndexManagerLabel, () => OpenIndexManager());
+                    structureChanged |= AddOrUpdateNoResultHelpLabelWithButton(ref m_IndexHelpLabel, k_IndexesPropertiesLabel, k_OpenIndexManagerLabel, () => OpenIndexManager());
                 else if (allDisabled)
-                    AddNoResultHelpLabelWithButton(k_IndexesDisabledLabel, k_OpenIndexManagerLabel, () => OpenIndexManager());
+                    structureChanged |= AddOrUpdateNoResultHelpLabelWithButton(ref m_IndexHelpLabel, k_IndexesDisabledLabel, k_OpenIndexManagerLabel, () => OpenIndexManager());
+                else
+                    structureChanged |= ClearNoResultsTipsHelper(ref m_IndexHelpLabel);
             }
 
             if (!context.wantsMore)
-                AddNoResultHelpLabelWithButton(k_ShowMoreResultsLabel, k_TurnItOnLabel, () => ToggleWantsMore());
+                structureChanged |= AddOrUpdateNoResultHelpLabelWithButton(ref m_WantsMoreLabel, k_ShowMoreResultsLabel, k_TurnItOnLabel, () => ToggleWantsMore());
+            else
+                structureChanged |= ClearNoResultsTipsHelper(ref m_WantsMoreLabel);
 
             if (!context.showPackages)
-                AddNoResultHelpLabelWithButton(k_ShowPackagesLabel, k_TurnItOnLabel, () => TogglePackages());
+                structureChanged |= AddOrUpdateNoResultHelpLabelWithButton(ref m_ShowPackagesLabel, k_ShowPackagesLabel, k_TurnItOnLabel, () => TogglePackages());
+            else
+                structureChanged |= ClearNoResultsTipsHelper(ref m_ShowPackagesLabel);
+
+            if (structureChanged)
+            {
+                SetSortOrder(m_NoResultLabel, 0);
+                SetSortOrder(m_QueryPropositionContainer, 1);
+                SetSortOrder(m_NoResultsHelpLabel, 2);
+                SetSortOrder(m_IndexHelpLabel, 3);
+                SetSortOrder(m_WantsMoreLabel, 4);
+                SetSortOrder(m_ShowPackagesLabel, 5);
+                Sort((elementA, elementB) =>
+                {
+                    if (elementA == null && elementB == null)
+                        return 0;
+                    if (elementA == null)
+                        return -1;
+                    if (elementB == null)
+                        return 1;
+                    var sortOrderA = elementA.userData as int? ?? 0;
+                    var sortOrderB = elementB.userData as int? ?? 0;
+                    return sortOrderA.CompareTo(sortOrderB);
+                });
+            }
         }
 
-        void AddNoResultQueryPropositions(int maxQueryCount)
+        void SetSortOrder(VisualElement element, int sortOrder)
         {
+            if (element == null)
+                return;
+            element.userData = sortOrder;
+        }
+
+        // This needs to be generic as converting from ref Label to ref VisualElement does not work.
+        static bool ClearNoResultsTipsHelper<T>(ref T helper)
+            where T : VisualElement
+        {
+            if (helper == null)
+                return false;
+            helper.RemoveFromHierarchy();
+            helper = null;
+            return true;
+        }
+
+        void ClearAllNoResultsTipsHelpers()
+        {
+            ClearNoResultsTipsHelper(ref m_NoResultLabel);
+            ClearNoResultsTipsHelper(ref m_NoResultsHelpLabel);
+            ClearNoResultsTipsHelper(ref m_IndexHelpLabel);
+            ClearNoResultsTipsHelper(ref m_WantsMoreLabel);
+            ClearNoResultsTipsHelper(ref m_ShowPackagesLabel);
+            ClearNoResultsTipsHelper(ref m_QueryPropositionContainer);
+        }
+
+        bool AddOrUpdateNoResultQueryPropositions(ref VisualElement container, int maxQueryCount)
+        {
+            container?.RemoveFromHierarchy();
+
             var emptyFilterId = string.IsNullOrEmpty(context.filterId);
             if (emptyFilterId)
             {
-                AddNoResultHelpLabel(k_AddFilterOrKeywordLabel);
-                return;
+                Label label = null;
+                AddOrUpdateNoResultHelpLabel(ref label, k_AddFilterOrKeywordLabel);
+                container = label;
+                return true;
             }
 
             var searches = new QueryHelperSearchGroup(viewState.queryBuilderEnabled, k_SearchesLabel);
@@ -512,32 +602,63 @@ namespace UnityEditor.Search
                 .Take(maxQueryCount).ToArray();
             if (filteredQueries.Length == 0)
             {
-                AddNoResultHelpLabel(k_AddFilterOrKeywordLabel);
-                return;
+                Label label = null;
+                AddOrUpdateNoResultHelpLabel(ref label, k_AddFilterOrKeywordLabel);
+                container = label;
+                return true;
             }
 
-            AddNoResultHelpLabel(k_TryAQueryLabel);
-            var container = Create("SearchEmptyViewQueryPropositions", noResultsRowContainerClassName);
-            PopulateSearchHelpers(filteredQueries, container);
+            container = new VisualElement();
+            Label tryAQueryLabel = null;
+            AddOrUpdateNoResultHelpLabel(ref tryAQueryLabel, k_TryAQueryLabel, container);
+            var innerContainer = Create("SearchEmptyViewQueryPropositions", noResultsRowContainerClassName);
+            PopulateSearchHelpers(filteredQueries, innerContainer);
+            container.Add(innerContainer);
 
             Add(container);
+            return true;
         }
 
-        private void AddNoResultLabel(in string text)
+        private bool AddOrUpdateNoResultLabel(ref Label label, in string text)
         {
-            var label = CreateLabel(text, null, PickingMode.Ignore, noResultsClassName);
+            if (label != null)
+            {
+                label.text = text;
+                return false;
+            }
+
+            label = CreateLabel(text, null, PickingMode.Ignore, noResultsClassName);
             Add(label);
+            return true;
         }
 
-        private void AddNoResultHelpLabel(in string text)
+        private bool AddOrUpdateNoResultHelpLabel(ref Label label, in string text, VisualElement container = null)
         {
-            var label = CreateLabel(text, null, PickingMode.Ignore, noResultsHelpClassName);
-            Add(label);
+            if (label != null)
+            {
+                label.text = text;
+                return false;
+            }
+
+            label = CreateLabel(text, null, PickingMode.Ignore, noResultsHelpClassName);
+
+            if (container != null)
+                container.Add(label);
+            else
+                Add(label);
+            return true;
         }
 
-        private void AddNoResultHelpLabelWithButton(in string text, in string buttonText, Action onClickedCallback)
+        private bool AddOrUpdateNoResultHelpLabelWithButton(ref VisualElement container, in string text, in string buttonText, Action onClickedCallback)
         {
-            var container = Create("SearchEmptyViewAction", noResultsRowContainerClassName);
+            if (container != null)
+            {
+                var innerLabel = container.Q<Label>();
+                innerLabel.text = text;
+                return false;
+            }
+
+            container = Create("SearchEmptyViewAction", noResultsRowContainerClassName);
             container.style.flexDirection = FlexDirection.Row;
             var label = CreateLabel(text, null, PickingMode.Ignore, noResultsHelpClassName);
             container.Add(label);
@@ -547,11 +668,12 @@ namespace UnityEditor.Search
             };
             container.Add(button);
             Add(container);
+            return true;
         }
 
         void IResultView.Refresh(RefreshFlags flags)
         {
-            if (flags == RefreshFlags.QueryCompleted || flags == RefreshFlags.ItemsChanged)
+            if (flags.HasAny(RefreshFlags.QueryCompleted | RefreshFlags.ItemsChanged | RefreshFlags.StructureChanged))
                 BuildView();
         }
 

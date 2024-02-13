@@ -18,7 +18,7 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         bool ValidateHtmlTag(TextProcessingElement[] chars, int startIndex, out int endIndex, TextGenerationSettings generationSettings, TextInfo textInfo, out bool isThreadSuccess)
         {
-            bool isMainThread = !JobsUtility.IsExecutingJob;
+            bool canWriteOnAsset = !IsExecutingJob;
             isThreadSuccess = true;
             TextSettings textSettings = generationSettings.textSettings;
 
@@ -625,7 +625,7 @@ namespace UnityEngine.TextCore.Text
                         {
                             if (tempFont == null)
                             {
-                                if (!isMainThread)
+                                if (!canWriteOnAsset)
                                 {
                                     isThreadSuccess = false;
                                     return false;
@@ -663,7 +663,7 @@ namespace UnityEngine.TextCore.Text
                             }
                             else
                             {
-                                if (!isMainThread)
+                                if (!canWriteOnAsset)
                                 {
                                     isThreadSuccess = false;
                                     return false;
@@ -732,7 +732,7 @@ namespace UnityEngine.TextCore.Text
                         }
                         else
                         {
-                            if (!isMainThread)
+                            if (!canWriteOnAsset)
                             {
                                 isThreadSuccess = false;
                                 return false;
@@ -1051,7 +1051,7 @@ namespace UnityEngine.TextCore.Text
                             // Load Color Gradient Preset
                             if (tempColorGradientPreset == null)
                             {
-                                if (!isMainThread)
+                                if (!canWriteOnAsset)
                                 {
                                     isThreadSuccess = false;
                                     return false;
@@ -1224,7 +1224,7 @@ namespace UnityEngine.TextCore.Text
                             {
                                 m_CurrentSpriteAsset = s_DefaultSpriteAsset;
                             }
-                            else if (s_DefaultSpriteAsset == null && isMainThread)
+                            else if (s_DefaultSpriteAsset == null && canWriteOnAsset)
                             {
                                 s_DefaultSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
                                 m_CurrentSpriteAsset = s_DefaultSpriteAsset;
@@ -1248,7 +1248,7 @@ namespace UnityEngine.TextCore.Text
                                 {
                                     if (tempSpriteAsset == null)
                                     {
-                                        if (!isMainThread)
+                                        if (!canWriteOnAsset)
                                         {
                                             isThreadSuccess = false;
                                             return false;

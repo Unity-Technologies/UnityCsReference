@@ -465,18 +465,10 @@ namespace UnityEditor.UIElements.Debugger
             // Sync the toolbar
             m_PickToggle.SetValueWithoutNotify(m_Context.pickElement);
             m_ShowLayoutToggle.SetValueWithoutNotify(m_Context.showLayoutBound);
-
-            if (Unsupported.IsDeveloperBuild())
-                m_RepaintOverlayToggle.SetValueWithoutNotify(m_Context.showRepaintOverlay);
-
-            if (Unsupported.IsDeveloperMode())
-                m_ShowDrawStatsToggle.SetValueWithoutNotify(m_Context.showDrawStats);
-
-            if (Unsupported.IsDeveloperMode())
-                m_BreakBatchesToggle.SetValueWithoutNotify(m_Context.breakBatches);
-
-            if (Unsupported.IsDeveloperBuild())
-                m_ShowWireframeToggle.SetValueWithoutNotify(m_Context.showWireframe);
+            m_RepaintOverlayToggle?.SetValueWithoutNotify(m_Context.showRepaintOverlay);
+            m_ShowDrawStatsToggle?.SetValueWithoutNotify(m_Context.showDrawStats);
+            m_BreakBatchesToggle?.SetValueWithoutNotify(m_Context.breakBatches);
+            m_ShowWireframeToggle?.SetValueWithoutNotify(m_Context.showWireframe);
 
             ApplyToPanel(m_Context);
 

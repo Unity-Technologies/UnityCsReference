@@ -514,9 +514,9 @@ namespace UnityEngine.UIElements
             get
             {
                 if (edition.hidePlaceholderOnFocus)
-                    return text.Length == 0 && !hasFocus;
+                    return string.IsNullOrEmpty(text) && !hasFocus;
 
-                return text.Length == 0;
+                return string.IsNullOrEmpty(text);
             }
         }
 

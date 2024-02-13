@@ -106,8 +106,11 @@ namespace UnityEngine.Accessibility
 
         internal static void Initialize()
         {
-            ServiceManager.screenReaderStatusChanged += ScreenReaderStatusChanged;
+            isScreenReaderEnabled = AccessibilityManager.IsScreenReaderEnabled();
+
+            AccessibilityManager.screenReaderStatusChanged += ScreenReaderStatusChanged;
             AccessibilityManager.nodeFocusChanged += NodeFocusChanged;
+
             s_ServiceManager = new ServiceManager();
         }
 
@@ -152,7 +155,7 @@ namespace UnityEngine.Accessibility
         /// <summary>
         /// The active AccessibilityHierarchy for the screen reader. May be @@null@@ if no hierarchy is active.
         /// <para>You need an active accessibility hierarchy to present any content to the user through the screen reader.</para>
-        /// <para>If the screen reader is off, there is no active hierarchy. If the screen reader is turned off on the device 
+        /// <para>If the screen reader is off, there is no active hierarchy. If the screen reader is turned off on the device
         /// while an active hierarchy is set, the active hierarchy is automatically set to @@null@@.</para>
         /// <para>For all the supported platforms, refer to <see cref="AssistiveSupport"/>.</para>
         /// </summary>
@@ -161,8 +164,8 @@ namespace UnityEngine.Accessibility
         /// platform and the code is not running in the Unity Editor.
         /// </remarks>
         /// <remarks>
-        /// When the active hierarchy is assigned, a notification is sent to the operating system that the screen changed 
-        /// considerably. The notification is sent by calling <see 
+        /// When the active hierarchy is assigned, a notification is sent to the operating system that the screen changed
+        /// considerably. The notification is sent by calling <see
         /// cref="IAccessibilityNotificationDispatcher.SendScreenChanged"/> (with a @@null@@ parameter).
         /// </remarks>
         public static AccessibilityHierarchy activeHierarchy

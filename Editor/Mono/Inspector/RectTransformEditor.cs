@@ -630,7 +630,7 @@ namespace UnityEditor
                 Rect positionLabel = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
                 Rect positionField = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight, position.width, EditorGUIUtility.singleLineHeight);
                 EditorGUI.HandlePrefixLabel(position, positionLabel, label, id);
-                float newValue = EditorGUI.DoFloatField(EditorGUI.s_RecycledEditor, positionField, positionLabel, id, value, EditorGUI.kFloatFieldFormatString, EditorStyles.textField, true);
+                float newValue = EditorGUI.DoFloatField(EditorGUI.s_DelayedTextEditor, positionField, positionLabel, id, value, EditorGUI.kFloatFieldFormatString, EditorStyles.textField, true);
                 if (EditorGUI.EndChangeCheck())
                 {
                     Undo.RecordObjects(targets, "Modified RectTransform Values");

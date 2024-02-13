@@ -36,6 +36,8 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseListView : BaseVerticalCollectionView
     {
+        private static readonly string k_SizeFieldLabel = "Size";
+
         internal static readonly BindingId showBoundCollectionSizeProperty = nameof(showBoundCollectionSize);
         internal static readonly BindingId showFoldoutHeaderProperty = nameof(showFoldoutHeader);
         internal static readonly BindingId headerTitleProperty = nameof(headerTitle);
@@ -258,7 +260,7 @@ namespace UnityEngine.UIElements
             m_Foldout = new Foldout() {name = foldoutHeaderUssClassName, text = m_HeaderTitle};
 
             var foldoutToggle = m_Foldout.Q<Toggle>(className: Foldout.toggleUssClassName);
-            foldoutToggle.m_Clickable.acceptClicksIfDisabled = true;
+            foldoutToggle.acceptClicksIfDisabled = true;
 
             m_Foldout.AddToClassList(foldoutHeaderUssClassName);
             hierarchy.Add(m_Foldout);
@@ -272,33 +274,37 @@ namespace UnityEngine.UIElements
             hierarchy.Add(scrollView);
         }
 
-        void SetupArraySizeField()
+        internal void SetupArraySizeField()
         {
-            if (!showBoundCollectionSize || drawnHeader != null)
+            if (!showBoundCollectionSize ||
+                (!showFoldoutHeader && GetProperty(internalBindingKey) == null) ||
+                drawnHeader != null)
             {
                 m_ArraySizeField?.RemoveFromHierarchy();
-                m_ArraySizeField = null;
                 return;
             }
 
-            m_ArraySizeField = new TextField() { name = arraySizeFieldUssClassName };
-            m_ArraySizeField.AddToClassList(arraySizeFieldUssClassName);
-            m_ArraySizeField.RegisterValueChangedCallback(OnArraySizeFieldChanged);
-            m_ArraySizeField.isDelayed = true;
-            m_ArraySizeField.focusable = true;
+            if (m_ArraySizeField == null)
+            {
+                m_ArraySizeField = new TextField() { name = arraySizeFieldUssClassName };
+                m_ArraySizeField.AddToClassList(arraySizeFieldUssClassName);
+                m_ArraySizeField.RegisterValueChangedCallback(OnArraySizeFieldChanged);
+                m_ArraySizeField.isDelayed = true;
+                m_ArraySizeField.focusable = true;
+            }
 
-            if (showAddRemoveFooter)
-                m_ArraySizeField.AddToClassList(arraySizeFieldWithFooterUssClassName);
+            m_ArraySizeField.EnableInClassList(arraySizeFieldWithFooterUssClassName, showAddRemoveFooter);
+            m_ArraySizeField.EnableInClassList(arraySizeFieldWithHeaderUssClassName, showFoldoutHeader);
 
             if (showFoldoutHeader)
             {
-                m_ArraySizeField.AddToClassList(arraySizeFieldWithHeaderUssClassName);
+                m_ArraySizeField.label = string.Empty;
                 // This is needed since z-index is not supported yet.
                 hierarchy.Add(m_ArraySizeField);
             }
             else
             {
-                m_ArraySizeField.label = "Size";
+                m_ArraySizeField.label = k_SizeFieldLabel;
                 hierarchy.Insert(0, m_ArraySizeField);
             }
 
@@ -354,6 +360,7 @@ namespace UnityEngine.UIElements
                 m_MakeHeader = value;
                 if (m_MakeHeader != null)
                 {
+                    SetupArraySizeField();
                     drawnHeader = m_MakeHeader.Invoke();
                     drawnHeader.tabIndex = 1;
                     hierarchy.Add(drawnHeader);

@@ -74,7 +74,7 @@ namespace UnityEngine.UIElements
                 if (ShouldWriteAttributeValue(dataSourcePathString_UxmlAttributeFlags))
                     e.dataSourcePathString = dataSourcePathString;
                 if (ShouldWriteAttributeValue(dataSource_UxmlAttributeFlags))
-                    e.dataSource = dataSource;
+                    e.dataSource = dataSource ? dataSource : null;
                 if (ShouldWriteAttributeValue(dataSourceTypeString_UxmlAttributeFlags))
                     e.dataSourceTypeString = dataSourceTypeString;
                 if (ShouldWriteAttributeValue(bindingMode_UxmlAttributeFlags))

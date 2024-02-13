@@ -85,7 +85,7 @@ namespace UnityEngine
             get { return layerCullSphericalInternal; }
             set
             {
-                if(RenderPipelineManager.currentPipeline != null)
+                if (GraphicsSettings.currentRenderPipeline != null)
                 {
                     Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.layerCullSpherical only with the built-in renderer.");
                 }
@@ -288,7 +288,7 @@ namespace UnityEngine
             get { return stereoTargetEyeInternal; }
             set
             {
-                if (RenderPipelineManager.currentPipeline != null)
+                if (GraphicsSettings.currentRenderPipeline != null)
                 {
                     Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.stereoTargetEye only with the built-in renderer.");
                 }

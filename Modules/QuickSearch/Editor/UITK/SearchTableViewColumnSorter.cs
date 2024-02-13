@@ -12,6 +12,8 @@ namespace UnityEditor.Search
 {
     abstract class BaseSearchListComparer : ISearchListComparer
     {
+        protected virtual bool UseProviderPriority => true;
+
         public virtual int Compare(SearchItem x, SearchItem y)
         {
             if (x == null && y == null)
@@ -27,12 +29,19 @@ namespace UnityEditor.Search
             var xa = x.options.HasAny(SearchItemOptions.CustomAction);
             var ya = y.options.HasAny(SearchItemOptions.CustomAction);
 
+            var p = UseProviderPriority ? CompareByProviderPriority(x, y) : 0;
             if (xa && ya)
+            {
+                if (UseProviderPriority && p != 0)
+                    return p;
                 return BaseCompare(x, y);
+            }
 
             if (xa) return -3;
             if (ya) return 3;
 
+            if (UseProviderPriority && p != 0)
+                return p;
             return CompareItems(x, y);
         }
 
@@ -64,6 +73,17 @@ namespace UnityEditor.Search
             if (c != 0)
                 return c;
             return string.CompareOrdinal(x.id, y.id);
+        }
+
+        public static int CompareByProviderPriority(in SearchItem x, in SearchItem y)
+        {
+            var px = x.provider;
+            var py = y.provider;
+
+            if (px == null && py == null) return 0;
+            if (px == null) return 1;
+            if (py == null) return -1;
+            return px.priority.CompareTo(py.priority);
         }
 
         public virtual int CompareItems(in SearchItem x, in SearchItem y)
@@ -222,6 +242,7 @@ namespace UnityEditor.Search
             public bool Equals(ValueKey other) => columnKey == other.columnKey && itemKey == other.itemKey;
         }
 
+        protected override bool UseProviderPriority => m_Comparers.Count == 0;
         private readonly List<CD> m_Comparers = new List<CD>();
         private readonly Dictionary<ValueKey, object> m_ValueCache = new Dictionary<ValueKey, object>();
 
@@ -235,10 +256,6 @@ namespace UnityEditor.Search
 
         public override int CompareItems(in SearchItem x, in SearchItem y)
         {
-            var compareFavoriteStateResult = CompareFavoriteState(x, y);
-            if (compareFavoriteStateResult != 0)
-                return compareFavoriteStateResult;
-
             if (m_Comparers.Count == 0)
                 return BaseCompare(x, y);
 
@@ -263,6 +280,9 @@ namespace UnityEditor.Search
 
             // We come here if, for all comparers, both values were null or equal.
             // So try one more time with BaseCompare.
+            var p = CompareByProviderPriority(x, y);
+            if (p != 0)
+                return p;
             return BaseCompare(x, y);
         }
 

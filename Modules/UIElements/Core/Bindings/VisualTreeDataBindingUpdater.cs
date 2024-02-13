@@ -42,10 +42,10 @@ namespace UnityEngine.UIElements
 
         public override ProfilerMarker profilerMarker => s_UpdateProfilerMarker;
 
-        readonly BindingUpdater m_Updater = new BindingUpdater();
-        readonly List<VisualElement> m_BindingRegistrationRequests = new List<VisualElement>();
-        readonly HashSet<VisualElement> m_DataSourceChangedRequests = new HashSet<VisualElement>();
-        readonly HashSet<VisualElement> m_RemovedElements = new HashSet<VisualElement>();
+        readonly BindingUpdater m_Updater = new();
+        readonly List<VisualElement> m_BindingRegistrationRequests = new();
+        readonly HashSet<VisualElement> m_DataSourceChangedRequests = new();
+        readonly HashSet<VisualElement> m_RemovedElements = new();
 
         protected override void OnHierarchyChange(VisualElement ve, HierarchyChangeType type)
         {
@@ -129,11 +129,12 @@ namespace UnityEngine.UIElements
             Debug.LogWarning($"{result.message} ({panelName})");
         }
 
-        private readonly List<VisualElement> m_BoundsElement = new List<VisualElement>();
-        private readonly List<VersionInfo> m_VersionChanges = new List<VersionInfo>();
-        private readonly HashSet<object> m_TrackedObjects = new HashSet<object>();
-        private readonly HashSet<Binding> m_RanUpdate = new HashSet<Binding>();
-        private readonly HashSet<object> m_KnownSources = new HashSet<object>();
+        private readonly List<VisualElement> m_BoundsElement = new();
+        private readonly List<VersionInfo> m_VersionChanges = new();
+        private readonly HashSet<object> m_TrackedObjects = new();
+        private readonly HashSet<Binding> m_RanUpdate = new();
+        private readonly HashSet<object> m_KnownSources = new();
+        private readonly HashSet<Binding> m_DirtyBindings = new();
 
         public override void Update()
         {
@@ -166,10 +167,11 @@ namespace UnityEngine.UIElements
                         if (null != source && m_TrackedObjects.Add(source))
                             m_VersionChanges.Add(new VersionInfo(source, version));
 
-                        if (!m_Updater.ShouldProcessBindingAtStage(bindingData.binding, BindingUpdateStage.UpdateUI, changed))
-                        {
+                        if (bindingData.binding.isDirty)
+                             m_DirtyBindings.Add(bindingData.binding);
+
+                        if (!m_Updater.ShouldProcessBindingAtStage(bindingData.binding, BindingUpdateStage.UpdateUI, changed, m_DirtyBindings.Contains(bindingData.binding)))
                             continue;
-                        }
 
                         if (bindingData.binding.updateTrigger == BindingUpdateTrigger.OnSourceChanged && source is INotifyBindablePropertyChanged && !bindingData.binding.isDirty)
                         {
@@ -208,6 +210,7 @@ namespace UnityEngine.UIElements
                     );
 
                     BindingResult result = default;
+                    var bindingVersion = bindingData.version;
                     using (s_UpdateBindingProfilerMarker.Auto())
                     {
                         result = m_Updater.UpdateUI(in context, bindingData.binding);
@@ -215,17 +218,21 @@ namespace UnityEngine.UIElements
 
                     CacheAndLogBindingResult(true, bindingData, result);
 
-                    switch (result.status)
+                    // Ensure that the binding update didn't remove itself in a synced fashion (i.e. removing itself from the panel)
+                    if (bindingData.version == bindingVersion)
                     {
-                        case BindingStatus.Success:
-                            m_RanUpdate.Add(bindingData.binding);
-                            break;
-                        case BindingStatus.Pending when wasDirty:
-                            bindingData.binding.MarkDirty();
-                            break;
-                        case BindingStatus.Pending:
-                            // Intentionally left empty.
-                            break;
+                        switch (result.status)
+                        {
+                            case BindingStatus.Success:
+                                m_RanUpdate.Add(bindingData.binding);
+                                break;
+                            case BindingStatus.Pending when wasDirty:
+                                bindingData.binding.MarkDirty();
+                                break;
+                            case BindingStatus.Pending:
+                                // Intentionally left empty.
+                                break;
+                        }
                     }
                 }
             }
@@ -247,6 +254,7 @@ namespace UnityEngine.UIElements
             m_TrackedObjects.Clear();
             m_RanUpdate.Clear();
             m_KnownSources.Clear();
+            m_DirtyBindings.Clear();
 
             bindingManager.ClearSourceCache();
         }
@@ -368,12 +376,11 @@ namespace UnityEngine.UIElements
 
                 var element = bindingData.target.element;
 
-                if (!m_Updater.ShouldProcessBindingAtStage(binding, BindingUpdateStage.UpdateSource, true))
+                if (!m_Updater.ShouldProcessBindingAtStage(binding, BindingUpdateStage.UpdateSource, true, false))
                     continue;
 
                 if (ranUpdate.Contains(binding))
                     continue;
-
 
                 var resolvedContext = bindingManager.GetResolvedDataSourceContext(bindingData.target.element, bindingData);
                 var source = resolvedContext.dataSource;

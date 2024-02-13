@@ -14,7 +14,7 @@ namespace UnityEditor.Search
         private readonly SearchViewState m_ViewState;
 
         public SearchViewState viewState => m_ViewState;
-        public SearchContext context => m_ViewState.context;
+        public SearchContext context => m_ViewState?.context;
 
         public HeadlessSearchViewState(SearchViewState viewState)
         {
@@ -85,14 +85,23 @@ namespace UnityEditor.Search
         bool HasArgument(int index);
     }
 
+    enum SearchEventResultStatus
+    {
+        NoHandlers,
+        Complete
+    }
+
     interface ISearchEventResult
     {
         bool hasResults { get; }
         object result { get; }
         IEnumerable<object> results { get; }
+        SearchEventResultStatus status { get; }
+        int handlersWithResultsCount { get; }
     }
 
     delegate void SearchEventHandler(ISearchEvent evt);
+    delegate void SearchEventPrepareHandler(ISearchEvent prepare);
     delegate void SearchEventResultHandler(ISearchEventResult result);
 
     class SearchEventManager
@@ -163,11 +172,15 @@ namespace UnityEditor.Search
             public bool hasResults { get; }
             public object result => hasResults ? results.First() : null;
             public IEnumerable<object> results { get; }
+            public SearchEventResultStatus status { get; }
+            public int handlersWithResultsCount { get; }
 
-            public SearchEventResult(IEnumerable<object> results)
+            public SearchEventResult(IEnumerable<object> results, int handlersWithResultsCount, SearchEventResultStatus status)
             {
                 this.results = results;
                 hasResults = results != null && results.Any();
+                this.handlersWithResultsCount = handlersWithResultsCount;
+                this.status = status;
             }
         }
 
@@ -217,13 +230,17 @@ namespace UnityEditor.Search
 
         public void Emit(string eventName, SearchEventPayload payload)
         {
-            Emit(eventName, payload, null);
+            Emit(eventName, payload, null, null);
         }
 
-        public void Emit(string eventName, SearchEventPayload payload, SearchEventResultHandler onResolved)
+        public void Emit(string eventName, SearchEventPayload payload, SearchEventPrepareHandler onPrepare, SearchEventResultHandler onResolved)
         {
             if (!m_EventHandlers.TryGetValue(eventName, out var eventHandlers))
+            {
+                onPrepare?.Invoke(new SearchEvent(eventName, payload));
+                onResolved?.Invoke(new SearchEventResult(null, 0, SearchEventResultStatus.NoHandlers));
                 return;
+            }
 
             Dispatcher.Enqueue(() =>
             {
@@ -232,18 +249,23 @@ namespace UnityEditor.Search
                     results = new List<object>();
 
                 var se = new SearchEvent(eventName, payload);
+                var handlersWithResultsCount = 0;
+                onPrepare?.Invoke(se);
                 foreach (var kvp in eventHandlers)
                 {
                     var eventHandler = kvp.Value;
                     eventHandler?.Invoke(se);
                     if (se.wasUsed && results != null)
+                    {
                         results.Add(se.result);
+                        ++handlersWithResultsCount;
+                    }
                     se.Reset();
                 }
 
                 if (onResolved != null)
                 {
-                    var ser = new SearchEventResult(results);
+                    var ser = new SearchEventResult(results, handlersWithResultsCount, SearchEventResultStatus.Complete);
                     onResolved.Invoke(ser);
                 }
             });

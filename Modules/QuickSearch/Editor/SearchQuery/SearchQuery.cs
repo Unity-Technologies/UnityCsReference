@@ -65,7 +65,7 @@ namespace UnityEditor.Search
         [SerializeField] Texture2D m_Thumbnail;
         [SerializeField] bool m_IsSearchTemplate;
         private long m_CreationTime;
-        private long m_LastUsedTime;
+        private long m_LastUsedTime = 0;
         private int m_ItemCount = -1;
 
         public string description;

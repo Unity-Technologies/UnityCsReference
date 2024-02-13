@@ -407,8 +407,7 @@ namespace UnityEditor.Search
 
         private void UpdateResultViewButton()
         {
-            m_ResultViewButtonContainer.Clear();
-            Emit(SearchEvent.RequestResultViewButtons, m_ResultViewButtonContainer);
+            Emit(SearchEvent.RequestResultViewButtons, _ => m_ResultViewButtonContainer.Clear(), null, m_ResultViewButtonContainer);
         }
 
         private void UpdateResultViewButton(ISearchEvent evt)
@@ -439,7 +438,7 @@ namespace UnityEditor.Search
         {
             var providerSupportsSync = m_ViewModel.state.GetProviderById(m_ViewModel.currentGroup)?.supportsSyncViewSearch ?? false;
             var searchViewSyncEnabled = providerSupportsSync && SearchUtils.SearchViewSyncEnabled(m_ViewModel.currentGroup);
-            var supportsSync = providerSupportsSync && searchViewSyncEnabled;
+            var supportsSync = providerSupportsSync && searchViewSyncEnabled && !viewState.isPicker;
             if (!supportsSync)
                 return;
             var syncButtonTooltip = m_ViewModel.currentGroup == "all" ? m_SyncSearchAllGroupTabTooltip :
@@ -519,8 +518,8 @@ namespace UnityEditor.Search
         internal void ShowViewFilters()
         {
             var filterMenu = new GenericMenu();
-            if (m_ViewModel is IHasCustomMenu customMenu)
-                customMenu.AddItemsToMenu(filterMenu);
+            if (m_ViewModel is ISearchWindow window)
+                window.AddItemsToMenu(filterMenu);
 
             filterMenu.AddSeparator(string.Empty);
             filterMenu.AddDisabledItem(new GUIContent("Search Providers"));

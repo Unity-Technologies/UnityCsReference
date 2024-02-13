@@ -296,14 +296,12 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
 
         internal static void ReloadGraphicsSettingsEditorIfNeeded()
         {
-            if (EditorWindow.HasOpenInstances<ProjectSettingsWindow>())
-            {
-                var settingsWindow = EditorWindow.GetWindow<ProjectSettingsWindow>(null, false);
-                if (settingsWindow.GetCurrentProvider() is not GraphicsSettingsProvider)
-                    return;
+            if (!EditorWindow.HasOpenInstances<ProjectSettingsWindow>())
+                return;
 
-                settingsWindow.m_Parent.Reload(settingsWindow);
-            }
+            var settingsWindow = EditorWindow.GetWindow<ProjectSettingsWindow>(null, false);
+            if (settingsWindow.GetCurrentProvider() is GraphicsSettingsProvider provider)
+                provider.Reload();
         }
 
         public static void OpenAndScrollTo(string propertyPath)

@@ -191,6 +191,27 @@ namespace UnityEngine.UIElements
 
         public TwoPaneSplitView()
         {
+            SetupSplitView();
+            Init(m_FixedPaneIndex, m_FixedPaneInitialDimension, m_Orientation);
+        }
+
+        /// <summary>
+        /// Parameterized constructor.
+        /// </summary>
+        /// <param name="fixedPaneIndex">0 for setting first child as the fixed pane, 1 for the second child element.</param>
+        /// <param name="fixedPaneStartDimension">Set an inital width or height for the fixed pane.</param>
+        /// <param name="orientation">Orientation of the split view.</param>
+        public TwoPaneSplitView(
+            int fixedPaneIndex,
+            float fixedPaneStartDimension,
+            TwoPaneSplitViewOrientation orientation)
+        {
+            SetupSplitView();
+            Init(fixedPaneIndex, fixedPaneStartDimension, orientation);
+        }
+
+        void SetupSplitView()
+        {
             AddToClassList(s_UssClassName);
 
             m_Content = new VisualElement();
@@ -209,20 +230,6 @@ namespace UnityEngine.UIElements
             m_DragLine.name = "unity-dragline";
             m_DragLine.AddToClassList(s_HandleDragLineClassName);
             m_DragLineAnchor.Add(m_DragLine);
-        }
-
-        /// <summary>
-        /// Parameterized constructor.
-        /// </summary>
-        /// <param name="fixedPaneIndex">0 for setting first child as the fixed pane, 1 for the second child element.</param>
-        /// <param name="fixedPaneStartDimension">Set an inital width or height for the fixed pane.</param>
-        /// <param name="orientation">Orientation of the split view.</param>
-        public TwoPaneSplitView(
-            int fixedPaneIndex,
-            float fixedPaneStartDimension,
-            TwoPaneSplitViewOrientation orientation) : this()
-        {
-            Init(fixedPaneIndex, fixedPaneStartDimension, orientation);
         }
 
         /// <summary>
@@ -295,7 +302,7 @@ namespace UnityEngine.UIElements
             evt.elementTarget.UnregisterCallback<GeometryChangedEvent>(OnUncollapsedPaneResized);
         }
 
-        internal void Init(int fixedPaneIndex, float fixedPaneInitialDimension, TwoPaneSplitViewOrientation orientation)
+        internal virtual void Init(int fixedPaneIndex, float fixedPaneInitialDimension, TwoPaneSplitViewOrientation orientation)
         {
             m_Orientation = orientation;
             m_FixedPaneIndex = fixedPaneIndex;

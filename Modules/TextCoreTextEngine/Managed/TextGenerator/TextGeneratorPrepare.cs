@@ -238,7 +238,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Lookup the Glyph data for each character and cache it.
                 #region LOOKUP GLYPH
-                TextElement character = GetTextElement(generationSettings, (uint)unicode, m_CurrentFontAsset, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                TextElement character = GetTextElement(generationSettings, (uint)unicode, m_CurrentFontAsset, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, ligature);
 
                 // Check if Lowercase or Uppercase variant of the character is available.
                 /* Not sure this is necessary anyone as it is very unlikely with recursive search through fallback fonts.
@@ -269,34 +269,34 @@ namespace UnityEngine.TextCore.Text
                     unicode = textProcessingArray[i].unicode = (uint)textSettings.missingCharacterUnicode == 0 ? k_Square : (uint)textSettings.missingCharacterUnicode;
 
                     // Check for the missing glyph character in the currently assigned font asset and its fallbacks
-                    character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                    character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, ligature);
 
                     if (character == null)
                     {
                         // Search for the missing glyph character in the Settings Fallback list.
                         if (textSettings.fallbackFontAssets != null && textSettings.fallbackFontAssets.Count > 0)
-                            character = FontAssetUtilities.GetCharacterFromFontAssets((uint)unicode, m_CurrentFontAsset, textSettings.fallbackFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                            character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.fallbackFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, ligature);
                     }
 
                     if (character == null)
                     {
                         // Search for the missing glyph in the Settings Default Font Asset.
                         if (textSettings.defaultFontAsset != null)
-                            character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, textSettings.defaultFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                            character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, textSettings.defaultFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, ligature);
                     }
 
                     if (character == null)
                     {
                         // Use Space (32) Glyph from the currently assigned font asset.
                         unicode = textProcessingArray[i].unicode = 32;
-                        character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                        character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, ligature);
                     }
 
                     if (character == null)
                     {
                         // Use End of Text (0x03) Glyph from the currently assigned font asset.
                         unicode = textProcessingArray[i].unicode = k_EndOfText;
-                        character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                        character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, ligature);
                     }
 
                     if (textSettings.displayWarnings)
@@ -367,7 +367,7 @@ namespace UnityEngine.TextCore.Text
                                 //if (componentUnicode == 0x200D)
                                 //    continue;
 
-                                uint glyphIndex = m_CurrentFontAsset.GetGlyphIndex(componentUnicode, out bool success);
+                                uint glyphIndex = m_CurrentFontAsset.GetGlyphIndex(componentUnicode, out bool _);
 
                                 if (glyphIndex == record.componentGlyphIDs[k])
                                     continue;
@@ -528,9 +528,9 @@ namespace UnityEngine.TextCore.Text
             return m_TotalCharacterCount;
         }
 
-        TextElement GetTextElement(TextGenerationSettings generationSettings, uint unicode, FontAsset fontAsset, FontStyles fontStyle, TextFontWeight fontWeight, out bool isUsingAlternativeTypeface)
+        TextElement GetTextElement(TextGenerationSettings generationSettings, uint unicode, FontAsset fontAsset, FontStyles fontStyle, TextFontWeight fontWeight, out bool isUsingAlternativeTypeface, bool populateLigatures)
         {
-            bool isMainThread = !JobsUtility.IsExecutingJob;
+            bool canWriteOnAsset = !IsExecutingJob;
             //Debug.Log("Unicode: " + unicode.ToString("X8"));
 
             TextSettings textSettings = generationSettings.textSettings;
@@ -538,7 +538,7 @@ namespace UnityEngine.TextCore.Text
             {
                 if (textSettings.emojiFallbackTextAssets != null && textSettings.emojiFallbackTextAssets.Count > 0)
                 {
-                    TextElement textElement = FontAssetUtilities.GetTextElementFromTextAssets(unicode, fontAsset, textSettings.emojiFallbackTextAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface);
+                    TextElement textElement = FontAssetUtilities.GetTextElementFromTextAssets(unicode, fontAsset, textSettings.emojiFallbackTextAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
 
                     if (textElement != null)
                     {
@@ -550,17 +550,17 @@ namespace UnityEngine.TextCore.Text
                 }
             }
 
-            Character character = FontAssetUtilities.GetCharacterFromFontAsset(unicode, fontAsset, false, fontStyle, fontWeight, out isUsingAlternativeTypeface);
+            Character character = FontAssetUtilities.GetCharacterFromFontAsset(unicode, fontAsset, false, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
 
             if (character != null)
                 return character;
 
-            if (!isMainThread && (fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS))
+            if (!canWriteOnAsset && (fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS))
                 return null;
 
             // Search potential list of fallback font assets assigned to the font asset.
             if (fontAsset.m_FallbackFontAssetTable != null && fontAsset.m_FallbackFontAssetTable.Count > 0)
-                character = FontAssetUtilities.GetCharacterFromFontAssets(unicode, fontAsset, fontAsset.m_FallbackFontAssetTable, true, fontStyle, fontWeight, out isUsingAlternativeTypeface);
+                character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, fontAsset.m_FallbackFontAssetTable, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
 
             if (character != null)
             {
@@ -570,12 +570,12 @@ namespace UnityEngine.TextCore.Text
                 return character;
             }
 
-            bool fontAssetEquals = isMainThread ? fontAsset.instanceID == generationSettings.fontAsset.instanceID : fontAsset == generationSettings.fontAsset;
+            bool fontAssetEquals = canWriteOnAsset ? fontAsset.instanceID == generationSettings.fontAsset.instanceID : fontAsset == generationSettings.fontAsset;
             // Search for the character in the primary font asset if not the current font asset
             if (!fontAssetEquals)
             {
                 // Search primary font asset
-                character = FontAssetUtilities.GetCharacterFromFontAsset(unicode, generationSettings.fontAsset, false, fontStyle, fontWeight, out isUsingAlternativeTypeface);
+                character = FontAssetUtilities.GetCharacterFromFontAsset(unicode, generationSettings.fontAsset, false, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
 
                 // Use material and index of primary font asset.
                 if (character != null)
@@ -591,7 +591,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Search list of potential fallback font assets assigned to the primary font asset.
                 if (generationSettings.fontAsset.m_FallbackFontAssetTable != null && generationSettings.fontAsset.m_FallbackFontAssetTable.Count > 0)
-                    character = FontAssetUtilities.GetCharacterFromFontAssets(unicode, fontAsset, generationSettings.fontAsset.m_FallbackFontAssetTable, true, fontStyle, fontWeight, out isUsingAlternativeTypeface);
+                    character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, generationSettings.fontAsset.m_FallbackFontAssetTable, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
 
                 if (character != null)
                 {
@@ -613,7 +613,7 @@ namespace UnityEngine.TextCore.Text
 
             // Search for the character in the list of fallback assigned in the settings (General Fallbacks).
             if (textSettings.fallbackFontAssets != null && textSettings.fallbackFontAssets.Count > 0)
-                character = FontAssetUtilities.GetCharacterFromFontAssets(unicode, fontAsset, textSettings.fallbackFontAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface);
+                character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, textSettings.fallbackFontAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
 
             if (character != null)
             {
@@ -625,7 +625,7 @@ namespace UnityEngine.TextCore.Text
 
             // Search for the character in the Default Font Asset assigned in the settings file.
             if (textSettings.defaultFontAsset != null)
-                character = FontAssetUtilities.GetCharacterFromFontAsset(unicode, textSettings.defaultFontAsset, true, fontStyle, fontWeight, out isUsingAlternativeTypeface);
+                character = FontAssetUtilities.GetCharacterFromFontAsset(unicode, textSettings.defaultFontAsset, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
 
             if (character != null)
             {
@@ -638,7 +638,7 @@ namespace UnityEngine.TextCore.Text
             // Search for the character in the Default Sprite Asset assigned in the settings file.
             if (textSettings.defaultSpriteAsset != null)
             {
-                if (!isMainThread && textSettings.defaultSpriteAsset.m_SpriteCharacterLookup == null)
+                if (!canWriteOnAsset && textSettings.defaultSpriteAsset.m_SpriteCharacterLookup == null)
                     return null;
                 SpriteCharacter spriteCharacter = FontAssetUtilities.GetSpriteCharacterFromSpriteAsset(unicode, textSettings.defaultSpriteAsset, true);
 
@@ -665,84 +665,6 @@ namespace UnityEngine.TextCore.Text
             foreach (var character in sourceText)
             {
                 m_TextBackingArray[writeIndex] = character;
-                writeIndex += 1;
-            }
-
-            // Terminate array with zero as we are not clearing the array on new invocation of this function.
-            m_TextBackingArray[writeIndex] = 0;
-            m_TextBackingArray.Count = writeIndex;
-        }
-
-        /// <summary>
-        /// Convert source text to uint and populate internal text backing array.
-        /// </summary>
-        /// <param name="sourceText">char array containing the source text to be converted</param>
-        /// <param name="start">Index of the first element of the source array to be converted and copied to the internal text backing array.</param>
-        /// <param name="length">Number of elements in the array to be converted and copied to the internal text backing array.</param>
-        void PopulateTextBackingArray(StringBuilder sourceText, int start, int length)
-        {
-            int readIndex;
-            int writeIndex = 0;
-
-            // Range check
-            if (sourceText == null)
-            {
-                readIndex = 0;
-                length = 0;
-            }
-            else
-            {
-                readIndex = Mathf.Clamp(start, 0, sourceText.Length);
-                length = Mathf.Clamp(length, 0, start + length < sourceText.Length ? length : sourceText.Length - start);
-            }
-
-            // Make sure array size is appropriate
-            if (length >= m_TextBackingArray.Capacity)
-                m_TextBackingArray.Resize((length));
-
-            int end = readIndex + length;
-            for (; readIndex < end; readIndex++)
-            {
-                m_TextBackingArray[writeIndex] = sourceText[readIndex];
-                writeIndex += 1;
-            }
-
-            // Terminate array with zero as we are not clearing the array on new invocation of this function.
-            m_TextBackingArray[writeIndex] = 0;
-            m_TextBackingArray.Count = writeIndex;
-        }
-
-        /// <summary>
-        /// Convert source text to Unicode (uint) and populate internal text backing array.
-        /// </summary>
-        /// <param name="sourceText">char array containing the source text to be converted</param>
-        /// <param name="start">Index of the first element of the source array to be converted and copied to the internal text backing array.</param>
-        /// <param name="length">Number of elements in the array to be converted and copied to the internal text backing array.</param>
-        void PopulateTextBackingArray(char[] sourceText, int start, int length)
-        {
-            int readIndex;
-            int writeIndex = 0;
-
-            // Range check
-            if (sourceText == null)
-            {
-                readIndex = 0;
-                length = 0;
-            }
-            else
-            {
-                readIndex = Mathf.Clamp(start, 0, sourceText.Length);
-                length = Mathf.Clamp(length, 0, start + length < sourceText.Length ? length : sourceText.Length - start);
-            }
-
-            // Make sure array size is appropriate
-            if (length >= m_TextBackingArray.Capacity)
-                m_TextBackingArray.Resize((length));
-
-            int end = readIndex + length;
-            for (; readIndex < end; readIndex++)
-            {
-                m_TextBackingArray[writeIndex] = sourceText[readIndex];
                 writeIndex += 1;
             }
 
@@ -998,7 +920,7 @@ namespace UnityEngine.TextCore.Text
 
         bool PopulateFontAsset(TextGenerationSettings generationSettings, TextProcessingElement[] textProcessingArray)
         {
-            bool isMainThread = !JobsUtility.IsExecutingJob;
+            bool canWriteOnAsset = !IsExecutingJob;
             TextSettings textSettings = generationSettings.textSettings;
 
             int spriteCount = 0;
@@ -1033,7 +955,7 @@ namespace UnityEngine.TextCore.Text
                     {
                         if (textSettings.matchMaterialPreset && m_CurrentMaterial.GetHashCode() != m_Ellipsis.fontAsset.material.GetHashCode())
                         {
-                            if (!isMainThread)
+                            if (!canWriteOnAsset)
                                 return false;
                             m_Ellipsis.material = MaterialManager.GetFallbackMaterial(m_CurrentMaterial, m_Ellipsis.fontAsset.material);
                         }
@@ -1085,7 +1007,6 @@ namespace UnityEngine.TextCore.Text
                 }
                 #endregion
 
-                bool isUsingAlternativeTypeface;
                 bool isUsingFallbackOrAlternativeTypeface = false;
 
                 FontAsset prevFontAsset = m_CurrentFontAsset;
@@ -1118,18 +1039,18 @@ namespace UnityEngine.TextCore.Text
                 }
                 #endregion
 
-                if (!isMainThread && m_CurrentFontAsset.m_CharacterLookupDictionary == null)
+                if (!canWriteOnAsset && m_CurrentFontAsset.m_CharacterLookupDictionary == null)
                     return false;
 
                 // Lookup the Glyph data for each character and cache it.
                 #region LOOKUP GLYPH
-                TextElement character = GetTextElement(generationSettings, (uint)unicode, m_CurrentFontAsset, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                TextElement character = GetTextElement(generationSettings, (uint)unicode, m_CurrentFontAsset, m_FontStyleInternal, m_FontWeightInternal, out _, ligature);
 
                 // Special handling for missing character.
                 // Replace missing glyph by the Square (9633) glyph or possibly the Space (32) glyph.
                 if (character == null)
                 {
-                    if (!isMainThread)
+                    if (!canWriteOnAsset)
                         return false;
 
                     // Save the original unicode character
@@ -1139,34 +1060,34 @@ namespace UnityEngine.TextCore.Text
                     unicode = textProcessingArray[i].unicode = (uint)textSettings.missingCharacterUnicode == 0 ? k_Square : (uint)textSettings.missingCharacterUnicode;
 
                     // Check for the missing glyph character in the currently assigned font asset and its fallbacks
-                    character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                    character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out _, ligature);
 
                     if (character == null)
                     {
                         // Search for the missing glyph character in the Settings Fallback list.
                         if (textSettings.fallbackFontAssets != null && textSettings.fallbackFontAssets.Count > 0)
-                            character = FontAssetUtilities.GetCharacterFromFontAssets((uint)unicode, m_CurrentFontAsset, textSettings.fallbackFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                            character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.fallbackFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out _, ligature);
                     }
 
                     if (character == null)
                     {
                         // Search for the missing glyph in the Settings Default Font Asset.
                         if (textSettings.defaultFontAsset != null)
-                            character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, textSettings.defaultFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                            character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, textSettings.defaultFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out _, ligature);
                     }
 
                     if (character == null)
                     {
                         // Use Space (32) Glyph from the currently assigned font asset.
                         unicode = textProcessingArray[i].unicode = 32;
-                        character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                        character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out _, ligature);
                     }
 
                     if (character == null)
                     {
                         // Use End of Text (0x03) Glyph from the currently assigned font asset.
                         unicode = textProcessingArray[i].unicode = k_EndOfText;
-                        character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                        character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out _, ligature);
                     }
 
                     if (textSettings.displayWarnings)
@@ -1181,7 +1102,7 @@ namespace UnityEngine.TextCore.Text
 
                 if (character.elementType == TextElementType.Character)
                 {
-                    bool textAssetEquals = isMainThread ? character.textAsset.instanceID == m_CurrentFontAsset.instanceID : character.textAsset == m_CurrentFontAsset;
+                    bool textAssetEquals = canWriteOnAsset ? character.textAsset.instanceID == m_CurrentFontAsset.instanceID : character.textAsset == m_CurrentFontAsset;
                     if (!textAssetEquals)
                     {
                         isUsingFallbackOrAlternativeTypeface = true;
@@ -1197,7 +1118,7 @@ namespace UnityEngine.TextCore.Text
                         // Get potential variant glyph index
                         if (!m_CurrentFontAsset.TryGetGlyphVariantIndexInternal(unicode, nextCharacter, out variantGlyphIndex))
                         {
-                            if (!isMainThread)
+                            if (!canWriteOnAsset)
                                 return false;
                             variantGlyphIndex = m_CurrentFontAsset.GetGlyphVariantIndex(unicode, nextCharacter);
                             m_CurrentFontAsset.TryAddGlyphVariantIndexInternal(unicode, nextCharacter, variantGlyphIndex);
@@ -1249,10 +1170,10 @@ namespace UnityEngine.TextCore.Text
 
                             if (ligatureGlyphID != 0)
                             {
-                                if (!isMainThread)
+                                if (!canWriteOnAsset)
                                     return false;
 
-                                if (m_CurrentFontAsset.TryAddGlyphInternal(ligatureGlyphID, out Glyph glyph))
+                                if (m_CurrentFontAsset.TryAddGlyphInternal(ligatureGlyphID, out Glyph _))
                                 {
 
                                     // Update text processing array
@@ -1295,7 +1216,7 @@ namespace UnityEngine.TextCore.Text
                 if (isUsingFallbackOrAlternativeTypeface && m_CurrentFontAsset.instanceID != generationSettings.fontAsset.instanceID)
                 {
                     // Create Fallback material instance matching current material preset if necessary
-                    if (isMainThread)
+                    if (canWriteOnAsset)
                     {
                         if (textSettings.matchMaterialPreset)
                             m_CurrentMaterial = MaterialManager.GetFallbackMaterial(m_CurrentMaterial, m_CurrentFontAsset.material);
@@ -1316,7 +1237,7 @@ namespace UnityEngine.TextCore.Text
                 // Handle Multi Atlas Texture support
                 if (character != null && character.glyph.atlasIndex > 0)
                 {
-                    if (isMainThread)
+                    if (canWriteOnAsset)
                         m_CurrentMaterial = MaterialManager.GetFallbackMaterial(m_CurrentFontAsset, m_CurrentMaterial, character.glyph.atlasIndex);
                     else
                         return false;
@@ -1397,35 +1318,36 @@ namespace UnityEngine.TextCore.Text
             GetUnderlineSpecialCharacter(generationSettings);
         }
 
- protected void GetEllipsisSpecialCharacter(TextGenerationSettings generationSettings)
+        protected void GetEllipsisSpecialCharacter(TextGenerationSettings generationSettings)
         {
             bool isUsingAlternativeTypeface;
 
             FontAsset fontAsset = m_CurrentFontAsset ?? generationSettings.fontAsset;
             TextSettings textSettings = generationSettings.textSettings;
+            bool populateLigature = generationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
 
             // Search base font asset
-            Character character = FontAssetUtilities.GetCharacterFromFontAsset(k_HorizontalEllipsis, fontAsset, false, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+            Character character = FontAssetUtilities.GetCharacterFromFontAsset(k_HorizontalEllipsis, fontAsset, false, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
 
             if (character == null)
             {
                 // Search primary fallback list
                 if (fontAsset.m_FallbackFontAssetTable != null && fontAsset.m_FallbackFontAssetTable.Count > 0)
-                    character = FontAssetUtilities.GetCharacterFromFontAssets(k_HorizontalEllipsis, fontAsset, fontAsset.m_FallbackFontAssetTable, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                    character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(k_HorizontalEllipsis, fontAsset, fontAsset.m_FallbackFontAssetTable, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
             }
 
             // Search the setting's general fallback list
             if (character == null)
             {
                 if (textSettings.fallbackFontAssets != null && textSettings.fallbackFontAssets.Count > 0)
-                    character = FontAssetUtilities.GetCharacterFromFontAssets(k_HorizontalEllipsis, fontAsset, textSettings.fallbackFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                    character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(k_HorizontalEllipsis, fontAsset, textSettings.fallbackFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
             }
 
             // Search the setting's default font asset
             if (character == null)
             {
                 if (textSettings.defaultFontAsset != null)
-                    character = FontAssetUtilities.GetCharacterFromFontAsset(k_HorizontalEllipsis, textSettings.defaultFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                    character = FontAssetUtilities.GetCharacterFromFontAsset(k_HorizontalEllipsis, textSettings.defaultFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
             }
 
             if (character != null)
@@ -1438,9 +1360,10 @@ namespace UnityEngine.TextCore.Text
 
             FontAsset fontAsset = m_CurrentFontAsset ?? generationSettings.fontAsset;
             TextSettings textSettings = generationSettings.textSettings;
+            bool populateLigature = generationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
 
             // Search base font asset
-            Character character = FontAssetUtilities.GetCharacterFromFontAsset(0x5F, fontAsset, false, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+            Character character = FontAssetUtilities.GetCharacterFromFontAsset(0x5F, fontAsset, false, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
 
             if (character != null)
                 m_Underline = new SpecialCharacter(character, m_CurrentMaterialIndex);

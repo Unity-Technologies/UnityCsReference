@@ -18,6 +18,7 @@ namespace UnityEditor
         public static System.Action selectionChanged;
         private static DelegateWithPerformanceTracker<System.Action> m_SelectionChangedEvent = new DelegateWithPerformanceTracker<System.Action>($"{nameof(Selection)}.{nameof(selectionChanged)}");
         internal static event System.Action<int> selectedObjectWasDestroyed;
+        internal static event System.Action<int> nonSelectedObjectWasDestroyed;
 
         [PublicAPI] // Used by packages with internal access. Not actually intended for users.
         internal static event System.Action postProcessSelectionMetadata;
@@ -27,6 +28,13 @@ namespace UnityEditor
         {
             if (selectedObjectWasDestroyed != null)
                 selectedObjectWasDestroyed(instanceID);
+        }
+
+        [UsedImplicitly, RequiredByNativeCode]
+        private static void Internal_NonSelectedObjectWasDestroyed(int instanceID)
+        {
+            if (nonSelectedObjectWasDestroyed != null)
+                nonSelectedObjectWasDestroyed(instanceID);
         }
 
         [UsedImplicitly, RequiredByNativeCode]

@@ -390,7 +390,7 @@ namespace UnityEditor.Search
             return p.hasVisibleChildren;
         }
 
-        static string GetFieldName(string propertyName)
+        internal static string GetFieldName(string propertyName)
         {
             return propertyName.Replace("m_", "").Replace(" ", "").ToLowerInvariant();
         }

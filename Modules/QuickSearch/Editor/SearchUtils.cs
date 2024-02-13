@@ -11,7 +11,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UIElements;
 using UnityEngine.Pool;
 using UnityEditor.Search.Providers;
 
@@ -1290,6 +1289,12 @@ namespace UnityEditor.Search
             }
         }
 
+        internal static string GetPropertyName(SerializedProperty prop)
+        {
+            var fieldName = ObjectIndexer.GetFieldName(prop.displayName);
+            return fieldName;
+        }
+
         internal static string FormatPropertyQuery(SerializedProperty prop)
         {
             string query = null;
@@ -1298,9 +1303,9 @@ namespace UnityEditor.Search
 
             var target = prop.serializedObject.targetObject;
             var assetPath = AssetDatabase.GetAssetPath(target);
-            var propertyPath = prop.propertyPath.Replace(" ", "");
+            var propetyName = GetPropertyName(prop);
             var propertyValue = GetPropertyValueForQuery(prop);
-            var baseQuery = $"{propertyPath}={propertyValue}";
+            var baseQuery = $"{propetyName}={propertyValue}";
             if (!string.IsNullOrEmpty(assetPath))
             {
                 // Format asset Query;

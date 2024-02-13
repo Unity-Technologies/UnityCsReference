@@ -131,6 +131,7 @@ namespace UnityEditor.UIElements
                 //Use a dummy repaint event, otherwise imgui element wont be shown when using event.current and rendered in the editor update loop
                 m_evt.type = EventType.Repaint;
                 m_Panel.Repaint(m_evt);
+                m_Panel.Render();
             }
             finally
             {
