@@ -466,7 +466,8 @@ namespace Unity.UI.Builder
             if (string.IsNullOrEmpty(documentElement.name) ||
                 elementInfoVisibilityState.HasFlag(BuilderExplorer.BuilderElementInfoVisibilityState.TypeName))
             {
-                var typeLabel = new Label(documentElement.typeName);
+                var uxmlTypeName = documentElement.GetUxmlTypeName();
+                var typeLabel = new Label(uxmlTypeName);
                 typeLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
                 typeLabel.AddToClassList(BuilderConstants.ElementTypeClassName);
                 labelCont.Add(typeLabel);

@@ -470,6 +470,34 @@ namespace Unity.UI.Builder
 
             return statusIndicator;
         }
+        
+        public static string GetUxmlTypeName(this VisualElement element)
+        {
+            if (null == element)
+                return null;
+
+            if (VisualElementFactoryRegistry.TryGetValue(element.fullTypeName, out var factories))
+                return factories[0].uxmlName;
+
+            if (VisualElementFactoryRegistry.TryGetValue(element.GetType(), out factories))
+                return factories[0].uxmlName;
+
+            return null;
+        }
+
+        public static string GetUxmlFullTypeName(this VisualElement element)
+        {
+            if (null == element)
+                return null;
+
+            if (VisualElementFactoryRegistry.TryGetValue(element.fullTypeName, out var factories))
+                return factories[0].uxmlQualifiedName;
+
+            if (VisualElementFactoryRegistry.TryGetValue(element.GetType(), out factories))
+                return factories[0].uxmlQualifiedName;
+
+            return null;
+        }
     }
 
     enum BuilderElementStyle

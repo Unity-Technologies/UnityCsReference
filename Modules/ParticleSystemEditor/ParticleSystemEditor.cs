@@ -64,24 +64,26 @@ namespace UnityEditor
             EditorApplication.projectChanged += HierarchyOrProjectWindowWasChanged;
             SceneView.duringSceneGui += OnSceneViewGUI;
             Undo.undoRedoEvent += UndoRedoPerformed;
-
+            PrefabUtility.prefabInstanceUpdated += PrefabInstanceUpdated;
+            PrefabUtility.prefabInstanceReverted += PrefabInstanceReverted;
             ShortcutIntegration.instance.contextManager.RegisterToolContext(m_ShortcutContext);
         }
 
         public void OnDisable()
         {
-            SceneView.duringSceneGui -= OnSceneViewGUI;
             EditorApplication.projectChanged -= HierarchyOrProjectWindowWasChanged;
             EditorApplication.hierarchyChanged -= HierarchyOrProjectWindowWasChanged;
+            SceneView.duringSceneGui -= OnSceneViewGUI;
             Undo.undoRedoEvent -= UndoRedoPerformed;
+            PrefabUtility.prefabInstanceUpdated -= PrefabInstanceUpdated;
+            PrefabUtility.prefabInstanceReverted -= PrefabInstanceReverted;
+            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_ShortcutContext);
 
             if (m_ParticleEffectUI != null)
             {
                 m_ParticleEffectUI.Clear();
                 m_ParticleEffectUI.ClearSelectedSystems();
             }
-
-            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_ShortcutContext);
         }
 
         private void HierarchyOrProjectWindowWasChanged()
@@ -103,6 +105,20 @@ namespace UnityEditor
             Init(true);
             if (m_ParticleEffectUI != null)
                 m_ParticleEffectUI.UndoRedoPerformed(info);
+        }
+
+        private void PrefabInstanceUpdated(GameObject instance)
+        {
+            Init(forceInit : false);
+            if (m_ParticleEffectUI != null)
+                m_ParticleEffectUI.PrefabInstanceUpdated(instance);
+        }
+
+        private void PrefabInstanceReverted(GameObject instance)
+        {
+            Init(forceInit: false);
+            if (m_ParticleEffectUI != null)
+                m_ParticleEffectUI.PrefabInstanceReverted(instance);
         }
 
         private void Init(bool forceInit)

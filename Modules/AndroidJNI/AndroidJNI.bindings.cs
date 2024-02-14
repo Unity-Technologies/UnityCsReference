@@ -425,6 +425,12 @@ namespace UnityEngine
         // Deletes the global reference pointed to by <tt>obj</tt>.
         [ThreadSafe]
         public static extern void DeleteGlobalRef(IntPtr obj);
+        // Checks that current thread is attached and deletes the global reference pointed to by <tt>obj</tt>.
+        [ThreadSafe]
+        internal static extern void QueueDeleteGlobalRef(IntPtr obj);
+        // Returns the number of global references to delete in queue.
+        [ThreadSafe]
+        internal static extern uint GetQueueGlobalRefsCount();
         // Creates a new global weak reference to the object referred to by the <tt>obj</tt> argument.
         [ThreadSafe]
         public static extern IntPtr NewWeakGlobalRef(IntPtr obj);

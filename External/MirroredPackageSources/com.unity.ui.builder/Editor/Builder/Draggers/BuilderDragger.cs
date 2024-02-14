@@ -26,7 +26,7 @@ namespace Unity.UI.Builder
 
         // It's possible to have multiple BuilderDraggers on the same element. This ensures
         // a kind of capture without using the capture system and just between BuilderDraggers.
-        static BuilderDragger s_CurrentlyActiveBuilderDragger = null;
+        internal static BuilderDragger s_CurrentlyActiveBuilderDragger = null;
 
         Vector2 m_Start;
         bool m_Active;
@@ -434,6 +434,8 @@ namespace Unity.UI.Builder
 
         void OnMouseDown(MouseDownEvent evt)
         {
+            if (s_CurrentlyActiveBuilderDragger != null && s_CurrentlyActiveBuilderDragger != this)
+                return;
             var target = evt.currentTarget as VisualElement;
 
             if (m_WeStartedTheDrag && target.HasMouseCapture())
@@ -487,6 +489,7 @@ namespace Unity.UI.Builder
                     else
                     {
                         target.ReleaseMouse();
+                        s_CurrentlyActiveBuilderDragger = null;
                     }
                 }
 

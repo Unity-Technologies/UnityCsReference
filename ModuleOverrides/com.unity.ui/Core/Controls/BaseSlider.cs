@@ -36,7 +36,7 @@ namespace UnityEngine.UIElements
         /// This class defines the properties of a BaseSlider element that you can
         /// use in a UXML asset.
         /// </remarks>
-        protected internal new class UxmlTraits : BaseField<TValueType>.UxmlTraits
+        public new class UxmlTraits : BaseField<TValueType>.UxmlTraits
         {
             /// <summary>
             /// Constructor.

@@ -446,7 +446,8 @@ namespace UnityEditor
             // Background
             EditorGUILayout.LabelField(k_Texts.backgroundTitle, EditorStyles.boldLabel);
             EditorGUILayout.Slider(m_SplashScreenOverlayOpacity, Application.HasProLicense() ? k_MinProEditionOverlayOpacity : k_MinPersonalEditionOverlayOpacity, 1.0f, k_Texts.overlayOpacity);
-            m_ShowBackgroundColorAnimator.target = m_SplashScreenBackgroundLandscape.objectReferenceValue == null;
+            m_ShowBackgroundColorAnimator.target = m_SplashScreenBackgroundLandscape.objectReferenceValue == null ||
+                (settingsExtension?.SupportsStaticSplashScreenBackgroundColor() ?? false);
             if (EditorGUILayout.BeginFadeGroup(m_ShowBackgroundColorAnimator.faded))
                 EditorGUILayout.PropertyField(m_SplashScreenBackgroundColor, k_Texts.backgroundColor);
             EditorGUILayout.EndFadeGroup();

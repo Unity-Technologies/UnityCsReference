@@ -3,11 +3,16 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 using UnityEngineInternal;
 using uei = UnityEngine.Internal;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using System.Threading;
 
 namespace UnityEngine
 {
@@ -172,6 +177,88 @@ namespace UnityEngine
         }
 
         // Clones the object /original/ and returns the clone.
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original) where T : UnityEngine.Object
+        {
+            return InstantiateAsync(original, 1, null, ReadOnlySpan<Vector3>.Empty, ReadOnlySpan<Quaternion>.Empty);
+        }
+
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, Transform parent) where T : UnityEngine.Object
+        {
+            return InstantiateAsync(original, 1, parent, ReadOnlySpan<Vector3>.Empty, ReadOnlySpan<Quaternion>.Empty);
+        }
+
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, Vector3 position, Quaternion rotation) where T : UnityEngine.Object
+        {
+            unsafe
+            {
+                return InstantiateAsync(original, 1, null, new ReadOnlySpan<Vector3>(&position, 1), new ReadOnlySpan<Quaternion>(&rotation, 1));
+            }
+        }
+
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, Transform parent, Vector3 position, Quaternion rotation) where T : UnityEngine.Object
+        {
+            unsafe
+            {
+                return InstantiateAsync(original, 1, null, new ReadOnlySpan<Vector3>(&position, 1), new ReadOnlySpan<Quaternion>(&rotation, 1));
+            }
+        }
+
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count) where T : UnityEngine.Object
+        {
+            return InstantiateAsync(original, count, null, ReadOnlySpan<Vector3>.Empty, ReadOnlySpan<Quaternion>.Empty);
+        }
+
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, Transform parent) where T : UnityEngine.Object
+        {
+            return InstantiateAsync(original, count, parent, ReadOnlySpan<Vector3>.Empty, ReadOnlySpan<Quaternion>.Empty);
+        }
+
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, Vector3 position, Quaternion rotation) where T : UnityEngine.Object
+        {
+            unsafe
+            {
+                return InstantiateAsync(original, count, null, new ReadOnlySpan<Vector3>(&position, 1), new ReadOnlySpan<Quaternion>(&rotation, 1));
+            }
+        }
+
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, ReadOnlySpan<Vector3> positions, ReadOnlySpan<Quaternion> rotations) where T : UnityEngine.Object
+        {
+            return InstantiateAsync(original, count, null, positions, rotations);
+        }
+
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, Transform parent, Vector3 position, Quaternion rotation) where T : UnityEngine.Object
+        {
+            unsafe
+            {
+                return InstantiateAsync(original, count, parent, new ReadOnlySpan<Vector3>(&position, 1), new ReadOnlySpan<Quaternion>(&rotation, 1));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, Transform parent, ReadOnlySpan<Vector3> positions, ReadOnlySpan<Quaternion> rotations) where T : UnityEngine.Object
+        {
+            CheckNullArgument(original, objectIsNullMessage);
+
+            if (count <= 0)
+            {
+                throw new ArgumentException("Cannot call instantiate multiple with count less or equal to zero");
+            }
+
+            if (original is ScriptableObject)
+                throw new ArgumentException("Cannot call instantiate multiple for a ScriptableObject");
+
+            unsafe
+            {
+                fixed (Vector3* positionsPtr = positions)
+                fixed (Quaternion* rotationsPtr = rotations)
+                {
+                    AsyncInstantiateOperation op = Internal_InstantiateAsyncWithParent(original, count, parent, (IntPtr)positionsPtr, positions.Length, (IntPtr)rotationsPtr, rotations.Length);
+                    return new AsyncInstantiateOperation<T>(op);
+                }
+            }
+        }
+
+        // Clones the object /original/ and returns the clone.
         [TypeInferenceRule(TypeInferenceRules.TypeOfFirstArgument)]
         public static Object Instantiate(Object original, Vector3 position, Quaternion rotation)
         {
@@ -211,6 +298,19 @@ namespace UnityEngine
         {
             CheckNullArgument(original, objectIsNullMessage);
             var obj = Internal_CloneSingle(original);
+
+            if (obj == null)
+                throw new UnityException(cloneDestroyedMessage);
+
+            return obj;
+        }
+
+        // Clones the object /original/ and returns the clone.
+        [TypeInferenceRule(TypeInferenceRules.TypeOfFirstArgument)]
+        public static Object Instantiate(Object original, Scene scene)
+        {
+            CheckNullArgument(original, objectIsNullMessage);
+            var obj = Internal_CloneSingleWithScene(original, scene);
 
             if (obj == null)
                 throw new UnityException(cloneDestroyedMessage);
@@ -483,8 +583,14 @@ namespace UnityEngine
         [NativeMethod(Name = "CloneObject", IsFreeFunction = true, ThrowsException = true)]
         extern static Object Internal_CloneSingle([NotNull("NullExceptionObject")] Object data);
 
+        [FreeFunction("CloneObjectToScene")]
+        extern static Object Internal_CloneSingleWithScene([NotNull] Object data, Scene scene);
+
         [FreeFunction("CloneObject")]
         extern static Object Internal_CloneSingleWithParent([NotNull("NullExceptionObject")] Object data, [NotNull("NullExceptionObject")] Transform parent, bool worldPositionStays);
+
+        [FreeFunction("InstantiateAsyncObjects")]
+        extern static AsyncInstantiateOperation Internal_InstantiateAsyncWithParent([NotNull("NullExceptionObject")] Object original, int count, Transform parent, IntPtr positions, int positionsCount, IntPtr rotations, int rotationsCount);
 
         [FreeFunction("InstantiateObject")]
         extern static Object Internal_InstantiateSingle([NotNull("NullExceptionObject")] Object data, Vector3 pos, Quaternion rot);

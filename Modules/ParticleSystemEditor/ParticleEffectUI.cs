@@ -192,7 +192,7 @@ namespace UnityEditor
             bool active = false;
             if (root != null)
                 active = root.gameObject.activeInHierarchy;
-            return !EditorApplication.isPlaying && active;
+            return active && !Application.IsPlaying(root.gameObject);
         }
 
         static Color GetDisabledColor()
@@ -346,18 +346,7 @@ namespace UnityEditor
 
                 if (ShouldManagePlaybackState(mainSystem))
                 {
-                    // Restore lastPlayBackTime if available in session cache
-                    Vector3 simulationState = SessionState.GetVector3(k_SimulationStateId + mainSystem.GetInstanceID(), Vector3.zero);
-                    if (mainSystem.GetInstanceID() == (int)simulationState.x)
-                    {
-                        float lastPlayBackTime = simulationState.z;
-                        if (lastPlayBackTime > 0f)
-                        {
-                            if (m_MainPlaybackSystem != mainSystem)
-                                ParticleSystemEditorUtils.PerformCompleteResimulation();
-                            ParticleSystemEditorUtils.playbackTime = lastPlayBackTime;
-                        }
-                    }
+                    TryRestorePlayState(mainSystem);
 
                     // Play when selecting a new particle effect
                     if (m_MainPlaybackSystem != mainSystem)
@@ -368,6 +357,61 @@ namespace UnityEditor
             m_MainPlaybackSystem = mainSystem;
 
             return initializeRequired;
+        }
+
+        void SavePlayState(ParticleSystem particleSystem)
+        {
+            if (particleSystem == null)
+                return;
+
+            // Store simulation state of current effect as Vector3 (rootInstanceID, PlayState, playBackTime) in Session cache
+            int rootInstanceId = particleSystem.GetInstanceID();
+            Vector3 state = new Vector3(rootInstanceId, (int)GetCurrentPlayState(), ParticleSystemEditorUtils.playbackTime);
+            SessionState.SetVector3(k_SimulationStateId + rootInstanceId, state);
+        }
+
+        void TryRestorePlayState(ParticleSystem particleSystem)
+        {
+            if (particleSystem == null)
+                return;
+
+            Vector3 simulationState = SessionState.GetVector3(k_SimulationStateId + particleSystem.GetInstanceID(), Vector3.zero);
+            if (particleSystem.GetInstanceID() == (int)simulationState.x)
+            {
+                float lastPlayBackTime = simulationState.z;
+                if (lastPlayBackTime > 0f)
+                {
+                    if (m_MainPlaybackSystem != particleSystem)
+                        ParticleSystemEditorUtils.PerformCompleteResimulation();
+                    ParticleSystemEditorUtils.playbackTime = lastPlayBackTime;
+                }
+
+                PlayState playState = (PlayState)simulationState.y;
+                switch (playState)
+                {
+                    case PlayState.Stopped:
+                        Stop();
+                        break;
+                    case PlayState.Playing:
+                        Play();
+                        break;
+                    case PlayState.Paused:
+                        Pause();
+                        break;
+                }
+            }
+        }
+
+        PlayState GetCurrentPlayState()
+        {
+            PlayState playState;
+            if (IsPlaying())
+                playState = PlayState.Playing;
+            else if (IsPaused())
+                playState = PlayState.Paused;
+            else
+                playState = PlayState.Stopped;
+            return playState;
         }
 
         internal void UndoRedoPerformed(in UndoRedoInfo info)
@@ -387,7 +431,34 @@ namespace UnityEditor
                 }
             }
 
+            // Undo will deactivate the ParticleSystem and therefore stop it, here we resume the playback state for the user (UUM-28514)
+            RestorePlayBackStateForCurrentSelectedParticleSystem();
+
             m_Owner.Repaint();
+        }
+
+        internal void PrefabInstanceUpdated(GameObject instance)
+        {
+            // Any update to prefab instances will have stopped the play back here we resume the playback state for the user (UUM-28514)
+            RestorePlayBackStateForCurrentSelectedParticleSystem();
+        }
+
+        internal void PrefabInstanceReverted(GameObject instance)
+        {
+            // Any update to prefab instances will have stopped the play back here we resume the playback state for the user (UUM-28514)
+            RestorePlayBackStateForCurrentSelectedParticleSystem();
+        }
+
+        void RestorePlayBackStateForCurrentSelectedParticleSystem()
+        {
+            if (m_SelectedParticleSystems == null || m_SelectedParticleSystems.Count == 0)
+                return;
+
+            ParticleSystem root = ParticleSystemEditorUtils.GetRoot(m_SelectedParticleSystems[0]);
+            if (ShouldManagePlaybackState(root))
+            {
+                TryRestorePlayState(root);
+            }
         }
 
         public void Clear()
@@ -395,19 +466,7 @@ namespace UnityEditor
             ParticleSystem root = ParticleSystemEditorUtils.GetRoot(m_SelectedParticleSystems[0]); // root can have been deleted
             if (ShouldManagePlaybackState(root))
             {
-                // Store simulation state of current effect as Vector3 (rootInstanceID, isPlaying, playBackTime)
-                if (root != null)
-                {
-                    PlayState playState;
-                    if (IsPlaying())
-                        playState = PlayState.Playing;
-                    else if (IsPaused())
-                        playState = PlayState.Paused;
-                    else
-                        playState = PlayState.Stopped;
-                    int rootInstanceId = root.GetInstanceID();
-                    SessionState.SetVector3(k_SimulationStateId + rootInstanceId, new Vector3(rootInstanceId, (int)playState, ParticleSystemEditorUtils.playbackTime));
-                }
+                SavePlayState(root);
 
                 // Stop the ParticleSystem here (prevents it being frozen on screen)
                 //Stop();
@@ -1128,6 +1187,16 @@ namespace UnityEditor
             if (m_Emitters == null)
             {
                 return;
+            }
+
+            // Cache play state so we can resume play after undo'ing and updating prefab instances (UUM-28514)
+            if (Event.current.type ==  EventType.Repaint)
+            {
+                ParticleSystem root = ParticleSystemEditorUtils.GetRoot(m_SelectedParticleSystems[0]);
+                if (ShouldManagePlaybackState(root))
+                {
+                    SavePlayState(root);
+                }
             }
 
             // Grab the latest data from the object

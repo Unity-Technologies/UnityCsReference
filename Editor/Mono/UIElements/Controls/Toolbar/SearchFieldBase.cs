@@ -77,7 +77,7 @@ namespace UnityEditor.UIElements
         /// This class defines the properties of a SearchFieldBase element that you can
         /// use in a UXML asset.
         /// </remarks>
-        protected new class UxmlTraits : VisualElement.UxmlTraits
+        public new class UxmlTraits : VisualElement.UxmlTraits
         {
             /// <summary>
             /// Constructor.

@@ -245,8 +245,8 @@ namespace UnityEditor.UIElements
 
                 foreach (var error in m_Errors)
                 {
-                    VisualTreeAsset obj;
-                    if (!cache.TryGetValue(error.filePath, out obj))
+                    VisualTreeAsset obj = null;
+                    if (!string.IsNullOrEmpty(error.filePath) && !cache.TryGetValue(error.filePath, out obj))
                         cache.Add(error.filePath, obj = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(error.filePath));
 
                     LogError(obj, error);

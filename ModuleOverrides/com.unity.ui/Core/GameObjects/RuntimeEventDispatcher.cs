@@ -12,11 +12,12 @@ namespace UnityEngine.UIElements
         {
             return EventDispatcher.CreateForRuntime(new List<IEventDispatchingStrategy>
             {
-                new NavigationEventDispatchingStrategy(),
                 new PointerCaptureDispatchingStrategy(),
+                new MouseCaptureDispatchingStrategy(),
                 new KeyboardEventDispatchingStrategy(),
                 new PointerEventDispatchingStrategy(),
-                new MouseEventDispatchingStrategy(), //TODO: remove all runtime mouse events (PointerWheelEvent?)
+                new MouseEventDispatchingStrategy(),
+                new NavigationEventDispatchingStrategy(),
                 new DefaultDispatchingStrategy(),
             });
         }
