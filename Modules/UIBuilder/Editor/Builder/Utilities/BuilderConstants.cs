@@ -173,6 +173,7 @@ namespace Unity.UI.Builder
         public static readonly string InspectorFieldValueInfoVEPropertyName = "__unity-ui-builder-property-value-info";
         public static readonly string InspectorFieldBindingInlineEditingEnabledPropertyName =
             "__unity-builder-binding-inline-editing-enabled";
+        public static readonly string InspectorTempSerializedDataPropertyName = "__unity-ui-builder-temp-serialized-data";
 
         // Inspector Header
         public static readonly string BuilderInspectorSelector = "Selector";
@@ -728,16 +729,13 @@ namespace Unity.UI.Builder
         public static readonly string UxmlEndTagSymbol = " /" + UxmlCloseTagSymbol;
         public static readonly string UxmlTemplateClassTag = "Template";
         public static readonly string UxmlNameAttr = "name";
-        public static readonly string UxmlHeader = "<ui:UXML xmlns:ui=\"UnityEngine.UIElements\" xmlns:uie=\"UnityEditor.UIElements\"";
-        public static readonly string UxmlFooter = "</ui:UXML>";
-        public static readonly string UxmlEngineNamespace = "UnityEngine.UIElements.";
-        public static readonly string UxmlEngineNamespaceReplace = "ui:";
-        public static readonly string UxmlEditorNamespace = "UnityEditor.UIElements.";
-        public static readonly string UxmlEditorNamespaceReplace = "uie:";
+        public static readonly string UxmlEngineNamespace = "UnityEngine.UIElements";
+        public static readonly string UxmlDefaultEngineNamespacePrefix = "ui";
+        public static readonly string UxmlEditorNamespace = "UnityEditor.UIElements";
+        public static readonly string UxmlDefaultEditorNamespacePrefix = "uie";
         public static readonly string UxmlTagTypeName = "UnityEngine.UIElements.UXML";
         public static readonly string UxmlInstanceTypeName = "UnityEngine.UIElements.Instance";
-        public static readonly string UxmlBindableElementTypeName = "UnityEngine.UIElements.BindableElement";
-        public static readonly string UxmlVisualElementTypeName = "UnityEngine.UIElements.VisualElement";
+
 
         // USS
         public static readonly string UssSelectorNameSymbol = "#";

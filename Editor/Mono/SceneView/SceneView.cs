@@ -2577,7 +2577,6 @@ namespace UnityEditor
             bool hdrDisplayActive = (m_Parent != null && m_Parent.actualView == this && m_Parent.hdrActive);
             if (!UseSceneFiltering() && evt.type == EventType.Repaint && GraphicsFormatUtility.IsIEEE754Format(m_SceneTargetTexture.graphicsFormat) && !hdrDisplayActive)
             {
-                var currentDepthBuffer = Graphics.activeDepthBuffer;
                 var rtDesc = m_SceneTargetTexture.descriptor;
                 rtDesc.graphicsFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
                 rtDesc.depthBufferBits = 0;
@@ -2585,7 +2584,7 @@ namespace UnityEditor
                 ldrSceneTargetTexture.name = "LDRSceneTarget";
                 Graphics.Blit(m_SceneTargetTexture, ldrSceneTargetTexture);
                 Graphics.Blit(ldrSceneTargetTexture, m_SceneTargetTexture);
-                Graphics.SetRenderTarget(m_SceneTargetTexture.colorBuffer, currentDepthBuffer);
+                Graphics.SetRenderTarget(m_SceneTargetTexture.colorBuffer, m_SceneTargetTexture.depthBuffer);
                 RenderTexture.ReleaseTemporary(ldrSceneTargetTexture);
             }
 

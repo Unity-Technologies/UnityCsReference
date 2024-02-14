@@ -10,6 +10,7 @@ using UnityEngine;
 using System.IO;
 using System.Linq;
 using UnityEditor.UIElements.StyleSheets;
+using UnityEngine.Pool;
 
 namespace Unity.UI.Builder
 {
@@ -23,32 +24,46 @@ namespace Unity.UI.Builder
                 stringBuilder.Append("    ");
         }
 
-        static void AppendElementTypeName(UxmlAsset root, StringBuilder stringBuilder)
+        static void AppendElementTypeName(VisualTreeAsset vta, UxmlAsset root, StringBuilder stringBuilder)
         {
-            if (root is TemplateAsset)
+            if (root is UxmlObjectAsset uxmlObjectAsset)
             {
-                stringBuilder.Append(BuilderConstants.UxmlEngineNamespaceReplace);
-                stringBuilder.Append("Instance");
-                return;
+                if (uxmlObjectAsset.isField)
+                {
+                    stringBuilder.Append(uxmlObjectAsset.fullTypeName);
+                    return;
+                }
             }
 
-            var typeName = root.fullTypeName;
-            if (typeName.StartsWith(BuilderConstants.UxmlEngineNamespace))
+            var xmlNamespace = root.xmlNamespace;
+
+            if (xmlNamespace != UxmlNamespaceDefinition.Empty)
             {
-                typeName = typeName.Substring(BuilderConstants.UxmlEngineNamespace.Length);
-                stringBuilder.Append(BuilderConstants.UxmlEngineNamespaceReplace);
-                stringBuilder.Append(typeName);
-                return;
-            }
-            else if (typeName.StartsWith(BuilderConstants.UxmlEditorNamespace))
-            {
-                typeName = typeName.Substring(BuilderConstants.UxmlEditorNamespace.Length);
-                stringBuilder.Append(BuilderConstants.UxmlEditorNamespaceReplace);
-                stringBuilder.Append(typeName);
-                return;
+                var namespaceDefinition = vta.FindUxmlNamespaceDefinitionFromPrefix(root, xmlNamespace.prefix);
+                if (namespaceDefinition != xmlNamespace)
+                {
+                    xmlNamespace = vta.FindUxmlNamespaceDefinitionForTypeName(root, root.fullTypeName);
+                }
             }
 
-            stringBuilder.Append(typeName);
+            if (string.IsNullOrEmpty(xmlNamespace.prefix))
+            {
+                if (string.IsNullOrEmpty(xmlNamespace.resolvedNamespace))
+                {
+                    stringBuilder.Append(root.fullTypeName);
+                }
+                else
+                {
+                    var name = root.fullTypeName.Substring(xmlNamespace.resolvedNamespace.Length + 1);
+                    stringBuilder.Append(name);
+                }
+            }
+            else
+            {
+                stringBuilder.Append($"{xmlNamespace.prefix}:");
+                var name = root.fullTypeName.Substring(xmlNamespace.resolvedNamespace.Length + 1);
+                stringBuilder.Append(name);
+            }
         }
 
         static void AppendElementAttribute(string name, string value, StringBuilder stringBuilder)
@@ -76,15 +91,29 @@ namespace Unity.UI.Builder
 
         static void AppendHeaderAttributes(VisualTreeAsset vta, StringBuilder stringBuilder, bool writingToFile)
         {
-            AppendElementAttributes(vta.GetRootUXMLElement(), stringBuilder, writingToFile, "ui", "uie");
+            AppendElementAttributes(vta.GetRootUxmlElement(), stringBuilder, writingToFile);
+        }
+
+        static void AppendNamespaceDefinition(UxmlNamespaceDefinition definition, StringBuilder stringBuilder)
+        {
+            AppendElementAttribute(string.IsNullOrEmpty(definition.prefix) ? "xmlns" : $"xmlns:{definition.prefix}", definition.resolvedNamespace, stringBuilder);
         }
 
         static void AppendElementAttributes(UxmlAsset uxmlAsset, StringBuilder stringBuilder, bool writingToFile, params string[] ignoredAttributes)
         {
-            var attributes = uxmlAsset.GetProperties();
-            if (attributes != null && attributes.Count > 0)
+            var namespaceDefinitions = uxmlAsset.namespaceDefinitions;
+            if (namespaceDefinitions is {Count: > 0})
             {
-                for (int i = 0; i < attributes.Count; i += 2)
+                for (var i = 0; i < namespaceDefinitions.Count; ++i)
+                {
+                    AppendNamespaceDefinition(namespaceDefinitions[i], stringBuilder);
+                }
+            }
+
+            var attributes = uxmlAsset.GetProperties();
+            if (attributes is {Count: > 0})
+            {
+                for (var i = 0; i < attributes.Count; i += 2)
                 {
                     var name = attributes[i];
                     var value = attributes[i + 1];
@@ -140,6 +169,7 @@ namespace Unity.UI.Builder
                 }
             }
 
+            var engineNamespaceDefinition = vta.FindUxmlNamespaceDefinitionForTypeName(vta.GetRootUxmlElement(), typeof(VisualElement).FullName);
             foreach (var templateAlias in templateAliases)
             {
                 // Skip templates if not in filter.
@@ -147,9 +177,18 @@ namespace Unity.UI.Builder
                     continue;
 
                 Indent(stringBuilder, 1);
+
                 stringBuilder.Append(BuilderConstants.UxmlOpenTagSymbol);
-                stringBuilder.Append(BuilderConstants.UxmlEngineNamespaceReplace);
-                stringBuilder.Append(BuilderConstants.UxmlTemplateClassTag);
+
+                if (engineNamespaceDefinition != UxmlNamespaceDefinition.Empty)
+                {
+                    stringBuilder.Append(string.IsNullOrEmpty(engineNamespaceDefinition.prefix)
+                        ? BuilderConstants.UxmlTemplateClassTag
+                        : $"{engineNamespaceDefinition.prefix}:{BuilderConstants.UxmlTemplateClassTag}");
+                }
+                else
+                    stringBuilder.Append($"{BuilderConstants.UxmlEngineNamespace}.{BuilderConstants.UxmlTemplateClassTag}");
+
                 AppendElementAttribute(BuilderConstants.UxmlNameAttr, templateAlias, stringBuilder);
 
                 var fieldInfo = VisualTreeAssetExtensions.UsingsListFieldInfo;
@@ -257,7 +296,7 @@ namespace Unity.UI.Builder
             Indent(stringBuilder, depth);
 
             stringBuilder.Append(BuilderConstants.UxmlOpenTagSymbol);
-            AppendElementTypeName(root, stringBuilder);
+            AppendElementTypeName(vta, root, stringBuilder);
 
             // If we have no children, avoid adding the full end tag and just end the open tag.
             bool hasChildTags = false;
@@ -415,7 +454,7 @@ namespace Unity.UI.Builder
             {
                 Indent(stringBuilder, depth);
                 stringBuilder.Append(BuilderConstants.UxmlOpenTagSymbol + "/");
-                AppendElementTypeName(root, stringBuilder);
+                AppendElementTypeName(vta, root, stringBuilder);
                 stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
                 stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
             }
@@ -430,7 +469,44 @@ namespace Unity.UI.Builder
         {
             var stringBuilder = new StringBuilder();
 
-            stringBuilder.Append(BuilderConstants.UxmlHeader);
+            var rootElement = vta.GetRootUxmlElement();
+            var engineNamespaceDefinition = vta.FindUxmlNamespaceDefinitionForTypeName(rootElement, typeof(VisualElement).FullName);
+
+            if (engineNamespaceDefinition != UxmlNamespaceDefinition.Empty)
+            {
+                stringBuilder.Append(string.IsNullOrEmpty(engineNamespaceDefinition.prefix)
+                    ? "<UXML"
+                    : $"<{engineNamespaceDefinition.prefix}:UXML");
+            }
+            else
+                stringBuilder.Append("<UXML");
+
+            AppendHeaderAttributes(vta, stringBuilder, false);
+
+            using var setHandle = HashSetPool<UxmlNamespaceDefinition>.Get(out var definitionsSet);
+            {
+                for (var i = 0; i < rootElement.namespaceDefinitions.Count; ++i)
+                {
+                    definitionsSet.Add(rootElement.namespaceDefinitions[i]);
+                }
+
+                foreach (var vea in veas)
+                {
+                    using var listHandle = ListPool<UxmlNamespaceDefinition>.Get(out var definitions);
+
+                    vta.GatherUxmlNamespaceDefinitions(vea, definitions);
+
+                    for (var i = 0; i < definitions.Count; ++i)
+                    {
+                        var definition = definitions[i];
+                        if (definitionsSet.Add(definition))
+                        {
+                            AppendNamespaceDefinition(definition, stringBuilder);
+                        }
+                    }
+                }
+            }
+
             stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
             stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
 
@@ -451,7 +527,14 @@ namespace Unity.UI.Builder
                 GenerateUXMLRecursive(vta, vtaPath, vea, idToChildren, stringBuilder, 1, true);
             }
 
-            stringBuilder.Append(BuilderConstants.UxmlFooter);
+            if (engineNamespaceDefinition != UxmlNamespaceDefinition.Empty)
+            {
+                stringBuilder.Append(string.IsNullOrEmpty(engineNamespaceDefinition.prefix)
+                    ? "</UXML>"
+                    : $"</{engineNamespaceDefinition.prefix}:UXML>");
+            }
+            else
+                stringBuilder.Append("</UXML>");
             stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
 
             return stringBuilder.ToString();
@@ -517,20 +600,21 @@ namespace Unity.UI.Builder
         {
             var stringBuilder = new StringBuilder();
 
-            if ((vta.visualElementAssets == null || vta.visualElementAssets.Count <= 0) &&
-                (vta.templateAssets == null || vta.templateAssets.Count <= 0))
+            if (vta.visualElementAssets is not {Count: > 0} &&
+                vta.templateAssets is not {Count: > 0})
             {
-                stringBuilder.Append(BuilderConstants.UxmlHeader);
-                stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
+                stringBuilder.Append($"{BuilderConstants.UxmlOpenTagSymbol}{BuilderConstants.UxmlDefaultEngineNamespacePrefix}:{BuilderConstants.UxmlEngineNamespace}{BuilderConstants.UxmlCloseTagSymbol}");
                 stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
-                stringBuilder.Append(BuilderConstants.UxmlFooter);
+
+                stringBuilder.Append($"{BuilderConstants.UxmlOpenTagSymbol}/{BuilderConstants.UxmlDefaultEngineNamespacePrefix}:{BuilderConstants.UxmlEngineNamespace}{BuilderConstants.UxmlCloseTagSymbol}");
                 stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
                 return stringBuilder.ToString();
             }
 
             var idToChildren = VisualTreeAssetUtilities.GenerateIdToChildren(vta);
 
-            stringBuilder.Append(BuilderConstants.UxmlHeader);
+            stringBuilder.Append(BuilderConstants.UxmlOpenTagSymbol);
+            AppendElementTypeName(vta, vta.GetRootUxmlElement(), stringBuilder);
             AppendHeaderAttributes(vta, stringBuilder, writingToFile);
             stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
             stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
@@ -540,7 +624,10 @@ namespace Unity.UI.Builder
 
             GenerateUXMLFromRootElements(vta, idToChildren, stringBuilder, vtaPath, writingToFile);
 
-            stringBuilder.Append(BuilderConstants.UxmlFooter);
+            stringBuilder.Append(BuilderConstants.UxmlOpenTagSymbol);
+            stringBuilder.Append("/");
+            AppendElementTypeName(vta, vta.GetRootUxmlElement(), stringBuilder);
+            stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
             stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
 
             return stringBuilder.ToString();

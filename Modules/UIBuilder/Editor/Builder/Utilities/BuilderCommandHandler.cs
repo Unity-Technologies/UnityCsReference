@@ -9,6 +9,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using UnityEditor.UIElements;
+using UnityEngine.Pool;
 
 namespace Unity.UI.Builder
 {
@@ -376,6 +377,9 @@ namespace Unity.UI.Builder
             var veas = new List<VisualElementAsset>();
             var vea = ve.GetVisualElementAsset();
 
+            using var _ = ListPool<UxmlNamespaceDefinition>.Get(out var nsDefinitions);
+            vta.GatherUxmlNamespaceDefinitions(vta.GetParentAsset(vea), nsDefinitions);
+
             veas.Add(vea);
 
             if (string.IsNullOrEmpty(path))
@@ -418,6 +422,18 @@ namespace Unity.UI.Builder
 
             // Replace with new template
             var newTemplateVTA = EditorGUIUtility.Load(path) as VisualTreeAsset;
+            var rootVea = newTemplateVTA.GetRootUxmlElement();
+            using var setHandle = HashSetPool<UxmlNamespaceDefinition>.Get(out var definitionsSet);
+            foreach (var def in rootVea.namespaceDefinitions)
+                definitionsSet.Add(def);
+
+            foreach (var def in nsDefinitions)
+            {
+                if (!definitionsSet.Add(def))
+                    continue;
+                rootVea.namespaceDefinitions.Add(def);
+            }
+
             var newTemplateContainer = newTemplateVTA.CloneTree();
             newTemplateContainer.SetProperty(BuilderConstants.LibraryItemLinkedTemplateContainerPathVEPropertyName, path);
             newTemplateContainer.name = newTemplateVTA.name;
@@ -448,7 +464,7 @@ namespace Unity.UI.Builder
             }
 
             var elementsToUnpack = new List<VisualElement>();
-            var rootVEA = templateContainer.GetVisualElementAsset();
+            var rootVea = templateContainer.GetVisualElementAsset();
             var isRootElement = true;
             VisualElementAsset rootUnpackedVEA = null;
             elementsToUnpack.Add(templateContainer);
@@ -468,6 +484,22 @@ namespace Unity.UI.Builder
                 var linkedTA = elementToUnpack.GetVisualElementAsset() as TemplateAsset;
                 var linkedVTACopy = linkedInstancedVTA.DeepCopy();
                 var unpackedVEA = unpackedVE.GetVisualElementAsset();
+
+                using var listHandle = ListPool<UxmlNamespaceDefinition>.Get(out var definitions);
+                m_PaneWindow.document.visualTreeAsset.GatherUxmlNamespaceDefinitions(unpackedVEA, definitions);
+                using var setHandle = HashSetPool<UxmlNamespaceDefinition>.Get(out var definitionsSet);
+                foreach (var def in definitions)
+                    definitionsSet.Add(def);
+
+                var definitionsToTransfer = linkedVTACopy.GetRootUxmlElement().namespaceDefinitions;
+                for (var i = 0; i < definitionsToTransfer.Count; ++i)
+                {
+                    var definitionToTransfer = definitionsToTransfer[i];
+                    if (definitionsSet.Contains(definitionToTransfer))
+                        continue;
+                    unpackedVEA.namespaceDefinitions.Add(definitionToTransfer);
+                }
+
                 var templateContainerVEA = elementToUnpack.GetVisualElementAsset();
                 var attributeOverrides = linkedTA.attributeOverrides;
 
@@ -521,7 +553,7 @@ namespace Unity.UI.Builder
 
             // Keep hierarchy tree state in the new unpacked element
             var hierarchy = Builder.ActiveWindow.hierarchy;
-            hierarchy.elementHierarchyView.CopyTreeViewItemStates(rootVEA, rootUnpackedVEA);
+            hierarchy.elementHierarchyView.CopyTreeViewItemStates(rootVea, rootUnpackedVEA);
 
             // Delete old template element
             BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document, templateContainer, false);

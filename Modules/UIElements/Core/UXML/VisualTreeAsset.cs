@@ -273,7 +273,7 @@ namespace UnityEngine.UIElements
             set { m_TemplateAssets = value; }
         }
 
-        [SerializeField] private List<UxmlObjectEntry> m_UxmlObjectEntries;
+        [SerializeField] private List<UxmlObjectEntry> m_UxmlObjectEntries = new ();
         [SerializeField] private List<int> m_UxmlObjectIds;
 
         internal List<UxmlObjectEntry> uxmlObjectEntries => m_UxmlObjectEntries;
@@ -298,7 +298,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal UxmlObjectAsset AddUxmlObject(UxmlAsset parent, string fieldUxmlName, string fullTypeName)
+        internal UxmlObjectAsset AddUxmlObject(UxmlAsset parent, string fieldUxmlName, string fullTypeName, UxmlNamespaceDefinition xmlNamespace = default)
         {
             m_UxmlObjectEntries ??= new List<UxmlObjectEntry>();
             m_UxmlObjectIds ??= new List<int>();
@@ -313,7 +313,7 @@ namespace UnityEngine.UIElements
 
             if (string.IsNullOrEmpty(fieldUxmlName))
             {
-                var newAsset = new UxmlObjectAsset(fullTypeName, false);
+                var newAsset = new UxmlObjectAsset(fullTypeName, false, xmlNamespace);
                 newAsset.parentId = parent.id;
                 newAsset.id = GetNextUxmlObjectId(parent.parentId);
                 entry.uxmlObjectAssets.Add(newAsset);
@@ -323,13 +323,13 @@ namespace UnityEngine.UIElements
             var fieldAsset = entry.GetField(fieldUxmlName);
             if (fieldAsset == null)
             {
-                fieldAsset = new UxmlObjectAsset(fieldUxmlName, true);
+                fieldAsset = new UxmlObjectAsset(fieldUxmlName, true, xmlNamespace);
                 entry.uxmlObjectAssets.Add(fieldAsset);
                 fieldAsset.parentId = parent.id;
                 fieldAsset.id = GetNextUxmlObjectId(parent.parentId);
             }
 
-            return AddUxmlObject(fieldAsset, null, fullTypeName);
+            return AddUxmlObject(fieldAsset, null, fullTypeName, xmlNamespace);
         }
 
         int GetNextUxmlObjectId(int parentId)
@@ -1099,6 +1099,11 @@ namespace UnityEngine.UIElements
             {
                 names.Add(asset.fullTypeName);
             }
+        }
+
+        internal VisualElementAsset GetRootUxmlElement()
+        {
+            return visualElementAssets?.Count > 0 ? visualElementAssets[0] : null;
         }
     }
 

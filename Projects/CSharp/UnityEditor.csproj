@@ -10016,14 +10016,44 @@
     <Compile Include="..\..\Modules\UIElementsEditor\AssemblyInfo.cs">
       <Link>Modules\UIElementsEditor\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\BindingExtensions.cs">
-      <Link>Modules\UIElementsEditor\Bindings\BindingExtensions.cs</Link>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\DefaultSerializedObjectBindingImplementation.cs">
+      <Link>Modules\UIElementsEditor\Bindings\DefaultSerializedObjectBindingImplementation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Bindings\EditorListViewController.cs">
       <Link>Modules\UIElementsEditor\Bindings\EditorListViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Bindings\ListViewBindings.cs">
       <Link>Modules\UIElementsEditor\Bindings\ListViewBindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedDefaultEnumBinding.cs">
+      <Link>Modules\UIElementsEditor\Bindings\SerializedDefaultEnumBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedIsExpandedBinding.cs">
+      <Link>Modules\UIElementsEditor\Bindings\SerializedIsExpandedBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedManagedEnumBinding.cs">
+      <Link>Modules\UIElementsEditor\Bindings\SerializedManagedEnumBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedObjectBinding.cs">
+      <Link>Modules\UIElementsEditor\Bindings\SerializedObjectBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedObjectBindingBase.cs">
+      <Link>Modules\UIElementsEditor\Bindings\SerializedObjectBindingBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedObjectBindingContext.cs">
+      <Link>Modules\UIElementsEditor\Bindings\SerializedObjectBindingContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedObjectBindingContextUpdater.cs">
+      <Link>Modules\UIElementsEditor\Bindings\SerializedObjectBindingContextUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedObjectBindingPropertyToBaseField.cs">
+      <Link>Modules\UIElementsEditor\Bindings\SerializedObjectBindingPropertyToBaseField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedObjectBindingToBaseField.cs">
+      <Link>Modules\UIElementsEditor\Bindings\SerializedObjectBindingToBaseField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedObjectStringConversionBinding.cs">
+      <Link>Modules\UIElementsEditor\Bindings\SerializedObjectStringConversionBinding.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedPropertyHelper.cs">
       <Link>Modules\UIElementsEditor\Bindings\SerializedPropertyHelper.cs</Link>

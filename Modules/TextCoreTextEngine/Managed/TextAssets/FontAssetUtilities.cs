@@ -29,7 +29,7 @@ namespace UnityEngine.TextCore.Text
         /// <param name="isAlternativeTypeface">Indicates if the OUT font asset is an alternative typeface or fallback font asset</param>
         /// <param name="fontAsset">The font asset that contains the requested character</param>
         /// <returns></returns>
-        internal static Character GetCharacterFromFontAsset(uint unicode, FontAsset sourceFontAsset, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface)
+        internal static Character GetCharacterFromFontAsset(uint unicode, FontAsset sourceFontAsset, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface, bool populateLigatures)
         {
             if (includeFallbacks)
             {
@@ -39,14 +39,14 @@ namespace UnityEngine.TextCore.Text
                     k_SearchedAssets.Clear();
             }
 
-            return GetCharacterFromFontAsset_Internal(unicode, sourceFontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface);
+            return GetCharacterFromFontAsset_Internal(unicode, sourceFontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface, populateLigatures);
         }
 
         /// <summary>
         /// Internal function returning the text element character for the given unicode value taking into consideration the font style and weight.
         /// Function searches the source font asset, list of font assets assigned as alternative typefaces and list of fallback font assets.
         /// </summary>
-        private static Character GetCharacterFromFontAsset_Internal(uint unicode, FontAsset sourceFontAsset, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface)
+        static Character GetCharacterFromFontAsset_Internal(uint unicode, FontAsset sourceFontAsset, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface, bool populateLigatures)
         {
             bool isMainThread = !JobsUtility.IsExecutingJob;
             isAlternativeTypeface = false;
@@ -119,9 +119,9 @@ namespace UnityEngine.TextCore.Text
                             if (!temp.m_MissingUnicodesFromFontFile.Contains(unicode))
                                 return null;
                         }
-                            
 
-                        else if (temp.TryAddCharacterInternal(unicode, out character))
+
+                        else if (temp.TryAddCharacterInternal(unicode, out character, populateLigatures))
                         {
                             isAlternativeTypeface = true;
                             return character;
@@ -165,7 +165,7 @@ namespace UnityEngine.TextCore.Text
                 if (!isMainThread)
                     return null;
 
-                if (sourceFontAsset.TryAddCharacterInternal(unicode, out character))
+                if (sourceFontAsset.TryAddCharacterInternal(unicode, out character, populateLigatures))
                     return character;
             }
 
@@ -198,7 +198,7 @@ namespace UnityEngine.TextCore.Text
                     // Add reference to this search query
                     //sourceFontAsset.FallbackSearchQueryLookup.Add(id);
 
-                    character = GetCharacterFromFontAsset_Internal(unicode, temp, true, fontStyle, fontWeight, out isAlternativeTypeface);
+                    character = GetCharacterFromFontAsset_Internal(unicode, temp, true, fontStyle, fontWeight, out isAlternativeTypeface, populateLigatures);
 
                     if (character != null)
                         return character;
@@ -223,6 +223,11 @@ namespace UnityEngine.TextCore.Text
         /// <param name="isAlternativeTypeface">Determines if the OUT font asset is an alternative typeface or fallback font asset</param>
         /// <returns></returns>
         public static Character GetCharacterFromFontAssets(uint unicode, FontAsset sourceFontAsset, List<FontAsset> fontAssets, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface)
+        {
+            return GetCharacterFromFontAssetsInternal(unicode, sourceFontAsset, fontAssets, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface, true);
+        }
+
+        internal static Character GetCharacterFromFontAssetsInternal(uint unicode, FontAsset sourceFontAsset, List<FontAsset> fontAssets, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface, bool populateLigatures = false)
         {
             isAlternativeTypeface = false;
 
@@ -249,7 +254,7 @@ namespace UnityEngine.TextCore.Text
                 // Add reference to this search query
                 //sourceFontAsset.FallbackSearchQueryLookup.Add(fontAsset.instanceID);
 
-                Character character = GetCharacterFromFontAsset_Internal(unicode, fontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface);
+                Character character = GetCharacterFromFontAsset_Internal(unicode, fontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface, populateLigatures);
 
                 if (character != null)
                     return character;
@@ -258,7 +263,7 @@ namespace UnityEngine.TextCore.Text
             return null;
         }
 
-        internal static TextElement GetTextElementFromTextAssets(uint unicode, FontAsset sourceFontAsset, List<TextAsset> textAssets, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface)
+        internal static TextElement GetTextElementFromTextAssets(uint unicode, FontAsset sourceFontAsset, List<TextAsset> textAssets, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface, bool populateLigatures)
         {
             isAlternativeTypeface = false;
 
@@ -285,7 +290,7 @@ namespace UnityEngine.TextCore.Text
                 if (textAsset.GetType() == typeof(FontAsset))
                 {
                     FontAsset fontAsset = textAsset as FontAsset;
-                    Character character = GetCharacterFromFontAsset_Internal(unicode, fontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface);
+                    Character character = GetCharacterFromFontAsset_Internal(unicode, fontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface, populateLigatures);
 
                     if (character != null)
                         return character;

@@ -22,6 +22,7 @@ namespace UnityEditor
             };
 
             public Transform transform;
+            public Transform parent;
             public Vector3 position;
             public Vector3 localPosition;
             public Quaternion rotation;
@@ -75,10 +76,17 @@ namespace UnityEditor
             private void SetupTransformValues(Transform t)
             {
                 transform = t;
+                parent = t.parent;
                 position = t.position;
                 localPosition = t.localPosition;
                 rotation = t.rotation;
                 scale = t.localScale;
+            }
+
+            void UpdateTransformValues()
+            {
+                parent = transform.parent;
+                localPosition = parent != null ? parent.InverseTransformPoint(position) : position;
             }
 
             private void SetScaleValue(Vector3 scale)
@@ -139,13 +147,16 @@ namespace UnityEditor
 
             public void SetPositionDelta(Vector3 positionDelta, bool applySmartRounding)
             {
+                if(transform.parent != parent)
+                    UpdateTransformValues();
+
                 Vector3 localPositionDelta = positionDelta;
-                if (transform.parent != null)
+                if (parent != null)
                 {
-                    localPositionDelta = transform.parent.InverseTransformVector(localPositionDelta);
+                    localPositionDelta = parent.InverseTransformVector(localPositionDelta);
 
                     if (!applySmartRounding)
-                        applySmartRounding = !transform.parent.localRotation.Equals(Quaternion.identity);
+                        applySmartRounding = !parent.localRotation.Equals(Quaternion.identity);
                 }
 
                 //If we are snapping, disable the smart rounding. If not the case, the transform will have the wrong snap value based on distance to screen.
@@ -361,7 +372,6 @@ namespace UnityEditor
 
             s_PreviousHandlePosition = newPosition;
             Vector3 positionDelta = newPosition - oldPosition;
-
             Object[] undoObjects = new Object[s_MouseDownState.Length];
             string undoName = "";
 

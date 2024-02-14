@@ -57,7 +57,7 @@ namespace UnityEngine
 
             if (m_jobject != IntPtr.Zero)
             {
-                AndroidJNISafe.DeleteGlobalRef(m_jobject);
+                AndroidJNISafe.QueueDeleteGlobalRef(m_jobject);
             }
         }
 
@@ -795,7 +795,9 @@ namespace UnityEngine
                     AndroidJNISafe.SetCharField(m_jobject, fieldID, (Char)(object)val);
             }
             else if (typeof(FieldType) == typeof(String))
+            {
                 AndroidJNISafe.SetStringField(m_jobject, fieldID, (String)(object)val);
+            }
             else if (typeof(FieldType) == typeof(AndroidJavaClass))
             {
                 AndroidJNISafe.SetObjectField(m_jobject, fieldID, val == null ? IntPtr.Zero : ((AndroidJavaClass)(object)val).m_jclass);
@@ -804,10 +806,14 @@ namespace UnityEngine
             {
                 AndroidJNISafe.SetObjectField(m_jobject, fieldID, val == null ? IntPtr.Zero : ((AndroidJavaObject)(object)val).m_jobject);
             }
+            else if (AndroidReflection.IsAssignableFrom(typeof(AndroidJavaProxy), typeof(FieldType)))
+            {
+                AndroidJNISafe.SetObjectField(m_jobject, fieldID, val == null ? IntPtr.Zero : ((AndroidJavaProxy)(object)val).GetRawProxy());
+            }
             else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(FieldType)))
             {
                 IntPtr jobject = AndroidJNIHelper.ConvertToJNIArray((Array)(object)val);
-                AndroidJNISafe.SetObjectField(m_jclass, fieldID, jobject);
+                AndroidJNISafe.SetObjectField(m_jobject, fieldID, jobject);
             }
             else
             {
@@ -1000,7 +1006,9 @@ namespace UnityEngine
                     AndroidJNISafe.SetStaticCharField(m_jclass, fieldID, (Char)(object)val);
             }
             else if (typeof(FieldType) == typeof(String))
+            {
                 AndroidJNISafe.SetStaticStringField(m_jclass, fieldID, (String)(object)val);
+            }
             else if (typeof(FieldType) == typeof(AndroidJavaClass))
             {
                 AndroidJNISafe.SetStaticObjectField(m_jclass, fieldID, val == null ? IntPtr.Zero : ((AndroidJavaClass)(object)val).m_jclass);
@@ -1008,6 +1016,10 @@ namespace UnityEngine
             else if (typeof(FieldType) == typeof(AndroidJavaObject))
             {
                 AndroidJNISafe.SetStaticObjectField(m_jclass, fieldID, val == null ? IntPtr.Zero : ((AndroidJavaObject)(object)val).m_jobject);
+            }
+            else if (AndroidReflection.IsAssignableFrom(typeof(AndroidJavaProxy), typeof(FieldType)))
+            {
+                AndroidJNISafe.SetStaticObjectField(m_jclass, fieldID, val == null ? IntPtr.Zero : ((AndroidJavaProxy)(object)val).GetRawProxy());
             }
             else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(FieldType)))
             {
@@ -1542,23 +1554,52 @@ namespace UnityEngine
                 IntPtr[] jniObjs = new IntPtr[arrayLen];
                 IntPtr fallBackType = AndroidJNISafe.FindClass("java/lang/Object");
                 IntPtr arrayType = IntPtr.Zero;
-
                 for (int i = 0; i < arrayLen; ++i)
                 {
                     if (objArray[i] != null)
                     {
                         jniObjs[i] = objArray[i].GetRawObject();
                         IntPtr objectType = objArray[i].GetRawClass();
-                        if (arrayType != objectType)
+                        if (arrayType == IntPtr.Zero)
                         {
-                            if (arrayType == IntPtr.Zero)
-                            {
-                                arrayType = objectType;
-                            }
-                            else
-                            {
-                                arrayType = fallBackType; // java/lang/Object
-                            }
+                            arrayType = objectType;
+                        }
+                        else if (arrayType != fallBackType && !AndroidJNI.IsSameObject(arrayType, objectType))
+                        {
+                            arrayType = fallBackType; // java/lang/Object
+                        }
+                    }
+                    else
+                    {
+                        jniObjs[i] = IntPtr.Zero;
+                    }
+                }
+                // zero sized array will call this with IntPtr.Zero type translated into java/lang/Object
+                IntPtr res = AndroidJNISafe.ToObjectArray(jniObjs, arrayType);
+                AndroidJNISafe.DeleteLocalRef(fallBackType);
+                return res;
+            }
+            else if (AndroidReflection.IsAssignableFrom(typeof(AndroidJavaProxy), type))
+            {
+                AndroidJavaProxy[] objArray = (AndroidJavaProxy[])array;
+                int arrayLen = array.GetLength(0);
+                IntPtr[] jniObjs = new IntPtr[arrayLen];
+                IntPtr fallBackType = AndroidJNISafe.FindClass("java/lang/Object");
+                IntPtr arrayType = IntPtr.Zero;
+
+                for (int i = 0; i < arrayLen; ++i)
+                {
+                    if (objArray[i] != null)
+                    {
+                        jniObjs[i] = objArray[i].GetRawProxy();
+                        IntPtr objectType = objArray[i].javaInterface.GetRawClass();
+                        if (arrayType == IntPtr.Zero)
+                        {
+                            arrayType = objectType;
+                        }
+                        else if (arrayType != fallBackType && !AndroidJNI.IsSameObject(arrayType, objectType))
+                        {
+                            arrayType = fallBackType; // java/lang/Object
                         }
                     }
                     else
@@ -1829,6 +1870,13 @@ namespace UnityEngine
                     return "L" + javaClass.Call<System.String>("getName") + ";";
                 }
             }
+            else if (obj == (object)type && AndroidReflection.IsAssignableFrom(typeof(AndroidJavaProxy), type))
+            {
+                // underlying Java class/interface can be found only for an actual object of 'type',
+                // and we cannot use Activator.CreateInstance(type) here because default constructor might not exist for 'type',
+                // returning empty string, this way ReflectionHelper finds field by name only.
+                return "";
+            }
             else if (type.Equals(typeof(AndroidJavaRunnable)))
             {
                 return "Ljava/lang/Runnable;";
@@ -1858,7 +1906,7 @@ namespace UnityEngine
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
                 sb.Append('[');
                 sb.Append(GetSignature(type.GetElementType()));
-                return sb.ToString();
+                return sb.Length > 1 ? sb.ToString() : "";
             }
             else
             {

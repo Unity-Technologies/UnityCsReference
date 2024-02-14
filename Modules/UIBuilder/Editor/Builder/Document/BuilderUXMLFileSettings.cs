@@ -29,7 +29,7 @@ namespace Unity.UI.Builder
 
         public BuilderUXMLFileSettings(VisualTreeAsset visualTreeAsset)
         {
-            m_RootElementAsset = visualTreeAsset.GetRootUXMLElement();
+            m_RootElementAsset = visualTreeAsset.GetRootUxmlElement();
 
             RetrieveEditorExtensionModeSetting();
         }

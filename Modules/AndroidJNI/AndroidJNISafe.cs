@@ -41,6 +41,11 @@ namespace UnityEngine
             if (globalref != IntPtr.Zero) AndroidJNI.DeleteGlobalRef(globalref);
         }
 
+        public static void QueueDeleteGlobalRef(IntPtr globalref)
+        {
+            if (globalref != IntPtr.Zero) AndroidJNI.QueueDeleteGlobalRef(globalref);
+        }
+
         public static void DeleteWeakGlobalRef(IntPtr globalref)
         {
             if (globalref != IntPtr.Zero) AndroidJNI.DeleteWeakGlobalRef(globalref);

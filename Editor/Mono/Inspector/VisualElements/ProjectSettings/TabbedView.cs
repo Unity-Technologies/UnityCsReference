@@ -208,6 +208,9 @@ namespace UnityEditor.UIElements.ProjectSettings
 
         public void Activate(TabButton button)
         {
+            if (m_ActiveTab == button)
+                return;
+
             if (m_ActiveTab != null)
             {
                 DeselectTab(m_ActiveTab);
