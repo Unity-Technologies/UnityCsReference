@@ -52,19 +52,21 @@ namespace UnityEditor
         // This will save the previous state which will be useful in case of platform switch
         int prevSizeGroupType;
 
+        //Take the backing scale from the window if it is available as this values is valid outside of OnGUI methods 
+        float backingScale => m_Parent?.GetBackingScaleFactor() ?? EditorGUIUtility.pixelsPerPoint;
         float minScale
         {
             get
             {
                 var clampedMinScale = Mathf.Min(kMinScale, ScaleThatFitsTargetInView(targetRenderSize, viewInWindow.size));
                 if (m_LowResolutionForAspectRatios[(int)currentSizeGroupType] && currentGameViewSize.sizeType == GameViewSizeType.AspectRatio)
-                    clampedMinScale = Mathf.Max(clampedMinScale, EditorGUIUtility.pixelsPerPoint);
+                    clampedMinScale = Mathf.Max(clampedMinScale, backingScale);
                 return clampedMinScale;
             }
         }
         float maxScale
         {
-            get { return Mathf.Max(kMaxScale * EditorGUIUtility.pixelsPerPoint, ScaleThatFitsTargetInView(targetRenderSize, viewInWindow.size)); }
+            get { return Mathf.Max(kMaxScale * backingScale, ScaleThatFitsTargetInView(targetRenderSize, viewInWindow.size)); }
         }
 
         [SerializeField] bool m_VSyncEnabled;
@@ -90,6 +92,9 @@ namespace UnityEditor
         PlayModeStateChange latestState = PlayModeStateChange.EnteredEditMode;
 
         internal override bool liveReloadPreferenceDefault => true;
+
+        // Added for tests
+        internal Vector2 zoomAreaScale => m_ZoomArea?.scale ?? Vector2.zero;
 
         internal static class Styles
         {
@@ -160,7 +165,7 @@ namespace UnityEditor
             }
         }
 
-        public bool forceLowResolutionAspectRatios => EditorGUIUtility.pixelsPerPoint == 1f;
+        public bool forceLowResolutionAspectRatios => backingScale == 1f;
 
         public bool vSyncEnabled
         {
@@ -298,7 +303,7 @@ namespace UnityEditor
 
         Vector2 gameMouseOffset { get { return -viewInWindow.position - targetInView.position; } }
 
-        float gameMouseScale { get { return EditorGUIUtility.pixelsPerPoint / m_ZoomArea.scale.y; } }
+        float gameMouseScale { get { return backingScale / m_ZoomArea.scale.y; } }
 
         internal bool drawGizmos
         {
@@ -363,7 +368,7 @@ namespace UnityEditor
                 EnforceZoomAreaConstraints();
             }
 
-            m_LastWindowPixelSize = position.size * EditorGUIUtility.pixelsPerPoint;
+            m_LastWindowPixelSize = position.size * backingScale;
             EditorApplication.SetSceneRepaintDirty();
 
             // update the scale according to new resolution
@@ -782,7 +787,7 @@ namespace UnityEditor
             var scale = ScaleThatFitsTargetInView(targetToFit, viewSize);
             if (scale > 1f)
             {
-                scale = Mathf.Min(maxScale * EditorGUIUtility.pixelsPerPoint, Mathf.FloorToInt(scale));
+                scale = Mathf.Min(maxScale * backingScale, Mathf.FloorToInt(scale));
             }
             return scale;
         }
@@ -905,7 +910,7 @@ namespace UnityEditor
             if (HandleCommand(evt))
                 return;
 
-            if (position.size * EditorGUIUtility.pixelsPerPoint != m_LastWindowPixelSize) // pixelsPerPoint only reliable in OnGUI()
+            if (position.size * backingScale != m_LastWindowPixelSize) // pixelsPerPoint only reliable in OnGUI()
             {
                 UpdateZoomAreaAndParent();
             }

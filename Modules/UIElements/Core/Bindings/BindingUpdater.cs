@@ -59,17 +59,17 @@ namespace UnityEngine.UIElements
         private static readonly CastDataSourceVisitor s_VisitDataSourceAsRootVisitor = new ();
         private static readonly UIPathVisitor s_VisitDataSourceAtPathVisitor = new ();
 
-        public bool ShouldProcessBindingAtStage(Binding bindingObject, BindingUpdateStage stage, bool versionChanged)
+        public bool ShouldProcessBindingAtStage(Binding bindingObject, BindingUpdateStage stage, bool versionChanged, bool dirty)
         {
             return bindingObject switch
             {
-                DataBinding dataBinding => ShouldProcessBindingAtStage(dataBinding, stage, versionChanged),
-                CustomBinding customBinding => ShouldProcessBindingAtStage(customBinding, stage, versionChanged),
+                DataBinding dataBinding => ShouldProcessBindingAtStage(dataBinding, stage, versionChanged, dirty),
+                CustomBinding customBinding => ShouldProcessBindingAtStage(customBinding, stage, versionChanged, dirty),
                 _ => throw new InvalidOperationException($"Binding type `{TypeUtility.GetTypeDisplayName(bindingObject.GetType())}` is not supported. This is an internal bug. Please report using `Help > Report a Bug...` ")
             };
         }
 
-        private static bool ShouldProcessBindingAtStage(DataBinding dataBinding, BindingUpdateStage stage, bool versionChanged)
+        private static bool ShouldProcessBindingAtStage(DataBinding dataBinding, BindingUpdateStage stage, bool versionChanged, bool dirty)
         {
             switch (stage)
             {
@@ -78,7 +78,7 @@ namespace UnityEngine.UIElements
                     if (dataBinding.bindingMode == BindingMode.ToSource)
                         return false;
 
-                    if (dataBinding.updateTrigger == BindingUpdateTrigger.EveryUpdate || dataBinding.isDirty)
+                    if (dataBinding.updateTrigger == BindingUpdateTrigger.EveryUpdate || dirty)
                         return true;
 
                     if (dataBinding.bindingMode == BindingMode.ToTargetOnce)
@@ -98,7 +98,7 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        private bool ShouldProcessBindingAtStage(CustomBinding customBinding, BindingUpdateStage stage, bool versionChanged)
+        private bool ShouldProcessBindingAtStage(CustomBinding customBinding, BindingUpdateStage stage, bool versionChanged, bool dirty)
         {
             switch (stage)
             {
@@ -107,8 +107,8 @@ namespace UnityEngine.UIElements
                     return customBinding.updateTrigger switch
                     {
                         BindingUpdateTrigger.EveryUpdate => true,
-                        BindingUpdateTrigger.OnSourceChanged when versionChanged || customBinding.isDirty => true,
-                        _ => customBinding.isDirty
+                        BindingUpdateTrigger.OnSourceChanged when versionChanged || dirty => true,
+                        _ => dirty
                     };
                 }
                 case BindingUpdateStage.UpdateSource:

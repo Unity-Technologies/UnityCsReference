@@ -78,8 +78,8 @@ namespace UnityEngine.UIElements
             set => m_SkipClone = value;
         }
 
-        public VisualElementAsset(string fullTypeName)
-            : base(fullTypeName)
+        public VisualElementAsset(string fullTypeName, UxmlNamespaceDefinition xmlNamespace = default)
+            : base(fullTypeName, xmlNamespace)
         {
         }
 

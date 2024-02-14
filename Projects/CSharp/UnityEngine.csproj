@@ -128,6 +128,9 @@
     <Compile Include="..\..\Modules\AndroidJNI\AndroidPermissions.cs">
       <Link>Modules\AndroidJNI\AndroidPermissions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\AssemblyInfo.cs">
+      <Link>Modules\AndroidJNI\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Animation\Managed\Animation.deprecated.cs">
       <Link>Modules\Animation\Managed\Animation.deprecated.cs</Link>
     </Compile>
@@ -1321,6 +1324,12 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAssetUtilities.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAssetUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetAtlasPopulation.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetAtlasPopulation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetFontFeatures.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetFontFeatures.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\SpriteAsset.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextAssets\SpriteAsset.cs</Link>
@@ -2842,6 +2851,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UXML\VisualTreeAsset.cs">
       <Link>Modules\UIElements\Core\UXML\VisualTreeAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UXML\VisualTreeAssetUtilities.cs">
+      <Link>Modules\UIElements\Core\UXML\VisualTreeAssetUtilities.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UpgradeConstants.cs">
       <Link>Modules\UIElements\Core\UpgradeConstants.cs</Link>

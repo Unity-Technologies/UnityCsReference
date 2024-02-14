@@ -393,7 +393,7 @@ namespace UnityEngine.UIElements
             {
                 m_TargetElement.UnregisterCallback<DetachFromPanelEvent>(OnTargetElementDetachFromPanel);
                 m_TargetElement.pseudoStates ^= PseudoStates.Active;
-                if (giveFocusBack)
+                if (giveFocusBack && m_TargetElement.canGrabFocus)
                     m_TargetElement.Focus();
             }
 

@@ -8,8 +8,9 @@ using System.Collections.Generic;
 using UnityEditor;
 using System;
 using System.IO;
-using System.Linq;
 using UnityEditor.UIElements;
+using Object = UnityEngine.Object;
+using VisualElement = UnityEngine.UIElements.VisualElement;
 
 namespace Unity.UI.Builder
 {
@@ -366,7 +367,7 @@ namespace Unity.UI.Builder
 
         public void AddStyleSheetsToAllRootElements(string newUssPath = null, int newUssIndex = 0)
         {
-            var rootVEA = visualTreeAsset.GetRootUXMLElement();
+            var rootVEA = visualTreeAsset.GetRootUxmlElement();
             AddStyleSheetsToRootAsset(rootVEA, newUssPath, newUssIndex);
         }
 
@@ -861,6 +862,22 @@ namespace Unity.UI.Builder
 
         void ClearUndo()
         {
+            // Destroy temp serialized data needed for undo/redo
+            if (m_CurrentDocumentRootElement != null)
+            {
+                var elements = m_CurrentDocumentRootElement.Query<VisualElement>();
+                elements.ForEach(x =>
+                {
+                    var tempSerializedData = x.GetProperty(BuilderConstants.InspectorTempSerializedDataPropertyName) as Object;
+                    if (tempSerializedData == null)
+                    {
+                        return;
+                    }
+
+                    Object.DestroyImmediate(tempSerializedData);
+                });
+            }
+
             m_VisualTreeAsset.ClearUndo();
 
             foreach (var openUSSFile in m_OpenUSSFiles)

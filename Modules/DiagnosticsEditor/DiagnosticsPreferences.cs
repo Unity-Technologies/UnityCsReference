@@ -83,7 +83,7 @@ namespace UnityEditor
                     m_HasAcceptedWarning = true;
                     rootElement.Clear();
 
-                    EditorWindow.GetWindow<SettingsWindow>().SetupIMGUIForCurrentProviderIfNeeded();
+                    EditorWindow.GetWindow<PreferenceSettingsWindow>().SetupIMGUIForCurrentProviderIfNeeded();
                 };
             }
         }

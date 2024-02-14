@@ -12,8 +12,6 @@ namespace UnityEditor.UIElements.Bindings
 {
     class ListViewSerializedObjectBinding : SerializedObjectBindingBase
     {
-        static ObjectPool<ListViewSerializedObjectBinding> s_Pool = new (() => new ListViewSerializedObjectBinding(), 32);
-
         protected override string bindingId { get; } = BindingExtensions.s_SerializedBindingId;
 
         ListView listView
@@ -38,7 +36,7 @@ namespace UnityEditor.UIElements.Bindings
             SerializedObjectBindingContext context,
             SerializedProperty prop)
         {
-            var newBinding = s_Pool.Get();
+            var newBinding = new ListViewSerializedObjectBinding();
             newBinding.isReleased = false;
             listView.SetBinding(BindingExtensions.s_SerializedBindingId, newBinding);
             newBinding.SetBinding(listView, context, prop);
@@ -289,7 +287,6 @@ namespace UnityEditor.UIElements.Bindings
             ClearListView();
 
             ResetCachedValues();
-            s_Pool.Release(this);
         }
 
         private bool m_LastSourceIncludesArraySize;
@@ -309,16 +306,11 @@ namespace UnityEditor.UIElements.Bindings
 
             try
             {
-                isUpdating = true;
                 UpdateArraySize();
             }
             catch (NullReferenceException e) when (e.Message.Contains("SerializedObject of SerializedProperty has been Disposed."))
             {
                 //this can happen when serializedObject has been disposed of
-            }
-            finally
-            {
-                isUpdating = false;
             }
         }
 
@@ -338,8 +330,6 @@ namespace UnityEditor.UIElements.Bindings
                     return new BindingResult(BindingStatus.Pending);
                 }
 
-                isUpdating = true;
-
                 var currentArraySize = m_ArraySize.intValue;
                 var listViewShowsMixedValue = listView.arraySizeField is {showMixedValue: true};
                 if (listViewShowsMixedValue ||
@@ -358,10 +348,6 @@ namespace UnityEditor.UIElements.Bindings
             catch (NullReferenceException e) when (e.Message.Contains("SerializedObject of SerializedProperty has been Disposed."))
             {
                 //this can happen when serializedObject has been disposed of
-            }
-            finally
-            {
-                isUpdating = false;
             }
 
             // We unbind here
