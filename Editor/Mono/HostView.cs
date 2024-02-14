@@ -122,7 +122,7 @@ namespace UnityEditor
             if (m_ActualView == value)
                 return;
 
-            DeregisterSelectedPane(clearActualView: true, sendEvents: true);
+            DeregisterSelectedPane(clearActualView: true, sendEvents: true, isSwitchingTab: value != null);
             m_ActualView = value;
             m_ActualViewName = null;
 
@@ -624,12 +624,10 @@ namespace UnityEditor
             UpdateViewMargins(m_ActualView);
         }
 
-        protected void DeregisterSelectedPane(bool clearActualView, bool sendEvents)
+        protected void DeregisterSelectedPane(bool clearActualView, bool sendEvents, bool isSwitchingTab = false)
         {
             if (!m_ActualView)
                 return;
-
-            editorWindowBackend?.OnUnregisterWindow();
 
             if (m_Update != null)
                 EditorApplication.update -= SendUpdate;
@@ -642,18 +640,35 @@ namespace UnityEditor
                 EditorApplication.update -= m_ActualView.CheckForWindowRepaint;
             }
 
+            // UUM-57083. Allow Blur events to take effect when switching tab.
+            if (isSwitchingTab)
+            {
+                UnityEngine.UIElements.EventDispatcher.editorDispatcher.PushDispatcherContext();
+            }
+
             if (clearActualView)
             {
                 var onBecameInvisible = m_OnBecameInvisible;
-
-                m_ActualView = null;
 
                 if (sendEvents)
                 {
                     OnLostFocus();
                     onBecameInvisible?.Invoke();
                 }
+
                 ClearDelegates();
+            }
+
+            editorWindowBackend?.OnUnregisterWindow();
+
+            if (isSwitchingTab)
+            {
+                UnityEngine.UIElements.EventDispatcher.editorDispatcher.PopDispatcherContext();
+            }
+
+            if (clearActualView)
+            {
+                m_ActualView = null;
             }
         }
 

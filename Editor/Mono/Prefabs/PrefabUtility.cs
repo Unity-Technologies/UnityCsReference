@@ -14,7 +14,7 @@ using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEngine.Bindings;
-
+using UnityEngine.Assertions;
 
 namespace UnityEditor
 {
@@ -884,6 +884,13 @@ namespace UnityEditor
 
             if (WarnIfRevertingManagedReferenceIsNotPossible(instanceProperty, action))
                 return;
+                
+            foreach (Object targetObject in instanceProperty.serializedObject.targetObjects)
+            {
+                GameObject outermostRoot = GetOutermostPrefabInstanceRoot(targetObject);
+                if (outermostRoot != null)
+                    Internal_CallPrefabInstanceReverting(outermostRoot);
+            }
 
             instanceProperty.prefabOverride = false;
 
@@ -892,6 +899,13 @@ namespace UnityEditor
                 instanceProperty.serializedObject.ApplyModifiedProperties();
             else
                 instanceProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+            foreach (Object targetObject in instanceProperty.serializedObject.targetObjects)
+            {
+                GameObject outermostRoot = GetOutermostPrefabInstanceRoot(targetObject);
+                if (outermostRoot != null)
+                    Internal_CallPrefabInstanceReverted(outermostRoot);
+            }
         }
 
         internal static bool IsPropertyBeingDrivenByPrefabStage(SerializedProperty property)
@@ -1180,6 +1194,8 @@ namespace UnityEditor
 
             var prefabInstanceGameObject = component.gameObject;
 
+            PrefabUtility.Internal_CallPrefabInstanceReverting(prefabInstanceGameObject);
+
             if (action == InteractionMode.UserAction)
             {
                 string dependentComponents = string.Join(
@@ -1210,6 +1226,8 @@ namespace UnityEditor
             {
                 PrefabUtility.MergePrefabInstance_internal(prefabInstanceGameObject);
             }
+
+            PrefabUtility.Internal_CallPrefabInstanceReverted(prefabInstanceGameObject);
         }
 
         private static bool IsPrefabInstanceObjectOf(Object instance, Object source)
@@ -1407,6 +1425,8 @@ namespace UnityEditor
                 return;
             }
 
+            PrefabUtility.Internal_CallPrefabInstanceReverting(instanceGameObject);
+
             var actionName = "Revert Prefab removed component";
             var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
 
@@ -1442,6 +1462,8 @@ namespace UnityEditor
                     }
                 }
             }
+
+            PrefabUtility.Internal_CallPrefabInstanceReverted(instanceGameObject);
         }
 
         private static void RemoveRemovedGameObjectOverridesWhichAreNull(Object prefabInstanceObject)
@@ -1686,14 +1708,19 @@ namespace UnityEditor
                 throw new ArgumentNullException(nameof(gameObject), "Cannot revert added GameObject. GameObject is null.");
 
             if (!IsAddedGameObjectOverride(gameObject))
-                throw new ArgumentException("Cannot apply added GameObject. GameObject is not an added GameObject override on a Prefab instance.", nameof(gameObject));
+                throw new ArgumentException("Cannot revert added GameObject. GameObject is not an added GameObject override on a Prefab instance.", nameof(gameObject));
 
             ThrowExceptionIfInstanceIsPersistent(gameObject);
+
+            GameObject instance = PrefabUtility.GetOutermostPrefabInstanceRoot(gameObject.transform.parent);
+            PrefabUtility.Internal_CallPrefabInstanceReverting(instance);
 
             if (action == InteractionMode.UserAction)
                 Undo.DestroyObjectImmediate(gameObject);
             else
                 Object.DestroyImmediate(gameObject);
+
+            PrefabUtility.Internal_CallPrefabInstanceReverted(instance);
         }
 
         public static List<ObjectOverride> GetObjectOverrides(GameObject prefabInstance, bool includeDefaultOverrides = false)
@@ -2601,6 +2628,25 @@ namespace UnityEditor
                     L10n.Tr("OK"));
 
             return result;
+        }
+
+        public static event Action<GameObject> prefabInstanceReverting;
+        public static event Action<GameObject> prefabInstanceReverted;
+
+        [RequiredByNativeCode]
+        internal static void Internal_CallPrefabInstanceReverting(GameObject instanceRoot)
+        {
+            Assert.IsNotNull(instanceRoot);
+
+            prefabInstanceReverting?.Invoke(instanceRoot);
+        }
+
+        [RequiredByNativeCode]
+        internal static void Internal_CallPrefabInstanceReverted(GameObject instanceRoot)
+        {
+            Assert.IsNotNull(instanceRoot);
+
+            prefabInstanceReverted?.Invoke(instanceRoot);
         }
 
         public static event Action<GameObject, PrefabUnpackMode> prefabInstanceUnpacking;

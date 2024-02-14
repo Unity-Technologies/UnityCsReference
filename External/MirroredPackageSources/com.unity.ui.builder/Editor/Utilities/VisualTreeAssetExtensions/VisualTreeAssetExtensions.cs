@@ -392,7 +392,7 @@ namespace Unity.UI.Builder
         internal static VisualElementAsset AddElement(
             this VisualTreeAsset vta, VisualElementAsset parent, VisualElement visualElement, int index = -1)
         {
-            var fullTypeName = visualElement.GetType().ToString();
+            var fullTypeName = visualElement.GetUxmlFullTypeName();
             var vea = new VisualElementAsset(fullTypeName);
             VisualTreeAssetUtilities.InitializeElement(vea);
 

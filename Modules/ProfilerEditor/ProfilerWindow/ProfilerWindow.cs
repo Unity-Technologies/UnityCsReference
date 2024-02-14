@@ -137,6 +137,12 @@ namespace UnityEditor
 
         bool m_CurrentFrameEnabled = false;
 
+        [NonSerialized]
+        bool m_IsInitialized = false;
+
+        [NonSerialized]
+        bool m_WasCreateGUICalled = false;
+
         const int k_MainThreadIndex = 0;
 
         HierarchyFrameDataView m_FrameDataView;
@@ -347,6 +353,11 @@ namespace UnityEditor
             Initialize();
             ConstructVisualTree();
             SubscribeToGlobalEvents();
+        }
+
+        void CreateGUI()
+        {
+            m_WasCreateGUICalled = true;
 
             // If there is already an open instance of the Module Editor window, resubscribe to the onChangesConfirmed event.
             if (ModuleEditorWindow.TryGetOpenInstance(out var moduleEditorWindow))
@@ -369,18 +380,26 @@ namespace UnityEditor
 
         void OnDisable()
         {
+            if (!m_IsInitialized) return;
+
             SaveViewSettings();
             m_AttachProfilerState.Dispose();
             m_AttachProfilerState = null;
             s_ProfilerWindows.Remove(this);
 
-            DeselectSelectedModuleIfNecessary();
-            foreach (var module in m_AllModules)
+            if (m_WasCreateGUICalled)
             {
-                module.OnDisable();
+                DeselectSelectedModuleIfNecessary();
+                foreach (var module in m_AllModules)
+                {
+                    module.OnDisable();
+                }
             }
 
             UnsubscribeFromGlobalEvents();
+
+            m_IsInitialized = false;
+            m_WasCreateGUICalled = false;
         }
 
         void Initialize()
@@ -396,6 +415,7 @@ namespace UnityEditor
             m_CategoryActivator = new ProfilerCategoryActivator();
 
             m_ActiveNativePlatformSupportModuleName = EditorUtility.GetActiveNativePlatformSupportModuleName();
+            m_IsInitialized = true;
         }
 
         List<ProfilerModule> InitializeAllModules(List<ProfilerModule> existingModules)

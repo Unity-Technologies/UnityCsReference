@@ -80,6 +80,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct UpdateContentLoading{ }
         [RequiredByNativeCode]
+        public struct UpdateAsyncInstantiate{ }
+        [RequiredByNativeCode]
         public struct RendererNotifyInvisible {}
         [RequiredByNativeCode]
         public struct PlayerCleanupCachedData {}

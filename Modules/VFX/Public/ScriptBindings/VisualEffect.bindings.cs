@@ -598,6 +598,7 @@ namespace UnityEngine.VFX
     }
 
     // Bindings for VFXRenderer is needed but we dont want it to be accessible to users
+    [UsedByNativeCode]
     [NativeType(Header = "Modules/VFX/Public/VFXRenderer.h"), RejectDragAndDropMaterial]
     internal sealed partial class VFXRenderer : Renderer
     {

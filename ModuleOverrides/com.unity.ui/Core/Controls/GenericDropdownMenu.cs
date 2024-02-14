@@ -146,7 +146,7 @@ namespace UnityEngine.UIElements
             if (m_TargetElement != null)
             {
                 m_TargetElement.pseudoStates ^= PseudoStates.Active;
-                if (giveFocusBack)
+                if (giveFocusBack && m_TargetElement.canGrabFocus)
                     m_TargetElement.Focus();
             }
 

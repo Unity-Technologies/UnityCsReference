@@ -7,7 +7,6 @@ using System;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using UnityEngine.Bindings;
-using UnityEngine;
 using Unity.Jobs;
 using UnityEngine.SceneManagement;
 using Unity.Content;
@@ -159,7 +158,7 @@ namespace Unity.Loading
 
         internal extern static bool ContentFile_IsHandleValid(ContentFile handle);
 
-        internal extern static ThreadPriority LoadingPriority { get; set; }
+        internal extern static float IntegrationTimeMS { get; set; }
 
         internal extern static bool WaitForLoadCompletion(ContentFile handle, int timeoutMs);
 
@@ -197,5 +196,18 @@ namespace Unity.Loading
 
         public static extern ContentFile[] GetContentFiles(ContentNamespace nameSpace);
         public static extern ContentSceneFile[] GetSceneFiles(ContentNamespace nameSpace);
+
+        public static float GetIntegrationTimeMS()
+        {
+            return IntegrationTimeMS ;
+        }
+
+        public static void SetIntegrationTimeMS(float integrationTimeMS)
+        {
+            if (integrationTimeMS <= 0)
+                throw new ArgumentOutOfRangeException("integrationTimeMS", "integrationTimeMS was out of range. Must be greater than zero.");
+
+            IntegrationTimeMS  = integrationTimeMS;
+        }
     }
 }
