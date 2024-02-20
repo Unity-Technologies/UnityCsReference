@@ -12,6 +12,7 @@ namespace Unity.Hierarchy
         [FieldOffset(0)] public HierarchyNode* Ptr;
         [FieldOffset(8)] public int Size;
         [FieldOffset(12)] public int Capacity;
-        [FieldOffset(16)] public fixed int Reserved[4];
+        [FieldOffset(16)] public int RemovedCount;
+        [FieldOffset(20)] public fixed int Reserved[3];
     };
 }

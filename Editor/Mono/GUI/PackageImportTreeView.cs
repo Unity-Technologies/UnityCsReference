@@ -534,6 +534,7 @@ namespace UnityEditor
         private class PackageImportTreeViewDataSource : TreeViewDataSource
         {
             private PackageImportTreeView m_PackageImportView;
+            private const string k_RootTreeItemName = "InvisibleAssetsFolder";
 
             public PackageImportTreeViewDataSource(TreeViewController treeView, PackageImportTreeView view)
                 : base(treeView)
@@ -559,7 +560,7 @@ namespace UnityEditor
             public override void FetchData()
             {
                 int rootDepth = -1; // -1 so its children will have 0 depth
-                m_RootItem = new PackageImportTreeViewItem(null, "Assets".GetHashCode(), rootDepth, null, "InvisibleAssetsFolder");
+                m_RootItem = new PackageImportTreeViewItem(null, k_RootTreeItemName.GetHashCode(), rootDepth, null, k_RootTreeItemName);
 
                 bool initExpandedState = true;
                 if (initExpandedState)

@@ -47,32 +47,42 @@ namespace UnityEngine
         public enum SupportedUnityFeatures
         {
             None = 0,
-            RigidbodySupport = 1 << 0,
-            ShapeSupport = 1 << 1,
-            JointSupport = 1 << 2,
+            DynamicsSupport = 1 << 1,
+            SDKVisualDebuggerSupport = 1 << 2,
             ArticulationSupport = 1 << 3,
-            VehicleSupport = 1 << 4,
-            SDKPhysicsDebuggerSupport = 1 << 5,
-            AllSupport = RigidbodySupport | ShapeSupport | JointSupport | ArticulationSupport | VehicleSupport | SDKPhysicsDebuggerSupport
+            ImmediateModeSupport = 1 << 4,
+            VehicleSupport = 1 << 5,
+            CharacterControllerSupport = 1 << 6
         };
 
         const uint k_InvalidID = 0;
 
         [FieldOffset(0)]
-        fixed byte m_Name[16];
-        [FieldOffset(16)]
-        public fixed ushort IntegrationVersion[3];
-        [FieldOffset(22)]
-        public fixed ushort SdkVersion[3];
-        [FieldOffset(28)]
         public readonly uint Id;
-        [FieldOffset(32)]
+        [FieldOffset(4)]
+        public fixed ushort IntegrationVersion[3];
+        [FieldOffset(10)]
+        public fixed ushort SdkVersion[3];
+        [FieldOffset(16)]
         public readonly SupportedUnityFeatures m_Features;
+        [FieldOffset(20)]
+        fixed byte m_Name[16];
+        [FieldOffset(36)]
+        fixed byte m_Desc[220];
 
         public unsafe string Name {
             get
             {
                 fixed(byte* ptr = m_Name)
+                    return Marshal.PtrToStringAnsi(new IntPtr(ptr));
+            }
+        }
+
+        public unsafe string Description
+        {
+            get
+            {
+                fixed (byte* ptr = m_Desc)
                     return Marshal.PtrToStringAnsi(new IntPtr(ptr));
             }
         }
@@ -103,6 +113,8 @@ namespace UnityEngine
                 return new ReadOnlySpan<IntegrationInfo>(integrations.ToPointer(), (int)count);
             }
         }
+
+        extern internal static uint GetCurrentIntegrationId();
 
         extern public static Vector3 gravity { [ThreadSafe] get; set; }
         extern public static float defaultContactOffset { get; set; }

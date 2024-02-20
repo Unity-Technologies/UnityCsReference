@@ -95,6 +95,7 @@ namespace UnityEngine.Rendering
             }
         }
 
+        [RequiredByNativeCode]
         internal static void RecreateCurrentPipeline(RenderPipelineAsset pipelineAsset)
         {
             if (s_CurrentPipelineAsset == pipelineAsset)

@@ -68,6 +68,9 @@ namespace UnityEditor.UIElements.ProjectSettings
             tabButton.OnClose += RemoveTab;
             tabButton.OnSelect += Activate;
 
+            Add(tabButton.Target);
+            tabButton.Target.style.display = DisplayStyle.None;
+
             if (activate)
                 Activate(tabButton);
         }
@@ -221,7 +224,7 @@ namespace UnityEditor.UIElements.ProjectSettings
 
             tabButton.Select();
             if (target != null)
-                Add(target);
+                target.style.display = DisplayStyle.Flex;
         }
 
         void DeselectTab(TabButton tabButton)
@@ -229,7 +232,8 @@ namespace UnityEditor.UIElements.ProjectSettings
             VisualElement target = tabButton.Target;
 
             if (target != null)
-                Remove(target);
+                target.style.display = DisplayStyle.None;
+
             tabButton.Deselect();
         }
     }

@@ -114,7 +114,10 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Registers a hierarchy node type handler for this hierarchy.
         /// </summary>
-        /// <returns>The hierarchy node type handler.</returns>
+        /// <remarks>
+        /// If a hierarchy node type handler with that type is already registered, the same instance is returned.
+        /// </remarks>
+        /// <returns>The hierarchy node type handler instance for that type.</returns>
         public T RegisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => (T)RegisterNodeTypeHandler(typeof(T));
 
         /// <summary>
@@ -125,20 +128,20 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Gets a hierarchy node type handler instance from this hierarchy.
         /// </summary>
-        /// <returns>The hierarchy node type handler.</returns>
+        /// <returns>If it was registered, the hierarchy node type handler instance for that type, <see langword="null"/> otherwise.</returns>
         public T GetNodeTypeHandlerBase<T>() where T : HierarchyNodeTypeHandlerBase => (T)GetNodeTypeHandlerFromType(typeof(T));
 
         /// <summary>
         /// Gets the node type handler instance for the specified node from this hierarchy.
         /// </summary>
-        /// <returns>The hierarchy node type handler.</returns>
+        /// <returns>If the node has a type, the hierarchy node type handler base instance, <see langword="null"/> otherwise.</returns>
         public HierarchyNodeTypeHandlerBase GetNodeTypeHandlerBase(in HierarchyNode node) => GetNodeTypeHandlerFromNode(in node);
 
         /// <summary>
         /// Gets the node type handler instance for the specified node type name from this hierarchy.
         /// </summary>
         /// <param name="nodeTypeName">The node type name.</param>
-        /// <returns>The hierarchy node type handler.</returns>
+        /// <returns>If the node type name matches a registered node type handler, the hierarchy node type handler base instance, <see langword="null"/> otherwise.</returns>
         public HierarchyNodeTypeHandlerBase GetNodeTypeHandlerBase(string nodeTypeName) => GetNodeTypeHandlerFromName(nodeTypeName);
 
         /// <summary>
@@ -163,11 +166,19 @@ namespace Unity.Hierarchy
         public extern HierarchyNodeType GetNodeType(in HierarchyNode node);
 
         /// <summary>
-        /// Reserves memory for nodes to use. Use this to avoid memory allocation hits when you add batches of nodes.    
+        /// Ensures that the hierarchy has enough memory reserved for storing the specified number of nodes.
         /// </summary>
         /// <param name="count">The number of nodes to reserve memory for.</param>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern void Reserve(int count);
+
+        /// <summary>
+        /// Ensures that the hierarchy node has enough memory reserved for storing the specified number of children nodes.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="count">The number of children nodes to reserve memory for.</param>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern void ReserveChildren(in HierarchyNode node, int count);
 
         /// <summary>
         /// Determines whether a node exists or not.
@@ -271,6 +282,14 @@ namespace Unity.Hierarchy
         public extern HierarchyNode GetChild(in HierarchyNode node, int index);
 
         /// <summary>
+        /// Gets the index of a child node in the parent's children list.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns></returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern int GetChildIndex(in HierarchyNode node);
+
+        /// <summary>
         /// Gets the child nodes of a hierarchy node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
@@ -310,18 +329,21 @@ namespace Unity.Hierarchy
         public extern int GetChildrenCountRecursive(in HierarchyNode node);
 
         /// <summary>
-        /// Sets the sorting index of a hierarchy node.
+        /// Sets the sort index of a hierarchy node.
         /// </summary>
+        /// <remarks>
+        /// After setting sort indexes, you must call <see cref="SortChildren"/> on the parent node to sort the child nodes.
+        /// </remarks>
         /// <param name="node">The hierarchy node.</param>
-        /// <param name="sortIndex">The sorting index.</param>
+        /// <param name="sortIndex">The sort index.</param>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern void SetSortIndex(in HierarchyNode node, int sortIndex);
 
         /// <summary>
-        /// Gets the sorting index of a hierarchy node.
+        /// Gets the sort index of a hierarchy node. Default is 0.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
-        /// <returns>The sorting index.</returns>
+        /// <returns>The sort index.</returns>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetSortIndex(in HierarchyNode node);
 

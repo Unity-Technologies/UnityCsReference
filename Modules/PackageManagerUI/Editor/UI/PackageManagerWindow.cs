@@ -85,10 +85,6 @@ namespace UnityEditor.PackageManager.UI
         private void BuildGUI()
         {
             var container = ServicesContainer.instance;
-            // The services container only enables a service (and its dependencies) when it is resolved so that we can keep amount of services
-            // running in the background to as low as possible if the user never opens the Package Manager Window.
-            // However, this also means when the Package Manager Window is opened, the not all services are enabled and we need to manually do that here.
-            container.EnableAllServices();
             var resourceLoader = container.Resolve<IResourceLoader>();
             var extensionManager = container.Resolve<IExtensionManager>();
             var selection = container.Resolve<ISelectionProxy>();
@@ -103,7 +99,7 @@ namespace UnityEditor.PackageManager.UI
             var pageRefreshHandler = container.Resolve<IPageRefreshHandler>();
 
             // Adding the ScrollView object here because it really need to be the first child under rootVisualElement for it to work properly.
-            // Since the StyleSheet is added to PackageManagerRoot, the css is exceptionally added directly to the object  
+            // Since the StyleSheet is added to PackageManagerRoot, the css is exceptionally added directly to the object
             m_ScrollView = new ScrollView
             {
                 mode = ScrollViewMode.Horizontal,

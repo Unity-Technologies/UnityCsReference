@@ -1143,7 +1143,12 @@ namespace Unity.UI.Builder
                     if (!string.IsNullOrEmpty(enumStr))
                     {
                         var enumStrHungarian = BuilderNameUtilities.ConvertDashToHungarian(enumStr);
-                        var enumObj = Enum.Parse(enumValue.GetType(), enumStrHungarian);
+                        if (!Enum.TryParse(enumValue.GetType(), enumStrHungarian, out var enumObj))
+                        {
+                            var values = string.Join(',', Enum.GetNames(enumValue.GetType()));
+                            var error = $"UIBuilder: Unexpected Enum Value {enumStrHungarian}: {styleProperty.name}. Expected values are: {values}";
+                            Debug.LogError(error);
+                        }
                         if (enumObj is Enum enumEnum)
                             enumValue = enumEnum;
                     }

@@ -30,7 +30,7 @@ namespace Unity.Profiling.Memory
         internal byte[]  Data { get; set; }
     }
 
-    [NativeHeader("Modules/Profiler/Runtime/MemorySnapshotManager.h")]
+    [NativeHeader("Runtime/Profiler/Runtime/MemorySnapshotManager.h")]
     public static class MemoryProfiler
     {
         private static event Action<string, bool> m_SnapshotFinished;

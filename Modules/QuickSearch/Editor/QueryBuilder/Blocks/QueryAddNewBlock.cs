@@ -14,7 +14,8 @@ namespace UnityEditor.Search
         internal override bool wantsEvents => true;
         internal override bool draggable => false;
 
-        static GUIContent createContent = EditorGUIUtility.IconContent("Toolbar Plus More", "|Add new query block (Tab)");
+        static readonly GUIContent s_CreateContent = EditorGUIUtility.IconContent("Toolbar Plus More", "|Add new query block (Tab)");
+        private Image m_Icon;
 
         public override string ToString() => null;
         internal override IBlockEditor OpenEditor(in Rect rect) => AddBlock(rect);
@@ -23,6 +24,7 @@ namespace UnityEditor.Search
             : base(source)
         {
             hideMenu = true;
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
         }
 
         internal override Color GetBackgroundColor()
@@ -40,7 +42,22 @@ namespace UnityEditor.Search
 
         internal override void CreateBlockElement(VisualElement container)
         {
-            AddImageButton(container, createContent.image, createContent.tooltip, evt => AddBlock(container.worldBound));
+            m_Icon = AddImageButton(container, s_CreateContent.image, s_CreateContent.tooltip, evt => AddBlock(container.worldBound));
+            m_Icon.style.height = blockHeight;
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            var ancestor = parent;
+            while (ancestor != null)
+            {
+                if (ancestor is SearchFieldElement searchField && searchField.addNewBlockIcon != null)
+                {
+                    m_Icon.image = searchField.addNewBlockIcon;
+                    break;
+                }
+                ancestor = ancestor.parent;
+            }
         }
 
         private IBlockEditor AddBlock(in Rect buttonRect)

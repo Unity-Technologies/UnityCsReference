@@ -16,10 +16,27 @@ class AudioRandomRangeSliderTracker : VisualElement
         public override object CreateInstance() => new AudioRandomRangeSliderTracker();
     }
 
+    static readonly CustomStyleProperty<Color> s_TrackerColorProperty = new("--tracker-color");
+
     Slider m_ParentSlider;
-    float m_PreviousWidth;
     Vector2 m_Range = Vector2.zero;
-    
+    Color m_TrackerColor;
+
+    static void CustomStylesResolved(CustomStyleResolvedEvent evt)
+    {
+        var element = (AudioRandomRangeSliderTracker)evt.currentTarget;
+
+        element.UpdateCustomStyles();
+    }
+
+    void UpdateCustomStyles()
+    {
+        if (customStyle.TryGetValue(s_TrackerColorProperty, out var trackerColor))
+        {
+            m_TrackerColor = trackerColor;
+        }
+    }
+
     internal static AudioRandomRangeSliderTracker Create(Slider parentSlider, Vector2 range)
     {
         var dragContainer = UIToolkitUtilities.GetChildByName<VisualElement>(parentSlider, "unity-drag-container");
@@ -27,48 +44,71 @@ class AudioRandomRangeSliderTracker : VisualElement
         var baseTracker = UIToolkitUtilities.GetChildByName<VisualElement>(parentSlider, "unity-tracker");
         var insertionIndex = dragContainer.IndexOf(baseTracker) + 1;
         var templateContainer = rangeTrackerAsset.Instantiate();
+
         dragContainer.Insert(insertionIndex, templateContainer);
+
         var rangeTracker = UIToolkitUtilities.GetChildAtIndex<AudioRandomRangeSliderTracker>(templateContainer, 0);
-        rangeTracker.m_ParentSlider = parentSlider;
-        rangeTracker.m_ParentSlider.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+
         rangeTracker.SetRange(range);
+        rangeTracker.m_ParentSlider = parentSlider;
+        rangeTracker.generateVisualContent += GenerateVisualContent;
+        rangeTracker.RegisterCallback<CustomStyleResolvedEvent>(CustomStylesResolved);
+        rangeTracker.m_ParentSlider.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+
         return rangeTracker;
     }
 
     internal void SetRange(Vector2 range)
     {
         m_Range = range;
-        var minValue = m_ParentSlider.value - Math.Abs(m_Range.x);
-        minValue = Mathf.Clamp(minValue, m_ParentSlider.lowValue, m_ParentSlider.highValue);
-        var maxValue = m_ParentSlider.value + Mathf.Abs(m_Range.y);
-        maxValue = Mathf.Clamp(maxValue, m_ParentSlider.lowValue, m_ParentSlider.highValue);
 
-        if (Mathf.Approximately(parent.contentRect.width, 0) || m_Range == Vector2.zero || Mathf.Approximately(minValue ,maxValue))
-        {
-            style.display = DisplayStyle.None;
-            return;
-        }
-
-        var minValueDelta = minValue - m_ParentSlider.lowValue;
-        var maxValueDelta = maxValue - m_ParentSlider.lowValue;
-
-        var pxPerVal = parent.contentRect.width / m_ParentSlider.range;
-        var translate = style.translate.value;
-        translate.x = pxPerVal * minValueDelta;
-        style.translate = translate;
-        style.width = (maxValueDelta - minValueDelta) * pxPerVal;
-        style.display = DisplayStyle.Flex;
+        MarkDirtyRepaint();
     }
 
     static void OnGeometryChanged(GeometryChangedEvent evt)
     {
         var sliderTracker = UIToolkitUtilities.GetChildByClassName<AudioRandomRangeSliderTracker>(evt.elementTarget, "unity-audio-random-range-slider-tracker");
-        if (Mathf.Approximately(sliderTracker.m_PreviousWidth, sliderTracker.parent.contentRect.width))
-        {
-            return;
-        }
 
-        sliderTracker.m_PreviousWidth = sliderTracker.parent.contentRect.width;
         sliderTracker.SetRange(sliderTracker.m_Range);
+    }
+
+    // Maps 'x' from the range '[x_min; x_max]' to the range '[y_min; y_max]'.
+    static float Map(float x, float x_min, float x_max, float y_min, float y_max)
+    {
+        var a = (x_max - x) / (x_max - x_min);
+        var b = (x - x_min) / (x_max - x_min);
+
+        return a * y_min + b * y_max;
+    }
+
+    static void GenerateVisualContent(MeshGenerationContext context)
+    {
+        var painter2D = context.painter2D;
+        var sliderTracker = context.visualElement as AudioRandomRangeSliderTracker;
+        var range = sliderTracker.m_Range;
+        var parentSlider = sliderTracker.m_ParentSlider;
+        var contentRect = context.visualElement.contentRect;
+
+        // Offset the range so it is centered around the parent slider's current value.
+        range.x += parentSlider.value;
+        range.y += parentSlider.value;
+
+        // Map the range from the slider value range (e.g. dB) to the horizontal span of the content-rect (px).
+        var left  = Map(range.y, parentSlider.lowValue, parentSlider.highValue, contentRect.xMin, contentRect.xMax);
+        var right = Map(range.x, parentSlider.lowValue, parentSlider.highValue, contentRect.xMin, contentRect.xMax);
+
+        // Clamp the mapped range so that it lies within the boundaries of the content-rect.
+        left =  Mathf.Clamp(left, contentRect.xMin, contentRect.xMax);
+        right = Mathf.Clamp(right, contentRect.xMin, contentRect.xMax);
+
+        // Draw the tracker.
+        painter2D.fillColor = sliderTracker.m_TrackerColor;
+        painter2D.BeginPath();
+        painter2D.MoveTo(new Vector2(left, contentRect.yMin));
+        painter2D.LineTo(new Vector2(right, contentRect.yMin));
+        painter2D.LineTo(new Vector2(right, contentRect.yMax));
+        painter2D.LineTo(new Vector2(left, contentRect.yMax));
+        painter2D.ClosePath();
+        painter2D.Fill();
     }
 }

@@ -43,9 +43,9 @@ namespace UnityEngine.LightTransport
         public void Prepare(IDeviceContext context, IWorld world, BufferSlice<Vector3> positions, float pushoff, int bounceCount);
         public void SetProgressReporter(BakeProgressState progress);
         public Result IntegrateDirectRadiance(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
-            bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut);
+            bool ignoreDirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut);
         public Result IntegrateIndirectRadiance(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
-            bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut);
+            bool ignoreIndirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut);
         public Result IntegrateValidity(IDeviceContext context, int positionOffset, int positionCount, int sampleCount, BufferSlice<float> validityEstimateOut);
     }
     internal class WintermuteProbeIntegrator : IProbeIntegrator
@@ -74,7 +74,7 @@ namespace UnityEngine.LightTransport
             _progress = progress;
         }
         public unsafe IProbeIntegrator.Result IntegrateDirectRadiance(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
-            bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
+            bool ignoreDirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
         {
             Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
             var wmContext = context as WintermuteContext;
@@ -88,6 +88,7 @@ namespace UnityEngine.LightTransport
             int directSampleCount = sampleCount;
             int giSampleCount = 0;
             int envSampleCount = 0;
+            const bool ignoreIndirectEnvironment = true;
             var lightBakerResult = LightBaker.IntegrateProbeDirectRadianceWintermute(positionsPtr, _integrationContext, positionOffset, positionCount, _pushoff,
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, wmContext, _progress, shPtr);
 
@@ -104,7 +105,7 @@ namespace UnityEngine.LightTransport
             return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
         public unsafe IProbeIntegrator.Result IntegrateIndirectRadiance(IDeviceContext context,
-            int positionOffset, int positionCount, int sampleCount, bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment,
+            int positionOffset, int positionCount, int sampleCount, bool ignoreIndirectEnvironment,
             BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
         {
             Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
@@ -117,6 +118,7 @@ namespace UnityEngine.LightTransport
             using var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* shPtr = NativeArrayUnsafeUtility.GetUnsafePtr(radianceBuffer);
             int directSampleCount = 0;
+            const bool ignoreDirectEnvironment = false;
             int giSampleCount = sampleCount;
             int envSampleCount = ignoreIndirectEnvironment ? 0 : sampleCount;
             var lightBakerResult = LightBaker.IntegrateProbeIndirectRadianceWintermute(positionsPtr, _integrationContext, positionOffset, positionCount, _pushoff,
@@ -192,7 +194,7 @@ namespace UnityEngine.LightTransport
             _progress = progress;
         }
         public unsafe IProbeIntegrator.Result IntegrateDirectRadiance(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
-            bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
+            bool ignoreDirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
         {
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
@@ -206,6 +208,7 @@ namespace UnityEngine.LightTransport
             int directSampleCount = sampleCount;
             int giSampleCount = 0;
             int envSampleCount = 0;
+            const bool ignoreIndirectEnvironment = true;
             var lightBakerResult = LightBaker.IntegrateProbeDirectRadianceRadeonRays(positionsPtr, _integrationContext, positionOffset, positionCount, _pushoff,
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, rrContext, _progress, shPtr);
 
@@ -223,7 +226,7 @@ namespace UnityEngine.LightTransport
         }
 
         public unsafe IProbeIntegrator.Result IntegrateIndirectRadiance(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
-            bool ignoreDirectEnvironment, bool ignoreIndirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
+            bool ignoreIndirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut)
         {
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
@@ -235,8 +238,9 @@ namespace UnityEngine.LightTransport
             using var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* shPtr = NativeArrayUnsafeUtility.GetUnsafePtr(radianceBuffer);
             int directSampleCount = 0;
+            const bool ignoreDirectEnvironment = false;
             int giSampleCount = sampleCount;
-            int envSampleCount = ignoreIndirectEnvironment ? 0 : sampleCount; ;
+            int envSampleCount = ignoreIndirectEnvironment ? 0 : sampleCount;
             var lightBakerResult = LightBaker.IntegrateProbeIndirectRadianceRadeonRays(positionsPtr, _integrationContext, positionOffset, positionCount, _pushoff,
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, rrContext, _progress, shPtr);
 

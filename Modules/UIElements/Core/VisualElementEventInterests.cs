@@ -132,6 +132,16 @@ namespace UnityEngine.UIElements
             UpdateEventInterestSelfCategories();
         }
 
+        // For unit tests only
+        internal void RemoveEventCallbackCategories(int eventCategories, TrickleDown trickleDown)
+        {
+            if (trickleDown == TrickleDown.TrickleDown)
+                m_TrickleDownEventCallbackCategories &= ~eventCategories;
+            else
+                m_BubbleUpEventCallbackCategories &= ~eventCategories;
+            UpdateEventInterestSelfCategories();
+        }
+
         // An aggregate of the EventCategory values of all the calls to RegisterCallback for this element
         // and overrides of HandleEventTrickleDown or HandleEventBubbleUp across this element's class hierarchy.
         internal int eventInterestSelfCategories => m_EventInterestSelfCategories;

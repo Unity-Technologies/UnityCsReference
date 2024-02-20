@@ -80,7 +80,7 @@ namespace UnityEditorInternal
 
     [Flags]
     [RequiredByNativeCode]
-    [NativeHeader("Modules/Profiler/Public/ProfilerStatsBase.h")]
+    [NativeHeader("Runtime/Profiler/Public/ProfilerStatsBase.h")]
     public enum GpuProfilingStatisticsAvailabilityStates
     {
         Gathered = 1 << 0,
@@ -101,7 +101,7 @@ namespace UnityEditorInternal
 
     [Flags]
     [RequiredByNativeCode]
-    [NativeHeader("Modules/Profiler/Public/ProfilerStats.h")]
+    [NativeHeader("Runtime/Profiler/Public/ProfilerStats.h")]
     internal enum GlobalIlluminationProfilingStatisticsAvailabilityStates
     {
         DataGathered = 1 << 0,
@@ -123,7 +123,7 @@ namespace UnityEditorInternal
     [NativeHeader("Modules/ProfilerEditor/Public/ProfilerSession.h")]
     [NativeHeader("Modules/ProfilerEditor/ProfilerHistory/ProfilerProperty.h")]
     [NativeHeader("Modules/ProfilerEditor/Public/EditorProfilerConnection.h")]
-    [NativeHeader("Modules/Profiler/Runtime/CollectProfilerStats.h")]
+    [NativeHeader("Runtime/Profiler/Runtime/CollectProfilerStats.h")]
     [NativeHeader("Runtime/Utilities/MemoryUtilities.h")]
     public static partial class ProfilerDriver
     {

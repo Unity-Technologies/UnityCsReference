@@ -105,6 +105,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly Dictionary<Type, IService> m_RegisteredServices = new();
 
+        private readonly Dictionary<IService, HashSet<IService>> m_ReverseDependencies = new();
+
         public ServicesContainer()
         {
             Reload();
@@ -113,6 +115,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void Reload()
         {
             m_RegisteredServices.Clear();
+            m_ReverseDependencies.Clear();
 
             var httpClientFactory = Register(new HttpClientFactory());
             var unityOAuthProxy = Register(new UnityOAuthProxy());
@@ -194,6 +197,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                 service.enabled = false;
         }
 
+        private void RegisterReverseDependencies(IService service)
+        {
+            foreach (var dependency in service?.dependencies ?? Array.Empty<IService>())
+            {
+                if (m_ReverseDependencies.TryGetValue(dependency, out var result))
+                    result.Add(service);
+                else
+                    m_ReverseDependencies[dependency] = new HashSet<IService> { service };
+            }
+        }
+
         public T Register<T>(T service) where T : class, IService
         {
             if (service == null)
@@ -202,29 +216,37 @@ namespace UnityEditor.PackageManager.UI.Internal
             var registrationType = service.registrationType;
             if (registrationType != null)
                 m_RegisteredServices[registrationType] = service;
+            RegisterReverseDependencies(service);
             return service;
         }
 
         public T Resolve<T>() where T : class, IService
         {
             var service = m_RegisteredServices.TryGetValue(typeof(T), out var result) ? result as T : null;
-            EnableService(service);
+            if (service == null || service.enabled)
+                return service;
+
+            var serviceEnablingQueue = new Queue<IService>();
+            serviceEnablingQueue.Enqueue(service);
+            while (serviceEnablingQueue.Count > 0)
+                EnableService(serviceEnablingQueue.Dequeue(), serviceEnablingQueue);
             return service;
         }
 
-        private void EnableService(IService service)
+        private void EnableService(IService service, Queue<IService> serviceEnablingQueue)
         {
-            if (service == null || service.enabled || service.dependencies == null)
+            if (service == null || service.enabled)
                 return;
-            foreach (var dependency in service.dependencies)
-                EnableService(dependency);
-            service.enabled = true;
-        }
 
-        public void EnableAllServices()
-        {
-            foreach (var service in m_RegisteredServices.Values)
-                EnableService(service);
+            foreach (var dependency in service.dependencies ?? Array.Empty<IService>())
+                EnableService(dependency, serviceEnablingQueue);
+
+            service.enabled = true;
+
+            // All the reverse dependencies go into the queue to avoid nested enabling
+            if (m_ReverseDependencies.TryGetValue(service, out var reverseDependencies))
+                foreach (var reverseDependency in reverseDependencies)
+                    serviceEnablingQueue.Enqueue(reverseDependency);
         }
     }
 }

@@ -113,5 +113,7 @@ namespace UnityEditor
         {
             return ClearManagedReferenceWithMissingTypeInternal(obj, id);
         }
+
+        internal static extern void SuppressMissingTypeWarning(string className);
     };
 }

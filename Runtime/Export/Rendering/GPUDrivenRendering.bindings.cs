@@ -20,8 +20,6 @@ namespace UnityEngine.Rendering
     delegate void GPUDrivenLODGroupDataNativeCallback(in GPUDrivenLODGroupDataNative lodGroupDataNative, GPUDrivenLODGroupDataCallback callback);
     delegate void GPUDrivenRendererDataCallback(in GPUDrivenRendererGroupData rendererData, IList<Mesh> meshes, IList<Material> materials);
     delegate void GPUDrivenRendererDataNativeCallback(in GPUDrivenRendererGroupDataNative rendererDataNative, List<Mesh> meshes, List<Material> materials, GPUDrivenRendererDataCallback callback);
-    delegate void GPUDrivenSpeedTreeWindDataCallback(in GPUDrivenSpeedTreeWindData speedTreeWindData);
-    delegate void GPUDrivenSpeedTreeWindDataNativeCallback(in GPUDrivenSpeedTreeWindDataNative speedTreeWindDataNative, GPUDrivenSpeedTreeWindDataCallback callback);
 
     [RequiredByNativeCode]
     internal static class GPUDrivenCallbacks
@@ -43,15 +41,6 @@ namespace UnityEngine.Rendering
             GPUDrivenRendererDataCallback target)
         {
             callback.Invoke(rendererDataNative, meshes, materials, target);
-        }
-
-        [RequiredByNativeCode(GenerateProxy = true)]
-        public static void InvokeGPUDrivenSpeedTreeWindDataNativeCallback(
-            GPUDrivenSpeedTreeWindDataNativeCallback callback,
-            in GPUDrivenSpeedTreeWindDataNative speedTreeWindDataNative,
-            GPUDrivenSpeedTreeWindDataCallback target)
-        {
-            callback.Invoke(speedTreeWindDataNative, target);
         }
     }
 
@@ -285,86 +274,6 @@ namespace UnityEngine.Rendering
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodFadeTransitionWidth));
         };
 
-        private static unsafe GPUDrivenSpeedTreeWindDataNativeCallback s_NativeSpeedTreeWindCallback = (in GPUDrivenSpeedTreeWindDataNative nativeData, GPUDrivenSpeedTreeWindDataCallback callback) =>
-        {
-            var instance = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.instance, nativeData.count, Allocator.Invalid);
-            var windVector = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windVector, nativeData.count, Allocator.Invalid);
-            var windGlobal = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windGlobal, nativeData.count, Allocator.Invalid);
-            var windBranchAdherences = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windBranchAdherences, nativeData.count, Allocator.Invalid);
-            var windBranch = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windBranch, nativeData.count, Allocator.Invalid);
-            var windBranchTwitch = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windBranchTwitch, nativeData.count, Allocator.Invalid);
-            var windBranchWhip = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windBranchWhip, nativeData.count, Allocator.Invalid);
-            var windBranchAnchor = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windBranchAnchor, nativeData.count, Allocator.Invalid);
-            var windTurbulences = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windTurbulences, nativeData.count, Allocator.Invalid);
-            var windLeaf1Ripple = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windLeaf1Ripple, nativeData.count, Allocator.Invalid);
-            var windLeaf1Tumble = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windLeaf1Tumble, nativeData.count, Allocator.Invalid);
-            var windLeaf1Twitch = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windLeaf1Twitch, nativeData.count, Allocator.Invalid);
-            var windLeaf2Ripple = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windLeaf2Ripple, nativeData.count, Allocator.Invalid);
-            var windLeaf2Tumble = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windLeaf2Tumble, nativeData.count, Allocator.Invalid);
-            var windLeaf2Twitch = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windLeaf2Twitch, nativeData.count, Allocator.Invalid);
-            var windFrondRipple = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windFrondRipple, nativeData.count, Allocator.Invalid);
-            var windAnimation = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.windAnimation, nativeData.count, Allocator.Invalid);
-
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref instance, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windVector, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windGlobal, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windBranchAdherences, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windBranch, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windBranchTwitch, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windBranchWhip, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windBranchAnchor, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windTurbulences, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windLeaf1Ripple, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windLeaf1Tumble, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windLeaf1Twitch, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windLeaf2Ripple, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windLeaf2Tumble, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windLeaf2Twitch, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windFrondRipple, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref windAnimation, AtomicSafetyHandle.Create());
-            GPUDrivenSpeedTreeWindData data = new GPUDrivenSpeedTreeWindData
-            {
-                history = nativeData.history,
-                instance = instance,
-                windVector = windVector,
-                windGlobal = windGlobal,
-                windBranchAdherences = windBranchAdherences,
-                windBranch = windBranch,
-                windBranchTwitch = windBranchTwitch,
-                windBranchWhip = windBranchWhip,
-                windBranchAnchor = windBranchAnchor,
-                windTurbulences = windTurbulences,
-                windLeaf1Ripple = windLeaf1Ripple,
-                windLeaf1Tumble = windLeaf1Tumble,
-                windLeaf1Twitch = windLeaf1Twitch,
-                windLeaf2Ripple = windLeaf2Ripple,
-                windLeaf2Tumble = windLeaf2Tumble,
-                windLeaf2Twitch = windLeaf2Twitch,
-                windFrondRipple = windFrondRipple,
-                windAnimation = windAnimation
-            };
-
-            callback(data);
-
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(instance));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windVector));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windGlobal));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windBranchAdherences));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windBranch));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windBranchTwitch));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windBranchWhip));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windBranchAnchor));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windTurbulences));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windLeaf1Ripple));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windLeaf1Tumble));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windLeaf1Twitch));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windLeaf2Ripple));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windLeaf2Tumble));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windLeaf2Twitch));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windFrondRipple));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(windAnimation));
-        };
-
         private extern void EnableGPUDrivenRenderingAndDispatchRendererData(ReadOnlySpan<int> renderersID, GPUDrivenRendererDataNativeCallback callback, List<Mesh> meshes, List<Material> materials, GPUDrivenRendererDataCallback param);
         public void EnableGPUDrivenRenderingAndDispatchRendererData(ReadOnlySpan<int> renderersID, GPUDrivenRendererDataCallback callback)
         {
@@ -378,12 +287,6 @@ namespace UnityEngine.Rendering
         public void DispatchLODGroupData(ReadOnlySpan<int> lodGroupID, GPUDrivenLODGroupDataCallback callback)
         {
             DispatchLODGroupData(lodGroupID, s_NativeLODGroupCallback, callback);
-        }
-
-        private extern void DispatchSpeedTreeWindData(ReadOnlySpan<int> renderersID, ReadOnlySpan<int> instances, bool history, GPUDrivenSpeedTreeWindDataNativeCallback callback, GPUDrivenSpeedTreeWindDataCallback param);
-        public void DispatchSpeedTreeWindData(ReadOnlySpan<int> renderersID, ReadOnlySpan<int> instances, bool history, GPUDrivenSpeedTreeWindDataCallback callback)
-        {
-            DispatchSpeedTreeWindData(renderersID, instances, history, s_NativeSpeedTreeWindCallback, callback);
         }
 
         public extern bool enablePartialRendering { set; get; }
@@ -466,31 +369,6 @@ namespace UnityEngine.Rendering
         public float* lodFadeTransitionWidth;
         public int lodDataCount;
     }
-
-    [UsedByNativeCode]
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct GPUDrivenSpeedTreeWindDataNative
-    {
-        public bool history;
-        public int* instance;
-        public Vector4* windVector;
-        public Vector4* windGlobal;
-        public Vector4* windBranchAdherences;
-        public Vector4* windBranch;
-        public Vector4* windBranchTwitch;
-        public Vector4* windBranchWhip;
-        public Vector4* windBranchAnchor;
-        public Vector4* windTurbulences;
-        public Vector4* windLeaf1Ripple;
-        public Vector4* windLeaf1Tumble;
-        public Vector4* windLeaf1Twitch;
-        public Vector4* windLeaf2Ripple;
-        public Vector4* windLeaf2Tumble;
-        public Vector4* windLeaf2Twitch;
-        public Vector4* windFrondRipple;
-        public Vector4* windAnimation;
-        public int count;
-    };
 
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
@@ -663,29 +541,4 @@ namespace UnityEngine.Rendering
         public NativeArray<float> lodScreenRelativeTransitionHeight;
         public NativeArray<float> lodFadeTransitionWidth;
     }
-
-    internal struct GPUDrivenSpeedTreeWindData
-    {
-        /// <summary>
-        /// SpeedTree wind data.
-        /// </summary>
-        public bool history;
-        public NativeArray<int> instance;
-        public NativeArray<Vector4> windVector;
-        public NativeArray<Vector4> windGlobal;
-        public NativeArray<Vector4> windBranchAdherences;
-        public NativeArray<Vector4> windBranch;
-        public NativeArray<Vector4> windBranchTwitch;
-        public NativeArray<Vector4> windBranchWhip;
-        public NativeArray<Vector4> windBranchAnchor;
-        public NativeArray<Vector4> windTurbulences;
-        public NativeArray<Vector4> windLeaf1Ripple;
-        public NativeArray<Vector4> windLeaf1Tumble;
-        public NativeArray<Vector4> windLeaf1Twitch;
-        public NativeArray<Vector4> windLeaf2Ripple;
-        public NativeArray<Vector4> windLeaf2Tumble;
-        public NativeArray<Vector4> windLeaf2Twitch;
-        public NativeArray<Vector4> windFrondRipple;
-        public NativeArray<Vector4> windAnimation;
-    };
 }

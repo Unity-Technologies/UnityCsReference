@@ -1230,6 +1230,9 @@
     <Compile Include="..\..\Modules\Terrain\Public\PaintContext.cs">
       <Link>Modules\Terrain\Public\PaintContext.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Terrain\Public\SpeedTreeWind.bindings.cs">
+      <Link>Modules\Terrain\Public\SpeedTreeWind.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Terrain\Public\Terrain.bindings.cs">
       <Link>Modules\Terrain\Public\Terrain.bindings.cs</Link>
     </Compile>

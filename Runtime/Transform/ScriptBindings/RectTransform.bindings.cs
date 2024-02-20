@@ -82,6 +82,10 @@ namespace UnityEngine
             if (!Application.isPlaying && CanRecordModifications() && !s_BlockUndo)
                 RuntimeUndo.RecordObject(rectTransform, "Driving RectTransform");
 
+            // Ensure the driven properties are cleared if the driver is different.
+            if (rectTransform.drivenByObject != driver)
+                rectTransform.drivenProperties = DrivenTransformProperties.None;
+
             rectTransform.drivenByObject = driver;
             rectTransform.drivenProperties = rectTransform.drivenProperties | drivenProperties;
 

@@ -246,9 +246,17 @@ namespace Unity.UI.Builder
             template.CloneTree(this);
 
             m_TextGeneratorStyle = this.Q<BuilderStyleRow>(null, "unity-text-generator");
-            //UIToolkitProjectSettings.onEnableAdvancedTextChanged += (show => m_TextGeneratorStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None);
-            //m_TextGeneratorStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
-            m_TextGeneratorStyle.style.display = DisplayStyle.None;
+            if (Unsupported.IsDeveloperMode())
+            {
+                UIToolkitProjectSettings.onEnableAdvancedTextChanged += ChangeTextGeneratorStyleVisibility;
+                m_TextGeneratorStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+            else
+            {
+                UIToolkitProjectSettings.onEnableAdvancedTextChanged -= ChangeTextGeneratorStyleVisibility;
+                m_TextGeneratorStyle.style.display = DisplayStyle.None;
+            }
+
 
             // Get the scroll view.
             // HACK: ScrollView is not capable of remembering a scroll position for content that changes often.
@@ -1667,11 +1675,16 @@ namespace Unity.UI.Builder
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            UIToolkitProjectSettings.onEnableAdvancedTextChanged -= (show => m_TextGeneratorStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None);
+            UIToolkitProjectSettings.onEnableAdvancedTextChanged -= ChangeTextGeneratorStyleVisibility;
             if (m_PreviewWindow != null)
             {
                 previewWindow.Close();
             }
+        }
+
+        void ChangeTextGeneratorStyleVisibility(bool show)
+        {
+            m_TextGeneratorStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
         }
     }
 }

@@ -77,7 +77,8 @@ namespace UnityEngine.UIElements
     /// The base class for mouse events.
     /// </summary>
     [EventCategory(EventCategory.Pointer)]
-    public abstract class MouseEventBase<T> : EventBase<T>, IMouseEvent, IMouseEventInternal where T : MouseEventBase<T>, new()
+    public abstract class MouseEventBase<T> : EventBase<T>, IMouseEvent, IMouseEventInternal, IPointerOrMouseEvent
+        where T : MouseEventBase<T>, new()
     {
         /// <summary>
         /// Flags that hold pressed modifier keys (Alt, Ctrl, Shift, Windows/Cmd).
@@ -167,6 +168,9 @@ namespace UnityEngine.UIElements
 
         IPointerEvent IMouseEventInternal.sourcePointerEvent { get; set; }
 
+        int IPointerOrMouseEvent.pointerId => PointerId.mousePointerId;
+        Vector3 IPointerOrMouseEvent.position => mousePosition;
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -216,7 +220,8 @@ namespace UnityEngine.UIElements
         {
             base.PreDispatch(panel);
 
-            if (((IMouseEventInternal)this).triggeredByOS)
+            // UUM-4156: save pointer position only for Mouse events that don't have an equivalent Pointer event.
+            if (((IMouseEventInternal)this).sourcePointerEvent == null && ((IMouseEventInternal)this).triggeredByOS)
             {
                 PointerDeviceState.SavePointerPosition(PointerId.mousePointerId, mousePosition, panel, panel.contextType);
             }
@@ -229,8 +234,6 @@ namespace UnityEngine.UIElements
             {
                 // pointerEvent processing should not be done and it should not have returned to the pool.
                 Debug.Assert(!pointerEvent.processed, "!pointerEvent.processed");
-
-                (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
 
                 // We are a compatibility mouse event. Pass our status to the original pointer event.
                 if (isPropagationStopped)
@@ -436,19 +439,11 @@ namespace UnityEngine.UIElements
         /// <returns>An initialized event.</returns>
         public new static MouseDownEvent GetPooled(Event systemEvent)
         {
-            if (systemEvent != null)
-                PointerDeviceState.PressButton(PointerId.mousePointerId, systemEvent.button);
-
             return MouseEventBase<MouseDownEvent>.GetPooled(systemEvent);
         }
 
         private static MouseDownEvent MakeFromPointerEvent(IPointerEvent pointerEvent)
         {
-            if (pointerEvent != null && pointerEvent.button >= 0)
-            {
-                PointerDeviceState.PressButton(PointerId.mousePointerId, pointerEvent.button);
-            }
-
             return MouseEventBase<MouseDownEvent>.GetPooled(pointerEvent);
         }
 
@@ -509,20 +504,11 @@ namespace UnityEngine.UIElements
         /// <returns>An initialized event.</returns>
         public new static MouseUpEvent GetPooled(Event systemEvent)
         {
-            if (systemEvent != null)
-                PointerDeviceState.ReleaseButton(PointerId.mousePointerId, systemEvent.button);
-
             return MouseEventBase<MouseUpEvent>.GetPooled(systemEvent);
         }
 
         private static MouseUpEvent MakeFromPointerEvent(IPointerEvent pointerEvent)
         {
-            // Release the equivalent mouse button
-            if (pointerEvent != null && pointerEvent.button >= 0)
-            {
-                PointerDeviceState.ReleaseButton(PointerId.mousePointerId, pointerEvent.button);
-            }
-
             return MouseEventBase<MouseUpEvent>.GetPooled(pointerEvent);
         }
 

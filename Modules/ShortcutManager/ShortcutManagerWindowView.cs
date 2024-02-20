@@ -252,7 +252,7 @@ namespace UnityEditor.ShortcutManagement
                 Event.current.Use();
 
                 var e = new Event(Event.current) { type = EventType.MouseUp };
-                using (var mouseUpEvent = MouseUpEvent.GetPooled(e))
+                using (var mouseUpEvent = PointerUpEvent.GetPooled(e))
                     m_Root.HandleEventBubbleUpDisabled(mouseUpEvent);
             }
 

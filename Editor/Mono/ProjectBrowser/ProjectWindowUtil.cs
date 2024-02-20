@@ -226,15 +226,59 @@ namespace UnityEditor
 
         internal class DoCreateAudioRandomContainer : EndNameEditAction
         {
-            public override void Action(int instanceId, string path, string resourceFile)
+            public Object[] selection;
+
+            private bool ActiveSelectionIsAudioClipList()
             {
-                var container = new AudioRandomContainer
-                {
-                    name = Path.GetFileName(path)
-                };
+                return selection.Length > 0 && selection.All(obj => obj.GetType() == typeof(AudioClip));
+            }
+
+            private void CreateAudioRandomContainer(string path)
+            {
+                var container = new AudioRandomContainer { name = Path.GetFileName(path) };
 
                 AssetDatabase.CreateAsset(container, path);
                 ProjectWindowUtil.ShowCreatedAsset(container);
+            }
+
+            private void CreateAudioRandomContainerFromSelectedClips(string path)
+            {
+                var audioClips = selection.Select(obj => obj as AudioClip).ToArray();
+                var container = new AudioRandomContainer { name = Path.GetFileName(path) };
+
+                container.elements = audioClips.Select(audioClip =>
+                {
+                    var element = new AudioContainerElement();
+                    element.audioClip = audioClip;
+                    element.hideFlags = HideFlags.HideInHierarchy;
+                    return element;
+                }).ToArray();
+
+                AssetDatabase.CreateAsset(container, path);
+
+                foreach (var element in container.elements)
+                {
+                    AssetDatabase.AddObjectToAsset(element, container);
+                    AssetDatabase.TryGetGUIDAndLocalFileIdentifier(element, out var guid, out var localId);
+                    var clipName = element.audioClip.name;
+                    element.name = $"{clipName}_{{{localId}}}";
+                }
+
+                AssetDatabase.SaveAssetIfDirty(container);
+
+                ProjectWindowUtil.ShowCreatedAsset(container);
+            }
+
+            public override void Action(int instanceId, string path, string resourceFile)
+            {
+                if (ActiveSelectionIsAudioClipList())
+                {
+                    CreateAudioRandomContainerFromSelectedClips(path);
+                }
+                else
+                {
+                    CreateAudioRandomContainer(path);
+                }
             }
         }
     }
@@ -506,7 +550,11 @@ namespace UnityEditor
         static internal void CreateAudioRandomContainer()
         {
             var icon = EditorGUIUtility.IconContent<AudioRandomContainer>().image as Texture2D;
-            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateAudioRandomContainer>(), "New Audio Random Container.asset", icon, null);
+            var scriptableObject = ScriptableObject.CreateInstance<DoCreateAudioRandomContainer>();
+
+            scriptableObject.selection = Selection.objects;
+
+            StartNameEditingIfProjectWindowExists(0, scriptableObject, "New Audio Random Container.asset", icon, null);
         }
 
         internal static string SetLineEndings(string content, LineEndingsMode lineEndingsMode)

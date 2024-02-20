@@ -272,7 +272,7 @@ namespace UnityEditor.Build.Profile
                 var key = viewablePlatformKeys[index];
                 string path = GetFilePathForBuildProfile(key);
 
-                if (!File.Exists(path))
+                if (!File.Exists(path) || !BuildProfileModuleUtil.IsModuleInstalled(key.Item1, key.Item2))
                     continue;
 
                 var profile = InternalEditorUtility.LoadSerializedFileAndForget(path);

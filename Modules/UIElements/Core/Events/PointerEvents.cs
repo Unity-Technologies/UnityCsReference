@@ -270,6 +270,12 @@ namespace UnityEngine.UIElements
         int displayIndex { get; set; }
     }
 
+    internal interface IPointerOrMouseEvent
+    {
+        int pointerId { get; }
+        Vector3 position { get; }
+    }
+
     internal static class PointerEventHelper
     {
         public static EventBase GetPooled(EventType eventType, Vector3 mousePosition, Vector2 delta, int button,
@@ -302,7 +308,7 @@ namespace UnityEngine.UIElements
     ///
     /// </remarks>
     [EventCategory(EventCategory.Pointer)]
-    public abstract class PointerEventBase<T> : EventBase<T>, IPointerEvent, IPointerEventInternal
+    public abstract class PointerEventBase<T> : EventBase<T>, IPointerEvent, IPointerEventInternal, IPointerOrMouseEvent
         where T : PointerEventBase<T>, new()
     {
         // See HTML spec for pointer pressure: https://developer.mozilla.org/en-US/docs/Web/API/PointerEvent/pressure
@@ -1169,8 +1175,7 @@ namespace UnityEngine.UIElements
                 panel.ProcessPointerCapture(i);
             }
 
-            // If ShouldSendCompatibilityMouseEvents == true, mouse event will take care of this.
-            if (!panel.ShouldSendCompatibilityMouseEvents(this) && ((IPointerEventInternal)this).triggeredByOS)
+            if (((IPointerEventInternal)this).triggeredByOS)
             {
                 (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
             }

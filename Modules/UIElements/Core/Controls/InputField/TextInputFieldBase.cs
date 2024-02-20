@@ -718,7 +718,7 @@ namespace UnityEngine.UIElements
             else if (evt.eventTypeId == FocusInEvent.TypeId())
             {
                 if (showMixedValue)
-                    textEdition.ResetValueAndText();
+                    ((INotifyValueChanged<string>)textInputBase.textElement).SetValueWithoutNotify(default);
             }
             else if (evt.eventTypeId == FocusEvent.TypeId())
             {
@@ -726,6 +726,9 @@ namespace UnityEngine.UIElements
             }
             else if (evt.eventTypeId == BlurEvent.TypeId())
             {
+                if (showMixedValue)
+                    UpdateMixedValueContent();
+
                 UpdatePlaceholderClassList();
             }
         }
@@ -750,12 +753,13 @@ namespace UnityEngine.UIElements
         {
             if (showMixedValue)
             {
-                text = mixedValueString;
+                ((INotifyValueChanged<string>)textInputBase.textElement).SetValueWithoutNotify(mixedValueString);
                 AddToClassList(mixedValueLabelUssClassName);
                 visualInput?.AddToClassList(mixedValueLabelUssClassName);
             }
             else
             {
+                UpdateTextFromValue();
                 visualInput?.RemoveFromClassList(mixedValueLabelUssClassName);
                 RemoveFromClassList(mixedValueLabelUssClassName);
             }

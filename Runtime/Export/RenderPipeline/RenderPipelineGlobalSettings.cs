@@ -70,7 +70,7 @@ namespace UnityEngine.Rendering
             if (settingsList == null)
                 return -1;
 
-            return settingsMap.TryGetValue(settingsType, out var index) ? index : -1;
+            return settingsMap.GetValueOrDefault(settingsType, -1);
         }
 
         internal void CleanNullSettings()
