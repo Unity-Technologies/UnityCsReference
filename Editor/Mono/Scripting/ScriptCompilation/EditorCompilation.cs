@@ -1194,7 +1194,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return instanceId;
             }
 
-            var guid = AssetDatabase.GUIDFromAssetPath(filePath);
+            // The AssetDatabase does not expect absolute paths. In this case, we
+            // try to get the Logical path for the supplied filePath and pass that along
+            var logicalFilePath = FileUtil.GetLogicalPath(filePath);
+            if (string.IsNullOrEmpty(logicalFilePath))
+            {
+                return 0;
+            }
+
+            var guid = AssetDatabase.GUIDFromAssetPath(logicalFilePath);
 
             // script compilation errors can happen before the asset database is initialized, so we reserve the instance id ahead of time (it is deterministic)
             instanceId = AssetDatabase.ReserveMonoScriptInstanceID(guid);

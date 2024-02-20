@@ -46,6 +46,7 @@ namespace UnityEngine.TextCore.Text
         [Ignore] public int[] triangles;
 
         [Ignore] public VertexDataLayout vertexDataLayout;
+        [Ignore] public bool applySDF = true;
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal GlyphRenderMode glyphRenderMode;

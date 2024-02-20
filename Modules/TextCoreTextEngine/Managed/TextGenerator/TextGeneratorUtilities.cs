@@ -1518,6 +1518,7 @@ namespace UnityEngine.TextCore.Text
         {
             int materialIndex = textInfo.textElementInfo[i].materialReferenceIndex;
             int indexX4 = textInfo.meshInfo[materialIndex].vertexCount;
+            textInfo.meshInfo[materialIndex].applySDF = false;
 
             TextElementInfo[] textElementInfoArray = textInfo.textElementInfo;
             textInfo.textElementInfo[i].vertexIndex = indexX4;

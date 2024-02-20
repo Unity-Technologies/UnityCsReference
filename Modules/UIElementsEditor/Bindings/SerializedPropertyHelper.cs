@@ -231,27 +231,80 @@ namespace UnityEditor.UIElements.Bindings
 
         public static void SetVector2PropertyValue(SerializedProperty p, Vector2 v)
         {
-            p.vector2Value = v;
+            // only set the value changed
+            if (p.hasMultipleDifferentValues)
+            {
+                if (!p.vector2Value.x.Equals(v.x))
+                    p.FindPropertyRelative("x").doubleValue = v.x;
+                if (!p.vector2Value.y.Equals(v.y))
+                    p.FindPropertyRelative("y").doubleValue = v.y;
+            }
+            else
+                p.vector2Value = v;
         }
 
         public static void SetVector3PropertyValue(SerializedProperty p, Vector3 v)
         {
-            p.vector3Value = v;
+            // only set the value changed
+            if (p.hasMultipleDifferentValues)
+            {
+                if (!p.vector3Value.x.Equals(v.x))
+                    p.FindPropertyRelative("x").doubleValue = v.x;
+                if (!p.vector3Value.y.Equals(v.y))
+                    p.FindPropertyRelative("y").doubleValue = v.y;
+                if (!p.vector3Value.z.Equals(v.z))
+                    p.FindPropertyRelative("z").doubleValue = v.z;
+            }
+            else
+                p.vector3Value = v;
         }
 
         public static void SetVector4PropertyValue(SerializedProperty p, Vector4 v)
         {
-            p.vector4Value = v;
+            // only set the value changed
+            if (p.hasMultipleDifferentValues)
+            {
+                if (!p.vector4Value.x.Equals(v.x))
+                    p.FindPropertyRelative("x").doubleValue = v.x;
+                if (!p.vector4Value.y.Equals(v.y))
+                    p.FindPropertyRelative("y").doubleValue = v.y;
+                if (!p.vector4Value.z.Equals(v.z))
+                    p.FindPropertyRelative("z").doubleValue = v.z;
+                if (!p.vector4Value.z.Equals(v.w))
+                    p.FindPropertyRelative("w").doubleValue = v.w;
+            }
+            else
+                p.vector4Value = v;
         }
 
         public static void SetVector2IntPropertyValue(SerializedProperty p, Vector2Int v)
         {
-            p.vector2IntValue = v;
+            // only set the value changed
+            if (p.hasMultipleDifferentValues)
+            {
+                if (!p.vector2IntValue.x.Equals(v.x))
+                    p.FindPropertyRelative("x").intValue = v.x;
+                if (!p.vector2IntValue.y.Equals(v.y))
+                    p.FindPropertyRelative("y").intValue = v.y;
+            }
+            else
+                p.vector2IntValue = v;
         }
 
         public static void SetVector3IntPropertyValue(SerializedProperty p, Vector3Int v)
         {
-            p.vector3IntValue = v;
+            // only set the value changed
+            if (p.hasMultipleDifferentValues)
+            {
+                if (!p.vector3IntValue.x.Equals(v.x))
+                    p.FindPropertyRelative("x").intValue = v.x;
+                if (!p.vector3IntValue.y.Equals(v.y))
+                    p.FindPropertyRelative("y").intValue = v.y;
+                if (!p.vector3IntValue.z.Equals(v.z))
+                    p.FindPropertyRelative("z").intValue = v.z;
+            }
+            else
+                p.vector3IntValue = v;
         }
 
         public static void SetRectPropertyValue(SerializedProperty p, Rect v)

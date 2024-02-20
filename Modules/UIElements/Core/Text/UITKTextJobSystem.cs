@@ -256,7 +256,7 @@ namespace UnityEngine.UIElements
                     renderModes.Add(meshInfo.glyphRenderMode);
 
                     bool hasGradientScale = meshInfo.glyphRenderMode != GlyphRenderMode.SMOOTH && meshInfo.glyphRenderMode != GlyphRenderMode.COLOR;
-                    bool isDynamicColor = !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
+                    bool isDynamicColor = meshInfo.applySDF && !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
 
                     alloc.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 

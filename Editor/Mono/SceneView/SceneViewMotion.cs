@@ -11,7 +11,8 @@ namespace UnityEditor
 {
     class SceneViewMotion
     {
-        const string k_TemporaryPanTool2D = "Scene View/Temporary Pan Tool for 2D Mode";
+        const string k_TemporaryPanTool2D1 = "Scene View/Temporary Pan Tool for 2D Mode 1";
+        const string k_TemporaryPanTool2D2 = "Scene View/Temporary Pan Tool for 2D Mode 2";
         const string k_TemporaryPanTool1 = "Scene View/Temporary Pan Tool 1";
         const string k_TemporaryPanTool2 = "Scene View/Temporary Pan Tool 2";
         const string k_TemporaryPanTool3 = "Scene View/Temporary Pan Tool 3";
@@ -166,7 +167,8 @@ namespace UnityEditor
             evt.Use();
         }
 
-        [ClutchShortcut(k_TemporaryPanTool2D, typeof(SceneViewViewport2D), KeyCode.Mouse1)]
+        [ClutchShortcut(k_TemporaryPanTool2D1, typeof(SceneViewViewport2D), KeyCode.Mouse1)]
+        [ClutchShortcut(k_TemporaryPanTool2D2, typeof(SceneViewViewport2D), KeyCode.Mouse0, ShortcutModifiers.Alt)]
         [ClutchShortcut(k_TemporaryPanTool1, typeof(SceneViewViewport), KeyCode.Mouse2)]
         [ClutchShortcut(k_TemporaryPanTool2, typeof(SceneViewViewport), KeyCode.Mouse2, ShortcutModifiers.Alt)]
         [ClutchShortcut(k_TemporaryPanTool3, typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
@@ -186,7 +188,7 @@ namespace UnityEditor
                 ctx.window.sceneViewMotion.HandleSceneViewMotionTool(args, ViewTool.Zoom, ctx.window);
         }
 
-        [ClutchShortcut(k_TemporaryOrbitTool, typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Alt)]
+        [ClutchShortcut(k_TemporaryOrbitTool, typeof(SceneViewViewport3D), KeyCode.Mouse0, ShortcutModifiers.Alt)]
         static void TemporaryOrbit(ShortcutArguments args)
         {
             if (args.context is ISceneViewContext ctx && ctx.window != null && ctx.window.sceneViewMotion != null)
