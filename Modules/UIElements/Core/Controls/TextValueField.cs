@@ -215,10 +215,12 @@ namespace UnityEngine.UIElements
 
             if (evt.eventTypeId == BlurEvent.TypeId())
             {
-                if (string.IsNullOrEmpty(text))
+                if (showMixedValue)
                 {
-                    // Make sure that empty field gets the default value
-                    value = default;
+                    UpdateMixedValueContent();
+                }
+                else if (string.IsNullOrEmpty(text))
+                {
                     textInputBase.UpdateTextFromValue();
                 }
                 else
@@ -231,8 +233,7 @@ namespace UnityEngine.UIElements
             {
                 if (showMixedValue)
                 {
-                    value = default;
-                    textInputBase.UpdateTextFromValue();
+                    textInputBase.text = "";
                 }
             }
         }

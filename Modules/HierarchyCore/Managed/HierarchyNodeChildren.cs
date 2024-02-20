@@ -79,10 +79,14 @@ namespace Unity.Hierarchy
             else
             {
                 m_Ptr = (HierarchyNode*)ptr.ToPointer();
-                var i = 0;
-                while (i < HierarchyNodeChildrenFixed.Capacity && m_Ptr[i].Id != 0)
-                    i++;
-                m_Count = i;
+                m_Count = 0;
+                for (int i = 0; i < HierarchyNodeChildrenFixed.Capacity; i++)
+                {
+                    if (m_Ptr[i] != HierarchyNode.Null)
+                        m_Count++;
+                    else
+                        break;
+                }
             }
         }
 

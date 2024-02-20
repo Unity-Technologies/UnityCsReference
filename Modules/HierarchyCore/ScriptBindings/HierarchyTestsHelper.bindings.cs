@@ -108,6 +108,9 @@ namespace Unity.Hierarchy
         [NativeMethod(IsThreadSafe = true)]
         internal static extern int GetVersion(Hierarchy hierarchy);
 
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern int GetChildrenCapacity(Hierarchy hierarchy, in HierarchyNode node);
+
         internal static bool SearchMatch(HierarchyViewModel model, in HierarchyNode node)
         {
             var handler = model.Hierarchy.GetNodeTypeHandlerBase(in node);

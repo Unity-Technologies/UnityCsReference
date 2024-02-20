@@ -140,7 +140,7 @@ namespace UnityEngine.UIElements
                 int i = path.trickleDownPath.Count - 1;
 
                 // Skip trickle down on non-target when propagating during pointer capture
-                if (isCapturingTarget && i > 0)
+                if (isCapturingTarget && i >= 0)
                     i = path.trickleDownPath[0] == target ? 0 : -1;
 
                 for (; i >= 0; i--)
@@ -232,7 +232,7 @@ namespace UnityEngine.UIElements
                 int i = path.trickleDownPath.Count - 1;
 
                 // Skip trickle down on non-target when propagating during pointer capture
-                if (isCapturingTarget && i > 0)
+                if (isCapturingTarget && i >= 0)
                     i = path.trickleDownPath[0] == target ? 0 : -1;
 
                 for (; i >= 0; i--)

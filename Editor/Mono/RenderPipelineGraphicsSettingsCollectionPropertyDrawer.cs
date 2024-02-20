@@ -7,8 +7,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
-using UnityEditor.Inspector.GraphicsSettingsInspectors;
-using UnityEditor.Rendering.Settings;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.ProjectSettings;
 using UnityEngine;
@@ -172,14 +170,14 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
                 root.Add(button);
             }
         }
-        
+
         void ShowContextualMenu(Rect rect, IRenderPipelineGraphicsSettings target, SerializedProperty property)
         {
             var contextualMenu = new GenericMenu(); //use ImGUI for now, need to be updated later
             RenderPipelineGraphicsSettingsContextMenuManager.PopulateContextMenu(target, property, ref contextualMenu);
             contextualMenu.DropDown(new Rect(rect.position + Vector2.up * rect.size.y, Vector2.zero), shouldDiscardMenuOnSecondClick: true);
         }
-        
+
         void DrawContextualMenuButton(VisualElement root, GraphicsSettingsDrawerInfo drawerInfo)
         {
             var button = new Button(Background.FromTexture2D(EditorGUIUtility.LoadIcon("pane options")));
@@ -219,7 +217,7 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 
             DrawHelpButton(line, settingsInfo.helpURLAttribute);
             DrawContextualMenuButton(line, settingsInfo);
-            
+
             root.Add(line);
         }
 
@@ -232,7 +230,6 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
                 {
                     ProjectSettingsSection.Styles.content,
                     k_GraphicsSettingsClass,
-                    k_GraphicsSettingsHighlightableClass,
                 }
             };
             root.Add(graphicsSettings);

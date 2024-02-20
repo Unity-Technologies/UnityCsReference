@@ -106,7 +106,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public static void RepaintOverlayPanel(BaseRuntimePanel panel)
+        public static void RepaintPanel(BaseRuntimePanel panel)
         {
             var oldCam = Camera.current;
             var oldRT = RenderTexture.active;
@@ -174,7 +174,7 @@ namespace UnityEngine.UIElements
             foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
             {
                 if (!onlyOffscreen || panel.targetTexture != null)
-                    panel.Repaint(null);
+                    RepaintPanel(panel);
             }
         }
 

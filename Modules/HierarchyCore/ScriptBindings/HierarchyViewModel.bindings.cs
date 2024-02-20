@@ -80,7 +80,11 @@ namespace Unity.Hierarchy
         /// </summary>
         public Hierarchy Hierarchy => m_Hierarchy;
 
-        internal int Version => m_Version;
+        internal int Version
+        {
+            [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+            get => m_Version;
+        }
 
         internal extern float UpdateProgress
         {

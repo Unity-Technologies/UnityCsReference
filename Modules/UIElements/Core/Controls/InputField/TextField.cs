@@ -200,6 +200,11 @@ namespace UnityEngine.UIElements
             ((INotifyValueChanged<string>)textInput.textElement).SetValueWithoutNotify(textValue);
         }
 
+        internal override void UpdateTextFromValue()
+        {
+            SetValueWithoutNotify(rawValue);
+        }
+
         [EventInterest(typeof(FocusOutEvent))]
         protected override void HandleEventBubbleUp(EventBase evt)
         {

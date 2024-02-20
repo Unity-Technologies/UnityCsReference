@@ -83,26 +83,53 @@ namespace UnityEditor
                     ReadOnlySpan<IntegrationInfo> infos = Physics.GetIntegrationInfos();
 
                     var classicEngineDropdown = rootElement.Q<DropdownField>(name: "classic-dropdown");
+                    var classicEngineHelpboxWarning = rootElement.Q<HelpBox>(name: "classic-helpbox-warning");
+                    classicEngineHelpboxWarning.text = "You've changed the active physics SDK integration. This requires a restart of the Editor for the change to take effect.";
+                    classicEngineHelpboxWarning.visible = false;
 
-                    if(infos.Length == 0)
+                    int currentChoiceIndex = 0;
+                    uint currentId = Physics.GetCurrentIntegrationId();
+                    for (int i = 0; i < infos.Length; ++i)
                     {
-                        classicEngineDropdown.choices.Add("None");
+                        IntegrationInfo info = infos[i];
+                        classicEngineDropdown.choices.Add(info.Name);
+                        if (currentId == info.Id)
+                            currentChoiceIndex = i;
                     }
+
+                    classicEngineDropdown.value = classicEngineDropdown.choices[currentChoiceIndex];
+
+                    if (!Unsupported.IsDeveloperMode() || Application.isPlaying)
+                        classicEngineDropdown.SetEnabled(false);
                     else
                     {
-                        for(int i = 0; i < infos.Length; ++i)
+                        classicEngineDropdown.RegisterValueChangedCallback((evt) =>
                         {
-                            IntegrationInfo info = infos[i];
-                            classicEngineDropdown.choices.Add(info.Name);
-                        }
+                            if (evt.newValue == evt.previousValue)
+                                return;
+
+                            uint oldIntegrationId = Physics.GetCurrentIntegrationId();
+                            uint newIntegrationId = 0;
+                            ReadOnlySpan<IntegrationInfo> integrationInfos = Physics.GetIntegrationInfos();
+                            for (int i = 0; i < integrationInfos.Length; ++i)
+                            {
+                                IntegrationInfo info = integrationInfos[i];
+                                if (info.Name == evt.newValue)
+                                {
+                                    newIntegrationId = info.Id;
+                                }
+                            }
+
+                            var idProp = serializedObject.FindProperty("m_CurrentBackendId");
+                            idProp.uintValue = newIntegrationId;
+
+                            //force apply the property here as we want to ensure that the change is done immediately 
+                            serializedObject.ApplyModifiedProperties();
+
+                            //enable warning box if we are swapping
+                            classicEngineHelpboxWarning.visible = newIntegrationId != Physics.GetCurrentIntegrationId();
+                        });
                     }
-
-                    classicEngineDropdown.value = classicEngineDropdown.choices[0];
-                    classicEngineDropdown.SetEnabled(false);
-
-                    //disabled until backend swapping hooks are fully landed
-                    var classicEngineHelpboxWarning = rootElement.Q<HelpBox>(name: "classic-helpbox-warning");
-                    classicEngineHelpboxWarning.visible = false;
 
                     var ecsEngineDropdown = rootElement.Q<DropdownField>(name: "ecs-dropdown");
                     var ecsEngineHelpboxInfo = rootElement.Q<HelpBox>(name: "ecs-helpbox-info");

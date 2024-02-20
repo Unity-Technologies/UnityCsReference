@@ -115,7 +115,7 @@ namespace UnityEditor.Build.Profile
             return installed
                 && BuildPipeline.LicenseCheck(buildTarget)
                 && !string.IsNullOrEmpty(moduleName)
-                && ModuleManager.GetBuildPostProcessor(moduleName) != null;
+                && ModuleManager.GetBuildProfileExtension(moduleName) != null;
         }
 
         /// <summary>
@@ -201,9 +201,18 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static void SwitchLegacyActiveFromBuildProfile(BuildProfile profile)
         {
-            EditorUserBuildSettings.SwitchActiveBuildTargetAndSubtarget(
-                profile.buildTarget,
-                (int)profile.subtarget);
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(profile.buildTarget);
+
+            if (buildTargetGroup == BuildTargetGroup.Standalone)
+            {
+                EditorUserBuildSettings.SwitchActiveBuildTargetAndSubtarget(
+                    profile.buildTarget,
+                    (int)profile.subtarget);
+                return;
+            }
+
+            // Subtarget fetched by EditorUserBuildSettings maps to the active build profile.
+            EditorUserBuildSettings.SwitchActiveBuildTarget(buildTargetGroup, profile.buildTarget);
         }
 
         public static void SwitchLegacySelectedBuildTargets(BuildProfile profile)
@@ -307,6 +316,12 @@ namespace UnityEditor.Build.Profile
         internal static BuildTarget GetBuildTarget(string moduleName)
         {
             return s_DiscoveredTargetInfos[moduleName].buildTargetPlatformVal;
+        }
+
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static void SuppressMissingTypeWarning()
+        {
+            SerializationUtility.SuppressMissingTypeWarning(nameof(BuildProfile));
         }
 
         static Dictionary<string, BuildTargetDiscovery.DiscoveredTargetInfo> InitializeDiscoveredTargetDict()

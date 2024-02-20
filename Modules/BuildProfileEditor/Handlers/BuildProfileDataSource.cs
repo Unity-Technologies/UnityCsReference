@@ -246,6 +246,11 @@ namespace UnityEditor.Build.Profile.Handlers
             var assetsGuids = AssetDatabase.FindAssets(buildProfileAssetSearchString);
             var result = new List<BuildProfile>(assetsGuids.Length);
 
+            // Suppress missing type warning thrown by serialization. This could happen
+            // when the build profile window is opened, then entering play mode and the
+            // module for that profile is not installed.
+            BuildProfileModuleUtil.SuppressMissingTypeWarning();
+
             foreach (var guid in assetsGuids)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);

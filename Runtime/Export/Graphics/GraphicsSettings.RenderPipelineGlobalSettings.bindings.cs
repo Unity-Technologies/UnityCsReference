@@ -31,6 +31,18 @@ namespace UnityEngine.Rendering
             s_PropertyHelper.propertyChangedEvent.Unsubscribe(callback);
         }
 
+        public static void ForEach(Action<IRenderPipelineGraphicsSettings> callback)
+        {
+            if (callback == null || currentRenderPipelineGlobalSettings == null)
+                return;
+
+            if (!currentRenderPipelineGlobalSettings.GetSettingsImplementingInterface<IRenderPipelineGraphicsSettings>(out var settingsList))
+                return;
+
+            foreach (var setting in settingsList)
+                callback(setting);
+        }
+
         [NativeName("RegisterRenderPipelineSettings")] static extern void Internal_RegisterRenderPipeline(string renderpipelineName, Object settings);
         [NativeName("UnregisterRenderPipelineSettings")] static extern void Internal_UnregisterRenderPipeline(string renderpipelineName);
         [NativeName("GetSettingsForRenderPipeline")] static extern Object Internal_GetSettingsForRenderPipeline(string renderpipelineName);

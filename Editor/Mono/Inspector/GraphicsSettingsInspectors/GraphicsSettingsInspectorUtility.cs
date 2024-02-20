@@ -7,8 +7,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text;
-using UnityEditor.Rendering.Settings;
 using UnityEditor.Rendering;
+using UnityEditor.Rendering.Settings;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.ProjectSettings;
 using UnityEngine;
@@ -304,15 +304,24 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                 provider.Reload();
         }
 
+        #endregion
+
+        #region OpenAndScrollTo
+
+        const string highlightableClass = "graphics-settings__highlightable";
+        const string highlightableColorClass = "graphics-settings__highlightable--background-color";
+
+        static int s_EventCounter;
+
         public static void OpenAndScrollTo(string propertyPath)
         {
             if (string.IsNullOrEmpty(propertyPath))
                 throw new ArgumentException(nameof(propertyPath), $"The {nameof(propertyPath)} argument can't be null or empty.");
 
-            var settingsWindow = GetOrOpenGraphicsSettingsWindow(out var wasOpened);
+            var settingsWindow = GetOrOpenGraphicsSettingsWindow(out var previousWindowState);
             var root = settingsWindow.rootVisualElement;
 
-            RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(!wasOpened, root, () =>
+            RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(previousWindowState is PreviousWindowState.Opened or PreviousWindowState.IncorrectProvider, root, () =>
             {
                 if (!TryFindPropertyAndTabByBindingPath(propertyPath, root, out var propertyField, out var tabbedView, out var tabButton))
                 {
@@ -324,22 +333,42 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                 var isCorrectTabOpenOrNotExist = tabbedView?.ActiveTab == tabButton;
                 if (!isCorrectTabOpenOrNotExist)
                     tabbedView?.Activate(tabButton);
-                RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(isCorrectTabOpenOrNotExist, tabButton?.Target,
-                    () => root.schedule.Execute(() => OpenFoldoutsThenScroll(propertyField, scrollView)).StartingIn(50));
+
+                RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(isCorrectTabOpenOrNotExist && previousWindowState is PreviousWindowState.Opened, tabbedView,
+                    () => { root.schedule.Execute(() => OpenFoldoutsThenScroll(propertyField, scrollView)).StartingIn(500); });
             });
         }
 
         public static void OpenAndScrollTo(Type renderPipelineGraphicsSettingsType)
+        {
+            OpenAndScrollTo<PropertyField>(renderPipelineGraphicsSettingsType);
+        }
+
+        public static void OpenAndScrollTo<TGraphicsSettings>(string propertyPath = "")
+            where TGraphicsSettings : IRenderPipelineGraphicsSettings
+        {
+            OpenAndScrollTo<TGraphicsSettings, PropertyField>(p => p.bindingPath.Contains(propertyPath));
+        }
+
+        public static void OpenAndScrollTo<TGraphicsSettings, TVisualElement>(Func<TVisualElement, bool> subElementFunc = null)
+            where TGraphicsSettings : IRenderPipelineGraphicsSettings
+            where TVisualElement : VisualElement
+        {
+            OpenAndScrollTo(typeof(TGraphicsSettings), subElementFunc);
+        }
+
+        internal static void OpenAndScrollTo<TVisualElement>(Type renderPipelineGraphicsSettingsType, Func<TVisualElement, bool> subElementFunc = null)
+            where TVisualElement : VisualElement
         {
             if (renderPipelineGraphicsSettingsType == null)
                 throw new ArgumentNullException(nameof(renderPipelineGraphicsSettingsType));
             if (!typeof(IRenderPipelineGraphicsSettings).IsAssignableFrom(renderPipelineGraphicsSettingsType))
                 throw new ArgumentException($"{nameof(IRenderPipelineGraphicsSettings)} is not assignable from {nameof(renderPipelineGraphicsSettingsType)}");
 
-            var settingsWindow = GetOrOpenGraphicsSettingsWindow(out var wasOpened);
+            var settingsWindow = GetOrOpenGraphicsSettingsWindow(out var previousWindowState);
             var root = settingsWindow.rootVisualElement;
 
-            RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(!wasOpened, settingsWindow.rootVisualElement, () =>
+            RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(previousWindowState is PreviousWindowState.Opened or PreviousWindowState.IncorrectProvider, settingsWindow.rootVisualElement, () =>
             {
                 if (!TryFindTabByType(renderPipelineGraphicsSettingsType, root, out var tabButton, out var bindingPath))
                 {
@@ -351,41 +380,49 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                 var isCorrectTabOpen = tabbedView.ActiveTab == tabButton;
                 if (!isCorrectTabOpen)
                     tabbedView.Activate(tabButton);
-
-                RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(isCorrectTabOpen, tabbedView, () =>
+                RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(previousWindowState is PreviousWindowState.Opened, tabbedView, () =>
                 {
-                    tabbedView.schedule.Execute(() =>
+                    RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(isCorrectTabOpen, tabbedView, () =>
                     {
-                        var target = tabButton.Target;
-                        var foundPropertyField = target
-                            .Query<PropertyField>()
-                            .Where(p => string.CompareOrdinal(p.bindingPath, bindingPath) == 0)
-                            .First();
-                        if (foundPropertyField == null)
-                            return;
+                        tabbedView.schedule.Execute(() =>
+                        {
+                            var target = tabButton.Target;
+                            VisualElement field = target
+                                .Query<PropertyField>()
+                                .Where(p => string.CompareOrdinal(p.bindingPath, bindingPath) == 0)
+                                .First();
 
-                        var scrollView = root.Q<ScrollView>("MainScrollView");
-                        OpenFoldoutsThenScroll(foundPropertyField, scrollView);
-                    }).StartingIn(50);
+                            if (field == null)
+                                return;
+
+                            if (subElementFunc != null)
+                                field = field.Query<TVisualElement>().Where(subElementFunc.Invoke).First();
+
+                            var scrollView = root.Q<ScrollView>("MainScrollView");
+                            OpenFoldoutsThenScroll(field, scrollView);
+                        }).StartingIn(500);
+                    });
                 });
             });
         }
 
-        internal static ProjectSettingsWindow GetOrOpenGraphicsSettingsWindow(out bool wasOpened)
+        internal static ProjectSettingsWindow GetOrOpenGraphicsSettingsWindow(out PreviousWindowState previousWindowState)
         {
-            wasOpened = false;
+            previousWindowState = PreviousWindowState.Opened;
             if (!EditorWindow.HasOpenInstances<ProjectSettingsWindow>())
             {
-                wasOpened = true;
+                previousWindowState = PreviousWindowState.NotOpened;
                 return SettingsService.OpenProjectSettings(GraphicsSettingsProvider.s_GraphicsSettingsProviderPath) as ProjectSettingsWindow;
             }
 
             var settingsWindow = EditorWindow.GetWindow<ProjectSettingsWindow>(null, true);
-            if (settingsWindow.GetCurrentProvider() is GraphicsSettingsProvider)
+            if (settingsWindow.GetCurrentProvider() is GraphicsSettingsProvider && settingsWindow.rootVisualElement != null)
                 return settingsWindow;
 
-            wasOpened = true;
-            return SettingsService.OpenProjectSettings(GraphicsSettingsProvider.s_GraphicsSettingsProviderPath) as ProjectSettingsWindow;
+            previousWindowState = PreviousWindowState.IncorrectProvider;
+            settingsWindow = SettingsService.OpenProjectSettings(GraphicsSettingsProvider.s_GraphicsSettingsProviderPath) as ProjectSettingsWindow;
+            settingsWindow.Show();
+            return settingsWindow;
         }
 
         static bool TryFindTabByType(Type renderPipelineGraphicsSettingsType, VisualElement root, out TabButton tabButton, out string bindingPath)
@@ -406,7 +443,7 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
 
                 if (!TryExtractSupportedOnRenderPipelineAttribute(gs.GetType(), out var globalSettingsSupportedOn, out var message))
                     return;
-                lambdaTabButton = root.Query<TabButton>().Where(tb =>
+                var tabButton = root.Query<TabButton>().Where(tb =>
                 {
                     if (tb.userData is not Type renderPipelineAssetType)
                         return false;
@@ -414,11 +451,15 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                     return globalSettingsSupportedOn.renderPipelineTypes[0] == renderPipelineAssetType;
                 }).First();
 
-                if (lambdaTabButton == null)
+                if (tabButton == null)
                     return;
+
                 var index = gs.IndexOf(renderPipelineGraphicsSettingsType);
-                if (index >= 0)
-                    lambdaBindingPath = $"{RenderPipelineGraphicsSettingsManager.serializationPathToCollection}.Array.data[{index}]";
+                if (index < 0)
+                    return;
+
+                lambdaTabButton = tabButton;
+                lambdaBindingPath = $"{RenderPipelineGraphicsSettingsManager.serializationPathToCollection}.Array.data[{index}]";
             });
             if (!string.IsNullOrEmpty(lambdaBindingPath))
                 (tabButton, bindingPath) = (lambdaTabButton, lambdaBindingPath);
@@ -453,11 +494,10 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             return propertyField != null;
         }
 
-        static int s_EventCounter;
-
-        static void OpenFoldoutsThenScroll(PropertyField propertyField, ScrollView scrollView)
+        static void OpenFoldoutsThenScroll<T>(T field, ScrollView scrollView)
+            where T : VisualElement
         {
-            var current = propertyField.parent;
+            var current = field.parent;
 
             s_EventCounter = 0;
             while (current != null)
@@ -465,14 +505,14 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                 if (current is Foldout { value: false } foldout)
                 {
                     s_EventCounter++;
-                    foldout.contentContainer.RegisterCallbackOnce<GeometryChangedEvent>(evt =>
+                    foldout.contentContainer.RegisterCallbackOnce<GeometryChangedEvent>(_ =>
                     {
                         s_EventCounter--;
-                        if (s_EventCounter == 0)
-                        {
-                            scrollView.UpdateScrollers(false, true);
-                            ScrollTo(propertyField, scrollView);
-                        }
+                        if (s_EventCounter != 0)
+                            return;
+
+                        scrollView.UpdateScrollers(false, true);
+                        ScrollTo(field, scrollView);
                     });
                     foldout.value = true;
                 }
@@ -481,14 +521,21 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             }
 
             if (s_EventCounter == 0)
-                ScrollTo(propertyField, scrollView);
+                ScrollTo(field, scrollView);
         }
 
-        static void ScrollTo(PropertyField propertyField, ScrollView scrollView)
+        static void ScrollTo<T>(T field, ScrollView scrollView)
+            where T : VisualElement
         {
-            scrollView.ScrollTo(propertyField);
-            propertyField.AddToClassList("graphics-settings__highlightable--selection-animation");
-            propertyField.RegisterCallbackOnce<TransitionEndEvent>(evt => propertyField.RemoveFromClassList("graphics-settings__highlightable--selection-animation"));
+            scrollView.ScrollTo(field);
+            field.AddToClassList(highlightableClass);
+            field.AddToClassList(highlightableColorClass);
+            field.RegisterCallbackOnce<TransitionEndEvent>(_ =>
+            {
+                field.RemoveFromClassList(highlightableColorClass);
+                field.RegisterCallbackOnce<TransitionEndEvent>(_ =>
+                    field.RemoveFromClassList(highlightableClass));
+            });
         }
 
         static void RegisterCallbackOnceOrCallImmediately<T>(bool immediateCondition, VisualElement element, Action callback)
@@ -497,9 +544,15 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             if (immediateCondition)
                 callback?.Invoke();
             else
-                element.RegisterCallbackOnce<T>(e => callback?.Invoke());
+                element.RegisterCallbackOnce<T>(_ => callback?.Invoke());
         }
 
+        internal enum PreviousWindowState
+        {
+            NotOpened,
+            IncorrectProvider,
+            Opened
+        }
         #endregion
     }
 }

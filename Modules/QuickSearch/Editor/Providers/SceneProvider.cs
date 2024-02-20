@@ -329,14 +329,12 @@ namespace UnityEditor.Search.Providers
 
         public static SearchItem AddResult(SearchContext context, SearchProvider provider, GameObject go)
         {
-            if (go)
-            {
-                var instanceId = go.GetHashCode();
-                var item = provider.CreateItem(context, instanceId.ToString(), ~instanceId, null, null, null, new GameObjectData(go));
-                return SetItemDescriptionFormat(item, useFuzzySearch: false);
-            }
+            if (!go)
+                return null;
 
-            return null;
+            var instanceId = go.GetHashCode();
+            var item = provider.CreateItem(context, instanceId.ToString(), ~instanceId, null, null, null, new GameObjectData(go));
+            return SetItemDescriptionFormat(item, useFuzzySearch: false);
         }
 
         private static SearchItem SetItemDescriptionFormat(SearchItem item, bool useFuzzySearch)

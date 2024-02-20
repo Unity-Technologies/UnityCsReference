@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Linq;
@@ -117,38 +118,53 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             var version = packageVersionField.value.Trim();
 
-            var package = m_PackageDatabase.GetPackage(packageName);
-            if (package != null)
+            var packageNameParts = packageName.Split('@').Where(s => !string.IsNullOrEmpty(s)).ToArray();
+
+            var packageNameIsolated = packageNameParts.FirstOrDefault();
+            var packageVersionIsolated = string.IsNullOrEmpty(version) ? packageNameParts.Length > 1 ? packageNameParts.Last() : null : version;
+
+            if (packageNameParts.Length > 1 && !string.IsNullOrEmpty(version))
             {
-                if (string.IsNullOrEmpty(version))
-                {
-                    InstallByNameAndVersion(packageName);
-                    return;
-                }
-                else if (package.versions.Any(v => v.versionString == version))
-                {
-                    InstallByNameAndVersion(packageName, version);
-                    return;
-                }
+                SetError(isNameError:true);
+                return;
             }
 
-            m_UpmClient.ExtraFetchPackageInfo(packageName,
+            var package = m_PackageDatabase.GetPackage(packageNameIsolated);
+            if (package != null && (string.IsNullOrEmpty(packageVersionIsolated) || package.versions.Any(v => v.versionString == packageVersionIsolated)))
+            {
+                InstallByNameAndVersion(packageNameIsolated, packageVersionIsolated);
+                return;
+            }
+
+            m_UpmClient.ExtraFetchPackageInfo(packageNameIsolated,
                 successCallback: packageInfo =>
                 {
-                    var packageVersion = packageVersionField.value;
-                    if (packageInfo == null)
-                        SetError(isNameError: true);
-                    else if (string.IsNullOrEmpty(packageVersion) || packageInfo.versions.all.Contains(packageVersion) == true)
-                        InstallByNameAndVersion(packageName, packageVersion);
+                    if (packageInfo != null)
+                    {
+                        if (string.IsNullOrEmpty(packageVersionIsolated) || packageInfo.versions.all.Contains(packageVersionIsolated))
+                            InstallByNameAndVersion(packageNameIsolated, packageVersionIsolated, packageInfo.assetStore?.productId);
+                        else
+                        {
+                            // As of the time of writing, users may specify a version that is not included in the version list but is still returned by UPM.
+                            // An example is com.unity.a@2, which is not present in the list, but UPM returns a package for it.
+                            m_UpmClient.ExtraFetchPackageInfo($"{packageNameIsolated}@{packageVersionIsolated}", successCallback: morePackageInfo =>
+                                {
+                                    if (morePackageInfo != null)
+                                    {
+                                        InstallByNameAndVersion(packageNameIsolated, packageVersionIsolated, packageInfo.assetStore?.productId);
+                                    }
+                                }, errorCallback: error => SetError(isVersionError: true));
+                        }
+                    }
                     else
-                        SetError(isVersionError: true);
+                        SetError(isNameError: true);
                 },
                 errorCallback: error => SetError(isNameError: true));
 
             inputForm.SetEnabled(false);
         }
 
-        private void InstallByNameAndVersion(string packageName, string packageVersion = null)
+        private void InstallByNameAndVersion(string packageName, string packageVersion = null, string productId = null)
         {
             var packageId = string.IsNullOrEmpty(packageVersion) ? packageName : $"{packageName}@{packageVersion}";
             m_UpmClient.AddById(packageId);
@@ -157,7 +173,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             Close();
 
-            var package = m_PackageDatabase.GetPackage(packageName);
+            var packageUniqueId = string.IsNullOrEmpty(productId) ? packageName : productId;
+            var package = m_PackageDatabase.GetPackage(packageUniqueId);
             if (package == null)
                 return;
 
