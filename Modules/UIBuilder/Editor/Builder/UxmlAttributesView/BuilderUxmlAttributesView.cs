@@ -91,7 +91,19 @@ namespace Unity.UI.Builder
         /// <summary>
         /// Are we able to edit the element or just view its data?
         /// </summary>
-        internal bool readOnly => m_CurrentUxmlElement == null;
+        internal bool readOnly
+        {
+            get
+            {
+                // Elements in templates should be editable when they have a name
+                if (m_IsInTemplateInstance)
+                {
+                    return string.IsNullOrEmpty(m_CurrentElement.name);
+                }
+
+                return m_CurrentUxmlElement == null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the value that indicates whether undo-redo is enabled when editing fields.
@@ -203,8 +215,6 @@ namespace Unity.UI.Builder
             m_CurrentElementSerializedObject = null;
             m_UxmlTraitAttributes = s_EmptyAttributeList;
             serializedRootPath = null;
-            if (m_TempSerializedData != null)
-                m_TempSerializedData.serializedData = null;
 
             if (m_CurrentElement != null)
             {
@@ -213,14 +223,22 @@ namespace Unity.UI.Builder
                 {
                     if (m_CurrentUxmlElement == null)
                     {
-                        // This is a temp element. We can not modify it but we should show its values in the inspector.
+                        m_TempSerializedData = m_CurrentElement.GetProperty(BuilderConstants.InspectorTempSerializedDataPropertyName) as TempSerializedData;
+
                         if (m_TempSerializedData == null)
                         {
                             m_TempSerializedData = ScriptableObject.CreateInstance<TempSerializedData>();
-                            m_TempSerializedData.hideFlags = HideFlags.NotEditable;
+
+                            // We need to keep the serialized data alive so we can undo/redo changes
+                            m_CurrentElement.SetProperty(BuilderConstants.InspectorTempSerializedDataPropertyName, m_TempSerializedData);
+
+                            // Elements without a VisualElementAsset should not be editable,
+                            // except for elements that can have an attribute override.
+                            m_TempSerializedData.hideFlags = readOnly ? HideFlags.NotEditable : HideFlags.None;
+
+                            m_TempSerializedData.serializedData = m_SerializedDataDescription.CreateSerializedData();
                         }
 
-                        m_TempSerializedData.serializedData = m_SerializedDataDescription.CreateSerializedData();
                         m_SerializedDataDescription.SyncSerializedData(m_CurrentElement, m_TempSerializedData.serializedData);
                         serializedRootPath = s_TempSerializedRootPath;
                         m_CurrentElementSerializedObject = new SerializedObject(m_TempSerializedData);
@@ -1126,7 +1144,8 @@ namespace Unity.UI.Builder
                         for (int j = s_UxmlAssets.Count; j < expectedListCount; ++j)
                         {
                             var fullTypeName = attributeOwnerList != null ? attributeOwnerList[j].GetType().FullName : currentAttributesOwner.GetType().FullName;
-                            var asset = m_UxmlDocument.AddUxmlObject(currentAttributesUxmlOwner, attribute.rootName, fullTypeName);
+                            var xmlns = m_UxmlDocument.FindUxmlNamespaceDefinitionForTypeName(currentAttributesUxmlOwner, fullTypeName);
+                            var asset = m_UxmlDocument.AddUxmlObject(currentAttributesUxmlOwner, attribute.rootName, fullTypeName, xmlns);
 
                             // Assign the new asset id to the serialized data
                             var sd = uxmlSerializedDataList != null ? (UxmlSerializedData)uxmlSerializedDataList[j] : (UxmlSerializedData)currentUxmlSerializedData;
@@ -1685,6 +1704,10 @@ namespace Unity.UI.Builder
                     }
                 }
 
+                // Re-sync serializedDataOverrides since attribute overrides have changed.
+                parentTemplateAsset.serializedDataOverrides.Clear();
+                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(m_UxmlDocument));
+
                 var hierarchyView = builder.hierarchy.elementHierarchyView;
                 var selectionId = hierarchyView.GetSelectedItemId();
 
@@ -1778,7 +1801,7 @@ namespace Unity.UI.Builder
                 // We fallback on the VisualElement factory if we don't find any so
                 // we can update the modified attributes. This fixes the TemplateContainer
                 // factory not found.
-                VisualElementFactoryRegistry.TryGetValue(BuilderConstants.UxmlVisualElementTypeName,
+                VisualElementFactoryRegistry.TryGetValue(typeof(VisualElement).FullName,
                     out factories);
             }
 
@@ -1842,23 +1865,7 @@ namespace Unity.UI.Builder
             // Unset value in asset.
             if (m_IsInTemplateInstance)
             {
-                var templateContainer = BuilderAssetUtilities.GetVisualElementRootTemplate(m_CurrentElement);
-                var templateAsset = templateContainer.GetVisualElementAsset() as TemplateAsset;
-
-                if (templateAsset != null)
-                {
-                    var builder = Builder.ActiveWindow;
-                    var hierarchyView = builder.hierarchy.elementHierarchyView;
-                    var selectionId = hierarchyView.GetSelectedItemId();
-
-                    templateAsset.RemoveAttributeOverride(m_CurrentElement.name, attributeName);
-
-                    builder.OnEnableAfterAllSerialization();
-
-                    hierarchyView.SelectItemById(selectionId);
-                }
-
-                UnsetEnumValue(attributeName, removeBinding);
+                UnsetTemplateAttribute(attributeName, removeBinding);
             }
             else
             {
@@ -1901,6 +1908,31 @@ namespace Unity.UI.Builder
                 NotifyAttributesChanged();
                 Refresh();
             }
+        }
+
+        void UnsetTemplateAttribute(string attributeName, bool removeBinding)
+        {
+            var templateContainer = BuilderAssetUtilities.GetVisualElementRootTemplate(m_CurrentElement);
+            var templateAsset = templateContainer.GetVisualElementAsset() as TemplateAsset;
+
+            if (templateAsset != null)
+            {
+                var builder = Builder.ActiveWindow;
+                var hierarchyView = builder.hierarchy.elementHierarchyView;
+                var selectionId = hierarchyView.GetSelectedItemId();
+
+                templateAsset.RemoveAttributeOverride(m_CurrentElement.name, attributeName);
+
+                // Re-sync serializedDataOverrides since attribute overrides have changed.
+                templateAsset.serializedDataOverrides.Clear();
+                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(m_UxmlDocument));
+
+                builder.OnEnableAfterAllSerialization();
+
+                hierarchyView.SelectItemById(selectionId);
+            }
+
+            UnsetEnumValue(attributeName, removeBinding);
         }
 
         protected void UnsetEnumValue(string attributeName, bool removeBinding)

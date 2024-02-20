@@ -344,8 +344,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal virtual bool sourceIncludesArraySize => false;
-
         /// <summary>
         /// Obsolete. Use <see cref="ListView.makeItem"/> or <see cref="TreeView.makeItem"/> instead.
         /// </summary>
@@ -672,8 +670,9 @@ namespace UnityEngine.UIElements
         internal SerializedVirtualizationData serializedVirtualizationData = new SerializedVirtualizationData();
 
         // Persisted. It's why this can't be a HashSet(). :(
+        // This field is used for view data persistence and must be serializable. (UUM-29291)
         [SerializeField, DontCreateProperty]
-        private readonly List<int> m_SelectedIds = new List<int>();
+        List<int> m_SelectedIds = new List<int>();
 
         // Not persisted! Just used for fast lookups of selected indices and object references.
         // This is to avoid also having a mapping from index/object ref to index for the entire

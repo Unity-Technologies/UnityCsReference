@@ -28,6 +28,10 @@ namespace Unity.UI.Builder
             vta.hideFlags = HideFlags.DontUnloadUnusedAsset;
 
             var uxmlTagElement = new VisualElementAsset(BuilderConstants.UxmlTagTypeName);
+            var engineNamespaceDefinition = new UxmlNamespaceDefinition {prefix = BuilderConstants.UxmlDefaultEngineNamespacePrefix, resolvedNamespace = BuilderConstants.UxmlEngineNamespace};
+            uxmlTagElement.namespaceDefinitions.Add(engineNamespaceDefinition);
+            uxmlTagElement.namespaceDefinitions.Add(new UxmlNamespaceDefinition{ prefix = BuilderConstants.UxmlDefaultEditorNamespacePrefix, resolvedNamespace = BuilderConstants.UxmlEditorNamespace});
+            uxmlTagElement.xmlNamespace = engineNamespaceDefinition;
             InitializeElement(uxmlTagElement);
             uxmlTagElement.id = GenerateNewId(vta, uxmlTagElement);
             vta.visualElementAssets.Add(uxmlTagElement);

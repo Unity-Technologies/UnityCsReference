@@ -19,8 +19,26 @@ namespace Unity.UI.Builder
 
         protected override bool ExplorerCanStartDrag(VisualElement targetElement)
         {
-            bool readyForDrag = (targetElement.IsSelector() || targetElement.IsStyleSheet()) && !targetElement.IsParentSelector();
-            return readyForDrag;
+            bool readyForDrag = targetElement.IsSelector() && !targetElement.IsParentSelector();
+            if (readyForDrag)
+                return true;
+
+            if (!targetElement.IsStyleSheet() || targetElement.IsParentSelector())
+                return false;
+            if (!paneWindow.document.activeOpenUXMLFile.isChildSubDocument)
+                return true;
+            if (paneWindow.document.openUSSFiles.Count == 0)
+                return false;
+
+            var styleSheet = targetElement.GetStyleSheet();
+            foreach (var openUSSFile in paneWindow.document.openUSSFiles)
+            {
+                if (openUSSFile.styleSheet == styleSheet)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         protected override string ExplorerGetDraggedPillText(VisualElement targetElement)

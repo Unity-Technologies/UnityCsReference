@@ -47,7 +47,11 @@ namespace UnityEngine.UIElements
         {
             if (m_FormatSelectedValueCallback != null)
                 return m_FormatSelectedValueCallback(value);
-            return (value != null) ? value.ToString() : string.Empty;
+
+            if (value != null)
+                return UIElementsUtility.ParseMenuName(value.ToString());
+
+            return string.Empty;
         }
 
         internal override string GetListItemToDisplay(T value)

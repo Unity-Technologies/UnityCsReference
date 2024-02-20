@@ -8,8 +8,7 @@ namespace UnityEngine.UIElements
     {
         VisualElement[] m_PendingTopElementUnderPointer = new VisualElement[PointerId.maxPointers];
         VisualElement[] m_TopElementUnderPointer = new VisualElement[PointerId.maxPointers];
-        private IPointerEvent[] m_TriggerPointerEvent = new IPointerEvent[PointerId.maxPointers];
-        private IMouseEvent[] m_TriggerMouseEvent = new IMouseEvent[PointerId.maxPointers];
+        private IPointerOrMouseEvent[] m_TriggerEvent = new IPointerOrMouseEvent[PointerId.maxPointers];
         private Vector2[] m_PickingPointerPositions = new Vector2[PointerId.maxPointers];
 
         // Some Events need to temporarily set the elementUnderPointer to a specific value to leave a predictable
@@ -44,8 +43,7 @@ namespace UnityEngine.UIElements
             }
 
             m_PendingTopElementUnderPointer[pointerId] = newElementUnderPointer;
-            m_TriggerPointerEvent[pointerId] = null;
-            m_TriggerMouseEvent[pointerId] = null;
+            m_TriggerEvent[pointerId] = null;
         }
 
         Vector2 GetEventPointerPosition(EventBase triggerEvent)
@@ -91,43 +89,32 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (m_TriggerPointerEvent[pointerId] == null && triggerEvent is IPointerEvent)
+            if (m_TriggerEvent[pointerId] == null && triggerEvent is IPointerOrMouseEvent p)
             {
-                m_TriggerPointerEvent[pointerId] = triggerEvent as IPointerEvent;
-            }
-
-            if (m_TriggerMouseEvent[pointerId] == null && triggerEvent is IMouseEvent)
-            {
-                m_TriggerMouseEvent[pointerId] = triggerEvent as IMouseEvent;
+                m_TriggerEvent[pointerId] = p;
             }
         }
 
         internal void CommitElementUnderPointers(EventDispatcher dispatcher, ContextType contextType)
         {
-            for (var i = 0; i < m_TopElementUnderPointer.Length; i++)
+            for (var i = 0; i < PointerId.maxPointers; i++)
             {
-                var triggerPointerEvent = m_TriggerPointerEvent[i];
+                var triggerEvent = m_TriggerEvent[i];
                 var previous = m_TopElementUnderPointer[i];
                 var current = m_PendingTopElementUnderPointer[i];
 
                 if (current == previous)
                 {
-                    if (triggerPointerEvent != null)
+                    if (triggerEvent != null)
                     {
-                        var pos3d = triggerPointerEvent.position;
-                        m_PickingPointerPositions[i] = new Vector2(pos3d.x, pos3d.y);
+                        m_PickingPointerPositions[i] = triggerEvent.position;
                     }
-                    else if (m_TriggerMouseEvent[i] != null)
-                    {
-                        m_PickingPointerPositions[i] = m_TriggerMouseEvent[i].mousePosition;
-                    }
-
                     continue;
                 }
 
                 m_TopElementUnderPointer[i] = current;
 
-                if (triggerPointerEvent == null && m_TriggerMouseEvent[i] == null)
+                if (triggerEvent == null)
                 {
                     using (new EventDispatcherGate(dispatcher))
                     {
@@ -147,64 +134,58 @@ namespace UnityEngine.UIElements
                     }
                 }
 
-                if (triggerPointerEvent != null)
+                if (triggerEvent != null)
                 {
-                    var pos3d = triggerPointerEvent.position;
-                    m_PickingPointerPositions[i] = new Vector2(pos3d.x, pos3d.y);
+                    var pos = triggerEvent.position;
+                    m_PickingPointerPositions[i] = pos;
 
-                    var baseEvent = triggerPointerEvent as EventBase;
-                    if (baseEvent != null && (
-                        baseEvent.eventTypeId == PointerMoveEvent.TypeId() ||
-                        baseEvent.eventTypeId == PointerDownEvent.TypeId() ||
-                        baseEvent.eventTypeId == PointerUpEvent.TypeId() ||
-                        baseEvent.eventTypeId == PointerCancelEvent.TypeId()))
+                    if (triggerEvent is EventBase baseEvent)
                     {
-                        using (new EventDispatcherGate(dispatcher))
+                        if (baseEvent.eventTypeId == PointerMoveEvent.TypeId() ||
+                            baseEvent.eventTypeId == PointerDownEvent.TypeId() ||
+                            baseEvent.eventTypeId == PointerUpEvent.TypeId() ||
+                            baseEvent.eventTypeId == PointerCancelEvent.TypeId())
                         {
-                            PointerEventsHelper.SendOverOut(previous, current, triggerPointerEvent, pos3d, i);
-                            PointerEventsHelper.SendEnterLeave<PointerLeaveEvent, PointerEnterEvent>(
-                                previous, current, triggerPointerEvent, pos3d, i);
+                            using (new EventDispatcherGate(dispatcher))
+                            {
+                                PointerEventsHelper.SendOverOut(previous, current, (IPointerEvent)triggerEvent, pos, i);
+                                PointerEventsHelper.SendEnterLeave<PointerLeaveEvent, PointerEnterEvent>(
+                                    previous, current, (IPointerEvent)triggerEvent, pos, i);
+
+                                if (triggerEvent.pointerId == PointerId.mousePointerId &&
+                                    ((IPointerEventInternal)triggerEvent).compatibilityMouseEvent is { } mouseEvent)
+                                {
+                                    MouseEventsHelper.SendMouseOverMouseOut(previous, current, mouseEvent, pos);
+                                    MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(
+                                        previous, current, mouseEvent, pos);
+                                }
+                            }
                         }
-                    }
-                }
-
-                m_TriggerPointerEvent[i] = null;
-
-                var triggerMouseEvent = m_TriggerMouseEvent[i];
-                if (triggerMouseEvent != null)
-                {
-                    Vector2 mousePos = triggerMouseEvent.mousePosition;
-                    m_PickingPointerPositions[i] = mousePos;
-                    var baseEvent = triggerMouseEvent as EventBase;
-                    if (baseEvent != null)
-                    {
-                        if (baseEvent.eventTypeId == MouseMoveEvent.TypeId() ||
-                            baseEvent.eventTypeId == MouseDownEvent.TypeId() ||
-                            baseEvent.eventTypeId == MouseUpEvent.TypeId() ||
+                        else if (
                             baseEvent.eventTypeId == WheelEvent.TypeId())
                         {
                             using (new EventDispatcherGate(dispatcher))
                             {
-                                MouseEventsHelper.SendMouseOverMouseOut(previous, current, triggerMouseEvent, mousePos);
+                                MouseEventsHelper.SendMouseOverMouseOut(previous, current, (IMouseEvent)triggerEvent, pos);
                                 MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(
-                                    previous, current, triggerMouseEvent, mousePos);
+                                    previous, current, (IMouseEvent)triggerEvent, pos);
                             }
                         }
                         else if (baseEvent.eventTypeId == MouseEnterWindowEvent.TypeId() ||
                                  baseEvent.eventTypeId == MouseLeaveWindowEvent.TypeId()
-                        )
+                                )
                         {
                             using (new EventDispatcherGate(dispatcher))
                             {
-                                PointerEventsHelper.SendOverOut(previous, current, null, mousePos, i);
+                                PointerEventsHelper.SendOverOut(previous, current, null, pos, i);
                                 PointerEventsHelper.SendEnterLeave<PointerLeaveEvent, PointerEnterEvent>(
-                                    previous, current, null, mousePos, i);
+                                    previous, current, null, pos, i);
 
                                 if (i == PointerId.mousePointerId)
                                 {
-                                    MouseEventsHelper.SendMouseOverMouseOut(previous, current, triggerMouseEvent, mousePos);
+                                    MouseEventsHelper.SendMouseOverMouseOut(previous, current, (IMouseEvent)triggerEvent, pos);
                                     MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(
-                                        previous, current, triggerMouseEvent, mousePos);
+                                        previous, current, (IMouseEvent)triggerEvent, pos);
                                 }
                             }
                         }
@@ -213,21 +194,21 @@ namespace UnityEngine.UIElements
                         {
                             using (new EventDispatcherGate(dispatcher))
                             {
-                                PointerEventsHelper.SendOverOut(previous, current, null, mousePos, i);
+                                PointerEventsHelper.SendOverOut(previous, current, null, pos, i);
                                 PointerEventsHelper.SendEnterLeave<PointerLeaveEvent, PointerEnterEvent>(
-                                    previous, current, null, mousePos, i);
+                                    previous, current, null, pos, i);
 
-                                MouseEventsHelper.SendMouseOverMouseOut(previous, current, triggerMouseEvent, mousePos);
+                                MouseEventsHelper.SendMouseOverMouseOut(previous, current, (IMouseEvent)triggerEvent, pos);
                                 MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(
-                                    previous, current, triggerMouseEvent, mousePos);
+                                    previous, current, (IMouseEvent)triggerEvent, pos);
                                 MouseEventsHelper.SendEnterLeave<DragLeaveEvent, DragEnterEvent>(
-                                    previous, current, triggerMouseEvent, mousePos);
+                                    previous, current, (IMouseEvent)triggerEvent, pos);
                             }
                         }
                     }
-
-                    m_TriggerMouseEvent[i] = null;
                 }
+
+                m_TriggerEvent[i] = null;
             }
         }
     }
