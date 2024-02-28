@@ -29,6 +29,7 @@ namespace UnityEngine.UIElements
     /// ]]>
     /// </code>
     /// </example>
+    [HelpURL("UIE-USS")]
     [Serializable]
     public class StyleSheet : ScriptableObject
     {

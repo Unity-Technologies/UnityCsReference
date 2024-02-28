@@ -318,6 +318,8 @@ namespace UnityEditor.Search
                 EditorApplication.projectChanged -= m_AsyncOnProjectOrHierarchyChangedCallback;
                 EditorApplication.hierarchyChanged -= m_AsyncOnProjectOrHierarchyChangedCallback;
             });
+
+            searchViewFlags = SearchViewFlags.ObjectPicker;
         }
 
         private void OnObjectChanged(Object obj)
@@ -344,10 +346,7 @@ namespace UnityEditor.Search
                 requiredTypeNames = new[] { objectType.ToString() }
             };
             var newContext = new SearchContext(searchContext.providers, searchContext.searchText, searchContext.options, runtimeContext);
-            var searchViewState = new SearchViewState(newContext, OnSelection, OnObjectChanged, objectType.ToString(), objectType)
-            {
-                title = $"{objectType.Name}"
-            }.SetSearchViewFlags(searchViewFlags);
+            var searchViewState = SearchViewState.CreatePickerState($"{objectType.Name}", newContext, OnSelection, OnObjectChanged, objectType.ToString(), objectType, searchViewFlags);
             if (m_OriginalObject)
                 searchViewState.selectedIds = new int[] { m_OriginalObject.GetInstanceID() };
             SearchService.ShowPicker(searchViewState);
@@ -923,21 +922,22 @@ namespace UnityEditor.Search
             s_DelegateWindow = EditorWindow.focusedWindow;
             s_ModalUndoGroup = Undo.GetCurrentGroup();
             s_OriginalItem = originalObject;
-            var searchViewState = new SearchViewState(context,
+
+            var title = property != null ? $"{property.displayName} ({objType.Name})" : objType.Name;
+            var searchViewState = SearchViewState.CreatePickerState(title, context,
                 (item, canceled) => SendSelectionEvent(item, canceled, id),
                 item => SendTrackingEvent(item, id), objType.ToString(), objType)
-                    .SetSearchViewFlags(searchViewFlags);
-            if (property != null)
-            { 
-                searchViewState.title = $"{property.displayName} ({objType.Name})";
-                if (property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue)
-                    searchViewState.selectedIds = new int[] { property.objectReferenceValue.GetInstanceID() };
+            .SetSearchViewFlags(searchViewFlags);
+            if (property != null && property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue)
+            {
+                searchViewState.selectedIds = new int[] { property.objectReferenceValue.GetInstanceID() };
             }
             else if (originalObject)
+            {
                 searchViewState.selectedIds = new int[] { originalObject.GetInstanceID() };
+            }
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, context.searchText, "object", "objectfield");
             SearchService.ShowPicker(searchViewState);
-
             evt.Use();
             GUIUtility.ExitGUI();
         }

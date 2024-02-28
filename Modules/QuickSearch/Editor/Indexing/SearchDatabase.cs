@@ -250,6 +250,15 @@ namespace UnityEditor.Search
         public bool needsUpdate => !m_UpdateQueue.IsEmpty;
         public string path => m_IndexSettingsPath ?? AssetDatabase.GetAssetPath(this);
 
+        internal enum AfterPlayModeUpdate
+        {
+            None,
+            Incremental = 1 << 1,
+            Build = 1 << 2
+        }
+
+        internal AfterPlayModeUpdate afterPlayModeUpdate { get; private set; }
+
         internal static event Action<SearchDatabase> indexLoaded;
         internal static List<SearchDatabase> s_DBs;
 
@@ -380,6 +389,7 @@ namespace UnityEditor.Search
             {
                 EditorApplication.delayCall -= SearchService.RefreshWindows;
                 EditorApplication.delayCall += SearchService.RefreshWindows;
+                Dispatcher.Emit(SearchEvent.SearchIndexesChanged, new SearchEventPayload(new HeadlessSearchViewState(), updated, deleted, moved));
             }
 
             Providers.FindProvider.Update(updated, deleted, moved);
@@ -467,6 +477,9 @@ namespace UnityEditor.Search
             if (settings == null)
                 return;
 
+            EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
+
             index = CreateIndexer(settings, path);
 
             if (settings.source == null)
@@ -484,6 +497,7 @@ namespace UnityEditor.Search
         internal void OnDisable()
         {
             Log("OnDisable");
+            EditorApplication.playModeStateChanged -= OnPlayModeChanged;
             SearchMonitor.contentRefreshed -= OnContentRefreshed;
             m_CurrentResolveTask?.Dispose();
             m_CurrentResolveTask = null;
@@ -530,7 +544,7 @@ namespace UnityEditor.Search
 
         private void Load()
         {
-            if (!this)
+            if (!this || bytes == null || bytes.Length == 0)
                 return;
 
             loaded = false;
@@ -801,6 +815,12 @@ namespace UnityEditor.Search
 
         private void Build()
         {
+            if (EditorApplication.isPlaying)
+            {
+                afterPlayModeUpdate |= AfterPlayModeUpdate.Build;
+                return;
+            }
+
             m_CurrentResolveTask?.Cancel();
             m_CurrentResolveTask?.Dispose();
             m_CurrentResolveTask = ResolveArtifacts("Build", $"Building {name.ToLowerInvariant()} search index", (task, data) => WaitForReadComplete(task, data, OnArtifactsResolved));
@@ -825,6 +845,12 @@ namespace UnityEditor.Search
         // To be used with WaitForReadComplete.
         private void AssignNewIndexAndSetup(Task task, TaskData data)
         {
+            if (task.error != null)
+            {
+                Debug.LogException(task.error);
+                return;
+            }
+
             index.ApplyFrom(data.combinedIndex);
             bytes = data.bytes;
             Setup();
@@ -900,10 +926,27 @@ namespace UnityEditor.Search
             }
         }
 
+        private void OnPlayModeChanged(PlayModeStateChange playState)
+        {
+            if (playState == PlayModeStateChange.EnteredEditMode && afterPlayModeUpdate != AfterPlayModeUpdate.None)
+            {
+                if (afterPlayModeUpdate.HasFlag(AfterPlayModeUpdate.Build))
+                {
+                    Build();
+                }
+                else if (afterPlayModeUpdate.HasFlag(AfterPlayModeUpdate.Incremental))
+                {
+                    ProcessIncrementalUpdates();
+                }
+                afterPlayModeUpdate = AfterPlayModeUpdate.None;
+            }
+        }
+
         private void OnContentRefreshed(string[] updated, string[] removed, string[] moved)
         {
             if (!this || settings.options.disabled)
                 return;
+
             var changeset = new AssetIndexChangeSet(updated, removed, moved, p => !index.SkipEntry(p, true));
             if (changeset.empty)
                 return;
@@ -916,6 +959,13 @@ namespace UnityEditor.Search
                 return;
 
             m_UpdateQueue.Add(changeset);
+
+            if (EditorApplication.isPlaying)
+            {
+                afterPlayModeUpdate |= AfterPlayModeUpdate.Incremental;
+                return;
+            }
+
             ProcessIncrementalUpdates();
         }
 

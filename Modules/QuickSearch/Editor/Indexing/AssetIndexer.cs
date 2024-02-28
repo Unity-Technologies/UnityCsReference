@@ -79,7 +79,7 @@ namespace UnityEditor.Search
             {
                 if (isPrefabDocument && objType == typeof(GameObject))
                     IndexProperty(documentIndex, name, "prefab", saveKeyword: true, exact: true);
-                if (objType == typeof(MonoScript))
+                else if (objType == typeof(MonoScript))
                     IndexProperty(documentIndex, name, "script", saveKeyword: true, exact: true);
 
                 IndexType(objType, documentIndex);

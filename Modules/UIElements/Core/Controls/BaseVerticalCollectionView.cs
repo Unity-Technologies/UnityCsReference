@@ -899,6 +899,13 @@ namespace UnityEngine.UIElements
             m_ScrollView.contentContainer.focusable = true;
             m_ScrollView.contentContainer.usageHints &= ~UsageHints.GroupTransform; // Scroll views with virtualized content shouldn't have the "view transform" optimization
 
+            // Setting the view data key on the ScrollView to get view data persistence on the contents. (UUM-62717)
+            // Disabling view data persistence on the vertical and horizontal scrollers to make sure we keep
+            // the previous behavior on the scrollOffset.
+            m_ScrollView.viewDataKey = "unity-vertical-collection-scroll-view";
+            m_ScrollView.verticalScroller.viewDataKey = null;
+            m_ScrollView.horizontalScroller.viewDataKey = null;
+
             focusable = true;
             isCompositeRoot = true;
             delegatesFocus = true;

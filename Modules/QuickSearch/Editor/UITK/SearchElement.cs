@@ -39,6 +39,7 @@ namespace UnityEditor.Search
         public const string RequestResultViewButtons = "search-request-result-view-buttons";
         public const string ItemFavoriteStateChanged = "search-item-favorite-state-changed";
         public const string SearchFieldFocused = "search-field-focused";
+        public const string SearchIndexesChanged = "search-indexes-changed";
     }
 
     interface ISearchElement
@@ -299,6 +300,11 @@ namespace UnityEditor.Search
         internal void Emit(string eventName, params object[] arguments)
         {
             Dispatcher.Emit(eventName, new SearchEventPayload(this, arguments));
+        }
+
+        internal void Emit(string eventName, SearchEventPrepareHandler onPrepare, SearchEventResultHandler onResolved, params object[] arguments)
+        {
+            Dispatcher.Emit(eventName, new SearchEventPayload(this, arguments), onPrepare, onResolved);
         }
 
         protected Action On(string eventName, SearchEventHandler handler)

@@ -36,4 +36,12 @@ namespace UnityEngine
 
         internal extern Bounds GetSpriteBounds();
     }
+
+    [NativeHeader("Modules/SpriteMask/Public/ScriptBindings/SpriteMask.bindings.h")]
+    [StaticAccessor("SpriteUtilityBindings", StaticAccessorType.DoubleColon)]
+    public static class SpriteMaskUtility
+    {
+        extern public static bool HasSpriteMaskInScene();
+    }
+
 }

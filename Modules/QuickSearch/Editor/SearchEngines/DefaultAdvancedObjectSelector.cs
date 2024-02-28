@@ -70,19 +70,16 @@ namespace UnityEditor.Search
         static void SelectObject(in AdvancedObjectSelectorParameters parameters)
         {
             var selectContext = parameters.context;
-            var viewFlags = SearchFlags.OpenPicker;
+            var searchFlags = SearchFlags.OpenPicker;
             if (Utils.IsRunningTests())
-                viewFlags |= SearchFlags.Dockable;
+                searchFlags |= SearchFlags.Dockable;
 
-            var searchQuery = BuildInitialQuery(selectContext);
-            if (string.IsNullOrEmpty(searchQuery))
-                searchQuery = "";
-            else
-                searchQuery += " ";
+            var searchQuery = BuildInitialQuery(selectContext) ?? "";
             var selectHandler = parameters.selectorClosedHandler;
             var trackingHandler = parameters.trackingHandler;
-            var viewState = new SearchViewState(
-                SearchService.CreateContext(GetObjectSelectorProviders(selectContext), searchQuery, viewFlags), selectHandler, trackingHandler,
+
+            var viewState = SearchViewState.CreatePickerState(null, 
+                SearchService.CreateContext(GetObjectSelectorProviders(selectContext), searchQuery, searchFlags), selectHandler, trackingHandler,
                 selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First());
             if (parameters.context.currentObject)
                 viewState.selectedIds = new int[] { parameters.context.currentObject.GetInstanceID()};

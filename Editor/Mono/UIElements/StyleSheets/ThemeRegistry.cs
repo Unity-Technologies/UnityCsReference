@@ -2,20 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.IO;
-using UnityEngine.UIElements;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.UIElements.StyleSheets
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     static class ThemeRegistry
     {
         internal static string k_DefaultStyleSheetPath
         {
-            get {
-                return "StyleSheets/Generated/Default.tss.asset";
-            }
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => "StyleSheets/Generated/Default.tss.asset";
         }
 
         public const string kThemeScheme = "unity-theme";

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Unity.Profiling;
 using UnityEditor.Search.Providers;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -166,12 +167,38 @@ namespace UnityEditor.Search
             if (!(context.target is AnimationClip clip) || !indexer.settings.options.properties)
                 return;
 
+            indexer.AddProperty("t", "animation", indexer.settings.baseScore, context.documentIndex);
+
             indexer.AddNumber("events", clip.events.Length, indexer.settings.baseScore, context.documentIndex);
             foreach (var e in clip.events)
             {
                 indexer.AddNumber("time", e.time, indexer.settings.baseScore, context.documentIndex);
                 indexer.AddProperty("function", e.functionName.ToLowerInvariant(), context.documentIndex, saveKeyword: true, exact: false);
             }
+        }
+
+        [CustomObjectIndexer(typeof(TerrainData), version = 1)]
+        internal static void TerrainIndexing(CustomObjectIndexerTarget context, ObjectIndexer indexer)
+        {
+            if (!(context.target is TerrainData terrain) || !indexer.settings.options.types)
+                return;
+            indexer.AddProperty("t", "terrain", context.documentIndex);
+        }
+
+        [CustomObjectIndexer(typeof(AssemblyDefinitionReferenceAsset), version = 1)]
+        internal static void AssemblyDefRefIndexing(CustomObjectIndexerTarget context, ObjectIndexer indexer)
+        {
+            if (!(context.target is AssemblyDefinitionReferenceAsset asmref) || !indexer.settings.options.types)
+                return;
+            indexer.AddProperty("t", "asmref", context.documentIndex);
+        }
+
+        [CustomObjectIndexer(typeof(AssemblyDefinitionAsset), version = 1)]
+        internal static void AssemblyDefIndexing(CustomObjectIndexerTarget context, ObjectIndexer indexer)
+        {
+            if (!(context.target is AssemblyDefinitionAsset asmdef) || !indexer.settings.options.types)
+                return;
+            indexer.AddProperty("t", "asmdef", context.documentIndex);
         }
 
         [CustomObjectIndexer(typeof(Texture2D), version = 2)]

@@ -13,34 +13,56 @@ namespace UnityEditor.Search
     [EditorWindowTitle(title = "Search")]
     class SearchPickerWindow : SearchWindow
     {
-        internal const string k_SavedSearchTextPrefKey = "picker_search_text";
         const string k_SavedWindowPositionPrefKey = "picker_window_position_offset";
+        const string k_PickerVisibilityFlags = "picker_visibility_flags";
+        const string k_PickerItemSize = "picker_item_size";
+        const string k_PickerInspector = "picker_inspector";
+        const string k_PickerCurrentGroup = "picker_current_group";
+        const int k_UniquePickerHash = 123456789;
 
         public override bool IsPicker()
         {
             return true;
         }
 
-        internal override void OnDisable()
+        protected override void LoadSessionSettings(SearchViewState args)
+        {
+            var visibilityFlags = (SearchFlags)SearchSettings.GetScopeValue(k_PickerVisibilityFlags, m_ContextHash, (int)(SearchFlags.WantsMore | SearchFlags.Packages));
+            args.context.options |= visibilityFlags;
+            args.itemSize = SearchSettings.GetScopeValue(k_PickerItemSize, m_ContextHash, (int)DisplayMode.Grid);
+            if (SearchSettings.GetScopeValue(k_PickerInspector, m_ContextHash, 0) != 0)
+            {
+                args.flags |= SearchViewFlags.OpenInspectorPreview;
+            }
+            RestoreSearchText(args);
+
+            args.group = SearchSettings.GetScopeValue(k_PickerCurrentGroup, m_ContextHash, GroupedSearchList.allGroupId);
+
+            UpdateViewState(args);
+        }
+
+        protected override void SaveSessionSettings()
         {
             if (m_LastFocusedWindow && !Utils.IsRunningTests())
             {
                 var offset = new Rect(position.position - m_LastFocusedWindow.position.position, position.size);
                 SearchSettings.SetScopeValue(k_SavedWindowPositionPrefKey, m_ContextHash, offset);
             }
-            SearchSettings.SetScopeValue(k_SavedSearchTextPrefKey, m_ContextHash, context.searchText);
 
-            base.OnDisable();
+            SearchSettings.SetScopeValue(k_PickerVisibilityFlags, m_ContextHash, (int)(context.options & (SearchFlags.WantsMore | SearchFlags.Packages)));
+            SearchSettings.SetScopeValue(k_PickerItemSize, m_ContextHash, itemIconSize);
+            SearchSettings.SetScopeValue(k_PickerInspector, m_ContextHash, viewState.flags.HasAny(SearchViewFlags.OpenInspectorPreview) ? 1 : 0);
+            SearchSettings.SetScopeValue(k_PickerCurrentGroup, m_ContextHash, viewState.group);
         }
 
         protected override void RestoreSearchText(SearchViewState viewState)
         {
-            if (Utils.IsRunningTests() || viewState.context == null || viewState.ignoreSaveSearches)
-                return;
+            // We do not restore any text.
+        }
 
-            var previousSearchText = SearchSettings.GetScopeValue(k_SavedSearchTextPrefKey, m_ContextHash, viewState.initialQuery);
-            if (string.CompareOrdinal(viewState.searchText.Trim(), previousSearchText.Trim()) != 0)
-                viewState.text = previousSearchText.Trim();
+        protected override void ComputeContextHash()
+        {
+            m_ContextHash = k_UniquePickerHash;
         }
 
         protected override void HandleEscapeKeyDown(EventBase evt)
@@ -85,10 +107,10 @@ namespace UnityEditor.Search
 
         public static SearchPickerWindow ShowPicker(SearchViewState args)
         {
-            var qs = Create<SearchPickerWindow>(args.LoadDefaults(SearchFlags.OpenPicker));
+            var qs = Create<SearchPickerWindow>(args);
             qs.titleContent.text = $"Select {args.title ?? "item"}...";
 
-            if (qs.viewState.flags.HasNone(SearchViewFlags.OpenInBuilderMode) && !string.IsNullOrEmpty(qs.context.searchText))
+            if (!qs.viewState.queryBuilderEnabled && !string.IsNullOrEmpty(qs.context.searchText))
             {
                 if (!qs.viewState.text.EndsWith(' '))
                     qs.viewState.text += ' ';
