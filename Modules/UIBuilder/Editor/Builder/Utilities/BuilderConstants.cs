@@ -522,6 +522,7 @@ namespace Unity.UI.Builder
         public static readonly string ExplorerHierarchyUnpackTemplate = "Unpack Instance";
         public static readonly string ExplorerHierarchyUnpackCompletely = "Unpack Instance Completely";
         public static readonly string ExplorerHierarchyCreateTemplate = "Create Template";
+        public static readonly string ExplorerHierarchyAddSelector = "Add selector...";
 
         // Explorer Messages
         public static readonly string ExplorerInExplorerNewClassSelectorInfoMessage = "Add new selector...";

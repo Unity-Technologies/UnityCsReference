@@ -588,5 +588,13 @@ namespace Unity.UI.Builder
             m_Selection.NotifyOfHierarchyChange(null);
             m_Selection.NotifyOfStylingChange(null);
         }
+
+        public void CreateTargetedSelector(VisualElement ve)
+        {
+            // populates the new selector field with a selector that targets the current element
+            var newSelectorTextField = m_PaneWindow.rootVisualElement.Q<BuilderStyleSheets>().newSelectorField.textField;
+            newSelectorTextField.value = BuilderStyleUtilities.GenerateElementTargetedSelector(ve);
+            newSelectorTextField.Focus();
+        }
     }
 }

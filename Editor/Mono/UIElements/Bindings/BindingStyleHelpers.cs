@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -411,6 +412,13 @@ namespace UnityEditor.UIElements
             e.StopImmediatePropagation();
         }
 
+        internal static void RegisterRightClickMenu(Label field, SerializedProperty property)
+        {
+            field.userData = property.Copy();
+            field.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled, TrickleDown.TrickleDown);
+            field.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
+        }
+
         internal static void RegisterRightClickMenu<TValue>(BaseField<TValue> field, SerializedProperty property)
         {
             field.userData = property.Copy();
@@ -460,16 +468,88 @@ namespace UnityEditor.UIElements
             if (!element.enabledInHierarchy)
                 GUI.enabled = false;
 
-            var menu = EditorGUI.FillPropertyContextMenu(property, null, null, element);
-            GUI.enabled = wasEnabled;
+            try
+            {
+                Event.ignoreGuiDepth = true;
+                Event.current = evt.imguiEvent;
+                var menu = EditorGUI.FillPropertyContextMenu(property, null, null, element);
+                GUI.enabled = wasEnabled;
 
-            if (menu == null)
-                return;
+                if (menu == null)
+                    return;
 
-            var menuRect = new Rect(evt.position, Vector2.zero);
-            menu.DropDown(menuRect);
+                var dropdownMenu = ConvertGenericMenuToDropdownMenu(menu);
+                element.panel.contextualMenuManager.DisplayMenu(evt, element, dropdownMenu);
+                evt.StopPropagation();
+            }
+            finally
+            {
+                Event.ignoreGuiDepth = false;
+            }
+        }
 
-            evt.StopPropagation();
+        static DropdownMenu ConvertGenericMenuToDropdownMenu(GenericMenu menu)
+        {
+            var dropdownMenu = new DropdownMenu();
+
+            foreach (var menuItem in menu.menuItems)
+            {
+                if (menuItem.separator)
+                {
+                    dropdownMenu.AppendSeparator(menuItem.content.text);
+                }
+                else
+                {
+                    var statusCallback = MenuItemToActionStatusCallback(menuItem);
+
+                    if (menuItem.func != null)
+                    {
+                        dropdownMenu.AppendAction(menuItem.content.text, _ => menuItem.func(), statusCallback);
+                    }
+                    else if (menuItem.func2 != null)
+                    {
+                        dropdownMenu.AppendAction(menuItem.content.text, action => menuItem.func2(action.userData), statusCallback, menuItem.userData);
+                    }
+                    else
+                    {
+                        dropdownMenu.AppendAction(menuItem.content.text, null, statusCallback);
+                    }
+                }
+            }
+
+            return dropdownMenu;
+        }
+
+        static readonly Dictionary<DropdownMenuAction.Status, Func<DropdownMenuAction, DropdownMenuAction.Status>> s_StatusCallbacks = new()
+        {
+            { DropdownMenuAction.Status.Normal, DropdownMenuAction.AlwaysEnabled },
+            { DropdownMenuAction.Status.Disabled, DropdownMenuAction.AlwaysDisabled },
+        };
+
+        static Func<DropdownMenuAction, DropdownMenuAction.Status> MenuItemToActionStatusCallback(GenericMenu.MenuItem menuItem)
+        {
+            var status = DropdownMenuAction.Status.None;
+
+            if (menuItem.func != null || menuItem.func2 != null)
+            {
+                status |= DropdownMenuAction.Status.Normal;
+            }
+            else
+            {
+                status |= DropdownMenuAction.Status.Disabled;
+            }
+
+            if (menuItem.on)
+                status |= DropdownMenuAction.Status.Checked;
+
+            // Cached callbacks
+            if (!s_StatusCallbacks.TryGetValue(status, out var callback))
+            {
+                callback = action => status;
+                s_StatusCallbacks[status] = callback;
+            }
+
+            return callback;
         }
     }
 }

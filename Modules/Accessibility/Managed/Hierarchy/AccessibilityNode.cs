@@ -139,7 +139,8 @@ namespace UnityEngine.Accessibility
             var nodeData = new AccessibilityNodeData
             {
                 id = id,
-                isActive = isActive
+                isActive = isActive,
+                parentId = AccessibilityNodeManager.k_InvalidNodeId
             };
             CreateNativeNodeWithData(ref nodeData);
 
@@ -398,23 +399,18 @@ namespace UnityEngine.Accessibility
         /// <summary>
         /// The parent of the node. If the node is at the root level, the <see cref="parent"/> value is @@null@@.
         /// </summary>
-        public AccessibilityNode parent
+        public AccessibilityNode parent => m_Parent;
+
+        internal void SetParent(AccessibilityNode parent, int index = -1)
         {
-            get => m_Parent;
-            internal set
+            // Even if parent is not changing, the index may have changed so
+            // update the native node.
+            m_Parent = parent;
+
+            if (IsInActiveHierarchy())
             {
-                if (m_Parent == value)
-                {
-                    return;
-                }
-
-                m_Parent = value;
-
-                if (IsInActiveHierarchy())
-                {
-                    var parentId = value?.id ?? AccessibilityNodeManager.k_InvalidNodeId;
-                    AccessibilityNodeManager.SetParent(id, parentId);
-                }
+                var parentId = parent?.id ?? AccessibilityNodeManager.k_InvalidNodeId;
+                AccessibilityNodeManager.SetParent(id, parentId, index);
             }
         }
 
@@ -646,7 +642,7 @@ namespace UnityEngine.Accessibility
                     // Even if parent is null (i.e. node is a root) we need to assign it as the children's parent because
                     // that happens when this method is called by AccessibilityHierarchy.RemoveNode and that can happen
                     // with a root node with destroyChildren being false (therefore the children became roots themselves).
-                    child.parent = parent;
+                    child.SetParent(parent);
                     parent?.childList.Add(child);
                 }
             }

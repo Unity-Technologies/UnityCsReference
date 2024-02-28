@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections;
-using UnityEngine;
 using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
 
@@ -31,12 +29,12 @@ namespace UnityEditor.UIElements
                     return true;
                 return aStr == bStr;
             }
+            if (a is IList || b is IList) // If either is a list, compare as a list. So we can support comparing against a null list.
+                return ListEquals(a as IList, b as IList);
             if (a is null || b is null)
                 return false;
-            if (a is IList aList && b is IList bList)
-                return ListEquals(aList, bList);
             if (a is not string &&
-                a is not UnityEngine.Object &&
+                a is not Object &&
                 a.GetType().IsClass &&
                 UxmlAttributeConverter.TryConvertToString(a, null, out var aString) &&
                 UxmlAttributeConverter.TryConvertToString(b, null, out var bString))
@@ -49,6 +47,15 @@ namespace UnityEditor.UIElements
 
         static bool ListEquals(IList a, IList b)
         {
+            // null and empty are treated as the same
+            bool aEmpty = a == null || a.Count == 0;
+            bool bEmpty = b == null || b.Count == 0;
+
+            if (aEmpty && bEmpty)
+                return true;
+            else if (aEmpty || bEmpty)
+                return false;
+
             if (a.Count != b.Count)
                 return false;
 

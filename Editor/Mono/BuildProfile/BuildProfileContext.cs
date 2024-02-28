@@ -50,7 +50,7 @@ namespace UnityEditor.Build.Profile
             get
             {
                 // Active Build profile may be deleted from the project.
-                if (m_ActiveProfile != null)
+                if (m_ActiveProfile != null && BuildProfileModuleUtil.IsModuleInstalled(m_ActiveProfile.moduleName, m_ActiveProfile.subtarget))
                     return m_ActiveProfile;
 
                 m_ActiveProfile = null;

@@ -39,6 +39,7 @@ namespace Unity.UI.Builder
         bool m_ShouldRefocusSelectorFieldOnBlur;
 
         BuilderDocument document => m_PaneWindow?.document;
+        public BuilderNewSelectorField newSelectorField => m_NewSelectorField;
 
         public BuilderStyleSheets(
             BuilderPaneWindow paneWindow,

@@ -124,17 +124,47 @@ namespace Unity.UI.Builder
         {
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName);
             var isNewValue = styleProperty.values.Length == 0;
-            
+
             if (!isNewValue && styleProperty.IsVariable())
             {
                 styleProperty.values = Array.Empty<StyleValueHandle>();
                 isNewValue = true;
             }
-            
+
             if (isNewValue)
                 styleSheet.AddValue(styleProperty, value);
             else // TODO: Assume only one value.
                 styleSheet.SetValue(styleProperty.values[0], value);
+        }
+
+        public static string GenerateElementTargetedSelector(VisualElement documentElement)
+        {
+            string elementTargetedSelector;
+            var classList = documentElement?.classList;
+
+            // if element has name, use that to target it
+            if (!string.IsNullOrEmpty(documentElement?.name))
+            {
+                elementTargetedSelector = $"#{documentElement.name}";
+            }
+            // if element has no name, use its class to target it
+            else if (classList != null && classList.Count > 0)
+            {
+                elementTargetedSelector = $".{classList[^1]}";
+            }
+            // if element has no class, use its type to target it
+            else
+            {
+                elementTargetedSelector = documentElement?.typeName;
+            }
+
+            // add its parents name or class or type to the selector
+            if (documentElement?.parent != null && !BuilderSharedStyles.IsDocumentElement(documentElement.parent))
+            {
+                elementTargetedSelector = GenerateElementTargetedSelector(documentElement.parent) + " > " + elementTargetedSelector;
+            }
+
+            return elementTargetedSelector;
         }
     }
 }

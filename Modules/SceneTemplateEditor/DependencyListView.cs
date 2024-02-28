@@ -164,6 +164,7 @@ namespace UnityEditor.SceneTemplate
             listViewContainer.style.maxHeight = (Mathf.Min(m_OriginalItems.Count, 30) + 2) * m_ItemSize;
 
             listView = new ListView(m_FilteredItems, itemHeight, MakeItem, BindItem);
+            listView.unbindItem = UnbindItem;
             listView.name = k_ListInternalView;
             listView.showAlternatingRowBackgrounds = AlternatingRowBackground.ContentOnly;
             listView.style.flexGrow = 1;
@@ -230,11 +231,10 @@ namespace UnityEditor.SceneTemplate
             UpdateGlobalCloneToggle();
             m_CloneHeaderToggle.RegisterValueChangedCallback(evt =>
             {
-                var listContent = listView.Q<VisualElement>("unity-content-container");
-                foreach (var row in listContent.Children())
+                for (var i = 0; i < m_FilteredItems.Count; i++)
                 {
                     var mode = evt.newValue ? TemplateInstantiationMode.Clone : TemplateInstantiationMode.Reference;
-                    SetDependencyInstantiationMode(row, mode);
+                    SetDependencyInstantiationMode(i, mode);
                 }
                 m_SerializedObject.ApplyModifiedProperties();
             });
@@ -267,17 +267,26 @@ namespace UnityEditor.SceneTemplate
             var instantiationModeProperty = property.FindPropertyRelative(SceneTemplateUtils.InstantiationModePropertyName);
             rowItem.cloneToggle.value = IsCloning(instantiationModeProperty);
             rowItem.cloneToggle.SetEnabled(SceneTemplateProjectSettings.Get().GetDependencyInfo(depProperty.objectReferenceValue).supportsModification);
-            rowItem.cloneToggle.RegisterValueChangedCallback(evt =>
-            {
-                if (evt.newValue == IsCloning(instantiationModeProperty))
-                    return;
-                var newInstantiationType = (evt.newValue ? TemplateInstantiationMode.Clone : TemplateInstantiationMode.Reference);
-                instantiationModeProperty.enumValueIndex = (int)newInstantiationType;
+            rowItem.cloneToggle.RegisterCallback<ChangeEvent<bool>, SerializedProperty>(RegisterToggleChangeEvent, instantiationModeProperty);
+        }
 
-                // Sync Selection if the dependency is part of it:
-                SyncListSelectionToValue(newInstantiationType);
-                UpdateGlobalCloneToggle();
-            });
+        void UnbindItem(VisualElement el, int modelIndex)
+        {
+            var rowItem = (DependencyRowItem)el;
+            rowItem.cloneToggle.UnregisterCallback<ChangeEvent<bool>, SerializedProperty>(RegisterToggleChangeEvent);
+        }
+
+        void RegisterToggleChangeEvent(ChangeEvent<bool> evt, SerializedProperty property)
+        {
+            if (evt.newValue == IsCloning(property))
+                return;
+
+            var newInstantiationType = (evt.newValue ? TemplateInstantiationMode.Clone : TemplateInstantiationMode.Reference);
+            property.enumValueIndex = (int)newInstantiationType;
+
+            // Sync Selection if the dependency is part of it:
+            SyncListSelectionToValue(newInstantiationType);
+            UpdateGlobalCloneToggle();
         }
 
         bool AreAllFilteredDependenciesCloned()
@@ -321,48 +330,34 @@ namespace UnityEditor.SceneTemplate
 
         void SyncListSelectionToValue(TemplateInstantiationMode mode)
         {
-            foreach(var item in GetSelectedItems())
+            foreach(var indice in listView.selectedIndices)
             {
-                SetDependencyInstantiationMode(item, mode);
+                SetDependencyInstantiationMode(indice, mode);
             }
             m_SerializedObject.ApplyModifiedProperties();
         }
 
-        static void SetDependencyInstantiationMode(VisualElement row, TemplateInstantiationMode mode)
+        void SetDependencyInstantiationMode(int indice, TemplateInstantiationMode mode)
         {
-            var prop = (SerializedProperty)row.userData;
-            var rowItem = (DependencyRowItem)row;
-            var toggle = rowItem.cloneToggle;
-            if (!toggle.enabledSelf)
+            var property = m_FilteredItems[indice];
+            var depProperty = property.FindPropertyRelative(SceneTemplateUtils.DependencyPropertyName);
+            var enabledState = SceneTemplateProjectSettings.Get().GetDependencyInfo(depProperty.objectReferenceValue)
+                .supportsModification;
+            if (!enabledState)
                 return;
 
-            toggle.SetValueWithoutNotify(mode == TemplateInstantiationMode.Clone);
+            var rootElementForIndex = listView.GetRootElementForIndex(indice);
+            var toggle = rootElementForIndex?.Q<Toggle>();
+            toggle?.SetValueWithoutNotify(mode == TemplateInstantiationMode.Clone);
 
-            var depProp = prop.FindPropertyRelative(SceneTemplateUtils.InstantiationModePropertyName);
+            var depProp = property.FindPropertyRelative(SceneTemplateUtils.InstantiationModePropertyName);
             if (depProp.enumValueIndex != (int)mode)
-            {
                 depProp.enumValueIndex = (int)mode;
-            }
-        }
-
-        IEnumerable<VisualElement> GetSelectedItems()
-        {
-            if (listView.selectedIndex == -1)
-                yield break;
-
-            var listContent = listView.Q<VisualElement>("unity-content-container");
-            foreach (var row in listContent.Children())
-            {
-                if (row.ClassListContains("unity-collection-view__item--selected"))
-                {
-                    yield return row;
-                }
-            }
         }
 
         IEnumerable<SerializedProperty> GetSelectedDependencies()
         {
-            return GetSelectedItems().Select(item => (SerializedProperty)item.userData);
+            return listView.selectedIndices.Select(indice => m_FilteredItems[indice]);
         }
 
         static void OnDoubleClick(IEnumerable<object> objs)

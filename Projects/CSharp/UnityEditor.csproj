@@ -807,6 +807,9 @@
     <Compile Include="..\..\Editor\Mono\Camera\ScriptableBakedReflectionSystemWrapper.bindings.cs">
       <Link>Editor\Mono\Camera\ScriptableBakedReflectionSystemWrapper.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Categorize.cs">
+      <Link>Editor\Mono\Categorize.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\ChangeTrackerHandle.bindings.cs">
       <Link>Editor\Mono\ChangeTrackerHandle.bindings.cs</Link>
     </Compile>

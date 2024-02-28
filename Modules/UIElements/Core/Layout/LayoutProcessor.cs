@@ -44,6 +44,7 @@ delegate void InvokeMeasureFunctionDelegate(
     LayoutMeasureMode widthMode,
     float height,
     LayoutMeasureMode heightMode,
+    ref IntPtr exception,
     out LayoutSize result);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -64,6 +65,7 @@ static class LayoutDelegates
         LayoutMeasureMode widthMode,
         float height,
         LayoutMeasureMode heightMode,
+        ref IntPtr exception, 
         out LayoutSize result)
     {
         var measureFunction = node.Measure;
@@ -75,8 +77,25 @@ static class LayoutDelegates
             return;
         }
 
-        using (s_InvokeMeasureFunctionMarker.Auto())
-            measureFunction(node.GetOwner(), ref node, width, widthMode, height, heightMode, out result);
+        // Fix for UUM-48790:
+        // AddressSanitizer (ASAN) is lost when we throw an exception from c#
+        // which is called from c++, which in turn is called from c#.
+        // C# : Measure Function <-- Exception
+        // C++: LayoutNative
+        // C# : LayoutProcessorNative <-- Catch
+        // To solve this issue we return the exception using a GCHandle
+        // to LayoutProcessorNative using intptr_t pointer in c++.
+        try
+        {
+            using (s_InvokeMeasureFunctionMarker.Auto())
+                measureFunction(node.GetOwner(), ref node, width, widthMode, height, heightMode, out result);
+        }
+        catch (Exception e)
+        {
+            GCHandle handle = GCHandle.Alloc(e);
+            exception = GCHandle.ToIntPtr(handle);
+            result = default;
+        }
     }
 
     [AOT.MonoPInvokeCallback(typeof(InvokeBaselineFunctionDelegate))]

@@ -111,13 +111,17 @@ namespace UnityEngine
         // The current event that's being processed right now.
         // TODO: set this to null outside the event loop.
         //
+
+        // So we can use Events inside of UI Toolkit code
+        internal static bool ignoreGuiDepth = false;
+
         public static Event current
         {
             get
             {
                 // return null if Event.current is queried outside OnGUI
                 // Only in editor because of backwards compatible.
-                if (GUIUtility.guiDepth > 0)
+                if (ignoreGuiDepth || GUIUtility.guiDepth > 0)
                     return s_Current;
                 else
                     return null;

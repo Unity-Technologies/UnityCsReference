@@ -1657,7 +1657,7 @@ namespace UnityEngine.TextCore.Text
         {
             success = true;
             // Check if glyph already exists in font asset.
-            if (m_CharacterLookupDictionary.TryGetValue(unicode, out var character))
+            if (characterLookupTable.TryGetValue(unicode, out var character))
                 return character.glyphIndex;
 
             if (TextGenerator.IsExecutingJob)

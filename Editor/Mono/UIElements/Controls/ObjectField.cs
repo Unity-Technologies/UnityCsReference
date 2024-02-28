@@ -445,6 +445,12 @@ namespace UnityEditor.UIElements
                 EditorApplication.projectChanged -= m_AsyncOnProjectOrHierarchyChangedCallback;
                 EditorApplication.hierarchyChanged -= m_AsyncOnProjectOrHierarchyChangedCallback;
             });
+
+            RegisterCallback<ContextualMenuPopulateEvent>((evt) =>
+            {
+                var state = value == null ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal;
+                evt.menu.AppendAction("Properties...", _ => PropertyEditor.OpenPropertyEditor(value), state);
+            });
         }
 
         internal void OnObjectChanged(Object obj)

@@ -12,11 +12,11 @@ namespace UnityEngine.Accessibility
     /// Represents the hierarchy data model that the screen reader uses for reading and navigating the UI.
     /// </summary>
     /// <remarks>
-    /// A hierarchy must be set to active through <see cref="AssistiveSupport.activeHierarchy"/> when the screen 
-    /// reader is on for the screen reader to function. If a hierarchy is not set active, the screen reader cannot read and     
+    /// A hierarchy must be set to active through <see cref="AssistiveSupport.activeHierarchy"/> when the screen
+    /// reader is on for the screen reader to function. If a hierarchy is not set active, the screen reader cannot read and
     /// navigate through the UI. Once an active hierarchy is set, if the hierarchy is modified, the screen reader must
     /// be notified by calling <see cref="AssistiveSupport.NotificationDispatcher.SendLayoutChanged"/> or
-    /// <see cref="AssistiveSupport.NotificationDispatcher.SendScreenChanged"/> (depending if the changes are only at 
+    /// <see cref="AssistiveSupport.NotificationDispatcher.SendScreenChanged"/> (depending if the changes are only at
     /// the layout level, or a more considerable screen change). Modifications in the hierarchy consist of calls to:
     ///
     ///- <see cref="AccessibilityHierarchy.AddNode"/>
@@ -138,6 +138,10 @@ namespace UnityEngine.Accessibility
         /// <returns>The node created and inserted.</returns>
         public AccessibilityNode InsertNode(int childIndex, string label = null, AccessibilityNode parent = null)
         {
+            // Only nodes intended as roots may have an invalid parent.
+            if (parent != null)
+                ValidateNodeInHierarchy(parent);
+
             // Generate a new node to return, then add it to the manager under it's parent
             var node = GenerateNewNode();
             m_Nodes[node.id] = node;
@@ -147,19 +151,7 @@ namespace UnityEngine.Accessibility
                 node.label = label;
             }
 
-            // TODO: A11Y-360 Stop flattening the hierarchy for iOS
-            if (Application.platform == RuntimePlatform.IPhonePlayer)
-            {
-                // On iOS, anything that is a child of a node that the screen reader can focus on, is not focusable by
-                // the screen reader. In order to have actual hierarchies on iOS, we need the concept of content containers
-                // to be implemented by that platform. Until then, we flatten the hierarchy so that everything works correctly
-                // (Android needs a true hierarchy to be in place to guarantee navigation works).
-                SetParent(node, null, null, m_RootNodes, childIndex);
-            }
-            else
-            {
-                SetParent(node, parent, null, parent == null ? m_RootNodes : parent.childList, childIndex);
-            }
+            SetParent(node, parent, null, parent == null ? m_RootNodes : parent.childList, childIndex);
 
             NotifyHierarchyChanged();
             return node;
@@ -192,7 +184,8 @@ namespace UnityEngine.Accessibility
             if (node.parent == newParent)
             {
                 // If the node we are trying to move is already at the right location, we are done
-                if (newChildIndex == newParent.childList.IndexOf(node))
+                var parentList = newParent == null ? m_RootNodes : newParent.childList;
+                if (newChildIndex == parentList.IndexOf(node))
                 {
                     return false;
                 }
@@ -280,30 +273,13 @@ namespace UnityEngine.Accessibility
 
         private void CheckForLoopsAndSetParent(AccessibilityNode node, AccessibilityNode parent, int newChildIndex = -1)
         {
-            // TODO: A11Y-360 Stop flattening the hierarchy for iOS once we have the content containers implemented for it (A11Y-285)
-            if (Application.platform == RuntimePlatform.IPhonePlayer)
-            {
-                // On iOS, anything that is a child of a node that the screen reader can focus on, is not focusable by
-                // the screen reader. In order to have actual hierarchies on iOS, we need the concept of content containers
-                // to be implemented by that platform. Until then, we flatten the hierarchy so that everything works correctly
-                // (Android needs a true hierarchy to be in place to guarantee navigation works).
-                SetParent(node, null, m_RootNodes, m_RootNodes, newChildIndex);
-                return;
-            }
-
-            // We don't validate the nodes are in the hierarchy here as this is an private method and we guarantee this is
+            // We don't validate the nodes are in the hierarchy here as this is a private method and we guarantee this is
             // only called when we're sure both given parameters are valid.
 
             // Edge case: moving the node to be a root, so no need to check for loops
             if (parent == null)
             {
-                // We don't want to add the same node as root twice
-                if (node.parent == null)
-                {
-                    return;
-                }
-
-                SetParent(node, null, node.parent.childList, m_RootNodes, newChildIndex);
+                SetParent(node, null, node.parent?.childList ?? m_RootNodes, m_RootNodes, newChildIndex);
                 return;
             }
 
@@ -334,14 +310,14 @@ namespace UnityEngine.Accessibility
                 ancestor = ancestor.parent;
             }
 
-            SetParent(node, parent, node.parent.childList, parent.childList, newChildIndex);
+            SetParent(node, parent, node.parent?.childList ?? m_RootNodes, parent.childList, newChildIndex);
         }
 
         private void SetParent(AccessibilityNode node, AccessibilityNode parent, IList<AccessibilityNode> previousParentChildren, IList<AccessibilityNode> newParentChildren, int newChildIndex = -1)
         {
             // Update references for both old and new parents and child
             previousParentChildren?.Remove(node);
-            node.parent = parent;
+            node.SetParent(parent, newChildIndex);
 
             if (newChildIndex < 0 || newChildIndex > newParentChildren.Count)
             {
