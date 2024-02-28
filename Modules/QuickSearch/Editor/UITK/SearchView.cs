@@ -210,7 +210,7 @@ namespace UnityEditor.Search
 
             if (context.options.HasAny(SearchFlags.Debug))
                 Debug.Log($"[{context.sessionId}] Running query {context.searchText}");
-            RefreshContent(RefreshFlags.QueryStarted);
+            RefreshContent(RefreshFlags.QueryStarted, false);
             SearchService.Request(context, OnIncomingItems, OnQueryRequestFinished);
         }
 
@@ -281,13 +281,8 @@ namespace UnityEditor.Search
                     if (!m_ResultView?.showNoResultMessage ?? false)
                         return false;
 
-                    if (m_ResultView is SearchEmptyView emptyView)
-                    {
-                        emptyView.Update();
-                        return false;
-                    }
-
-                    nextView = new SearchEmptyView(this, viewState.flags);
+                    if (m_ResultView is not SearchEmptyView)
+                        nextView = new SearchEmptyView(this, viewState.flags);
                 }
                 else
                 {
@@ -377,14 +372,19 @@ namespace UnityEditor.Search
             return viewState.itemSize;
         }
 
-        public void RefreshContent(RefreshFlags flags)
+        public void RefreshContent(RefreshFlags flags, bool updateView = true)
         {
             using (new EditorPerformanceTracker("SearchView.RefreshContent"))
             {
-                UpdateView();
+                if (updateView)
+                {
+                    UpdateView();
+                    m_ResultView?.Refresh(flags);
+                }
+
                 if (context.debug)
                     Debug.Log($"[{searchInProgress}] Refresh {flags} for query \"{context.searchText}\": {m_ResultView}");
-                m_ResultView?.Refresh(flags);
+
                 Dispatcher.Emit(SearchEvent.RefreshContent, new SearchEventPayload(this, flags, context.searchText));
             }
         }

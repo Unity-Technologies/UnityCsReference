@@ -124,9 +124,9 @@ namespace UnityEditor.Search
             s_SearchEventManager.Emit(eventName, payload);
         }
 
-        internal static void Emit(string eventName, SearchEventPayload payload, SearchEventResultHandler onResolved)
+        internal static void Emit(string eventName, SearchEventPayload payload, SearchEventPrepareHandler onPrepare, SearchEventResultHandler onResolved)
         {
-            s_SearchEventManager.Emit(eventName, payload, onResolved);
+            s_SearchEventManager.Emit(eventName, payload, onPrepare, onResolved);
         }
     }
 }

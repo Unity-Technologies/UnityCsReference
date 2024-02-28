@@ -144,6 +144,7 @@ namespace UnityEditor.Search.Providers
             }
         }
 
+        internal const string filterId = "p:";
         internal const string type = "asset";
         private const string displayName = "Project";
 
@@ -153,7 +154,7 @@ namespace UnityEditor.Search.Providers
             return new SearchProvider(type, displayName)
             {
                 priority = 25,
-                filterId = "p:",
+                filterId = filterId,
                 showDetails = true,
                 showDetailsOptions = ShowDetailsOptions.Default | ShowDetailsOptions.Inspector | ShowDetailsOptions.DefaultGroup,
                 supportsSyncViewSearch = true,
@@ -766,26 +767,39 @@ namespace UnityEditor.Search.Providers
                 new SearchAction(type, "delete", null, "Delete", DeleteAssets),
                 new SearchAction(type, "copy_path", null, "Copy Path")
                 {
-                    enabled = items => items.Count == 1,
-                    handler = item =>
+                    enabled = items => items.Count >= 1,
+                    execute = items =>
                     {
-                        if (GetAssetPath(item) is string sc)
+                        var paths = items.Select(GetAssetPath).Where(path => !string.IsNullOrEmpty(path)).ToArray();                        
+                        if (paths.Length == 1)
                         {
-                            EditorGUIUtility.systemCopyBuffer = sc;
-                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, item.ToObject(), sc);
+                            EditorGUIUtility.systemCopyBuffer = paths[0];
+                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, items[0].ToObject(), paths[0]);
                         }
+                        else if (paths.Length > 1)
+                        {
+                            var pathsStr = string.Join(",", paths);
+                            EditorGUIUtility.systemCopyBuffer = pathsStr;
+                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, pathsStr);
+                        }                        
                     }
                 },
                 new SearchAction(type, "copy_guid", null, "Copy GUID")
                 {
-                    enabled = items => items.Count == 1,
-                    handler = item =>
+                    enabled = items => items.Count >= 1,
+                    execute = items =>
                     {
-                        if (GetAssetPath(item) is string sc)
+                        var guids = items.Select(item => AssetDatabase.AssetPathToGUID(GetAssetPath(item))).Where(path => !string.IsNullOrEmpty(path)).ToArray();
+                        if (guids.Length == 1)
                         {
-                            var guid = AssetDatabase.AssetPathToGUID(sc);
-                            EditorGUIUtility.systemCopyBuffer = guid;
-                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, item.ToObject(), guid);
+                            EditorGUIUtility.systemCopyBuffer = guids[0];
+                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, items[0].ToObject(), guids[0]);
+                        }
+                        else if (guids.Length > 1)
+                        {
+                            var guidsStr = string.Join(",", guids);
+                            EditorGUIUtility.systemCopyBuffer = guidsStr;
+                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, guidsStr);
                         }
                     }
                 },

@@ -1300,12 +1300,13 @@ namespace UnityEditor.Search
             {
                 if (m_Pattern == FilePattern.Folder)
                 {
-                    string folderName = IndexManager.ChooseFolder(m_Path, m_ExplorerButton.text) + "/";
-                    UpdateValues(folderName);
+                    string folderName = IndexManager.ChooseFolder(m_Path, m_ExplorerButton.text);
+                    if (folderName != null)
+                        UpdateValues(folderName + "/");
                 }
                 else if (m_Pattern == FilePattern.File)
                 {
-                    var fileName = "";
+                    string fileName = null;
 
                     var result = EditorUtility.OpenFilePanel(m_ExplorerButton.text, Application.dataPath, "");
                     if (!string.IsNullOrEmpty(result))
@@ -1316,13 +1317,15 @@ namespace UnityEditor.Search
                             fileName = result.Substring(k_ProjectPath.Length + 1); // Only the project part
                         }
                     }
-                    UpdateValues(fileName);
+
+                    if (fileName != null)
+                        UpdateValues(fileName);
                 }
             }
         }
         internal static string ChooseFolder(string path, string title)
         {
-            var folderName = "";
+            string folderName = null;
 
             var result = EditorUtility.OpenFolderPanel(title, Application.dataPath, folderName);
             if (!string.IsNullOrEmpty(result))

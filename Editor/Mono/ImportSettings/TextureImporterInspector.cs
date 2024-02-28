@@ -932,16 +932,21 @@ namespace UnityEditor
             m_ShowElementsAtlasSettings.target = isLayerShape;
             if (EditorGUILayout.BeginFadeGroup(m_ShowElementsAtlasSettings.faded) && isLayerShape)
             {
+                var isEditorTargetPreset = Presets.Preset.IsEditorTargetAPreset(target);
+
                 EditorGUI.indentLevel++;
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_FlipbookColumns, s_Styles.flipbookColumns);
                 if (EditorGUI.EndChangeCheck())
                 {
                     var val = m_FlipbookColumns.intValue;
-                    val = Mathf.Clamp(val, 1, m_TextureWidth);
+
+                    // It happens when we are directly changing a TextureImporter preset and not an ImportSettings (targetting a 2D texture).
+                    // We don't wanna clamp the value to 'm_TextureWidth', or it will always be set to -1 since there's no texture targeted.
+                    val = Mathf.Clamp(val, 1, !isEditorTargetPreset ? m_TextureWidth : val);
                     m_FlipbookColumns.intValue = val;
                 }
-                if (m_TextureWidth % m_FlipbookColumns.intValue != 0)
+                if (!isEditorTargetPreset && m_TextureWidth % m_FlipbookColumns.intValue != 0)
                     EditorGUILayout.HelpBox($"Image width {m_TextureWidth} does not divide into {m_FlipbookColumns.intValue} columns exactly", MessageType.Warning, true);
 
                 EditorGUI.BeginChangeCheck();
@@ -949,10 +954,13 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     var val = m_FlipbookRows.intValue;
-                    val = Mathf.Clamp(val, 1, m_TextureHeight);
+
+                    // It happens when we are directly changing a TextureImporter preset and not an ImportSettings (targetting a 2D texture).
+                    // We don't wanna clamp the value to 'm_TextureHeight', or it will always be set to -1 since there's no texture targeted.
+                    val = Mathf.Clamp(val, 1, !isEditorTargetPreset ? m_TextureHeight : val);
                     m_FlipbookRows.intValue = val;
                 }
-                if (m_TextureHeight % m_FlipbookRows.intValue != 0)
+                if (!isEditorTargetPreset && m_TextureHeight % m_FlipbookRows.intValue != 0)
                     EditorGUILayout.HelpBox($"Image height {m_TextureHeight} does not divide into {m_FlipbookRows.intValue} rows exactly", MessageType.Warning, true);
                 EditorGUI.indentLevel--;
             }

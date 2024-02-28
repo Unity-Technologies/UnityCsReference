@@ -224,15 +224,8 @@ namespace UnityEditor.Presets
         {
             var provider = PresetSearchProvider.CreateProvider(presetContext);
             var searchContext = UnityEditor.Search.SearchService.CreateContext(provider, string.Empty);
-            var viewState = new SearchViewState(searchContext,
-                SearchViewFlags.CompactView |
-                SearchViewFlags.OpenInBuilderMode |
-                SearchViewFlags.DisableSavedSearchQuery)
-            {
-                windowTitle = new GUIContent("Preset Selector"),
-                title = "Preset",
-                filterHandler = item => OnPresetFilter(presetContext, provider, item),
-                selectHandler = (item, canceled) =>
+            var viewState = SearchViewState.CreatePickerState("Preset", searchContext,
+                selectHandler: (item, canceled) =>
                 {
                     Preset preset = null;
                     if (item?.id == PresetSearchProvider.CreateItemID)
@@ -247,16 +240,19 @@ namespace UnityEditor.Presets
 
                     PresetEditorHelper.presetEditorOpen = false;
                 },
-
-                trackingHandler = item =>
+                trackingHandler: item =>
                 {
                     var preset = item?.ToObject<Preset>();
                     OnPresetSelected(in presetContext, preset, false);
 
                     presetContext.OnSelectionChanged?.Invoke(preset);
                 },
-                selectedIds = presetContext.CurrentSelection != null ? new []{ presetContext.CurrentSelection.GetInstanceID() } : null
-            };
+                filterHandler: item => OnPresetFilter(presetContext, provider, item),
+                SearchViewFlags.CompactView
+            );
+
+            viewState.windowTitle = new GUIContent("Preset Selector");
+            viewState.selectedIds = presetContext.CurrentSelection != null ? new[] { presetContext.CurrentSelection.GetInstanceID() } : null;
             PresetEditorHelper.presetEditorOpen = true;
             return UnityEditor.Search.SearchService.ShowPicker(viewState);
         }

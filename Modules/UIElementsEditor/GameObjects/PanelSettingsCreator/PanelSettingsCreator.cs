@@ -2,17 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.IO;
-using System.Linq;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements.StyleSheets;
-using Button = UnityEngine.UIElements.Button;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     static class PanelSettingsCreator
     {
         static void CreateDirectoryRecursively(string dirPath)
@@ -31,23 +29,37 @@ namespace UnityEditor.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static string GetTssTemplateContent()
         {
             return "@import url(\"" + ThemeRegistry.kThemeScheme + "://default\");";
         }
 
-        internal static ThemeStyleSheet GetOrCreateDefaultTheme()
+        internal static ThemeStyleSheet GetFirstThemeOrCreateDefaultTheme()
         {
-            // Create unity default theme if it is not there
-            var defaultTssAsset = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(ThemeRegistry.kUnityRuntimeThemePath);
-            if (defaultTssAsset == null)
+            // Find first runtime theme
+            var runtimeThemes = AssetDatabase.FindAssets(new SearchFilter
             {
-                CreateDirectoryRecursively(ThemeRegistry.kUnityThemesPath);
-                File.WriteAllText(ThemeRegistry.kUnityRuntimeThemePath, GetTssTemplateContent());
-                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                searchArea = SearchFilter.SearchArea.InAssetsOnly,
+                classNames = new[] { nameof(ThemeStyleSheet) }
+            });
 
-                defaultTssAsset = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(ThemeRegistry.kUnityRuntimeThemePath);
+            if (runtimeThemes.Length > 0)
+            {
+                var assetPath = AssetDatabase.GUIDToAssetPath(runtimeThemes[0]);
+                return AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(assetPath);
             }
+
+            return CreateDefaultTheme();
+        }
+
+        private static ThemeStyleSheet CreateDefaultTheme()
+        {
+            CreateDirectoryRecursively(ThemeRegistry.kUnityThemesPath);
+            File.WriteAllText(ThemeRegistry.kUnityRuntimeThemePath, GetTssTemplateContent());
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+
+            var defaultTssAsset = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(ThemeRegistry.kUnityRuntimeThemePath);
 
             return defaultTssAsset;
         }
@@ -55,7 +67,7 @@ namespace UnityEditor.UIElements
         [MenuItem("Assets/Create/UI Toolkit/Panel Settings Asset", priority = 702)]
         static void CreatePanelSettings()
         {
-            var defaultTssAsset = GetOrCreateDefaultTheme();
+            var defaultTssAsset = GetFirstThemeOrCreateDefaultTheme();
 
             PanelSettings settings = ScriptableObject.CreateInstance<PanelSettings>();
             settings.themeStyleSheet = defaultTssAsset;

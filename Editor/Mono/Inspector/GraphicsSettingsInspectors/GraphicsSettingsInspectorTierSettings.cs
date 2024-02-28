@@ -17,6 +17,7 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
     {
         static TierSettingsWindow s_Instance;
 
+
         public static void CreateWindow()
         {
             s_Instance = GetWindow<TierSettingsWindow>();
@@ -44,10 +45,13 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                     marginLeft = 5,
                     marginRight = 5
                 },
-                UseAnimation = false
+                UseAnimation = false,
+                VerticalLayout = false
             };
+            var scrollView = new ScrollView(ScrollViewMode.Vertical);
+            rootVisualElement.Add(scrollView);
             graphicsSettingsInspectorTierSettings.Initialize(m_SerializedObject);
-            rootVisualElement.Add(graphicsSettingsInspectorTierSettings);
+            scrollView.contentContainer.Add(graphicsSettingsInspectorTierSettings);
             RenderPipelineManager.activeRenderPipelineAssetChanged += RenderPipelineAssetChanged;
         }
 
@@ -148,7 +152,7 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         public override bool BuiltinOnly => true;
         public bool UseAnimation { get; set; } = true;
 
-        bool verticalLayout = true;
+        public bool VerticalLayout { get; set; } = true;
 
         // this is category animation is blatantly copied from PlayerSettingsEditor.cs
         bool m_ShowTierSettingsUI = true; // show by default, as otherwise users are confused
@@ -222,7 +226,7 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             var validPlatforms = BuildPlatforms.instance.GetValidPlatforms().ToArray();
             var platform = validPlatforms[EditorGUILayout.BeginPlatformGrouping(validPlatforms, null, EditorStyles.frameBox)];
 
-            if (verticalLayout) OnGuiVertical(platform);
+            if (VerticalLayout) OnGuiVertical(platform);
             else OnGuiHorizontal(platform);
 
             EditorGUILayout.EndPlatformGrouping();

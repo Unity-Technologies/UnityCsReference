@@ -576,6 +576,9 @@ namespace Unity.UI.Builder
         // Toolbar
         //
 
+        // Themes
+        public static readonly string ToolbarBuiltInDefaultRuntimeThemeName = "Built-in Default Runtime Theme";
+
         // Toolbar Messages
         public static readonly string ToolbarLoadUxmlDialogTitle = "Load UXML File";
         public static readonly string ToolbarCannotLoadUxmlOutsideProjectMessage = "UI Builder: Cannot load .uxml files outside the Project.";

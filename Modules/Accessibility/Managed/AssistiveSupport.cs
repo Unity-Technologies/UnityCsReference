@@ -97,8 +97,11 @@ namespace UnityEngine.Accessibility
 
         internal static void Initialize()
         {
-            ServiceManager.screenReaderStatusChanged += ScreenReaderStatusChanged;
+            isScreenReaderEnabled = AccessibilityManager.IsScreenReaderEnabled();
+
+            AccessibilityManager.screenReaderStatusChanged += ScreenReaderStatusChanged;
             AccessibilityManager.nodeFocusChanged += NodeFocusChanged;
+
             s_ServiceManager = new ServiceManager();
         }
 

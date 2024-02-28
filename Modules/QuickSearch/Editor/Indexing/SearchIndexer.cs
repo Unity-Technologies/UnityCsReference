@@ -60,6 +60,7 @@ namespace UnityEditor.Search
         public readonly int score;     // Score of the entry (used for sorting)
 
         public readonly double number;
+        public readonly int doc;
         public readonly HashSet<int> docs; // Document indexes
 
         public SearchIndexEntry(long _key, int _crc, Type _type)
@@ -68,6 +69,7 @@ namespace UnityEditor.Search
             crc = _crc;
             type = _type;
             score = int.MaxValue;
+            doc = -1;
             docs = null;
             number = _type == Type.Number ? BitConverter.Int64BitsToDouble(key) : double.NaN;
         }
@@ -78,8 +80,9 @@ namespace UnityEditor.Search
         }
 
         public SearchIndexEntry(long _key, int _crc, Type _type, int _index, int _score)
-            : this(_key, _crc, _type, _score, new[] { _index })
+            : this(_key, _crc, _type, _score, null)
         {
+            doc = _index;
         }
 
         public SearchIndexEntry(long _key, int _crc, Type _type, int _score, IEnumerable<int> _docs)
@@ -88,6 +91,7 @@ namespace UnityEditor.Search
             crc = _crc;
             type = _type;
             score = _score;
+            doc = -1;
             docs = _docs != null ? new HashSet<int>(_docs) : null;
             number = _type == Type.Number ? BitConverter.Int64BitsToDouble(key) : double.NaN;
         }
@@ -95,8 +99,8 @@ namespace UnityEditor.Search
         public override string ToString()
         {
             if (type == Type.Number)
-                return $"[{type}] {crc}:{number} ({score}) [{string.Join(",", docs)}]";
-            return $"[{type}] {crc}:{key} ({score}) [{string.Join(",", docs)}]";
+                return $"[{type}] {crc}:{number} ({score}) [{(doc == -1 ? string.Join(",", docs) : doc)}]";
+            return $"[{type}] {crc}:{key} ({score}) [{(doc == -1 ? string.Join(",", docs) : doc)}]";
         }
 
         public override int GetHashCode()
@@ -845,9 +849,9 @@ namespace UnityEditor.Search
                     indexWriter.Write((byte)p.type);
                     indexWriter.Write(p.score);
 
-                    if (p.docs.Count == 1)
+                    if (p.doc >= 0)
                     {
-                        indexWriter.Write(~p.docs.First());
+                        indexWriter.Write(~p.doc);
                     }
                     else
                     {
@@ -1153,20 +1157,21 @@ namespace UnityEditor.Search
             foreach (var sie in entries)
             {
                 var siDocs = RemapIndexes(sie, docIndexes);
-                var insertAt = m_BatchIndexes.BinarySearch(sie, wiec);
-                if (insertAt < 0)
-                {
-                    m_BatchIndexes.Insert(~insertAt, new SearchIndexEntry(sie.key, sie.crc, sie.type, baseScore + sie.score, siDocs));
-                }
-                else
-                {
-                    m_BatchIndexes[insertAt].docs.UnionWith(siDocs);
-                }
+                UpdateIndexEntry(m_BatchIndexes, sie, wiec, baseScore, siDocs);
             }
         }
 
         static IEnumerable<int> RemapIndexes(SearchIndexEntry sie, Dictionary<int/*other*/, int/*current*/> mapIndexes)
         {
+            if (sie.doc >= 0)
+            {
+                if (mapIndexes.TryGetValue(sie.doc, out var di))
+                    yield return di;
+            }
+
+            if (sie.docs == null)
+                yield break;
+
             foreach (var sdi in sie.docs)
             {
                 if (mapIndexes.TryGetValue(sdi, out var di))
@@ -1197,11 +1202,8 @@ namespace UnityEditor.Search
 
                 lock (this)
                 {
-                    indexes = new List<SearchIndexEntry>(m_Indexes.Where(i =>
-                    {
-                        i.docs.ExceptWith(removeDocIndexes);
-                        return i.docs.Count > 0;
-                    }));
+                    indexes = new List<SearchIndexEntry>();
+                    FilterOrphanEntries(m_Indexes, removeDocIndexes, indexes);
                 }
             }
             else
@@ -1232,15 +1234,7 @@ namespace UnityEditor.Search
                 var wiec = new SearchIndexComparer(SearchIndexOperator.DoNotCompareScore);
                 foreach (var sie in other.m_Indexes.Concat(other.m_BatchIndexes))
                 {
-                    var insertAt = indexes.BinarySearch(sie, wiec);
-                    if (insertAt < 0)
-                    {
-                        indexes.Insert(~insertAt, new SearchIndexEntry(sie.key, sie.crc, sie.type, baseScore + sie.score, RemapIndexes(sie, updatedDocIndexes)));
-                    }
-                    else
-                    {
-                        indexes[insertAt].docs.UnionWith(RemapIndexes(sie, updatedDocIndexes));
-                    }
+                    UpdateIndexEntry(indexes, sie, wiec, baseScore, RemapIndexes(sie, updatedDocIndexes));
 
                     documentIndexing?.Invoke(bi++, null, count);
                 }
@@ -1258,6 +1252,31 @@ namespace UnityEditor.Search
                 m_Timestamp = DateTime.UtcNow.ToBinary();
                 BuildDocumentIndexTable();
                 m_IndexReady = true;
+            }
+        }
+
+        static void UpdateIndexEntry(List<SearchIndexEntry> indexes, SearchIndexEntry sie, SearchIndexComparer wiec, int baseScore, IEnumerable<int> siDocs)
+        {
+            var insertAt = indexes.BinarySearch(sie, wiec);
+            if (insertAt < 0)
+            {
+                indexes.Insert(~insertAt, new SearchIndexEntry(sie.key, sie.crc, sie.type, baseScore + sie.score, siDocs));
+            }
+            else
+            {
+                var index = indexes[insertAt];
+                if (index.docs == null)
+                {
+                    var oldDoc = index.doc;
+                    index = new SearchIndexEntry(index.key, index.crc, index.type, index.score, siDocs);
+                    if (oldDoc >= 0)
+                        index.docs.Add(oldDoc);
+                    indexes[insertAt] = index;
+                }
+                else
+                {
+                    indexes[insertAt].docs.UnionWith(siDocs);
+                }
             }
         }
 
@@ -1613,11 +1632,8 @@ namespace UnityEditor.Search
                         if (m_IndexByDocuments.TryGetValue(rd, out var di))
                             removedDocIndexes.Add(di);
                     }
-                    m_BatchIndexes.AddRange(m_Indexes.Where(e =>
-                    {
-                        e.docs.Except(removedDocIndexes);
-                        return e.docs.Count > 0;
-                    }));
+
+                    FilterOrphanEntries(m_Indexes, removedDocIndexes, m_BatchIndexes);
                 }
                 else
                 {
@@ -1631,6 +1647,24 @@ namespace UnityEditor.Search
                 OnFinish();
             else
                 Dispatcher.Enqueue(OnFinish);
+        }
+
+        void FilterOrphanEntries(IReadOnlyList<SearchIndexEntry> searchEntries, HashSet<int> removedDocIndexes, List<SearchIndexEntry> addToEntries)
+        {
+            foreach (var entry in searchEntries)
+            {
+                if (entry.docs != null)
+                {
+                    entry.docs.ExceptWith(removedDocIndexes);
+                    if (entry.docs.Count > 0)
+                        addToEntries.Add(entry);
+                }
+                else
+                {
+                    if (!removedDocIndexes.Contains(entry.doc))
+                        addToEntries.Add(entry);
+                }
+            }
         }
 
         private protected virtual void OnFinish()
@@ -1899,25 +1933,47 @@ namespace UnityEditor.Search
             }
         }
 
+        // This method assumes entries are sorted.
         static IEnumerable<SearchIndexEntry> CompressEntries(IList<SearchIndexEntry> entries)
         {
-            var le = new SearchIndexEntry(long.MaxValue, int.MaxValue, SearchIndexEntry.Type.Undefined);
-            for (int i = 0, end = entries.Count; i != end; ++i)
+            if (entries.Count <= 0)
+                yield break;
+
+            if (entries.Count == 1)
+            {
+                var e = entries[0];
+                if (e.docs is { Count: > 0 } || e.doc >= 0)
+                    yield return e;
+                yield break;
+            }
+
+            var le = entries[0];
+            for (int i = 1, end = entries.Count; i != end; ++i)
             {
                 var e = entries[i];
                 if (e.type == le.type && e.crc == le.crc && e.key == le.key)
                 {
-                    le.docs.UnionWith(e.docs);
+                    if (le.docs == null)
+                    {
+                        var oldDoc = le.doc;
+                        le = new SearchIndexEntry(e.key, e.crc, e.type, le.score, Array.Empty<int>());
+                        if (oldDoc >= 0)
+                            le.docs.Add(oldDoc);
+                    }
+                    if (e.docs != null)
+                        le.docs.UnionWith(e.docs);
+                    else if (e.doc >= 0)
+                        le.docs.Add(e.doc);
                 }
                 else
                 {
+                    if (le.docs is { Count: > 0 } || le.doc >= 0)
+                        yield return le;
                     le = e;
-                    if (le.docs.Count > 0)
-                        yield return e;
                 }
             }
 
-            if (le.docs != null && le.docs.Count > 0)
+            if (le.docs is { Count: > 0 } || le.doc >= 0)
                 yield return le;
         }
 
@@ -2119,21 +2175,39 @@ namespace UnityEditor.Search
             do
             {
                 var fi = m_Indexes[foundIndex];
+                if (fi.docs == null && fi.doc < 0)
+                    continue;
+
+                if (fi.docs == null)
+                {
+                    if (GetRangeResult(term, fi.doc, fi.score, foundIndex, subset, findAll, out var sr))
+                        yield return sr;
+                    continue;
+                }
+
                 foreach (var di in fi.docs)
                 {
-                    var re = new SearchResult(di, fi.score);
-                    bool intersects = findAll || subset.Contains(re);
-                    if (intersects)
-                    {
-                        if (term.type == SearchIndexEntry.Type.Number)
-                            yield return new SearchResult(re.index, re.score + (int)Math.Abs(term.number - m_Indexes[foundIndex].number));
-                        else
-                            yield return new SearchResult(re.index, re.score);
-                    }
+                    if (GetRangeResult(term, di, fi.score, foundIndex, subset, findAll, out var sr))
+                        yield return sr;
                 }
+
                 // Advance to last matching element
             }
             while (Upper(ref foundIndex, term, comparer.op));
+        }
+
+        bool GetRangeResult(SearchIndexEntry term, int doc, int score, int foundIndex, SearchResultCollection subset, bool findAll, out SearchResult result)
+        {
+            result = new SearchResult(doc, score);
+            bool intersects = findAll || subset.Contains(result);
+            if (intersects)
+            {
+                if (term.type == SearchIndexEntry.Type.Number)
+                    result = new SearchResult(result.index, result.score + (int)Math.Abs(term.number - m_Indexes[foundIndex].number));
+                return true;
+            }
+
+            return false;
         }
 
         private IEnumerable<SearchResult> SearchIndexes(

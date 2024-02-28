@@ -13,7 +13,13 @@ namespace UnityEditor.Audio.UIElements
 
         public OnAudioFilterReadLevelMeter(MonoBehaviour behaviour)
         {
-            onGUIHandler = () => { m_IMGUI_AudioFilterGUI.DrawAudioFilterGUI(behaviour); };
+            onGUIHandler = () =>
+            {
+                if (GUIView.current != null)
+                {
+                    m_IMGUI_AudioFilterGUI.DrawAudioFilterGUI(behaviour);
+                }
+            };
         }
     }
 }
