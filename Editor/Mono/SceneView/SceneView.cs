@@ -2216,9 +2216,9 @@ namespace UnityEditor
             return m_Camera.targetTexture != null;
         }
 
-        private void DoDrawCamera(Rect windowSpaceCameraRect, Rect groupSpaceCameraRect, out bool pushedGUIClip)
+        private void DoDrawCamera(Rect windowSpaceCameraRect, Rect groupSpaceCameraRect, out bool pushedGUIClipNeedsToBePopped)
         {
-            pushedGUIClip = false;
+            pushedGUIClipNeedsToBePopped = false;
 
             if (!m_Camera.gameObject.activeInHierarchy)
                 return;
@@ -2232,8 +2232,21 @@ namespace UnityEditor
 
             if (UseSceneFiltering())
             {
+                bool sceneRendersToRT = SceneCameraRendersIntoRT();
+                if (sceneRendersToRT)
+                {
+                    GUIClip.Push(groupSpaceCameraRect, Vector2.zero, Vector2.zero, true);
+                    GUIClip.Internal_PushParentClip(Matrix4x4.identity, GUIClip.GetParentMatrix(), groupSpaceCameraRect);
+                }
+
                 if (evt.type == EventType.Repaint)
                     RenderFilteredScene(groupSpaceCameraRect);
+
+                if (sceneRendersToRT)
+                {
+                    GUIClip.Internal_PopParentClip();
+                    GUIClip.Pop();
+                }
 
                 if (evt.type == EventType.Repaint)
                     RenderTexture.active = null;
@@ -2253,7 +2266,7 @@ namespace UnityEditor
                 {
                     GUIClip.Push(new Rect(0f, 0f, position.width, position.height), Vector2.zero, Vector2.zero, true);
                     GUIClip.Internal_PushParentClip(Matrix4x4.identity, GUIClip.GetParentMatrix(), groupSpaceCameraRect);
-                    pushedGUIClip = true;
+                    pushedGUIClipNeedsToBePopped = true;
                 }
                 Handles.DrawCameraStep1(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam, drawGizmos, true);
 
@@ -2574,8 +2587,8 @@ namespace UnityEditor
                 GUIUtility.keyboardControl = m_MainViewControlID;
 
             // Draw camera
-            bool pushedGUIClip;
-            DoDrawCamera(windowSpaceCameraRect, groupSpaceCameraRect, out pushedGUIClip);
+            bool pushedGUIClipNeedsToBePopped;
+            DoDrawCamera(windowSpaceCameraRect, groupSpaceCameraRect, out pushedGUIClipNeedsToBePopped);
 
             CleanupCustomSceneLighting();
 
@@ -2620,7 +2633,7 @@ namespace UnityEditor
                 }
 
                 // If we reset the offsets pop that clip off now.
-                if (pushedGUIClip)
+                if (pushedGUIClipNeedsToBePopped)
                 {
                     GUIClip.Internal_PopParentClip();
                     GUIClip.Pop();

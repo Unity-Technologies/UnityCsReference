@@ -279,6 +279,7 @@ namespace UnityEditorInternal
             var header = new Label();
             header.text = GetHeaderText();
             header.tooltip = property.tooltip;
+            BindingsStyleHelpers.RegisterRightClickMenu(header, property);
             header.AddToClassList(kHeaderClassName);
 
             var listView = CreateListView(property);

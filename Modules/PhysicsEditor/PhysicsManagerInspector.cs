@@ -460,6 +460,7 @@ namespace UnityEditor
             tab.Add(new PropertyField(serializedObject.FindProperty("m_SolverType")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_DefaultMaxAngularSpeed")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_ScratchBufferChunkCount")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_FastMotionThreshold")));
         }
 
         static void SetupClothTab(VisualElement tab, SerializedObject serializedObject)

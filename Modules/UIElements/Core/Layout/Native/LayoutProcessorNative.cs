@@ -12,6 +12,7 @@ struct LayoutState
 {
     public IntPtr measureFunctionCallback;
     public IntPtr baselineFunctionCallback;
+    public IntPtr unusedExceptionPointer;
 
     public uint depth;
     public uint currentGenerationCount;
@@ -33,10 +34,22 @@ unsafe class LayoutProcessorNative : ILayoutProcessor
     {
         var pNode = (IntPtr)(&node);
 
+        IntPtr exceptionPlaceHolder = IntPtr.Zero;
+
         fixed (void* ptrState = &m_State)
         {
             var pState = (IntPtr) ptrState;
-            LayoutNative.CalculateLayout(pNode, parentWidth, parentHeight, (int)parentDirection, pState);
+
+            LayoutNative.CalculateLayout(pNode, parentWidth, parentHeight, (int)parentDirection, pState, (IntPtr)(&exceptionPlaceHolder));
+
+            if (exceptionPlaceHolder != IntPtr.Zero)
+            {
+                GCHandle handle = GCHandle.FromIntPtr(exceptionPlaceHolder);
+                Exception e = handle.Target as Exception;
+                handle.Free();
+                m_State.error = false;
+                throw e;
+            }
         }
     }
 }

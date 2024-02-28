@@ -33,6 +33,11 @@ namespace UnityEngine.UIElements
         public void DisplayMenu(EventBase triggerEvent, IEventHandler target)
         {
             DropdownMenu menu = new DropdownMenu();
+            DisplayMenu(triggerEvent, target, menu);
+        }
+
+        internal void DisplayMenu(EventBase triggerEvent, IEventHandler target, DropdownMenu menu)
+        {
             int pointerId, button;
 
             using (ContextualMenuPopulateEvent cme = ContextualMenuPopulateEvent.GetPooled(triggerEvent, menu, target, this))

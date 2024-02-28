@@ -148,6 +148,7 @@ namespace UnityEditor
         internal static PropertyEditor FocusedPropertyEditor { get; private set; }
 
         EditorElementUpdater m_EditorElementUpdater;
+        IPreviewable m_cachedPreviewEditor;
 
         public InspectorMode inspectorMode
         {
@@ -1132,44 +1133,38 @@ namespace UnityEditor
                 if (previewAndLabelElement != null && !hasFloatingPreviewWindow)
                 {
                     VisualElement previewItem = null;
-                        CreatePreviewables();
-                        IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
-                        m_cachedPreviewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
+                    CreatePreviewables();
+                    IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
+                    m_cachedPreviewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
 
-                        if (m_cachedPreviewEditor != null && m_cachedPreviewEditor.HasPreviewGUI())
+                    if (m_cachedPreviewEditor != null && m_cachedPreviewEditor.HasPreviewGUI())
+                    {
+                        previewWindow = new InspectorPreviewWindow();
+
+                        preview = m_SplitView.Q(s_PreviewContainer);
+                        preview.style.minHeight = m_PreviewMinHeight;
+
+                        previewItem = m_cachedPreviewEditor.CreatePreview(previewWindow);
+
+                        if (previewItem != null)
                         {
-                            if (previewWindow == null)
-                                previewWindow = new InspectorPreviewWindow();
-
-                            preview = m_SplitView.Q(s_PreviewContainer);
-                            IStyle style = preview.style;
-                            style.minHeight = m_PreviewMinHeight;
-                            previewItem = m_cachedPreviewEditor.CreatePreview(previewWindow);
-
-                            if (previewItem != null)
-                            {
-                                // Temporary naming while in transition to UITK
-                                InitUITKPreview();
-                            }
-
-                            // IMGUI fallback if no UITK preview found
-                            if (previewItem == null)
-                            {
-                                var previewAndLabelsContainer =
-                                    CreateIMGUIContainer(DrawPreviewAndLabels, s_PreviewContainer);
-                                m_PreviewResizer.SetContainer(previewAndLabelsContainer, kBottomToolbarHeight);
-                                previewAndLabelElement.Add(previewAndLabelsContainer);
-
-                                if (preview == null)
-                                    m_SplitView.Add(previewAndLabelElement);
-                            }
-                            else
-                            {
-                                preview = m_SplitView.Q(s_PreviewContainer);
-                                preview.Add(previewWindow);
-                            }
+                            // Temporary naming while in transition to UITK
+                            InitUITKPreview();
+                            preview.Add(previewWindow);
                         }
+                        else // IMGUI fallback if no UITK preview found
+                        {
+                            var previewAndLabelsContainer =
+                                CreateIMGUIContainer(DrawPreviewAndLabels, s_PreviewContainer);
+                            m_PreviewResizer.SetContainer(previewAndLabelsContainer, kBottomToolbarHeight);
+                            previewAndLabelElement.Add(previewAndLabelsContainer);
+
+                            if (preview == null)
+                                m_SplitView.Add(previewAndLabelElement);
+                        }
+                    }
                 }
+
                 // Footer
                 if (previewAndLabelElement?.childCount == 0)
                 {
@@ -1268,8 +1263,6 @@ namespace UnityEditor
 
             dragline.style.marginRight = margin;
         }
-
-        private IPreviewable m_cachedPreviewEditor;
 
         internal void PrepareToolbar(InspectorPreviewWindow toolbar, bool isFloatingPreviewWindow = false)
         {

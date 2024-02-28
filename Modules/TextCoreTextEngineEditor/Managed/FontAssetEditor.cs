@@ -50,7 +50,7 @@ namespace UnityEditor.TextCore.Text
     [CustomEditor(typeof(FontAsset))]
     internal class FontAssetEditor : Editor
     {
-        private struct UI_PanelState
+        internal struct UI_PanelState
         {
             public static bool generationSettingsPanel = true;
             public static bool fontAtlasInfoPanel = true;
@@ -64,7 +64,7 @@ namespace UnityEditor.TextCore.Text
             public static bool MarkToMarkTablePanel = false;
         }
 
-        private struct GenerationSettings
+        internal struct GenerationSettings
         {
             public Font sourceFont;
             public int faceIndex;
@@ -155,12 +155,12 @@ namespace UnityEditor.TextCore.Text
         private int m_CurrentMarkToBasePage = 0;
         private int m_CurrentMarkToMarkPage = 0;
 
-        private int m_SelectedGlyphRecord = -1;
-        private int m_SelectedCharacterRecord = -1;
-        private int m_SelectedLigatureRecord = -1;
-        private int m_SelectedAdjustmentRecord = -1;
-        private int m_SelectedMarkToBaseRecord = -1;
-        private int m_SelectedMarkToMarkRecord = -1;
+        internal int m_SelectedGlyphRecord = -1;
+        internal int m_SelectedCharacterRecord = -1;
+        internal int m_SelectedLigatureRecord = -1;
+        internal int m_SelectedAdjustmentRecord = -1;
+        internal int m_SelectedMarkToBaseRecord = -1;
+        internal int m_SelectedMarkToMarkRecord = -1;
 
         enum RecordSelectionType { CharacterRecord, GlyphRecord, LigatureSubstitutionRecord, AdjustmentPairRecord, MarkToBaseRecord, MarkToMarkRecord }
 
@@ -452,12 +452,7 @@ namespace UnityEditor.TextCore.Text
                 Font sourceFont = (Font)EditorGUILayout.ObjectField("Source Font File", m_fontAsset.SourceFont_EditorRef, typeof(Font), false);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    m_GenerationSettings.sourceFont = m_fontAsset.SourceFont_EditorRef;
-                    m_fontAsset.SourceFont_EditorRef = sourceFont;
-                    m_FontFaces = GetFontFaces(0);
-                    m_FaceInfoDirty = true;
-                    m_DisplayDestructiveChangeWarning = true;
-                    //m_MaterialPresetsRequireUpdate = true;
+                    UpdateSourceFontFile(sourceFont);
                 }
 
                 EditorGUI.BeginDisabledGroup(sourceFont == null);
@@ -466,70 +461,14 @@ namespace UnityEditor.TextCore.Text
                     m_FontFaceIndex_prop.intValue = EditorGUILayout.Popup(new GUIContent("Font Face"), m_FontFaceIndex_prop.intValue, m_FontFaces);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        m_MaterialPresetsRequireUpdate = true;
-                        m_DisplayDestructiveChangeWarning = true;
-                        m_FaceInfoDirty = true;
+                        UpdateFontFaceIndex(m_FontFaceIndex_prop.intValue);
                     }
 
                     EditorGUI.BeginChangeCheck();
                     EditorGUILayout.PropertyField(m_AtlasPopulationMode_prop, new GUIContent("Atlas Population Mode"));
                     if (EditorGUI.EndChangeCheck())
                     {
-                        serializedObject.ApplyModifiedProperties();
-
-                        bool isDatabaseRefreshRequired = false;
-
-                        // Static font asset
-                        if (m_AtlasPopulationMode_prop.intValue == 0)
-                        {
-                            m_fontAsset.sourceFontFile = null;
-
-                            //Set atlas textures to non readable.
-                            for (int i = 0; i < m_fontAsset.atlasTextures.Length; i++)
-                            {
-                                Texture2D tex = m_fontAsset.atlasTextures[i];
-
-                                if (tex != null && tex.isReadable)
-                                    FontEngineEditorUtilities.SetAtlasTextureIsReadable(tex, false);
-                            }
-
-                            //Debug.Log("Atlas Population mode set to [Static].");
-                        }
-                        else // Dynamic font asset
-                        {
-                            if (m_fontAsset.m_SourceFontFile_EditorRef.dynamic == false)
-                            {
-                                Debug.LogWarning("Please set the [" + m_fontAsset.name + "] font to dynamic mode as this is required for Dynamic SDF support.", m_fontAsset.m_SourceFontFile_EditorRef);
-                                m_AtlasPopulationMode_prop.intValue = 0;
-
-                                serializedObject.ApplyModifiedProperties();
-                            }
-                            else
-                            {
-                                m_fontAsset.sourceFontFile = m_fontAsset.m_SourceFontFile_EditorRef;
-
-                                // Set atlas textures to non readable.
-                                for (int i = 0; i < m_fontAsset.atlasTextures.Length; i++)
-                                {
-                                    Texture2D tex = m_fontAsset.atlasTextures[i];
-
-                                    if (tex != null && tex.isReadable == false)
-                                        FontEngineEditorUtilities.SetAtlasTextureIsReadable(tex, true);
-                                }
-
-                                //Debug.Log("Atlas Population mode set to [" + (m_AtlasPopulationMode_prop.intValue == 1 ? "Dynamic" : "Dynamic OS") + "].");
-                            }
-
-                            // Dynamic OS font asset
-                            if (m_AtlasPopulationMode_prop.intValue == 2)
-                                m_fontAsset.sourceFontFile = null;
-                        }
-
-                        if (isDatabaseRefreshRequired)
-                            AssetDatabase.Refresh();
-
-                        serializedObject.Update();
-                        isAssetDirty = true;
+                        UpdateAtlasPopulationMode(m_AtlasPopulationMode_prop.intValue);
                     }
 
                     // Save state of atlas settings
@@ -585,62 +524,12 @@ namespace UnityEditor.TextCore.Text
 
                             if (GUI.Button(new Rect(rect.width - 140, rect.y + 36, 80, 18), new GUIContent("Apply")))
                             {
-                                m_DisplayDestructiveChangeWarning = false;
-
-                                // Update face info if  sampling point size was changed.
-                                if (m_GenerationSettings.pointSize != m_SamplingPointSize_prop.intValue || m_FaceInfoDirty)
-                                {
-                                    LoadFontFace(m_SamplingPointSize_prop.intValue, m_FontFaceIndex_prop.intValue);
-                                    m_fontAsset.faceInfo = FontEngine.GetFaceInfo();
-                                    m_FaceInfoDirty = false;
-                                }
-
-                                Material mat = m_fontAsset.material;
-
-                                // Update material
-                                mat.SetFloat(TextShaderUtilities.ID_TextureWidth, m_AtlasWidth_prop.intValue);
-                                mat.SetFloat(TextShaderUtilities.ID_TextureHeight, m_AtlasHeight_prop.intValue);
-
-                                if (mat.HasProperty(TextShaderUtilities.ID_GradientScale))
-                                    mat.SetFloat(TextShaderUtilities.ID_GradientScale, m_AtlasPadding_prop.intValue + 1);
-
-                                // Update material presets if any of the relevant properties have been changed.
-                                if (m_MaterialPresetsRequireUpdate)
-                                {
-                                    m_MaterialPresetsRequireUpdate = false;
-
-                                    Material[] materialPresets = TextCoreEditorUtilities.FindMaterialReferences(m_fontAsset);
-                                    for (int i = 0; i < materialPresets.Length; i++)
-                                    {
-                                        mat = materialPresets[i];
-
-                                        mat.SetFloat(TextShaderUtilities.ID_TextureWidth, m_AtlasWidth_prop.intValue);
-                                        mat.SetFloat(TextShaderUtilities.ID_TextureHeight, m_AtlasHeight_prop.intValue);
-
-                                        if (mat.HasProperty(TextShaderUtilities.ID_GradientScale))
-                                            mat.SetFloat(TextShaderUtilities.ID_GradientScale, m_AtlasPadding_prop.intValue + 1);
-                                    }
-                                }
-
-                                m_fontAsset.UpdateFontAssetData();
-                                GUIUtility.keyboardControl = 0;
-                                isAssetDirty = true;
-
-                                // Update Font Asset Creation Settings to reflect new changes.
-                                UpdateFontAssetCreationSettings();
-
-                                // TODO: Clear undo buffers.
-                                //Undo.ClearUndo(m_fontAsset);
+                                ApplyDestructiveChanges();
                             }
 
                             if (GUI.Button(new Rect(rect.width - 56, rect.y + 36, 80, 18), new GUIContent("Revert")))
                             {
-                                m_DisplayDestructiveChangeWarning = false;
-                                RestoreGenerationSettings();
-                                GUIUtility.keyboardControl = 0;
-
-                                // TODO: Clear undo buffers.
-                                //Undo.ClearUndo(m_fontAsset);
+                                RevertDestructiveChanges();
                             }
 
                             GUI.enabled = guiEnabledState;
@@ -2046,7 +1935,7 @@ namespace UnityEditor.TextCore.Text
             }
         }
 
-        void SavedGenerationSettings()
+        internal void SavedGenerationSettings()
         {
             m_GenerationSettings.faceIndex = m_FontFaceIndex_prop.intValue;
             m_GenerationSettings.glyphRenderMode = (GlyphRenderMode)m_AtlasRenderMode_prop.intValue;
@@ -2056,7 +1945,7 @@ namespace UnityEditor.TextCore.Text
             m_GenerationSettings.atlasHeight     = m_AtlasHeight_prop.intValue;
         }
 
-        void RestoreGenerationSettings()
+        internal void RestoreGenerationSettings()
         {
             m_fontAsset.SourceFont_EditorRef = m_GenerationSettings.sourceFont;
             m_FontFaceIndex_prop.intValue = m_GenerationSettings.faceIndex;
@@ -2967,6 +2856,143 @@ namespace UnityEditor.TextCore.Text
                 // Could switch to using the default material of the font asset which would require passing scale to the shader.
                 Graphics.DrawTexture(glyphDrawPosition, atlasTexture, texCoords, 0, 0, 0, 0, new Color(0.8f, 0.8f, 0.8f), mat);
             }
+        }
+
+
+        internal void UpdateSourceFontFile(Font sourceFont)
+        {
+            m_GenerationSettings.sourceFont = m_fontAsset.SourceFont_EditorRef;
+            m_fontAsset.SourceFont_EditorRef = sourceFont;
+            m_FontFaces = GetFontFaces(0);
+            m_FaceInfoDirty = true;
+            m_DisplayDestructiveChangeWarning = true;
+        }
+
+        internal void UpdateFontFaceIndex(int index)
+        {
+            var faceInfo = m_fontAsset.faceInfo;
+            faceInfo.faceIndex = index;
+            m_fontAsset.faceInfo = faceInfo;
+            m_MaterialPresetsRequireUpdate = true;
+            m_DisplayDestructiveChangeWarning = true;
+            m_FaceInfoDirty = true;
+        }
+
+        // 0 = Static, 1 = Dynamic, 2 = Dynamic OS
+        internal void UpdateAtlasPopulationMode(int populationMode)
+        {
+            serializedObject.ApplyModifiedProperties();
+            m_fontAsset.atlasPopulationMode = (AtlasPopulationMode)populationMode;
+
+            // Static font asset
+            if (populationMode == 0)
+            {
+                m_fontAsset.sourceFontFile = null;
+
+                //Set atlas textures to non readable.
+                for (int i = 0; i < m_fontAsset.atlasTextures.Length; i++)
+                {
+                    Texture2D tex = m_fontAsset.atlasTextures[i];
+
+                    if (tex != null && tex.isReadable)
+                        FontEngineEditorUtilities.SetAtlasTextureIsReadable(tex, false);
+                }
+
+                //Debug.Log("Atlas Population mode set to [Static].");
+            }
+            else // Dynamic font asset
+            {
+                if (m_fontAsset.m_SourceFontFile_EditorRef.dynamic == false)
+                {
+                    Debug.LogWarning("Please set the [" + m_fontAsset.name + "] font to dynamic mode as this is required for Dynamic SDF support.", m_fontAsset.m_SourceFontFile_EditorRef);
+                    m_AtlasPopulationMode_prop.intValue = 0;
+                    m_fontAsset.atlasPopulationMode = (AtlasPopulationMode)populationMode;
+
+                    serializedObject.ApplyModifiedProperties();
+                }
+                else
+                {
+                    m_fontAsset.sourceFontFile = m_fontAsset.m_SourceFontFile_EditorRef;
+
+                    // Set atlas textures to readable.
+                    for (int i = 0; i < m_fontAsset.atlasTextures.Length; i++)
+                    {
+                        Texture2D tex = m_fontAsset.atlasTextures[i];
+
+                        if (tex != null && tex.isReadable == false)
+                            FontEngineEditorUtilities.SetAtlasTextureIsReadable(tex, true);
+                    }
+
+                    //Debug.Log("Atlas Population mode set to [" + (m_AtlasPopulationMode_prop.intValue == 1 ? "Dynamic" : "Dynamic OS") + "].");
+                }
+
+                // Dynamic OS font asset
+                if (populationMode == 2)
+                    m_fontAsset.sourceFontFile = null;
+            }
+
+            serializedObject.Update();
+            isAssetDirty = true;
+        }
+
+        internal void ApplyDestructiveChanges()
+        {
+            m_DisplayDestructiveChangeWarning = false;
+
+            // Update face info if  sampling point size was changed.
+            if (m_GenerationSettings.pointSize != m_SamplingPointSize_prop.intValue || m_FaceInfoDirty)
+            {
+                LoadFontFace(m_SamplingPointSize_prop.intValue, m_FontFaceIndex_prop.intValue);
+                m_fontAsset.faceInfo = FontEngine.GetFaceInfo();
+                m_FaceInfoDirty = false;
+            }
+
+            Material mat = m_fontAsset.material;
+
+            // Update material
+            mat.SetFloat(TextShaderUtilities.ID_TextureWidth, m_AtlasWidth_prop.intValue);
+            mat.SetFloat(TextShaderUtilities.ID_TextureHeight, m_AtlasHeight_prop.intValue);
+
+            if (mat.HasProperty(TextShaderUtilities.ID_GradientScale))
+                mat.SetFloat(TextShaderUtilities.ID_GradientScale, m_AtlasPadding_prop.intValue + 1);
+
+            // Update material presets if any of the relevant properties have been changed.
+            if (m_MaterialPresetsRequireUpdate)
+            {
+                m_MaterialPresetsRequireUpdate = false;
+
+                Material[] materialPresets = TextCoreEditorUtilities.FindMaterialReferences(m_fontAsset);
+                for (int i = 0; i < materialPresets.Length; i++)
+                {
+                    mat = materialPresets[i];
+
+                    mat.SetFloat(TextShaderUtilities.ID_TextureWidth, m_AtlasWidth_prop.intValue);
+                    mat.SetFloat(TextShaderUtilities.ID_TextureHeight, m_AtlasHeight_prop.intValue);
+
+                    if (mat.HasProperty(TextShaderUtilities.ID_GradientScale))
+                        mat.SetFloat(TextShaderUtilities.ID_GradientScale, m_AtlasPadding_prop.intValue + 1);
+                }
+            }
+
+            m_fontAsset.UpdateFontAssetData();
+            GUIUtility.keyboardControl = 0;
+            isAssetDirty = true;
+
+            // Update Font Asset Creation Settings to reflect new changes.
+            UpdateFontAssetCreationSettings();
+
+            // TODO: Clear undo buffers.
+            //Undo.ClearUndo(m_fontAsset);
+        }
+
+        internal void RevertDestructiveChanges()
+        {
+            m_DisplayDestructiveChangeWarning = false;
+            RestoreGenerationSettings();
+            GUIUtility.keyboardControl = 0;
+
+            // TODO: Clear undo buffers.
+            //Undo.ClearUndo(m_fontAsset);
         }
     }
 }

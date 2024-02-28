@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Audio;
 using UnityEditor.Audio.UIElements;
+using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -276,6 +277,7 @@ sealed class AudioContainerWindow : EditorWindow
         SubscribeToPitchCallbacksAndEvents();
         SubscribeToClipListCallbacksAndEvents();
         SubscribeToAutomaticTriggerCallbacksAndEvents();
+        SubscribeToTooltipCallbacksAndEvents();
         m_IsSubscribedToGUICallbacksAndEvents = true;
     }
 
@@ -286,6 +288,7 @@ sealed class AudioContainerWindow : EditorWindow
         UnsubscribeFromPitchCallbacksAndEvents();
         UnsubscribeFromClipListCallbacksAndEvents();
         UnsubscribeFromAutomaticTriggerCallbacksAndEvents();
+        UnsubscribeFromTooltipCallbacksAndEvents();
         m_IsSubscribedToGUICallbacksAndEvents = false;
     }
 
@@ -1089,6 +1092,39 @@ sealed class AudioContainerWindow : EditorWindow
         m_TimeRandomizationRangeSlider?.UnregisterValueChangedCallback(OnTimeRandomizationRangeChanged);
     }
 
+    void SubscribeToTooltipCallbacksAndEvents()
+    {
+        rootVisualElement.RegisterCallback<TooltipEvent>(ShowTooltip, TrickleDown.TrickleDown);
+    }
+
+    void UnsubscribeFromTooltipCallbacksAndEvents()
+    {
+        rootVisualElement.UnregisterCallback<TooltipEvent>(ShowTooltip);
+    }
+
+    void ShowTooltip(TooltipEvent evt)
+    {
+        var name = (evt.target as VisualElement).name;
+
+        if (name == "play-button" || name == "play-button-image")
+        {
+            var mode = State.IsPlayingOrPaused() ? "Stop" : "Play";
+            var shortcut = ShortcutManager.instance.GetShortcutBinding("Audio/Play-stop Audio Random Container");
+
+            if (shortcut.Equals(ShortcutBinding.empty))
+            {
+                evt.tooltip = mode;
+            }
+            else
+            {
+                evt.tooltip = mode + " (" + shortcut + ")";
+            }
+
+            evt.rect = (evt.target as VisualElement).worldBound;
+            evt.StopPropagation();
+        }
+    }
+
     void BindAndTrackAutomaticTriggerProperties()
     {
         var automaticTriggerModeProperty = State.SerializedObject.FindProperty("m_AutomaticTriggerMode");
@@ -1317,6 +1353,21 @@ sealed class AudioContainerWindow : EditorWindow
 
             if (deletedAssets.Length > 0)
                 Instance.OnAssetsDeleted(deletedAssets);
+        }
+    }
+
+    #endregion
+
+    #region Shortcuts
+
+    [Shortcut("Audio/Play-stop Audio Random Container", typeof(AudioContainerWindow), KeyCode.P, ShortcutModifiers.Alt)]
+    static void Preview(ShortcutArguments args)
+    {
+        var audioContainerWindow = focusedWindow as AudioContainerWindow;
+
+        if (audioContainerWindow != null && audioContainerWindow.IsDisplayingTarget())
+        {
+            audioContainerWindow.OnPlayStopButtonClicked();
         }
     }
 

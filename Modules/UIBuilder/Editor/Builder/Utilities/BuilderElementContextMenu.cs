@@ -305,6 +305,18 @@ namespace Unity.UI.Builder
                         m_PaneWindow.commandHandler.CreateTemplateFromHierarchy(documentElement, activeOpenUXML.visualTreeAsset);
                     });
             }
+
+            evt.menu.AppendSeparator();
+
+            evt.menu.AppendAction(
+                BuilderConstants.ExplorerHierarchyAddSelector,
+                a =>
+                {
+                    m_PaneWindow.commandHandler.CreateTargetedSelector(documentElement);
+                },
+            documentElement != null
+                ? DropdownMenuAction.Status.Normal
+                : DropdownMenuAction.Status.Disabled);
         }
     }
 }

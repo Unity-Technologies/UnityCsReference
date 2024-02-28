@@ -58,6 +58,8 @@ namespace UnityEngine.UIElements
         public static extern void ClearSnapshots(IntPtr handle);
 
         [ThreadSafe] public static extern MeshWriteDataInterface ExecuteSnapshotFromJob(IntPtr painterHandle, int i);
+
+        public static extern Rect ComputeBBoxFromArcs(IntPtr meshes, int meshCount);
     }
 
     /// <summary>

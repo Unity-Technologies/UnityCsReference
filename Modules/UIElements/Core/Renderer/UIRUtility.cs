@@ -42,14 +42,14 @@ namespace UnityEngine.UIElements
             }
             else if (ve.renderChainData.boneTransformAncestor != null)
             {
-                if (ve.renderChainData.boneTransformAncestor.renderChainData.localTransformScaleZero)
+                if (ve.renderChainData.boneTransformAncestor.renderChainData.worldTransformScaleZero)
                     ComputeTransformMatrix(ve, ve.renderChainData.boneTransformAncestor, out transform);
                 else
                     VisualElement.MultiplyMatrix34(ref ve.renderChainData.boneTransformAncestor.worldTransformInverse, ref ve.worldTransformRef, out transform);
             }
             else if (ve.renderChainData.groupTransformAncestor != null)
             {
-                if (ve.renderChainData.groupTransformAncestor.renderChainData.localTransformScaleZero)
+                if (ve.renderChainData.groupTransformAncestor.renderChainData.worldTransformScaleZero)
                     ComputeTransformMatrix(ve, ve.renderChainData.groupTransformAncestor, out transform);
                 else
                     VisualElement.MultiplyMatrix34(ref ve.renderChainData.groupTransformAncestor.worldTransformInverse, ref ve.worldTransformRef, out transform);

@@ -158,16 +158,24 @@ namespace Unity.UI.Builder
             return m_Canvas.Query().Where(e => e.GetVisualTreeAsset() == m_PaneWindow.document.visualTreeAsset).First();
         }
 
+        private StyleLength m_targetInitialMinWidth;
+        private StyleLength m_targetInitialMinHeight;
+
         protected void FixElementSizeAndPosition(VisualElement target)
         {
+            m_targetInitialMinWidth = target.style.minWidth;
+            m_targetInitialMinHeight = target.style.minHeight;
+
             target.style.minWidth = target.resolvedStyle.width;
             target.style.minHeight = target.resolvedStyle.height;
         }
 
         protected void UnfixElementSizeAndPosition(VisualElement target)
         {
-            target.style.minWidth = StyleKeyword.Null;
-            target.style.minHeight = StyleKeyword.Null;
+            target.style.minWidth = m_targetInitialMinWidth;
+            target.style.minHeight = m_targetInitialMinHeight;
+
+            selection.ForceVisualAssetUpdateWithoutSave(target, BuilderHierarchyChangeType.InlineStyle);
         }
 
         public void RegisterCallbacksOnTarget(VisualElement target)

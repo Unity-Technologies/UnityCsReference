@@ -3,15 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Reflection;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.ProjectSettings;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
+using UnityEditor.Categorization;
 
 namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 {
@@ -22,20 +21,17 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
         const string k_LineClass = "contextual-menu-button--handler";
         const string k_GraphicsSettingsClass = "project-settings-section__graphics-settings";
         const string k_GraphicsSettingsHighlightableClass = "graphics-settings__highlightable";
+        const string k_GraphicsSettingsContentFollowupClass = "project-settings-section__content-followup";
 
-        internal class GraphicsSettingsDrawerInfo
+        internal struct SettingsInfo : ICategorizable
         {
             public SerializedProperty property { get; private set; }
+            public Type type { get; private set; }
             public HelpURLAttribute helpURLAttribute { get; private set; }
-            public string category { get; private set; }
-            public CategoryInfo parentCategory { get; internal set; }
-            public string name { get; private set; }
             public bool onlyForDevMode { get; private set; }
             public IRenderPipelineGraphicsSettings target => property?.boxedValue as IRenderPipelineGraphicsSettings;
-
-            private GraphicsSettingsDrawerInfo() { }
-
-            public static GraphicsSettingsDrawerInfo ExtractFrom(SerializedProperty property)
+            
+            public static SettingsInfo? ExtractFrom(SerializedProperty property)
             {
                 //boxedProperty can be null if we keep in the list a data blob for a type that have disappears
                 //this can happens if user remove a IRenderPipelineGraphicsSettings from his project for instance
@@ -48,118 +44,37 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
                 if (!Unsupported.IsDeveloperMode() && hidden)
                     return null;
 
-                string name = null;
-                string category = type.GetCustomAttribute<CategoryAttribute>()?.Category;
-                int pos = category?.IndexOf('/') ?? -1;
-                if (!string.IsNullOrEmpty(category) && pos >= 0)
-                {
-                    //before first '/': we use it as the cathegory
-                    //everything after first '/': we use it as the name
-                    name = category.Substring(pos + 1);
-                    category = category.Substring(0, pos);
-                }
-
-                name ??= ObjectNames.NicifyVariableName(type.Name);
-                category ??= name;
-
-
-                return new GraphicsSettingsDrawerInfo()
+                return new SettingsInfo()
                 {
                     property = property.Copy(),
+                    type = type,
                     helpURLAttribute = type.GetCustomAttribute<HelpURLAttribute>(),
-                    category = category,
-                    parentCategory = null,
-                    name = name,
-                    onlyForDevMode = hidden
+                    onlyForDevMode = hidden,
                 };
             }
         }
 
         //internal for tests
-        internal class CategoryInfo : IEnumerable<GraphicsSettingsDrawerInfo>
+        internal static List<Category<LeafElement<SettingsInfo>>> Categorize(SerializedProperty property)
         {
-            SortedDictionary<string, GraphicsSettingsDrawerInfo> settingsInfos;
-
-            public int count => settingsInfos.Count;
-
-            public GraphicsSettingsDrawerInfo first
-            {
-                get
-                {
-                    var e = settingsInfos.GetEnumerator();
-                    e.MoveNext();
-                    return e.Current.Value;
-                }
-            }
-
-            public string category => first.category;
-
-            private CategoryInfo()
-            {
-            }
-
-            public bool Contains(GraphicsSettingsDrawerInfo settingsInfo)
-                => settingsInfos.ContainsKey(settingsInfo.name);
-
-            public void Add(GraphicsSettingsDrawerInfo settingsInfo)
-            {
-                settingsInfo.parentCategory = this;
-                settingsInfos.Add(settingsInfo.name, settingsInfo);
-            }
-
-            public static CategoryInfo ExtractFrom(GraphicsSettingsDrawerInfo property)
-            {
-                var categoryInfo = new CategoryInfo()
-                {
-                    settingsInfos = new() { { property.name, property } }
-                };
-                property.parentCategory = categoryInfo;
-                return categoryInfo;
-            }
-
-            IEnumerator<GraphicsSettingsDrawerInfo> IEnumerable<GraphicsSettingsDrawerInfo>.GetEnumerator()
-                => settingsInfos.Values.GetEnumerator();
-
-            IEnumerator IEnumerable.GetEnumerator()
-                => (this as IEnumerable<GraphicsSettingsDrawerInfo>).GetEnumerator();
-        }
-
-        //internal for tests
-        internal static SortedDictionary<string, CategoryInfo> Categorize(SerializedProperty property)
-        {
-            SortedDictionary<string, CategoryInfo> categories = new();
+            List<SettingsInfo> elements = new();
 
             var propertyIterator = property.Copy();
             var end = propertyIterator.GetEndProperty();
             propertyIterator.NextVisible(true);
             while (!SerializedProperty.EqualContents(propertyIterator, end))
             {
-                var info = GraphicsSettingsDrawerInfo.ExtractFrom(propertyIterator);
+                var info = SettingsInfo.ExtractFrom(propertyIterator);
                 if (info == null)
                 {
                     propertyIterator.NextVisible(false);
-                    continue; //remove array length property
+                    continue; //remove array length and hidden properties
                 }
-
-                //sort per type in category
-                if (categories.TryGetValue(info.category, out var categoryInfo))
-                {
-                    if (categoryInfo.Contains(info))
-                        Debug.LogWarning($"{nameof(IRenderPipelineGraphicsSettings)} {info.name} is duplicated. Only showing first one.");
-                    else
-                        categoryInfo.Add(info);
-
-                    propertyIterator.NextVisible(false);
-                    continue;
-                }
-
-                //sort per category
-                categories.Add(info.category, CategoryInfo.ExtractFrom(info));
-
+                elements.Add(info.Value);
                 propertyIterator.NextVisible(false);
             }
 
-            return categories;
+            return elements.SortByCategory();
         }
 
         void DrawHelpButton(VisualElement root, HelpURLAttribute helpURLAttribute)
@@ -171,85 +86,55 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
             }
         }
 
-        void ShowContextualMenu(Rect rect, IRenderPipelineGraphicsSettings target, SerializedProperty property)
+        void ShowContextualMenu(Rect rect, List<LeafElement<SettingsInfo>> siblings, SerializedProperty property)
         {
+            List<IRenderPipelineGraphicsSettings> targets = new(siblings.Count);
+            foreach (SettingsInfo sibling in siblings)
+                targets.Add(sibling.target);
+
             var contextualMenu = new GenericMenu(); //use ImGUI for now, need to be updated later
-            RenderPipelineGraphicsSettingsContextMenuManager.PopulateContextMenu(target, property, ref contextualMenu);
+            RenderPipelineGraphicsSettingsContextMenuManager.PopulateContextMenu(targets, property, ref contextualMenu);
             contextualMenu.DropDown(new Rect(rect.position + Vector2.up * rect.size.y, Vector2.zero), shouldDiscardMenuOnSecondClick: true);
         }
 
-        void DrawContextualMenuButton(VisualElement root, GraphicsSettingsDrawerInfo drawerInfo)
+        void DrawContextualMenuButton(VisualElement root, LeafElement<SettingsInfo> settingsInfo)
         {
             var button = new Button(Background.FromTexture2D(EditorGUIUtility.LoadIcon("pane options")));
-            button.clicked += () => ShowContextualMenu(button.worldBound, drawerInfo.target, drawerInfo.property);
+            button.clicked += () => ShowContextualMenu(button.worldBound, settingsInfo.parent.content, settingsInfo.data.property);
             root.Add(button);
         }
 
-        void DrawHeader(VisualElement root, CategoryInfo categoryInfo)
+        void DrawHeader(VisualElement root, Category<LeafElement<SettingsInfo>> category)
         {
             var line = new VisualElement();
             line.style.flexDirection = FlexDirection.Row;
             line.AddToClassList(k_LineClass);
 
-            var label = new Label(categoryInfo.category);
+            var label = new Label(category.name);
             label.AddToClassList(ProjectSettingsSection.Styles.header);
             line.Add(label);
 
             root.Add(line);
 
-            if (categoryInfo.count > 1)
-                return;
-
-            var onlySettings = categoryInfo.first;
-            DrawHelpButton(line, onlySettings.helpURLAttribute);
-            DrawContextualMenuButton(line, onlySettings);
+            var firstSetting = category[0];
+            DrawHelpButton(line, firstSetting.data.helpURLAttribute);
+            DrawContextualMenuButton(line, firstSetting);
         }
 
-        void DrawSubheader(VisualElement root, GraphicsSettingsDrawerInfo settingsInfo)
-        {
-            var line = new VisualElement();
-            line.style.flexDirection = FlexDirection.Row;
-            line.AddToClassList(k_LineClass);
-
-            var label = new Label(settingsInfo.name);
-            label.AddToClassList(ProjectSettingsSection.Styles.subheader);
-            line.Add(label);
-
-            DrawHelpButton(line, settingsInfo.helpURLAttribute);
-            DrawContextualMenuButton(line, settingsInfo);
-
-            root.Add(line);
-        }
-
-        void DrawContent(VisualElement root, GraphicsSettingsDrawerInfo settingsInfo)
+        void DrawContent(VisualElement root, SettingsInfo settingsInfo, bool first)
         {
             var graphicsSettings = new PropertyField(settingsInfo.property)
             {
-                name = settingsInfo.name,
+                name = settingsInfo.type.Name,
                 classList =
                 {
                     ProjectSettingsSection.Styles.content,
                     k_GraphicsSettingsClass,
                 }
             };
+            if (!first)
+                graphicsSettings.classList.Add(k_GraphicsSettingsContentFollowupClass);
             root.Add(graphicsSettings);
-
-            if (settingsInfo.onlyForDevMode)
-                graphicsSettings.RegisterCallback<GeometryChangedEvent>(UpdatePropertyLabel);
-        }
-
-        static void UpdatePropertyLabel(GeometryChangedEvent evt)
-        {
-            var propertyField = (PropertyField)evt.target;
-            propertyField.Query<Label>(className: "unity-property-field__label")
-                .ForEach(l =>
-                {
-                    l.enableRichText = true;
-                    l.text = $"{l.text} <b>(DevMode Only)</b>";
-                    l.tooltip = "Field is only visible in developer mode";
-                });
-
-            propertyField.UnregisterCallback<GeometryChangedEvent>(UpdatePropertyLabel);
         }
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
@@ -258,15 +143,13 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
             var graphicsSettings = property.FindPropertyRelative("m_List");
             Debug.Assert(graphicsSettings != null);
 
-            foreach (var categoryInfo in Categorize(graphicsSettings).Values)
+            foreach (var category in Categorize(graphicsSettings))
             {
-                DrawHeader(root, categoryInfo);
-                foreach (var graphicSettingsInfo in categoryInfo)
-                {
-                    if (categoryInfo.count > 1)
-                        DrawSubheader(root, graphicSettingsInfo);
-                    DrawContent(root, graphicSettingsInfo);
-                }
+                DrawHeader(root, category);
+
+                DrawContent(root, category[0], first: true);
+                for (int i = 1; i < category.count; ++i)
+                    DrawContent(root, category[i], first: false);
             }
 
             return root;

@@ -160,6 +160,8 @@ namespace UnityEditor.Build.Profile
 
         internal void OnActivateClicked()
         {
+            editorState.buildAndRunButtonDisplayName = platformSettingsState.buildAndRunButtonDisplayName;
+            editorState.buildButtonDisplayName = platformSettingsState.buildButtonDisplayName;
             editorState.UpdateBuildActionStates(ActionState.Disabled, ActionState.Disabled);
         }
 

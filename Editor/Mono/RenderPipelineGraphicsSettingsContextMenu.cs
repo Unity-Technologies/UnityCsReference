@@ -31,6 +31,22 @@ namespace UnityEditor.Rendering
             => PopulateContextMenu(setting as T, drawer, ref menu);
     }
 
+    struct RenderPipelineGraphicsSettingsContextMenuComparer : IComparer<IRenderPipelineGraphicsSettingsContextMenu>, IComparer<(IRenderPipelineGraphicsSettingsContextMenu, IEnumerable<IRenderPipelineGraphicsSettings>)>
+    {
+        //Sorting is done first by priority, but when priority
+        //are the same, we sort by type name to have a stable result.
+        public int Compare(IRenderPipelineGraphicsSettingsContextMenu m1, IRenderPipelineGraphicsSettingsContextMenu m2)
+        {
+            var compResult = m1.priority.CompareTo(m2.priority);
+            if (compResult == 0)
+                compResult = m1.GetType().FullName.CompareTo(m2.GetType().FullName);
+            return compResult;
+        }
+
+        public int Compare((IRenderPipelineGraphicsSettingsContextMenu, IEnumerable<IRenderPipelineGraphicsSettings>) m1, (IRenderPipelineGraphicsSettingsContextMenu, IEnumerable<IRenderPipelineGraphicsSettings>) m2)
+            => Compare(m1.Item1, m2.Item1);
+    }
+
     static class RenderPipelineGraphicsSettingsContextMenuManager
     {
         // typeof(IRenderPipelineGraphicsSettings) is used for global menu entries.
@@ -38,6 +54,7 @@ namespace UnityEditor.Rendering
        
         static Dictionary<Type, List<IRenderPipelineGraphicsSettingsContextMenu>> Initialize()
         {
+            RenderPipelineGraphicsSettingsContextMenuComparer comparer = new();
             Dictionary<Type, List<IRenderPipelineGraphicsSettingsContextMenu>> menus = new();
 
             Type GetTargetGraphicsSettingsType(Type menuType)
@@ -69,43 +86,33 @@ namespace UnityEditor.Rendering
             }
 
             foreach (var list in menus.Values)
-                Sort(list);
+                list.Sort(comparer);
 
             return menus;
         }
 
-        static void Sort(List<IRenderPipelineGraphicsSettingsContextMenu> listToSort)
+        static internal void PopulateContextMenu(IEnumerable<IRenderPipelineGraphicsSettings> graphicsSettings, SerializedProperty property, ref GenericMenu menu)
         {
-            //Sorting is done first by priority, but when priority
-            //are the same, we sort by type name to have a stable result.
-            listToSort.Sort((m1, m2) =>
-            {
-                var compResult = m1.priority.CompareTo(m2.priority);
-                if (compResult == 0)
-                    compResult = m1.GetType().AssemblyQualifiedName.CompareTo(m2.GetType().AssemblyQualifiedName);
-                return compResult;
-            });
-        }
-
-        static internal void PopulateContextMenu<T>(T graphicsSettings, SerializedProperty property, ref GenericMenu menu)
-            where T : class, IRenderPipelineGraphicsSettings
-        {
+            RenderPipelineGraphicsSettingsContextMenuComparer comparer = new();
             var drawer = ScriptAttributeUtility.GetHandler(property).propertyDrawer;
-            List<IRenderPipelineGraphicsSettingsContextMenu> menuPopupators = null;
             var defaultMenuPopulators = s_MenuEntries.Value.GetValueOrDefault(typeof(IRenderPipelineGraphicsSettings));
+            List<(IRenderPipelineGraphicsSettingsContextMenu populator, IEnumerable<IRenderPipelineGraphicsSettings> data)> menuPopupators = new();
+            foreach(var defaultMenuPopulator in defaultMenuPopulators)
+                menuPopupators.Add((defaultMenuPopulator, graphicsSettings));
 
-            if (s_MenuEntries.Value.TryGetValue(graphicsSettings.GetType(), out var additionalSpecificMenuPopulators))
+            foreach(var settings in graphicsSettings)
             {
-                menuPopupators = new(defaultMenuPopulators);
-                foreach (var item in additionalSpecificMenuPopulators)
-                    menuPopupators.Add(item);
-                Sort(menuPopupators);
+                if (s_MenuEntries.Value.TryGetValue(settings.GetType(), out var additionalSpecificMenuPopulators))
+                {
+                    foreach (var item in additionalSpecificMenuPopulators)
+                        menuPopupators.Add((item, new IRenderPipelineGraphicsSettings[] { settings }));
+                }
             }
-            else
-                menuPopupators = defaultMenuPopulators;
 
+            menuPopupators.Sort(comparer);
             foreach (var menuPopulator in menuPopupators)
-                menuPopulator.PopulateContextMenu(graphicsSettings, drawer, ref menu);
+                foreach(var settings in menuPopulator.data)
+                    menuPopulator.populator.PopulateContextMenu(settings, drawer, ref menu);
         }
     }
 
@@ -115,22 +122,36 @@ namespace UnityEditor.Rendering
         // Keeping space in case one want to modify after the Reset
         public int priority => int.MaxValue - 1;
 
+        List<IRenderPipelineGraphicsSettings> targets;
+
         public void PopulateContextMenu(IRenderPipelineGraphicsSettings setting, PropertyDrawer _, ref GenericMenu menu)
         {
-            if (menu.menuItems.Count > 0 && !menu.menuItems[menu.menuItems.Count - 1].separator)
-                menu.AddSeparator("");
+            if (menu.menuItems.Count > 0)
+            {
+                if (menu.menuItems[menu.menuItems.Count - 1].userData is ResetImplementation implementation)
+                {
+                    implementation.targets.Add(setting);
+                    return;
+                }
+                else if (!menu.menuItems[menu.menuItems.Count - 1].separator)
+                    menu.AddSeparator("");
+            }
 
             if (EditorApplication.isPlaying)
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent(k_Label), false);
             else
-                menu.AddItem(EditorGUIUtility.TrTextContent(k_Label), false, () => Reset(setting));
+            {
+                targets = new() { setting };
+                menu.AddItem(EditorGUIUtility.TrTextContent(k_Label), false, (implementation) => Reset((ResetImplementation)implementation), this);
+            }
         }
 
-        static void Reset(IRenderPipelineGraphicsSettings setting)
+        static void Reset(ResetImplementation implementation)
         {
             var alreadyOpenedWindow = EditorWindow.GetWindow<ProjectSettingsWindow>();
             var renderPipelineType = RenderPipelineEditorUtility.GetPipelineTypeFromPipelineAssetType(GraphicsSettingsInspectorUtility.GetRenderPipelineAssetTypeForSelectedTab(alreadyOpenedWindow.rootVisualElement));
-            RenderPipelineGraphicsSettingsManager.ResetRenderPipelineGraphicsSettings(setting.GetType(), renderPipelineType);
+            foreach (var target in implementation.targets)
+                RenderPipelineGraphicsSettingsManager.ResetRenderPipelineGraphicsSettings(target.GetType(), renderPipelineType);
         }
     }
 }
