@@ -103,8 +103,8 @@ namespace UnityEngine
                 isCached = isCalledFromNative ? textHandleCached.isCachedOnNative : true;
                 if (!textHandleCached.isCachedOnNative && isCalledFromNative)
                 {
-                    textHandleCached.Update(settings);
-                    textHandleCached.UpdatePreferredSize(settings);
+                    textHandleCached.Update();
+                    textHandleCached.UpdatePreferredSize();
                     textHandleCached.isCachedOnNative = true;
                 }
                 return textHandleCached;
@@ -115,8 +115,8 @@ namespace UnityEngine
             var listNode = new LinkedListNode<TextHandleTuple>(tuple);
             handle.tuple = listNode;
             textHandles[hash] = handle;
-            handle.Update(settings);
-            handle.UpdatePreferredSize(settings);
+            handle.Update();
+            handle.UpdatePreferredSize();
             textHandlesTuple.AddLast(listNode);
             handle.isCachedOnNative = isCalledFromNative;
             return handle;

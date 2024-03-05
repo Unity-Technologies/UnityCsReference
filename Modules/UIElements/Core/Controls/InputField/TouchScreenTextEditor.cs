@@ -10,6 +10,11 @@ namespace UnityEngine.UIElements
         private bool m_TouchKeyboardAllowsInPlaceEditing = false;
         private bool m_IsClicking = false;
 
+        // For UI Test Framework.
+        internal static long Frame { get; private set; }
+        // For UI Test Framework.
+        internal static TouchScreenKeyboard activeTouchScreenKeyboard { get; private set; }
+
         public TouchScreenTextEditorEventHandler(TextElement textElement, TextEditingUtilities editingUtilities)
             : base(textElement, editingUtilities) {}
 
@@ -28,6 +33,8 @@ namespace UnityEngine.UIElements
 
         void DoPollTouchScreenKeyboard()
         {
+            ++Frame;
+
             if (editingUtilities.TouchScreenKeyboardShouldBeUsed())
             {
                 if (textElement.m_TouchScreenKeyboard == null)
@@ -99,7 +106,7 @@ namespace UnityEngine.UIElements
 
                         edition.UpdateText(editingUtilities.text);
                         // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.
-                        textElement.uitkTextHandle.Update();
+                        textElement.uitkTextHandle.ComputeSettingsAndUpdate();
                     }
                     else if (!m_IsClicking && touchKeyboard != null && touchKeyboard.canGetSelection)
                     {
@@ -112,7 +119,7 @@ namespace UnityEngine.UIElements
                     edition.UpdateText(touchKeyboardText);
 
                     // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.
-                    textElement.uitkTextHandle.Update();
+                    textElement.uitkTextHandle.ComputeSettingsAndUpdate();
                 }
 
                 if (!edition.isDelayed)
@@ -152,6 +159,7 @@ namespace UnityEngine.UIElements
                 m_TouchKeyboardPoller?.Pause();
                 TouchScreenKeyboard.hideInput = true;
             }
+            activeTouchScreenKeyboard = null;
         }
 
         private void OpenTouchScreenKeyboard()
@@ -181,6 +189,8 @@ namespace UnityEngine.UIElements
             {
                 textElement.m_TouchScreenKeyboard.selection = new RangeInt(textElement.m_TouchScreenKeyboard.text?.Length ?? 0, 0);
             }
+
+            activeTouchScreenKeyboard = textElement.m_TouchScreenKeyboard;
         }
 
         public override void HandleEventBubbleUp(EventBase evt)

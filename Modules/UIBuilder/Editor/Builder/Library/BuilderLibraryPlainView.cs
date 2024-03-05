@@ -118,55 +118,6 @@ namespace Unity.UI.Builder
             FillView(m_Items);
         }
 
-        void AdjustSpace(PersistedFoldout foldout)
-        {
-            if (foldout.contentContainer.style.display == DisplayStyle.None)
-                return;
-
-            foreach (var dummy in m_DummyItems)
-            {
-                if (dummy.parent == foldout)
-                    dummy.RemoveFromHierarchy();
-            }
-
-            var plainViewItem = foldout.contentContainer.Q<LibraryPlainViewItem>();
-            var plainViewItemSize = new Vector2(plainViewItem.resolvedStyle.width, plainViewItem.resolvedStyle.height);
-            var itemsInRow = (int)Mathf.Floor(foldout.contentContainer.resolvedStyle.width / plainViewItemSize.x);
-
-            var foldoutItemsCount = foldout.contentContainer.childCount;
-            if (foldoutItemsCount <= itemsInRow)
-            {
-                foldout.contentContainer.style.justifyContent = Justify.FlexStart;
-                return;
-            }
-
-            foldout.contentContainer.style.justifyContent = Justify.SpaceAround;
-            var rem = foldoutItemsCount % itemsInRow;
-            if (rem == 0)
-                return;
-
-            var numberOfRequiredDummies = itemsInRow - rem;
-
-            for (var i = 0; i < numberOfRequiredDummies; i++)
-                foldout.Add(GetDummyItemView());
-        }
-
-        LibraryPlainViewItem GetDummyItemView()
-        {
-            foreach (var item in m_DummyItems.Where(item => item.parent == null))
-            {
-                return item;
-            }
-
-            var id = (int)Random.Range(0, float.MaxValue);
-            while (m_Items.Any(i => i.id == id))
-                id = (int)Random.Range(0, float.MaxValue);
-            var newItem = new LibraryPlainViewItem(new TreeViewItemData<BuilderLibraryTreeItem>(id, null));
-
-            m_DummyItems.Add(newItem);
-            return newItem;
-        }
-
         public override VisualElement contentContainer => m_ContentContainer == null ? this : m_ContentContainer;
 
         void FillView(IEnumerable<TreeViewItem> items, VisualElement itemsParent = null)
@@ -182,7 +133,6 @@ namespace Unity.UI.Builder
                         categoryFoldout.tag = BuilderConstants.EditorOnlyTag;
                         categoryFoldout.Q(LibraryFoldout.TagLabelName).AddToClassList(BuilderConstants.TagPillClassName);
                     }
-                    categoryFoldout.contentContainer.RegisterCallback<GeometryChangedEvent>(e => AdjustSpace(categoryFoldout));
                     categoryFoldout.AddToClassList(k_PlainViewFoldoutStyle);
                     Add(categoryFoldout);
                     FillView(item.children, categoryFoldout);

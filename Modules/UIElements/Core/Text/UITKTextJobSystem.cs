@@ -209,7 +209,7 @@ namespace UnityEngine.UIElements
                 {
                     visualElement.uitkTextHandle.AddTextInfoToCache();
                 }
-                var textInfo = visualElement.uitkTextHandle.UpdateFontAssetPrepared();
+                var textInfo = visualElement.uitkTextHandle.Update();
                 var meshInfos = (textInfo).meshInfo;
 
                 List<Material> materials = null;

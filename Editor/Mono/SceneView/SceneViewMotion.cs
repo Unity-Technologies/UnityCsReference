@@ -29,6 +29,7 @@ namespace UnityEditor
         internal const string k_SetSceneViewMotionHotControlEventCommandName = "SetSceneViewMotionHotControlEventCommand"; // Also used in tests.
 
         bool m_Moving;
+        public bool viewportsUnderMouse { get; set; }
         static readonly CameraFlyModeContext s_CameraFlyModeContext = new CameraFlyModeContext();
 
         // used by Tests/EditModeAndPlayModeTests/SceneView/CameraFlyModeContextTests
@@ -81,29 +82,31 @@ namespace UnityEditor
             public SceneView window => EditorWindow.focusedWindow as SceneView;
             public virtual bool active => ViewHasFocus;
             public static bool ViewHasFocus => (EditorWindow.focusedWindow is SceneView view) && view.sceneViewMotion != null;
+            public static bool ViewHasFocusAndViewportUnderMouse => ViewHasFocus && (EditorWindow.focusedWindow as SceneView).sceneViewMotion.viewportsUnderMouse;
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
         internal class SceneViewViewport : SceneViewContext
         {
+            public override bool active => ViewHasFocusAndViewportUnderMouse;
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
         class SceneViewViewport2D : SceneViewContext
         {
-            public override bool active => ViewHasFocus && (window.in2DMode || window.isRotationLocked);
+            public override bool active => ViewHasFocusAndViewportUnderMouse && (window.in2DMode || window.isRotationLocked);
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
         class SceneViewViewport3D : SceneViewContext
         {
-            public override bool active => ViewHasFocus && !window.in2DMode && !window.isRotationLocked;
+            public override bool active => ViewHasFocusAndViewportUnderMouse && !window.in2DMode && !window.isRotationLocked;
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
         class SceneViewViewportLockedPanTool : SceneViewContext
         {
-            public override bool active => ViewHasFocus && Tools.current == Tool.View;
+            public override bool active => ViewHasFocusAndViewportUnderMouse&& Tools.current == Tool.View;
         }
 
         [Shortcut(k_PanFocusTool, typeof(SceneViewViewport), KeyCode.Mouse2)]

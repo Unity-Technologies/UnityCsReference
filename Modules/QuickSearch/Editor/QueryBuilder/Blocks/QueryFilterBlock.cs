@@ -159,14 +159,6 @@ namespace UnityEditor.Search
                 {
                     foreach (Enum v in ve.GetType().GetEnumValues())
                         yield return new SearchProposition(category: null, label: ObjectNames.NicifyVariableName(v.ToString()), data: v);
-
-                    foreach (Enum v in SearchUtils.FindTypes<Enum>(ve.GetType().Name).SelectMany(t => t.GetEnumValues().OfType<Enum>()))
-                    {
-                        var vv = Convert.ToInt32(v);
-                        var label = $"{ObjectNames.NicifyVariableName(v.ToString())} ({vv})";
-                        yield return new SearchProposition(category: $"More/{v.GetType().FullName.Replace("UnityEngine.", "").Replace(".", "/")}",
-                            label: label, help: v.GetType().FullName, data: v, priority: vv);
-                    }
                 }
                 else
                 {
@@ -445,7 +437,7 @@ namespace UnityEditor.Search
 
             return true;
         }
-        
+
         private void ParseMarker(in QueryMarker marker)
         {
             this.marker = marker;
@@ -524,14 +516,14 @@ namespace UnityEditor.Search
         private object FormatObjectValue()
         {
             if (formatValue == null && formatType != null)
-                return $"<$object:none,{formatType.Name}$>";
+                return $"<$object:none,{formatType.FullName}$>";
             return '"' + this.value + '"';
         }
 
         private string GetFormatMarkerArgs()
         {
             if ((format == QueryBlockFormat.Enum || format == QueryBlockFormat.Object) && formatType != null)
-                return $",{formatType.Name}";
+                return $",{formatType.FullName}";
             return string.Empty;
         }
 

@@ -400,12 +400,23 @@ namespace UnityEditor
             menu.AddItem(new GUIContent("Copy Property Path"), false, () => EditorGUIUtility.systemCopyBuffer = propertyPath);
 
             if (CanSearchProperty(property))
+            {
                 menu.AddItem(new GUIContent("Search for same Property"), false, () => SearchProperty(property));
+                if (property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue)
+                {
+                    menu.AddItem(new GUIContent($"Find references to {property.objectReferenceValue.GetType().Name} {property.objectReferenceValue.name}"), false, () => FindReferences(property.objectReferenceValue));
+                }
+            }
         }
 
         private void SearchProperty(SerializedProperty property)
         {
             CommandService.Execute("OpenToSearchByProperty", CommandHint.Menu, property);
+        }
+
+        private void FindReferences(UnityEngine.Object obj)
+        {
+            CommandService.Execute("OpenToFindReferenceOnObject", CommandHint.Menu, obj);
         }
 
         private bool CanSearchProperty(SerializedProperty property)

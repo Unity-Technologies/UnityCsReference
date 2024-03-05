@@ -40,6 +40,7 @@ namespace UnityEditor.SpeedTree.Importer
         // Additional Settings properties
         private SerializedProperty m_MotionVectorModeEnumValue;
         private SerializedProperty m_GenerateColliders;
+        private SerializedProperty m_GenerateRigidbody;
 
         // LOD properties
         private SerializedProperty m_EnableSmoothLOD;
@@ -113,6 +114,7 @@ namespace UnityEditor.SpeedTree.Importer
 
                 m_MotionVectorModeEnumValue = FindPropertyFromName(addSettingsStr, nameof(addSettings.motionVectorModeEnumValue));
                 m_GenerateColliders = FindPropertyFromName(addSettingsStr, nameof(addSettings.generateColliders));
+                m_GenerateRigidbody = FindPropertyFromName(addSettingsStr, nameof(addSettings.generateRigidbody));
             }
 
             // LOD properties
@@ -200,7 +202,8 @@ namespace UnityEditor.SpeedTree.Importer
             // Additional Settings
             SpeedTreeImporterCommonEditor.ShowAdditionalSettingsGUI(
                 ref m_MotionVectorModeEnumValue,
-                ref m_GenerateColliders);
+                ref m_GenerateColliders,
+                ref m_GenerateRigidbody);
 
             EditorGUILayout.Space();
 

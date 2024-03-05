@@ -36,6 +36,11 @@ namespace UnityEditor.Search
     {
         public const int version = SearchIndexEntry.version | (0x0004 << 13);
 
+        public static string GetGUID(Type type)
+        {
+            return GUID.CreateGUIDFromSInt64((long)type.FullName.GetHashCode64()).ToString();
+        }
+
         public abstract IndexingOptions options { get; }
 
         private SearchDatabase.Options GetOptions()
@@ -63,7 +68,8 @@ namespace UnityEditor.Search
                     indexer.Write(fileStream);
 
                 ctx.DependsOnSourceAsset(ctx.assetPath);
-                ctx.DependsOnCustomDependency(GetType().GUID.ToString("N"));
+                var typeGuid = GetGUID(GetType());
+                ctx.DependsOnCustomDependency(typeGuid);
                 ctx.DependsOnCustomDependency(nameof(CustomObjectIndexerAttribute));
 
             }

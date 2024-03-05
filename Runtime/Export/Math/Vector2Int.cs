@@ -235,7 +235,9 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override int GetHashCode()
         {
-            return x.GetHashCode() ^ (y.GetHashCode() << 2);
+           const int p1 = 73856093;
+           const int p2 = 83492791;
+           return (x * p1) ^ (y * p2);
         }
 
         /// *listonly*

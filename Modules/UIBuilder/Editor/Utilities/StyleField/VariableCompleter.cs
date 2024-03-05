@@ -56,14 +56,15 @@ namespace Unity.UI.Builder
                 e.Q<Label>(s_ItemEditorOnlyLabelName).EnableInClassList(BuilderConstants.HiddenStyleClassName, !res.isEditorVar);
             };
 
-            selectionChanged += OnSelectionChanged;
+            hoveredItemChanged += UpdateDetailView;
+            selectionChanged += UpdateDetailView;
 
             matcherCallback = Matcher;
             getTextFromDataCallback = GetVarName;
             SetupCompleterField(handler.variableField?.textField, false);
         }
 
-        void OnSelectionChanged(VariableInfo data)
+        void UpdateDetailView(VariableInfo data)
         {
             if (m_DetailsView == null) return;
 

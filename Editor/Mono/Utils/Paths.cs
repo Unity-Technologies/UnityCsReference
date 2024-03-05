@@ -15,7 +15,7 @@ namespace UnityEditor.Utils
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class Paths
     {
-        static char[] invalidFilenameChars;
+        internal static char[] invalidFilenameChars;
 
         static Paths()
         {

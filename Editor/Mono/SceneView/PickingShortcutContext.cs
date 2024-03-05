@@ -8,6 +8,6 @@ namespace UnityEditor
 {
     class SceneViewPickingShortcutContext : SceneViewMotion.SceneViewContext
     {
-        public override bool active => ViewHasFocus && Tools.current != Tool.View;
+        public override bool active => ViewHasFocusAndViewportUnderMouse && Tools.current != Tool.View;
     }
 }

@@ -284,7 +284,14 @@ namespace UnityEditor.UIElements
 
             // Need to update the cache for multi-object edit detection.
             if (editor.targets.Length != Selection.objects.Length)
-                inspectorWindow.tracker.RebuildIfNecessary();
+            {
+                // Cannot force rebuild if locked, otherwise we get an infinite update loop.
+                var tracker = inspectorWindow.tracker;
+                if (tracker.isLocked)
+                    tracker.RebuildIfNecessary();
+                else
+                    tracker.ForceRebuild();
+            }
 
             var updateInspectorVisibility = false;
 

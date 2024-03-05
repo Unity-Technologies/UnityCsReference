@@ -53,6 +53,8 @@ namespace UnityEditor.Search
             SearchSettings.SetScopeValue(k_PickerItemSize, m_ContextHash, itemIconSize);
             SearchSettings.SetScopeValue(k_PickerInspector, m_ContextHash, viewState.flags.HasAny(SearchViewFlags.OpenInspectorPreview) ? 1 : 0);
             SearchSettings.SetScopeValue(k_PickerCurrentGroup, m_ContextHash, viewState.group);
+
+            SearchSettings.Save();
         }
 
         protected override void RestoreSearchText(SearchViewState viewState)

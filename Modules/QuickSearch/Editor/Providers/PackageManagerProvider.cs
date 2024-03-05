@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using UnityEditor.PackageManager;
 using UnityEngine;
 
 namespace UnityEditor.Search.Providers
@@ -49,13 +50,22 @@ namespace UnityEditor.Search.Providers
                 yield break;
 
             s_ListRequest = s_ListRequest ?? PackageManager.Client.List(true);
-            s_SearchRequest = s_SearchRequest ?? PackageManager.Client.SearchAll();
+            s_SearchRequest = s_SearchRequest ?? PackageManager.Client.SearchAll(Utils.runningTests);
 
             if (s_SearchRequest == null || s_ListRequest == null)
                 yield break;
 
             while (!s_SearchRequest.IsCompleted || !s_ListRequest.IsCompleted)
+            {
+                if (s_SearchRequest.Status == StatusCode.Failure)
+                    yield break;
+                if (s_ListRequest.Status == StatusCode.Failure)
+                    yield break;
                 yield return null;
+            }
+
+            if (s_SearchRequest.Status == StatusCode.Failure || s_ListRequest.Status == StatusCode.Failure)
+                yield break;
 
             if (s_SearchRequest.Result == null || s_ListRequest.Result == null)
                 yield break;

@@ -77,6 +77,19 @@ namespace UnityEditor
             Internal_Destroy();
         }
 
+        // Pixel-position on screen.
+        public Rect position
+        {
+            get => Internal_Position;
+            set
+            {
+                if (!View.IsValidViewRect(value))
+                    throw new ArgumentException($"Invalid position: {value}");
+
+                Internal_Position = value;
+            }
+        }
+
         internal ShowMode showMode => (ShowMode)m_ShowMode;
 
         private string m_WindowID = null;
@@ -229,6 +242,12 @@ namespace UnityEditor
 
         public void SetMinMaxSizes(Vector2 min, Vector2 max)
         {
+            if (!View.IsValidViewSize(min))
+                throw new ArgumentException($"Invalid minimum size: {min}");
+
+            if (!View.IsValidViewSize(max))
+                throw new ArgumentException($"Invalid maximum size: {max}");
+
             m_MinSize = min;
             m_MaxSize = max;
             Rect r = position;

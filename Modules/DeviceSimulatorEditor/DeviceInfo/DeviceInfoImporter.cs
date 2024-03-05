@@ -187,6 +187,8 @@ namespace UnityEditor.DeviceSimulation
                 "processorCount",
                 "processorFrequency",
                 "processorType",
+                "processorModel",
+                "processorManufacturer",
                 "supportsAccelerometer",
                 "supportsAudio",
                 "supportsGyroscope",

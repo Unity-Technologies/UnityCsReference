@@ -275,10 +275,10 @@ namespace UnityEditor.Search
             {
                 ignoreSaveSearches = true;
             }
-            if (flags.HasAny(SearchViewFlags.OpenInBuilderMode) || isSimplePicker)
-                queryBuilderEnabled = true;
-            else if (flags.HasAny(SearchViewFlags.OpenInTextMode))
+            if (flags.HasAny(SearchViewFlags.OpenInTextMode))
                 queryBuilderEnabled = false;
+            else if (flags.HasAny(SearchViewFlags.OpenInBuilderMode) || isSimplePicker)
+                queryBuilderEnabled = true;
             return this;
         }
 

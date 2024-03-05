@@ -182,6 +182,12 @@ namespace UnityEditor.SpeedTree.Importer
             }
 
             GameObject mainObject = new GameObject(ImporterSettings.kGameObjectName);
+
+            if (m_AdditionalSettings.generateRigidbody)
+            {
+                CreateAndAddRigidBodyToAsset(mainObject);
+            }
+
             ctx.AddObjectToAsset(ImporterSettings.kGameObjectName, mainObject);
             ctx.SetMainObject(mainObject);
 
@@ -1319,6 +1325,16 @@ namespace UnityEditor.SpeedTree.Importer
             }
 
             return shader != null;
+        }
+
+        private void CreateAndAddRigidBodyToAsset(GameObject mainObject)
+        {
+            Rigidbody rb = mainObject.AddComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.useGravity = false;
+                rb.isKinematic = true;
+            }
         }
 
         private void CreateAndAddCollidersToAsset()

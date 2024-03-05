@@ -92,6 +92,16 @@ namespace UnityEngine
             get { return GetProcessorType(); }
         }
 
+        public static string processorModel
+        {
+            get { return GetProcessorModel(); }
+        }
+
+        public static string processorManufacturer
+        {
+            get { return GetProcessorManufacturer(); }
+        }
+
         public static int processorFrequency
         {
             get { return GetProcessorFrequencyMHz(); }
@@ -715,6 +725,12 @@ namespace UnityEngine
 
         [FreeFunction("systeminfo::GetProcessorType")]
         static extern string GetProcessorType();
+
+        [FreeFunction("systeminfo::GetProcessorModel")]
+        static extern string GetProcessorModel();
+
+        [FreeFunction("systeminfo::GetProcessorManufacturer")]
+        static extern string GetProcessorManufacturer();
 
         [FreeFunction("systeminfo::GetProcessorFrequencyMHz")]
         static extern int GetProcessorFrequencyMHz();

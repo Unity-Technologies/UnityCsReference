@@ -159,6 +159,7 @@ namespace UnityEditor.Search
 
             if (progressId == k_BlockingProgress)
             {
+                // TODO: should this report the actual progress instead of -1?
                 EditorUtility.DisplayProgressBar(title, status, -1f);
                 return;
             }

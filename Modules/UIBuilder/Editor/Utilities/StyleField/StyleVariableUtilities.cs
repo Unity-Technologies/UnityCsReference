@@ -87,6 +87,19 @@ namespace Unity.UI.Builder
                             valueType = StyleValueType.Color;
                     }
 
+                    if (valueType == StyleValueType.Function)
+                    {
+                        var function = (StyleValueFunction)valueHandle.valueIndex;
+                        if (function == StyleValueFunction.Var)
+                        {
+                            // resolve to find the true value type
+                            var varName = variable.sheet.ReadVariable(variable.handles[2]);
+                            var varInfo = FindVariable(currentVisualElement, varName, editorExtensionMode);
+                            if (varInfo.styleVariable.handles != null)
+                                valueType = varInfo.styleVariable.handles[0].valueType;
+                        }
+                    }
+
                     return (compatibleTypes == null || compatibleTypes.Contains(valueType)) && !variable.name.StartsWith("--unity-theme");
                 })
                 .Distinct()

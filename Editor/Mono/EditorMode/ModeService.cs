@@ -365,7 +365,12 @@ namespace UnityEditor
             Log("LoadModes");
 
             ScanModes();
-            var currentModeIndex = LoadProjectPrefModeIndex();
+
+            var currentModeIndex = GetSessionModeIndex();
+            if (currentModeIndex == -1)
+            {
+                currentModeIndex = LoadProjectPrefModeIndex();
+            }
             if (checkStartupMode && HasStartupMode())
             {
                 var requestEditorMode = Application.GetValueForARGV("editor-mode");
@@ -378,6 +383,17 @@ namespace UnityEditor
             }
 
             SetModeIndex(currentModeIndex);
+        }
+
+        private static void SaveSessionMode()
+        {
+            SessionState.SetString(k_ModeCurrentIdKeyName, currentId);
+        }
+
+        private static int GetSessionModeIndex()
+        {
+            var currentModeId = SessionState.GetString(k_ModeCurrentIdKeyName, "");
+            return GetModeIndexById(currentModeId);
         }
 
         internal static void InitializeCurrentMode()
@@ -512,6 +528,8 @@ namespace UnityEditor
                         SessionState.SetBool(capName, (Boolean)state);
                 }
             }
+
+            SaveSessionMode();
         }
 
         private static int LoadProjectPrefModeIndex()

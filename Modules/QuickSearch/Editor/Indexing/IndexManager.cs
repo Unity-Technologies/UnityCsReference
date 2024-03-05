@@ -7,7 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor.UIElements;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UIToolkitListView = UnityEngine.UIElements.ListView;
@@ -141,6 +141,14 @@ namespace UnityEditor.Search
             rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnSizeChange);
 
             m_ListViewIndexSettings.SetSelection(indexToSelect);
+        }
+
+        internal void SelectIndexWithName(string name)
+        {
+            var index = m_IndexSettings.FindIndex(i => i.name == name);
+            if (index == -1)
+                throw new System.Exception($"Index with name {name} not found");
+            m_ListViewIndexSettings.SetSelection(index);
         }
 
         private void OnPackageToggle(ChangeEvent<bool> evt)
@@ -447,6 +455,7 @@ namespace UnityEditor.Search
                     case "extended":
                         toggle.label = L10n.Tr("Sub objects");
                         toggle.tooltip = L10n.Tr("Include all sub objects (all Scene objects for a Unity scene, and all sub-assets for an FBX)");
+                        toggle.enabledSelf = selectedItem.type == SearchDatabase.IndexType.asset;
                         break;
                     case "dependencies":
                         toggle.tooltip = L10n.Tr("Include information about objects' direct dependencies in this index");
@@ -614,9 +623,17 @@ namespace UnityEditor.Search
         private void CreateIndexSettings()
         {
             var message = L10n.Tr("Please enter a file name for the new Index Settings.");
-            var path = EditorUtility.SaveFilePanelInProject(L10n.Tr("Save Index Settings"), selectedItem.name, k_IndexExtension, message, Application.dataPath);
-            if (!string.IsNullOrEmpty(path))
-                CreateIndexSettings(path);
+            var path = EditorUtility.SaveFilePanel(message, Application.dataPath, selectedItem.name, k_IndexExtension);
+            if (string.IsNullOrEmpty(path))
+                return;
+
+            if (!SearchUtils.ValidateAssetPath(ref path, ".index", out var errorMessage))
+            {
+                Debug.LogWarning($"Save index has failed. {errorMessage}");
+                return;
+            }
+
+            CreateIndexSettings(path);
         }
 
         internal void CreateIndexSettings(string path)
@@ -760,7 +777,7 @@ namespace UnityEditor.Search
 
         private void SendIndexEvent(SearchAnalytics.GenericEventType type, IndexManagerViewModel model)
         {
-            SearchAnalytics.SendEvent(m_WindowId, SearchAnalytics.GenericEventType.IndexManagerRemoveIndex, model.type.ToString(),  $"0x{model.options.GetHashCode():X}");
+            SearchAnalytics.SendEvent(m_WindowId, type, model.type.ToString(),  $"0x{model.options.GetHashCode():X}");
         }
 
         private void SendSaveIndexEvent(IndexManagerViewModel model)
@@ -995,7 +1012,8 @@ namespace UnityEditor.Search
                         {
                             var settings = m_IndexSettingsAssets[index].settings;
                             var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(settings.options.GetHashCode());
-                            AssetDatabaseAPI.RegisterCustomDependency(indexImporterType.GUID.ToString("N"), Hash128.Parse(Guid.NewGuid().ToString("N")));
+                            var typeGuid = SearchIndexEntryImporter.GetGUID(indexImporterType);
+                            AssetDatabaseAPI.RegisterCustomDependency(typeGuid, Hash128.Parse(Guid.NewGuid().ToString("N")));
                             SearchDatabase.ImportAsset(m_IndexSettingsFilePaths[index], true);
                         });
                         menu.ShowAsContext();
@@ -1512,6 +1530,7 @@ namespace UnityEditor.Search
             UpdateListView();
         }
 
+        
         internal void SetSelection(int index)
         {
             ListView.SetSelection(index);

@@ -345,7 +345,6 @@ namespace UnityEditor.Search
 
         internal void ShowObjectSelector()
         {
-            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, searchContext.searchText, "object", "objectfield");
             m_OriginalObject = value;
             var runtimeContext = new RuntimeSearchContext
             {
@@ -355,11 +354,18 @@ namespace UnityEditor.Search
                 requiredTypes = new[] { objectType },
                 requiredTypeNames = new[] { objectType.ToString() }
             };
+
+            if (searchContext == null)
+            {
+                searchContext = SearchService.CreateContext(runtimeContext, "");
+            }
+
             var newContext = new SearchContext(searchContext.providers, searchContext.searchText, searchContext.options, runtimeContext);
             var searchViewState = SearchViewState.CreatePickerState($"{objectType.Name}", newContext, OnSelection, OnObjectChanged, objectType.ToString(), objectType, searchViewFlags);
             if (m_OriginalObject)
                 searchViewState.selectedIds = new int[] { m_OriginalObject.GetInstanceID() };
             SearchService.ShowPicker(searchViewState);
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, searchContext.searchText, "object", "objectfield");
         }
 
         private Object TryReadComponentFromGameObject(Object obj, Type type)
