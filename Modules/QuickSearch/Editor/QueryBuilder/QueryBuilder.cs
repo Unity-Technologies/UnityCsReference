@@ -331,19 +331,22 @@ namespace UnityEditor.Search
             var source = DragAndDrop.GetGenericData(k_SourceDataIdentifier) as QueryBlock;
             var target = DragAndDrop.GetGenericData(k_TargetDataIdentifier) as QueryBlock;
 
-            DropBlock(source, target);
-            evt.Use();
+            if (DropBlock(source, target))
+            {
+                evt.Use();
+            }
         }
 
-        internal void DropBlock(QueryBlock source, QueryBlock target)
+        internal bool DropBlock(QueryBlock source, QueryBlock target)
         {
             if (source == null || target == null)
-                return;
+                return false;
 
             var targetIndex = GetBlockIndex(target);
             blocks.Remove(source);
             blocks.Insert(targetIndex, source);
             Apply();
+            return true;
         }
 
         private void DragAndDropGUI()

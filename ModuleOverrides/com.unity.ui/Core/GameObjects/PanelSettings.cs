@@ -54,6 +54,7 @@ namespace UnityEngine.UIElements
     /// Defines a Panel Settings asset that instantiates a panel at runtime. The panel makes it possible for Unity to display
     /// UXML-file based UI in the Game view.
     /// </summary>
+    [HelpURL("UIE-Runtime-Panel-Settings")]
     public class PanelSettings : ScriptableObject
     {
         private const int k_DefaultSortingOrder = 0;

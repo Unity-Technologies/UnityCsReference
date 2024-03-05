@@ -59,7 +59,9 @@ namespace UnityEngine
         internal extern void CopyFromPtr(IntPtr ptr);
 
         public static extern bool PopEvent([NotNull] Event outEvent);
+        internal static extern void QueueEvent([NotNull] Event outEvent);
         public static extern int GetEventCount();
+        internal static extern void ClearEvents();
 
         private static extern void Internal_SetNativeEvent(IntPtr ptr);
 

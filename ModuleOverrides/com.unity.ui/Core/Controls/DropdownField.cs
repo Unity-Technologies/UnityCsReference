@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public new class UxmlTraits : BaseField<string>.UxmlTraits
         {
-            UxmlIntAttributeDescription m_Index = new UxmlIntAttributeDescription { name = "index" };
+            UxmlIntAttributeDescription m_Index = new UxmlIntAttributeDescription { name = "index", defaultValue = kPopupFieldDefaultIndex };
             UxmlStringAttributeDescription m_Choices = new UxmlStringAttributeDescription() { name = "choices" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)

@@ -6473,7 +6473,13 @@ namespace UnityEngine.TextCore.Text
                 else if (m_TextElementType == TextElementType.Character)
                 {
                     m_CachedTextElement = textInfo.textElementInfo[m_CharacterCount].textElement;
-                    if (m_CachedTextElement == null) continue;
+                    if (m_CachedTextElement == null)
+                    {
+                        continue;
+                    }
+
+                    m_CurrentFontAsset = textInfo.textElementInfo[m_CharacterCount].fontAsset;
+                    m_CurrentMaterial = textInfo.textElementInfo[m_CharacterCount].material;;
 
                     m_CurrentMaterialIndex = textInfo.textElementInfo[m_CharacterCount].materialReferenceIndex;
 

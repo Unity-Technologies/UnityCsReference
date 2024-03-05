@@ -20,7 +20,7 @@ namespace UnityEditor.UIElements
             UIDocument.IsEditorPlayingOrWillChangePlaymode = () => EditorApplication.isPlayingOrWillChangePlaymode;
 
             PanelSettings.CreateRuntimePanelDebug = UIElementsEditorRuntimeUtility.CreateRuntimePanelDebug;
-            PanelSettings.GetOrCreateDefaultTheme = PanelSettingsCreator.GetOrCreateDefaultTheme;
+            PanelSettings.GetOrCreateDefaultTheme = PanelSettingsCreator.GetFirstThemeOrCreateDefaultTheme;
             PanelSettings.GetGameViewResolution = (int display) =>
                 {
                     foreach (var playModeView in PlayModeView.GetAllPlayModeViewWindows())

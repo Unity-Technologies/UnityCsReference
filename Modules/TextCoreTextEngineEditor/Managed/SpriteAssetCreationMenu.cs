@@ -179,6 +179,7 @@ namespace UnityEditor.TextCore.Text
             // Sort glyph table by glyph index
             spriteAsset.SortGlyphTable();
             spriteAsset.UpdateLookupTables();
+            spriteAsset.MarkDirty();
             TextEventManager.ON_SPRITE_ASSET_PROPERTY_CHANGED(true, spriteAsset);
         }
 

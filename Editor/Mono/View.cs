@@ -120,12 +120,9 @@ namespace UnityEditor
         // Override to resize subviews
         protected virtual void SetPosition(Rect newPos)
         {
-            m_Position = newPos;
-        }
+            if (!IsValidViewRect(newPos))
+                throw new ArgumentException($"Invalid position: {newPos}");
 
-        // Only set the position.
-        internal void SetPositionOnly(Rect newPos)
-        {
             m_Position = newPos;
         }
 
@@ -238,6 +235,15 @@ namespace UnityEditor
         virtual protected bool OnFocus()
         {
             return true;
+        }
+
+        internal static bool IsValidViewPosition(Vector2 p) => IsValidViewVector(p);
+        internal static bool IsValidViewSize(Vector2 s) => IsValidViewVector(s);
+        internal static bool IsValidViewRect(Rect r) => IsValidViewVector(r.position) && IsValidViewVector(r.size);
+
+        static bool IsValidViewVector(Vector2 v)
+        {
+            return !float.IsNaN(v.x) && !float.IsNaN(v.y) && !float.IsInfinity(v.x) && !float.IsInfinity(v.y);
         }
     }
 } //namespace

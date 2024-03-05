@@ -238,6 +238,25 @@ namespace Unity.UI.Builder
             if (m_Notifiers == null || m_Notifiers.Count == 0)
                 return;
 
+            ForceVisualAssetUpdateWithoutSave(element, changeType);
+
+            // This is so anyone interested can refresh their use of this UXML with
+            // the latest (unsaved to disk) changes.
+            EditorUtility.SetDirty(m_PaneWindow.document.visualTreeAsset);
+            m_LiveReloadTriggerMethod?.Invoke(null, null);
+
+            foreach (var notifier in m_Notifiers)
+                if (notifier != source)
+                    notifier.HierarchyChanged(element, changeType);
+        }
+
+        internal void ForceVisualAssetUpdateWithoutSave(
+            VisualElement element = null,
+            BuilderHierarchyChangeType changeType = BuilderHierarchyChangeType.All)
+        {
+            if (m_Notifiers == null || m_Notifiers.Count == 0)
+                return;
+
             VisualElementAsset vea = element?.GetVisualElementAsset();
             if (vea != null && vea.ruleIndex >= 0 && changeType.HasFlag(BuilderHierarchyChangeType.InlineStyle))
             {
@@ -253,15 +272,6 @@ namespace Unity.UI.Builder
             {
                 m_PaneWindow.document.RefreshStyle(m_DocumentRootElement);
             }
-
-            // This is so anyone interested can refresh their use of this UXML with
-            // the latest (unsaved to disk) changes.
-            EditorUtility.SetDirty(m_PaneWindow.document.visualTreeAsset);
-            m_LiveReloadTriggerMethod?.Invoke(null, null);
-
-            foreach (var notifier in m_Notifiers)
-                if (notifier != source)
-                    notifier.HierarchyChanged(element, changeType);
         }
 
         public void NotifyOfStylingChange(IBuilderSelectionNotifier source = null, List<string> styles = null, BuilderStylingChangeType changeType = BuilderStylingChangeType.Default)

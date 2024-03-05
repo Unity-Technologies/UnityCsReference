@@ -70,10 +70,12 @@ namespace UnityEditor.ShortcutManagement
                 if (value)
                 {
                     EditorApplication.globalEventHandler += EventHandler;
+                    GUIUtility.beforeEventProcessed += BeforeEventProcessedHandler;
                 }
                 else
                 {
                     EditorApplication.globalEventHandler -= EventHandler;
+                    GUIUtility.beforeEventProcessed -= BeforeEventProcessedHandler;
                 }
 
                 s_Enabled = value;
@@ -135,6 +137,12 @@ namespace UnityEditor.ShortcutManagement
             if (s_IgnoreWhenPlayModeFocused && EditorWindow.focusedWindow is GameView && Application.isPlaying) return;
             instance.contextManager.SetFocusedWindow(EditorWindow.focusedWindow);
             instance.HandleKeyEvent(Event.current);
+        }
+
+        static void BeforeEventProcessedHandler(EventType type, KeyCode keyCode)
+        {
+            if (s_IgnoreWhenPlayModeFocused && EditorWindow.focusedWindow is GameView && Application.isPlaying) return;
+            instance.ResetShortcutState(type, keyCode);
         }
 
         static void OnInvokingAction(ShortcutEntry shortcutEntry, ShortcutArguments shortcutArguments)
@@ -289,6 +297,11 @@ namespace UnityEditor.ShortcutManagement
         internal void HandleKeyEvent(Event evt)
         {
             trigger.HandleKeyEvent(evt, contextManager);
+        }
+
+        internal void ResetShortcutState(EventType type, KeyCode keyCode)
+        {
+            trigger.ResetShortcutState(type, keyCode);
         }
 
         internal string GetKeyCombinationFor(string shortcutId)

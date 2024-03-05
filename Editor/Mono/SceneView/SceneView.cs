@@ -188,6 +188,15 @@ namespace UnityEditor
             s_SelectionCacheDirty = true;
         }
 
+        static void OnNonSelectedObjectWasDestroyed(int instanceID)
+        {
+            if (s_CachedChildRenderersFromSelection != null && s_CachedChildRenderersFromSelection.Contains(instanceID))
+            {
+                s_ActiveEditorsDirty = true;
+                s_SelectionCacheDirty = true;
+            }
+        }
+
         static void OnEditorTrackerRebuilt()
         {
             s_ActiveEditorsDirty = true;
@@ -1260,6 +1269,7 @@ namespace UnityEditor
             SceneVisibilityManager.currentStageIsIsolated += CurrentStageIsolated;
             ActiveEditorTracker.editorTrackerRebuilt += OnEditorTrackerRebuilt;
             Selection.selectedObjectWasDestroyed += OnSelectedObjectWasDestroyed;
+            Selection.nonSelectedObjectWasDestroyed += OnNonSelectedObjectWasDestroyed;
             Lightmapping.lightingDataUpdated += RepaintAll;
             onCameraModeChanged += delegate
             {
@@ -1468,6 +1478,7 @@ namespace UnityEditor
             Lightmapping.lightingDataUpdated -= RepaintAll;
             ActiveEditorTracker.editorTrackerRebuilt -= OnEditorTrackerRebuilt;
             Selection.selectedObjectWasDestroyed -= OnSelectedObjectWasDestroyed;
+            Selection.nonSelectedObjectWasDestroyed -= OnNonSelectedObjectWasDestroyed;
             sceneViewGrids.gridVisibilityChanged -= GridOnGridVisibilityChanged;
 
             sceneViewGrids.OnDisable(this);
@@ -2080,9 +2091,9 @@ namespace UnityEditor
             return m_Camera.targetTexture != null;
         }
 
-        private void DoDrawCamera(Rect windowSpaceCameraRect, Rect groupSpaceCameraRect, out bool pushedGUIClip)
+        private void DoDrawCamera(Rect windowSpaceCameraRect, Rect groupSpaceCameraRect, out bool pushedGUIClipNeedsToBePopped)
         {
-            pushedGUIClip = false;
+            pushedGUIClipNeedsToBePopped = false;
 
             if (!m_Camera.gameObject.activeInHierarchy)
                 return;
@@ -2096,8 +2107,21 @@ namespace UnityEditor
 
             if (UseSceneFiltering())
             {
+                bool sceneRendersToRT = SceneCameraRendersIntoRT();
+                if (sceneRendersToRT)
+                {
+                    GUIClip.Push(groupSpaceCameraRect, Vector2.zero, Vector2.zero, true);
+                    GUIClip.Internal_PushParentClip(Matrix4x4.identity, GUIClip.GetParentMatrix(), groupSpaceCameraRect);
+                }
+
                 if (evt.type == EventType.Repaint)
                     RenderFilteredScene(groupSpaceCameraRect);
+
+                if (sceneRendersToRT)
+                {
+                    GUIClip.Internal_PopParentClip();
+                    GUIClip.Pop();
+                }
 
                 if (evt.type == EventType.Repaint)
                     RenderTexture.active = null;
@@ -2117,7 +2141,7 @@ namespace UnityEditor
                 {
                     GUIClip.Push(new Rect(0f, 0f, position.width, position.height), Vector2.zero, Vector2.zero, true);
                     GUIClip.Internal_PushParentClip(Matrix4x4.identity, GUIClip.GetParentMatrix(), groupSpaceCameraRect);
-                    pushedGUIClip = true;
+                    pushedGUIClipNeedsToBePopped = true;
                 }
                 Handles.DrawCameraStep1(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam, drawGizmos, true);
 
@@ -2438,8 +2462,8 @@ namespace UnityEditor
                 GUIUtility.keyboardControl = m_MainViewControlID;
 
             // Draw camera
-            bool pushedGUIClip;
-            DoDrawCamera(windowSpaceCameraRect, groupSpaceCameraRect, out pushedGUIClip);
+            bool pushedGUIClipNeedsToBePopped;
+            DoDrawCamera(windowSpaceCameraRect, groupSpaceCameraRect, out pushedGUIClipNeedsToBePopped);
 
             CleanupCustomSceneLighting();
 
@@ -2453,7 +2477,6 @@ namespace UnityEditor
             bool hdrDisplayActive = (m_Parent != null && m_Parent.actualView == this && m_Parent.hdrActive);
             if (!UseSceneFiltering() && evt.type == EventType.Repaint && GraphicsFormatUtility.IsIEEE754Format(m_SceneTargetTexture.graphicsFormat) && !hdrDisplayActive)
             {
-                var currentDepthBuffer = Graphics.activeDepthBuffer;
                 var rtDesc = m_SceneTargetTexture.descriptor;
                 rtDesc.graphicsFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
                 rtDesc.depthBufferBits = 0;
@@ -2461,7 +2484,7 @@ namespace UnityEditor
                 ldrSceneTargetTexture.name = "LDRSceneTarget";
                 Graphics.Blit(m_SceneTargetTexture, ldrSceneTargetTexture);
                 Graphics.Blit(ldrSceneTargetTexture, m_SceneTargetTexture);
-                Graphics.SetRenderTarget(m_SceneTargetTexture.colorBuffer, currentDepthBuffer);
+                Graphics.SetRenderTarget(m_SceneTargetTexture.colorBuffer, m_SceneTargetTexture.depthBuffer);
                 RenderTexture.ReleaseTemporary(ldrSceneTargetTexture);
             }
 
@@ -2485,7 +2508,7 @@ namespace UnityEditor
                 }
 
                 // If we reset the offsets pop that clip off now.
-                if (pushedGUIClip)
+                if (pushedGUIClipNeedsToBePopped)
                 {
                     GUIClip.Internal_PopParentClip();
                     GUIClip.Pop();

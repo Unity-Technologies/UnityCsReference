@@ -79,7 +79,7 @@ namespace UnityEditor.Search
             {
                 if (isPrefabDocument && objType == typeof(GameObject))
                     IndexProperty(documentIndex, name, "prefab", saveKeyword: true, exact: true);
-                if (objType == typeof(MonoScript))
+                else if (objType == typeof(MonoScript))
                     IndexProperty(documentIndex, name, "script", saveKeyword: true, exact: true);
 
                 IndexType(objType, documentIndex);
@@ -104,6 +104,10 @@ namespace UnityEditor.Search
             var subObjDocumentIndex = AddDocument(id, objPathName, containerPath, checkIfDocumentExists, SearchDocumentFlags.Nested | SearchDocumentFlags.Asset);
 
             IndexTypes(subObj.GetType(), subObjDocumentIndex, isPrefabDocument, exact: true);
+            if (subObj is GameObject subGo)
+            {
+                IndexComponents(subObjDocumentIndex, subGo);
+            }
             IndexProperty(subObjDocumentIndex, "is", "nested", saveKeyword: true, exact: true);
             IndexProperty(subObjDocumentIndex, "is", "subasset", saveKeyword: true, exact: true);
             if (settings.options.dependencies)
@@ -188,19 +192,12 @@ namespace UnityEditor.Search
                             IndexProperty(documentIndex, "name", obj.name, saveKeyword: true, exact: true);
                     }
 
-                    if (isPrefab)
+                    if (isPrefab || at == typeof(GameObject))
                     {
                         var rootPrefabObject = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                         if (rootPrefabObject)
                         {
-                            var gocs = rootPrefabObject.GetComponents<Component>();
-                            for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
-                            {
-                                var c = gocs[componentIndex];
-                                if (!c || (c.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
-                                    continue;
-                                IndexTypes(c.GetType(), documentIndex, false);
-                            }
+                            IndexComponents(documentIndex, rootPrefabObject);
                         }
                     }
                 }
@@ -217,6 +214,18 @@ namespace UnityEditor.Search
 
             if (settings.options.dependencies)
                 IndexDependencies(documentIndex, path);
+        }
+
+        void IndexComponents(in int documentIndex, GameObject go)
+        {
+            var gocs = go.GetComponents<Component>();
+            for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
+            {
+                var c = gocs[componentIndex];
+                if (!c || (c.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
+                    continue;
+                IndexTypes(c.GetType(), documentIndex, false);
+            }
         }
 
         internal void IndexFileName(in int documentIndex, string filePath)

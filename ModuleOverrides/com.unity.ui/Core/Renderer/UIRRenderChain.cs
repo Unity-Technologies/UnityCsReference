@@ -996,6 +996,7 @@ namespace UnityEngine.UIElements.UIR
         internal bool localFlipsWinding;
         internal bool localTransformScaleZero;
         internal bool worldFlipsWinding;
+        public bool worldTransformScaleZero;
 
         internal Implementation.ClipMethod clipMethod; // Self
         internal int childrenStencilRef;

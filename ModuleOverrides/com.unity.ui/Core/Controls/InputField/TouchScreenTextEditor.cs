@@ -40,7 +40,19 @@ namespace UnityEngine.UIElements
                 if (touchKeyboard.status != TouchScreenKeyboard.Status.Visible)
                 {
                     if (touchKeyboard.status == TouchScreenKeyboard.Status.Canceled)
+                    {
                         edition.RestoreValueAndText();
+                    }
+                    else 
+                    {
+                        //Ensure that text is updated after closing the keyboard as some platforms only send input after it is closed
+                        touchKeyboardText = touchKeyboard.text;
+                        if (editingUtilities.text != touchKeyboardText)
+                        {
+                            edition.UpdateText(touchKeyboardText);
+                            textElement.uitkTextHandle.Update();
+                        }
+                    }
 
                     CloseTouchScreenKeyboard();
 
@@ -137,7 +149,7 @@ namespace UnityEngine.UIElements
             {
                 textElement.m_TouchScreenKeyboard.active = false;
                 textElement.m_TouchScreenKeyboard = null;
-                m_TouchKeyboardPoller.Pause();
+                m_TouchKeyboardPoller?.Pause();
                 TouchScreenKeyboard.hideInput = true;
             }
         }
@@ -238,7 +250,10 @@ namespace UnityEngine.UIElements
         private void OnFocusOutEvent(FocusOutEvent evt)
         {
             var currentFocusedTextElement = (TextElement)evt.target;
-            var pendingFocusedTextElement = (TextElement)currentFocusedTextElement.focusController.m_LastPendingFocusedElement; // Expected to be NULL when losing focus
+
+            // Expected to be NULL when losing focus
+            var pendingFocusedTextElement =
+                currentFocusedTextElement.focusController.m_LastPendingFocusedElement as TextElement;
 
             // Adds the ability to keep the soft keyboard open when clicking into another input field only if,
             // the keyboard type, multiline or hide mobile input are not the same - otherwise we need to
@@ -256,7 +271,7 @@ namespace UnityEngine.UIElements
             {
                 // Partially dismiss the keyboard
                 textElement.m_TouchScreenKeyboard = null;
-                m_TouchKeyboardPoller.Pause();
+                m_TouchKeyboardPoller?.Pause();
             }
 
             if (textElement.edition.isDelayed)

@@ -146,6 +146,7 @@ namespace UnityEngine.Networking
 
         private static extern void ClearCookieCache(string domain, string path);
 
+        [NativeThrows]
         internal extern static IntPtr Create();
 
         [NativeMethod(IsThreadSafe = true)]

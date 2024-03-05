@@ -316,7 +316,8 @@ namespace UnityEditor.Search
             m_FilteredItems?.Dispose();
             m_FilteredItems = new GroupedSearchList(context);
             m_FilteredItems.currentGroup = m_ViewState.group;
-            LoadContext();
+
+            ComputeContextHash();
         }
 
         public static QuickSearch Open(float defaultWidth = 950, float defaultHeight = 539, SearchFlags flags = SearchFlags.OpenDefault)
@@ -604,6 +605,7 @@ namespace UnityEditor.Search
 
             SetContext(m_ViewState.context);
             LoadSessionSettings(m_ViewState);
+            activeQuery = m_ViewState.activeQuery;
             Refresh();
 
             SearchSettings.SortActionsPriority();
@@ -1033,7 +1035,7 @@ namespace UnityEditor.Search
 
         public void AddItemsToMenu(GenericMenu menu)
         {
-            AddItemsToMenu(menu, "Options/");
+            AddItemsToMenu(menu, "");
         }
 
         public void AddItemsToMenu(GenericMenu menu, string optionPrefix)
@@ -1052,7 +1054,7 @@ namespace UnityEditor.Search
                 menu.AddItem(savedSearchContent, m_ViewState.flags.HasAny(SearchViewFlags.OpenLeftSidePanel), () => TogglePanelView(SearchViewFlags.OpenLeftSidePanel));
             if (m_ViewState.flags.HasNone(SearchViewFlags.DisableInspectorPreview))
                 menu.AddItem(previewInspectorContent, m_ViewState.flags.HasAny(SearchViewFlags.OpenInspectorPreview), () => TogglePanelView(SearchViewFlags.OpenInspectorPreview));
-            if (m_ViewState.flags.HasNone(SearchViewFlags.DisableBuilderModeToggle))
+            if (!m_ViewState.hasQueryBuilderToggle)
                 menu.AddItem(new GUIContent($"Query Builder\tF1"), viewState.queryBuilderEnabled, () => ToggleQueryBuilder());
             if (IsSavedSearchQueryEnabled() || m_ViewState.flags.HasNone(SearchViewFlags.DisableInspectorPreview))
                 menu.AddSeparator("");
@@ -1079,7 +1081,7 @@ namespace UnityEditor.Search
 
         private void ToggleQueryBuilder()
         {
-            if (viewState.flags.HasAny(SearchViewFlags.DisableBuilderModeToggle))
+            if (!viewState.hasQueryBuilderToggle)
                 return;
             SearchSettings.queryBuilder = viewState.queryBuilderEnabled = !viewState.queryBuilderEnabled;
             SearchSettings.Save();
@@ -1865,7 +1867,7 @@ namespace UnityEditor.Search
                 }
             }
         }
-    
+
         private void ToggleIndexEnabled(SearchDatabase db)
         {
             db.settings.options.disabled = !db.settings.options.disabled;
@@ -1992,7 +1994,7 @@ namespace UnityEditor.Search
             }
 
             // Draw text/block toggle
-            if (!viewState.flags.HasAny(SearchViewFlags.DisableBuilderModeToggle))
+            if (viewState.hasQueryBuilderToggle)
             {
                 buttonRect.x += buttonRect.width + 4f;
                 buttonRect.width = buttonStyle.fixedWidth;
@@ -2318,19 +2320,13 @@ namespace UnityEditor.Search
                 searchQueryPath = EditorUtility.SaveFilePanel("Save search query...", initialFolder, searchQueryFileName, "asset");
             if (string.IsNullOrEmpty(searchQueryPath))
                 return null;
-            if (!Paths.IsValidAssetPath(searchQueryPath, ".asset", out var errorMessage))
+            if (!SearchUtils.ValidateAssetPath(ref searchQueryPath, ".asset", out var errorMessage))
             {
                 Debug.LogWarning($"Save Search Query has failed. {errorMessage}.");
                 return null;
             }
 
-            searchQueryPath = Utils.CleanPath(searchQueryPath);
-            if (!System.IO.Directory.Exists(Path.GetDirectoryName(searchQueryPath)) || !Utils.IsPathUnderProject(searchQueryPath))
-                return null;
-
-            searchQueryPath = Utils.GetPathUnderProject(searchQueryPath);
             SearchSettings.queryFolder = Utils.CleanPath(Path.GetDirectoryName(searchQueryPath));
-
             return SaveSearchQueryFromContext(searchQueryPath, true);
         }
 
@@ -2389,7 +2385,7 @@ namespace UnityEditor.Search
                 m_DebounceOff = Utils.CallDelayed(RefreshSearch, SearchSettings.debounceMs / 1000.0);
         }
 
-        private void LoadContext()
+        protected virtual void ComputeContextHash()
         {
             m_ContextHash = context.GetHashCode();
             if (context.options.HasAny(SearchFlags.FocusContext))
@@ -2406,6 +2402,11 @@ namespace UnityEditor.Search
 
         protected void UpdateViewState(SearchViewState args)
         {
+            if (viewState.hideAllGroup && (args.group == null || string.Equals("all", args.group, StringComparison.Ordinal)))
+                args.group = args.context?.GetProviders().FirstOrDefault()?.id;
+
+            currentGroup = args.group;
+
             if (context?.options.HasAny(SearchFlags.Expression) ?? false)
                 itemIconSize = (int)DisplayMode.Table;
             else
@@ -2440,9 +2441,6 @@ namespace UnityEditor.Search
             }
 
             args.group = viewState.hideTabs ? null : (loadGroup ?? args.group);
-            if (viewState.hideAllGroup && (args.group == null || string.Equals("all", args.group, StringComparison.Ordinal)))
-                args.group = args.context?.GetProviders().FirstOrDefault()?.id;
-
             UpdateViewState(args);
         }
 

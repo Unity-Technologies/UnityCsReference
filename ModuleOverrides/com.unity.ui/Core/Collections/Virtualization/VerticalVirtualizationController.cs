@@ -25,10 +25,7 @@ namespace UnityEngine.UIElements
 
         protected readonly Func<T, bool> m_VisibleItemPredicateDelegate;
 
-        internal int itemsCount =>
-            m_CollectionView.sourceIncludesArraySize
-                ? m_CollectionView.itemsSource.Count - 1
-                : m_CollectionView.itemsSource.Count;
+        internal int itemsCount => m_CollectionView.itemsSource.Count;
 
         protected virtual bool VisibleItemPredicate(T i)=> i.rootElement.style.display == DisplayStyle.Flex;
 

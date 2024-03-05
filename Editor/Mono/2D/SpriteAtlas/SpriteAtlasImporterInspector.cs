@@ -426,7 +426,7 @@ namespace UnityEditor.U2D
 
             using (new GUILayout.HorizontalScope())
             {
-                using (new EditorGUI.DisabledScope(!HasModified() || !IsValidAtlas()))
+                using (new EditorGUI.DisabledScope(!HasModified() || !IsValidAtlas() || Application.isPlaying))
                 {
                     GUILayout.FlexibleSpace();
 

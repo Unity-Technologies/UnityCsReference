@@ -49,6 +49,13 @@ namespace UnityEngine
         internal static Func<Exception, bool> endContainerGUIFromException;
         internal static Action guiChanged;
 
+        // This callback function allows to peek at events before they
+        // are processed in order to clean any dangling state left after
+        // an event was unexpectedly used.
+        internal static Action<EventType, KeyCode> beforeEventProcessed;
+
+        private static Event m_Event = new Event();
+
         [RequiredByNativeCode]
         private static void MarkGUIChanged()
         {
@@ -157,6 +164,12 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal static void ProcessEvent(int instanceID, IntPtr nativeEventPtr, out bool result)
         {
+            if (beforeEventProcessed != null)
+            {
+                m_Event.CopyFromPtr(nativeEventPtr);
+                beforeEventProcessed.Invoke(m_Event.type, m_Event.keyCode);
+            }
+
             result = false;
             if (processEvent != null)
                 result = processEvent(instanceID, nativeEventPtr);

@@ -21,7 +21,8 @@ using StyleSheet = UnityEngine.UIElements.StyleSheet;
 
 namespace UnityEditor.UIElements
 {
-    // Make sure UXML is imported after assets than can be addressed in USS
+    // Make sure UXML is imported after assets than can be addressed in USS    
+    [HelpURL("UIE-VisualTree-landing")]
     [ScriptedImporter(version: 11, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter

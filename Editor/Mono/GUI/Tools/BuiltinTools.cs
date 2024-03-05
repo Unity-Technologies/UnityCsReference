@@ -81,6 +81,14 @@ namespace UnityEditor
 
             return prefabStage.ContainsTransformPrefabPropertyPatchingFor(Selection.gameObjects, partialPropertyName);
         }
+
+        protected void ResetGlobalHandleRotationIfNeeded()
+        {
+            if (Tools.pivotRotation == PivotRotation.Global && Event.current.GetTypeForControl(GUIUtility.hotControl) == EventType.MouseUp)
+            {
+                Tools.ResetGlobalHandleRotation();
+            }
+        }
     }
 
     static class ManipulationToolUtility
@@ -194,6 +202,8 @@ namespace UnityEditor
         {
             if (view.camera.transform.position == handlePosition)
                 return;
+
+            ResetGlobalHandleRotationIfNeeded();
 
             var ids = Handles.TransformHandleIds.Default;
             TransformManipulator.BeginManipulationHandling(false);
@@ -331,10 +341,7 @@ namespace UnityEditor
 
         protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {
-            if (Tools.pivotRotation == PivotRotation.Global && Event.current.GetTypeForControl(GUIUtility.hotControl) == EventType.MouseUp)
-            {
-                Tools.ResetGlobalHandleRotation();
-            }
+            ResetGlobalHandleRotationIfNeeded();
 
             Quaternion before = Tools.handleRotation;
 

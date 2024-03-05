@@ -31,7 +31,13 @@ namespace UnityEngine.Search
         OpenInBuilderMode = 1 << 22,
         OpenInTextMode = 1 << 23,
         DisableBuilderModeToggle = 1 << 24,
-        Borderless = 1 << 25
+        Borderless = 1 << 25,
+        DisableQueryHelpers = 1 << 26,
+        DisableNoResultTips = 1 << 27,
+        IgnoreSavedSearches = 1 << 28,
+        ObjectPicker = 1 << 29,
+        ObjectPickerAdvancedUI = 1 << 30,
+        ContextSwitchPreservedMask = Borderless | OpenLeftSidePanel | OpenInspectorPreview
     }
 
     [AttributeUsage(AttributeTargets.Field)]
@@ -71,7 +77,7 @@ namespace UnityEngine.Search
             this.query = query;
             this.providerIds = providerIdsCommaSeparated?.Split(',', ';') ?? new string[0];
             this.instantiableProviders = instantiableProviders ?? new Type[0];
-            this.flags = flags;
+            this.flags = flags | SearchViewFlags.ObjectPicker;
         }
     }
 }
