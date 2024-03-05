@@ -87,6 +87,9 @@ namespace Unity.UI.Builder
                     else if (veValueStr == "True")
                         veValueStr = "true";
 
+                    if (veValueAbstract is IEnumerable<string> enumerable)
+                        veValueStr = string.Join(",", enumerable);
+
                     var attributeValueStr = attribute.defaultValueAsString;
                     if (veValueStr == attributeValueStr)
                         continue;

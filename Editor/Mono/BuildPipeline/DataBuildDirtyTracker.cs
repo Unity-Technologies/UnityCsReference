@@ -185,13 +185,21 @@ namespace UnityEditor.Mono.BuildPipeline
             if (!buildReportPath.FileExists())
                 return true;
 
-            DataBuildDirtyTracker tracker = new DataBuildDirtyTracker()
+            try
             {
-                buildData = JsonUtility.FromJson<BuildData>(buildReportPath.ReadAllText()),
-                scenes = scenes,
-                buildOptions = buildOptions & BuildData.BuildOptionsMask
-            };
-            return tracker.DoCheckDirty();
+                DataBuildDirtyTracker tracker = new DataBuildDirtyTracker()
+                {
+                    buildData = JsonUtility.FromJson<BuildData>(buildReportPath.ReadAllText()),
+                    scenes = scenes,
+                    buildOptions = buildOptions & BuildData.BuildOptionsMask
+                };
+                return tracker.DoCheckDirty();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Rebuilding Data files because the build data file is corrupt: {e}");
+                return true;
+            }
         }
     }
 }

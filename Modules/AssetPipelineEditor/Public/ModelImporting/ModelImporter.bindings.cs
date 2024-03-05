@@ -859,6 +859,12 @@ namespace UnityEditor
             set;
         }
 
+        public extern bool strictVertexDataChecks
+        {
+            get;
+            set;
+        }
+
         [System.Obsolete("Use animationCompression instead", true)]
         private bool reduceKeyframes { get { return false; } set {} }
 

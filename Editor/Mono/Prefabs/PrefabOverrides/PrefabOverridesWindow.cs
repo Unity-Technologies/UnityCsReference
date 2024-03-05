@@ -37,7 +37,6 @@ namespace UnityEditor
         float m_ButtonWidth;
 
         bool m_AnyOverrides;
-        bool m_Disconnected;
         bool m_InvalidComponentOnInstance;
         bool m_ModelPrefab;
         bool m_Immutable;
@@ -63,7 +62,6 @@ namespace UnityEditor
             public static GUIContent infoModel = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.\nApplying to a Model Prefab is not possible.");
             public static GUIContent infoDefault = EditorGUIUtility.TrTextContent("Click on individual items to review, revert and apply.");
             public static GUIContent infoNoApply = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.");
-            public static GUIContent warningDisconnected = EditorGUIUtility.TrTextContent("Disconnected. Cannot show overrides.");
 
             // Messages related to reasons for inability to apply.
             public static GUIContent warningInvalidAsset = EditorGUIUtility.TrTextContent("The Prefab file contains an invalid script. Applying is not possible. Enter Prefab Mode and remove or recover the script.");
@@ -137,7 +135,6 @@ namespace UnityEditor
                 UpdateTextMultiple();
 
             m_AnyOverrides = false;
-            m_Disconnected = false;
             m_InvalidComponentOnInstance = false;
             m_ModelPrefab = false;
             m_Immutable = false;
@@ -163,8 +160,6 @@ namespace UnityEditor
 
             if (PrefabUtility.HasPrefabInstanceAnyOverrides(prefabInstanceRoot, false))
                 m_AnyOverrides = true;
-            if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstanceRoot))
-                m_Disconnected = true;
             if (PrefabUtility.HasInvalidComponent(prefabInstanceRoot))
                 m_InvalidComponentOnInstance = true;
 
@@ -183,7 +178,7 @@ namespace UnityEditor
 
         bool IsShowingActionButton()
         {
-            return m_AnyOverrides || m_Disconnected;
+            return m_AnyOverrides;
         }
 
         bool HasMultiSelection()
@@ -200,7 +195,7 @@ namespace UnityEditor
         {
             return
                 !HasMultiSelection() &&
-                (m_AnyOverrides || m_Disconnected) &&
+                m_AnyOverrides &&
                 !m_ModelPrefab &&
                 (m_InvalidComponentOnInstance || m_InvalidComponentOnAsset || m_HasManagedReferencesWithMissingTypesOnAsset || m_Immutable);
         }
@@ -284,11 +279,7 @@ namespace UnityEditor
             }
             else
             {
-                if (m_Disconnected)
-                {
-                    EditorGUILayout.HelpBox(Styles.warningDisconnected.text, MessageType.Warning);
-                }
-                else if (m_AnyOverrides)
+                if (m_AnyOverrides)
                 {
                     Rect treeViewRect = GUILayoutUtility.GetRect(100, 10000, 0, 10000);
                     m_TreeView.OnGUI(treeViewRect);

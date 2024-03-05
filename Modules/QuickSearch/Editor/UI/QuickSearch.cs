@@ -1766,7 +1766,7 @@ namespace UnityEditor.Search
                 }
             }
         }
-    
+
         private void ToggleIndexEnabled(SearchDatabase db)
         {
             db.settings.options.disabled = !db.settings.options.disabled;
@@ -2193,14 +2193,13 @@ namespace UnityEditor.Search
                 searchQueryPath = EditorUtility.SaveFilePanel("Save search query...", initialFolder, searchQueryFileName, "asset");
             if (string.IsNullOrEmpty(searchQueryPath))
                 return null;
-
-            searchQueryPath = Utils.CleanPath(searchQueryPath);
-            if (!System.IO.Directory.Exists(Path.GetDirectoryName(searchQueryPath)) || !Utils.IsPathUnderProject(searchQueryPath))
+            if (!SearchUtils.ValidateAssetPath(ref searchQueryPath, ".asset", out var errorMessage))
+            {
+                Debug.LogWarning($"Save Search Query has failed. {errorMessage}.");
                 return null;
+            }
 
-            searchQueryPath = Utils.GetPathUnderProject(searchQueryPath);
             SearchSettings.queryFolder = Utils.CleanPath(Path.GetDirectoryName(searchQueryPath));
-
             return SaveSearchQueryFromContext(searchQueryPath, true);
         }
 

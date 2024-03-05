@@ -790,6 +790,15 @@ namespace UnityEngine.UIElements
                     UpdateContentViewTransform();
                 }, SliderDirection.Vertical)
             { viewDataKey = "VerticalScroller" };
+
+            horizontalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
+            verticalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
+
+            horizontalScroller.lowButton.AddAction(UpdateElasticBehaviour);
+            horizontalScroller.highButton.AddAction(UpdateElasticBehaviour);
+            verticalScroller.lowButton.AddAction(UpdateElasticBehaviour);
+            verticalScroller.highButton.AddAction(UpdateElasticBehaviour);
+
             verticalScroller.AddToClassList(vScrollerUssClassName);
             verticalScroller.style.display = DisplayStyle.None;
             m_ContentAndVerticalScrollContainer.Add(verticalScroller);
@@ -1529,19 +1538,7 @@ namespace UnityEngine.UIElements
 
             if (updateContentViewTransform)
             {
-                // Update elastic behavior
-                if (touchScrollBehavior == TouchScrollBehavior.Elastic)
-                {
-                    m_LowBounds = new Vector2(
-                        Mathf.Min(horizontalScroller.lowValue, horizontalScroller.highValue),
-                        Mathf.Min(verticalScroller.lowValue, verticalScroller.highValue));
-                    m_HighBounds = new Vector2(
-                        Mathf.Max(horizontalScroller.lowValue, horizontalScroller.highValue),
-                        Mathf.Max(verticalScroller.lowValue, verticalScroller.highValue));
-
-                    ExecuteElasticSpringAnimation();
-                }
-
+                UpdateElasticBehaviour();
                 UpdateContentViewTransform();
             }
         }
@@ -1564,6 +1561,21 @@ namespace UnityEngine.UIElements
             else
             {
                 m_SingleLineHeight = UIElementsUtility.singleLineHeight;
+            }
+        }
+
+        void UpdateElasticBehaviour()
+        {
+            if (touchScrollBehavior == TouchScrollBehavior.Elastic)
+            {
+                m_LowBounds = new Vector2(
+                    Mathf.Min(horizontalScroller.lowValue, horizontalScroller.highValue),
+                    Mathf.Min(verticalScroller.lowValue, verticalScroller.highValue));
+                m_HighBounds = new Vector2(
+                    Mathf.Max(horizontalScroller.lowValue, horizontalScroller.highValue),
+                    Mathf.Max(verticalScroller.lowValue, verticalScroller.highValue));
+
+                ExecuteElasticSpringAnimation();
             }
         }
     }

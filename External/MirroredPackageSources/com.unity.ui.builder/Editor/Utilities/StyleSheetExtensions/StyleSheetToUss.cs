@@ -111,8 +111,7 @@ namespace Unity.UI.Builder
                     break;
                 case StyleValueType.AssetReference:
                     var assetRef = sheet.ReadAssetReference(handle);
-                    var assetPath = URIHelpers.MakeAssetUri(assetRef);
-                    str = assetRef == null ? "none" : $"url('{assetPath}')";
+                    str = GetPathValueFromAssetRef(assetRef);
                     break;
                 case StyleValueType.Variable:
                     str = sheet.ReadVariable(handle);
@@ -126,7 +125,7 @@ namespace Unity.UI.Builder
         private static string GetPathValueFromAssetRef(UnityEngine.Object assetRef)
         {
             var assetPath = URIHelpers.MakeAssetUri(assetRef);
-            return assetRef == null ? "none" : $"url('{assetPath}')";
+            return assetRef == null ? "none" : $"url(\"{assetPath}\")";
         }
 
         public static void ValueHandlesToUssString(StringBuilder sb, StyleSheet sheet, UssExportOptions options, string propertyName, StyleValueHandle[] values, ref int valueIndex, int valueCount = -1)

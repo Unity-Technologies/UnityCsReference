@@ -40,6 +40,7 @@ namespace UnityEditor
         protected override void SetPosition(Rect newPos)
         {
             base.SetPosition(newPos);
+            newPos = position; // base.SetPosition does some sanitization so we have to use the position property instead of the newPos we received
             if (children.Length == 0)
                 return;
             if (children.Length > 2)

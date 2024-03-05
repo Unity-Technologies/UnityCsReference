@@ -241,8 +241,6 @@ namespace UnityEngine.UIElements
                     var recycledItem = targetView.GetRecycledItemFromIndex(targetView.itemsSource.Count - 1);
                     if (recycledItem != null)
                         PlaceHoverBarAtElement(recycledItem);
-                    else if (targetView.sourceIncludesArraySize && targetView.itemsSource.Count > 0)
-                        PlaceHoverBarAtElement(targetView.GetRecycledItemFromIndex(0));
                     else
                         PlaceHoverBarAt(0);
                     break;
@@ -273,16 +271,6 @@ namespace UnityEngine.UIElements
                 else
                     dragPosition.insertAtIndex = 0;
 
-                HandleTreePosition(pointerPosition, ref dragPosition);
-                return true;
-            }
-
-            // Skip array size item
-            if (targetView.sourceIncludesArraySize && recycledItem.index == 0)
-            {
-                dragPosition.insertAtIndex = recycledItem.index + 1;
-                dragPosition.childIndex = 0;
-                dragPosition.dropPosition = DragAndDropPosition.BetweenItems;
                 HandleTreePosition(pointerPosition, ref dragPosition);
                 return true;
             }

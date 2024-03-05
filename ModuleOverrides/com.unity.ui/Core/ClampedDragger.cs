@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements
         }
 
         public event System.Action dragging;
+        public event System.Action draggingEnded;
 
         public DragDirection dragDirection { get; set; }
 
@@ -44,6 +45,12 @@ namespace UnityEngine.UIElements
             startMousePosition = localPosition;
             dragDirection = DragDirection.None;
             base.ProcessDownEvent(evt, localPosition, pointerId);
+        }
+
+        protected override void ProcessUpEvent(EventBase evt, Vector2 localPosition, int pointerId)
+        {
+            base.ProcessUpEvent(evt, localPosition, pointerId);
+            draggingEnded?.Invoke();
         }
 
         protected override void ProcessMoveEvent(EventBase evt, Vector2 localPosition)

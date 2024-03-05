@@ -58,10 +58,9 @@ namespace UnityEditor.UIElements.Bindings
             boundProperty = prop;
             boundPropertyPath = prop.propertyPath;
 
-            m_DataList = new SerializedObjectList(prop, listView.sourceIncludesArraySize);
+            m_DataList = new SerializedObjectList(prop);
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_DataList.ArraySize.intValue;
-            m_LastSourceIncludesArraySize = listView.sourceIncludesArraySize;
             SetListView(listView);
         }
 
@@ -112,6 +111,7 @@ namespace UnityEditor.UIElements.Bindings
             });
 
             listView.itemsSource = m_DataList;
+            listView.SetupArraySizeField();
 
             var foldoutInput = listView.headerFoldout?.toggle?.visualInput;
             if (foldoutInput != null)
@@ -131,6 +131,7 @@ namespace UnityEditor.UIElements.Bindings
 
             listView.SetProperty(BaseVerticalCollectionView.internalBindingKey, null);
             listView.itemsSource = null;
+            listView.SetupArraySizeField();
             listView.Rebuild();
 
             if (listView.bindItem == m_DefaultBindItem)
@@ -271,10 +272,9 @@ namespace UnityEditor.UIElements.Bindings
 
         void UpdateArraySize()
         {
-            m_DataList.RefreshProperties(boundProperty, listView.sourceIncludesArraySize);
+            m_DataList.RefreshProperties(boundProperty);
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_ArraySize.intValue;
-            m_LastSourceIncludesArraySize = listView.sourceIncludesArraySize;
             listView.RefreshItems();
         }
 
@@ -293,7 +293,6 @@ namespace UnityEditor.UIElements.Bindings
         }
 
         private UInt64 m_LastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
-        private bool m_LastSourceIncludesArraySize;
 
         protected override void ResetCachedValues()
         {
@@ -313,7 +312,7 @@ namespace UnityEditor.UIElements.Bindings
                 ResetUpdate();
                 isUpdating = true;
 
-                if (m_LastUpdatedRevision == bindingContext.lastRevision && listView.sourceIncludesArraySize == m_LastSourceIncludesArraySize)
+                if (m_LastUpdatedRevision == bindingContext.lastRevision)
                     return;
 
                 if (bindingContext.IsValid() && IsPropertyValid())
@@ -321,7 +320,7 @@ namespace UnityEditor.UIElements.Bindings
                     m_LastUpdatedRevision = bindingContext.lastRevision;
 
                     int currentArraySize = m_ArraySize.intValue;
-                    if (currentArraySize != m_ListViewArraySize || listView.sourceIncludesArraySize != m_LastSourceIncludesArraySize)
+                    if (currentArraySize != m_ListViewArraySize)
                     {
                         UpdateArraySize();
                     }
@@ -373,12 +372,12 @@ namespace UnityEditor.UIElements.Bindings
 
         List<SerializedProperty> properties;
 
-        public SerializedObjectList(SerializedProperty parentProperty, bool includeArraySize)
+        public SerializedObjectList(SerializedProperty parentProperty)
         {
-            RefreshProperties(parentProperty, includeArraySize);
+            RefreshProperties(parentProperty);
         }
 
-        public void RefreshProperties(SerializedProperty parentProperty, bool includeArraySize)
+        public void RefreshProperties(SerializedProperty parentProperty)
         {
             ArrayProperty = parentProperty.Copy();
             var property = ArrayProperty.Copy();
@@ -395,10 +394,6 @@ namespace UnityEditor.UIElements.Bindings
                 if (property.propertyType == SerializedPropertyType.ArraySize)
                 {
                     ArraySize = property.Copy();
-                    if (includeArraySize)
-                    {
-                        properties.Add(ArraySize);
-                    }
                 }
                 else
                 {

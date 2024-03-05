@@ -269,6 +269,15 @@ namespace UnityEditor.Animations
 
         public void SetStateEffectiveMotion(AnimatorState state, Motion motion, int layerIndex)
         {
+            //delete existing nested blend tree asset
+            Motion selectedMotion = GetStateEffectiveMotion(state, layerIndex);
+            BlendTree blendTree = selectedMotion as BlendTree;
+
+            if (blendTree != null && !AssetDatabase.IsMainAsset(blendTree))
+            {
+                MecanimUtilities.DestroyBlendTreeRecursive(blendTree);
+            }
+
             if (layers[layerIndex].syncedLayerIndex == -1)
             {
                 undoHandler.DoUndo(state, "Set Motion");

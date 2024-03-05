@@ -1062,7 +1062,11 @@ namespace UnityEditor
             }
             set
             {
-                m_MinSize = value; MakeParentsSettingsMatchMe();
+                if (!View.IsValidViewSize(value))
+                    throw new ArgumentException($"Invalid minSize: {value}");
+
+                m_MinSize = value;
+                MakeParentsSettingsMatchMe();
             }
         }
 
@@ -1075,6 +1079,9 @@ namespace UnityEditor
             }
             set
             {
+                if (!View.IsValidViewSize(value))
+                    throw new ArgumentException($"Invalid minSize: {value}");
+
                 m_MaxSize = value;
                 MakeParentsSettingsMatchMe();
             }

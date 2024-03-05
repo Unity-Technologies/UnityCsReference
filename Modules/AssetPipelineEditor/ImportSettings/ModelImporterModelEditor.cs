@@ -93,6 +93,10 @@ namespace UnityEditor
         SerializedProperty m_AddColliders;
         [CacheProperty("bakeAxisConversion")]
         SerializedProperty m_BakeAxisConversion;
+
+        [CacheProperty]
+        SerializedProperty m_StrictVertexDataChecks;
+
 #pragma warning restore 0649
 
         public ModelImporterModelEditor(AssetImporterEditor panelContainer)
@@ -117,6 +121,7 @@ namespace UnityEditor
             public static GUIContent ImportLights = EditorGUIUtility.TrTextContent("Import Lights");
             public static GUIContent PreserveHierarchy = EditorGUIUtility.TrTextContent("Preserve Hierarchy", "Always create an explicit prefab root, even if the model only has a single root.");
             public static GUIContent SortHierarchyByName = EditorGUIUtility.TrTextContent("Sort Hierarchy By Name", "Sort game objects children by name.");
+            public static GUIContent StrictVertexDataChecks = EditorGUIUtility.TrTextContent("Strict Vertex Data Checks", "Enables strict checks on Vertex data. If enabled, checks discard invalid data, this may result in missing vertex data but ensures that import results are consistent and can prevent crashes.");
 
             public static GUIContent Meshes = EditorGUIUtility.TrTextContent("Meshes", "Global settings for generated meshes");
             public static GUIContent MeshCompressionLabel = EditorGUIUtility.TrTextContent("Mesh Compression" , "Higher compression ratio means lower mesh precision. If enabled, the mesh bounds and a lower bit depth per component are used to compress the mesh data.");
@@ -260,6 +265,8 @@ namespace UnityEditor
             NormalsTangentsGUI();
 
             UvsGUI();
+
+            EditorGUILayout.PropertyField(m_StrictVertexDataChecks, Styles.StrictVertexDataChecks);
         }
 
         void NormalsTangentsGUI()

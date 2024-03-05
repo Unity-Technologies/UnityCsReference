@@ -30,6 +30,7 @@ namespace UnityEditor
     {
         NotAPrefab = 0,
         Connected = 1,
+        [Obsolete("PrefabInstanceStatus.Disconnected has been deprecated and is not used. Prefabs can not be in a disconnected state.")]
         Disconnected = 2,
         MissingAsset = 3
     }
@@ -58,8 +59,10 @@ namespace UnityEditor
         // The object was an instance of a prefab, but the original prefab could not be found.
         MissingPrefabInstance = 5,
         // The object is an instance of a user created prefab, but the connection is broken.
+        [Obsolete("PrefabType.DisconnectedPrefabInstance has been deprecated and is not used. Prefabs can not be in a disconnected state.")]
         DisconnectedPrefabInstance = 6,
         // The object is an instance of an imported 3D model, but the connection is broken.
+        [Obsolete("PrefabType.DisconnectedModelPrefabInstance has been deprecated and is not used. Prefabs can not be in a disconnected state.")]
         DisconnectedModelPrefabInstance = 7,
     }
 
@@ -74,6 +77,15 @@ namespace UnityEditor
         ConnectToPrefab = 1,
         // Replaces the prefab using name based lookup in the transform hierarchy.
         ReplaceNameBased = 2,
+    }
+
+    // This must match C++ MergeStatus
+    internal enum MergeStatus
+    {
+        NotMerged,                       // Initial state, before trying to merge
+        NormalMerge,                     // Prefab source was found and merged successfully
+        MergedAsMissing,                 // Prefab source was missing and the Prefab couldn't be merged
+        MergedAsMissingWithSceneBackup   // Prefab source was missing, but Prefab data was found in the scene file - no merging was done
     }
 
     public sealed partial class PrefabUtility
@@ -344,8 +356,6 @@ namespace UnityEditor
         {
             ThrowExceptionIfNotValidPrefabInstanceObject(instanceRoot, false);
 
-            bool isDisconnected = PrefabUtility.IsDisconnectedFromPrefabAsset(instanceRoot);
-
             GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
 
             var actionName = "Revert Prefab Instance";
@@ -363,10 +373,6 @@ namespace UnityEditor
             if (action == InteractionMode.UserAction)
             {
                 RegisterNewObjects(prefabInstanceRoot, hierarchy, actionName);
-                if (isDisconnected)
-                {
-                    Undo.RegisterCreatedObjectUndo(GetPrefabInstanceHandle(prefabInstanceRoot), actionName);
-                }
             }
         }
 
@@ -379,7 +385,6 @@ namespace UnityEditor
             using (new AtomicUndoScope())
             {
                 GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
-                var isDisconnected = GetPrefabInstanceHandle(prefabInstanceRoot) == null;
 
                 var actionName = "Apply instance to prefab";
                 Object correspondingSourceObject = GetCorrespondingObjectFromSource(prefabInstanceRoot);
@@ -399,12 +404,6 @@ namespace UnityEditor
                 if (action == InteractionMode.UserAction)
                 {
                     RegisterNewObjects(correspondingSourceObject as GameObject, prefabHierarchy, actionName); // handles created objects
-                    if (isDisconnected)
-                    {
-                        var prefabInstanceHandle = GetPrefabInstanceHandle(prefabInstanceRoot);
-                        Assert.IsNotNull(prefabInstanceHandle);
-                        Undo.RegisterCreatedObjectUndo(prefabInstanceHandle, actionName);
-                    }
                 }
             }
 
@@ -1372,18 +1371,18 @@ namespace UnityEditor
 
             if (action == InteractionMode.UserAction)
             {
-                string dependentComponents = string.Join(
-                    ", ",
-                    GetRemovedComponentDependencies(assetComponent, instanceGameObject, OverrideOperation.Revert).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
-                if (!string.IsNullOrEmpty(dependentComponents))
-                {
-                    string error = String.Format(
-                        L10n.Tr("Can't revert removed component {0} because it depends on {1}."),
-                        ObjectNames.GetInspectorTitle(assetComponent),
-                        dependentComponents);
+            string dependentComponents = string.Join(
+                ", ",
+                GetRemovedComponentDependencies(assetComponent, instanceGameObject, OverrideOperation.Revert).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+            if (!string.IsNullOrEmpty(dependentComponents))
+            {
+                string error = String.Format(
+                    L10n.Tr("Can't revert removed component {0} because it depends on {1}."),
+                    ObjectNames.GetInspectorTitle(assetComponent),
+                    dependentComponents);
                     EditorUtility.DisplayDialog(L10n.Tr("Can't revert removed component"), error, L10n.Tr("OK"));
-                    return;
-                }
+                return;
+            }
 
                 Undo.RegisterCompleteObjectUndo(instanceGameObject, actionName);
             }
@@ -1662,6 +1661,17 @@ namespace UnityEditor
             return AssetDatabase.GetAssetPath(GetOriginalSourceOrVariantRoot(instanceComponentOrGameObject));
         }
 
+        [Obsolete("The concept of disconnecting Prefab instances has been deprecated. This method always returns False.")]
+        public static bool IsDisconnectedFromPrefabAsset(Object componentOrGameObject)
+        {
+            return false;
+        }
+
+        [Obsolete("The concept of disconnecting Prefab instances has been deprecated. This method does nothing.")]
+        public static void DisconnectPrefabInstance(Object targetObject)
+        {
+        }
+
         public static Texture2D GetIconForGameObject(GameObject gameObject)
         {
             if (IsAnyPrefabInstanceRoot(gameObject))
@@ -1772,8 +1782,15 @@ namespace UnityEditor
             if (EditorUtility.IsPersistent(instanceRoot))
                 throw new ArgumentException("Can't save persistent object as a Prefab asset");
 
-            if (IsPrefabAssetMissing(instanceRoot))
-                throw new ArgumentException("Can't save Prefab instance with missing asset as a Prefab. You may unpack the instance and save the unpacked GameObjects as a Prefab.");
+            if (IsPartOfNonAssetPrefabInstance(instanceRoot))
+            {
+                // A PrefabInstance with missing asset can be correctly restored only if CorrespondingObjects info is available
+                // CorrespondingObject info is available when a PrefabInstance with missing asset was merged before deleting the asset (kNormalMerge) or when it has a scene backup (kMergedAsMissingWithSceneBackup)
+                var mergeStatus = GetMergeStatus(instanceRoot);
+                var hasCorrespondingSourceObjectInfo = mergeStatus == MergeStatus.NormalMerge || mergeStatus == MergeStatus.MergedAsMissingWithSceneBackup;
+                if (IsPrefabAssetMissing(instanceRoot) && !hasCorrespondingSourceObjectInfo)
+                    throw new ArgumentException("Can't save Prefab instance with missing asset and scene backup as a Prefab. You may unpack the instance and save the unpacked GameObjects as a Prefab.");
+            }
 
             var actualInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
             if (actualInstanceRoot)
@@ -1886,21 +1903,9 @@ namespace UnityEditor
             if (!IsPartOfNonAssetPrefabInstance(instance))
                 throw new ArgumentException("Provided GameObject is not a Prefab instance");
 
-            if (IsDisconnectedFromPrefabAsset(instance))
-            {
-                // The concept of disconnecting are being deprecated. For now use FindRootGameObjectWithSameParentPrefab
-                // to re-connect existing disconnected prefabs.
-                var validRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(instance);
-                var ok = validRoot == instance;
-                if (!ok && PrefabUtility.GetCorrespondingObjectFromOriginalSource(instance) != PrefabUtility.GetCorrespondingObjectFromSource(instance))
-                    throw new ArgumentException("Can't save Prefab from an object that originates from a nested Prefab");
-            }
-            else
-            {
-                var root = GetOutermostPrefabInstanceRoot(instance);
-                if (root != instance)
-                    throw new ArgumentException("GameObject to save Prefab from must be a Prefab root");
-            }
+            var root = GetOutermostPrefabInstanceRoot(instance);
+            if (root != instance)
+                throw new ArgumentException("GameObject to save Prefab from must be a Prefab root");
 
             var assetObject = GetCorrespondingObjectFromSource(instance);
             string path = AssetDatabase.GetAssetPath(assetObject);
@@ -1994,11 +1999,9 @@ namespace UnityEditor
         }
 
         // Returns the corresponding object from its immediate source from a connected Prefab,
-        // or null if it can't be found, or the Prefab instance is disconnected.
+        // or null if it can't be found
         internal static TObject GetCorrespondingConnectedObjectFromSource<TObject>(TObject componentOrGameObject) where TObject : Object
         {
-            if (IsDisconnectedFromPrefabAsset(GetGameObject(componentOrGameObject)))
-                return null;
             return (TObject)GetCorrespondingObjectFromSource_internal(componentOrGameObject);
         }
 
@@ -2064,20 +2067,6 @@ namespace UnityEditor
                 return PrefabType.Prefab;
             }
 
-            if (IsDisconnectedFromPrefabAsset(target))
-            {
-                var corresponding = GetCorrespondingObjectFromSource(target);
-                var prefabObject = GetPrefabObject(corresponding);
-                // Object was at some point connected to a prefab, but now it is not attached to one anymore and the prefab no longer exists
-                if (prefabObject == null)
-                    return PrefabType.None;
-
-                if (isModel)
-                    return PrefabType.DisconnectedModelPrefabInstance;
-
-                return PrefabType.DisconnectedPrefabInstance;
-            }
-
             if (IsPrefabAssetMissing(target))
                 return PrefabType.MissingPrefabInstance;
 
@@ -2105,9 +2094,6 @@ namespace UnityEditor
 
             Transform parent = gameObject.transform.parent;
             if (parent == null)
-                return false;
-
-            if (IsDisconnectedFromPrefabAsset(parent))
                 return false;
 
             // Can't be added to a prefab instance if the parent is not part of a prefab instance.
@@ -2292,9 +2278,6 @@ namespace UnityEditor
             if (!PrefabUtility.IsPartOfNonAssetPrefabInstance(componentOrGameObject))
                 return PrefabInstanceStatus.NotAPrefab;
 
-            if (PrefabUtility.IsDisconnectedFromPrefabAsset(componentOrGameObject))
-                return PrefabInstanceStatus.Disconnected;
-
             if (PrefabUtility.IsPrefabAssetMissing(componentOrGameObject))
                 return PrefabInstanceStatus.MissingAsset;
 
@@ -2308,6 +2291,9 @@ namespace UnityEditor
 
             if (PrefabUtility.IsPrefabAssetMissing(componentOrGameObject))
                 return PrefabAssetType.MissingAsset;
+
+            if (PrefabUtility.IsPartOfVariantPrefab(componentOrGameObject))
+                return PrefabAssetType.Variant;
 
             if (PrefabUtility.IsPartOfModelPrefab(componentOrGameObject))
                 return PrefabAssetType.Model;
