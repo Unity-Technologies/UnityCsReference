@@ -118,7 +118,9 @@ namespace Unity.UI.Builder
                     else
                         displayPath = Path.GetFileName(fullPath);
                 }
-                var valueText = StyleSheetToUss.ValueHandleToUssString(info.sheet, new UssExportOptions(), "", info.styleVariable.handles[0]);
+
+                var valueText = StyleSheetToUss.ValueHandleToUssString(info.sheet, new UssExportOptions(), "",
+                    info.styleVariable.handles[0].valueType != StyleValueType.Function ? info.styleVariable.handles[0] : info.styleVariable.handles[2]);
 
                 variableValue = valueText;
                 sourceStyleSheet = displayPath;

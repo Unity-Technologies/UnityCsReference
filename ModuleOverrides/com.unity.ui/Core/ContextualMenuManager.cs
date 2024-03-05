@@ -32,15 +32,24 @@ namespace UnityEngine.UIElements
         public void DisplayMenu(EventBase triggerEvent, IEventHandler target)
         {
             DropdownMenu menu = new DropdownMenu();
+            int pointerId, button;
 
             using (ContextualMenuPopulateEvent cme = ContextualMenuPopulateEvent.GetPooled(triggerEvent, menu, target, this))
             {
+                pointerId = triggerEvent is IPointerEvent pe ? pe.pointerId : PointerId.mousePointerId;
+                button = cme.button;
                 target?.SendEvent(cme);
             }
 
             if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
             {
                 displayMenuHandledOSX = true;
+
+                if (button >= 0)
+                {
+                    // Reset the button state now, as we might miss the PointerUp event to the ContextualMenu window.
+                    PointerDeviceState.ReleaseButton(pointerId, button);
+                }
             }
         }
 

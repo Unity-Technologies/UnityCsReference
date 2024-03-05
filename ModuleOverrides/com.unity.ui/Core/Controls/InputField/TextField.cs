@@ -141,6 +141,11 @@ namespace UnityEngine.UIElements
             ((INotifyValueChanged<string>)textInput.textElement).SetValueWithoutNotify(rawValue);
         }
 
+        internal override void UpdateTextFromValue()
+        {
+            SetValueWithoutNotify(rawValue);
+        }
+
         [EventInterest(typeof(BlurEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {

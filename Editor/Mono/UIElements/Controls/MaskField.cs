@@ -342,6 +342,17 @@ namespace UnityEditor.UIElements
             return mixedString;
         }
 
+        public override TChoice value
+        {
+            get => base.value;
+            set
+            {
+                // We need to convert the value to an accepted mask value so that the comparision with the old value works (UUM-56605)
+                // For example, if the value is null, we need to convert it to the mask value of the Nothing choice or it will be considered as different.
+                base.value = MaskToValue(UpdateMaskIfEverything(ValueToMask(value)));
+            }
+        }
+
         public override void SetValueWithoutNotify(TChoice newValue)
         {
             base.SetValueWithoutNotify(MaskToValue(UpdateMaskIfEverything(ValueToMask(newValue))));

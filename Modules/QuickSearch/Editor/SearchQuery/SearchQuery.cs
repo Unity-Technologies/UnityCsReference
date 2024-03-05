@@ -62,7 +62,7 @@ namespace UnityEditor.Search
         [SerializeField] Texture2D m_Thumbnail;
         [SerializeField] bool m_IsSearchTemplate;
         private long m_CreationTime;
-        private long m_LastUsedTime;
+        private long m_LastUsedTime = 0;
         private int m_ItemCount = -1;
 
         public string description;
@@ -314,13 +314,11 @@ namespace UnityEditor.Search
         public static void ShowQueryIconPicker(Action<Texture2D, bool> selectIcon)
         {
             var pickIconContext = SearchService.CreateContext(new[] { "adb", "asset" }, "", SearchFlags.WantsMore);
-            var viewState = new SearchViewState(pickIconContext,
+            var viewState = SearchViewState.CreatePickerState("Query Icon", pickIconContext,
                 (newIcon, canceled) => selectIcon(newIcon as Texture2D, canceled),
                 null,
                 "Texture",
                 typeof(Texture2D));
-            viewState.title = "Query Icon";
-            viewState.SetSearchViewFlags(SearchViewFlags.GridView);
             SearchService.ShowPicker(viewState);
         }
 

@@ -72,7 +72,7 @@ namespace UnityEngine.UIElements
         /// <returns>Whether or not the drag handle is needed.</returns>
         public virtual bool NeedsDragHandle(int index)
         {
-            return !baseListView.sourceIncludesArraySize || index != 0;
+            return true;
         }
 
         /// <summary>

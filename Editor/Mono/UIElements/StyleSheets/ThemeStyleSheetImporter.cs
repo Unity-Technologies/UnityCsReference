@@ -11,6 +11,7 @@ namespace UnityEditor.UIElements.StyleSheets
 {
     // Make sure style sheets importer after allowed dependent assets: textures, fonts, json and uss.
     // Has to be higher then AssetImportOrder.kImportOrderLate
+    [HelpURL("UIE-tss")]
     [ScriptedImporter(version: 4, ext: "tss", importQueueOffset: 1101)]
     [ExcludeFromPreset]
     class ThemeStyleSheetImporter : StyleSheetImporter

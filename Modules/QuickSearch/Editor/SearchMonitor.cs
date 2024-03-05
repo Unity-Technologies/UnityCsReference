@@ -313,7 +313,7 @@ namespace UnityEditor.Search
         public static void RaiseContentRefreshed(string[] updated, string[] removed, string[] moved)
         {
             UpdateTransactionManager(updated, removed, moved);
-            InvalidatePropertyDatabase(updated, removed);
+            InvalidatePropertyDatabase(updated, removed, moved);
 
             if (!s_ContentRefreshedEnabled)
                 return;
@@ -437,9 +437,9 @@ namespace UnityEditor.Search
             }
         }
 
-        static void InvalidatePropertyDatabase(string[] updated, string[] removed)
+        static void InvalidatePropertyDatabase(string[] updated, string[] removed, string[] moved)
         {
-            foreach (var assetPath in updated.Concat(removed))
+            foreach (var assetPath in updated.Concat(removed).Concat(moved))
                 InvalidateDocument(AssetDatabase.AssetPathToGUID(assetPath));
         }
 

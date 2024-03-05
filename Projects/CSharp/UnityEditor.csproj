@@ -4393,17 +4393,47 @@
     <Compile Include="..\..\External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs">
       <Link>External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\BindingExtensions.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\BindingExtensions.cs</Link>
-    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\BindingStyleHelpers.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\BindingStyleHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\DefaultSerializedObjectBindingImplementation.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\DefaultSerializedObjectBindingImplementation.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\EditorListViewController.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\EditorListViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\ListViewBindings.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\ListViewBindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedDefaultEnumBinding.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedDefaultEnumBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedIsExpandedBinding.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedIsExpandedBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedManagedEnumBinding.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedManagedEnumBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectBinding.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectBindingBase.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectBindingBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectBindingContext.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectBindingContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectBindingContextUpdater.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectBindingContextUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectBindingPropertyToBaseField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectBindingPropertyToBaseField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectBindingToBaseField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectBindingToBaseField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectStringConversionBinding.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedObjectStringConversionBinding.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedPropertyHelper.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedPropertyHelper.cs</Link>
@@ -8467,7 +8497,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_cc61/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_125e/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

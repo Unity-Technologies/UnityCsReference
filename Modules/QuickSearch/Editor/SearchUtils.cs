@@ -12,6 +12,8 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Pool;
+using UnityEditor.Search.Providers;
+using UnityEditor.Utils;
 
 using UnityEditor.SceneManagement;
 
@@ -23,6 +25,7 @@ namespace UnityEditor.Search
     public static class SearchUtils
     {
         internal static readonly char[] KeywordsValueDelimiters = new[] { ':', '=', '<', '>', '!', '|' };
+        private static readonly char[] k_AdbInvalidCharacters = {'/', '?', '<', '>', '\\', ':', '*', '|', '"' };
 
         /// <summary>
         /// Separators used to split an entry into indexable tokens.
@@ -548,6 +551,8 @@ namespace UnityEditor.Search
                     icon: GetTypeIcon(typeof(MonoScript)), data: typeof(MonoScript), type: blockType, priority: priority, color: QueryColors.type);
                 yield return new SearchProposition(category: "Types", label: "Scenes", replacement: "t:scene",
                     icon: GetTypeIcon(typeof(SceneAsset)), data: typeof(SceneAsset), type: blockType, priority: priority, color: QueryColors.type);
+                yield return new SearchProposition(category: "Types", label: "Presets", replacement: "t:preset",
+                    icon: GetTypeIcon(typeof(Presets.Preset)), data: typeof(Presets.Preset), type: blockType, priority: priority, color: QueryColors.type);
             }
 
             if (!s_BaseTypes.TryGetValue(typeof(T), out var types))
@@ -637,7 +642,7 @@ namespace UnityEditor.Search
                 var replacement = label;
                 if (blockType == typeof(QueryFilterBlock))
                 {
-                    replacement = $"{replacementBase}<$enum:{enumName},{enumType.Name}$>";
+                    replacement = $"{replacementBase}<$enum:{enumName},{enumType.FullName}$>";
                 }
                 else if (blockType == typeof(QueryListMarkerBlock))
                 {
@@ -903,7 +908,7 @@ namespace UnityEditor.Search
                         {
                             var enums = valueType.GetEnumValues();
                             if (enums.Length > 0)
-                                return $"{replacement}=<$enum:{enums.GetValue(0)},{valueType.Name}$>";
+                                return $"{replacement}=<$enum:{enums.GetValue(0)},{valueType.FullName}$>";
                         }
                     }
                     break;
@@ -1009,15 +1014,11 @@ namespace UnityEditor.Search
         public static void ShowIconPicker(Action<Texture2D, bool> iconSelectedHandler)
         {
             var pickIconContext = SearchService.CreateContext(new[] { "adb", "asset" }, "", SearchFlags.WantsMore);
-            var viewState = new SearchViewState(pickIconContext,
+            var viewState = SearchViewState.CreatePickerState("Icon", pickIconContext,
                 (newIcon, canceled) => iconSelectedHandler(newIcon as Texture2D, canceled),
                 null,
                 "Texture",
-                typeof(Texture2D))
-            {
-                title = "Icon"
-            };
-            viewState.SetSearchViewFlags(UnityEngine.Search.SearchViewFlags.GridView);
+                typeof(Texture2D));
             SearchService.ShowPicker(viewState);
         }
 
@@ -1096,6 +1097,171 @@ namespace UnityEditor.Search
         {
             return OpenWithContextualProvider(null, providerIds, SearchFlags.OpenContextual);
         }
+        
+        internal static string CreateFindObjectReferenceQuery(UnityEngine.Object obj)
+        {
+            var objPath = GetObjectPath(obj);
+            if (string.IsNullOrEmpty(objPath))
+                return null;
+            var query = $"ref=\"{objPath}\"";
+            return query;
+        }
+
+        internal static string RemoveInvalidChars(string filename)
+        {
+            filename = string.Concat(filename.Split(Paths.invalidFilenameChars));
+            if (filename.Length > 0 && !char.IsLetterOrDigit(filename[0]))
+                filename = filename.Substring(1);
+            return filename;
+        }
+
+        internal static bool ValidateAssetPath(ref string path, string requiredExtensionWithDot, out string errorMessage)
+        {
+            if (!Paths.IsValidAssetPath(path, requiredExtensionWithDot, out errorMessage))
+            {
+                errorMessage = $"Save Search Query has failed. {errorMessage}";
+                return false;
+            }
+            path = Utils.CleanPath(path);
+            var fileName = Path.GetFileName(path);
+
+            // On Mac Path.GetInvalidFileNameChars() doesn't include <,> but these characters are invalid for ADB.
+            if (fileName.IndexOfAny(k_AdbInvalidCharacters) >= 0)
+            {
+                errorMessage = $"Filename has invalid characters.";
+                return false;
+            }
+
+            var directory = Utils.CleanPath(Path.GetDirectoryName(path));
+            if (!System.IO.Directory.Exists(directory))
+            {
+                errorMessage = $"Directory does not exists {directory}";
+                return false;
+            }
+
+            if (!Utils.IsPathUnderProject(path))
+            {
+                errorMessage = $"Path is not under the project or packages: {path}";
+                return false;
+            }
+
+            path = Utils.GetPathUnderProject(path);
+
+            return true;
+        }
+
+        [CommandHandler("OpenToFindReferenceOnObject")]
+        internal static void OpenToFindReferenceOnObject(CommandExecuteContext c)
+        {
+            var obj = c.GetArgument<UnityEngine.Object>(0);
+            if(obj == null)
+                return;
+            OpenToFindReferenceOnObject(obj);
+        }
+
+        internal static ISearchView OpenToFindReferenceOnObject(UnityEngine.Object obj)
+        {
+            var query = CreateFindObjectReferenceQuery(obj);
+            if (string.IsNullOrEmpty(query))
+                return QuickSearch.OpenDefaultQuickSearch();
+
+            return OpenWithContextualProvider(query,
+                new [] { Providers.AssetProvider.type, Providers.BuiltInSceneObjectsProvider.type },
+                SearchFlags.Default,
+                "Find References");
+        }
+
+        [CommandHandler("OpenToSearchByProperty")]
+        internal static void OpenToSearchByProperty(CommandExecuteContext c)
+        {
+            var prop = c.GetArgument<SerializedProperty>(0);
+            if (prop == null)
+                return;
+            OpenToSearchByProperty(prop);
+        }
+
+        [CommandHandler("IsPropertyValidForQuery")]
+        internal static void IsPropertyValidForQuery(CommandExecuteContext c)
+        {
+            var prop = c.GetArgument<SerializedProperty>(0);
+            if (prop == null)
+            {
+                c.result = false;
+                return;
+            }
+            c.result = IsPropertyValidForQuery(prop);
+        }
+
+        internal static bool IsPropertyValidForQuery(SerializedProperty prop)
+        {
+            var valid = !(prop == null ||
+                prop.serializedObject == null ||
+                !prop.serializedObject.isValid ||
+                !prop.serializedObject.targetObject ||
+                prop.serializedObject.targetObject == null);
+            return valid && IsPropertyTypeSupported(prop);
+        }
+
+        internal static ISearchView OpenToSearchByProperty(SerializedProperty prop)
+        {
+            if (!IsPropertyValidForQuery(prop))
+                return QuickSearch.OpenDefaultQuickSearch();
+
+            var query = FormatPropertyQuery(prop);
+            if (query == null)
+                return QuickSearch.OpenDefaultQuickSearch();
+
+            var context = SearchService.CreateContext(query, SearchFlags.OpenGlobal);
+            return SearchService.ShowWindow(context);
+        }
+
+        internal static string GetPropertyValueForQuery(SerializedProperty prop)
+        {
+            var value = PropertySelectors.GetSerializedPropertyValue(prop);
+            switch(prop.propertyType)
+            {
+                case SerializedPropertyType.Color:
+                    return $"#{ColorUtility.ToHtmlStringRGB((Color)value)}";
+                case SerializedPropertyType.ObjectReference:
+                case SerializedPropertyType.ManagedReference:
+                case SerializedPropertyType.ExposedReference:
+                    return GetObjectPath(value as UnityEngine.Object);
+                default:
+                    return value == null ? null : value.ToString();
+            }
+        }
+
+        internal static string GetPropertyName(SerializedProperty prop)
+        {
+            var fieldName = ObjectIndexer.GetFieldName(prop.displayName);
+            return fieldName;
+        }
+
+        internal static string FormatPropertyQuery(SerializedProperty prop)
+        {
+            string query = null;
+            if (!IsPropertyValidForQuery(prop))
+                return query;
+
+            var target = prop.serializedObject.targetObject;
+            var assetPath = AssetDatabase.GetAssetPath(target);
+            var propetyName = GetPropertyName(prop);
+            var propertyValue = GetPropertyValueForQuery(prop);
+            var baseQuery = $"{propetyName}={propertyValue}";
+            if (!string.IsNullOrEmpty(assetPath))
+            {
+                // Format asset Query;
+                return $"{AssetProvider.filterId}{baseQuery}";
+            }
+
+            if (target is UnityEngine.GameObject || target is MonoBehaviour || target is Component)
+            {
+                // Format Hierarchy Query:
+                return $"{BuiltInSceneObjectsProvider.filterId}#{baseQuery}";
+            }
+
+            return null;
+        }
 
         internal static ISearchView OpenWithContextualProvider(string searchQuery, string[] providerIds, SearchFlags flags, string topic = null, bool useExplicitProvidersAsNormalProviders = false)
         {
@@ -1128,3 +1294,4 @@ namespace UnityEditor.Search
         }
     }
 }
+

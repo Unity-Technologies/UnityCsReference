@@ -179,6 +179,7 @@ namespace UnityEditor
         private const float kFloorTextureScale = 4;
         private const float kFloorAlpha = 0.5f;
         private const float kFloorShadowAlpha = 0.3f;
+        private const float kDefaultIntensity = 1.4f;
 
         private const int kDefaultLayer = 0; // Must match kDefaultLayer in TagTypes.h
 
@@ -434,9 +435,9 @@ namespace UnityEditor
                     m_PreviewUtility.camera.allowHDR = false;
                     m_PreviewUtility.camera.allowMSAA = false;
                     m_PreviewUtility.ambientColor = new Color(.1f, .1f, .1f, 0);
-                    m_PreviewUtility.lights[0].intensity = 1.4f;
+                    m_PreviewUtility.lights[0].intensity = kDefaultIntensity;
                     m_PreviewUtility.lights[0].transform.rotation = Quaternion.Euler(40f, 40f, 0);
-                    m_PreviewUtility.lights[1].intensity = 1.4f;
+                    m_PreviewUtility.lights[1].intensity = kDefaultIntensity;
                 }
                 return m_PreviewUtility;
             }
@@ -714,6 +715,14 @@ namespace UnityEditor
             Matrix4x4 shadowMatrix;
             RenderTexture shadowMap = RenderPreviewShadowmap(previewUtility.lights[0], m_BoundingVolumeScale / 2, bodyPosition, floorPos, out shadowMatrix);
 
+            // SRP might initialize the light settings during the first frame of rendering
+            // (e.g HDRP is overriding the intensity value during 'InitDefaultHDAdditionalLightData').
+            // So this call is necessary to avoid a flickering when selecting an animation clip.
+            if (previewUtility.lights[0].intensity != kDefaultIntensity || previewUtility.lights[0].intensity != kDefaultIntensity)
+            {
+                SetupPreviewLightingAndFx(probe);
+            }
+
             float tempZoomFactor = (is2D ? 1.0f : m_ZoomFactor);
             // Position camera
             previewUtility.camera.orthographic = is2D;
@@ -779,9 +788,9 @@ namespace UnityEditor
 
         private void SetupPreviewLightingAndFx(SphericalHarmonicsL2 probe)
         {
-            previewUtility.lights[0].intensity = 1.4f;
+            previewUtility.lights[0].intensity = kDefaultIntensity;
             previewUtility.lights[0].transform.rotation = Quaternion.Euler(40f, 40f, 0);
-            previewUtility.lights[1].intensity = 1.4f;
+            previewUtility.lights[1].intensity = kDefaultIntensity;
             RenderSettings.ambientMode = AmbientMode.Custom;
             RenderSettings.ambientLight = new Color(0.1f, 0.1f, 0.1f, 1.0f);
             RenderSettings.ambientProbe = probe;

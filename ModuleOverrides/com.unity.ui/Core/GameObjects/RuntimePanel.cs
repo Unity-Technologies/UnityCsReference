@@ -41,6 +41,9 @@ namespace UnityEngine.UIElements
             focusController = new FocusController(new NavigateFocusRing(visualTree));
             m_PanelSettings  = ownerObject as PanelSettings;
             name = m_PanelSettings != null ? m_PanelSettings.name : "RuntimePanel";
+
+            visualTree.RegisterCallback<FocusEvent, RuntimePanel>((e, p) => p.OnElementFocus(e), this,
+                TrickleDown.TrickleDown);
         }
 
         public override void Update()
@@ -49,6 +52,11 @@ namespace UnityEngine.UIElements
                 m_PanelSettings.ApplyPanelSettings();
 
             base.Update();
+        }
+
+        private void OnElementFocus(FocusEvent evt)
+        {
+            UIElementsRuntimeUtility.defaultEventSystem.OnFocusEvent(this, evt);
         }
     }
 }

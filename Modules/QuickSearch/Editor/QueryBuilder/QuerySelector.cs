@@ -192,7 +192,7 @@ namespace UnityEditor.Search
             public bool isValid => lastIndex != -1;
         }
 
-        static ItemSearchData[] s_ItemSearchDatas = new ItemSearchData[2];
+        static ItemSearchData[] s_ItemSearchDatas = new ItemSearchData[3];
         internal static bool DoSearchItemMatch(in AdvancedDropdownItem item, in string[] words, out bool didMatchStart)
         {            
             void PrepareItemData(int index, string data)
@@ -206,14 +206,19 @@ namespace UnityEditor.Search
                 }
             }
 
-            PrepareItemData(0, item.displayName);
-            PrepareItemData(1, item.name);
+            var itemDataCount = 0;
+            PrepareItemData(itemDataCount++, item.displayName);
+            PrepareItemData(itemDataCount++, item.name);
+            if (item.userData is SearchProposition proposition)
+            {
+                PrepareItemData(itemDataCount++, proposition.replacement);
+            }
 
             didMatchStart = false;
             var fp = -1;
             foreach (var w in words)
             {                
-                for (var i = 0; i < s_ItemSearchDatas.Length; ++i)
+                for (var i = 0; i < itemDataCount; ++i)
                 {
                     if (s_ItemSearchDatas[i].isValid)
                     {
@@ -228,26 +233,34 @@ namespace UnityEditor.Search
                     return false;
             }
             return fp != -1;
+        }
 
-            /*
-            didMatchStart = false;
-            var label = item.displayName ?? item.name;
-            var pp = label.LastIndexOf('(');
-            pp = pp == -1 ? label.Length : pp;
-            foreach (var w in words)
+        internal static AdvancedDropdownItem CreateItem(SearchProposition p, bool formatNames, out string path, out string name, out string prefix)
+        {
+            path = p.path;
+            name = p.label;
+            prefix = p.category;
+            if (name.LastIndexOf('/') != -1)
             {
-                var fp = label.IndexOf(w, 0, pp, StringComparison.OrdinalIgnoreCase);
-                if (fp == -1)
-                    return false;
-                didMatchStart |= (fp == 0 || label[fp - 1] == ' ');
+                var ls = path.LastIndexOf('/');
+                name = path.Substring(ls + 1);
+                prefix = path.Substring(0, ls);
             }
-            return true;
-            */
+
+            var displayName = formatNames ? ObjectNames.NicifyVariableName(name) : name;
+            var newItem = new AdvancedDropdownItem(path)
+            {
+                displayName = displayName,
+                icon = p.icon ?? Icons.quicksearch,
+                tooltip = string.IsNullOrEmpty(p.help) ? $"Search {displayName}" : p.help,
+                userData = p
+            };
+            return newItem;
         }
 
         private bool OnSearchItemMatch(in AdvancedDropdownItem item, in string[] words, out bool didMatchStart)
         {
-            return DoSearchItemMatch(item, words, out didMatchStart);            
+            return DoSearchItemMatch(item, words, out didMatchStart);
         }
 
         private void OnClose(AdvancedDropdownWindow w = null)
@@ -266,26 +279,7 @@ namespace UnityEditor.Search
             var formatNames = m_BlockSource.formatNames;
             foreach (var p in m_Propositions)
             {
-                var path = p.path;
-                var name = p.label;
-                var prefix = p.category;
-
-                if (name.LastIndexOf('/') != -1)
-                {
-                    var ls = path.LastIndexOf('/');
-                    name = path.Substring(ls+1);
-                    prefix = path.Substring(0, ls);
-                }
-
-                var displayName = formatNames ? ObjectNames.NicifyVariableName(name) : name;
-                var newItem = new AdvancedDropdownItem(path)
-                {
-                    displayName = displayName,
-                    icon = p.icon ?? Icons.quicksearch,
-                    tooltip = string.IsNullOrEmpty(p.help) ? $"Search {displayName}" : p.help,
-                    userData = p
-                };
-
+                var newItem = CreateItem(p, formatNames, out var path, out var name, out var prefix);
                 var parent = rootItem;
                 if (prefix != null)
                     parent = MakeParents(prefix, p, rootItem);

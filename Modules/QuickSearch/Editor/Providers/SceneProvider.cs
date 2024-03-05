@@ -436,11 +436,12 @@ namespace UnityEditor.Search.Providers
     static class BuiltInSceneObjectsProvider
     {
         public const string type = "scene";
+        public const string filterId = "h:";
 
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
         {
-            return new SceneProvider(type, "h:", "Hierarchy");
+            return new SceneProvider(type, filterId, "Hierarchy");
         }
 
         [SearchActionsProvider]

@@ -296,7 +296,13 @@ namespace UnityEditor.Search
         public void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string name, string value, bool saveKeyword, bool exact)
         {
             IndexProperty(documentIndex, name, value, saveKeyword, exact);
-            MapProperty(name, name, name, typeof(TProperty).Name, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
+            MapProperty(name, name, name, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
+        }
+
+        internal void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string name, string value, bool saveKeyword, bool exact, string keywordLabel, string keywordHelp)
+        {
+            IndexProperty(documentIndex, name, value, saveKeyword, exact);
+            MapProperty(name, keywordLabel, keywordHelp, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
         }
         /// <summary>
         /// Add a key-number value pair to the index. The key won't be added with variations. See <see cref="SearchIndexer.AddNumber"/>.
@@ -389,7 +395,7 @@ namespace UnityEditor.Search
             return p.hasVisibleChildren;
         }
 
-        static string GetFieldName(string propertyName)
+        internal static string GetFieldName(string propertyName)
         {
             return propertyName.Replace("m_", "").Replace(" ", "").ToLowerInvariant();
         }
@@ -406,12 +412,9 @@ namespace UnityEditor.Search
             var next = p.NextVisible(true);
             while (next)
             {
-                if (p.isValid)
-                {
-                    var fieldName = GetFieldName(p.displayName);
-                    if (p.propertyPath[p.propertyPath.Length - 1] != ']')
-                        IndexProperty(documentIndex, fieldName, p, maxDepth);
-                }
+                var fieldName = GetFieldName(p.displayName);
+                if (p.propertyPath[p.propertyPath.Length - 1] != ']')
+                    IndexProperty(documentIndex, fieldName, p, maxDepth);
                 next = shouldContinueIterating(p) && p.NextVisible(ShouldIndexChildren(p, recursive));
             }
         }

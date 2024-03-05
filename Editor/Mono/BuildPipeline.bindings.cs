@@ -186,7 +186,10 @@ namespace UnityEditor
         AssetBundleStripUnityVersion = 32768, // 1 << 15
 
         // Calculate bundle hash on the bundle content
-        UseContentHash = 65536 // 1 << 16
+        UseContentHash = 65536, // 1 << 16
+
+        // Use when AssetBundle dependencies need to be calculated recursively, such as when you have a dependency chain of matching typed Scriptable Objects
+        RecurseDependencies = 131072 // 1 << 17
     }
 
     // Keep in sync with CanAppendBuild in EditorUtility.h

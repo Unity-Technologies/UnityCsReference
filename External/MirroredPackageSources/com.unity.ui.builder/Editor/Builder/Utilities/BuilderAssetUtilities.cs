@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
-using UnityEditor.ProjectWindowCallback;
+using UnityEditor.UIElements;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -20,30 +21,32 @@ namespace Unity.UI.Builder
         public const string defaultRuntimeThemeContent = "@import url(\"" + ThemeRegistry.kThemeScheme +
                                                            "://default\");\nVisualElement {}";
 
-        internal static ThemeStyleSheet CreateDefaultRuntimeAsset(string pathName)
+        internal static bool IsProjectDefaultRuntimeAsset(string path)
         {
-            pathName = AssetDatabase.GenerateUniqueAssetPath(pathName);
+            if (path == ThemeRegistry.k_DefaultStyleSheetPath)
+            {
+                return false;
+            }
 
-            var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
-            action.filecontent = defaultRuntimeThemeContent;
+            if (!File.Exists(path))
+            {
+                return false;
+            }
 
-            const int instanceId = ProjectBrowser.kAssetCreationInstanceID_ForNonExistingAssets;
-            action.Action(instanceId, pathName, null);
-            action.CleanUp();
-
-            return EditorGUIUtility.Load(pathName) as ThemeStyleSheet;
-        }
-
-        internal static bool IsDefaultRuntimeAsset(string path)
-        {
             var assetString = File.ReadAllText(path);
 
             if (!string.IsNullOrEmpty(assetString))
             {
-                assetString = assetString.Replace("\r", "");
+                assetString = DeleteNewlinesAndWhitespaces(assetString);
             }
 
-            return assetString == defaultRuntimeThemeContent;
+            return assetString == DeleteNewlinesAndWhitespaces(defaultRuntimeThemeContent)
+                || assetString == DeleteNewlinesAndWhitespaces(PanelSettingsCreator.GetTssTemplateContent());
+        }
+
+        private static string DeleteNewlinesAndWhitespaces(string str)
+        {
+            return Regex.Replace(str, @"[\r\n\s]+", string.Empty);
         }
 
         static string GetFullPath(string path)

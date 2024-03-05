@@ -375,8 +375,8 @@ namespace UnityEditor
                 ShowGenericMenu(position.width - genericMenuLeftOffset, m_TabAreaRect.y + genericMenuTopOffset);
             }
 
-            DrawTabs(m_TabAreaRect);
             HandleSplitView(); //fogbugz 1169963: in order to easily use the splitter in the gameView, it must be prioritized over DrawView(). Side effect for touch is that splitter picking zones might overlap other controls but the tabs still have higher priority so the user can undock the window in that case
+            DrawTabs(m_TabAreaRect);
             DrawView(dockAreaRect);
 
             DrawTabScrollers(m_TabAreaRect);
@@ -1147,11 +1147,9 @@ namespace UnityEditor
                     EditorWindow.focusedWindow.maximized = maximize;
                     InternalEditorUtility.RepaintAllViews();
                 }
-                return EditorWindow.focusedWindow.maximized;
             }
 
-            // Return false in case there is no current focused window
-            return false;
+            return EditorWindow.focusedWindow.maximized;
         }
     }
 

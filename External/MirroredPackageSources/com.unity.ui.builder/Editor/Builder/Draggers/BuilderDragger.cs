@@ -26,7 +26,7 @@ namespace Unity.UI.Builder
 
         // It's possible to have multiple BuilderDraggers on the same element. This ensures
         // a kind of capture without using the capture system and just between BuilderDraggers.
-        static BuilderDragger s_CurrentlyActiveBuilderDragger = null;
+        internal static BuilderDragger s_CurrentlyActiveBuilderDragger = null;
 
         Vector2 m_Start;
         bool m_Active;
@@ -170,16 +170,24 @@ namespace Unity.UI.Builder
             return m_Canvas.Query().Where(e => e.GetVisualTreeAsset() == m_PaneWindow.document.visualTreeAsset).First();
         }
 
+        private StyleLength m_targetInitialMinWidth;
+        private StyleLength m_targetInitialMinHeight;
+
         protected void FixElementSizeAndPosition(VisualElement target)
         {
+            m_targetInitialMinWidth = target.style.minWidth;
+            m_targetInitialMinHeight = target.style.minHeight;
+
             target.style.minWidth = target.resolvedStyle.width;
             target.style.minHeight = target.resolvedStyle.height;
         }
 
         protected void UnfixElementSizeAndPosition(VisualElement target)
         {
-            target.style.minWidth = StyleKeyword.Null;
-            target.style.minHeight = StyleKeyword.Null;
+            target.style.minWidth = m_targetInitialMinWidth;
+            target.style.minHeight = m_targetInitialMinHeight;
+
+            selection.ForceVisualAssetUpdateWithoutSave(target, BuilderHierarchyChangeType.InlineStyle);
         }
 
         public void RegisterCallbacksOnTarget(VisualElement target)
@@ -434,6 +442,8 @@ namespace Unity.UI.Builder
 
         void OnMouseDown(MouseDownEvent evt)
         {
+            if (s_CurrentlyActiveBuilderDragger != null && s_CurrentlyActiveBuilderDragger != this)
+                return;
             var target = evt.currentTarget as VisualElement;
 
             if (m_WeStartedTheDrag && target.HasMouseCapture())
@@ -487,6 +497,7 @@ namespace Unity.UI.Builder
                     else
                     {
                         target.ReleaseMouse();
+                        s_CurrentlyActiveBuilderDragger = null;
                     }
                 }
 

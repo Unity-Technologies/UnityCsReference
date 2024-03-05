@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Unity.Profiling;
 using UnityEditor.Search.Providers;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -166,6 +167,8 @@ namespace UnityEditor.Search
             if (!(context.target is AnimationClip clip) || !indexer.settings.options.properties)
                 return;
 
+            indexer.AddProperty("t", "animation", indexer.settings.baseScore, context.documentIndex);
+
             indexer.AddNumber("events", clip.events.Length, indexer.settings.baseScore, context.documentIndex);
             foreach (var e in clip.events)
             {
@@ -174,24 +177,49 @@ namespace UnityEditor.Search
             }
         }
 
-        [CustomObjectIndexer(typeof(Texture2D), version = 2)]
+        [CustomObjectIndexer(typeof(TerrainData), version = 1)]
+        internal static void TerrainIndexing(CustomObjectIndexerTarget context, ObjectIndexer indexer)
+        {
+            if (!(context.target is TerrainData terrain) || !indexer.settings.options.types)
+                return;
+            indexer.AddProperty("t", "terrain", context.documentIndex);
+        }
+
+        [CustomObjectIndexer(typeof(AssemblyDefinitionReferenceAsset), version = 1)]
+        internal static void AssemblyDefRefIndexing(CustomObjectIndexerTarget context, ObjectIndexer indexer)
+        {
+            if (!(context.target is AssemblyDefinitionReferenceAsset asmref) || !indexer.settings.options.types)
+                return;
+            indexer.AddProperty("t", "asmref", context.documentIndex);
+        }
+
+        [CustomObjectIndexer(typeof(AssemblyDefinitionAsset), version = 1)]
+        internal static void AssemblyDefIndexing(CustomObjectIndexerTarget context, ObjectIndexer indexer)
+        {
+            if (!(context.target is AssemblyDefinitionAsset asmdef) || !indexer.settings.options.types)
+                return;
+            indexer.AddProperty("t", "asmdef", context.documentIndex);
+        }
+
+        [CustomObjectIndexer(typeof(Texture2D), version = 3)]
         internal static void Texture2DIndexing(CustomObjectIndexerTarget context, ObjectIndexer indexer)
         {
             if (!(context.target is Texture2D texture) || !indexer.settings.options.properties)
                 return;
 
-            indexer.IndexProperty<TextureFormat, Texture2D>(context.documentIndex, "format", texture.format.ToString(), saveKeyword: true, exact: true);
-            indexer.IndexProperty<FilterMode, Texture2D>(context.documentIndex, "filtermode", texture.filterMode.ToString(), saveKeyword: true, exact: true);
-            indexer.IndexProperty<TextureDimension, Texture2D>(context.documentIndex, "dimension", texture.dimension.ToString(), saveKeyword: true, exact: true);
+            indexer.IndexProperty<TextureFormat, Texture2D>(context.documentIndex, "format", texture.format.ToString(), saveKeyword: true, exact: true, "Format", string.Empty);
+            indexer.IndexProperty<FilterMode, Texture2D>(context.documentIndex, "filtermode", texture.filterMode.ToString(), saveKeyword: true, exact: true, "Filter Mode", string.Empty);
+            indexer.IndexProperty<TextureDimension, Texture2D>(context.documentIndex, "dimension", texture.dimension.ToString(), saveKeyword: true, exact: true, "Dimension", string.Empty);
 
             var ti = AssetImporter.GetAtPath(context.id) as TextureImporter;
             if (ti)
             {
-                indexer.IndexProperty<TextureImporterType, TextureImporter>(context.documentIndex, "type", ti.textureType.ToString(), saveKeyword: true, exact: true);
-                indexer.IndexProperty<TextureImporterShape, TextureImporter>(context.documentIndex, "shape", ti.textureShape.ToString(), saveKeyword: true, exact: true);
-                indexer.IndexProperty<bool, TextureImporter>(context.documentIndex, "readable", ti.isReadable.ToString(), saveKeyword: false, exact: true);
-                indexer.IndexProperty<bool, TextureImporter>(context.documentIndex, "srgb", ti.sRGBTexture.ToString(), saveKeyword: false, exact: true);
-                indexer.IndexProperty<TextureImporterCompression, TextureImporter>(context.documentIndex, "compression", ti.textureCompression.ToString(), saveKeyword: true, exact: true);
+                indexer.IndexProperty<TextureImporterType, TextureImporter>(context.documentIndex, "type", ti.textureType.ToString(), saveKeyword: true, exact: true, "Type", string.Empty);
+                indexer.IndexProperty<TextureImporterShape, TextureImporter>(context.documentIndex, "shape", ti.textureShape.ToString(), saveKeyword: true, exact: true, "Shape", string.Empty);
+                indexer.IndexProperty<bool, TextureImporter>(context.documentIndex, "readable", ti.isReadable.ToString(), saveKeyword: false, exact: true, "Readable", string.Empty);
+                indexer.IndexProperty<bool, TextureImporter>(context.documentIndex, "srgb", ti.sRGBTexture.ToString(), saveKeyword: false, exact: true, "sRGB", string.Empty);
+                indexer.IndexProperty<TextureImporterCompression, TextureImporter>(context.documentIndex, "compression", ti.textureCompression.ToString(), saveKeyword: true, exact: true, "Compression", string.Empty);
+
                 var so = new SerializedObject(ti);
                 var psArray = so.FindProperty("m_PlatformSettings");
                 if (psArray != null)

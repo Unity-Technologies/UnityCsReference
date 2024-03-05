@@ -97,6 +97,7 @@ namespace UnityEngine.UIElements
             m_MouseProcessedAtLeastOnce = false;
             m_ConsecutiveMoveCount = 0;
             m_IsMoveFromKeyboard = false;
+            m_FocusedPanel = null;
         }
 
         public enum UpdateMode
@@ -296,6 +297,14 @@ namespace UnityEngine.UIElements
                         self.input.anyKey ? NavigationDeviceType.Keyboard : NavigationDeviceType.NonKeyboard,
                         self.m_CurrentModifiers), this);
             }
+        }
+
+        // Change focused panel to reflect an element being focused by code. However
+        // - Do not modify the target of any ongoing focus-based event sequence
+        // - Do not unfocus the current focused panel if its element loses focus
+        internal void OnFocusEvent(RuntimePanel panel, FocusEvent evt)
+        {
+            focusedPanel = panel;
         }
 
         internal void SendFocusBasedEvent<TArg>(Func<TArg, EventBase> evtFactory, TArg arg)

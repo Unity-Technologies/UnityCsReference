@@ -90,8 +90,23 @@ namespace UnityEditor.Search
         protected override void HandleKeyEvent(Event evt, List<int> selection)
         {
             if (evt.isKey)
-                return;
-            base.HandleKeyEvent(evt, selection);
+            {
+                // Onloy set the selection if the tableview doesn't currently has focus.
+                if (!m_PropertyTable.controller.HasFocus())
+                {
+                    base.HandleKeyEvent(evt, selection);
+                    if (evt.type == EventType.Used)
+                    {
+                        // Assume that if the event was consumed, selection has changed.
+                        var selectedIds = searchView.selection.Select(item => item.id.GetHashCode()).ToArray();
+                        m_PropertyTable.SetSelection(selectedIds, TreeViewSelectionOptions.FireSelectionChanged);
+                    }
+                }
+            }
+            else
+            {
+                base.HandleKeyEvent(evt, selection);
+            }
         }
 
         public SearchColumn FindColumnBySelector(string selector)

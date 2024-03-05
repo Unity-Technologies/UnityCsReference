@@ -12,8 +12,6 @@ namespace UnityEditor.UIElements.Bindings
 {
     class ListViewSerializedObjectBinding : SerializedObjectBindingBase
     {
-        static ObjectPool<ListViewSerializedObjectBinding> s_Pool = new (() => new ListViewSerializedObjectBinding(), 32);
-
         ListView listView
         {
             get => boundElement as ListView;
@@ -36,7 +34,7 @@ namespace UnityEditor.UIElements.Bindings
             SerializedObjectBindingContext context,
             SerializedProperty prop)
         {
-            var newBinding = s_Pool.Get();
+            var newBinding = new ListViewSerializedObjectBinding();
             newBinding.isReleased = false;
             newBinding.SetBinding(listView, context, prop);
         }
@@ -54,10 +52,9 @@ namespace UnityEditor.UIElements.Bindings
         protected void SetBinding(ListView targetList, SerializedObjectBindingContext context,
             SerializedProperty prop)
         {
-            m_DataList = new SerializedObjectList(prop, targetList.sourceIncludesArraySize);
+            m_DataList = new SerializedObjectList(prop);
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_DataList.ArraySize.intValue;
-            m_LastSourceIncludesArraySize = targetList.sourceIncludesArraySize;
 
             SetListView(targetList);
             SetContext(context, m_ArraySize);
@@ -111,6 +108,7 @@ namespace UnityEditor.UIElements.Bindings
             });
 
             listView.itemsSource = m_DataList;
+            listView.SetupArraySizeField();
 
             var foldoutInput = listView.headerFoldout?.toggle?.visualInput;
             if (foldoutInput != null)
@@ -130,6 +128,7 @@ namespace UnityEditor.UIElements.Bindings
 
             listView.SetProperty(BaseVerticalCollectionView.internalBindingKey, null);
             listView.itemsSource = null;
+            listView.SetupArraySizeField();
             listView.Rebuild();
 
             if (listView.bindItem == m_DefaultBindItem)
@@ -257,10 +256,9 @@ namespace UnityEditor.UIElements.Bindings
 
         void UpdateArraySize()
         {
-            m_DataList.RefreshProperties(listView.sourceIncludesArraySize);
+            m_DataList.RefreshProperties();
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_ArraySize.intValue;
-            m_LastSourceIncludesArraySize = listView.sourceIncludesArraySize;
 
             var isOverMaxMultiEditLimit = m_DataList.IsOverMaxMultiEditLimit;
             listView.footer?.SetEnabled(!isOverMaxMultiEditLimit);
@@ -284,10 +282,7 @@ namespace UnityEditor.UIElements.Bindings
             ClearListView();
 
             ResetCachedValues();
-            s_Pool.Release(this);
         }
-
-        private bool m_LastSourceIncludesArraySize;
 
         protected override void ResetCachedValues()
         {
@@ -304,16 +299,11 @@ namespace UnityEditor.UIElements.Bindings
 
             try
             {
-                isUpdating = true;
                 UpdateArraySize();
             }
             catch (NullReferenceException e) when (e.Message.Contains("SerializedObject of SerializedProperty has been Disposed."))
             {
                 //this can happen when serializedObject has been disposed of
-            }
-            finally
-            {
-                isUpdating = false;
             }
         }
 
@@ -337,16 +327,12 @@ namespace UnityEditor.UIElements.Bindings
                 if (!IsSynced())
                     return;
 
-                isUpdating = true;
-
                 var currentArraySize = m_ArraySize.intValue;
                 var listViewShowsMixedValue = listView.arraySizeField is {showMixedValue: true};
-                if (listViewShowsMixedValue ||
-                    (listView.arraySizeField == null || int.Parse(listView.arraySizeField.value) == currentArraySize) &&
-                    listView.sourceIncludesArraySize == m_LastSourceIncludesArraySize)
+                if (listViewShowsMixedValue || listView.arraySizeField == null)
                     return;
-                if (currentArraySize != m_ListViewArraySize ||
-                    listView.sourceIncludesArraySize != m_LastSourceIncludesArraySize)
+
+                if (currentArraySize != m_ListViewArraySize)
                 {
                     UpdateArraySize();
                 }
@@ -356,10 +342,6 @@ namespace UnityEditor.UIElements.Bindings
             catch (NullReferenceException e) when (e.Message.Contains("SerializedObject of SerializedProperty has been Disposed."))
             {
                 //this can happen when serializedObject has been disposed of
-            }
-            finally
-            {
-                isUpdating = false;
             }
 
             // We unbind here
@@ -397,13 +379,13 @@ namespace UnityEditor.UIElements.Bindings
 
         List<SerializedProperty> properties;
 
-        public SerializedObjectList(SerializedProperty parentProperty, bool includeArraySize)
+        public SerializedObjectList(SerializedProperty parentProperty)
         {
             ArrayProperty = parentProperty.Copy();
-            RefreshProperties(includeArraySize);
+            RefreshProperties();
         }
 
-        public void RefreshProperties(bool includeArraySize)
+        public void RefreshProperties()
         {
             var property = ArrayProperty.Copy();
             var endProperty = property.GetEndProperty();
@@ -419,10 +401,6 @@ namespace UnityEditor.UIElements.Bindings
                 if (property.propertyType == SerializedPropertyType.ArraySize)
                 {
                     ArraySize = property.Copy();
-                    if (includeArraySize)
-                    {
-                        properties.Add(ArraySize);
-                    }
                 }
                 else
                 {
@@ -518,7 +496,7 @@ namespace UnityEditor.UIElements.Bindings
 
             ArrayProperty.MoveArrayElement(srcIndex, destIndex);
             EditorGUIUtility.MoveArrayExpandedState(ArrayProperty, srcIndex, destIndex);
-            RefreshProperties(properties.Count > 0 && properties[0] == ArraySize);
+            RefreshProperties();
         }
 
         public void ApplyChanges()

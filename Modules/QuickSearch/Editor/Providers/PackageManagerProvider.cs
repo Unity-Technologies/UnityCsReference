@@ -49,7 +49,7 @@ namespace UnityEditor.Search.Providers
                 yield break;
 
             s_ListRequest = s_ListRequest ?? PackageManager.Client.List(true);
-            s_SearchRequest = s_SearchRequest ?? PackageManager.Client.SearchAll();
+            s_SearchRequest = s_SearchRequest ?? PackageManager.Client.SearchAll(Utils.runningTests);
 
             if (s_SearchRequest == null || s_ListRequest == null)
                 yield break;

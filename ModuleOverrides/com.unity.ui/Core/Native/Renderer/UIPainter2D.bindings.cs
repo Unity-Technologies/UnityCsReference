@@ -52,6 +52,8 @@ namespace UnityEngine.UIElements
 
         public static extern MeshWriteDataInterface Stroke(IntPtr handle);
         public static extern MeshWriteDataInterface Fill(IntPtr handle, FillRule fillRule);
+
+        public static extern Rect ComputeBBoxFromArcs(IntPtr meshes, int meshCount);
     }
 
     /// <summary>

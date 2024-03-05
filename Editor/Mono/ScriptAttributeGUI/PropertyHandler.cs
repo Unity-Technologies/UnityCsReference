@@ -252,6 +252,11 @@ namespace UnityEditor
                 if (childrenAreExpanded)
                 {
                     SerializedProperty endProperty = prop.GetEndProperty();
+                    // Children need to be indented
+                    int prevIndent = EditorGUI.indentLevel;
+                    EditorGUI.indentLevel++;
+                    position = EditorGUI.IndentedRect(position);
+                    EditorGUI.indentLevel = prevIndent;
                     while (prop.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(prop, endProperty))
                     {
                         if (GUI.isInsideList && prop.depth <= EditorGUI.GetInsideListDepth())
@@ -417,8 +422,25 @@ namespace UnityEditor
                 }
             }
 
-            var propertyPath = property.propertyPath;
+            var propertyPath = property.propertyPath.Replace(" ", "");
             menu.AddItem(new GUIContent("Copy Property Path"), false, () => EditorGUIUtility.systemCopyBuffer = propertyPath);
+
+            if (CanSearchProperty(property))
+                menu.AddItem(new GUIContent("Search for same Property"), false, () => SearchProperty(property));
+        }
+
+        private void SearchProperty(SerializedProperty property)
+        {
+            CommandService.Execute("OpenToSearchByProperty", CommandHint.Menu, property);
+        }
+
+        private bool CanSearchProperty(SerializedProperty property)
+        {
+            if (!CommandService.Exists("OpenToSearchByProperty") || !CommandService.Exists("IsPropertyValidForQuery"))
+                return false;
+
+            var result = CommandService.Execute("IsPropertyValidForQuery", CommandHint.Menu, property);
+            return (bool)result;
         }
 
         public void CallMenuCallback(object[] targets, MethodInfo method)

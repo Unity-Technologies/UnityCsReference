@@ -21,8 +21,10 @@ namespace UnityEditor.ShortcutManagement
         List<ShortcutEntry> m_MouseActionEntries = new List<ShortcutEntry>();
         List<ShortcutEntry> m_MouseClutchEntries = new List<ShortcutEntry>();
 
+        List<KeyCode> m_KeyDownEvents = new List<KeyCode>();
+
         // There can be more than one active clutch at a time.
-        Dictionary<KeyCode, KeyValuePair<ShortcutEntry, object>> m_ActiveClutches = new Dictionary<KeyCode, KeyValuePair<ShortcutEntry, object>>();
+        readonly Dictionary<KeyCode, KeyValuePair<ShortcutEntry, object>> m_ActiveClutches = new();
 
         (KeyCode keyCode, ShortcutEntry entry, object context) m_ActiveMouseActionEntry;
 
@@ -56,6 +58,28 @@ namespace UnityEditor.ShortcutManagement
             m_ConflictResolver = conflictResolver;
         }
 
+        public void ResetShortcutState(EventType type, KeyCode keyCode)
+        {
+            switch (type)
+            {
+                case EventType.MouseDown:
+                    if (m_ActiveMouseActionEntry.entry != null &&
+                        m_ActiveMouseActionEntry.keyCode == keyCode)
+                        ResetMouseShortcuts();
+                    m_ActiveClutches.Remove(keyCode);
+                    break;
+                case EventType.KeyDown:
+                    if (m_KeyDownEvents.Contains(keyCode))
+                        return;
+                    m_KeyDownEvents.Add(keyCode);
+                    m_ActiveClutches.Remove(keyCode);
+                    break;
+                case EventType.KeyUp:
+                    m_KeyDownEvents.Remove(keyCode);
+                    break;
+            }
+        }
+
         public void HandleKeyEvent(Event evt, IContextManager contextManager)
         {
             if (evt == null) return;
@@ -64,12 +88,14 @@ namespace UnityEditor.ShortcutManagement
                 return;
 
             KeyCode keyCode = evt.isMouse ? evt.button + KeyCode.Mouse0 : evt.keyCode;
-
-            if (keyCode == KeyCode.None) return;
+            if (keyCode == KeyCode.None)
+                return;
 
             var isKeyUpOrMouseUpEvent = evt.type == EventType.KeyUp || evt.type == EventType.MouseUp;
             if (isKeyUpOrMouseUpEvent)
             {
+                // mouse shortcuts can be both action and clutch. if this is the case, m_ActiveMouseActionEntry will be
+                // valid when mouse delta is less than a drag threshold
                 if (m_ActiveMouseActionEntry.entry != null && m_ActiveMouseActionEntry.keyCode == keyCode)
                 {
                     var shortcutEntry = m_ActiveMouseActionEntry.entry;
@@ -220,6 +246,12 @@ namespace UnityEditor.ShortcutManagement
                             break;
 
                         var context = contextManager.GetContextInstanceOfType(shortcutEntry.context);
+                        if (context == null)
+                        {
+                            Reset();
+                            break;
+                        }
+
                         switch (shortcutEntry.type)
                         {
                             case ShortcutType.Menu:

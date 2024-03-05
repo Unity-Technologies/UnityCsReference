@@ -33,6 +33,8 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseListView : BaseVerticalCollectionView
     {
+        private static readonly string k_SizeFieldLabel = "Size";
+
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseListView"/>.
         /// </summary>
@@ -91,13 +93,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// The default value is <c>true</c>.
-        /// When this property is set to <c>true</c>, Unity displays the collection size as the first item in the list, but does
-        /// not make it an actual list item that is part of the list index. If you query for list index 0,
-        /// Unity returns the first real list item, and not the collection size.
-        /// If <see cref="showFoldoutHeader"/> is set to <c>true</c>, the collection size field is included in the header instead.
-        /// You can use this property to debug a ListView because the property indicates whether the data source is
-        /// linked correctly. In production, the collection size rarely displays as a line item in a ListView.
-        /// </remarks>>
+        /// When this property is set to to <c>true</c>, the ListView includes a TextField to control the array size.
+        /// </remarks>
         /// <seealso cref="UnityEditor.UIElements.BindingExtensions.Bind"/>
         public bool showBoundCollectionSize
         {
@@ -113,8 +110,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal override bool sourceIncludesArraySize => showBoundCollectionSize && binding != null && !showFoldoutHeader;
-
         bool m_ShowFoldoutHeader;
 
         /// <summary>
@@ -126,7 +121,7 @@ namespace UnityEngine.UIElements
         /// the scroll view inside that newly created foldout. You can change the text of this foldout with <see cref="headerTitle"/>
         /// property on the ListView.
         /// If <see cref="showBoundCollectionSize"/> is set to <c>true</c>, the header includes a TextField to control
-        /// the array size, instead of using the field as part of the list.
+        /// the array size.
         /// </remarks>>
         public bool showFoldoutHeader
         {
@@ -172,22 +167,37 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void SetupArraySizeField()
+        internal void SetupArraySizeField()
         {
-            if (sourceIncludesArraySize || !showFoldoutHeader || !showBoundCollectionSize)
+            if (!showBoundCollectionSize || (!showFoldoutHeader && GetProperty(internalBindingKey) == null))
             {
                 m_ArraySizeField?.RemoveFromHierarchy();
-                m_ArraySizeField = null;
                 return;
             }
 
-            m_ArraySizeField = new TextField() { name = arraySizeFieldUssClassName };
-            m_ArraySizeField.AddToClassList(arraySizeFieldUssClassName);
-            m_ArraySizeField.RegisterValueChangedCallback(OnArraySizeFieldChanged);
-            m_ArraySizeField.isDelayed = true;
-            m_ArraySizeField.focusable = true;
-            hierarchy.Add(m_ArraySizeField);
+            if (m_ArraySizeField == null)
+            {
+                m_ArraySizeField = new TextField() { name = arraySizeFieldUssClassName };
+                m_ArraySizeField.AddToClassList(arraySizeFieldUssClassName);
+                m_ArraySizeField.RegisterValueChangedCallback(OnArraySizeFieldChanged);
+                m_ArraySizeField.isDelayed = true;
+                m_ArraySizeField.focusable = true;
+            }
 
+            m_ArraySizeField.EnableInClassList(arraySizeFieldWithFooterUssClassName, showAddRemoveFooter);
+            m_ArraySizeField.EnableInClassList(arraySizeFieldWithHeaderUssClassName, showFoldoutHeader);
+
+            if (showFoldoutHeader)
+            {
+                m_ArraySizeField.label = string.Empty;
+                // This is needed since z-index is not supported yet.
+                hierarchy.Add(m_ArraySizeField);
+            }
+            else
+            {
+                m_ArraySizeField.label = k_SizeFieldLabel;
+                hierarchy.Insert(0, m_ArraySizeField);
+            }
             UpdateArraySizeField();
         }
 
@@ -230,6 +240,9 @@ namespace UnityEngine.UIElements
         {
             EnableInClassList(listViewWithFooterUssClassName, enabled);
             scrollView.EnableInClassList(scrollViewWithFooterUssClassName, enabled);
+
+            if (m_ArraySizeField != null)
+                m_ArraySizeField.EnableInClassList(arraySizeFieldWithFooterUssClassName, enabled);
 
             if (enabled)
             {
@@ -342,7 +355,7 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
-            var noItemsCount = itemsSource.Count == 0 && !sourceIncludesArraySize;
+            var noItemsCount = itemsSource.Count == 0;
 
             if (m_IsOverMultiEditLimit)
             {
@@ -617,13 +630,29 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public static readonly string foldoutHeaderUssClassName = ussClassName + "__foldout-header";
         /// <summary>
-        /// The USS class name for the size field of the ListView when foldout header is enabled.
+        /// The USS class name for the size field of the ListView when show bound collection size is enabled.
         /// </summary>
         /// <remarks>
-        /// Unity adds this USS class to the size field element in the ListView when <see cref="showFoldoutHeader"/> is set to <c>true</c>.
+        /// Unity adds this USS class to the size field element in the ListView when <see cref="showBoundCollectionSize"/> is set to <c>true</c>.
         /// Any styling applied to this class affects every size field located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string arraySizeFieldUssClassName = ussClassName + "__size-field";
+        /// <summary>
+        /// The USS class name for the size field of the ListView when foldout header is enabled.
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to the size field element in the ListView when <see cref="showBoundCollectionSize"/> is set to <c>true</c>.
+        /// Any styling applied to this class affects every size field located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
+        public static readonly string arraySizeFieldWithHeaderUssClassName = arraySizeFieldUssClassName + "--with-header";
+        /// <summary>
+        /// The USS class name for the size field of the ListView when the footer is enabled.
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to the size field element in the ListView when <see cref="showBoundCollectionSize"/> is set to <c>true</c>.
+        /// Any styling applied to this class affects every size field located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
+        public static readonly string arraySizeFieldWithFooterUssClassName = arraySizeFieldUssClassName + "--with-footer";
         /// <summary>
         /// The USS class name for ListView when foldout header is enabled.
         /// </summary>

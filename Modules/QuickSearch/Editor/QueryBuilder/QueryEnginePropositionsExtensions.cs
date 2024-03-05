@@ -259,7 +259,7 @@ namespace UnityEditor.Search
         static IEnumerable<SearchProposition> GetPropositionsFromType(IQueryEngineFilter filter, Type type, string category = null, Type blockType = null, int priority = 0, Texture2D icon = null, Color color = default)
         {
             var filterId = filter.token;
-            var defaultOperator = filter.supportedOperators == null ? ":" : filter.supportedOperators.FirstOrDefault();
+            var defaultOperator = filter.supportedOperators?.FirstOrDefault() ?? ":";
             if (type.IsEnum)
                 return SearchUtils.FetchEnumPropositions(type, category, filterId, defaultOperator, blockType, priority, icon, color);
 

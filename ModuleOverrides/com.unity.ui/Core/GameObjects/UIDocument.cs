@@ -103,6 +103,7 @@ namespace UnityEngine.UIElements
     /// Defines a Component that connects VisualElements to GameObjects. This makes it
     /// possible to render UI defined in UXML documents in the Game view.
     /// </summary>
+    [HelpURL("UIE-get-started-with-runtime-ui")]
     [AddComponentMenu("UI Toolkit/UI Document"), ExecuteAlways, DisallowMultipleComponent]
     [DefaultExecutionOrder(-100)] // UIDocument's OnEnable should run before user's OnEnable
     public sealed class UIDocument : MonoBehaviour

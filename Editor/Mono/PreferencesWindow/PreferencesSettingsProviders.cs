@@ -85,6 +85,7 @@ namespace UnityEditor
             public static readonly GUIContent performBumpMapCheck = EditorGUIUtility.TrTextContent("Perform Bump Map Check", "Enables Bump Map Checks upon import of Materials. This checks that textures used in a normal map material slot are actually defined as normal maps.");
             public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
             public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
+            public static readonly GUIContent useProjectPathInTitle = EditorGUIUtility.TrTextContent("Use Project Path in Window Title", "If enabled the Project's name is replaced in the main window title with the Project's path on disk.");
         }
 
         class ExternalProperties
@@ -252,6 +253,22 @@ namespace UnityEditor
             base.OnActivate(searchContext, rootElement);
             prefWinExtensions = ModuleManager.GetPreferenceWindowExtensions();
             ReadPreferences();
+        }
+
+        internal static bool useProjectPathInTitle
+        {
+            get
+            {
+                return EditorPrefs.GetBool("UseProjectPathInTitle", false);
+            }
+            set
+            {
+                if(value != EditorPrefs.GetBool("UseProjectPathInTitle", false))
+                {
+                    EditorPrefs.SetBool("UseProjectPathInTitle", value);
+                    EditorApplication.UpdateMainWindowTitle();
+                }
+            }
         }
 
         [SettingsProvider]
@@ -567,6 +584,8 @@ namespace UnityEditor
             m_GraphSnapping = EditorGUILayout.Toggle(GeneralProperties.enableSnapping, m_GraphSnapping);
 
             GameView.openWindowOnEnteringPlayMode = EditorGUILayout.Toggle(GeneralProperties.enterPlayModeSettingsFocusGameView, GameView.openWindowOnEnteringPlayMode);
+
+            useProjectPathInTitle = EditorGUILayout.Toggle(GeneralProperties.useProjectPathInTitle, useProjectPathInTitle);
 
             DrawInteractionModeOptions();
 

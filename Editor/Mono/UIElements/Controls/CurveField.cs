@@ -265,6 +265,14 @@ namespace UnityEditor.UIElements
             CurveEditorSettings settings = new CurveEditorSettings();
             if (rawValue == null)
                 rawValue = new AnimationCurve();
+            if (ranges != Rect.zero)
+            {
+                settings.hRangeMin = ranges.xMin;
+                settings.hRangeMax = ranges.xMax;
+                settings.vRangeMin = ranges.yMin;
+                settings.vRangeMax = ranges.yMax;
+            }
+
             CurveEditorWindow.curve = rawValue;
 
             CurveEditorWindow.color = curveColor;
