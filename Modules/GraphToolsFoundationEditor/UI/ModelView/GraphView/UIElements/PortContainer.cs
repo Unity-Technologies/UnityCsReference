@@ -24,6 +24,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string ussClassName = "ge-port-container";
         public static readonly string portCountClassNamePrefix = ussClassName.WithUssModifier("port-count-");
 
+        static TextGenerator s_TextGenerator = new TextGenerator();
         string m_CurrentPortCountClassName;
         bool m_SetupLabelWidth;
         float m_MaxLabelWidth;
@@ -192,7 +193,7 @@ namespace Unity.GraphToolsFoundation.Editor
             if (s_TextGenerationSettings.fontSize == 0)
                 return 0;
 
-            var size = TextGenerator.GetPreferredValues(s_TextGenerationSettings, TextHandle.textInfoCommon);
+            var size = s_TextGenerator.GetPreferredValues(s_TextGenerationSettings, TextHandle.textInfoCommon);
 
             return Mathf.Ceil(size.x);
         }

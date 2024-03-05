@@ -34,8 +34,7 @@ namespace UnityEditor
     {
         private const string k_ScriptingPrefix = "ContainerWindowBindings::";
 
-        // Pixel-position on screen.
-        public extern Rect position
+        extern Rect Internal_Position
         {
             [FreeFunction(k_ScriptingPrefix + "GetPosition", HasExplicitThis = true)] get;
             [FreeFunction(k_ScriptingPrefix + "SetPosition", HasExplicitThis = true)] set;

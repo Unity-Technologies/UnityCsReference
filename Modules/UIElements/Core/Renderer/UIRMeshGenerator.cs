@@ -634,7 +634,7 @@ namespace UnityEngine.UIElements.UIR
             m_Settings.color = color;
             m_Settings.material = font.material;
 
-            TextCore.Text.TextGenerator.GenerateText(m_Settings, m_TextInfo);
+            TextCore.Text.TextGenerator.GetTextGenerator().GenerateText(m_Settings, m_TextInfo);
 
             for (int i = 0, meshInfoCount = m_TextInfo.meshInfo.Length; i < meshInfoCount; i++)
             {

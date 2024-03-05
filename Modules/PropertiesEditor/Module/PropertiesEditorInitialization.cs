@@ -24,7 +24,7 @@ namespace Unity.Properties.Internal
             if (s_Initialized)
                 return;
             s_InitializeJobHandle = new InitializePropertiesJob().Schedule();
-            PropertyBag.AddJobToWaitQueue(s_InitializeJobHandle);
+            JobHandle.ScheduleBatchedJobs();
             s_Initialized = true;
         }
 

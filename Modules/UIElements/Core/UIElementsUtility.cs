@@ -556,9 +556,12 @@ namespace UnityEngine.UIElements
 
             var displayValue = menuName.TrimEnd();
             var separatorPos = displayValue.LastIndexOf(' ');
-            int modifierPos = Array.IndexOf(s_Modifiers, displayValue[separatorPos + 1]);
-            if (separatorPos != -1 && displayValue.Length > separatorPos + 1 && modifierPos > -1)
-                displayValue = displayValue.Substring(0, separatorPos).TrimEnd();
+            if (separatorPos > -1)
+            {
+                int modifierPos = Array.IndexOf(s_Modifiers, displayValue[separatorPos + 1]);
+                if (displayValue.Length > separatorPos + 1 && modifierPos > -1)
+                    displayValue = displayValue.Substring(0, separatorPos).TrimEnd();
+            }
 
             return displayValue;
         }

@@ -293,7 +293,7 @@ namespace UnityEditor.Search
        public QueryLabelBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
             : base(source, id, value, attr)
         {
-            icon = Utils.LoadIcon("AssetLabelIcon");
+            icon = Utils.LoadIcon("QuickSearch/AssetLabelIconSquare");
         }
 
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
@@ -311,7 +311,7 @@ namespace UnityEditor.Search
         public QueryTagBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
             : base(source, id, value, attr)
         {
-            icon = Utils.LoadIcon("AssetLabelIcon");
+            icon = Utils.LoadIcon("QuickSearch/AssetLabelIconSquare");
         }
 
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)

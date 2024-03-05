@@ -40,7 +40,19 @@ namespace UnityEngine.UIElements
                 if (touchKeyboard.status != TouchScreenKeyboard.Status.Visible)
                 {
                     if (touchKeyboard.status == TouchScreenKeyboard.Status.Canceled)
+                    {
                         edition.RestoreValueAndText();
+                    }
+                    else 
+                    {
+                        //Ensure that text is updated after closing the keyboard as some platforms only send input after it is closed
+                        touchKeyboardText = touchKeyboard.text;
+                        if (editingUtilities.text != touchKeyboardText)
+                        {
+                            edition.UpdateText(touchKeyboardText);
+                            textElement.uitkTextHandle.Update();
+                        }
+                    }
 
                     CloseTouchScreenKeyboard();
 
@@ -87,7 +99,7 @@ namespace UnityEngine.UIElements
 
                         edition.UpdateText(editingUtilities.text);
                         // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.
-                        textElement.uitkTextHandle.Update();
+                        textElement.uitkTextHandle.ComputeSettingsAndUpdate();
                     }
                     else if (!m_IsClicking && touchKeyboard != null && touchKeyboard.canGetSelection)
                     {
@@ -100,7 +112,7 @@ namespace UnityEngine.UIElements
                     edition.UpdateText(touchKeyboardText);
 
                     // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.
-                    textElement.uitkTextHandle.Update();
+                    textElement.uitkTextHandle.ComputeSettingsAndUpdate();
                 }
 
                 if (!edition.isDelayed)

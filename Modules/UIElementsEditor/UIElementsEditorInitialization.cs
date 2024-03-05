@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements
         {
             var jobHandle = PropertiesEditorInitialization.GetInitializationJobHandle();
             var handle = new InitializeUIElementsJob().Schedule(jobHandle);
-            PropertyBag.AddJobToWaitQueue(handle);
+            JobHandle.ScheduleBatchedJobs();
         }
 
         struct InitializeUIElementsJob : IJob
