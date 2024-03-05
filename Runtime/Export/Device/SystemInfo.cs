@@ -21,6 +21,10 @@ namespace UnityEngine.Device
 
         public static string processorType => ShimManager.systemInfoShim.processorType;
 
+        public static string processorModel => ShimManager.systemInfoShim.processorModel;
+
+        public static string processorManufacturer => ShimManager.systemInfoShim.processorManufacturer;
+
         public static int processorFrequency => ShimManager.systemInfoShim.processorFrequency;
 
         public static int processorCount => ShimManager.systemInfoShim.processorCount;

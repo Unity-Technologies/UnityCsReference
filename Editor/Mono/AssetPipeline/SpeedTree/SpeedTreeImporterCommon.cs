@@ -276,12 +276,14 @@ namespace UnityEditor.SpeedTree.Importer
 
         static internal void ShowAdditionalSettingsGUI(
             ref SerializedProperty motionVectorModeEnumValue,
-            ref SerializedProperty generateColliders)
+            ref SerializedProperty generateColliders,
+            ref SerializedProperty generateRigidbody)
         {
             GUILayout.Label(Styles.AdditionalSettingsHeader, EditorStyles.boldLabel);
             EditorGUILayout.Popup(motionVectorModeEnumValue, Styles.MotionVectorModeNames, Styles.MotionVectorMode);
 
             EditorGUILayout.PropertyField(generateColliders);
+            EditorGUILayout.PropertyField(generateRigidbody);
         }
 
         static internal void ShowWindGUI(

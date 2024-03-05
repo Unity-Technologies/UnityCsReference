@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.AnimatedValues;
-using UnityEditor.IMGUI.Controls;
-using UnityEditor.EditorTools;
 using UnityEngine;
 
 namespace UnityEditor
@@ -400,7 +398,7 @@ namespace UnityEditor
             }
 
             var driveTypeProperty = drive.FindPropertyRelative("driveType");
-            var driveType = (ArticulationDriveType)driveTypeProperty.enumValueIndex;
+            var driveType = (ArticulationDriveType)driveTypeProperty.intValue;
 
             // Always display fields
 
@@ -434,7 +432,12 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(drive.FindPropertyRelative("targetVelocity"), Styles.targetVelocity);
             EditorGUI.EndDisabled();
 
-            EditorGUILayout.PropertyField(driveTypeProperty, Styles.driveType);
+            //this workaround is required here due to the fact that ArticulationDriveType in native currently resides outside of the ArticulationDrive type
+            EditorGUI.BeginChangeCheck();
+            driveType = (ArticulationDriveType)EditorGUILayout.EnumPopup(Styles.driveType, driveType);
+
+            if(EditorGUI.EndChangeCheck())
+                driveTypeProperty.intValue = (int)driveType;
 
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();

@@ -71,6 +71,7 @@ namespace UnityEngine.UIElements
         private BaseFieldMouseDragger m_Dragger;
         internal bool m_UpdateTextFromValue;
         private bool m_ForceUpdateDisplay;
+        internal const int kMaxValueFieldLength = 1000;
 
         internal bool forceUpdateDisplay
         {

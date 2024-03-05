@@ -23,21 +23,10 @@ namespace UnityEngine.TextCore.Text
         {
             if (s_Settings != null && s_Generators != null && s_TextInfosCommon != null)
                 return;
-            s_Settings = new TextGenerationSettings[JobsUtility.ThreadIndexCount];
-            for (int i = 0; i < JobsUtility.ThreadIndexCount; i++)
-            {
-                s_Settings[i] = new TextGenerationSettings();
-            }
-            s_Generators = new TextGenerator[JobsUtility.ThreadIndexCount];
-            for (int i = 0; i < JobsUtility.ThreadIndexCount; i++)
-            {
-                s_Generators[i] = new TextGenerator();
-            }
-            s_TextInfosCommon = new TextInfo[JobsUtility.ThreadIndexCount];
-            for (int i = 0; i < JobsUtility.ThreadIndexCount; i++)
-            {
-                s_TextInfosCommon[i] = new TextInfo(VertexDataLayout.VBO);
-            }
+
+            InitArray(ref s_Settings, () => new TextGenerationSettings());
+            InitArray(ref s_Generators, () => new TextGenerator());
+            InitArray(ref s_TextInfosCommon, () => new TextInfo(VertexDataLayout.VBO));
         }
 
         static TextGenerationSettings[] s_Settings;
@@ -47,11 +36,7 @@ namespace UnityEngine.TextCore.Text
             {
                 if (s_Settings == null)
                 {
-                    s_Settings = new TextGenerationSettings[JobsUtility.ThreadIndexCount];
-                    for (int i = 0; i < JobsUtility.ThreadIndexCount; i++)
-                    {
-                        s_Settings[i] = new TextGenerationSettings();
-                    }
+                    InitArray(ref s_Settings, () => new TextGenerationSettings());
                 }
                 return s_Settings;
             }
@@ -64,12 +49,7 @@ namespace UnityEngine.TextCore.Text
             {
                 if (s_Generators == null)
                 {
-                    s_Generators = new TextGenerator[JobsUtility.ThreadIndexCount];
-                    s_Generators[0] = TextGenerator.GetTextGenerator();
-                    for (int i = 1; i < JobsUtility.ThreadIndexCount; i++)
-                    {
-                        s_Generators[i] = new TextGenerator();
-                    }
+                    InitArray(ref s_Generators, () => new TextGenerator());
                 }
                 return s_Generators;
             }
@@ -82,13 +62,20 @@ namespace UnityEngine.TextCore.Text
             {
                 if (s_TextInfosCommon == null)
                 {
-                    s_TextInfosCommon = new TextInfo[JobsUtility.ThreadIndexCount];
-                    for (int i = 0; i < JobsUtility.ThreadIndexCount; i++)
-                    {
-                        s_TextInfosCommon[i] = new TextInfo(VertexDataLayout.VBO);
-                    }
+                    InitArray(ref s_TextInfosCommon, () => new TextInfo(VertexDataLayout.VBO));
                 }
                 return s_TextInfosCommon;
+            }
+        }
+
+        private static void InitArray<T>(ref T[] array, Func<T> createInstance)
+        {
+            if (array != null)
+                return;
+            array = new T[JobsUtility.ThreadIndexCount];
+            for (int i = 0; i < JobsUtility.ThreadIndexCount; i++)
+            {
+                array[i] = createInstance();
             }
         }
 
@@ -117,11 +104,12 @@ namespace UnityEngine.TextCore.Text
             private set;
         }
 
-        private Rect screenRect;
-        private float lineHeightDefault;
-        private bool isPlaceholder;
+        private Rect m_ScreenRect;
+        private float m_LineHeightDefault;
+        private bool m_IsPlaceholder;
         private bool m_IsCached;
         private LinkedListNode<TextInfo> m_TextInfoNode;
+        private bool m_IsEllided;
 
         private static LinkedList<TextInfo> s_TextInfoPool = new LinkedList<TextInfo>();
         private static double s_MinTimeInCache = 1;
@@ -175,11 +163,7 @@ namespace UnityEngine.TextCore.Text
 
                 m_IsCached = true;
                 SetDirty();
-                
-                if (canWriteOnAsset)
-                    Update(settings);
-                else
-                    UpdateFontAssetPrepared();
+                Update();
             }
         }
 
@@ -258,9 +242,9 @@ namespace UnityEngine.TextCore.Text
         public Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
         {
             AddTextInfoToCache();
-            var result = screenRect.position;
+            var result = m_ScreenRect.position;
             if (textInfo.characterCount == 0)
-                return inverseYAxis ? new Vector2(0, lineHeightDefault) : result;
+                return inverseYAxis ? new Vector2(0, m_LineHeightDefault) : result;
 
             var validIndex = index >= textInfo.characterCount ? textInfo.characterCount - 1 : index;
             var character = textInfo.textElementInfo[validIndex];
@@ -268,7 +252,7 @@ namespace UnityEngine.TextCore.Text
             var vectorX = index >= textInfo.characterCount ? character.xAdvance : character.origin;
 
             result += inverseYAxis ?
-                new Vector2(vectorX, screenRect.height - descender) :
+                new Vector2(vectorX, m_ScreenRect.height - descender) :
                 new Vector2(vectorX, descender);
 
             return result;
@@ -277,9 +261,9 @@ namespace UnityEngine.TextCore.Text
         public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, bool useXAdvance = false, bool inverseYAxis = true)
         {
             AddTextInfoToCache();
-            var result = screenRect.position;
+            var result = m_ScreenRect.position;
             if (textInfo.characterCount == 0 || index < 0)
-                return inverseYAxis ? new Vector2(0, lineHeightDefault) : result;
+                return inverseYAxis ? new Vector2(0, m_LineHeightDefault) : result;
 
             if (index >= textInfo.characterCount)
                 index = textInfo.characterCount - 1;
@@ -290,13 +274,13 @@ namespace UnityEngine.TextCore.Text
             if (index >= textInfo.characterCount - 1 || useXAdvance)
             {
                 result += inverseYAxis ?
-                    new Vector2(character.xAdvance, screenRect.height - line.descender) :
+                    new Vector2(character.xAdvance, m_ScreenRect.height - line.descender) :
                     new Vector2(character.xAdvance, line.descender);
                 return result;
             }
 
             result += inverseYAxis ?
-                new Vector2(character.origin, screenRect.height - line.descender) :
+                new Vector2(character.origin, m_ScreenRect.height - line.descender) :
                 new Vector2(character.origin, line.descender);
 
             return result;
@@ -307,7 +291,7 @@ namespace UnityEngine.TextCore.Text
         public int GetCursorIndexFromPosition(Vector2 position, bool inverseYAxis = true)
         {
             if (inverseYAxis)
-                position.y = screenRect.height - position.y;
+                position.y = m_ScreenRect.height - position.y;
 
             var lineNumber = 0;
             if (textInfo.lineCount > 1)
@@ -534,7 +518,7 @@ namespace UnityEngine.TextCore.Text
         public int FindIntersectingLink(Vector3 position, bool inverseYAxis = true)
         {
             if (inverseYAxis)
-                position.y = screenRect.height - position.y;
+                position.y = m_ScreenRect.height - position.y;
 
             for (int i = 0; i < textInfo.linkCount; i++)
             {
@@ -745,7 +729,7 @@ namespace UnityEngine.TextCore.Text
 
         public bool IsPlaceholder
         {
-            get => isPlaceholder;
+            get => m_IsPlaceholder;
         }
 
         public bool IsElided()
@@ -756,7 +740,7 @@ namespace UnityEngine.TextCore.Text
             if (textInfo.characterCount == 0) // impossible to differentiate between an empty string and a fully truncated string.
                 return true;
 
-            return TextGenerator.isTextTruncated;
+            return m_IsEllided;
         }
 
         /// <summary>
@@ -832,35 +816,21 @@ namespace UnityEngine.TextCore.Text
 
         protected void UpdatePreferredValues(TextGenerationSettings tgs)
         {
-            preferredSize = TextGenerator.GetPreferredValues(tgs, textInfoCommon);
+            preferredSize = generator.GetPreferredValues(tgs, textInfoCommon);
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        protected TextInfo Update(TextGenerationSettings tgs)
+        internal TextInfo Update()
         {
-            screenRect = tgs.screenRect;
-            lineHeightDefault = GetLineHeightDefault(tgs);
-            isPlaceholder = tgs.isPlaceholder;
-            if (!IsDirty(tgs))
-                return textInfo;
-
-            TextGenerator.GenerateText(settings, textInfo);
-
-            return textInfo;
-        }
-
-        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal TextInfo UpdateFontAssetPrepared()
-        {
-            screenRect = settings.screenRect;
-            lineHeightDefault = GetLineHeightDefault(settings);
-            isPlaceholder = settings.isPlaceholder;
+            m_ScreenRect = settings.screenRect;
+            m_LineHeightDefault = GetLineHeightDefault(settings);
+            m_IsPlaceholder = settings.isPlaceholder;
             if (!IsDirty(settings))
                 return textInfo;
 
-            generator.Prepare(settings, textInfo);
-            generator.GenerateTextMesh(settings, textInfo);
-            return textInfo;
+            generator.GenerateText(settings, textInfo);
+	        m_IsEllided = generator.isTextTruncated;
+	        return textInfo;
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
@@ -877,7 +847,7 @@ namespace UnityEngine.TextCore.Text
         }
 
 		[VisibleToOtherModules("UnityEngine.IMGUIModule")]
-        internal void UpdatePreferredSize(TextGenerationSettings generationSettings)
+        internal void UpdatePreferredSize()
         {
             if (textInfo.characterCount <= 0)
                 return;
@@ -894,15 +864,15 @@ namespace UnityEngine.TextCore.Text
                 maxDescender = Mathf.Min(maxDescender, textInfo.textElementInfo[lineInfo.firstVisibleCharacterIndex].descender);
 
                 // UUM-46147: For IMGUI rendered width includes xAdvance for backward compatibility
-                renderedWidth = generationSettings.isIMGUI ? Mathf.Max(renderedWidth, lineInfo.length) : Mathf.Max(renderedWidth, lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x);
+                renderedWidth = settings.isIMGUI ? Mathf.Max(renderedWidth, lineInfo.length) : Mathf.Max(renderedWidth, lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x);
             }
             renderedHeight = maxAscender - maxDescender;
 
             // Adjust Preferred Width and Height to account for Margins.
-            renderedWidth += generationSettings.margins.x > 0 ? generationSettings.margins.x : 0;
-            renderedWidth += generationSettings.margins.z > 0 ? generationSettings.margins.z : 0;
-            renderedHeight += generationSettings.margins.y > 0 ? generationSettings.margins.y : 0;
-            renderedHeight += generationSettings.margins.w > 0 ? generationSettings.margins.w : 0;
+            renderedWidth += settings.margins.x > 0 ? settings.margins.x : 0;
+            renderedWidth += settings.margins.z > 0 ? settings.margins.z : 0;
+            renderedHeight += settings.margins.y > 0 ? settings.margins.y : 0;
+            renderedHeight += settings.margins.w > 0 ? settings.margins.w : 0;
 
             // Round Preferred Values to nearest 5/100.
             renderedWidth = (int)(renderedWidth * 100 + 1f) / 100f;

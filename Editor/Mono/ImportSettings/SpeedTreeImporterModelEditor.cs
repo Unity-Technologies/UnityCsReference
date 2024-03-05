@@ -36,6 +36,8 @@ namespace UnityEditor
 
             public static GUIContent AdditionalSettingsHeader = EditorGUIUtility.TrTextContent("Additional Settings");
             public static GUIContent MotionVectorMode = EditorGUIUtility.TrTextContent("Motion Vectors", "Motion vector mode to set for the mesh renderer of each LOD object");
+            public static GUIContent GenerateRigidBody = EditorGUIUtility.TrTextContent("Generate Rigidbody", "Generates a Rigidbody in the root game object");
+            public static GUIContent GenerateColliders  = EditorGUIUtility.TrTextContent("Generate Colliders", "Generates mesh colliders for the LOD objects");
 
             public static GUIContent WindHeader = EditorGUIUtility.TrTextContent("Wind");
             public static GUIContent WindQuality = EditorGUIUtility.TrTextContent("Wind Quality", "Controls the wind effect's quality.");
@@ -105,6 +107,10 @@ namespace UnityEditor
         private SerializedProperty m_BillboardTransitionCrossFadeWidth;
         private SerializedProperty m_FadeOutWidth;
 
+        // physics
+        private SerializedProperty m_GenerateRigidbody;
+        private SerializedProperty m_GenerateColliders;
+
         private bool m_AllAreV8;
         private bool m_AllAreNotV8;
 
@@ -152,6 +158,9 @@ namespace UnityEditor
             m_AnimateCrossFading = serializedObject.FindProperty("m_AnimateCrossFading");
             m_BillboardTransitionCrossFadeWidth = serializedObject.FindProperty("m_BillboardTransitionCrossFadeWidth");
             m_FadeOutWidth = serializedObject.FindProperty("m_FadeOutWidth");
+
+            m_GenerateRigidbody = serializedObject.FindProperty("m_GenerateRigidbody");
+            m_GenerateColliders = serializedObject.FindProperty("m_GenerateColliders");
 
             m_ShowSmoothLODOptions.value = m_EnableSmoothLOD.hasMultipleDifferentValues || m_EnableSmoothLOD.boolValue;
             m_ShowSmoothLODOptions.valueChanged.AddListener(Repaint);
@@ -287,6 +296,12 @@ namespace UnityEditor
             // motion vectors
             GUILayout.Label(Styles.AdditionalSettingsHeader, EditorStyles.boldLabel);
             EditorGUILayout.Popup(m_MotionVectorModeEnumValue, Styles.MotionVectorModeNames, Styles.MotionVectorMode);
+
+            EditorGUILayout.Space();
+
+            GUILayout.Label("Physics", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(m_GenerateRigidbody , Styles.GenerateRigidBody);
+            EditorGUILayout.PropertyField(m_GenerateColliders, Styles.GenerateColliders);
 
             EditorGUILayout.Space();
         }

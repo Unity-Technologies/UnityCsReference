@@ -64,6 +64,8 @@ namespace UnityEditor.DeviceSimulation
         public override string operatingSystem => m_SystemInfo.operatingSystem;
         public override OperatingSystemFamily operatingSystemFamily => m_SystemInfoFields.Contains("operatingSystemFamily") ? m_SystemInfo.operatingSystemFamily : base.operatingSystemFamily;
         public override string processorType => m_SystemInfoFields.Contains("processorType") ? m_SystemInfo.processorType : base.processorType;
+        public override string processorModel => m_SystemInfoFields.Contains("processorModel") ? m_SystemInfo?.processorModel : base.processorModel;
+        public override string processorManufacturer => m_SystemInfoFields.Contains("processorManufacturer") ? m_SystemInfo?.processorManufacturer : base.processorManufacturer;
         public override int processorFrequency => m_SystemInfoFields.Contains("processorFrequency") ? m_SystemInfo.processorFrequency : base.processorFrequency;
         public override int processorCount => m_SystemInfoFields.Contains("processorCount") ? m_SystemInfo.processorCount : base.processorCount;
         public override int systemMemorySize => m_SystemInfoFields.Contains("systemMemorySize") ? m_SystemInfo.systemMemorySize : base.systemMemorySize;

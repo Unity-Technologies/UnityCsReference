@@ -90,6 +90,11 @@ namespace UnityEditor
         public extern int bestWindQuality { get; }
         public extern int selectedWindQuality { get; set; }
 
+        /////////////////////////////////////////////////////////////////////////////
+        // Physics settings
+
+        public extern bool generateRigidbody { get; set; }
+        public extern bool generateColliders { get; set; }
 
         /////////////////////////////////////////////////////////////////////////////
         // LOD settings

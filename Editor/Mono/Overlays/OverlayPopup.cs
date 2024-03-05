@@ -145,10 +145,18 @@ namespace UnityEditor.Overlays
                 }
                 else // If neither side has enough space, show the popup on the widest one
                 {
+                    // Try to show the popup as clamped if possible
+                    EnableInClassList(k_Clamped, true);
                     if (bottomSpace <= upSpace)
-                        yAdjusted = upPlacement - placement.height;
-
-                    placement.height = canvasWorld.yMax - yAdjusted;
+                    {
+                        var oldY = yAdjusted;
+                        yAdjusted = canvasWorld.yMin;
+                        placement.height = oldY - yAdjusted;
+                    }
+                    else
+                    {
+                        placement.height = canvasWorld.yMax - yAdjusted;
+                    }
                 }
             }
 

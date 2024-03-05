@@ -2999,7 +2999,7 @@ namespace UnityEditor
 
             // Privacy permissions
             bool showPrivacyPermissions =
-                platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS;
+                platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS || platform.namedBuildTarget == NamedBuildTarget.VisionOS;
 
             if (showPrivacyPermissions)
             {

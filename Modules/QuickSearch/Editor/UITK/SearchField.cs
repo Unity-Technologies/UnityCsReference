@@ -679,7 +679,7 @@ namespace UnityEditor.Search
 
         internal void UpdateInternalTextData()
         {
-            textElement.uitkTextHandle.Update();
+            textElement.uitkTextHandle.ComputeSettingsAndUpdate();
         }
     }
 }

@@ -382,7 +382,8 @@ namespace UnityEditor.Search
 
                 if (string.IsNullOrEmpty(s.provider) || string.CompareOrdinal(s.provider, m_ViewModel.currentGroup) == 0)
                 {
-                    menu.AddItem(new GUIContent($"More.../Sort By {ObjectNames.NicifyVariableName(s.label)}"), false, () => SortGroupBySelector(s));
+                    var sortType = s.description ?? s.label;
+                    menu.AddItem(new GUIContent($"More.../Sort By {ObjectNames.NicifyVariableName(sortType)}"), false, () => SortGroupBySelector(s));
                 }
             }
 

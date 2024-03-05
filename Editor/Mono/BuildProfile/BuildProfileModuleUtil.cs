@@ -30,8 +30,6 @@ namespace UnityEditor.Build.Profile
         {
             "Switch",
             "QNX",
-            "PS4",
-            "PS5"
         };
 
         /// <summary>

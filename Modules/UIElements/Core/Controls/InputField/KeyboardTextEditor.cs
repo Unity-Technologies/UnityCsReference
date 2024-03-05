@@ -196,7 +196,7 @@ namespace UnityEngine.UIElements
 
             // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.
             // The latest text geometry is also required for updating the cusor and selection position.
-            textElement.uitkTextHandle.Update();
+            textElement.uitkTextHandle.ComputeSettingsAndUpdate();
         }
 
         void OnValidateCommandEvent(ValidateCommandEvent evt)

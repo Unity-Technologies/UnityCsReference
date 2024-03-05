@@ -87,6 +87,8 @@ namespace UnityEditor.DeviceSimulation
         public int processorCount;
         public int processorFrequency;
         public string processorType;
+        public string processorModel;
+        public string processorManufacturer;
         public bool supportsAccelerometer;
         public bool supportsAudio;
         public bool supportsGyroscope;

@@ -282,6 +282,9 @@ namespace UnityEditor.Build.Profile
                     continue;
                 }
 
+                if (!BuildProfileModuleUtil.IsModuleInstalled(profileObj.moduleName, profileObj.subtarget))
+                    continue;
+
                 m_BuildModuleNameToClassicPlatformProfile.Add((profileObj.moduleName, profileObj.subtarget), profileObj);
                 classicPlatformProfiles.Add(profileObj);
             }

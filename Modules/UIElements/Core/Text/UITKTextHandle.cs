@@ -87,7 +87,7 @@ namespace UnityEngine.UIElements
             return preferredSize;
         }
 
-        public MeshInfo[] Update()
+        public MeshInfo[] ComputeSettingsAndUpdate()
         {
             ConvertUssToTextGenerationSettings();
 
@@ -95,7 +95,7 @@ namespace UnityEngine.UIElements
             if (m_PreviousGenerationSettingsHash == settings.GetHashCode())
                 AddTextInfoToCache();
             else
-                Update(settings);
+                Update();
 
             HandleATag();
             HandleLinkTag();

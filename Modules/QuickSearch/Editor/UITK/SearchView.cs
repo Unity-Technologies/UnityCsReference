@@ -138,9 +138,8 @@ namespace UnityEditor.Search
                 multiselect = viewState.context?.options.HasAny(SearchFlags.Multiselect) ?? false;
                 m_FilteredItems = new GroupedSearchList(context, GetDefaultSearchListComparer());
                 m_FilteredItems.currentGroup = viewState.group;
-                viewState.itemSize = GetDefaultItemSize();
+                viewState.itemSize = viewState.itemSize == 0 ? GetDefaultItemSize() : viewState.itemSize;
                 hideHelpers = m_ViewState.HasFlag(SearchViewFlags.DisableQueryHelpers);
-
                 style.flexGrow = 1f;
 
                 Refresh();

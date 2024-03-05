@@ -77,15 +77,12 @@ namespace UnityEngine.TextCore.Text
         internal static TextGenerator GetTextGenerator()
         {
             if (s_TextGenerator == null)
-            {
                 s_TextGenerator = new TextGenerator();
-                s_DefaultSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
-            }
 
             return s_TextGenerator;
         }
 
-        public static void GenerateText(TextGenerationSettings settings, TextInfo textInfo)
+        public void GenerateText(TextGenerationSettings settings, TextInfo textInfo)
         {
             bool canWriteOnAsset = !IsExecutingJob;
             if (settings.fontAsset == null || settings.fontAsset.characterLookupTable == null)
@@ -101,16 +98,14 @@ namespace UnityEngine.TextCore.Text
                 return;
             }
 
-            TextGenerator textGenerator = GetTextGenerator();
-
             Profiler.BeginSample("TextGenerator.GenerateText");
-            textGenerator.Prepare(settings, textInfo);
+            Prepare(settings, textInfo);
 
             // Update font asset atlas textures and font features.
             if (canWriteOnAsset)
                 FontAsset.UpdateFontAssetsInUpdateQueue();
 
-            textGenerator.GenerateTextMesh(settings, textInfo);
+            GenerateTextMesh(settings, textInfo);
             Profiler.EndSample();
         }
 
@@ -150,8 +145,9 @@ namespace UnityEngine.TextCore.Text
         /// <summary>
         /// Property indicating whether the text is Truncated or using Ellipsis.
         /// </summary>
-        public static bool isTextTruncated { get { return m_IsTextTruncated; } }
-        static protected bool m_IsTextTruncated;
+        public bool isTextTruncated { get { return m_IsTextTruncated; } }
+        protected bool m_IsTextTruncated;
+
 
         /// <summary>
         /// Delegate for the OnMissingCharacter event called when the requested Unicode character is missing from the font asset.
@@ -281,7 +277,6 @@ namespace UnityEngine.TextCore.Text
 
         Dictionary<int, int> m_MaterialReferenceIndexLookup = new Dictionary<int, int>();
         bool m_IsCalculatingPreferredValues;
-        static SpriteAsset s_DefaultSpriteAsset;
         bool m_TintSprite;
 
         protected SpecialCharacter m_Ellipsis;
@@ -292,6 +287,7 @@ namespace UnityEngine.TextCore.Text
         /// <summary>
         /// This is the main function that is responsible for creating / displaying the text.
         /// </summary>
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal void GenerateTextMesh(TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             // Early exit if no font asset was assigned. This should not be needed since LiberationSans SDF will be assigned by default.

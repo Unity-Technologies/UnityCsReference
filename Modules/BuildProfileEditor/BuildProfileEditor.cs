@@ -51,6 +51,9 @@ namespace UnityEditor.Build.Profile
                 if (editorState.buildAction == ActionState.Disabled)
                     editorState.buildAndRunAction = ActionState.Disabled;
 
+                if (editorState.additionalActions != next.additionalActions)
+                    editorState.additionalActions = next.additionalActions;
+
                 parentState?.Apply(next);
             });
 

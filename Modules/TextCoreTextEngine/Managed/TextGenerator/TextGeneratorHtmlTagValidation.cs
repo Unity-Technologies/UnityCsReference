@@ -1220,14 +1220,9 @@ namespace UnityEngine.TextCore.Text
                             {
                                 m_CurrentSpriteAsset = textSettings.defaultSpriteAsset;
                             }
-                            else if (s_DefaultSpriteAsset != null)
+                            else if (TextSettings.s_GlobalSpriteAsset != null)
                             {
-                                m_CurrentSpriteAsset = s_DefaultSpriteAsset;
-                            }
-                            else if (s_DefaultSpriteAsset == null && canWriteOnAsset)
-                            {
-                                s_DefaultSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
-                                m_CurrentSpriteAsset = s_DefaultSpriteAsset;
+                                m_CurrentSpriteAsset = TextSettings.s_GlobalSpriteAsset;
                             }
 
                             // No valid sprite asset available

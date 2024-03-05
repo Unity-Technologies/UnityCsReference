@@ -84,7 +84,7 @@ namespace UnityEngine.UIElements
         /// Constructor.
         /// </summary>
         /// <param name="maxLength">Maximum number of characters the field can take.</param>
-        public FloatField(string label, int maxLength = kMaxLengthNone)
+        public FloatField(string label, int maxLength = kMaxValueFieldLength)
             : base(label, maxLength, new FloatInput())
         {
             AddToClassList(ussClassName);

@@ -20,7 +20,7 @@ namespace UnityEditor.UIElements.Debugger
         public StyleLengthField(int maxLength)
             : this(null, maxLength) {}
 
-        public StyleLengthField(string label, int maxLength = kMaxLengthNone)
+        public StyleLengthField(string label, int maxLength = kMaxValueFieldLength)
             : base(label, maxLength, new LengthInput())
         {
             AddToClassList(ussClassName);
