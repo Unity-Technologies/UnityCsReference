@@ -165,6 +165,8 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         protected List<SpriteAsset> m_FallbackSpriteAssets;
 
+        internal static SpriteAsset s_GlobalSpriteAsset { private set; get; }
+
         /// <summary>
         /// The unicode value of the sprite character that will be used when the requested character sprite is missing from the sprite asset and potential fallbacks.
         /// </summary>
@@ -235,6 +237,8 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         protected UnicodeLineBreakingRules m_UnicodeLineBreakingRules;
 
+       
+
 
         // =============================================
         // Text object specific settings
@@ -264,6 +268,8 @@ namespace UnityEngine.TextCore.Text
         void OnEnable()
         {
             lineBreakingRules.LoadLineBreakingRules();
+            if (s_GlobalSpriteAsset == null)
+                s_GlobalSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
         }
 
         protected void InitializeFontReferenceLookup()

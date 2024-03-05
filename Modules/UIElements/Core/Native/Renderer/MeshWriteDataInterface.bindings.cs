@@ -18,5 +18,15 @@ namespace UnityEngine.UIElements
         public IntPtr indices;
         public int vertexCount;
         public int indexCount;
+
+        unsafe static public MeshWriteDataInterface FromMeshWriteData(MeshWriteData data)
+        {
+            var mwdi = new MeshWriteDataInterface();
+            mwdi.vertices = new IntPtr(data.m_Vertices.GetUnsafePtr());
+            mwdi.indices = new IntPtr(data.m_Indices.GetUnsafePtr());
+            mwdi.vertexCount = data.m_Vertices.Length;
+            mwdi.indexCount = data.m_Indices.Length;
+            return mwdi;
+        }
     }
 }

@@ -10,6 +10,7 @@ using UnityEngine.Serialization;
 
 namespace UnityEngine.TextCore.Text
 {
+    [HelpURL("https://docs.unity3d.com/2023.2/Documentation/Manual/UIE-sprite.html")]
     [ExcludeFromPresetAttribute]
     public class SpriteAsset : TextAsset
     {

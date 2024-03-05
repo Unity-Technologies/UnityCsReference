@@ -34,100 +34,107 @@ namespace UnityEditorInternal.Profiling
         private PhysicsProfilerStatsView m_ShowStatsView;
         private PhysicsProfilerStatsView m_CachedShowStatsView;
 
-        // Current Counters to display.
-        static readonly ProfilerCounterData[] k_CurrentPhysicsAreaCounterNames =
+        static Physics2DProfilerModule()
         {
-            new ProfilerCounterData()
+            k_CurrentPhysicsAreaCounterNames = new ProfilerCounterData[]
             {
-                m_Name = "Total Contacts",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
+                new ProfilerCounterData()
+                {
+                    m_Name = "Total Contacts",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Total Shapes",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Total Queries",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Total Callbacks",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Total Joints",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Total Bodies",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Awake Bodies",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Dynamic Bodies",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Continuous Bodies",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Physics Used Memory (2D)",
+                    m_Category = k_MemoryCategoryName,
+                }
+            };
+
+            k_LegacyPhysicsAreaCounterNames = new ProfilerCounterData[]
             {
-                m_Name = "Total Shapes",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Total Queries",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Total Callbacks",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Total Joints",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Total Bodies",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Awake Bodies",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Dynamic Bodies",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Continuous Bodies",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Physics Used Memory (2D)",
-                m_Category = k_MemoryCategoryName,
-            }
-        };
+                new ProfilerCounterData()
+                {
+                    m_Name = "Total Bodies",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Active Bodies",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Sleeping Bodies",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Dynamic Bodies",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Kinematic Bodies",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Static Bodies",
+                    m_Category = k_Physics2DCategoryName,
+                },
+                new ProfilerCounterData()
+                {
+                    m_Name = "Contacts",
+                    m_Category = k_Physics2DCategoryName,
+                }
+            };
+        }
+
+        // Current Counters to display.
+        static readonly ProfilerCounterData[] k_CurrentPhysicsAreaCounterNames;
 
         // Legacy Counters to display.
-        static readonly ProfilerCounterData[] k_LegacyPhysicsAreaCounterNames =
-        {
-            new ProfilerCounterData()
-            {
-                m_Name = "Total Bodies",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Active Bodies",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Sleeping Bodies",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Dynamic Bodies",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Kinematic Bodies",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Static Bodies",
-                m_Category = k_Physics2DCategoryName,
-            },
-            new ProfilerCounterData()
-            {
-                m_Name = "Contacts",
-                m_Category = k_Physics2DCategoryName,
-            }
-        };
+        static readonly ProfilerCounterData[] k_LegacyPhysicsAreaCounterNames;
 
         const int k_DefaultOrderIndex = 7;
         private static readonly ushort k_Physics2DCategoryId = ProfilerCategory.Physics2D;

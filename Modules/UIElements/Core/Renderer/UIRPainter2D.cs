@@ -537,7 +537,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         /// <param name="vectorImage">The VectorImage object that will be initialized with this painter. This object should not be null.</param>
         /// <returns>True if the VectorImage initialization succeeded. False otherwise.</returns>
-        public bool SaveToVectorImage(VectorImage vectorImage)
+        public unsafe bool SaveToVectorImage(VectorImage vectorImage)
         {
             if (!isDetached)
             {
@@ -558,19 +558,17 @@ namespace UnityEngine.UIElements
                 indCount += mwd.m_Indices.Length;
             }
 
-            var bboxMin = new Vector2(float.MaxValue, float.MaxValue);
-            var bboxMax = new Vector2(-float.MaxValue, -float.MaxValue);
-            foreach (var mwd in meshes)
+            // Case UUM-41589: We cannot simply compute the bbox from the vertices because
+            // of the additional buffer around the shapes used for anti-aliasing. The
+            // ComputeBoundingBoxFromArcs() method peeks into the arc data for more precise measurements.
+            // This is a native method for performance reasons.
+            Rect bbox = Rect.zero;
+            NativeArray<MeshWriteDataInterface> nativeMeshes;
+            using (nativeMeshes = new NativeArray<MeshWriteDataInterface>(meshes.Count, Allocator.Temp, NativeArrayOptions.UninitializedMemory))
             {
-                var vs = mwd.m_Vertices;
-                for (int i = 0; i < vs.Length; ++i)
-                {
-                    var v = vs[i];
-                    if (float.IsNaN(v.position.x) || float.IsNaN(v.position.y))
-                        continue;
-                    bboxMin = Vector2.Min(bboxMin, v.position);
-                    bboxMax = Vector2.Max(bboxMax, v.position);
-                }
+                for (int i = 0; i < meshes.Count; ++i)
+                    nativeMeshes[i] = MeshWriteDataInterface.FromMeshWriteData(meshes[i]);
+                bbox = UIPainter2D.ComputeBBoxFromArcs(new IntPtr(nativeMeshes.GetUnsafePtr()), nativeMeshes.Length);
             }
 
             // Allocate + copy
@@ -586,8 +584,8 @@ namespace UnityEngine.UIElements
                 {
                     var v = verts[i];
                     var p = v.position;
-                    p.x -= bboxMin.x;
-                    p.y -= bboxMin.y;
+                    p.x -= bbox.x;
+                    p.y -= bbox.y;
                     allVerts[vCount++] = new VectorImageVertex() {
                         position = new Vector3(p.x, p.y, Vertex.nearZ),
                         tint = v.tint,
@@ -607,7 +605,7 @@ namespace UnityEngine.UIElements
             vectorImage.version = 0;
             vectorImage.vertices = allVerts;
             vectorImage.indices = allInds;
-            vectorImage.size = bboxMax - bboxMin;
+            vectorImage.size = bbox.size;
 
             return true;
         }

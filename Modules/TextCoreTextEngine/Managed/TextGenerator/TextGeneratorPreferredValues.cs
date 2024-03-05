@@ -12,7 +12,7 @@ namespace UnityEngine.TextCore.Text
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal partial class TextGenerator
     {
-        public static Vector2 GetPreferredValues(TextGenerationSettings settings, TextInfo textInfo)
+        public Vector2 GetPreferredValues(TextGenerationSettings settings, TextInfo textInfo)
         {
             if (settings.fontAsset == null || settings.fontAsset.characterLookupTable == null)
             {
@@ -20,10 +20,8 @@ namespace UnityEngine.TextCore.Text
                 return Vector2.zero;
             }
 
-            TextGenerator textGenerator = GetTextGenerator();
-
-            textGenerator.Prepare(settings, textInfo);
-            return textGenerator.GetPreferredValuesInternal(settings, textInfo);
+            Prepare(settings, textInfo);
+            return GetPreferredValuesInternal(settings, textInfo);
         }
 
         Vector2 GetPreferredValuesInternal(TextGenerationSettings generationSettings, TextInfo textInfo)

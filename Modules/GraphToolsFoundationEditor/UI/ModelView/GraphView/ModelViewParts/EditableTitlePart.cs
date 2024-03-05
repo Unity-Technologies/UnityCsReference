@@ -24,6 +24,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected static readonly CustomStyleProperty<float> k_WantedTextSize = new CustomStyleProperty<float>("--wanted-text-size");
 
         static UnityEngine.TextCore.Text.TextGenerationSettings s_TextGenerationSettings = new();
+        static TextGenerator s_TextGenerator = new TextGenerator();
 
         public class Options
         {
@@ -96,7 +97,7 @@ namespace Unity.GraphToolsFoundation.Editor
             s_TextGenerationSettings.screenRect = new Rect(0, 0, 32000, 32000);
             s_TextGenerationSettings.fontSize = fontSize;
 
-            var size = TextGenerator.GetPreferredValues(s_TextGenerationSettings, TextHandle.textInfoCommon);
+            var size = s_TextGenerator.GetPreferredValues(s_TextGenerationSettings, TextHandle.textInfoCommon);
 
             return size.x;
         }

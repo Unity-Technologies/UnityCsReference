@@ -419,7 +419,7 @@ namespace UnityEditor.Search
             var flags = context?.options ?? SearchFlags.Default;
             if (query.GetViewState() != null)
             {
-                flags = query.GetViewState().searchFlags;
+                flags |= (query.GetViewState().searchFlags & (SearchFlags.WantsMore | SearchFlags.Packages));
             }
             return SearchService.CreateContext(SearchUtils.GetMergedProviders(providers, query.GetProviderIds()), query.searchText, flags);
         }
@@ -950,19 +950,13 @@ namespace UnityEditor.Search
             var searchQueryPath = string.IsNullOrWhiteSpace(path) ? EditorUtility.SaveFilePanel("Save search query...", initialFolder, searchQueryFileName, "asset") : path;
             if (string.IsNullOrEmpty(searchQueryPath))
                 return;
-            if (!Paths.IsValidAssetPath(searchQueryPath, ".asset", out var errorMessage))
+            if (!SearchUtils.ValidateAssetPath(ref searchQueryPath, ".asset", out var errorMessage))
             {
-                Debug.LogWarning($"Save Search Query has failed. {errorMessage}.");
+                Debug.LogWarning($"Save Search Query has failed. {errorMessage}");
                 return;
             }
 
-            searchQueryPath = Utils.CleanPath(searchQueryPath);
-            if (!System.IO.Directory.Exists(Path.GetDirectoryName(searchQueryPath)) || !Utils.IsPathUnderProject(searchQueryPath))
-                return;
-
-            searchQueryPath = Utils.GetPathUnderProject(searchQueryPath);
             SearchSettings.queryFolder = Utils.CleanPath(Path.GetDirectoryName(searchQueryPath));
-
             SaveSearchQueryFromContext(searchQueryPath, true);
         }
 
@@ -1045,9 +1039,7 @@ namespace UnityEditor.Search
                 args.group = args.context?.GetProviders().FirstOrDefault()?.id;
 
             if (context?.options.HasAny(SearchFlags.Expression) ?? false)
-                itemIconSize = (int)DisplayMode.Table;
-            else
-                itemIconSize = args.itemSize;
+                args.itemSize = (int)DisplayMode.Table;
         }
 
         protected virtual void LoadSessionSettings(SearchViewState args)

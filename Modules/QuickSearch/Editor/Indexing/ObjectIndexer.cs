@@ -296,7 +296,13 @@ namespace UnityEditor.Search
         public void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string name, string value, bool saveKeyword, bool exact)
         {
             IndexProperty(documentIndex, name, value, saveKeyword, exact);
-            MapProperty(name, name, name, typeof(TProperty).Name, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
+            MapProperty(name, name, name, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
+        }
+
+        internal void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string name, string value, bool saveKeyword, bool exact, string keywordLabel, string keywordHelp)
+        {
+            IndexProperty(documentIndex, name, value, saveKeyword, exact);
+            MapProperty(name, keywordLabel, keywordHelp, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
         }
 
         /// <summary>
@@ -402,6 +408,30 @@ namespace UnityEditor.Search
             IndexProperties(documentIndex, p, recursive, maxDepth, s_IndexAllPropertiesFunc);
         }
 
+        internal static bool IsIndexableProperty(in SerializedPropertyType type)
+        {
+            switch (type)
+            {
+                // Unsupported property types:
+                case SerializedPropertyType.Generic:
+                case SerializedPropertyType.Bounds:
+                case SerializedPropertyType.BoundsInt:
+                case SerializedPropertyType.Rect:
+                case SerializedPropertyType.RectInt:
+                case SerializedPropertyType.Vector2Int:
+                case SerializedPropertyType.Vector3Int:
+                case SerializedPropertyType.LayerMask:
+                case SerializedPropertyType.AnimationCurve:
+                case SerializedPropertyType.Gradient:
+                case SerializedPropertyType.ExposedReference:
+                case SerializedPropertyType.ManagedReference:
+                case SerializedPropertyType.FixedBufferSize:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
         internal void IndexProperties(int documentIndex, in SerializedProperty p, bool recursive, int maxDepth, Func<SerializedProperty, bool> shouldContinueIterating)
         {
             using var _ = k_IndexPropertiesMarker.Auto();
@@ -409,7 +439,7 @@ namespace UnityEditor.Search
             while (next)
             {
                 var fieldName = GetFieldName(p.displayName);
-                if (p.propertyPath[p.propertyPath.Length - 1] != ']')
+                if (IsIndexableProperty(p.propertyType) && p.propertyPath[p.propertyPath.Length - 1] != ']')
                     IndexProperty(documentIndex, fieldName, p, maxDepth);
 
                 next = shouldContinueIterating(p) && p.NextVisible(ShouldIndexChildren(p, recursive));
@@ -504,8 +534,6 @@ namespace UnityEditor.Search
                     LogProperty(fieldName, p, p.quaternionValue.eulerAngles);
                     break;
                 case SerializedPropertyType.ObjectReference:
-                    if (!p.objectReferenceValue || string.IsNullOrEmpty(p.objectReferenceValue.name))
-                        return;
                     AddReference(documentIndex, fieldName, p.objectReferenceValue);
                     LogProperty(fieldName, p, p.objectReferenceValue);
                     break;
@@ -555,7 +583,11 @@ namespace UnityEditor.Search
         {
             using var _ = k_AddObjectReferenceMarker.Auto();
             if (!objRef)
+            {
+                if (settings.options.properties)
+                    IndexProperty(documentIndex, propertyName, "none", saveKeyword: false, exact: true);
                 return;
+            }
 
             var assetPath = SearchUtils.GetObjectPath(objRef);
             if (string.IsNullOrEmpty(assetPath))

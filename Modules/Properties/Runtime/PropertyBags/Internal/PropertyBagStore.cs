@@ -27,8 +27,6 @@ namespace Unity.Properties.Internal
     /// </remarks>
     static class PropertyBagStore
     {
-        private static ConcurrentQueue<JobHandle> s_Handles = new ConcurrentQueue<JobHandle>();
-
         internal struct TypedStore<TContainer>
         {
             public static IPropertyBag<TContainer> PropertyBag;
@@ -235,26 +233,6 @@ namespace Unity.Properties.Internal
 
             propertyBag = GetPropertyBag(value.GetType());
             return null != propertyBag;
-        }
-
-        internal static void AddJobToWaitQueue(JobHandle handle)
-        {
-            var handles = s_Handles ??= new ConcurrentQueue<JobHandle>();
-            handles.Enqueue(handle);
-        }
-
-        static void WaitForJobs()
-        {
-            if (s_Handles is not {Count: > 0})
-                return;
-
-            foreach (var handle in s_Handles)
-            {
-                if (!handle.IsCompleted)
-                    handle.Complete();
-            }
-
-            s_Handles.Clear();
         }
     }
 }

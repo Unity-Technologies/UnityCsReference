@@ -69,6 +69,14 @@ namespace UnityEditor.Search
             packages
         }
 
+        public enum LoadState
+        {
+            Loading,
+            Canceled,
+            Error,
+            Complete
+        }
+
         [Flags]
         enum ChangeStatus
         {
@@ -245,10 +253,11 @@ namespace UnityEditor.Search
 
         public ObjectIndexer index { get; internal set; }
         public bool loaded { get; private set; }
-        public bool ready => this && loaded && index != null && index.IsReady();
+        public bool ready => this && loaded && index != null && index.IsReady() && LoadingState == LoadState.Complete;
         public bool updating => m_UpdateTasks > 0 || !loaded || m_CurrentResolveTask != null || !ready;
         public bool needsUpdate => !m_UpdateQueue.IsEmpty;
         public string path => m_IndexSettingsPath ?? AssetDatabase.GetAssetPath(this);
+        public LoadState LoadingState { get; private set; } = LoadState.Loading;
 
         internal enum AfterPlayModeUpdate
         {
@@ -278,6 +287,7 @@ namespace UnityEditor.Search
 
         public SearchDatabase Reload(Settings settings)
         {
+            LoadingState = LoadState.Loading;
             loaded = false;
 
             using var writeLockScope = new TryWriteLockScope(m_ImmutableLock);
@@ -475,7 +485,10 @@ namespace UnityEditor.Search
         internal void OnEnable()
         {
             if (settings == null)
+            {
+                LoadingState = LoadState.Error;
                 return;
+            }
 
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
@@ -483,7 +496,10 @@ namespace UnityEditor.Search
             index = CreateIndexer(settings, path);
 
             if (settings.source == null)
+            {
+                LoadingState = LoadState.Error;
                 return;
+            }
 
             m_InstanceID = GetInstanceID();
 
@@ -508,7 +524,10 @@ namespace UnityEditor.Search
         private void LoadAsync()
         {
             if (!this)
+            {
+                LoadingState = LoadState.Error;
                 return;
+            }
 
             var backupIndexPath = GetBackupIndexPath(false);
             if (File.Exists(backupIndexPath))
@@ -545,8 +564,12 @@ namespace UnityEditor.Search
         private void Load()
         {
             if (!this || bytes == null || bytes.Length == 0)
+            {
+                LoadingState = LoadState.Error;
                 return;
+            }
 
+            LoadingState = LoadState.Loading;
             loaded = false;
             var loadTask = new Task("Load", $"Reading {name.ToLowerInvariant()} search index", (task, data) => WaitForReadComplete(task, data, AssignNewIndexAndSetup), this);
             loadTask.RunThread(() =>
@@ -565,6 +588,7 @@ namespace UnityEditor.Search
 
         private void IncrementalLoad(string indexPath)
         {
+            LoadingState = LoadState.Loading;
             loaded = false;
             var loadTask = new Task("Read", $"Loading {name.ToLowerInvariant()} search index", (task, data) => WaitForReadComplete(task, data, AssignNewIndexAndSetup), this);
             loadTask.RunThread(() =>
@@ -654,6 +678,8 @@ namespace UnityEditor.Search
                     else
                     {
                         // Check if the asset is still available (maybe it was deleted since last request)
+                        // TODO: What happens if exists and is still importing? I.e. it takes more than 10s to import? We should not
+                        // try to produce another artifact in that case.
                         var resolvedPath = AssetDatabase.GUIDToAssetPath(a.guid);
                         if (!string.IsNullOrEmpty(resolvedPath) && File.Exists(resolvedPath))
                         {
@@ -708,6 +734,8 @@ namespace UnityEditor.Search
             if (resolveTask?.Canceled() ?? false)
                 return;
 
+            // TODO: Can't use combineAutoResolve = true here, because we use WaitForReadComplete which might defer the resolver
+            // on another frame, and so the task still needs to be valid at that moment.
             ResolveArtifacts(CreateArtifacts(paths), null, resolveTask, true);
         }
 
@@ -821,6 +849,7 @@ namespace UnityEditor.Search
                 return;
             }
 
+            LoadingState = LoadState.Loading;
             m_CurrentResolveTask?.Cancel();
             m_CurrentResolveTask?.Dispose();
             m_CurrentResolveTask = ResolveArtifacts("Build", $"Building {name.ToLowerInvariant()} search index", (task, data) => WaitForReadComplete(task, data, OnArtifactsResolved));
@@ -831,7 +860,10 @@ namespace UnityEditor.Search
         {
             m_CurrentResolveTask = null;
             if (task.canceled || task.error != null)
+            {
+                LoadingState = task.canceled ? LoadState.Canceled : LoadState.Error;
                 return;
+            }
 
             index.ApplyFrom(data.combinedIndex);
             bytes = data.bytes;
@@ -847,7 +879,14 @@ namespace UnityEditor.Search
         {
             if (task.error != null)
             {
+                LoadingState = LoadState.Error;
                 Debug.LogException(task.error);
+                return;
+            }
+
+            if (data == null)
+            {
+                LoadingState = LoadState.Error;
                 return;
             }
 
@@ -859,9 +898,14 @@ namespace UnityEditor.Search
         private void Setup()
         {
             if (!this)
+            {
+                LoadingState = LoadState.Error;
                 return;
+            }
 
+            // Is it considered loaded if there are any pending updates?
             loaded = true;
+            LoadingState = LoadState.Complete;
             Log("Setup");
             indexLoaded?.Invoke(this);
             SearchMonitor.contentRefreshed -= OnContentRefreshed;

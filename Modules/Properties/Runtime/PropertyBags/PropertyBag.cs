@@ -79,18 +79,6 @@ namespace Unity.Properties
         {
             return PropertyBagStore.AllTypes;
         }
-
-        /// <summary>
-        /// Allows for <see cref="IPropertyBag"/> to be registered on a background thread while ensuring that the jobs will be completed before
-        /// the next call to <see cref="GetPropertyBag"/>.
-        /// </summary>
-        /// <param name="handle">The job handle to wait on.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [VisibleToOtherModules("UnityEditor.PropertiesModule")]
-        internal static void AddJobToWaitQueue(JobHandle handle)
-        {
-            PropertyBagStore.AddJobToWaitQueue(handle);
-        }
     }
 
     /// <summary>

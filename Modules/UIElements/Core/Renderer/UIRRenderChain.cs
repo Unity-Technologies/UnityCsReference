@@ -943,6 +943,7 @@ namespace UnityEngine.UIElements.UIR
         public bool localFlipsWinding;
         public bool localTransformScaleZero;
         public bool worldFlipsWinding;
+        public bool worldTransformScaleZero;
 
         public ClipMethod clipMethod; // Self
         public int childrenStencilRef;

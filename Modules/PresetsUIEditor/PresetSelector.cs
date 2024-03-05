@@ -248,7 +248,7 @@ namespace UnityEditor.Presets
                     presetContext.OnSelectionChanged?.Invoke(preset);
                 },
                 filterHandler: item => OnPresetFilter(presetContext, provider, item),
-                SearchViewFlags.CompactView
+                SearchViewFlags.CompactView | SearchViewFlags.OpenInTextMode
             );
 
             viewState.windowTitle = new GUIContent("Preset Selector");

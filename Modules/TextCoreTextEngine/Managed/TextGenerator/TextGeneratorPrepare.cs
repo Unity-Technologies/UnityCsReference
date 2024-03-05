@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Unity.Jobs.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 using UnityEngine.TextCore.LowLevel;
 
@@ -12,6 +13,7 @@ namespace UnityEngine.TextCore.Text
 {
     internal partial class TextGenerator
     {
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal void Prepare(TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             Profiler.BeginSample("TextGenerator.Prepare");

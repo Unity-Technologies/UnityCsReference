@@ -842,7 +842,15 @@ namespace UnityEngine.UIElements.UIR
 
         static void UpdateZeroScaling(VisualElement ve)
         {
-            ve.renderChainData.localTransformScaleZero = Math.Abs(ve.transform.scale.x * ve.transform.scale.y) < 0.001f;
+            bool transformScaleZero = Math.Abs(ve.transform.scale.x * ve.transform.scale.y) < 0.001f;
+            ve.renderChainData.localTransformScaleZero = transformScaleZero;
+
+            bool parentTransformScaleZero = false;
+            VisualElement parent = ve.hierarchy.parent;
+            if (parent != null)
+                parentTransformScaleZero = parent.renderChainData.worldTransformScaleZero;
+
+            ve.renderChainData.worldTransformScaleZero = parentTransformScaleZero | transformScaleZero;
         }
 
         static bool NeedsTransformID(VisualElement ve)

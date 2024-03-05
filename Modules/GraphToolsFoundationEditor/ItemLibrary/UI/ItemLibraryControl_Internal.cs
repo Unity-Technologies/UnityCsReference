@@ -568,7 +568,7 @@ namespace Unity.ItemLibrary.Editor
             var newText = m_SearchTextField.value + m_SuggestedCompletion;
             m_SearchTextField.value = newText;
             m_Text = newText;
-            m_SearchTextField.textInputBase.textElement.uitkTextHandle.Update();
+            m_SearchTextField.textInputBase.textElement.uitkTextHandle.ComputeSettingsAndUpdate();
             m_SearchTextField.textSelection.MoveTextEnd();
         }
     }
