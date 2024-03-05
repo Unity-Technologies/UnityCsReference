@@ -90,12 +90,11 @@ namespace UnityEditor
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern private static GameObject[] FindAllInstancesOfPrefab_internal([NotNull("NullExceptionObject")] GameObject prefabRoot, int sceneHandle);
+        extern private static MergeStatus GetMergeStatus(GameObject componentOrGameObject);
 
-        // Disconnects the prefab instance from its parent prefab.
-        [Obsolete("The concept of disconnecting Prefab instances has been deprecated.")]
-        [FreeFunction]
-        extern public static void DisconnectPrefabInstance(Object targetObject);
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern private static GameObject[] FindAllInstancesOfPrefab_internal([NotNull("NullExceptionObject")] GameObject prefabRoot, int sceneHandle);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
@@ -289,7 +288,7 @@ namespace UnityEditor
 
         // Returns true if the object is an instance of a prefab,
         // regardless of whether the instance is a regular prefab, a variant or model.
-        // Also returns true if disconnected, and if the asset is missing.
+        // Also returns if the asset is missing.
         // Is also true for prefab instances inside persistent prefab assets -
         // use IsPartOfNonAssetPrefabInstance to exclude those.
         [FreeFunction]
@@ -297,7 +296,7 @@ namespace UnityEditor
 
         // Returns true if the object is an instance of a prefab,
         // regardless of whether the instance is a regular prefab, a variant or model.
-        // Also returns true if disconnected, and if the asset is missing.
+        // Also returns true if the asset is missing.
         // Is false for prefab instances inside persistent prefab assets -
         // use IsPartOfPrefabInstance to include those.
         // Note that prefab instances in prefab mode are not assets/persistent since technically,
@@ -327,9 +326,6 @@ namespace UnityEditor
         // Examples are Model Prefabs and Prefabs in read-only folders.
         [FreeFunction]
         extern public static bool IsPartOfImmutablePrefab([NotNull] Object componentOrGameObject);
-
-        [FreeFunction]
-        extern public static bool IsDisconnectedFromPrefabAsset([NotNull] Object componentOrGameObject);
 
         [FreeFunction]
         extern public static bool IsPrefabAssetMissing([NotNull] Object instanceComponentOrGameObject);

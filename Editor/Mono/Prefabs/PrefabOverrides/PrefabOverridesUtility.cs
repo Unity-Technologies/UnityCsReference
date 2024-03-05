@@ -32,8 +32,6 @@ namespace UnityEditor.SceneManagement
             // that are not part of that source prefab objects component list (these must be added)
             TransformVisitor transformVisitor = new TransformVisitor();
             var modifiedObjects = new List<ObjectOverride>();
-            if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstance))
-                return modifiedObjects;
 
             Func<Transform, object, bool> checkMethod;
             if (includeDefaultOverrides)
@@ -89,9 +87,6 @@ namespace UnityEditor.SceneManagement
             // From root of instance traverse all child go and detect any components that are not part of that source prefab objects component list (these must be added)
             TransformVisitor transformVisitor = new TransformVisitor();
             var addedComponents = new List<AddedComponent>();
-            if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstance))
-                return addedComponents;
-
             transformVisitor.VisitPrefabInstanceTransforms(prefabInstanceRoot.transform, CheckForAddedComponents, addedComponents);
             return addedComponents;
         }
@@ -142,8 +137,6 @@ namespace UnityEditor.SceneManagement
 
             // From root of asset traverse all children and detect any Components that are not present on the instance object (these must be deleted)
             var removedComponents = new List<RemovedComponent>();
-            if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstance))
-                return removedComponents;
             TransformVisitor transformVisitor = new TransformVisitor();
             transformVisitor.VisitPrefabInstanceTransforms(prefabInstanceRoot.transform, CheckForRemovedComponents, removedComponents);
             return removedComponents;
@@ -154,8 +147,6 @@ namespace UnityEditor.SceneManagement
             ThrowExceptionIfNullOrNotPartOfPrefabInstance(prefabInstance);
 
             var removedComponents = new List<RemovedComponent>();
-            if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstance))
-                return removedComponents;
             CheckForRemovedComponents(prefabInstance.transform, removedComponents);
             return removedComponents;
         }
@@ -226,8 +217,6 @@ namespace UnityEditor.SceneManagement
             // From root instance traverse all children and detect any GameObjects that are not a prefab gameobject (these must be added)
             TransformVisitor transformVisitor = new TransformVisitor();
             var addedGameObjects = new List<AddedGameObject>();
-            if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstance))
-                return addedGameObjects;
 
             transformVisitor.VisitAndConditionallyEnterChildren(
                 prefabInstanceRoot.transform,

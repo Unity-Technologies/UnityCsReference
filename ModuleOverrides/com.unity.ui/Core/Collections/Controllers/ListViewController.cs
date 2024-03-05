@@ -44,7 +44,7 @@ namespace UnityEngine.UIElements
 
         public virtual bool NeedsDragHandle(int index)
         {
-            return !listView.sourceIncludesArraySize || index != 0;
+            return true;
         }
 
         public virtual void AddItems(int itemCount)

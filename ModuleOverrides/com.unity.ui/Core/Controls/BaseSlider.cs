@@ -387,7 +387,13 @@ namespace UnityEngine.UIElements
             if (Mathf.Abs(totalRange) < UIRUtility.k_Epsilon)
                 return;
 
-            float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos, totalRange)) / totalRange;
+            float normalizedDragElementPosition;
+
+            if (clamped)
+                normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos, totalRange)) / totalRange;
+            else
+                normalizedDragElementPosition = dragElementPos / totalRange;
+
             value = SliderLerpDirectionalUnclamped(lowValue, highValue, normalizedDragElementPosition);
         }
 

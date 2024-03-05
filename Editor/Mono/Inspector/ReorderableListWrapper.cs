@@ -57,11 +57,12 @@ namespace UnityEditorInternal
                 if (m_ReorderableList != null)
                 {
                     bool versionChanged = !SerializedProperty.VersionEquals(m_ReorderableList.serializedProperty, m_OriginalProperty);
+                    bool serializedObjectChanged = m_ReorderableList.serializedProperty.serializedObject.m_NativeObjectPtr != m_OriginalProperty.serializedObject.m_NativeObjectPtr;
 
                     m_ReorderableList.serializedProperty = m_OriginalProperty;
                     UpdatePrefabPatchState(m_OriginalProperty.serializedObject.targetObject);
 
-                    if (versionChanged || m_ArraySize != null && m_LastArraySize != m_ArraySize.intValue)
+                    if (versionChanged || serializedObjectChanged || m_ArraySize != null && m_LastArraySize != m_ArraySize.intValue)
                     {
                         m_ReorderableList.InvalidateCacheRecursive();
                         ReorderableList.InvalidateParentCaches(m_ReorderableList.serializedProperty.propertyPath);

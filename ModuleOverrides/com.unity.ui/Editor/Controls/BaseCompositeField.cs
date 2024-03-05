@@ -258,6 +258,10 @@ namespace UnityEditor.UIElements
 
         protected override void UpdateMixedValueContent()
         {
+            foreach (var field in m_Fields)
+            {
+                field.showMixedValue = showMixedValue;
+            }
         }
     }
 }

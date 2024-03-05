@@ -527,6 +527,25 @@ namespace UnityEngine.UIElements
             return referencePixelsPerUnit / pixelsPerUnit;
         }
 
+        internal static char[] s_Modifiers = new char[5] { '&', '%', '^', '#', '_' };
+
+        internal static string ParseMenuName(string menuName)
+        {
+            if (string.IsNullOrEmpty(menuName))
+                return string.Empty;
+
+            var displayValue = menuName.TrimEnd();
+            var separatorPos = displayValue.LastIndexOf(' ');
+            if (separatorPos > -1)
+            {
+                int modifierPos = Array.IndexOf(s_Modifiers, displayValue[separatorPos + 1]);
+                if (displayValue.Length > separatorPos + 1 && modifierPos > -1)
+                    displayValue = displayValue.Substring(0, separatorPos).TrimEnd();
+            }
+
+            return displayValue;
+        }
+
         internal static int m_InMemoryAssetsVersion { get; private set; } = 0;
 
         internal static void InMemoryAssetsHaveBeenChanged()

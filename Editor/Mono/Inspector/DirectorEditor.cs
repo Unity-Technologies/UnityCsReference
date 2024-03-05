@@ -42,6 +42,8 @@ namespace UnityEditor
         private SerializedProperty m_UpdateMethod;
         private SerializedProperty m_SceneBindings;
 
+        private bool m_DirtySceneBindings;
+
         private Texture    m_DefaultScriptContentTexture;
 
         private GUIContent m_BindingContent = new GUIContent();
@@ -93,14 +95,16 @@ namespace UnityEditor
         public override void OnInspectorGUI()
         {
             if (PlayableAssetOutputsChanged() || m_BindingItems.Count != m_SceneBindings.arraySize)
-                SynchronizeSceneBindings();
+            {
+                m_DirtySceneBindings = true;
+            }
 
             serializedObject.Update();
 
             if (PropertyFieldAsObject(m_PlayableAsset, Styles.PlayableText, typeof(PlayableAsset)))
             {
                 serializedObject.ApplyModifiedProperties();
-                SynchronizeSceneBindings();
+                m_DirtySceneBindings = true;
 
                 // some editors (like Timeline) needs to repaint when the playable asset changes
                 InternalEditorUtility.RepaintAllViews();
@@ -135,7 +139,9 @@ namespace UnityEditor
                 DoDirectorBindingInspector();
 
             if (serializedObject.ApplyModifiedProperties())
-                SynchronizeSceneBindings();
+            {
+                m_DirtySceneBindings = true;
+            }
         }
 
         private bool PlayableAssetOutputsChanged()
@@ -164,6 +170,11 @@ namespace UnityEditor
 
         private void DoDirectorBindingInspector()
         {
+            if (m_SceneBindings.isExpanded)
+            {
+                SynchronizeSceneBindings();
+            }
+
             EditorGUILayout.BeginHorizontal();
 
             var rect = GUILayoutUtility.GetRect(EditorGUIUtility.fieldWidth, EditorGUIUtility.fieldWidth, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight,  EditorStyles.foldout);
@@ -202,8 +213,10 @@ namespace UnityEditor
 
         void SynchronizeSceneBindings()
         {
-            if (targets.Length > 1)
+            if (targets.Length > 1 || !m_DirtySceneBindings)
                 return;
+
+            m_DirtySceneBindings = false;
 
             var director = (PlayableDirector)target;
             var playableAsset = m_PlayableAsset.objectReferenceValue as PlayableAsset;

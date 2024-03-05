@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Pool;
+using UnityEditor.Utils;
 
 using UnityEditor.SceneManagement;
 
@@ -23,6 +24,7 @@ namespace UnityEditor.Search
     public static class SearchUtils
     {
         internal static readonly char[] KeywordsValueDelimiters = new[] { ':', '=', '<', '>', '!', '|' };
+        private static readonly char[] k_AdbInvalidCharacters = {'/', '?', '<', '>', '\\', ':', '*', '|', '"' };
 
         /// <summary>
         /// Separators used to split an entry into indexable tokens.
@@ -547,6 +549,8 @@ namespace UnityEditor.Search
                     icon: GetTypeIcon(typeof(MonoScript)), data: typeof(MonoScript), type: blockType, priority: priority, color: QueryColors.type);
                 yield return new SearchProposition(category: "Types", label: "Scenes", replacement: "t:scene",
                     icon: GetTypeIcon(typeof(SceneAsset)), data: typeof(SceneAsset), type: blockType, priority: priority, color: QueryColors.type);
+                yield return new SearchProposition(category: "Types", label: "Presets", replacement: "t:preset",
+                    icon: GetTypeIcon(typeof(Presets.Preset)), data: typeof(Presets.Preset), type: blockType, priority: priority, color: QueryColors.type);
             }
 
             if (!s_BaseTypes.TryGetValue(typeof(T), out var types))
@@ -1065,6 +1069,49 @@ namespace UnityEditor.Search
         internal static ISearchView OpenWithContextualProvider(params string[] providerIds)
         {
             return OpenWithContextualProvider(null, providerIds, SearchFlags.OpenContextual);
+        }
+
+        internal static string RemoveInvalidChars(string filename)
+        {
+            filename = string.Concat(filename.Split(Paths.invalidFilenameChars));
+            if (filename.Length > 0 && !char.IsLetterOrDigit(filename[0]))
+                filename = filename.Substring(1);
+            return filename;
+        }
+
+        internal static bool ValidateAssetPath(ref string path, string requiredExtensionWithDot, out string errorMessage)
+        {
+            if (!Paths.IsValidAssetPath(path, requiredExtensionWithDot, out errorMessage))
+            {
+                errorMessage = $"Save Search Query has failed. {errorMessage}";
+                return false;
+            }
+            path = Utils.CleanPath(path);
+            var fileName = Path.GetFileName(path);
+
+            // On Mac Path.GetInvalidFileNameChars() doesn't include <,> but these characters are invalid for ADB.
+            if (fileName.IndexOfAny(k_AdbInvalidCharacters) >= 0)
+            {
+                errorMessage = $"Filename has invalid characters.";
+                return false;
+            }
+
+            var directory = Utils.CleanPath(Path.GetDirectoryName(path));
+            if (!System.IO.Directory.Exists(directory))
+            {
+                errorMessage = $"Directory does not exists {directory}";
+                return false;
+            }
+
+            if (!Utils.IsPathUnderProject(path))
+            {
+                errorMessage = $"Path is not under the project or packages: {path}";
+                return false;
+            }
+
+            path = Utils.GetPathUnderProject(path);
+
+            return true;
         }
 
         internal static ISearchView OpenWithContextualProvider(string searchQuery, string[] providerIds, SearchFlags flags, string topic = null, bool useExplicitProvidersAsNormalProviders = false)

@@ -1734,8 +1734,7 @@ namespace UnityEditor.SceneManagement
         Texture2D DeterminePrefabFileIconFromInstanceRootGameObject()
         {
             bool partOfInstance = PrefabUtility.IsPartOfNonAssetPrefabInstance(prefabContentsRoot);
-            bool disconnected = PrefabUtility.GetPrefabInstanceStatus(prefabContentsRoot) == PrefabInstanceStatus.Disconnected;
-            if (partOfInstance && !disconnected)
+            if (partOfInstance)
                 return Icons.prefabVariantIcon;
             return Icons.prefabIcon;
         }

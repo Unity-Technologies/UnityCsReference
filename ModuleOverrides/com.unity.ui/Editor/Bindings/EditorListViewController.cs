@@ -77,12 +77,6 @@ namespace UnityEditor.UIElements.Bindings
             {
                 var index = indices[i];
 
-                if (view.sourceIncludesArraySize)
-                {
-                    //we must offset everything by 1
-                    index--;
-                }
-
                 serializedObjectList.RemoveAt(index, listCount);
                 listCount--;
             }
@@ -93,12 +87,6 @@ namespace UnityEditor.UIElements.Bindings
 
         public override void RemoveItem(int index)
         {
-            if (view.sourceIncludesArraySize)
-            {
-                //we must offset everything by 1
-                index--;
-            }
-
             using (ListPool<int>.Get(out var indices))
             {
                 indices.Add(index);
@@ -113,13 +101,6 @@ namespace UnityEditor.UIElements.Bindings
 
         public override void Move(int srcIndex, int destIndex)
         {
-            if (view.sourceIncludesArraySize)
-            {
-                //we must offset everything by 1
-                srcIndex--;
-                destIndex--;
-            }
-
             serializedObjectList.Move(srcIndex, destIndex);
             serializedObjectList.ApplyChanges();
             RaiseItemIndexChanged(srcIndex, destIndex);

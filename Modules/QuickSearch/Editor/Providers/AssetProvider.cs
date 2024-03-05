@@ -511,9 +511,16 @@ namespace UnityEditor.Search.Providers
 
                 while (!db.ready)
                 {
-                    if (!db || cancelToken.IsCancellationRequested || context.options.HasAny(SearchFlags.Synchronous))
+                    if (!db || cancelToken.IsCancellationRequested || db.LoadingState == SearchDatabase.LoadState.Error || db.LoadingState == SearchDatabase.LoadState.Canceled)
                         yield break;
-                    yield return null;
+                    if (context.options.HasAny(SearchFlags.Synchronous))
+                    {
+                        Dispatcher.ProcessOne();
+                    }
+                    else
+                    {
+                        yield return null;
+                    }
                 }
             }
 

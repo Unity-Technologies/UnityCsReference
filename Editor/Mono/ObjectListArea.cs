@@ -227,7 +227,7 @@ namespace UnityEditor
         internal void InitForSearch(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, Func<string, int> assetToInstanceId, SearchService.SearchSessionOptions searchSessionOptions)
         {
             var searchQuery = searchFilter.originalText;
-            if (string.IsNullOrEmpty(searchQuery))
+            if (!string.IsNullOrEmpty(searchQuery))
                 searchQuery = searchFilter.FilterToSearchFieldString();
 
             // Override Asset search here. For GameObjects, it is done in CachedFilteredHierarchy.cs

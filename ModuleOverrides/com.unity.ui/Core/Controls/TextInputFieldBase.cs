@@ -359,6 +359,9 @@ namespace UnityEngine.UIElements
             //     the input, and we put it back when the BlurEvent is received.
             else if (evt.eventTypeId == FocusInEvent.TypeId())
             {
+                if (showMixedValue)
+                    textInputBase.text = "";
+
                 if (evt.leafTarget == this || evt.leafTarget == labelElement)
                 {
                     m_VisualInputTabIndex = visualInput.tabIndex;
@@ -375,6 +378,9 @@ namespace UnityEngine.UIElements
             }
             else if (evt.eventTypeId == BlurEvent.TypeId())
             {
+                if (showMixedValue)
+                    UpdateMixedValueContent();
+
                 delegatesFocus = true;
 
                 if (evt.leafTarget == this || evt.leafTarget == labelElement)
@@ -421,12 +427,13 @@ namespace UnityEngine.UIElements
         {
             if (showMixedValue)
             {
-                text = mixedValueString;
+                textInputBase.text = mixedValueString;
                 AddToClassList(mixedValueLabelUssClassName);
                 visualInput?.AddToClassList(mixedValueLabelUssClassName);
             }
             else
             {
+                textInputBase.UpdateTextFromValue();
                 visualInput?.RemoveFromClassList(mixedValueLabelUssClassName);
                 RemoveFromClassList(mixedValueLabelUssClassName);
             }

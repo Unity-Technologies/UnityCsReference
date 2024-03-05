@@ -314,7 +314,11 @@ namespace UnityEditor.UIElements
 
                 if (evt.eventTypeId == BlurEvent.TypeId())
                 {
-                    if (string.IsNullOrEmpty(text))
+                    if (textValueFieldParent.showMixedValue)
+                    {
+                        textValueFieldParent.UpdateMixedValueContent();
+                    }
+                    else if (string.IsNullOrEmpty(text))
                     {
                         // Make sure that empty field gets the default value
                         textValueFieldParent.value = default(TValueType);
@@ -330,8 +334,7 @@ namespace UnityEditor.UIElements
                 {
                     if (textValueFieldParent.showMixedValue)
                     {
-                        textValueFieldParent.value = default(TValueType);
-                        UpdateTextFromValue();
+                        textValueFieldParent.textInputBase.text = "";
                     }
                 }
             }

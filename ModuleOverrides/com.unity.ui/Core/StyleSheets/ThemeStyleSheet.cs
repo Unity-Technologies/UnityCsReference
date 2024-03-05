@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a style sheet that's assembled from other style sheets.
     /// </summary>
+    [HelpURL("UIE-tss")]
     [Serializable]
     public class ThemeStyleSheet : StyleSheet
     {

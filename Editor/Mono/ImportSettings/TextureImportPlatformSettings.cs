@@ -142,6 +142,15 @@ namespace UnityEditor
         public static BuildPlatform[] GetBuildPlayerValidPlatforms()
         {
             List<BuildPlatform> validPlatforms = BuildPlatforms.instance.GetValidPlatforms();
+
+            // The Dedicated Server is a subtarget of Standalone, textures are generally stripped from server builds,
+            // so overriding the texture settings for the Dedicated Server is a rare case that doesn't add much value.
+            // Supporting texture overrides for Dedicated Server is possible, but as importer dependencies cannot distinguish
+            // today between Standalone-Server and Standalone-Non-Server, such support means that textures would reimport on
+            // switching, for instance, between Standalone-Win and Standalon-OSX. That would represent a performance regression
+            // and so, we have opted to not support texture overrides for Dedicated Server.
+            validPlatforms.Remove(BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(NamedBuildTarget.Server));
+            
             return validPlatforms.ToArray();
         }
 
