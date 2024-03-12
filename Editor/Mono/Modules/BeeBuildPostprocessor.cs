@@ -347,7 +347,7 @@ namespace UnityEditor.Modules
                 ToolChainPath = toolchainPath,
                 RelativeDataPath = relativeDataPath,
                 ExtraTypes = extraTypesFile?.ToString(),
-                GenerateUsymFile = PlayerSettings.GetIl2CppStacktraceInformation(NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(args.target))) == Il2CppStacktraceInformation.MethodFileLineNumber,
+                GenerateUsymFile = PlayerSettings.GetIl2CppStacktraceInformation(namedBuildTarget) == Il2CppStacktraceInformation.MethodFileLineNumber,
                 UsymtoolPath = GetUsymtoolPath(),
             };
         }

@@ -59,7 +59,11 @@ namespace UnityEditor
                 {
                     s_DefaultTextSettings = EditorGUIUtility.Load(s_DefaultEditorTextSettingPath) as EditorTextSettings;
                     if (s_DefaultTextSettings)
+                    {
                         UpdateLocalizationFontAsset();
+                        UpdateDefaultTextStyleSheet();
+                        GUISkin.m_SkinChanged += UpdateDefaultTextStyleSheet;
+                    }
                 }
 
                 return s_DefaultTextSettings;
@@ -99,6 +103,13 @@ namespace UnityEditor
                 defaultTextSettings.emojiFallbackTextAssets.Add(emojiFallback);
         }
 
+        internal static void UpdateDefaultTextStyleSheet()
+        {
+            s_DefaultTextSettings.defaultStyleSheet = EditorGUIUtility.Load(EditorGUIUtility.skinIndex == EditorResources.darkSkinIndex ? s_DarkEditorTextStyleSheetPath : s_LightEditorTextStyleSheetPath) as TextStyleSheet;
+        }
+
         internal static readonly string s_DefaultEditorTextSettingPath = "UIPackageResources/Editor Text Settings.asset";
+        internal static readonly string s_DarkEditorTextStyleSheetPath = "UIPackageResources/Dark Editor Text StyleSheet.asset";
+        internal static readonly string s_LightEditorTextStyleSheetPath = "UIPackageResources/Light Editor Text StyleSheet.asset";
     }
 }

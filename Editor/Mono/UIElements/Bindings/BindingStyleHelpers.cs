@@ -405,6 +405,13 @@ namespace UnityEditor.UIElements
             e.StopImmediatePropagation();
         }
 
+        internal static void RegisterRightClickMenu(Label field, SerializedProperty property)
+        {
+            field.userData = property.Copy();
+            field.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled, TrickleDown.TrickleDown);
+            field.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
+        }
+
         internal static void RegisterRightClickMenu<TValue>(BaseField<TValue> field, SerializedProperty property)
         {
             field.userData = property.Copy();

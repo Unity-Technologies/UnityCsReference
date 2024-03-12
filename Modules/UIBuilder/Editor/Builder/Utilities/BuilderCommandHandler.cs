@@ -335,10 +335,9 @@ namespace Unity.UI.Builder
         bool DeleteElement(VisualElement element)
         {
             if (BuilderSharedStyles.IsSelectorsContainerElement(element) ||
-                BuilderSharedStyles.IsStyleSheetElement(element) ||
                 BuilderSharedStyles.IsDocumentElement(element) ||
                 !element.IsLinkedToAsset() ||
-                (!BuilderSharedStyles.IsSelectorElement(element) && !element.IsPartOfActiveVisualTreeAsset(m_PaneWindow.document)))
+                (!BuilderSharedStyles.IsSelectorElement(element) && !element.IsPartOfActiveVisualTreeAsset(m_PaneWindow.document) && !BuilderSharedStyles.IsStyleSheetElement(element)))
                 return false;
 
             if (BuilderSharedStyles.IsSelectorElement(element))
@@ -350,9 +349,24 @@ namespace Unity.UI.Builder
                 var selectorStr = BuilderSharedStyles.GetSelectorString(element);
                 styleSheet.RemoveSelector(selectorStr);
 
-                element.RemoveFromHierarchy();
+                // If we are deleting multiple items then its possible that a previous
+                // delete recreated the explorer panel and this element is no longer valid.
+                // In that case, we force an update with OnEnableAfterAllSerialization.
+                if (element.panel == null)
+                {
+                    m_PaneWindow.OnEnableAfterAllSerialization();
+                }
+                else
+                {
+                    element.RemoveFromHierarchy();
+                }
                 m_Selection.NotifyOfHierarchyChange();
 
+                return true;
+            }
+            else if (BuilderSharedStyles.IsStyleSheetElement(element))
+            {
+                BuilderStyleSheetsUtilities.RemoveUSSFromAsset(m_PaneWindow, m_Selection, element);
                 return true;
             }
 

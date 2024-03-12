@@ -540,7 +540,7 @@ namespace UnityEngine.UIElements
             {
                 if (contentOffset >= viewportMaxOffset)
                     break;
-            
+
                 contentOffset += GetExpectedItemHeight(i);
 
                 var item = m_ActiveItems[activeIndex++];
@@ -580,7 +580,7 @@ namespace UnityEngine.UIElements
                     if (firstVisiblePadding < serializedData.scrollOffset.y)
                         break;
                 }
-            
+
                 m_ActiveItems.InsertRange(0, inserting);
                 m_ScrollInsertionList.Clear();
             }
@@ -635,7 +635,7 @@ namespace UnityEngine.UIElements
                     CycleItems(anchoredIndex);
                     ScheduleFill();
                 }
-                
+
                 firstVisibleIndex = anchoredIndex;
                 itemOffset = anchorOffset;
             }
@@ -749,7 +749,7 @@ namespace UnityEngine.UIElements
             m_ScheduledItem.Pause();
             m_ScheduledItem.Resume();
         }
-        
+
         void ScheduleScroll()
         {
             if (m_ScrollScheduledItem == null)
@@ -832,19 +832,39 @@ namespace UnityEngine.UIElements
             if (lastIndex < 0)
                 return 0;
 
-            if (m_ContentHeightCache.TryGetValue(lastIndex, out var height))
+            var draggedIndex = GetDraggedIndex();
+
+            float GetContentHeightFromCachedHeight(int index, in ContentHeightCacheInfo heightInfo)
             {
                 // Make sure we don't include the dragged item height.
-                var draggedIndex = GetDraggedIndex();
-                if (draggedIndex >= 0 && lastIndex >= draggedIndex)
+                if (draggedIndex >= 0 && index >= draggedIndex)
                 {
-                    return height.sum + (lastIndex - height.count + 1) * defaultExpectedHeight - m_DraggedItem.rootElement.layout.height;
+                    return heightInfo.sum + (index - heightInfo.count + 1) * defaultExpectedHeight - m_DraggedItem.rootElement.layout.height;
                 }
 
-                return height.sum + (lastIndex - height.count + 1) * defaultExpectedHeight;
+                return heightInfo.sum + (index - heightInfo.count + 1) * defaultExpectedHeight;
             }
 
-            return GetContentHeightForIndex(lastIndex - 1) + GetExpectedItemHeight(lastIndex);
+            // We can skip a lot of work when there is a big jump past the last known cached index. We can use the default
+            // expected height for anything past that, without the need to iterate through the indices.
+            if (m_HighestCachedIndex <= lastIndex && m_ContentHeightCache.TryGetValue(m_HighestCachedIndex, out var highestHeightInfo))
+            {
+                return GetContentHeightFromCachedHeight(lastIndex, highestHeightInfo);
+            }
+
+            // Accumulate height down the indices until we find a node that has been cached.
+            var totalHeight = 0f;
+            for (var i = lastIndex; i >= 0; i--)
+            {
+                if (m_ContentHeightCache.TryGetValue(i, out var heightInfo))
+                {
+                    return totalHeight + GetContentHeightFromCachedHeight(i, heightInfo);
+                }
+
+                totalHeight += draggedIndex == i ? 0 : defaultExpectedHeight;
+            }
+
+            return totalHeight;
         }
 
         ContentHeightCacheInfo GetCachedContentHeight(int index)

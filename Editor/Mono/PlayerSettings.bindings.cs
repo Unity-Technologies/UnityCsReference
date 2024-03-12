@@ -914,46 +914,6 @@ namespace UnityEditor
             set;
         }
 
-        internal static readonly char[] defineSplits = new[] { ';', ',', ' ' };
-
-        internal static string[] ConvertScriptingDefineStringToArray(string defines)
-        {
-            return defines.Split(defineSplits, StringSplitOptions.RemoveEmptyEntries);
-        }
-
-        internal static string ConvertScriptingDefineArrayToString(string[] defines)
-        {
-            List<string> list = new List<string>();
-            foreach (var define in defines)
-            {
-                string[] split = define.Split(' ', ';');
-
-                // Split each define element, since there can be multiple defines added
-                foreach (var item in split)
-                {
-                    if (!string.IsNullOrEmpty(item))
-                    {
-                        list.Add(item);
-                    }
-                }
-            }
-
-            // Remove duplicates
-            defines = list.Distinct().ToArray();
-
-            // Join all defines to one string
-            var joined = new StringBuilder();
-            foreach (var define in defines)
-            {
-                if (joined.Length != 0)
-                    joined.Append(';');
-
-                joined.Append(define);
-            }
-
-            return joined.ToString();
-        }
-
         // TargetGroup no longer defines the entire build targets space. Now build targets are better
         // identified by a string key (wrapped into NamedBuildTarget), so all the following methods are being replaced.
 
@@ -963,7 +923,7 @@ namespace UnityEditor
 
         [Obsolete("Use GetScriptingDefineSymbols(NamedBuildTarget buildTarget, out string[] defines) instead")]
         public static void GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, out string[] defines) =>
-            defines = ConvertScriptingDefineStringToArray(GetScriptingDefineSymbolsForGroup(targetGroup));
+            defines = ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(GetScriptingDefineSymbolsForGroup(targetGroup));
 
         [Obsolete("Use SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string defines) instead")]
         public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string defines) =>
@@ -1066,13 +1026,13 @@ namespace UnityEditor
         public static string GetScriptingDefineSymbols(NamedBuildTarget buildTarget) =>
             GetScriptingDefineSymbolsInternal(buildTarget.TargetName);
         public static void GetScriptingDefineSymbols(NamedBuildTarget buildTarget, out string[] defines) =>
-            defines = ConvertScriptingDefineStringToArray(GetScriptingDefineSymbols(buildTarget));
+            defines = ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(GetScriptingDefineSymbols(buildTarget));
 
         // Set user-specified symbols for script compilation for the given build target group.
         public static void SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string defines)
         {
             if (!string.IsNullOrEmpty(defines))
-                defines = string.Join(";", ConvertScriptingDefineStringToArray(defines));
+                defines = string.Join(";", ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(defines));
 
             SetScriptingDefineSymbolsInternal(buildTarget.TargetName, defines);
         }
@@ -1082,7 +1042,7 @@ namespace UnityEditor
             if (defines == null)
                 throw new ArgumentNullException(nameof(defines));
 
-            SetScriptingDefineSymbols(buildTarget, ConvertScriptingDefineArrayToString(defines));
+            SetScriptingDefineSymbols(buildTarget, ScriptingDefinesHelper.ConvertScriptingDefineArrayToString(defines));
         }
 
         [NativeThrows]
