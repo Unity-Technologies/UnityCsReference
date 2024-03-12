@@ -1292,6 +1292,8 @@ namespace UnityEngine.UIElements
             {
                 sourceEvent.StopPropagation();
             }
+
+            focusController.IgnoreEvent(sourceEvent);
         }
 
         private protected virtual bool HandleItemNavigation(bool moveIn, bool altKey)

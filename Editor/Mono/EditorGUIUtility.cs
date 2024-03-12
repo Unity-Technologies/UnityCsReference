@@ -1824,6 +1824,11 @@ namespace UnityEditor
             return ObjectSelector.get.objectSelectorID;
         }
 
+        internal static string GetHyperlinkColorForSkin()
+        {
+            return skinIndex == EditorResources.darkSkinIndex ? "#40a0ff" : "#0000FF";
+        }
+
         // Enum for tracking what styles the editor uses
         internal enum EditorLook
         {

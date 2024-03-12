@@ -42,6 +42,13 @@ namespace UnityEditor.Analytics
         [NativeMethod("AddParameter")]
         private extern void AddUInt32(string name, uint value);
 
+        public void AddParameter(string name, string value)
+        {
+            AddParameterString(name, value);
+        }
+
+        private extern void AddParameterString(string name, string value);
+
         public void AddParameter(string name, int[] value)
         {
             AddParameterInt32Array(name, value);

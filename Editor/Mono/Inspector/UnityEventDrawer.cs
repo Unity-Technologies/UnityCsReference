@@ -279,6 +279,7 @@ namespace UnityEditorInternal
             var header = new Label();
             header.text = GetHeaderText();
             header.tooltip = property.tooltip;
+            RegisterRightClickMenu(header, property);
             header.AddToClassList(kHeaderClassName);
 
             var listView = CreateListView(property);
@@ -289,6 +290,46 @@ namespace UnityEditorInternal
 
             return listViewContainer;
         }
+
+        static void RegisterRightClickMenu(Label field, SerializedProperty property)
+        {
+            field.userData = property.Copy();
+            field.RegisterCallback<PointerUpEvent>(RightClickFieldMenuEvent, InvokePolicy.IncludeDisabled, TrickleDown.TrickleDown);
+            field.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
+        }
+
+        static void RightClickFieldMenuEvent(PointerUpEvent evt)
+        {
+            if (evt.button != (int)MouseButton.RightMouse)
+                return;
+
+            if (!(evt.target is VisualElement element))
+                return;
+
+            var property = element.userData as SerializedProperty;
+            if (property == null)
+                return;
+
+            var wasEnabled = GUI.enabled;
+            if (!element.enabledInHierarchy)
+                GUI.enabled = false;
+
+            var menu = EditorGUI.FillPropertyContextMenu(property, null, null, element);
+            GUI.enabled = wasEnabled;
+
+            if (menu == null)
+                return;
+
+            var menuRect = new Rect(evt.position, Vector2.zero);
+            menu.DropDown(menuRect);
+
+            evt.StopPropagation();
+        }
+
+        static void StopContextClickEvent(ContextClickEvent e)
+        {
+            e.StopImmediatePropagation();
+        }       
 
         private float GetElementHeight()
         {
