@@ -25,7 +25,7 @@ namespace UnityEngine.Networking
         internal IntPtr m_Ptr;
 
         [NativeMethod(IsThreadSafe = true)]
-        private extern void Release();
+        private extern void ReleaseFromScripting();
 
         [VisibleToOtherModules]
         internal DownloadHandler()
@@ -40,7 +40,7 @@ namespace UnityEngine.Networking
         {
             if (m_Ptr != IntPtr.Zero)
             {
-                Release();
+                ReleaseFromScripting();
                 m_Ptr = IntPtr.Zero;
             }
         }

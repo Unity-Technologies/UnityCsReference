@@ -73,9 +73,10 @@ namespace UnityEditor.VFX
     {
         public VFXLayoutElementDesc[] layout;
         public uint capacity;
-        public ComputeBufferType type;
+        public GraphicsBuffer.Target target;
         public uint size;
         public uint stride;
+        public ComputeBufferMode mode;
     }
 
     internal struct VFXTemporaryGPUBufferDesc

@@ -105,6 +105,7 @@ namespace UnityEngine.Rendering
             var materialsCount = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<short>(nativeData.materialsCount, nativeData.rendererGroupCount, Allocator.Invalid);
             var instancesOffset = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(null, 0, Allocator.Invalid);
             var instancesCount = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(null, 0, Allocator.Invalid);
+            var editorData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<GPUDrivenRendererEditorData>(nativeData.editorData, nativeData.rendererGroupCount, Allocator.Invalid);
 
             var invalidRendererGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.invalidRendererGroupID, nativeData.invalidRendererGroupIDCount, Allocator.Invalid);
 
@@ -139,6 +140,7 @@ namespace UnityEngine.Rendering
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref materialsCount, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref instancesOffset, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref instancesCount, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref editorData, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref invalidRendererGroupID, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref localToWorldMatrix, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref prevLocalToWorldMatrix, AtomicSafetyHandle.Create());
@@ -168,6 +170,7 @@ namespace UnityEngine.Rendering
                 materialsCount = materialsCount,
                 instancesOffset = instancesOffset,
                 instancesCount = instancesCount,
+                editorData = editorData,
                 invalidRendererGroupID = invalidRendererGroupID,
                 localToWorldMatrix = localToWorldMatrix,
                 prevLocalToWorldMatrix = prevLocalToWorldMatrix,
@@ -199,6 +202,7 @@ namespace UnityEngine.Rendering
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(materialsCount));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(instancesOffset));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(instancesCount));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(editorData));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(invalidRendererGroupID));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(localToWorldMatrix));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(prevLocalToWorldMatrix));
@@ -303,6 +307,13 @@ namespace UnityEngine.Rendering
 
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    internal struct GPUDrivenRendererEditorData
+    {
+        public ulong sceneCullingMask;
+    }
+
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct GPUDrivenRendererGroupDataNative
     {
         public int* rendererGroupID;
@@ -320,6 +331,7 @@ namespace UnityEngine.Rendering
         public short* materialsCount;
         public int* instancesOffset;
         public int* instancesCount;
+        public GPUDrivenRendererEditorData* editorData;
         public int rendererGroupCount;
 
         public int* invalidRendererGroupID;
@@ -476,6 +488,7 @@ namespace UnityEngine.Rendering
         // Used for indexing multiple instances per a renderer group.
         public NativeArray<int> instancesOffset;
         public NativeArray<int> instancesCount;
+        public NativeArray<GPUDrivenRendererEditorData> editorData;
 
         /// <summary>
         /// Invalid or disabled Render Group IDs.

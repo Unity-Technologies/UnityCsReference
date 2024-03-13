@@ -50,7 +50,7 @@ namespace UnityEditor.Build.Profile
             get
             {
                 // Active Build profile may be deleted from the project.
-                if (m_ActiveProfile != null && BuildProfileModuleUtil.IsModuleInstalled(m_ActiveProfile.moduleName, m_ActiveProfile.subtarget))
+                if (m_ActiveProfile != null && m_ActiveProfile.CanBuildLocally())
                     return m_ActiveProfile;
 
                 m_ActiveProfile = null;
@@ -175,12 +175,6 @@ namespace UnityEditor.Build.Profile
         internal static bool TryGetActiveOrClassicPlatformSettingsBase<T>(
             BuildTarget target, StandaloneBuildSubtarget subTarget, out T result) where T : BuildProfilePlatformSettingsBase
         {
-            if (!EditorUserBuildSettings.IsBuildProfileScriptingAvailable())
-            {
-                result = null;
-                return false;
-            }
-
             BuildProfile buildProfile = GetActiveOrClassicBuildProfile(target, subTarget);
             if (buildProfile != null && buildProfile.platformBuildProfile is T platformProfile)
             {
@@ -194,6 +188,11 @@ namespace UnityEditor.Build.Profile
 
         internal BuildProfile GetForClassicPlatform(BuildTarget target, StandaloneBuildSubtarget subTarget)
         {
+            if (!BuildProfileModuleUtil.IsStandalonePlatform(target))
+                subTarget = StandaloneBuildSubtarget.Default;
+            else if (subTarget == StandaloneBuildSubtarget.Default)
+                subTarget = StandaloneBuildSubtarget.Player;
+
             var key = GetKey(target, subTarget);
             return m_BuildModuleNameToClassicPlatformProfile.GetValueOrDefault(key);
         }
@@ -244,6 +243,34 @@ namespace UnityEditor.Build.Profile
             return result;
         }
 
+        /// <summary>
+        /// Sync the active build profile to EditorUserBuildSettings to ensure they are in a consistent state.
+        /// </summary>
+        void SyncActiveProfileToFallback()
+        {
+            if (!EditorUserBuildSettings.isBuildProfileAvailable)
+                return;
+
+            var buildProfile = activeProfile ?? GetForClassicPlatform(EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.standaloneBuildSubtarget);
+
+            if (buildProfile == null)
+            {
+                EditorUserBuildSettings.isBuildProfileAvailable = false;
+                return;
+            }
+
+            EditorUserBuildSettings.CopyFromBuildProfile(buildProfile);
+
+            string module = BuildTargetDiscovery.GetModuleNameForBuildTarget(buildProfile.buildTarget);
+            var extension = ModuleManager.GetBuildProfileExtension(module);
+            if (extension != null)
+            {
+                extension.CopyPlatformSettingsFromBuildProfile(buildProfile.platformBuildProfile);
+            }
+
+            EditorUserBuildSettings.isBuildProfileAvailable = false;
+        }
+
         void OnDisable()
         {
             Save();
@@ -256,10 +283,18 @@ namespace UnityEditor.Build.Profile
 
             if (sharedProfile != null)
                 SaveBuildProfileInProject(sharedProfile);
+
+            SyncActiveProfileToFallback();
+
+            EditorApplication.quitting -= SyncActiveProfileToFallback;
         }
 
         void OnEnable()
         {
+            EditorUserBuildSettings.isBuildProfileAvailable = true;
+            EditorApplication.quitting -= SyncActiveProfileToFallback;
+            EditorApplication.quitting += SyncActiveProfileToFallback;
+
             classicPlatformProfiles = new List<BuildProfile>();
 
             // Load platform build profiles from ProjectSettings folder.
@@ -282,9 +317,6 @@ namespace UnityEditor.Build.Profile
                     continue;
                 }
 
-                if (!BuildProfileModuleUtil.IsModuleInstalled(profileObj.moduleName, profileObj.subtarget))
-                    continue;
-
                 m_BuildModuleNameToClassicPlatformProfile.Add((profileObj.moduleName, profileObj.subtarget), profileObj);
                 classicPlatformProfiles.Add(profileObj);
             }
@@ -300,6 +332,21 @@ namespace UnityEditor.Build.Profile
             }
 
             instance.sharedProfile = sharedProfileObj;
+
+            var buildProfile = instance.activeProfile ?? GetForClassicPlatform(EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.standaloneBuildSubtarget);
+
+            // profile can be null if we're in the middle of creating classic profiles
+            if (buildProfile == null)
+                return;
+
+            EditorUserBuildSettings.CopyToBuildProfile(buildProfile);
+
+            string module = BuildTargetDiscovery.GetModuleNameForBuildTarget(buildProfile.buildTarget);
+            var extension = ModuleManager.GetBuildProfileExtension(module);
+            if (extension != null)
+            {
+                extension.CopyPlatformSettingsToBuildProfile(buildProfile.platformBuildProfile);
+            }
         }
 
         /// <summary>

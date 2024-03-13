@@ -21,7 +21,7 @@ namespace UnityEngine.Networking
         internal IntPtr m_Ptr;
 
         [NativeMethod(IsThreadSafe = true)]
-        private extern void Release();
+        private extern void ReleaseFromScripting();
 
         internal UploadHandler() {}
 
@@ -34,7 +34,7 @@ namespace UnityEngine.Networking
         {
             if (m_Ptr != IntPtr.Zero)
             {
-                Release();
+                ReleaseFromScripting();
                 m_Ptr = IntPtr.Zero;
             }
         }

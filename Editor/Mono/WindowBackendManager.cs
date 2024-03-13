@@ -51,6 +51,7 @@ namespace UnityEditor
         object visualTree { get; }
 
         void SizeChanged();
+        void OnBackingScaleFactorChanged();
         void EventInterestsChanged();
         void ResetPanelRenderingOnAssetChangeChanged();
     }

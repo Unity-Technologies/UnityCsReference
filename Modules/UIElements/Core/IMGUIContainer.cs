@@ -256,6 +256,7 @@ namespace UnityEngine.UIElements
             public bool enabled;
             public bool changed;
             public int displayIndex;
+            public float pixelsPerPoint;
         }
 
         private GUIGlobals m_GUIGlobals;
@@ -272,6 +273,7 @@ namespace UnityEngine.UIElements
             {
                 m_GUIGlobals.displayIndex = Event.current.displayIndex;
             }
+            m_GUIGlobals.pixelsPerPoint = GUIUtility.pixelsPerPoint;
         }
 
         private void RestoreGlobals()
@@ -286,6 +288,7 @@ namespace UnityEngine.UIElements
             {
                 Event.current.displayIndex = m_GUIGlobals.displayIndex;
             }
+            GUIUtility.pixelsPerPoint = m_GUIGlobals.pixelsPerPoint;
         }
 
         static readonly ProfilerMarker k_OnGUIMarker = new ProfilerMarker("OnGUI");
@@ -318,6 +321,10 @@ namespace UnityEngine.UIElements
             GUI.color = playModeTintColor;
             // From now on, Event.current is either evt or a copy of evt.
             // Since Event.current may change while being processed, we do not rely on evt below but use Event.current instead.
+
+
+            GUIUtility.pixelsPerPoint = scaledPixelsPerPoint;
+
 
             if (Event.current.type != EventType.Layout)
             {

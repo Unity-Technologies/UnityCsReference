@@ -1,4 +1,4 @@
-## Unity 2023.3.0b10 C# reference source code
+## Unity 6000.0.0b11 C# reference source code
 
 The C# part of the Unity engine and editor source code.
 May be used for reference purposes only.

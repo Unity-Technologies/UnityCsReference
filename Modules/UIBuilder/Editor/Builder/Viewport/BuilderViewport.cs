@@ -387,6 +387,9 @@ namespace Unity.UI.Builder
 
             var targetOffset = target == null ? Vector2.zero : m_Canvas.worldBound.min - target.worldBound.min;
 
+            // Adjust the offset in case the canvas is not at the origin.
+            targetOffset -= m_Canvas.localBound.position;
+
             // Scale the target zoom
             targetOffset /= zoomScale / targetZoom;
 

@@ -368,7 +368,7 @@ namespace UnityEditor.Build.Profile
             {
                 var platformSettingsBase = profile.platformBuildProfile;
                 if (platformSettingsBase == null)
-                    return;
+                    continue;
 
                 switch (name)
                 {

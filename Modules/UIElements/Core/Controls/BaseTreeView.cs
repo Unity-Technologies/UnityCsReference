@@ -14,6 +14,27 @@ using UnityEngine.Pool;
 namespace UnityEngine.UIElements
 {
     /// <summary>
+    /// A data structure for the tree view item expansion event.
+    /// </summary>
+    public class TreeViewExpansionChangedArgs
+    {
+        /// <summary>
+        /// The id of the item being expanded or collapsed. Returns -1 when expandAll() or collapseAll() is being called.
+        /// </summary>
+        public int id { get; set; }
+
+        /// <summary>
+        /// Indicates whether the item is expanded (true) or collapsed (false).
+        /// </summary>
+        public bool isExpanded { get; set; }
+
+        /// <summary>
+        /// Indicates whether the expandAllChildren or collapsedAllChildren is applied when expanding the item.
+        /// </summary>
+        public bool isAppliedToAllChildren { get; set; }
+    }
+
+    /// <summary>
     /// Base class for a tree view, a vertically scrollable area that links to, and displays, a list of items organized in a tree.
     /// </summary>
     public abstract class BaseTreeView : BaseVerticalCollectionView
@@ -131,6 +152,14 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Raised when an item is expanded or collapsed.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="TreeViewExpansionChangedArgs"/> will contain the expanded state of the item being modified.
+        /// </remarks>
+        public event Action<TreeViewExpansionChangedArgs> itemExpandedChanged;
+
+        /// <summary>
         /// Sets the root items to use with the default tree view controller.
         /// </summary>
         /// <remarks>
@@ -183,6 +212,7 @@ namespace UnityEngine.UIElements
             if (viewController != null)
             {
                 viewController.itemIndexChanged -= OnItemIndexChanged;
+                viewController.itemExpandedChanged -= OnItemExpandedChanged;
             }
 
             base.SetViewController(controller);
@@ -190,12 +220,18 @@ namespace UnityEngine.UIElements
             if (viewController != null)
             {
                 viewController.itemIndexChanged += OnItemIndexChanged;
+                viewController.itemExpandedChanged += OnItemExpandedChanged;
             }
         }
 
         void OnItemIndexChanged(int srcIndex, int dstIndex)
         {
             RefreshItems();
+        }
+
+        void OnItemExpandedChanged(TreeViewExpansionChangedArgs arg)
+        {
+            itemExpandedChanged?.Invoke(arg);
         }
 
         internal override ICollectionDragAndDropController CreateDragAndDropController() => new TreeViewReorderableDragAndDropController(this);
@@ -341,10 +377,11 @@ namespace UnityEngine.UIElements
         /// Removes an item of the tree if it can find it.
         /// </summary>
         /// <param name="id">The item id.</param>
+        /// <param name="rebuildTree">Whether we need to rebuild tree data. Set to false when doing multiple additions to save a few rebuilds.</param>
         /// <returns>If the item was removed from the tree.</returns>
-        public bool TryRemoveItem(int id)
+        public bool TryRemoveItem(int id, bool rebuildTree = true)
         {
-            if (viewController.TryRemoveItem(id))
+            if (viewController.TryRemoveItem(id, rebuildTree))
             {
                 RefreshItems();
                 return true;
@@ -365,29 +402,36 @@ namespace UnityEngine.UIElements
 
         private protected override bool HandleItemNavigation(bool moveIn, bool altPressed)
         {
-            var index = selectedIndex;
-            var hasChildren = viewController.HasChildrenByIndex(index);
-
             var selectionIncrement = 1;
-            if (moveIn)
+            var hasChanges = false;
+
+            foreach (var selectedId in selectedIds)
             {
-                if (hasChildren && !IsExpandedByIndex(index))
+                var id = viewController.GetIndexForId(selectedId);
+
+                if (!viewController.HasChildrenByIndex(id))
+                    break;
+
+                if (moveIn && !IsExpandedByIndex(id))
                 {
-                    ExpandItemByIndex(index, altPressed);
-                    return true;
+                    ExpandItemByIndex(id, altPressed);
+                    hasChanges = true;
+                }
+                else if (!moveIn && IsExpandedByIndex(id))
+                {
+                    CollapseItemByIndex(id, altPressed);
+                    hasChanges = true;
                 }
             }
-            else
-            {
-                if (hasChildren && IsExpandedByIndex(index))
-                {
-                    CollapseItemByIndex(index, altPressed);
-                    return true;
-                }
 
+            if (hasChanges)
+                return true;
+
+            if (!moveIn)
+            {
                 // Find the nearest ancestor with children in the tree and select it.
                 // If no ancestor is found, find the closest item with children before the current one.
-                var id = viewController.GetIdForIndex(index);
+                var id = viewController.GetIdForIndex(selectedIndex);
                 var ancestorId = viewController.GetParentId(id);
                 if (ancestorId != ReusableCollectionItem.UndefinedIndex)
                 {
@@ -399,8 +443,9 @@ namespace UnityEngine.UIElements
                 selectionIncrement = -1;
             }
 
+            bool hasChildren;
             // Find the next item with children in the tree and select it.
-            var selectionIndex = index;
+            var selectionIndex = selectedIndex;
             do
             {
                 selectionIndex += selectionIncrement;

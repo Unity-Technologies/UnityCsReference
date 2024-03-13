@@ -109,7 +109,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static EditorBuildSettingsScene[] GetActiveBuildProfileSceneList()
         {
-            if (BuildProfileContext.instance.activeProfile is null)
+            if (!EditorUserBuildSettings.isBuildProfileAvailable || BuildProfileContext.instance.activeProfile is null)
                 return null;
 
             return BuildProfileContext.instance.activeProfile.scenes;

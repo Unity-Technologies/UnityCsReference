@@ -64,7 +64,6 @@ namespace UnityEditor.Collaboration
             if (_enumerator == null)
                 return;
 
-
             try
             {
                 if (!_enumerator.MoveNext())

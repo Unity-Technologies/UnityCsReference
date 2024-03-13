@@ -316,5 +316,8 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         internal static extern bool inspectorUseIMGUIDefaultInspector { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool referencedClipsExactNaming { get; set; }
     }
 }

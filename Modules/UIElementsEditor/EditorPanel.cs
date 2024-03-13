@@ -46,6 +46,7 @@ namespace UnityEditor.UIElements
             standardShader = EditorShader;
             updateMaterial += OnUpdateMaterial;
             uiElementsBridge = new EditorUIElementsBridge();
+            UpdateScalingFromEditorWindow = true;
         }
 
         static void OnUpdateMaterial(Material mat)
@@ -60,6 +61,62 @@ namespace UnityEditor.UIElements
 
             var assetTracker = editorUpdater.GetUpdater(VisualTreeEditorUpdatePhase.AssetChange) as ILiveReloadSystem;
             panel.liveReloadSystem = assetTracker;
+        }
+
+        internal float? GetBackingScaleFactor()
+        {
+            return GetBackingScaleFactor(ownerObject);
+        }
+
+        float? GetBackingScaleFactor(object obj)
+        {
+            return obj switch
+            {
+                GUIView view => view.GetBackingScaleFactor(),
+                View view => GetBackingScaleFactor(view.parent), //MainView and SplitView are not GUIView
+                EditorWindow editorWindow => GetBackingScaleFactor(editorWindow?.m_Parent),
+                IEditorWindowModel ewm => GetBackingScaleFactor(ewm.window),
+                _ => null,
+            } ;
+        }
+
+        private void CheckPanelScaling()
+        {
+            // Can be disabled for setting a manual scale for testing
+            if (UpdateScalingFromEditorWindow)
+            {
+
+                //check that the scaling is up to date
+                var windowScaling = GetBackingScaleFactor();
+                if (windowScaling == null || windowScaling.Value == -1)
+                {
+                    Debug.Assert(windowScaling != null, "got -1 here!!" );
+                   // if we have -1, we were able to get to a GuiView, but the native call returned -1 because there is no containerWindow
+                   // if the windowScaling == null we were simply not able to get to a GuiView
+                   // in both cases, we want to update the scaling like the old behavior.
+                   pixelsPerPoint = GUIUtility.pixelsPerPoint;
+                }
+                else
+                {
+                    Debug.Assert(pixelsPerPoint == windowScaling.Value, $"Scaling mismatch between the EditorWindow ({windowScaling.Value}) and the Editor Panel {name} ({pixelsPerPoint}). OnBackingScaleFactorChangedInternal was probably not call upon scaling change");
+                    pixelsPerPoint = windowScaling.Value;// AKA silence the assert after the first occurence
+                }
+            }
+        }
+        public override void ValidateLayout()
+        {
+            CheckPanelScaling();
+            base.ValidateLayout();
+        }
+        public override void Repaint(Event e)
+        {
+            CheckPanelScaling();
+            base.Repaint(e);
+        }
+        public override void Render()
+        {
+            CheckPanelScaling();
+            base.Render();
         }
     }
 }

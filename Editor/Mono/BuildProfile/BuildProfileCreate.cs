@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.Build.Profile
 {
-    internal sealed partial class BuildProfile
+    public sealed partial class BuildProfile
     {
         [UsedImplicitly]
         internal static event Action<BuildProfile> onBuildProfileEnable;

@@ -131,6 +131,7 @@ namespace UnityEditorInternal
     [NativeHeader("Runtime/Utilities/FileUtilities.h")]
     [NativeHeader("Runtime/Utilities/LaunchUtilities.h")]
     [NativeHeader("Runtime/Utilities/UnityConfiguration.h")]
+    [NativeHeader("Runtime/Utilities/UnityGitConfiguration.h")]
     public partial class InternalEditorUtility
     {
         public extern static bool isHumanControllingUs
@@ -508,6 +509,9 @@ namespace UnityEditorInternal
 
         [FreeFunction("UnityConfig::GetUnityBuildNumericRevision")]
         extern public static int GetUnityRevision();
+
+        [FreeFunction("UnityConfig::GetUnityProductName")]
+        extern public static string GetUnityProductName();
 
         [FreeFunction("InternalEditorUtilityBindings::IsUnityBeta")]
         extern public static bool IsUnityBeta();

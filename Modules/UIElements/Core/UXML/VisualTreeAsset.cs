@@ -212,7 +212,7 @@ namespace UnityEngine.UIElements
                     }
                     else if (!string.IsNullOrEmpty(entry.path))
                     {
-                        var vta = Panel.LoadResource(entry.path, typeof(VisualTreeAsset), GUIUtility.pixelsPerPoint) as
+                        var vta = Panel.LoadResource(entry.path, typeof(VisualTreeAsset),1) as
                             VisualTreeAsset;
                         if (vta != null && !sent.Contains(entry.asset))
                         {
@@ -257,8 +257,7 @@ namespace UnityEngine.UIElements
                         foreach (var stylesheetPath in vea.stylesheetPaths)
                         {
                             var stylesheet =
-                                Panel.LoadResource(stylesheetPath, typeof(StyleSheet),
-                                    GUIUtility.pixelsPerPoint) as StyleSheet;
+                                Panel.LoadResource(stylesheetPath, typeof(StyleSheet), 1) as StyleSheet;
                             if (stylesheet != null && !sent.Contains(stylesheet))
                             {
                                 sent.Add(stylesheet);
@@ -1002,7 +1001,7 @@ namespace UnityEngine.UIElements
                 return entry.asset;
 
             string path = entry.path;
-            return Panel.LoadResource(path, typeof(VisualTreeAsset), GUIUtility.pixelsPerPoint) as VisualTreeAsset;
+            return Panel.LoadResource(path, typeof(VisualTreeAsset),1) as VisualTreeAsset;
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

@@ -848,7 +848,7 @@ namespace Unity.Hierarchy
         [FreeFunction("HierarchyViewModelBindings::GetIndicesWithoutAnyFlagsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern int GetIndicesWithoutAnyFlagsSpan(HierarchyNodeFlags flags, Span<int> outIndices);
 
-        #region Obsolete public APIs to remove in 2024 / Unity 7
+        #region Obsolete public APIs to remove in 2024
         [Obsolete("HasFlags is obsolete, please use HasAllFlags or HasAnyFlags instead", false)]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool HasFlags(HierarchyNodeFlags flags) => HasAllFlagsAny(flags);

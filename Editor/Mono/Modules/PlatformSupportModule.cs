@@ -390,6 +390,11 @@ namespace UnityEditor.Modules
         /// </summary>
         void CopyPlatformSettingsToBuildProfile(BuildProfilePlatformSettingsBase platformSettingsBase);
 
+        /// <summary>
+        /// Copy platform settings from build profile to platform specific setting asset.
+        /// </summary>
+        void CopyPlatformSettingsFromBuildProfile(BuildProfilePlatformSettingsBase platformSettings);
+
         void OnDisable();
     }
 

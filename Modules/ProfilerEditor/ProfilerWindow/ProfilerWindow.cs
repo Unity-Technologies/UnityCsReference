@@ -900,7 +900,7 @@ namespace UnityEditor
                     if (ProfilerDriver.enabled)
                         Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, $"Recording {GetRecordingStateName(connectionName)} has started...");
                     else
-                        Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "Recording has ended.\r\nClick <color=#40a0ff><link=\"openprofiler='true'\">here</link></color> to open the profiler window.");
+                        Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, $"Recording has ended.\r\nClick <color={EditorGUIUtility.GetHyperlinkColorForSkin()}><link=\"openprofiler='true'\">here</link></color> to open the profiler window.");
                 }
             }
         }

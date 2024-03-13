@@ -177,7 +177,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var previousEnabled = GUI.enabled;
 
             PackageManifest manifest = null;
-            if (m_Package?.state == PackageState.InDevelopment && (m_Version?.isInstalled ?? false))
+            if (m_Version?.HasTag(PackageTag.Custom) ?? false)
             {
                 var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString);
                 manifest = m_AssetDatabase.LoadAssetAtPath<PackageManifest>($"{packageInfo.assetPath}/package.json");

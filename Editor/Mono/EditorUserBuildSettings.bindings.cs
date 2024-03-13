@@ -1077,7 +1077,8 @@ namespace UnityEditor
             }
         }
 
-        internal static extern bool IsBuildProfileScriptingAvailable();
+        internal static extern bool isBuildProfileAvailable { get; set; }
+        internal static extern void CopyFromBuildProfile(ScriptableObject buildProfile);
         internal static extern void CopyToBuildProfile(ScriptableObject buildProfile);
     }
 }

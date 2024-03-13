@@ -667,6 +667,13 @@ namespace UnityEditor
         [FreeFunction("ModelImporterBindings::GetReferencedClips")]
         private extern static string[] INTERNAL_GetReferencedClips(ModelImporter self);
 
+        public static string[] GetReferencedClipsForModelPath(string modelPath)
+        {
+            return INTERNAL_GetReferencedClipsForModelPath(modelPath);
+        }
+        [FreeFunction("ModelImporterBindings::GetReferencedClipsForModelPath")]
+        private extern static string[] INTERNAL_GetReferencedClipsForModelPath(string modelPath);
+
         public extern bool isReadable
         {
             get;

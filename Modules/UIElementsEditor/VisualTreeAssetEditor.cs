@@ -93,6 +93,8 @@ namespace UnityEditor.UIElements
 
             var r = new Rect(0, 0, width, height);
             var viewportRect = GUIClip.UnclipToWindow(r); // Still in points, not pixels
+            m_Panel.pixelsPerPoint = 1;
+            m_Panel.UpdateScalingFromEditorWindow = false;
             m_Panel.visualTree.SetSize(viewportRect.size); // We will draw relative to a viewport covering the preview area, so draw at 0,0
             m_Panel.visualTree.IncrementVersion(VersionChangeType.Repaint);
 

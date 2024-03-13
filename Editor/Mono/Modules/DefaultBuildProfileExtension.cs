@@ -70,6 +70,10 @@ namespace UnityEditor.Modules
         {
         }
 
+        public virtual void CopyPlatformSettingsFromBuildProfile(BuildProfilePlatformSettingsBase platformSettings)
+        {
+        }
+
         public virtual void OnDisable()
         {
         }
@@ -441,7 +445,7 @@ namespace UnityEditor.Modules
         public virtual void ShowInternalPlatformBuildOptions()
         {
         }
-        
+
         /// Helper method for rendering an IMGUI popup over an enum
         /// serialized property.
         /// </summary>

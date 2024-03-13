@@ -45,10 +45,15 @@ namespace UnityEditor
 
     public class ApplicationTitleDescriptor
     {
+        [Obsolete("Do not create your own instance of ApplicationTitleDescriptor. Use the one provided by EditorApplication.updateMainWindowTitle instead.")]
         public ApplicationTitleDescriptor(string projectName, string unityVersion, string activeSceneName, string targetName, bool codeCoverageEnabled)
+            : this(projectName, "Unity", unityVersion, activeSceneName, targetName, codeCoverageEnabled) {}
+
+        internal ApplicationTitleDescriptor(string projectName, string unityProductName, string unityVersion, string activeSceneName, string targetName, bool codeCoverageEnabled)
         {
             title = "";
             this.projectName = projectName;
+            this.unityProductName = unityProductName;
             this.unityVersion = unityVersion;
             this.activeSceneName = activeSceneName;
             this.targetName = targetName;
@@ -57,6 +62,7 @@ namespace UnityEditor
 
         public string title;
         public string projectName { get; private set; }
+        public string unityProductName { get; private set; }
         public string unityVersion { get; private set; }
         public string activeSceneName { get; private set; }
         public string targetName { get; private set; }
@@ -319,7 +325,7 @@ namespace UnityEditor
                 title += $" - {desc.targetName}";
             }
 
-            title += $" - Unity {desc.unityVersion}";
+            title += $" - {desc.unityProductName} ({desc.unityVersion})";
 
             if (desc.codeCoverageEnabled)
             {
@@ -340,33 +346,26 @@ namespace UnityEditor
 
         internal static ApplicationTitleDescriptor GetApplicationTitleDescriptor()
         {
-            var activeSceneName = L10n.Tr("Untitled");
-            if (!string.IsNullOrEmpty(SceneManager.GetActiveScene().path))
-            {
-                activeSceneName = Path.GetFileNameWithoutExtension(SceneManager.GetActiveScene().path);
-            }
+            var activeSceneName = string.IsNullOrEmpty(SceneManager.GetActiveScene().path)
+                ? L10n.Tr("Untitled")
+                : Path.GetFileNameWithoutExtension(SceneManager.GetActiveScene().path);
 
-            ApplicationTitleDescriptor desc;
-            if (PreferencesProvider.useProjectPathInTitle)
-            {
-                desc = new ApplicationTitleDescriptor(
-                   Path.GetFullPath(Path.Combine(Application.dataPath, "..")),
-                   (Unsupported.IsSourceBuild() || Unsupported.IsDeveloperMode()) ? InternalEditorUtility.GetUnityDisplayVersion() : Application.unityVersion,
-                   activeSceneName,
-                   BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)),
-                   Coverage.enabled
-                );
-            }
-            else
-            {
-                desc = new ApplicationTitleDescriptor(
-                   GetDefaultProjectName(),
-                   (Unsupported.IsSourceBuild() || Unsupported.IsDeveloperMode()) ? InternalEditorUtility.GetUnityDisplayVersion() : Application.unityVersion,
-                   activeSceneName,
-                   BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)),
-                   Coverage.enabled
-                );
-            }
+            var unityVersion = Unsupported.IsSourceBuild() || Unsupported.IsDeveloperMode()
+                ? InternalEditorUtility.GetUnityDisplayVersion()
+                : Application.unityVersion;
+
+            var projectString = PreferencesProvider.useProjectPathInTitle
+                ? Path.GetFullPath(Path.Combine(Application.dataPath, ".."))
+                : GetDefaultProjectName();
+
+            var desc = new ApplicationTitleDescriptor(
+                projectString,
+                InternalEditorUtility.GetUnityProductName(),
+                unityVersion,
+                activeSceneName,
+                BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)),
+                Coverage.enabled
+            );
 
             desc.title = GetDefaultMainWindowTitle(desc);
 

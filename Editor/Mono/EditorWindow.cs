@@ -1436,6 +1436,7 @@ namespace UnityEditor
         {
             if(overlayCanvas != null)
                 overlayCanvas.Rebuild();
+
             OnBackingScaleFactorChanged();
         }
 

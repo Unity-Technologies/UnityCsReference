@@ -214,6 +214,7 @@ namespace UnityEditor.UIElements
                 m_Header = m_Footer = null;
                 m_EditorUsedInDecorators = null;
                 m_DecoratorsElement = null;
+                m_IsCulled = true;
                 Clear();
                 InitCulled(editors);
                 return;
@@ -228,6 +229,7 @@ namespace UnityEditor.UIElements
             {
                 m_EditorIndex = editorIndex;
                 m_EditorUsedInDecorators = null;
+                m_IsCulled = false;
                 Clear();
                 Init(editors);
                 return;

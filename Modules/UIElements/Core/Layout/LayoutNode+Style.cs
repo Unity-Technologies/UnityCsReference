@@ -125,11 +125,6 @@ partial struct LayoutNode
         }
     }
 
-    public float Flex
-    {
-        set => SetValue(ref Style.Flex, value);
-    }
-
     public float FlexGrow
     {
         get => Style.FlexGrow;

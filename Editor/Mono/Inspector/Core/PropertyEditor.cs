@@ -475,6 +475,13 @@ namespace UnityEditor
             return m_AllPropertyEditors.AsEnumerable();
         }
 
+        protected virtual void EnsureAppropriateTrackerIsInUse()
+        {
+            if (m_InspectorMode == InspectorMode.Normal)
+                m_Tracker = ActiveEditorTracker.sharedTracker;
+            else if (m_Tracker is null || m_Tracker.Equals(ActiveEditorTracker.sharedTracker))
+                m_Tracker = new ActiveEditorTracker();
+        }
 
         protected void SetMode(InspectorMode mode)
         {
@@ -485,7 +492,12 @@ namespace UnityEditor
                 // Clear the editors Element so that a real rebuild is done
                 editorsElement.Clear();
                 m_EditorElementUpdater.Clear();
-                tracker.inspectorMode = mode;
+
+                EnsureAppropriateTrackerIsInUse();
+
+                m_Tracker.inspectorMode = m_InspectorMode;
+                m_Tracker.ForceRebuild();
+
                 m_ResetKeyboardControl = true;
                 SceneView.SetActiveEditorsDirty(true);
             }
@@ -2547,6 +2559,8 @@ namespace UnityEditor
                     if (!(ed.target is ParticleSystemRenderer))
                     {
                         currentElement.ReinitCulled(newEditorsIndex, editors);
+                        if (!InspectorElement.disabledThrottling)
+                            m_EditorElementUpdater.Add(currentElement);
 
                         // We need to move forward as the current element is the culled one, so we're not really
                         // interested in it.
@@ -2563,6 +2577,8 @@ namespace UnityEditor
 
                 editors[newEditorsIndex].propertyViewer = this;
                 currentElement.Reinit(newEditorsIndex, editors);
+                if (!InspectorElement.disabledThrottling)
+                    m_EditorElementUpdater.Add(currentElement);
                 editorToElementMap[ed.target.GetInstanceID()] = currentElement;
                 ++newEditorsIndex;
                 ++previousEditorsIndex;
