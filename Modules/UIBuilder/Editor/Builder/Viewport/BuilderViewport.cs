@@ -361,6 +361,9 @@ namespace Unity.UI.Builder
 
             var targetOffset = target == null ? Vector2.zero : m_Canvas.worldBound.min - target.worldBound.min;
 
+            // Adjust the offset in case the canvas is not at the origin.
+            targetOffset -= m_Canvas.localBound.position;
+
             // Scale the target zoom
             targetOffset /= zoomScale / targetZoom;
 
@@ -403,7 +406,7 @@ namespace Unity.UI.Builder
         void OnPick(MouseDownEvent evt)
         {
             // Do not prevent zoom and pan
-            if (evt.button == 2 || (evt.actionKey && evt.altKey || (evt.button == (int)MouseButton.RightMouse && evt.altKey)))
+            if (evt.button == 2 || (evt.actionKey && evt.altKey || (evt.button == (int)MouseButton.RightMouse && evt.altKey)) || evt.button == 0 && evt.ctrlKey)
                 return;
 
             m_PickedElements.Clear();

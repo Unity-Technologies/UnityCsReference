@@ -275,6 +275,8 @@ namespace UnityEditor.Modules
 
         protected virtual string Il2CppLinkerFlagsFor(BuildPostProcessArgs args) => null;
 
+        protected virtual string Il2CppLinkerFlagsFileFor(BuildPostProcessArgs args) => null;
+
         protected virtual string Il2CppDataRelativePath(BuildPostProcessArgs args) => "Data";
 
         Il2CppConfig Il2CppConfigFor(BuildPostProcessArgs args)
@@ -295,6 +297,7 @@ namespace UnityEditor.Modules
             var toolchainPath = Il2CppToolchainPathFor(args);
             var compilerFlags = Il2CppCompilerFlagsFor(args);
             var linkerFlags = Il2CppLinkerFlagsFor(args);
+            var linkerFlagsFile = Il2CppLinkerFlagsFileFor(args);
             var relativeDataPath = Il2CppDataRelativePath(args);
 
             if (CrashReportingSettings.enabled)
@@ -343,6 +346,7 @@ namespace UnityEditor.Modules
                 AllowDebugging = allowDebugging,
                 CompilerFlags = compilerFlags,
                 LinkerFlags = linkerFlags,
+                LinkerFlagsFile = linkerFlagsFile,
                 SysRootPath = sysrootPath,
                 ToolChainPath = toolchainPath,
                 RelativeDataPath = relativeDataPath,

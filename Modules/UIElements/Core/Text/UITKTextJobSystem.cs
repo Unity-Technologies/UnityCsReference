@@ -111,6 +111,7 @@ namespace UnityEngine.UIElements
         {
             var textDatas = (List<ManagedJobData>)data;
             TextHandle.InitThreadArrays();
+            PanelTextSettings.InitializeDefaultPanelTextSettingsIfNull();
             TextHandle.currentTime = Time.realtimeSinceStartup;
 
             k_PrepareMainThreadMarker.Begin();
@@ -153,15 +154,11 @@ namespace UnityEngine.UIElements
             List<ManagedJobData> managedJobDatas = (List<ManagedJobData>)managedJobsHandle.Target;
             foreach (var textData in managedJobDatas)
             {
-                if (!textData.prepareSuccess)
-                {
-                    textData.visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings();
-                    textData.visualElement.uitkTextHandle.PrepareFontAsset();
-                }
+                if (textData.prepareSuccess)
+                    continue;
 
-                var fa = TextUtilities.GetFontAsset(textData.visualElement);
-                if (fa.m_CharacterLookupDictionary == null)
-                    fa.ReadFontAssetDefinition();
+                textData.visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings();
+                textData.visualElement.uitkTextHandle.PrepareFontAsset();
             }
 
             FontAsset.UpdateFontAssetsInUpdateQueue();

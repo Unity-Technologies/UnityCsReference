@@ -26,6 +26,7 @@ namespace Unity.UI.Builder
 
         internal struct TestAccess
         {
+            public ToggleButtonGroup buttonStrip;
             public BuilderObjectField dataSourceField;
             public TextField dataSourceTypeField;
             public TextField dataSourcePathField;
@@ -37,6 +38,7 @@ namespace Unity.UI.Builder
         // Note: They are internal only to be accessible in tests
         internal TestAccess testAccess => new()
         {
+            buttonStrip = m_ButtonStrip,
             dataSourceField = m_DataSourceField,
             dataSourceTypeField = m_DataSourceTypeField,
             dataSourcePathField = m_DataSourcePathField,
@@ -125,6 +127,8 @@ namespace Unity.UI.Builder
         public UxmlSerializedDataDescription uxmlSerializedDataDescription => bindingUxmlSerializedDataDescription ?? m_SerializedDataDescription;
 
         protected bool isBinding => bindingUxmlSerializedDataDescription != null;
+
+        private bool isShowingDataSource { get; set; } = true;
 
         /// <summary>
         /// Notifies attributes have changed.
@@ -239,12 +243,19 @@ namespace Unity.UI.Builder
             {
                 m_BindingsFoldout = new PersistedFoldout() { text = "Bindings", classList = { PersistedFoldout.unindentedUssClassName } };
 
-                m_ButtonStrip = new ToggleButtonGroup("Data Source");
+                m_ButtonStrip = new ToggleButtonGroup("Data Source")
+                {
+                    viewDataKey = isBinding ? "builder__binding-window__data-source-field" : "builder__inspector-header__data-source-field"
+                };
                 m_ButtonStrip.Add(new Button { text = "Object", style = { flexGrow = 1 }, tooltip = k_DataSourceObjectTooltip });
                 m_ButtonStrip.Add(new Button { text = "Type", style = { flexGrow = 1 }, tooltip = k_DataSourceTypeTooltip});
                 m_ButtonStrip.isMultipleSelection = false;
                 m_ButtonStrip.AddToClassList(ToggleButtonGroup.alignedFieldUssClassName);
                 m_ButtonStrip.RegisterValueChangedCallback(evt => SetSourceVisibility(evt.newValue[0]));
+
+                // Show Asset by default.
+                m_ButtonStrip.value = new ToggleButtonGroupState(0b01, 2);
+
                 m_BindingsFoldout.Add(m_ButtonStrip);
                 m_BindingsFoldout.Add(m_SourceWidgetContainer = new VisualElement() { style = { flexGrow = 1 } });
             }
@@ -279,9 +290,13 @@ namespace Unity.UI.Builder
             var attribute = uxmlSerializedDataDescription?.FindAttributeWithUxmlName(k_BindingAttr_DataSourceType) ?? FindAttribute(k_BindingAttr_DataSourceType);
             SetupStyleRow(styleRow, m_TypeFieldContainer, attribute);
 
-            // Show Asset by default.
-            m_ButtonStrip.value = new ToggleButtonGroupState(0b01, 2);
-            SetSourceVisibility(true);
+            // Set current value
+            m_ButtonStrip.value = isShowingDataSource
+                ? new ToggleButtonGroupState(0b01, 2)
+                : new ToggleButtonGroupState(0b10, 2);
+
+            // Force update visibility in case the value didn't change.
+            SetSourceVisibility(isShowingDataSource);
 
             if (isBinding)
             {
@@ -345,8 +360,10 @@ namespace Unity.UI.Builder
 
         void SetSourceVisibility(bool showAsset)
         {
+            isShowingDataSource = showAsset;
             m_AssetFieldContainer.style.display = showAsset ? DisplayStyle.Flex : DisplayStyle.None;
             m_TypeFieldContainer.style.display = showAsset ? DisplayStyle.None : DisplayStyle.Flex;
+            UpdateCompleter();
         }
 
         /// <inheritdoc/>
@@ -522,7 +539,7 @@ namespace Unity.UI.Builder
                 m_DataSourcePathCompleter.binding = binding as DataBinding;
             }
 
-            m_DataSourcePathCompleter.UpdateResults();
+            m_DataSourcePathCompleter.UpdateResults(isShowingDataSource);
         }
 
         void UpdateWarningBox()

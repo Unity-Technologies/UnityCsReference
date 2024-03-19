@@ -737,7 +737,12 @@ namespace UnityEditor.TextCore.Text
                         // Get list of characters that need to be packed and rendered to the atlas texture.
                         if (m_CharacterSetSelectionMode == 7 || m_CharacterSetSelectionMode == 8)
                         {
-                            List<uint> char_List = new List<uint>();
+                            // Ensure these characters are always added
+                            List<uint> char_List = new List<uint>()
+                            {
+                                9, // Space
+                                95 // Underline
+                            };
 
                             for (int i = 0; i < m_CharacterSequence.Length; i++)
                             {

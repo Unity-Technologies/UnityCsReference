@@ -18,6 +18,7 @@ namespace UnityEditor
 
         private readonly string k_PreviewName = "preview-container";
         internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
+        internal bool IsFloatingWindow => parent is { window.rootView: not null, window.showMode: not ShowMode.MainWindow };
         public void SetParentInspector(InspectorWindow inspector)
         {
             m_ParentInspectorWindow = inspector;

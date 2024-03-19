@@ -225,6 +225,12 @@ namespace UnityEngine.UIElements
             SetValueWithoutNotify(toggleButtonGroupState);
         }
 
+        internal override void OnViewDataReady()
+        {
+            base.OnViewDataReady();
+            UpdateButtonStates(value);
+        }
+
         protected override void UpdateMixedValueContent()
         {
             if (showMixedValue)

@@ -51,15 +51,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal static string GetServicesPackageGroupName(IPackage package)
         {
-            var packageGameServiceField = GetLatestEditorGameServiceField(package);
-            var hasServiceGroupingId = HasDynamicServiceGroupId(packageGameServiceField);
-            if (hasServiceGroupingId)
-            {
-                return GetDynamicServiceGroupId(packageGameServiceField);
-            }
-
+            // override order: editor s_GroupMap first, then service package upm groupId field if exist
             if (s_GroupMap == null || string.IsNullOrWhiteSpace(package.name) || !s_GroupMap.ContainsKey(package.name))
             {
+                var packageGameServiceField = GetLatestEditorGameServiceField(package);
+                var hasServiceGroupingId = HasDynamicServiceGroupId(packageGameServiceField);
+                if (hasServiceGroupingId)
+                {
+                    return GetDynamicServiceGroupId(packageGameServiceField);
+                }
+
                 return string.Empty;
             }
 
