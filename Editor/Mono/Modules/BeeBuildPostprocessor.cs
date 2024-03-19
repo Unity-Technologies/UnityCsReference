@@ -225,6 +225,11 @@ namespace UnityEditor.Modules
             return null;
         }
 
+        protected virtual string Il2CppLinkerFlagsFileFor(BuildPostProcessArgs args)
+        {
+            return null;
+        }
+
         protected virtual string Il2CppDataRelativePath(BuildPostProcessArgs args)
         {
             return "Data";
@@ -248,6 +253,7 @@ namespace UnityEditor.Modules
             var toolchainPath = Il2CppToolchainPathFor(args);
             var compilerFlags = Il2CppCompilerFlagsFor(args);
             var linkerFlags = Il2CppLinkerFlagsFor(args);
+            var linkerFlagsFile = Il2CppLinkerFlagsFileFor(args);
             var relativeDataPath = Il2CppDataRelativePath(args);
 
             if (CrashReportingSettings.enabled)
@@ -296,6 +302,7 @@ namespace UnityEditor.Modules
                 AllowDebugging = allowDebugging,
                 CompilerFlags = compilerFlags,
                 LinkerFlags = linkerFlags,
+                LinkerFlagsFile = linkerFlagsFile,
                 SysRootPath = sysrootPath,
                 ToolChainPath = toolchainPath,
                 RelativeDataPath = relativeDataPath,

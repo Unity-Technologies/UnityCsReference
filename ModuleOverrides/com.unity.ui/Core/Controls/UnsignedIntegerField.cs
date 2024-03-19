@@ -75,7 +75,7 @@ namespace UnityEngine.UIElements
         /// Constructor.
         /// </summary>
         /// <param name="maxLength">Maximum number of characters the field can take.</param>
-        public UnsignedIntegerField(string label, int maxLength = kMaxLengthNone)
+        public UnsignedIntegerField(string label, int maxLength = kMaxValueFieldLength)
             : base(label, maxLength, new UnsignedIntegerInput())
         {
             AddToClassList(ussClassName);

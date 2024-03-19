@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -182,6 +184,8 @@ namespace UnityEngine.UIElements
         internal static readonly string ussFoldoutDepthClassName = ussClassName + "--depth-";
         internal static readonly int ussFoldoutMaxDepth = 4;
 
+        private KeyboardNavigationManipulator m_NavigationManipulator;
+
         internal override void OnViewDataReady()
         {
             base.OnViewDataReady();
@@ -192,13 +196,47 @@ namespace UnityEngine.UIElements
             SetValueWithoutNotify(m_Value);
         }
 
+        private void Apply(KeyboardNavigationOperation op, EventBase sourceEvent)
+        {
+            if (Apply(op))
+            {
+                sourceEvent.StopPropagation();
+            }
+        }
+
+        private bool Apply(KeyboardNavigationOperation op)
+        {
+            switch (op)
+            {
+                case KeyboardNavigationOperation.Previous:
+                case KeyboardNavigationOperation.Next:
+                case KeyboardNavigationOperation.SelectAll:
+                case KeyboardNavigationOperation.Cancel:
+                case KeyboardNavigationOperation.Submit:
+                case KeyboardNavigationOperation.Begin:
+                case KeyboardNavigationOperation.End:
+                case KeyboardNavigationOperation.PageDown:
+                case KeyboardNavigationOperation.PageUp:
+                    break; // Allow focus to move outside the Foldout
+                case KeyboardNavigationOperation.MoveRight:
+                    SetValueWithoutNotify(true);
+                    return true;
+                case KeyboardNavigationOperation.MoveLeft:
+                    SetValueWithoutNotify(false);
+                    return true;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(op), op, null);
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Constructs a Foldout element.
         /// </summary>
         public Foldout()
         {
             AddToClassList(ussClassName);
-
             m_Toggle = new Toggle();
 
             m_Container = new VisualElement()
@@ -214,13 +252,13 @@ namespace UnityEngine.UIElements
             m_Toggle.AddToClassList(toggleUssClassName);
             m_Toggle.visualInput.AddToClassList(inputUssClassName);
             m_Toggle.visualInput.Q(className: Toggle.checkmarkUssClassName).AddToClassList(checkmarkUssClassName);
+            m_Toggle.AddManipulator(m_NavigationManipulator = new KeyboardNavigationManipulator(Apply));
             hierarchy.Add(m_Toggle);
 
             m_Container.AddToClassList(contentUssClassName);
             hierarchy.Add(m_Container);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-
             SetValueWithoutNotify(true);
         }
 

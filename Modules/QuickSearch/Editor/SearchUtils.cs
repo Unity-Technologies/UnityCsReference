@@ -683,35 +683,69 @@ namespace UnityEditor.Search
             return EnumeratePropertyKeywords(objs).Select(k => CreateKeywordProposition(k));
         }
 
+        internal static void IterateSupportedProperties(SerializedObject so, Action<SerializedProperty> handler)
+        {
+            var p = so.GetIterator();
+            var next = p.NextVisible(true);
+            while (next)
+            {
+                var supported = SearchUtils.IsPropertyTypeSupported(p);
+                if (supported)
+                {
+                    handler(p);
+                }
+                next = p.NextVisible(IterateSupportedProperties_EnterChildren(p));
+            }
+        }
+
+        internal static bool IterateSupportedProperties_EnterChildren(SerializedProperty p)
+        {
+            switch (p.propertyType)
+            {
+                case SerializedPropertyType.AnimationCurve:
+                case SerializedPropertyType.Bounds:
+                case SerializedPropertyType.Gradient:
+                case SerializedPropertyType.Vector3Int:
+                case SerializedPropertyType.Vector2Int:
+                case SerializedPropertyType.Vector2:
+                case SerializedPropertyType.Vector3:
+                case SerializedPropertyType.Vector4:
+                case SerializedPropertyType.Quaternion:
+                    return false;
+            }
+
+            if (p.propertyType == SerializedPropertyType.Generic)
+            {
+                if (string.Equals(p.type, "map", StringComparison.Ordinal))
+                    return false;
+                if (string.Equals(p.type, "Matrix4x4f", StringComparison.Ordinal))
+                    return false;
+            }
+
+            return (p.propertyType == SerializedPropertyType.String || !p.isArray) && !p.isFixedBuffer && p.propertyPath.LastIndexOf('[') == -1;
+        }
+
         internal static IEnumerable<string> EnumeratePropertyKeywords(IEnumerable<UnityEngine.Object> objs)
         {
             var templates = GetTemplates(objs);
             foreach (var obj in templates)
             {
                 var objType = obj.GetType();
+                var isAsset = !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(obj));
                 using (var so = new SerializedObject(obj))
                 {
                     var p = so.GetIterator();
                     var next = p.NextVisible(true);
                     while (next)
                     {
-                        var supported = IsPropertyTypeSupported(p);
-                        if (supported)
+                        var supported = SearchUtils.IsPropertyTypeSupported(p);
+                        var propertyType = GetPropertyManagedTypeString(p);
+                        if (propertyType != null)
                         {
-                            var propertyType = GetPropertyManagedTypeString(p);
-                            if (propertyType != null)
-                            {
-                                var keyword = CreateKeyword(p, propertyType);
-                                yield return keyword;
-                            }
+                            var keyword = CreateKeyword(p, propertyType);
+                            yield return keyword;
                         }
-
-                        var isVector = p.propertyType == SerializedPropertyType.Vector3 ||
-                            p.propertyType == SerializedPropertyType.Vector4 ||
-                            p.propertyType == SerializedPropertyType.Quaternion ||
-                            p.propertyType == SerializedPropertyType.Vector2;
-
-                        next = p.NextVisible(supported && !p.isArray && !p.isFixedBuffer && !isVector);
+                        next = p.NextVisible(IterateSupportedProperties_EnterChildren(p));
                     }
                 }
             }
@@ -777,23 +811,14 @@ namespace UnityEditor.Search
 
         internal static bool IsPropertyTypeSupported(SerializedProperty p)
         {
-            switch (p.propertyType)
-            {
-                case SerializedPropertyType.AnimationCurve:
-                case SerializedPropertyType.Bounds:
-                case SerializedPropertyType.Gradient:
-                    return false;
-            }
+            var isAsset = !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(p.serializedObject.targetObject));
+            return IsPropertyTypeSupported(p, isAsset);
+        }
 
-            if (p.propertyType == SerializedPropertyType.Generic)
-            {
-                if (string.Equals(p.type, "map", StringComparison.Ordinal))
-                    return false;
-                if (string.Equals(p.type, "Matrix4x4f", StringComparison.Ordinal))
-                    return false;
-            }
-
-            return (p.propertyType == SerializedPropertyType.String || !p.isArray) && !p.isFixedBuffer && p.propertyPath.LastIndexOf('[') == -1;
+        internal static bool IsPropertyTypeSupported(SerializedProperty p, bool isOwnerAsset)
+        {
+            var isSupported = isOwnerAsset ? ObjectIndexer.IsIndexableProperty(p.propertyType) : SearchValue.IsSearchableProperty(p.propertyType);
+            return isSupported && (p.propertyType == SerializedPropertyType.String || !p.isArray) && !p.isFixedBuffer && p.propertyPath.LastIndexOf('[') == -1;
         }
 
         internal static IEnumerable<UnityEngine.Object> GetTemplates(IEnumerable<UnityEngine.Object> objects)
@@ -1189,7 +1214,7 @@ namespace UnityEditor.Search
                 c.result = false;
                 return;
             }
-            c.result = IsPropertyValidForQuery(prop);
+            c.result = IsPropertyValidForQuery(prop) && FormatPropertyQuery(prop) != null;
         }
 
         internal static bool IsPropertyValidForQuery(SerializedProperty prop)
@@ -1225,16 +1250,36 @@ namespace UnityEditor.Search
                 case SerializedPropertyType.ObjectReference:
                 case SerializedPropertyType.ManagedReference:
                 case SerializedPropertyType.ExposedReference:
-                    return GetObjectPath(value as UnityEngine.Object);
+                    {
+                        if (value == null)
+                            return "none";
+
+                        var path = GetObjectPath(value as UnityEngine.Object);
+                        return $"\"{path}\"";
+                    }
+                case SerializedPropertyType.String:
+                    return $"\"{value}\"";
                 default:
                     return value == null ? null : value.ToString();
             }
         }
 
-        internal static string GetPropertyName(SerializedProperty prop)
+        internal static string GetPropertyOperator(SerializedProperty prop)
         {
-            var fieldName = ObjectIndexer.GetFieldName(prop.displayName);
-            return fieldName;
+            switch (prop.propertyType)
+            {
+                case SerializedPropertyType.Float:
+                    return ":";
+                default:
+                    return "=";
+            }
+        }
+
+        internal static string GetPropertyName(SerializedProperty prop, bool isAsset)
+        {
+            if (isAsset)
+                return ObjectIndexer.GetFieldName(prop.displayName);
+            return prop.propertyPath;
         }
 
         internal static string FormatPropertyQuery(SerializedProperty prop)
@@ -1245,19 +1290,22 @@ namespace UnityEditor.Search
 
             var target = prop.serializedObject.targetObject;
             var assetPath = AssetDatabase.GetAssetPath(target);
-            var propetyName = GetPropertyName(prop);
+            var isAsset = !string.IsNullOrEmpty(assetPath);
+            var propetyName = GetPropertyName(prop, isAsset);
             var propertyValue = GetPropertyValueForQuery(prop);
-            var baseQuery = $"{propetyName}={propertyValue}";
-            if (!string.IsNullOrEmpty(assetPath))
+            var operatorStr = GetPropertyOperator(prop);
+            var typeStr = $"t:{target.GetType().Name} ";
+            var propertyQuery = $"{propetyName}{operatorStr}{propertyValue}";
+            if (isAsset)
             {
                 // Format asset Query;
-                return $"{AssetProvider.filterId}{baseQuery}";
+                return $"{AssetProvider.filterId}{typeStr}{propertyQuery}";
             }
 
             if (target is UnityEngine.GameObject || target is MonoBehaviour || target is Component)
             {
                 // Format Hierarchy Query:
-                return $"{BuiltInSceneObjectsProvider.filterId}#{baseQuery}";
+                return $"{BuiltInSceneObjectsProvider.filterId}{typeStr}#{propertyQuery}";
             }
 
             return null;

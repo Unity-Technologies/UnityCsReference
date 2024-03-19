@@ -141,6 +141,9 @@ using UnityEngine;
 
 [assembly: InternalsVisibleTo("Unity.Entities.Build")]
 
+[assembly: InternalsVisibleTo("Unity.Muse.Common.Bridge")]
+[assembly: InternalsVisibleTo("Unity.Muse.Chat.Bridge")]
+
 [assembly: InternalsVisibleTo("Unity.Scenes")]
 
 [assembly: AssemblyIsEditorAssembly]

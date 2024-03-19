@@ -44,7 +44,8 @@ namespace UnityEditor.Search
         // 25- Fix SearchDocument concurrency
         // 26- Index all dir tokens in combination for dir: filter.
         // 27- Use AssemblyQualifiedName for PropertyType in IndexProperty<TProperty, TPropertyOwner>
-        internal const int version = 0x027;
+        // 28- Improve Properties indexing (supports more types)
+        internal const int version = 0x028;
 
         public enum Type : byte
         {
@@ -1204,6 +1205,12 @@ namespace UnityEditor.Search
                     updatedDocIndexes[od.Key] = currentDocIndex;
             }
 
+            // We concatenate other.m_SourceDocument here because we want to remove all documents in m_Document that come from other.m_SourceDocument but are
+            // not in other.m_Document. This can happen when a modification on an asset makes it index less documents, so other.m_Documents would contain less documents
+            // than m_Documents. We consider that other contains the truth for those source documents, so if we have superfluous documents we have to remove them.
+            // For example, consider a scene that has 3 objects (a cube, a capsule and a sphere). The scene is indexed. The current index contains 4 documents (scene + 3 objects)
+            // and 1 source document. We remove the sphere from the scene. The new index will contain 3 documents (scene + 2 objects) and 1 source document. Since the scene is a
+            // source document that is in both indexes, we need to remove the sphere document from the current index otherwise we will have a stale document.
             var removeDocIndexes = new HashSet<int>(removeDocuments.Concat(other.m_SourceDocuments.Keys).SelectMany(FindDocumentIndexesByPath));
             if (removeDocIndexes.Count > 0)
             {
@@ -2000,25 +2007,6 @@ namespace UnityEditor.Search
             m_IndexReady = true;
         }
 
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-        private bool NumberCompare(SearchIndexOperator op, double d1, double d2)
-        {
-            if (op == SearchIndexOperator.Equal)
-                return d1 == d2;
-            if (op == SearchIndexOperator.Contains)
-                return Mathf.Approximately((float)d1, (float)d2);
-            if (op == SearchIndexOperator.Greater)
-                return d1 > d2;
-            if (op == SearchIndexOperator.GreaterOrEqual)
-                return d1 >= d2;
-            if (op == SearchIndexOperator.Less)
-                return d1 < d2;
-            if (op == SearchIndexOperator.LessOrEqual)
-                return d1 <= d2;
-
-            return false;
-        }
-
         private bool Rewind(int foundIndex, in SearchIndexEntry term, SearchIndexOperator op)
         {
             if (foundIndex <= 0)
@@ -2029,7 +2017,7 @@ namespace UnityEditor.Search
                 return false;
 
             if (term.type == SearchIndexEntry.Type.Number)
-                return NumberCompare(op, prevEntry.number, term.number);
+                return Utils.NumberCompare(op, prevEntry.number, term.number);
 
             return prevEntry.key == term.key;
         }
@@ -2041,7 +2029,7 @@ namespace UnityEditor.Search
                 return false;
 
             if (term.type == SearchIndexEntry.Type.Number)
-                return NumberCompare(op, m_Indexes[foundIndex].number, term.number);
+                return Utils.NumberCompare(op, m_Indexes[foundIndex].number, term.number);
 
             return m_Indexes[foundIndex].key == term.key;
         }
@@ -2054,7 +2042,7 @@ namespace UnityEditor.Search
                 var cont = !Advance(foundIndex, term, op);
                 if (cont)
                     foundIndex--;
-                return IsIndexValid(foundIndex, term.key, term.type) && cont;
+                return IsIndexValid(foundIndex, term.crc, term.type) && cont;
             }
 
             {
