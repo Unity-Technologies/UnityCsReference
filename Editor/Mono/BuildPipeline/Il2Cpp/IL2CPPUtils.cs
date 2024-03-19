@@ -35,6 +35,8 @@ namespace UnityEditor
         public abstract string GetToolchainPath();
         public abstract string GetIl2CppCompilerFlags();
         public abstract string GetIl2CppLinkerFlags();
+        // The sysroot package does not currently contain an implemenation for this method, adding a default implementation to avoid breaking stuff
+        public virtual string GetIl2CppLinkerFlagsFile() => null;
     }
 }
 

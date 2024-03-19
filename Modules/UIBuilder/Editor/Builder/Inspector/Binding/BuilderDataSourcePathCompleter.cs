@@ -18,6 +18,7 @@ namespace Unity.UI.Builder
         private List<Type> m_ToUICompatibleTypes;
         private Dictionary<Type, List<Type>> m_ToSrcCompatibleTypesMap;
         private List<PropertyPathInfo> m_CompatibleProperties = new ();
+        private bool m_ShowForDataSource = true;
         private List<PropertyPathInfo> m_AllProperties = new ();
         private DataBinding m_Binding;
 
@@ -55,7 +56,7 @@ namespace Unity.UI.Builder
 
                     m_ShowOnlyCompatibleResultsToggle.toggle.RegisterValueChangedCallback((_) =>
                     {
-                        UpdateResults();
+                        UpdateResults(m_ShowForDataSource);
                         Refresh();
                     });
                 }
@@ -115,10 +116,10 @@ namespace Unity.UI.Builder
         /// <summary>
         /// Updates the completer results
         /// </summary>
-        public void UpdateResults()
+        public void UpdateResults(bool showForDataSource)
         {
             enabled = element != null && (bindingDataSource != null || bindingDataSourceType != null);
-            UpdatePropertyList();
+            UpdatePropertyList(showForDataSource);
         }
 
         void ShowPropertyDetails(PropertyPathInfo propertyInfo)
@@ -154,8 +155,9 @@ namespace Unity.UI.Builder
             return popup;
         }
 
-        void UpdatePropertyList()
+        void UpdatePropertyList(bool showForDataSource)
         {
+            m_ShowForDataSource = showForDataSource;
             m_AllProperties.Clear();
             m_CompatibleProperties.Clear();
             m_ToUICompatibleTypes?.Clear();
@@ -164,13 +166,16 @@ namespace Unity.UI.Builder
             if (enabled)
             {
                 // If the binding data source is specified then ignore the binding data source type.
-                if (bindingDataSource != null)
+                if (m_ShowForDataSource)
                 {
-                    var source = bindingDataSource;
+                    if (bindingDataSource != null)
+                    {
+                        var source = bindingDataSource;
 
-                    if (source is BuilderObjectField.NonUnityObjectValue nonUnityObject)
-                        source = nonUnityObject.data;
-                    DataBindingUtility.GetPropertyPaths(source, int.MaxValue, m_AllProperties);
+                        if (source is BuilderObjectField.NonUnityObjectValue nonUnityObject)
+                            source = nonUnityObject.data;
+                        DataBindingUtility.GetPropertyPaths(source, int.MaxValue, m_AllProperties);
+                    }
                 }
                 else
                 {

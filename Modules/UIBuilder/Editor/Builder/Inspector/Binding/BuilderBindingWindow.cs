@@ -51,6 +51,8 @@ namespace Unity.UI.Builder
             {
                 Builder.ActiveWindow.closing += Close;
             }
+
+            AssemblyReloadEvents.beforeAssemblyReload += Close;
         }
 
         private void OnDisable()
@@ -62,6 +64,8 @@ namespace Unity.UI.Builder
             m_View.closing?.Invoke();
             m_View = null;
             s_Window = null;
+
+            AssemblyReloadEvents.beforeAssemblyReload -= Close;
         }
 
         internal override void OnResized()

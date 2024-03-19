@@ -392,6 +392,7 @@ namespace UnityEditor.IMGUI.Controls
             areaPosition.y += kBorderThickness;
             areaPosition.height -= kBorderThickness * 2;
             areaPosition.width -= kBorderThickness * 2;
+            m_Gui.areaRect = areaPosition;
 
             GUILayout.BeginArea(m_Gui.GetAnimRect(areaPosition, anim));
             // Header

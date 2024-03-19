@@ -631,5 +631,20 @@ namespace UnityEngine.UIElements
         {
             changed?.Invoke(this, type);
         }
+
+        internal float GetWidth(float layoutWidth)
+        {
+            return width.unit == LengthUnit.Pixel ? width.value : width.value * layoutWidth / 100f;
+        }
+
+        internal float GetMaxWidth(float layoutWidth)
+        {
+            return maxWidth.unit == LengthUnit.Pixel ? maxWidth.value : maxWidth.value * layoutWidth / 100f;
+        }
+
+        internal float GetMinWidth(float layoutWidth)
+        {
+            return minWidth.unit == LengthUnit.Pixel ? minWidth.value : minWidth.value * layoutWidth / 100f;
+        }
     }
 }

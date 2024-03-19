@@ -241,6 +241,9 @@ namespace UnityEditor
 
         bool IsTargetAsset(Object obj)
         {
+            if (assetTargets == null)
+                return false;
+
             if (obj is Component component)
                 obj = component.gameObject;
 

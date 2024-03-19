@@ -821,9 +821,15 @@ namespace UnityEngine.TextCore.Text
             if (!IsDirty(settings))
                 return textInfo;
 
+            if (settings.fontAsset == null || settings.fontAsset.characterLookupTable == null)
+            {
+                Debug.LogWarning("Can't Generate Mesh, No Font Asset has been assigned.");
+                return textInfo;
+            }
+
             generator.GenerateText(settings, textInfo);
-	        m_IsEllided = generator.isTextTruncated;
-	        return textInfo;
+            m_IsEllided = generator.isTextTruncated;
+            return textInfo;
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
