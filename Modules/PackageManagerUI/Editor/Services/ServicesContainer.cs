@@ -26,6 +26,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly IOProxy m_IOProxy;
 
+        private readonly DateTimeProxy m_DateTimeProxy;
+
         private readonly PackageManagerProjectSettingsProxy m_SettingsProxy;
 
         private readonly ClientProxy m_ClientProxy;
@@ -117,6 +119,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ApplicationProxy = new ApplicationProxy();
             m_EditorAnalyticsProxy = new EditorAnalyticsProxy();
             m_IOProxy = new IOProxy();
+            m_DateTimeProxy = new DateTimeProxy();
             m_SettingsProxy = new PackageManagerProjectSettingsProxy();
             m_ClientProxy = new ClientProxy();
 
@@ -163,11 +166,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_AssetStoreCache.ResolveDependencies(m_ApplicationProxy, m_AssetStoreUtils, m_HttpClientFactory, m_IOProxy);
             m_AssetStoreClient.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI, m_FetchStatusTracker, m_UpmCache, m_UpmClient, m_IOProxy);
-            m_AssetStoreOAuth.ResolveDependencies(m_UnityConnectProxy, m_UnityOAuthProxy, m_HttpClientFactory);
+            m_AssetStoreOAuth.ResolveDependencies(m_DateTimeProxy, m_UnityConnectProxy, m_UnityOAuthProxy, m_HttpClientFactory);
             m_AssetStoreUtils.ResolveDependencies(m_UnityConnectProxy);
             m_AssetStoreRestAPI.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreOAuth, m_AssetStoreCache, m_HttpClientFactory);
             m_AssetStoreDownloadManager.ResolveDependencies(m_ApplicationProxy, m_HttpClientFactory, m_UnityConnectProxy, m_IOProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCachePathProxy);
-            m_AssetStoreCallQueue.ResolveDependencies(m_ApplicationProxy, m_UnityConnectProxy, m_PackageFiltering, m_AssetStoreClient, m_AssetStoreCache, m_PageManager);
+            m_AssetStoreCallQueue.ResolveDependencies(m_ApplicationProxy, m_UnityConnectProxy, m_PackageFiltering, m_UpmCache, m_AssetStoreClient, m_AssetStoreCache, m_PageManager);
 
             m_UpmClient.ResolveDependencies(m_UpmCache, m_FetchStatusTracker, m_IOProxy, m_SettingsProxy, m_ClientProxy, m_ApplicationProxy);
             m_UpmRegistryClient.ResolveDependencies(m_UpmCache, m_SettingsProxy, m_ClientProxy, m_ApplicationProxy);
@@ -244,6 +247,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Register(m_ExtensionManager);
             Register(m_EditorAnalyticsProxy);
             Register(m_IOProxy);
+            Register(m_DateTimeProxy);
             Register(m_SettingsProxy);
             Register(m_ClientProxy);
 

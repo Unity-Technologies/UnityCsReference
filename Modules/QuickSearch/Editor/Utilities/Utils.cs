@@ -40,6 +40,7 @@ namespace UnityEditor.Search
         internal static readonly bool isDeveloperBuild = false;
         internal static bool runningTests { get; set; }
         internal static bool fakeWorkerProcess { get; set; }
+        private static readonly Regex s_RangeRx = new Regex(@"(-?[\d\.]+)\.\.(-?[\d\.]+)");
 
         struct RootDescriptor
         {
@@ -780,6 +781,96 @@ namespace UnityEditor.Search
             return TryParse(Convert.ToString(value), out number);
         }
 
+        internal static bool TryGetFloat(object value, out float number)
+        {
+            if (value == null)
+            {
+                number = float.NaN;
+                return false;
+            }
+
+            if (value is string s)
+            {
+                if (TryParse(s, out number))
+                    return true;
+                else
+                {
+                    number = float.NaN;
+                    return false;
+                }
+            }
+
+            if (value.GetType().IsPrimitive || value is decimal)
+            {
+                number = Convert.ToSingle(value);
+                return true;
+            }
+
+            return TryParse(Convert.ToString(value), out number);
+        }
+
+        internal const double DOUBLE_EPSILON = 0.0001;
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        internal static bool Approximately(double a, double b)
+        {
+            // If a or b is zero, compare that the other is less or equal to epsilon.
+            // If neither a or b are 0, then find an epsilon that is good for
+            // comparing numbers at the maximum magnitude of a and b.
+            // Floating points have about 7 significant digits, so
+            // 1.000001f can be represented while 1.0000001f is rounded to zero,
+            // thus we could use an epsilon of 0.000001f for comparing values close to 1.
+            // We multiply this epsilon by the biggest magnitude of a and b.
+            return Math.Abs(b - a) < Math.Max(0.000001 * Math.Max(Math.Abs(a), Math.Abs(b)), double.Epsilon * 8);
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        internal static bool NumberCompare(SearchIndexOperator op, double d1, double d2)
+        {
+            switch (op)
+            {
+                case SearchIndexOperator.Equal:
+                    return Approximately(d1, d2);
+                case SearchIndexOperator.Contains:
+                    return Approximately(d1, d2);
+                case SearchIndexOperator.NotEqual:
+                    return !Approximately(d1, d2);
+                case SearchIndexOperator.Greater:
+                    return d1 > d2;
+                case SearchIndexOperator.GreaterOrEqual:
+                    return d1 > d2 || Approximately(d1, d2);
+                case SearchIndexOperator.Less:
+                    return d1 < d2;
+                case SearchIndexOperator.LessOrEqual:
+                    return d1 < d2 || Approximately(d1, d2);
+            }
+            return false;
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        internal static bool NumberCompare(SearchIndexOperator op, float d1, float d2)
+        {
+            switch (op)
+            {
+                case SearchIndexOperator.Equal:
+                    return Mathf.Approximately(d1, d2);
+                case SearchIndexOperator.Contains:
+                    return Mathf.Approximately(d1, d2);
+                case SearchIndexOperator.NotEqual:
+                    return !Mathf.Approximately(d1, d2);
+                case SearchIndexOperator.Greater:
+                    return d1 > d2;
+                case SearchIndexOperator.GreaterOrEqual:
+                    return d1 > d2 || Mathf.Approximately(d1, d2);
+                case SearchIndexOperator.Less:
+                    return d1 < d2;
+                case SearchIndexOperator.LessOrEqual:
+                    return d1 < d2 || Mathf.Approximately(d1, d2);
+            }
+            return false;
+        }
+
+
         internal static bool IsRunningTests()
         {
             return runningTests;
@@ -950,12 +1041,22 @@ namespace UnityEditor.Search
 
         internal static string ToString(in Vector2Int v)
         {
-            return $"({(int.MaxValue == v.x ? string.Empty : v.x.ToString())},{(int.MaxValue == v.y ? string.Empty : v.y.ToString())})";
+            return $"({FormatIntString(v.x)},{FormatIntString(v.y)})";
         }
 
         internal static string ToString(in Vector3Int v)
         {
-            return $"({(int.MaxValue == v.x ? string.Empty : v.x.ToString())},{(int.MaxValue == v.y ? string.Empty : v.y.ToString())},{(int.MaxValue == v.z ? string.Empty : v.z.ToString())})";
+            return $"({FormatIntString(v.x)},{FormatIntString(v.y)},{FormatIntString(v.z)})";
+        }
+
+        internal static string ToString(in Rect r)
+        {
+            return $"({FormatFloatString(r.x)},{FormatFloatString(r.y)},{FormatFloatString(r.width)},{FormatFloatString(r.height)})";
+        }
+
+        internal static string ToString(in RectInt r)
+        {
+            return $"({FormatIntString(r.x)},{FormatIntString(r.y)},{FormatIntString(r.width)},{FormatIntString(r.height)})";
         }
 
         internal static string FormatFloatString(in float f)
@@ -963,6 +1064,13 @@ namespace UnityEditor.Search
             if (float.IsNaN(f))
                 return string.Empty;
             return f.ToString(CultureInfo.InvariantCulture);
+        }
+
+        internal static string FormatIntString(in int i)
+        {
+            if (int.MaxValue == i)
+                return string.Empty;
+            return i.ToString();
         }
 
         internal static bool TryParseVectorValue(in object value, out Vector4 vc, out int dim)
@@ -988,6 +1096,24 @@ namespace UnityEditor.Search
             if (values.Length >= 4 && values[3].Length > 0 && (values[3].Length > 1 || values[3][0] != '-') && TryParse(values[3], out f))
                 vc.w = f;
 
+            return true;
+        }
+
+        internal static bool TryParseRange(in string arg, out PropertyRange range)
+        {
+            range = default;
+            if (arg.Length < 2 || arg.IndexOf("..") == -1)
+                return false;
+
+            var rangeMatches = s_RangeRx.Matches(arg);
+            if (rangeMatches.Count != 1 || rangeMatches[0].Groups.Count != 3)
+                return false;
+
+            var rg = rangeMatches[0].Groups;
+            if (!Utils.TryParse(rg[1].Value, out float min) || !Utils.TryParse(rg[2].Value, out float max))
+                return false;
+
+            range = new PropertyRange(min, max);
             return true;
         }
 

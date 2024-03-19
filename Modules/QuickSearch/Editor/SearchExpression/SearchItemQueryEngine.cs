@@ -13,16 +13,16 @@ namespace UnityEditor.Search
 {
     readonly struct PropertyRange
     {
-        public readonly double min;
-        public readonly double max;
+        public readonly float min;
+        public readonly float max;
 
-        public PropertyRange(double min, double max)
+        public PropertyRange(float min, float max)
         {
             this.min = min;
             this.max = max;
         }
 
-        public bool Contains(double f)
+        public bool Contains(float f)
         {
             if (f >= min && f <= max)
                 return true;
@@ -158,12 +158,14 @@ namespace UnityEditor.Search
         }
 
         public readonly ValueType type;
-        public readonly double number;
+        [Obsolete("Change type to a float. Please use floatNumber instead.", false)]
+        public readonly double number = double.NaN;
+        public readonly float floatNumber;
         public readonly string text;
         internal readonly Vector4 v4;
         internal readonly SearchColor color;
 
-        public bool boolean => type == ValueType.Bool && number == 1d;
+        public bool boolean => type == ValueType.Bool && floatNumber == 1d;
         public bool valid => type != ValueType.Nil;
 
         public static SearchValue invalid = new SearchValue();
@@ -171,7 +173,7 @@ namespace UnityEditor.Search
         public SearchValue(bool v)
         {
             this.type = ValueType.Bool;
-            this.number = v ? 1d : 0f;
+            this.floatNumber = v ? 1f : 0f;
             this.text = null;
             this.color = default;
             this.v4 = Vector4.zero;
@@ -180,16 +182,16 @@ namespace UnityEditor.Search
         public SearchValue(float number)
         {
             this.type = ValueType.Number;
-            this.number = Convert.ToDouble(number);
+            this.floatNumber = number;
             this.text = null;
             this.color = default;
             this.v4 = Vector4.zero;
         }
-
+        
         public SearchValue(double number)
         {
             this.type = ValueType.Number;
-            this.number = number;
+            this.floatNumber = (float)number;
             this.text = null;
             this.color = default;
             this.v4 = Vector4.zero;
@@ -198,7 +200,7 @@ namespace UnityEditor.Search
         public SearchValue(string text)
         {
             this.type = ValueType.Text;
-            this.number = float.NaN;
+            this.floatNumber = float.NaN;
             this.text = text;
             this.color = default;
             this.v4 = Vector4.zero;
@@ -207,7 +209,7 @@ namespace UnityEditor.Search
         public SearchValue(Color color)
         {
             this.type = ValueType.Color;
-            this.number = float.NaN;
+            this.floatNumber = float.NaN;
             this.text = null;
             this.color = new SearchColor(color);
             this.v4 = Vector4.zero;
@@ -216,7 +218,7 @@ namespace UnityEditor.Search
         internal SearchValue(SearchColor color)
         {
             this.type = ValueType.Color;
-            this.number = float.NaN;
+            this.floatNumber = float.NaN;
             this.text = null;
             this.color = color;
             this.v4 = Vector4.zero;
@@ -225,7 +227,7 @@ namespace UnityEditor.Search
         internal SearchValue(Vector4 v, int dim)
         {
             this.type = dim == 2 ? ValueType.Vector2 : (dim == 3 ? ValueType.Vector3 : ValueType.Vector4);
-            this.number = float.NaN;
+            this.floatNumber = float.NaN;
             this.text = null;
             this.color = default;
             this.v4 = v;
@@ -235,7 +237,7 @@ namespace UnityEditor.Search
         {
             this.type = ValueType.Object;
             this.text = SearchUtils.GetObjectPath(obj);
-            this.number = float.NaN;
+            this.floatNumber = float.NaN;
             this.color = default;
             this.v4 = default;
         }
@@ -244,7 +246,7 @@ namespace UnityEditor.Search
         {
             this.type = ValueType.Object;
             this.text = obj ? SearchUtils.GetObjectPath(obj) : path;
-            this.number = float.NaN;
+            this.floatNumber = float.NaN;
             this.color = default;
             this.v4 = default;
         }
@@ -252,7 +254,7 @@ namespace UnityEditor.Search
         internal SearchValue(int enumIntegerValue, string enumStringValue)
         {
             this.type = ValueType.Enum;
-            this.number = enumIntegerValue;
+            this.floatNumber = enumIntegerValue;
             this.text = enumStringValue;
             this.color = default;
             this.v4 = default;
@@ -261,14 +263,14 @@ namespace UnityEditor.Search
         public SearchValue(object v)
         {
             this.type = ValueType.Nil;
-            this.number = float.NaN;
+            this.floatNumber = float.NaN;
             this.text = null;
             this.color = default;
             this.v4 = Vector4.zero;
             if (v is bool b)
             {
                 this.type = ValueType.Bool;
-                this.number = b ? 1 : 0;
+                this.floatNumber = b ? 1 : 0;
             }
             else if (v is string s)
             {
@@ -280,10 +282,10 @@ namespace UnityEditor.Search
                 this.type = ValueType.Color;
                 this.color = new SearchColor(c);
             }
-            else if (Utils.TryGetNumber(v, out var d))
+            else if (Utils.TryGetFloat(v, out var f))
             {
                 this.type = ValueType.Number;
-                this.number = d;
+                this.floatNumber = f;
             }
             else if (v is Vector2 v2)
             {
@@ -317,7 +319,7 @@ namespace UnityEditor.Search
             switch (type)
             {
                 case ValueType.Bool: return $"{boolean} [{type}]";
-                case ValueType.Number: return $"{number} [{type}]";
+                case ValueType.Number: return $"{floatNumber} [{type}]";
                 case ValueType.Text: return $"{text} [{type}]";
                 case ValueType.Color: return $"{color} [{type}]";
                 case ValueType.Vector2:
@@ -327,10 +329,27 @@ namespace UnityEditor.Search
                 case ValueType.Object:
                     return $"{text} [{type}]";
                 case ValueType.Enum:
-                    return $"{number} ({text}) [{type}]";
+                    return $"{floatNumber} ({text}) [{type}]";
             }
 
             return "nil";
+        }
+
+        internal static bool IsSearchableProperty(in SerializedPropertyType type)
+        {
+            switch (type)
+            {
+                case SerializedPropertyType.Generic:
+                case SerializedPropertyType.LayerMask:
+                case SerializedPropertyType.AnimationCurve:
+                case SerializedPropertyType.Gradient:
+                case SerializedPropertyType.ExposedReference:
+                case SerializedPropertyType.FixedBufferSize:
+                case SerializedPropertyType.ManagedReference:
+                    return false;
+                default:
+                    return true;
+            }
         }
 
         public static SearchValue ConvertPropertyValue(in SerializedProperty sp)
@@ -342,8 +361,8 @@ namespace UnityEditor.Search
                 case SerializedPropertyType.Character:
                     var managedType = sp.GetManagedType();
                     if (managedType != null && managedType.IsEnum)
-                        return new SearchValue(sp.intValue, managedType.GetEnumValues().GetValue(sp.intValue).ToString());
-                    return new SearchValue(Convert.ToDouble(sp.intValue));
+                        return new SearchValue(sp.intValue, PropertySelectors.GetEnumValue(managedType, sp));
+                    return new SearchValue(Convert.ToSingle(sp.intValue));
 
                 case SerializedPropertyType.Boolean: return new SearchValue(sp.boolValue);
                 case SerializedPropertyType.Float: return new SearchValue(sp.floatValue);
@@ -352,31 +371,27 @@ namespace UnityEditor.Search
                 case SerializedPropertyType.Enum:
                     managedType = sp.GetManagedType();
                     if (managedType != null && managedType.IsEnum)
-                        return new SearchValue(sp.intValue, managedType.GetEnumValues().GetValue(sp.intValue).ToString());
-                    return new SearchValue(sp.intValue, sp.enumNames[sp.enumValueIndex]);
+                        return new SearchValue(sp.intValue, PropertySelectors.GetEnumValue(managedType, sp));
+                    return new SearchValue(sp.enumValueIndex, PropertySelectors.GetEnumValue(sp));
 
                 case SerializedPropertyType.ObjectReference:
                     return new SearchValue(sp.objectReferenceValue);
 
                 case SerializedPropertyType.Bounds: return new SearchValue(sp.boundsValue.size.magnitude);
                 case SerializedPropertyType.BoundsInt: return new SearchValue(sp.boundsIntValue.size.magnitude);
-                case SerializedPropertyType.Rect: return new SearchValue(sp.rectValue.size.magnitude);
+                case SerializedPropertyType.Rect: return new SearchValue(new Vector4(sp.rectValue.x, sp.rectValue.y, sp.rectValue.width, sp.rectValue.height), 4);
+                case SerializedPropertyType.RectInt: return new SearchValue(new Vector4(sp.rectIntValue.x, sp.rectIntValue.y, sp.rectIntValue.width, sp.rectIntValue.height), 4);
                 case SerializedPropertyType.Color: return new SearchValue(sp.colorValue);
                 case SerializedPropertyType.Vector2: return new SearchValue(new Vector4(sp.vector2Value.x, sp.vector2Value.y), 2);
                 case SerializedPropertyType.Vector3: return new SearchValue(new Vector4(sp.vector3Value.x, sp.vector3Value.y, sp.vector3Value.z), 3);
                 case SerializedPropertyType.Vector4: return new SearchValue(new Vector4(sp.vector4Value.x, sp.vector4Value.y, sp.vector4Value.z, sp.vector4Value.w), 4);
+                case SerializedPropertyType.Quaternion:
+                    {
+                        var euler = sp.quaternionValue.eulerAngles;
+                        return new SearchValue(new Vector4(euler.x, euler.y, euler.z), 3);
+                    }
                 case SerializedPropertyType.Vector2Int: return new SearchValue(new Vector4(sp.vector2IntValue.x, sp.vector2IntValue.y), 2);
                 case SerializedPropertyType.Vector3Int: return new SearchValue(new Vector4(sp.vector3IntValue.x, sp.vector3IntValue.y, sp.vector3IntValue.z), 3);
-
-                case SerializedPropertyType.Generic: break;
-                case SerializedPropertyType.LayerMask: break;
-                case SerializedPropertyType.AnimationCurve: break;
-                case SerializedPropertyType.Gradient: break;
-                case SerializedPropertyType.Quaternion: break;
-                case SerializedPropertyType.ExposedReference: break;
-                case SerializedPropertyType.FixedBufferSize: break;
-                case SerializedPropertyType.RectInt: break;
-                case SerializedPropertyType.ManagedReference: break;
 
                 case SerializedPropertyType.Hash128:
                     return new SearchValue(sp.hash128Value.ToString());
@@ -388,57 +403,39 @@ namespace UnityEditor.Search
             return SearchValue.invalid;
         }
 
-        internal static bool TryParseRange(in string arg, out PropertyRange range)
-        {
-            range = default;
-            if (arg.Length < 2 || arg.IndexOf("..") == -1)
-                return false;
-
-            var rangeMatches = s_RangeRx.Matches(arg);
-            if (rangeMatches.Count != 1 || rangeMatches[0].Groups.Count != 3)
-                return false;
-
-            var rg = rangeMatches[0].Groups;
-            if (!Utils.TryParse(rg[1].Value, out double min) || !Utils.TryParse(rg[2].Value, out double max))
-                return false;
-
-            range = new PropertyRange(min, max);
-            return true;
-        }
-
         public static void SetupEngine<T>(QueryEngine<T> queryEngine)
         {
-            queryEngine.AddOperatorHandler(":", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => r.Contains(f)));
-            queryEngine.AddOperatorHandler("=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => r.Contains(f)));
-            queryEngine.AddOperatorHandler("!=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => !r.Contains(f)));
-            queryEngine.AddOperatorHandler("<=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => f <= r.max));
-            queryEngine.AddOperatorHandler("<", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => f < r.min));
-            queryEngine.AddOperatorHandler(">", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => f > r.max));
-            queryEngine.AddOperatorHandler(">=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => f >= r.min));
+            queryEngine.AddOperatorHandler(":", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.Contains, v, range));
+            queryEngine.AddOperatorHandler("=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.Equal, v, range));
+            queryEngine.AddOperatorHandler("!=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.NotEqual, v, range));
+            queryEngine.AddOperatorHandler("<=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.LessOrEqual, v, range));
+            queryEngine.AddOperatorHandler("<", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.Less, v, range));
+            queryEngine.AddOperatorHandler(">", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.Greater, v, range));
+            queryEngine.AddOperatorHandler(">=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.GreaterOrEqual, v, range));
 
-            queryEngine.AddOperatorHandler(":", (SearchValue v, double number, StringComparison sc) => PropertyFloatCompare(v, number, (f, r) => Math.Abs(f - r) < double.Epsilon));
-            queryEngine.AddOperatorHandler("=", (SearchValue v, double number) => PropertyFloatCompare(v, number, (f, r) => Math.Abs(f - r) < double.Epsilon));
-            queryEngine.AddOperatorHandler("!=", (SearchValue v, double number) => PropertyFloatCompare(v, number, (f, r) => Math.Abs(f - r) >= double.Epsilon));
-            queryEngine.AddOperatorHandler("<=", (SearchValue v, double number) => PropertyFloatCompare(v, number, (f, r) => f <= r));
-            queryEngine.AddOperatorHandler("<", (SearchValue v, double number) => PropertyFloatCompare(v, number, (f, r) => f < r));
-            queryEngine.AddOperatorHandler(">", (SearchValue v, double number) => PropertyFloatCompare(v, number, (f, r) => f > r));
-            queryEngine.AddOperatorHandler(">=", (SearchValue v, double number) => PropertyFloatCompare(v, number, (f, r) => f >= r));
+            queryEngine.AddOperatorHandler(":", (SearchValue v, float number, StringComparison sc) => PropertyFloatCompare(SearchIndexOperator.Contains, v, number));
+            queryEngine.AddOperatorHandler("=", (SearchValue v, float number) => PropertyFloatCompare(SearchIndexOperator.Equal, v, number));
+            queryEngine.AddOperatorHandler("!=", (SearchValue v, float number) => PropertyFloatCompare(SearchIndexOperator.NotEqual, v, number));
+            queryEngine.AddOperatorHandler("<=", (SearchValue v, float number) => PropertyFloatCompare(SearchIndexOperator.LessOrEqual, v, number));
+            queryEngine.AddOperatorHandler("<", (SearchValue v, float number) => PropertyFloatCompare(SearchIndexOperator.Less, v, number));
+            queryEngine.AddOperatorHandler(">", (SearchValue v, float number) => PropertyFloatCompare(SearchIndexOperator.Greater, v, number));
+            queryEngine.AddOperatorHandler(">=", (SearchValue v, float number) => PropertyFloatCompare(SearchIndexOperator.GreaterOrEqual, v, number));
 
-            queryEngine.AddOperatorHandler(":", (Vector4 v, Vector4 v4, StringComparison sc) => PropertyVector4Compare(v, v4, (f, r) => Math.Abs(f - r) < double.Epsilon));
-            queryEngine.AddOperatorHandler("=", (Vector4 v, Vector4 v4) => PropertyVector4Compare(v, v4, (f, r) => Math.Abs(f - r) < double.Epsilon));
-            queryEngine.AddOperatorHandler("!=", (Vector4 v, Vector4 v4) => PropertyVector4Compare(v, v4, (f, r) => Math.Abs(f - r) >= double.Epsilon));
-            queryEngine.AddOperatorHandler("<=", (Vector4 v, Vector4 v4) => PropertyVector4Compare(v, v4, (f, r) => f <= r));
-            queryEngine.AddOperatorHandler("<", (Vector4 v, Vector4 v4) => PropertyVector4Compare(v, v4, (f, r) => f < r));
-            queryEngine.AddOperatorHandler(">", (Vector4 v, Vector4 v4) => PropertyVector4Compare(v, v4, (f, r) => f > r));
-            queryEngine.AddOperatorHandler(">=", (Vector4 v, Vector4 v4) => PropertyVector4Compare(v, v4, (f, r) => f >= r));
+            queryEngine.AddOperatorHandler(":", (Vector4 v, Vector4 v4, StringComparison sc) => PropertyVector4Compare(SearchIndexOperator.Contains, v, v4));
+            queryEngine.AddOperatorHandler("=", (Vector4 v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.Equal, v, v4));
+            queryEngine.AddOperatorHandler("!=", (Vector4 v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.NotEqual, v, v4));
+            queryEngine.AddOperatorHandler("<=", (Vector4 v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.LessOrEqual, v, v4));
+            queryEngine.AddOperatorHandler("<", (Vector4 v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.Less, v, v4));
+            queryEngine.AddOperatorHandler(">", (Vector4 v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.Greater, v, v4));
+            queryEngine.AddOperatorHandler(">=", (Vector4 v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.GreaterOrEqual, v, v4));
 
-            queryEngine.AddOperatorHandler(":", (SearchValue v, Vector4 v4, StringComparison sc) => PropertyVector4Compare(v, v4, (f, r) => Math.Abs(f - r) < double.Epsilon));
-            queryEngine.AddOperatorHandler("=", (SearchValue v, Vector4 v4) => PropertyVector4Compare(v, v4, (f, r) => Math.Abs(f - r) < double.Epsilon));
-            queryEngine.AddOperatorHandler("!=", (SearchValue v, Vector4 v4) => PropertyVector4Compare(v, v4, (f, r) => Math.Abs(f - r) >= double.Epsilon));
-            queryEngine.AddOperatorHandler("<=", (SearchValue v, Vector4 v4) => PropertyVector4Compare(v, v4, (f, r) => f <= r));
-            queryEngine.AddOperatorHandler("<", (SearchValue v, Vector4 v4) => PropertyVector4Compare(v, v4, (f, r) => f < r));
-            queryEngine.AddOperatorHandler(">", (SearchValue v, Vector4 v4) => PropertyVector4Compare(v, v4, (f, r) => f > r));
-            queryEngine.AddOperatorHandler(">=", (SearchValue v, Vector4 v4) => PropertyVector4Compare(v, v4, (f, r) => f >= r));
+            queryEngine.AddOperatorHandler(":", (SearchValue v, Vector4 v4, StringComparison sc) => PropertyVector4Compare(SearchIndexOperator.Contains, v, v4));
+            queryEngine.AddOperatorHandler("=", (SearchValue v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.Equal, v, v4));
+            queryEngine.AddOperatorHandler("!=", (SearchValue v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.NotEqual, v, v4));
+            queryEngine.AddOperatorHandler("<=", (SearchValue v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.LessOrEqual, v, v4));
+            queryEngine.AddOperatorHandler("<", (SearchValue v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.Less, v, v4));
+            queryEngine.AddOperatorHandler(">", (SearchValue v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.Greater, v, v4));
+            queryEngine.AddOperatorHandler(">=", (SearchValue v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.GreaterOrEqual, v, v4));
 
             queryEngine.AddOperatorHandler("=", (SearchValue v, bool b) => PropertyBoolCompare(v, b, (f, r) => f == r));
             queryEngine.AddOperatorHandler(":", (SearchValue v, bool b) => PropertyBoolCompare(v, b, (f, r) => f == r));
@@ -462,7 +459,7 @@ namespace UnityEditor.Search
 
             queryEngine.AddTypeParser(arg =>
             {
-                if (TryParseRange(arg, out var range))
+                if (Utils.TryParseRange(arg, out var range))
                     return new ParseResult<PropertyRange>(true, range);
                 return ParseResult<PropertyRange>.none;
             });
@@ -484,8 +481,6 @@ namespace UnityEditor.Search
             });
         }
 
-        private static readonly Regex s_RangeRx = new Regex(@"(-?[\d\.]+)\.\.(-?[\d\.]+)");
-
         private static bool StringContains(string ev, string fv, StringComparison sc)
         {
             if (ev == null || fv == null)
@@ -493,46 +488,63 @@ namespace UnityEditor.Search
             return ev.IndexOf(fv, sc) != -1;
         }
 
-        private static bool PropertyVector4Compare(in SearchValue v, in Vector4 v4, in Func<float, float, bool> comparer)
+        private static bool PropertyVector4Compare(in SearchIndexOperator op, in SearchValue v, in Vector4 v4)
         {
             if (v.type != ValueType.Vector3 && v.type != ValueType.Vector2 && v.type != ValueType.Vector4)
                 return false;
-            return PropertyVector4Compare(v.v4, v4, comparer);
+            return PropertyVector4Compare(op, v.v4, v4);
         }
 
-        private static bool PropertyVector4Compare(in Vector4 v, in Vector4 v4, in Func<float, float, bool> comparer)
+        private static bool PropertyVector4Compare(in SearchIndexOperator op, in Vector4 v, in Vector4 v4)
         {
             bool hx = !float.IsNaN(v4.x),
                  hy = !float.IsNaN(v4.y),
                  hz = !float.IsNaN(v4.z),
                  hw = !float.IsNaN(v4.w);
-            return (hx == false || comparer(v.x, v4.x))
-                && (hy == false || comparer(v.y, v4.y))
-                && (hz == false || comparer(v.z, v4.z))
-                && (hw == false || comparer(v.w, v4.w));
+            return (hx == false || Utils.NumberCompare(op, v.x, v4.x))
+                && (hy == false || Utils.NumberCompare(op, v.y, v4.y))
+                && (hz == false || Utils.NumberCompare(op, v.z, v4.z))
+                && (hw == false || Utils.NumberCompare(op, v.w, v4.w));
         }
 
-        private static bool PropertyRangeCompare(in SearchValue v, in PropertyRange range, Func<double, PropertyRange, bool> comparer)
+        private static bool PropertyRangeCompare(in SearchIndexOperator op, in SearchValue v, in PropertyRange range)
         {
             if (v.type != ValueType.Number)
                 return false;
-            return comparer(v.number, range);
+            switch(op)
+            {
+                case SearchIndexOperator.Equal:
+                    return range.Contains(v.floatNumber);
+                case SearchIndexOperator.Contains:
+                    return range.Contains(v.floatNumber);
+                case SearchIndexOperator.NotEqual:
+                    return !range.Contains(v.floatNumber);
+                case SearchIndexOperator.Greater:
+                    return v.floatNumber > range.max;
+                case SearchIndexOperator.GreaterOrEqual:
+                    return v.floatNumber >= range.max;
+                case SearchIndexOperator.Less:
+                    return v.floatNumber < range.min;
+                case SearchIndexOperator.LessOrEqual:
+                    return v.floatNumber <= range.min;
+            }
+            return false;
         }
 
-        private static bool PropertyFloatCompare(in SearchValue v, double value, Func<double, double, bool> comparer)
+        private static bool PropertyFloatCompare(in SearchIndexOperator op, in SearchValue v, float value)
         {
             if (v.type == ValueType.Enum)
-                return comparer(v.number, value);
+                return Utils.NumberCompare(op, v.floatNumber, value);
             if (v.type != ValueType.Number)
                 return false;
-            return comparer(v.number, value);
+            return Utils.NumberCompare(op, v.floatNumber, value);
         }
 
         private static bool PropertyBoolCompare(in SearchValue v, bool b, Func<bool, bool, bool> comparer)
         {
             if (v.type != ValueType.Bool)
                 return false;
-            return comparer(v.number == 1d, b);
+            return comparer(v.floatNumber == 1d, b);
         }
 
         private static bool PropertyStringCompare(in SearchValue v, string s, Func<string, string, bool> comparer)
@@ -619,7 +631,7 @@ namespace UnityEditor.Search
                     return new PropertyDatabaseRecordValue((byte)PropertyDatabaseType.GameObjectProperty, (byte)gop.type);
                 case ValueType.Bool:
                 case ValueType.Number:
-                    return new PropertyDatabaseRecordValue((byte)PropertyDatabaseType.GameObjectProperty, (byte)gop.type, BitConverter.DoubleToInt64Bits(gop.number));
+                    return new PropertyDatabaseRecordValue((byte)PropertyDatabaseType.GameObjectProperty, (byte)gop.type, BitConverter.SingleToInt32Bits(gop.floatNumber));
                 case ValueType.Text:
                     stringSymbol = args.stringTableView.ToSymbol(gop.text);
                     return new PropertyDatabaseRecordValue((byte)PropertyDatabaseType.GameObjectProperty, (byte)gop.type, (int)stringSymbol);
@@ -639,7 +651,7 @@ namespace UnityEditor.Search
                     return new PropertyDatabaseRecordValue((byte)PropertyDatabaseType.GameObjectProperty, (byte)gop.type, (int)stringSymbol);
                 case ValueType.Enum:
                     stringSymbol = args.stringTableView.ToSymbol(gop.text);
-                    return new PropertyDatabaseRecordValue((byte)PropertyDatabaseType.GameObjectProperty, (byte)gop.type, (int)stringSymbol, (int)gop.number);
+                    return new PropertyDatabaseRecordValue((byte)PropertyDatabaseType.GameObjectProperty, (byte)gop.type, (int)stringSymbol, (int)gop.floatNumber);
             }
 
             return PropertyDatabaseRecordValue.invalid;
@@ -654,9 +666,9 @@ namespace UnityEditor.Search
                 case ValueType.Nil:
                     return new SearchValue();
                 case ValueType.Bool:
-                    return new SearchValue(BitConverter.Int64BitsToDouble(args.value.int64_1) == 1d);
+                    return new SearchValue(BitConverter.Int32BitsToSingle(args.value.int32_1) == 1d);
                 case ValueType.Number:
-                    return new SearchValue(BitConverter.Int64BitsToDouble(args.value.int64_1));
+                    return new SearchValue(BitConverter.Int32BitsToSingle(args.value.int32_1));
                 case ValueType.Text:
                     var symbol = args.value.int32_1;
                     var str = args.stringTableView.GetString(symbol);

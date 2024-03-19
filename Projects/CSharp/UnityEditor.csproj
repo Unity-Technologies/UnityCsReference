@@ -3046,6 +3046,9 @@
     <Compile Include="..\..\Editor\Mono\ScriptableWizard.cs">
       <Link>Editor\Mono\ScriptableWizard.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\ScriptingDefinesHelper.cs">
+      <Link>Editor\Mono\ScriptingDefinesHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\APIUpdaterAssemblyHelper.cs">
       <Link>Editor\Mono\Scripting\APIUpdater\APIUpdaterAssemblyHelper.cs</Link>
     </Compile>
@@ -5694,6 +5697,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ClientProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ClientProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\DateTimeProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\DateTimeProxy.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\EditorAnalyticsProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\EditorAnalyticsProxy.cs</Link>

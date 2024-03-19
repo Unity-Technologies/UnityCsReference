@@ -54,7 +54,7 @@ namespace UnityEditor
 
         protected override void OnDestroy()
         {
-            if (m_PreviewWindow != null)
+            if (m_PreviewWindow is { IsFloatingWindow: true } )
                 m_PreviewWindow.Close();
             if (m_Tracker != null && !m_Tracker.Equals(ActiveEditorTracker.sharedTracker))
                 m_Tracker.Destroy();

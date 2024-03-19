@@ -917,7 +917,7 @@ namespace UnityEditor
                 var prefabStage = SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
                 if (prefabStage != null && prefabStage.mode == SceneManagement.PrefabStage.Mode.InContext)
                 {
-                    var propertyPath = property.propertyPath;
+                    var propertyPath = (property.isReferencingAManagedReferenceField ? property.managedReferencePropertyPath : property.propertyPath);
                     ScriptableObject driver = prefabStage;
                     if (
                         (DrivenPropertyManagerInternal.IsDriving(driver, target, propertyPath))

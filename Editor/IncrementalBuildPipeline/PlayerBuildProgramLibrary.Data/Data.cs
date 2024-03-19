@@ -94,6 +94,7 @@ namespace PlayerBuildProgramLibrary.Data
         public string[] AdditionalArgs = new string[0];
         public string CompilerFlags;
         public string LinkerFlags;
+        public string LinkerFlagsFile;
         public string ExtraTypes;
         public bool CreateSymbolFiles;
         public bool AllowDebugging;

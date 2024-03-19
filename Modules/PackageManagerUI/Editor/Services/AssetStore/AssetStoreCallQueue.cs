@@ -38,6 +38,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private PackageFiltering m_PackageFiltering;
         [NonSerialized]
+        private UpmCache m_UpmCache;
+        [NonSerialized]
         private AssetStoreClient m_AssetStoreClient;
         [NonSerialized]
         private AssetStoreCache m_AssetStoreCache;
@@ -46,6 +48,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void ResolveDependencies(ApplicationProxy application,
             UnityConnectProxy unityConnect,
             PackageFiltering packageFiltering,
+            UpmCache upmCache,
             AssetStoreClient assetStoreClient,
             AssetStoreCache assetStoreCache,
             PageManager pageManager)
@@ -53,6 +56,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application = application;
             m_UnityConnect = unityConnect;
             m_PackageFiltering = packageFiltering;
+            m_UpmCache = upmCache;
             m_AssetStoreClient = assetStoreClient;
             m_AssetStoreCache = assetStoreCache;
             m_PageManager = pageManager;
@@ -148,6 +152,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_AssetStoreClient.RefreshLocal();
                 CheckUpdateForUncheckedLocalInfos();
             }
+
+            foreach (var productId in m_UpmCache.installedPackageInfos.Select(info => info.assetStore?.productId).Where(id => !string.IsNullOrEmpty(id) && m_AssetStoreCache.GetProductInfo(id) == null))
+                AddToFetchDetailsQueue(productId);
         }
 
         public virtual void AddToFetchDetailsQueue(string packageUniqueId)

@@ -331,29 +331,36 @@ namespace UnityEngine.UIElements
 
         private protected override bool HandleItemNavigation(bool moveIn, bool altPressed)
         {
-            var index = selectedIndex;
-            var hasChildren = viewController.HasChildrenByIndex(index);
-
             var selectionIncrement = 1;
-            if (moveIn)
+            var hasChanges = false;
+
+            foreach (var selectedId in selectedIds)
             {
-                if (hasChildren && !IsExpandedByIndex(index))
+                var id = viewController.GetIndexForId(selectedId);
+
+                if (!viewController.HasChildrenByIndex(id))
+                    break;
+
+                if (moveIn && !IsExpandedByIndex(id))
                 {
-                    ExpandItemByIndex(index, altPressed);
-                    return true;
+                    ExpandItemByIndex(id, altPressed);
+                    hasChanges = true;
+                }
+                else if (!moveIn && IsExpandedByIndex(id))
+                {
+                    CollapseItemByIndex(id, altPressed);
+                    hasChanges = true;
                 }
             }
-            else
-            {
-                if (hasChildren && IsExpandedByIndex(index))
-                {
-                    CollapseItemByIndex(index, altPressed);
-                    return true;
-                }
 
+            if (hasChanges)
+                return true;
+
+            if (!moveIn)
+            {
                 // Find the nearest ancestor with children in the tree and select it.
                 // If no ancestor is found, find the closest item with children before the current one.
-                var id = viewController.GetIdForIndex(index);
+                var id = viewController.GetIdForIndex(selectedIndex);
                 var ancestorId = viewController.GetParentId(id);
                 if (ancestorId != ReusableCollectionItem.UndefinedIndex)
                 {
@@ -365,8 +372,9 @@ namespace UnityEngine.UIElements
                 selectionIncrement = -1;
             }
 
+            bool hasChildren;
             // Find the next item with children in the tree and select it.
-            var selectionIndex = index;
+            var selectionIndex = selectedIndex;
             do
             {
                 selectionIndex += selectionIncrement;
