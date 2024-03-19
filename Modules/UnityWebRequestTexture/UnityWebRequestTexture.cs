@@ -28,5 +28,15 @@ namespace UnityEngine.Networking
             return new UnityWebRequest(uri, UnityWebRequest.kHttpVerbGET, new DownloadHandlerTexture(!nonReadable), null);
         }
 
+        public static UnityWebRequest GetTexture(string uri, DownloadedTextureParams parameters)
+        {
+            return new UnityWebRequest(uri, UnityWebRequest.kHttpVerbGET, new DownloadHandlerTexture(parameters), null);
+        }
+
+        public static UnityWebRequest GetTexture(Uri uri, DownloadedTextureParams parameters)
+        {
+            return new UnityWebRequest(uri, UnityWebRequest.kHttpVerbGET, new DownloadHandlerTexture(parameters), null);
+        }
+
     }
 }

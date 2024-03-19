@@ -1103,12 +1103,14 @@ namespace UnityEngine.UIElements
             if (evt.destinationPanel.contextType == ContextType.Player)
             {
                 m_ContentAndVerticalScrollContainer.RegisterCallback<PointerMoveEvent>(OnPointerMove);
-
                 contentContainer.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
                 contentContainer.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
                 contentContainer.RegisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
+
                 contentContainer.RegisterCallback<PointerCaptureEvent>(OnPointerCapture);
                 contentContainer.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
+
+                evt.destinationPanel.visualTree.RegisterCallback<PointerUpEvent>(OnRootPointerUp, TrickleDown.TrickleDown);
             }
         }
 
@@ -1127,13 +1129,15 @@ namespace UnityEngine.UIElements
 
             if (evt.originPanel.contextType == ContextType.Player)
             {
-                m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
                 m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
-                m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
-                m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
+                contentContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+                contentContainer.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
+                contentContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
 
                 contentContainer.UnregisterCallback<PointerCaptureEvent>(OnPointerCapture);
                 contentContainer.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
+
+                evt.originPanel.visualTree.UnregisterCallback<PointerUpEvent>(OnRootPointerUp, TrickleDown.TrickleDown);
             }
         }
 
@@ -1144,7 +1148,7 @@ namespace UnityEngine.UIElements
             if (m_CapturedTarget == null)
                 return;
 
-            m_ScrollingPointerId = evt.pointerId;
+            m_TouchPointerMoveAllowed = true;
             m_CapturedTarget.RegisterCallback(m_CapturedTargetPointerMoveCallback);
             m_CapturedTarget.RegisterCallback(m_CapturedTargetPointerUpCallback);
         }
@@ -1220,7 +1224,6 @@ namespace UnityEngine.UIElements
             m_FirstLayoutPass = -1;
         }
 
-        private int m_ScrollingPointerId = PointerId.invalidPointerId;
         private const float k_VelocityLerpTimeFactor = 10;
         internal const float ScrollThresholdSquared = 100;
         private Vector2 m_StartPosition;
@@ -1231,6 +1234,7 @@ namespace UnityEngine.UIElements
         private Vector2 m_HighBounds;
         private float m_LastVelocityLerpTime;
         private bool m_StartedMoving;
+        private bool m_TouchPointerMoveAllowed;
         private bool m_TouchStoppedVelocity;
         VisualElement m_CapturedTarget;
         EventCallback<PointerMoveEvent> m_CapturedTargetPointerMoveCallback;
@@ -1489,16 +1493,16 @@ namespace UnityEngine.UIElements
             if (evt.pointerType == PointerType.mouse || !evt.isPrimary)
                 return;
 
-            if (m_ScrollingPointerId != PointerId.invalidPointerId)
+            if (evt.pointerId != PointerId.invalidPointerId)
             {
-                ReleaseScrolling(m_ScrollingPointerId, evt.target);
+                ReleaseScrolling(evt.pointerId, evt.target);
             }
 
             m_PostPointerUpAnimation?.Pause();
 
             var touchStopsVelocityOnly = Mathf.Abs(m_Velocity.x) > 10 || Mathf.Abs(m_Velocity.y) > 10;
 
-            m_ScrollingPointerId = evt.pointerId;
+            m_TouchPointerMoveAllowed = true;
             m_StartedMoving = false;
             InitTouchScrolling(evt.position);
 
@@ -1513,7 +1517,7 @@ namespace UnityEngine.UIElements
 
         void OnPointerMove(PointerMoveEvent evt)
         {
-            if (evt.pointerType == PointerType.mouse || !evt.isPrimary || evt.pointerId != m_ScrollingPointerId)
+            if (evt.pointerType == PointerType.mouse || !evt.isPrimary || !m_TouchPointerMoveAllowed)
                 return;
 
             if (evt.isHandledByDraggable)
@@ -1656,7 +1660,7 @@ namespace UnityEngine.UIElements
 
                 m_LastVelocityLerpTime = Time.unscaledTime;
 
-                var deltaTime = (m_ElasticAnimationIntervalMs/1000f);
+                var deltaTime = k_TouchScrollInertiaBaseTimeInterval;
                 var newVelocity = (newScrollOffset - scrollOffset) / deltaTime;
                 m_Velocity = Vector2.Lerp(m_Velocity, newVelocity, deltaTime * k_VelocityLerpTimeFactor);
             }
@@ -1668,13 +1672,9 @@ namespace UnityEngine.UIElements
 
         bool ReleaseScrolling(int pointerId, IEventHandler target)
         {
-            if (pointerId != m_ScrollingPointerId)
-                return false;
-
-            m_ScrollingPointerId = PointerId.invalidPointerId;
-
             m_TouchStoppedVelocity = false;
             m_StartedMoving = false;
+            m_TouchPointerMoveAllowed = false;
 
             if (target != contentContainer || !contentContainer.HasPointerCapture(pointerId))
                 return false;
@@ -1689,7 +1689,7 @@ namespace UnityEngine.UIElements
             contentContainer.ReleasePointer(pointerId);
             return true;
         }
-
+        
         void ExecuteElasticSpringAnimation()
         {
             ComputeInitialSpringBackVelocity();
@@ -1803,6 +1803,11 @@ namespace UnityEngine.UIElements
         void OnRootCustomStyleResolved(CustomStyleResolvedEvent evt)
         {
             ReadSingleLineHeight();
+        }
+
+        void OnRootPointerUp(PointerUpEvent evt)
+        {
+            m_TouchPointerMoveAllowed = false;
         }
 
         void ReadSingleLineHeight()

@@ -193,7 +193,7 @@ namespace UnityEditor.Search
                 // the automatic update during tests.
                 this.autoFlush = autoFlush && !Utils.IsRunningTests();
 
-                m_Debounce = Delayer.Debounce(_ => TriggerBackgroundUpdate(), backgroundUpdateDebounceInSeconds);
+                m_Debounce = Delayer.Debounce(_ => TriggerBackgroundUpdate(), TimeSpan.FromSeconds(backgroundUpdateDebounceInSeconds));
                 m_Valid = true;
             }
             else

@@ -135,10 +135,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager.onDownloadFinalized -= OnDownloadProgress;
         }
 
-        public void Refresh(IPackage package, IPackageVersion version)
+        public void Refresh(IPackage package)
         {
             m_Package = package;
-            m_Version = version;
+            m_Version = package.versions.primary;
 
             Refresh();
         }
@@ -156,7 +156,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         // Returns true if the progress bar is visible and there's no need to further check other containers
         private bool RefreshProgressContainer(IOperation operation = null)
         {
-            operation ??= m_AssetStoreDownloadManager.GetDownloadOperation(m_Version?.package?.product?.id);
+            operation ??= m_AssetStoreDownloadManager.GetDownloadOperation(m_Package?.product?.id);
             var progressVisible = operation != null && m_Version?.package?.uniqueId == operation.packageUniqueId && m_DownloadProgress.UpdateProgress(operation);
             UIUtils.SetElementDisplay(m_ProgressContainer, progressVisible);
             if (progressVisible)

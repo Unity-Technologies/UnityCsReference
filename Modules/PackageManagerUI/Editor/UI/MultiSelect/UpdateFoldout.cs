@@ -16,10 +16,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
         }
 
-        protected override MultiSelectItem CreateMultiSelectItem(IPackageVersion version)
+        protected override MultiSelectItem CreateMultiSelectItem(IPackage package)
         {
-            var rightInfoText = string.Format(k_UpdateInfoTextFormat, version?.package?.versions.GetUpdateTarget(version).versionString);
-            return new MultiSelectItem(version, rightInfoText);
+            var rightInfoText = string.Format(k_UpdateInfoTextFormat, package?.versions.GetUpdateTarget(package.versions.primary).versionString);
+            return new MultiSelectItem(package, rightInfoText);
         }
     }
 }

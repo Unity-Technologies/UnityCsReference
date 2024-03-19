@@ -16,26 +16,60 @@ namespace UnityEditor
         private readonly bool m_FirstExecuteImmediate;
         private bool m_DelayInProgress;
 
-        public static Delayer Throttle(Action<object> action, double delay = 0.2)
+        internal static readonly TimeSpan DefaultDelay = TimeSpan.FromMilliseconds(200);
+
+        /// <summary>
+        /// Throttle the action to be executed at most once every delay.
+        /// If no delay is specified default delay is <see cref="DefaultDelay"/>
+        /// </summary>
+        /// <param name="action">action to be executed</param>
+        /// <param name="delay">delay of the action, if not specified <see cref="DefaultDelay"/> will be used</param>
+        /// <returns>a new instance of a <see cref="Delayer"/></returns>
+        public static Delayer Throttle(Action<object> action, TimeSpan? delay = null)
         {
-            return new Delayer(action, delay, true, false);
+            return new Delayer(action, delay ?? DefaultDelay, true, false);
         }
 
-        public static Delayer Throttle(Action<object> action, double delay, bool firstExecuteImmediate)
+        /// <summary>
+        /// Throttle the action to be executed at most once every delay.
+        /// </summary>
+        /// <param name="action">action to be executed</param>
+        /// <param name="delay">delay of the action</param>
+        /// <param name="firstExecuteImmediate">if true, the action will be executed immediately</param>
+        /// <returns>a new instance of a <see cref="Delayer"/></returns>
+        public static Delayer Throttle(Action<object> action, TimeSpan delay, bool firstExecuteImmediate)
         {
             return new Delayer(action, delay, true, firstExecuteImmediate);
         }
 
-        public static Delayer Debounce(Action<object> action, double delay = 0.2)
+        /// <summary>
+        /// Debounce the action to be executed after the delay has passed.
+        /// If no delay is specified default delay is <see cref="DefaultDelay"/>
+        /// </summary>
+        /// <param name="action">action to be executed</param>
+        /// <param name="delay">delay of the action, if not specified <see cref="DefaultDelay"/> will be used</param>
+        /// <returns>a new instance of a <see cref="Delayer"/></returns>
+        public static Delayer Debounce(Action<object> action, TimeSpan? delay = null)
         {
-            return new Delayer(action, delay, false, false);
+            return new Delayer(action, delay ?? DefaultDelay, false, false);
         }
 
-        public static Delayer Debounce(Action<object> action, double delay, bool firstExecuteImmediate)
+        /// <summary>
+        /// Debounce the action to be executed after the delay has passed.
+        /// </summary>
+        /// <param name="action">action to be executed</param>
+        /// <param name="delay">delay for the action</param>
+        /// <param name="firstExecuteImmediate">if true, the action will be executed immediately</param>
+        /// <returns>a new instance of a <see cref="Delayer"/></returns>
+        public static Delayer Debounce(Action<object> action, TimeSpan delay, bool firstExecuteImmediate)
         {
             return new Delayer(action, delay, false, firstExecuteImmediate);
         }
 
+        /// <summary>
+        /// Try to execute the action
+        /// </summary>
+        /// <param name="context">Context object to pass to the configured action</param>
         public void Execute(object context = null)
         {
             m_Context = context;
@@ -60,10 +94,10 @@ namespace UnityEditor
             }
         }
 
-        private Delayer(Action<object> action, double delay, bool isThrottle, bool firstExecuteImmediate)
+        private Delayer(Action<object> action, TimeSpan delay, bool isThrottle, bool firstExecuteImmediate)
         {
             m_Action = action;
-            m_DebounceDelay = TimeSpan.FromSeconds(delay).Ticks;
+            m_DebounceDelay = delay.Ticks;
             m_IsThrottle = isThrottle;
             m_FirstExecuteImmediate = firstExecuteImmediate;
         }

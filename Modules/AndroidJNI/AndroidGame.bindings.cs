@@ -44,4 +44,23 @@ namespace UnityEngine.Android
         /// </summary>
         Content = 0x00000004
     }
+
+    [NativeType(Header = "Modules/AndroidJNI/Public/GameStateHelper.h")]
+    internal enum GameStateLabel
+    {
+        Default = -1,
+        InitialLoading = -2,
+        AssetPacksLoading = -3,
+        WebRequest = -4
+    }
+
+    [NativeHeader("Modules/AndroidJNI/Public/GameStateHelper.h")]
+    [StaticAccessor("GameStateHelper::Get()", StaticAccessorType.Dot)]
+    public static partial class AndroidGame
+    {
+        // Required for automated SetGameState calls, indicates to the operating system when the application is in loading state, level is the type of loading
+        internal static extern void StartLoading(int label);
+        // Required for automated SetGameState calls, indicates to the operating system when loading state is ended, level is the type of loading
+        internal static extern void StopLoading(int label);
+    }
 }

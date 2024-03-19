@@ -27,11 +27,11 @@ internal abstract class DownloadActionBase : PackageAction
 
     protected abstract string analyticEventName { get; }
 
-    protected override bool TriggerActionImplementation(IList<IPackageVersion> versions)
+    protected override bool TriggerActionImplementation(IList<IPackage> packages)
     {
-        var canDownload = m_OperationDispatcher.Download(versions.Select(v => v.package));
+        var canDownload = m_OperationDispatcher.Download(packages);
         if (canDownload)
-            PackageManagerWindowAnalytics.SendEvent(analyticEventName, versions);
+            PackageManagerWindowAnalytics.SendEvent(analyticEventName, packages.Select(p => p.versions.primary));
         return canDownload;
     }
 

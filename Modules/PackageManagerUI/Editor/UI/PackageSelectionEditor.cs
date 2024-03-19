@@ -88,9 +88,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void GetPackageAndVersion(PackageSelectionObject packageSelectionObject)
         {
-            m_PackageDatabase.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
-            if (m_Version == null && string.IsNullOrEmpty(packageSelectionObject.versionUniqueId))
-                m_Version = m_Package?.versions.primary;
+            m_Package = m_PackageDatabase.GetPackage(packageSelectionObject.packageUniqueId);
+            m_Version = m_Package?.versions.primary;
         }
 
         private void OnPackagesChanged(PackagesChangeArgs args)
@@ -200,7 +199,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
             if (packageSelectionObject != null && (m_Package == null || m_Version == null))
-                packageDatabase.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
+            {
+                m_Package = packageDatabase.GetPackage(packageSelectionObject.packageUniqueId);
+                m_Version = m_Package?.versions.primary;
+            }
         }
 
         internal override bool HasLargeHeader()

@@ -157,7 +157,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (!GetSelection().Contains(tempPackageUniqueId))
                 return;
-            AmendSelection(new[] { new PackageAndVersionIdPair(finalPackageUniqueId) }, new[] { new PackageAndVersionIdPair(tempPackageUniqueId) });
+            AmendSelection(new[] { finalPackageUniqueId }, new[] { tempPackageUniqueId });
         }
 
         public void UpdateVisualStateVisibilityWithSearchText()
@@ -265,37 +265,37 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IEnumerable<VisualState> GetSelectedVisualStates()
         {
-            return m_Selection.Select(s => visualStates.Get(s?.packageUniqueId)).Where(v => v != null);
+            return m_Selection.Select(s => visualStates.Get(s)).Where(v => v != null);
         }
 
-        public virtual bool SetNewSelection(IPackage package, IPackageVersion version = null, bool isExplicitUserSelection = false)
+        public virtual bool SetNewSelection(IPackage package, bool isExplicitUserSelection = false)
         {
-            return SetNewSelection(new[] { new PackageAndVersionIdPair(package?.uniqueId, version?.uniqueId) }, isExplicitUserSelection);
+            return SetNewSelection(new[] { package?.uniqueId }, isExplicitUserSelection);
         }
 
-        public virtual bool SetNewSelection(PackageAndVersionIdPair packageAndVersionId, bool isExplicitUserSelection = false)
+        public virtual bool SetNewSelection(string packageUniqueId, bool isExplicitUserSelection = false)
         {
-            return SetNewSelection(new[] { packageAndVersionId }, isExplicitUserSelection);
+            return SetNewSelection(new[] { packageUniqueId }, isExplicitUserSelection);
         }
 
-        public virtual bool SetNewSelection(IEnumerable<PackageAndVersionIdPair> packageAndVersionIds, bool isExplicitUserSelection = false)
+        public virtual bool SetNewSelection(IEnumerable<string> packageUniqueIds, bool isExplicitUserSelection = false)
         {
-            if (!m_Selection.SetNewSelection(packageAndVersionIds) && !isExplicitUserSelection)
+            if (!m_Selection.SetNewSelection(packageUniqueIds) && !isExplicitUserSelection)
                 return false;
 
             TriggerOnSelectionChanged(isExplicitUserSelection);
             return true;
         }
 
-        public virtual void RemoveSelection(IEnumerable<PackageAndVersionIdPair> toRemove, bool isExplicitUserSelection = false)
+        public virtual void RemoveSelection(IEnumerable<string> toRemove, bool isExplicitUserSelection = false)
         {
             var previousFirstSelection = GetSelection().firstSelection;
-            AmendSelection(Enumerable.Empty<PackageAndVersionIdPair>(), toRemove, isExplicitUserSelection);
+            AmendSelection(Enumerable.Empty<string>(), toRemove, isExplicitUserSelection);
             if (!GetSelection().Any())
                 SetNewSelection(new[] { previousFirstSelection }, isExplicitUserSelection);
         }
 
-        public virtual bool AmendSelection(IEnumerable<PackageAndVersionIdPair> toAddOrUpdate, IEnumerable<PackageAndVersionIdPair> toRemove, bool isExplicitUserSelection = false)
+        public virtual bool AmendSelection(IEnumerable<string> toAddOrUpdate, IEnumerable<string> toRemove, bool isExplicitUserSelection = false)
         {
             if (!m_Selection.AmendSelection(toAddOrUpdate, toRemove) && !isExplicitUserSelection)
                 return false;
@@ -317,24 +317,24 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var selection = GetSelection();
 
-            var invalidSelectionsToRemove = new List<PackageAndVersionIdPair>();
-            foreach (var item in selection)
+            var invalidSelectionsToRemove = new List<string>();
+            foreach (var packageUniqueId in selection)
             {
-                m_PackageDatabase.GetPackageAndVersion(item, out var package, out var _);
-                var visualState = visualStates.Get(item.packageUniqueId);
+                var package = m_PackageDatabase.GetPackage(packageUniqueId);
+                var visualState = visualStates.Get(packageUniqueId);
                 if (package == null || visualState?.visible != true)
-                    invalidSelectionsToRemove.Add(item);
+                    invalidSelectionsToRemove.Add(packageUniqueId);
             }
 
             if (selection.Count > 0 && invalidSelectionsToRemove.Count == 0)
                 return false;
 
-            var newSelectionToAdd = new List<PackageAndVersionIdPair>();
+            var newSelectionToAdd = new List<string>();
             if (invalidSelectionsToRemove.Count == selection.Count)
             {
                 var firstVisible = visualStates.FirstOrDefault(v => v.visible && !selection.Contains(v.packageUniqueId));
                 if (firstVisible != null)
-                    newSelectionToAdd.Add(new PackageAndVersionIdPair(firstVisible.packageUniqueId));
+                    newSelectionToAdd.Add(firstVisible.packageUniqueId);
             }
 
             return AmendSelection(newSelectionToAdd, invalidSelectionsToRemove);

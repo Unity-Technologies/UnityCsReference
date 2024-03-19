@@ -303,7 +303,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrEmpty(args.packageToSelect))
             {
                 m_PackageDatabase.GetPackageAndVersionByIdOrName(args.packageToSelect, out var package, out var version, true);
-                m_PageManager.activePage.SetNewSelection(package, version, true);
+                m_PageManager.activePage.SetNewSelection(package, true);
                 packageList.OnFocus();
             }
             return true;
@@ -360,7 +360,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 m_PackageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out var package, out var version, true);
                 if (package != null)
-                    args.page = m_PageManager.FindPage(package, version) ?? m_PageManager.activePage;
+                    args.page = m_PageManager.FindPage(package) ?? m_PageManager.activePage;
                 else
                 {
                     var packageToSelectSplit = packageToSelect.Split('@');
@@ -447,14 +447,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 // When there are multiple versions selected, we want to make the legacy single select arguments to be null
                 // that way extension UI implemented for single package selection will not show for multi-select cases.
-                var versions = selections.Select(selection =>
+                var packages = selections.Select(selection =>
                 {
-                    m_PackageDatabase.GetPackageAndVersion(selection, out var package, out var version);
-                    return version ?? package?.versions.primary;
+                    var package = m_PackageDatabase.GetPackage(selection);
+                    return package;
                 }).ToArray();
 
-                var version = versions.Length > 1 ? null : versions.FirstOrDefault();
-                return new PackageSelectionArgs { package = version?.package, packageVersion = version, versions = versions, window = this };
+                var package = packages.Length > 1 ? null : packages.FirstOrDefault();
+                return new PackageSelectionArgs { package = package, packageVersion = package?.versions.primary, packages = packages, window = this };
             }
         }
 

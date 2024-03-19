@@ -23,13 +23,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             this.inProgressFoldout = inProgressFoldout;
         }
 
-        public virtual bool AddPackageVersion(IPackageVersion version)
+        public virtual bool AddPackage(IPackage package)
         {
-            var state = mainAction.GetActionState(version, out _, out _);
+            var state = mainAction.GetActionState(package.versions.primary, out _, out _);
             if (state.HasFlag(PackageActionState.InProgress))
-                inProgressFoldout.AddPackageVersion(version);
+                inProgressFoldout.AddPackage(package);
             else if (state == PackageActionState.Visible || state.HasFlag(PackageActionState.DisabledTemporarily))
-                mainFoldout.AddPackageVersion(version);
+                mainFoldout.AddPackage(package);
             else
                 return false;
             return true;
@@ -41,10 +41,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             inProgressFoldout.Refresh();
         }
 
-        public void ClearVersions()
+        public void ClearPackages()
         {
-            mainFoldout.ClearVersions();
-            inProgressFoldout.ClearVersions();
+            mainFoldout.ClearPackages();
+            inProgressFoldout.ClearPackages();
         }
     }
 }

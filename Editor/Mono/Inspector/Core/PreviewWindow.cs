@@ -86,8 +86,7 @@ namespace UnityEditor
             CreatePreviewables();
 
             previewWindow = new InspectorPreviewWindow();
-            IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
-            IPreviewable editor = GetEditorThatControlsPreview(editorsWithPreviews);
+            IPreviewable editor = GetEditorThatControlsPreview(tracker.activeEditors);
             previewWindow = editor?.CreatePreview(previewWindow) as InspectorPreviewWindow;
 
             if (m_ParentInspectorWindow != null && previewWindow != null)
@@ -132,8 +131,7 @@ namespace UnityEditor
         {
             return new IMGUIContainer(() =>
             {
-                IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
-                IPreviewable editor = GetEditorThatControlsPreview(editorsWithPreviews);
+                IPreviewable editor = GetEditorThatControlsPreview(tracker.activeEditors);
 
                 if (drawToolbar)
                 {

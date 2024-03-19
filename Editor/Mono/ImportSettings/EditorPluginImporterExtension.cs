@@ -16,10 +16,8 @@ namespace UnityEditor
     {
         internal enum EditorPluginCPUArchitecture
         {
-            AnyCPU,
-            [InspectorName("Intel 64-bit")]
+            AnyCPU = 0,
             x86_64,
-            [InspectorName("Apple silicon / Arm64")]
             ARM64
         }
 
@@ -54,11 +52,20 @@ namespace UnityEditor
         internal class CPUProperty : Property
         {
             private readonly Func<Enum, bool> validArch;
+            private EditorPluginOSArchitecture currentOS;
+            private readonly GUIContent[] m_ArchitectureNames;
 
             public CPUProperty(GUIContent name, string key, EditorPluginCPUArchitecture defaultValue, Func<Enum, bool> validArch)
                 : base(name, key, defaultValue, BuildPipeline.GetEditorTargetName())
             {
                 this.validArch = validArch;
+                this.currentOS = EditorPluginOSArchitecture.AnyOS;
+                int enumLength = Enum.GetNames(typeof(EditorPluginCPUArchitecture)).Length;
+                m_ArchitectureNames = new GUIContent[enumLength];
+                for (int i = 0; i < enumLength; i++)
+                {
+                    m_ArchitectureNames[i] = EditorGUIUtility.TrTextContent(GetArchitectureName(currentOS, (EditorPluginCPUArchitecture)i));
+                }
             }
 
             internal override void Reset(PluginImporterInspector inspector)
@@ -74,7 +81,56 @@ namespace UnityEditor
 
             internal override void OnGUI(PluginImporterInspector inspector)
             {
-                value = EditorGUILayout.EnumPopup(name, (Enum)value, validArch, false);
+                EditorGUILayout.BeginHorizontal();
+                EditorGUI.BeginChangeCheck();
+                int selectedIndex = (int)GetCurrentArchitecture(inspector);
+                selectedIndex = EditorGUILayout.Popup(name, selectedIndex, m_ArchitectureNames);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    value = (EditorPluginCPUArchitecture)selectedIndex;
+                }
+                EditorGUILayout.EndHorizontal();
+            }
+
+            private EditorPluginCPUArchitecture GetCurrentArchitecture(PluginImporterInspector inspector)
+            {
+                var arch = value as EditorPluginCPUArchitecture?;
+                if (arch == null)
+                {
+                    return EditorPluginCPUArchitecture.AnyCPU;
+                }
+                return arch.Value;
+            }
+
+            public void UpdateArchitectureNames(EditorPluginOSArchitecture osValue)
+            {
+                if (currentOS != osValue)
+                {
+                    int enumLength = Enum.GetNames(typeof(EditorPluginCPUArchitecture)).Length;
+                    for (int i = 0; i < enumLength; i++)
+                    {
+                        m_ArchitectureNames[i] = EditorGUIUtility.TrTextContent(GetArchitectureName(osValue, (EditorPluginCPUArchitecture)i));
+                    }
+                    currentOS = osValue;
+                }
+            }
+
+            static string GetArchitectureName(EditorPluginOSArchitecture os, EditorPluginCPUArchitecture architecture)
+            {
+                switch (architecture)
+                {
+                    case EditorPluginCPUArchitecture.x86_64:
+                        return os == EditorPluginOSArchitecture.OSX ? "Intel 64-bit" : "x64";
+
+                    case EditorPluginCPUArchitecture.ARM64:
+                        return os == EditorPluginOSArchitecture.OSX ? "Apple silicon" : "Arm64";
+
+                    case EditorPluginCPUArchitecture.AnyCPU:
+                        return "Any CPU";
+
+                    default:
+                        throw new NotSupportedException("Unknown EditorPluginCPUArchitecture value: " + architecture);
+                }
             }
         }
 
@@ -94,6 +150,7 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             editorOSProperty.OnGUI(inspector);
+            editorCPUProperty.UpdateArchitectureNames((EditorPluginOSArchitecture)editorOSProperty.value);
             editorCPUProperty.OnGUI(inspector);
 
             if (EditorGUI.EndChangeCheck())

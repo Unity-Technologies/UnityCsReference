@@ -18,17 +18,18 @@ internal class DeselectAction : PackageAction
         m_AnalyticsEventName = analyticsEventName;
     }
 
-    protected override bool TriggerActionImplementation(IList<IPackageVersion> versions)
+    protected override bool TriggerActionImplementation(IList<IPackage> packages)
     {
-        m_PageManager.activePage.RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.package.uniqueId, v.uniqueId)));
+        var packageUniqueIds = packages.Select(p => p.uniqueId).ToArray();
+        m_PageManager.activePage.RemoveSelection(packageUniqueIds);
         if (!string.IsNullOrEmpty(m_AnalyticsEventName))
-            PackageManagerWindowAnalytics.SendEvent(m_AnalyticsEventName, packageIds: versions.Select(v => v.package.uniqueId));
+            PackageManagerWindowAnalytics.SendEvent(m_AnalyticsEventName, packageIds: packageUniqueIds);
         return true;
     }
 
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
-        m_PageManager.activePage.RemoveSelection(new[] { new PackageAndVersionIdPair(version.package.uniqueId, version.uniqueId) });
+        m_PageManager.activePage.RemoveSelection(new[] { version.package.uniqueId });
         return true;
     }
 

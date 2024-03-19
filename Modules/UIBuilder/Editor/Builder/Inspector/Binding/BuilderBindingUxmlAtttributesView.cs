@@ -23,6 +23,7 @@ namespace Unity.UI.Builder
 
         internal new struct TestAccess
         {
+            public ToggleButtonGroup buttonStrip;
             public BuilderObjectField dataSourceField;
             public BaseField<string> dataSourceTypeField;
             public TextField dataSourcePathField;
@@ -45,6 +46,7 @@ namespace Unity.UI.Builder
                 var baseTestAccess = base.testAccess;
                 return new TestAccess
                 {
+                    buttonStrip = baseTestAccess.buttonStrip,
                     dataSourceField = baseTestAccess.dataSourceField,
                     dataSourceTypeField = baseTestAccess.dataSourceTypeField,
                     dataSourcePathField = baseTestAccess.dataSourcePathField,
@@ -388,7 +390,7 @@ namespace Unity.UI.Builder
             Undo.CollapseUndoOperations(undoGroup);
 
             // Apply changes to the element
-            targetView.CallDeserializeOnElement(); 
+            targetView.CallDeserializeOnElement();
             targetView.SendNotifyAttributesChanged();
         }
 

@@ -42,13 +42,13 @@ namespace Unity.UI.Builder
         {
             var documentElement = GetProperty(BuilderConstants.ElementLinkedDocumentVisualElementVEPropertyName) as VisualElement;
 
-            if ((!documentElement.IsPartOfCurrentDocument() || BuilderSharedStyles.IsDocumentElement(documentElement)) &&
+            if ((!documentElement.IsPartOfCurrentDocument() ||
+                 BuilderSharedStyles.IsDocumentElement(documentElement)) &&
                 !BuilderSharedStyles.IsSelectorElement(documentElement))
                 return;
 
+            documentElement.schedule.Execute(FocusOnRenameTextField).ExecuteLater(100);
             SetReorderingZonesEnabled(false);
-
-            FocusOnRenameTextField();
         }
 
         internal void SetReorderingZonesEnabled(bool value)

@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
         public static void InitializeUIElementsEditorManaged()
         {
             var jobHandle = PropertiesEditorInitialization.GetInitializationJobHandle();
-            var handle = new InitializeUIElementsJob().Schedule(jobHandle);
+            new InitializeUIElementsJob().Schedule(jobHandle);
             JobHandle.ScheduleBatchedJobs();
         }
 

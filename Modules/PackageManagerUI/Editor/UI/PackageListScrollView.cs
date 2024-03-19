@@ -79,9 +79,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ISelectableItem GetFirstSelectedItem()
         {
-            m_PackageDatabase.GetPackageAndVersion(m_PageManager.activePage.GetSelection().firstSelection, out var package, out var version);
-            var selectedVersion = version ?? package?.versions.primary;
-            return GetPackageItem(selectedVersion?.package.uniqueId);
+            var package = m_PackageDatabase.GetPackage(m_PageManager.activePage.GetSelection().firstSelection);
+            return GetPackageItem(package?.uniqueId);
         }
 
         public void ScrollToSelection()
@@ -291,11 +290,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SelectAllBetween(string firstPackageUniqueId, string secondPackageUniqueId)
         {
-            var newSelections = new List<PackageAndVersionIdPair>();
+            var newSelections = new List<string>();
             var inBetweenTwoPackages = false;
             if (firstPackageUniqueId == secondPackageUniqueId)
             {
-                newSelections.Add(new PackageAndVersionIdPair(firstPackageUniqueId));
+                newSelections.Add(firstPackageUniqueId);
             }
             else
             {
@@ -310,7 +309,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var matchFirstPackage = packageUniqueId == firstPackageUniqueId;
                     var matchSecondPackage = packageUniqueId == secondPackageUniqueId;
                     if (matchFirstPackage || matchSecondPackage || inBetweenTwoPackages)
-                        newSelections.Add(new PackageAndVersionIdPair(packageUniqueId));
+                        newSelections.Add(packageUniqueId);
 
                     if (matchFirstPackage || matchSecondPackage)
                     {
@@ -332,7 +331,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void SelectAllVisible()
         {
             var validItems = packageItems.Where(p => !string.IsNullOrEmpty(p.package?.uniqueId) && UIUtils.IsElementVisible(p));
-            m_PageManager.activePage.SetNewSelection(validItems.Select(item => new PackageAndVersionIdPair(item.package.uniqueId)), true);
+            m_PageManager.activePage.SetNewSelection(validItems.Select(item => item.package.uniqueId), true);
         }
 
         private void OnMouseDown(MouseDownEvent evt)
@@ -346,7 +345,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (evt.shiftKey)
             {
-                var firstItem = m_PageManager.activePage.GetSelection().firstSelection?.packageUniqueId;
+                var firstItem = m_PageManager.activePage.GetSelection().firstSelection;
                 SelectAllBetween(firstItem, packageItem.package.uniqueId);
                 return;
             }
@@ -365,8 +364,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (evt.direction == NavigationMoveEvent.Direction.Up || evt.direction == NavigationMoveEvent.Direction.Down)
             {
                 var selection = m_PageManager.activePage.GetSelection();
-                var firstItem = selection.firstSelection?.packageUniqueId;
-                var lastItem = selection.lastSelection?.packageUniqueId;
+                var firstItem = selection.firstSelection;
+                var lastItem = selection.lastSelection;
 
                 var nextItem = FindNextVisiblePackageItem(GetPackageItem(lastItem), evt.direction == NavigationMoveEvent.Direction.Up);
                 SelectAllBetween(firstItem, nextItem?.package.uniqueId ?? lastItem);
@@ -423,7 +422,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var nextElement = FindNextVisibleSelectableItem(reverseOrder);
             if (nextElement != null)
             {
-                m_PageManager.activePage.SetNewSelection(nextElement.package, nextElement.targetVersion);
+                m_PageManager.activePage.SetNewSelection(nextElement.package);
                 ScrollIfNeeded(nextElement.element);
                 return true;
             }
@@ -434,7 +433,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // We use the `lastSelection` here as that is the one the user interacted last and it feels more natural that way when navigating with keyboard
             var lastSelection = m_PageManager.activePage.GetSelection().lastSelection;
-            var packageItem = GetPackageItem(lastSelection?.packageUniqueId);
+            var packageItem = GetPackageItem(lastSelection);
             if (packageItem == null)
                 return null;
 

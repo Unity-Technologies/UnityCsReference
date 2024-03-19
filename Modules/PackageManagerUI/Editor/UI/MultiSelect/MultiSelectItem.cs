@@ -8,12 +8,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class MultiSelectItem : VisualElement
     {
-        private IPackageVersion m_Version;
+        private IPackage m_Package;
         private string m_RightInfoText;
 
-        public MultiSelectItem(IPackageVersion version, string rightInfoText = "")
+        public MultiSelectItem(IPackage package, string rightInfoText = "")
         {
-            m_Version = version;
+            m_Package = package;
             m_RightInfoText = rightInfoText;
 
             m_MainContainer = new VisualElement { name = "mainContainer" };
@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_NameLabel = new Label { name = "nameLabel" };
             m_LeftContainer.Add(m_NameLabel);
 
-            if (m_Version?.HasTag(PackageTag.Feature | PackageTag.LegacyFormat | PackageTag.BuiltIn) == false)
+            if (m_Package?.versions.primary.HasTag(PackageTag.Feature | PackageTag.LegacyFormat | PackageTag.BuiltIn) == false)
             {
                 m_VersionLabel = new Label { name = "versionLabel" };
                 m_LeftContainer.Add(m_VersionLabel);
@@ -47,17 +47,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Refresh()
         {
-            m_TypeIcon.EnableClassToggle("featureIcon", "packageIcon", m_Version?.HasTag(PackageTag.Feature) == true);
-            m_NameLabel.text = m_Version.displayName;
+            var version = m_Package?.versions.primary;
+            m_TypeIcon.EnableClassToggle("featureIcon", "packageIcon", version?.HasTag(PackageTag.Feature) == true);
+            m_NameLabel.text = version?.displayName;
             if (m_VersionLabel != null)
-                m_VersionLabel.text = m_Version.versionString;
+                m_VersionLabel.text = version?.versionString;
 
             m_RightInfoLabel.text = m_RightInfoText;
 
-            if (m_Version.HasTag(PackageTag.LegacyFormat))
+            if (version?.HasTag(PackageTag.LegacyFormat) == true)
                 return;
 
-            if (m_Version.package.progress != PackageProgress.None)
+            if (m_Package != null && m_Package.progress != PackageProgress.None)
                 StartSpinner();
             else
                 StopSpinner();

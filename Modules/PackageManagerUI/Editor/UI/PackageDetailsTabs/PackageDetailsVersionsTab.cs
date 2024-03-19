@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly VisualElement m_VersionHistoryList;
         private readonly VisualElement m_VersionsToolbar;
         private readonly Button m_VersionsShowOthersButton;
+        private readonly Label m_LoadingLabel;
 
         private IPackageVersion m_Version;
 
@@ -61,6 +62,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_VersionsShowOthersButton = new Button { name = "versionsShowAllButton", text = L10n.Tr("See other versions") };
             m_VersionsToolbar.Add(m_VersionsShowOthersButton);
+            
+            m_LoadingLabel = new Label { name = "versionsLoadingLabel", text = L10n.Tr("Loading...") };
+            m_Container.Add(m_LoadingLabel);
 
             m_VersionsShowOthersButton.clickable.clicked += ShowOthersVersion;
         }
@@ -70,10 +74,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_Version?.package == null)
                 return;
 
-            m_UpmCache.SetLoadAllVersions(m_Version.package.uniqueId, true);
-            PackageManagerWindowAnalytics.SendEvent("seeAllVersions", m_Version.package.uniqueId);
+            UIUtils.SetElementDisplay(m_LoadingLabel, true);
+            UIUtils.SetElementDisplay(m_VersionsToolbar, false);
 
-            Refresh(m_Version);
+            EditorApplication.delayCall += () =>
+            {
+                m_UpmCache.SetLoadAllVersions(m_Version.package.uniqueId, true);
+                PackageManagerWindowAnalytics.SendEvent("seeAllVersions", m_Version.package.uniqueId);
+
+                Refresh(m_Version);
+            };
         }
 
         public override bool IsValid(IPackageVersion version)
@@ -103,6 +113,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var seeVersionsToolbar = versions.numUnloadedVersions > 0 && (m_SettingsProxy.seeAllPackageVersions || m_Version.availableRegistry != RegistryType.UnityRegistry || m_Version.package.versions.installed?.HasTag(PackageTag.Experimental) == true);
             UIUtils.SetElementDisplay(m_VersionsToolbar, seeVersionsToolbar);
+            UIUtils.SetElementDisplay(m_LoadingLabel, false);
 
             var latestVersion = m_Version.package?.versions.latest;
             var primaryVersion = m_Version.package?.versions.primary;

@@ -37,7 +37,7 @@ class SerializedObjectBinding<TValue> : SerializedObjectBindingPropertyToBaseFie
 
         SetContext(context, property);
 
-        var originalValue = this.lastFieldValue = c.value;
+        this.lastFieldValue = c.value;
 
         if (c is BaseField<TValue> bf)
         {
@@ -49,18 +49,6 @@ class SerializedObjectBinding<TValue> : SerializedObjectBindingPropertyToBaseFie
         }
 
         this.field = c;
-
-        if (compareValues(originalValue, property, getValue)) //the value hasn't changed, but we want the binding to send an event no matter what
-        {
-            if (this.field is VisualElement handler)
-            {
-                using (ChangeEvent<TValue> evt = ChangeEvent<TValue>.GetPooled(originalValue, originalValue))
-                {
-                    evt.elementTarget = handler;
-                    handler.SendEvent(evt);
-                }
-            }
-        }
     }
 
     public override void OnRelease()

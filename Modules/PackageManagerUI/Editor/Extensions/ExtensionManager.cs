@@ -15,7 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         DetailsExtension CreateDetailsExtension();
         PackageExtensionAction CreatePackageActionButton();
         PackageExtensionAction CreatePackageActionMenu();
-        void SendPackageSelectionChangedEvent(IPackage package, IPackageVersion version);
+        void SendPackageSelectionChangedEvent(IPackage package);
         void OnWindowCreated(IWindow window, VisualElement detailsExtensionContainer, VisualElement toolbarExtensionsContainer);
         void OnWindowDestroy();
     }
@@ -29,7 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             private IWindow m_Window = null;
 
             // This is to keep track of the selection that happens during the initialization process
-            private Tuple<IPackage, IPackageVersion> m_DelayedPackageSelection = null;
+            private IPackage m_DelayedPackageSelection = null;
 
             // We keep a dictionary of objects so that we only create one instance for one type
             // and if a developer implements multiple interfaces with one class we won't create multiple instances
@@ -95,7 +95,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // This is the delayed `OnPackageSelectionChanged` call during initialization. Check `OnPackageSelectionChanged` for more details.
                 if (m_DelayedPackageSelection != null)
                 {
-                    SendPackageSelectionChangedEvent(m_DelayedPackageSelection.Item1, m_DelayedPackageSelection.Item2);
+                    SendPackageSelectionChangedEvent(m_DelayedPackageSelection);
                     m_DelayedPackageSelection = null;
                 }
             }
@@ -120,14 +120,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_Window = null;
             }
 
-            public void SendPackageSelectionChangedEvent(IPackage package, IPackageVersion version)
+            public void SendPackageSelectionChangedEvent(IPackage package)
             {
                 // Due to the way the Package Manager window initializes, the first `OnPackageSelectionChanged` would happen before the `OnWindowCreated`
                 // That means the first time `OnPackageSelectionChanged` is triggered, the window is not fully ready and `m_Window` is null
                 // Hence we want to delay calling this first `OnPackageSelectionChanged` until the window is created in `OnWindowCreated`
                 if (m_Window == null)
                 {
-                    m_DelayedPackageSelection = new Tuple<IPackage, IPackageVersion>(package, version);
+                    m_DelayedPackageSelection = package;
                     return;
                 }
 
@@ -135,7 +135,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     try
                     {
-                        var args = new PackageSelectionArgs { package = package, packageVersion = version, window = m_Window };
+                        var args = new PackageSelectionArgs { package = package, packageVersion = package?.versions.primary, window = m_Window };
                         extension.OnPackageSelectionChanged(args);
                     }
                     catch (Exception exception)
@@ -147,7 +147,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private EventDispatcher m_EventDispatcher = new EventDispatcher();
-        public void SendPackageSelectionChangedEvent(IPackage package, IPackageVersion version) => m_EventDispatcher.SendPackageSelectionChangedEvent(package, version);
+        public void SendPackageSelectionChangedEvent(IPackage package) => m_EventDispatcher.SendPackageSelectionChangedEvent(package);
 
         private IWindow m_Window = null;
         private VisualElement m_DetailsExtensionContainer;

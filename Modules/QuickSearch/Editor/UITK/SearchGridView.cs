@@ -118,7 +118,7 @@ namespace UnityEditor.Search
             m_Throttler = Delayer.Throttle(o =>
             {
                 UpdateView();
-            }, SearchView.resultViewUpdateThrottleDelay, true);
+            }, TimeSpan.FromSeconds(SearchView.resultViewUpdateThrottleDelay), true);
 
             m_GridView.itemsBuilt += UpdateSelection;
             m_GridView.itemsChosen += OnItemsChosen;

@@ -134,7 +134,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 m_PageManager.activePage = page;
                 page.LoadExtraItems(packagesInProgress);
-                page.SetNewSelection(packagesInProgress.Select(p => new PackageAndVersionIdPair(p.uniqueId)));
+                page.SetNewSelection(packagesInProgress.Select(p => p.uniqueId));
             }
             Close();
         }

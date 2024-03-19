@@ -43,8 +43,10 @@ namespace Unity.UI.Builder
 
             if ((changeType & (BuilderHierarchyChangeType.ElementName | BuilderHierarchyChangeType.ClassList)) != 0)
             {
-                var selectedId = m_ElementHierarchyView.GetSelectedItemId();
-                var index = m_ElementHierarchyView.treeView.viewController.GetIndexForId(selectedId);
+                // Look for the item associated with the element renamed. Note that the edited element may not be selected
+                // yet.
+                var item = m_ElementHierarchyView.FindElement(m_ElementHierarchyView.treeRootItems, element);
+                var index = m_ElementHierarchyView.treeView.viewController.GetIndexForId(item.id);
                 if (index == -1)
                 {
                     return;

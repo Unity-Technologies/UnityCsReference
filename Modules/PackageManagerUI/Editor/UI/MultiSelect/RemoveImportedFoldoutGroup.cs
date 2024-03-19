@@ -20,9 +20,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             base.Refresh();
         }
 
-        public override bool AddPackageVersion(IPackageVersion version)
+        public override bool AddPackage(IPackage package)
         {
-            return version.importedAssets?.Any() == true && base.AddPackageVersion(version);
+            return package.versions.primary.importedAssets?.Any() == true && base.AddPackage(package);
         }
     }
 }

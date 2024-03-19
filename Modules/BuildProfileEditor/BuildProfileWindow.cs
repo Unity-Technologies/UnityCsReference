@@ -230,15 +230,18 @@ namespace UnityEditor.Build.Profile
 
         public void OnDisable()
         {
-            m_BuildProfileDataSource.Dispose();
+            m_BuildProfileDataSource?.Dispose();
             BuildProfileContext.instance.activeProfileChanged -= OnActiveProfileChanged;
 
             if (m_AssetImportWindow != null)
                 m_AssetImportWindow.Close();
 
             // Set list view's items source to null, so the items' unbind gets called
-            m_BuildProfilesListView.itemsSource = null;
-            m_BuildProfileClassicPlatformListView.itemsSource = null;
+            if (m_BuildProfilesListView != null)
+                m_BuildProfilesListView.itemsSource = null;
+
+            if (m_BuildProfileClassicPlatformListView != null)
+                m_BuildProfileClassicPlatformListView.itemsSource = null;
         }
 
         /// <summary>

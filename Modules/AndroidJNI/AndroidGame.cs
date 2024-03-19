@@ -36,7 +36,7 @@ namespace UnityEngine.Android
         Battery = 0x00000003
     }
 
-    public static class AndroidGame
+    public static partial class AndroidGame
     {
         private static AndroidJavaObject m_UnityGameManager;
         private static AndroidJavaObject m_UnityGameState;

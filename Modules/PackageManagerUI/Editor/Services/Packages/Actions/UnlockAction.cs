@@ -15,10 +15,11 @@ internal class UnlockAction : PackageAction
         m_PageManager = pageManager;
     }
 
-    protected override bool TriggerActionImplementation(IList<IPackageVersion> versions)
+    protected override bool TriggerActionImplementation(IList<IPackage> packages)
     {
-        m_PageManager.activePage.SetPackagesUserUnlockedState(versions.Select(v => v.package.uniqueId), true);
-        PackageManagerWindowAnalytics.SendEvent("unlock", packageIds: versions.Select(v => v.package.uniqueId));
+        var packageUniqueIds = packages.Select(p => p.uniqueId).ToArray();
+        m_PageManager.activePage.SetPackagesUserUnlockedState(packageUniqueIds, true);
+        PackageManagerWindowAnalytics.SendEvent("unlock", packageIds: packageUniqueIds);
         return true;
     }
 

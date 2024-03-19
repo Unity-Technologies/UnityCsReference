@@ -63,6 +63,7 @@ namespace Unity.UI.Builder
 
             m_TextField = m_Inspector.Q<TextField>("header-selected-text-field");
             m_TextField.isDelayed = true;
+            m_TextField.dispatchMode = DispatchMode.Immediate;
             m_TextField.tooltip = "name";
             m_TextField.bindingPath = "name";
 

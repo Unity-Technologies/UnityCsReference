@@ -20,9 +20,9 @@ namespace UnityEditor.PackageManager.UI
         public IPackageVersion packageVersion { get; internal set; }
 
         /// <summary>
-        /// The selected package versions
+        /// The selected packages
         /// </summary>
-        public IPackageVersion[] versions { get; internal set; }
+        public IPackage[] packages { get; internal set; }
 
         /// <summary>
         /// The handle to the Package Manager window

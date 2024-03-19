@@ -35,18 +35,9 @@ class SerializedIsExpandedBinding : SerializedObjectBindingPropertyToBaseField<b
         propCompareValues = SerializedPropertyHelper.ValueEquals<bool>;
 
         SetContext(context, property);
-        var originalValue = this.lastFieldValue = foldout.value;
+        this.lastFieldValue = foldout.value;
         BindingsStyleHelpers.RegisterRightClickMenu(foldout, property);
         field = foldout;
-
-        if (propCompareValues(originalValue, property, propGetValue)) //the value hasn't changed, but we want the binding to send an event no matter what
-        {
-            using (ChangeEvent<bool> evt = ChangeEvent<bool>.GetPooled(originalValue, originalValue))
-            {
-                evt.elementTarget = foldout;
-                foldout.SendEvent(evt);
-            }
-        }
     }
 
     public override void OnRelease()

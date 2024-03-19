@@ -47,6 +47,10 @@ namespace Unity.UI.Builder
 
     internal interface IBuilderSelectionNotifier
     {
+        void BeforeSelectionChanged()
+        {
+        }
+
         void SelectionChanged();
         void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType);
         void StylingChanged(List<string> styles, BuilderStylingChangeType changeType);
@@ -162,6 +166,8 @@ namespace Unity.UI.Builder
             if (ve == null)
                 return;
 
+            NotifyOfBeforeSelectionChange(source);
+
             foreach (var sel in m_Selection)
             {
                 if (sel == null)
@@ -188,6 +194,8 @@ namespace Unity.UI.Builder
             if (ve == null)
                 return;
 
+            NotifyOfBeforeSelectionChange(source);
+
             m_Selection.Add(ve);
 
             if (sort)
@@ -201,6 +209,8 @@ namespace Unity.UI.Builder
 
         public void RemoveFromSelection(IBuilderSelectionNotifier source, VisualElement ve)
         {
+            NotifyOfBeforeSelectionChange(source);
+
             m_Selection.Remove(ve);
             BuilderAssetUtilities.RemoveElementFromSelectionInAsset(m_PaneWindow.document, ve);
 
@@ -211,6 +221,8 @@ namespace Unity.UI.Builder
         {
             if (isEmpty)
                 return;
+
+            NotifyOfBeforeSelectionChange(source);
 
             if (undo)
                 foreach (var sel in m_Selection)
@@ -295,6 +307,16 @@ namespace Unity.UI.Builder
             m_CurrentStyleList = styles;
             m_CurrentChangeType = changeType;
             QueueUpPostPanelUpdaterChangeAction(NotifyOfStylingChangePostStylingUpdate);
+        }
+
+        void NotifyOfBeforeSelectionChange(IBuilderSelectionNotifier source)
+        {
+            if (m_Notifiers == null || m_Notifiers.Count == 0)
+                return;
+
+            foreach (var notifier in m_Notifiers)
+                if (notifier != source)
+                    notifier.BeforeSelectionChanged();
         }
 
         void NotifyOfSelectionChange(IBuilderSelectionNotifier source)

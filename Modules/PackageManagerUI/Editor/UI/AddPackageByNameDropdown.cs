@@ -182,7 +182,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (page != null)
             {
                 m_PageManager.activePage = page;
-                page.SetNewSelection(package, package.versions?.FirstOrDefault(v => v.versionString == packageVersion));
+                page.SetNewSelection(package);
             }
         }
 

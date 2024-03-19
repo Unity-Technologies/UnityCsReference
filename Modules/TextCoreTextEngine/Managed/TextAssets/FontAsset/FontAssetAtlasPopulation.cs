@@ -256,7 +256,7 @@ namespace UnityEngine.TextCore.Text
             }
 
             Glyph[] glyphs;
-            var allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs, out int glyphsAddedCount);
+            var allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
 
             // Add new glyphs to relevant font asset data structure
             {
@@ -267,7 +267,7 @@ namespace UnityEngine.TextCore.Text
                 EnsureAdditionalCapacity(m_GlyphIndexList, additionalCapacity);
             }
 
-            for (int i = 0; i < glyphsAddedCount && glyphs[i] != null; i++)
+            for (int i = 0; i < glyphs.Length && glyphs[i] != null; i++)
             {
                 Glyph glyph = glyphs[i];
 
@@ -574,10 +574,10 @@ namespace UnityEngine.TextCore.Text
             Glyph[] glyphs;
 
             // Try adding remaining glyphs in the newly created atlas texture
-            bool allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs, out int glyphsAddedCount);
+            bool allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
 
             // Add new glyphs to relevant data structures.
-            for (int i = 0; i < glyphsAddedCount && glyphs[i] != null; i++)
+            for (int i = 0; i < glyphs.Length && glyphs[i] != null; i++)
             {
                 Glyph glyph = glyphs[i];
                 uint glyphIndex = glyph.index;

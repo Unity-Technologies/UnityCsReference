@@ -150,37 +150,36 @@ namespace UnityEditor.PackageManager.UI.Internal
             title.text = string.Format(L10n.Tr("{0} {1} selected"), selections.Count, selections.Count > 1 ? L10n.Tr("items") : L10n.Tr("item"));
 
             // We get the versions from the visual states instead of directly from the selection to keep the ordering of packages
-            var versions = m_PageManager.activePage.visualStates.Select(visualState =>
+            var packages = m_PageManager.activePage.visualStates.Select(visualState =>
             {
-                if (!selections.TryGetValue(visualState.packageUniqueId, out var pair))
+                if (!selections.Contains(visualState.packageUniqueId))
                     return null;
-                m_PackageDatabase.GetPackageAndVersion(pair, out var package, out var version);
-                return version ?? package?.versions.primary;
-            }).Where(version => version != null);
+                return m_PackageDatabase.GetPackage(visualState.packageUniqueId);
+            }).Where(package => package != null);
 
             foreach (var foldoutElement in allFoldoutElements)
-                foldoutElement.ClearVersions();
+                foldoutElement.ClearPackages();
 
-            foreach (var version in versions)
+            foreach (var package in packages)
             {
-                if (m_UnlockFoldout.AddPackageVersion(version))
+                if (m_UnlockFoldout.AddPackage(package))
                     continue;
 
-                if (m_CheckUpdateFoldout.AddPackageVersion(version))
+                if (m_CheckUpdateFoldout.AddPackage(package))
                     continue;
 
                 var isActionable = false;
                 foreach (var foldoutGroup in m_FoldoutGroups)
-                    isActionable |= foldoutGroup.AddPackageVersion(version);
+                    isActionable |= foldoutGroup.AddPackage(package);
 
                 if (!isActionable)
-                    m_NoActionFoldout.AddPackageVersion(version);
+                    m_NoActionFoldout.AddPackage(package);
             }
 
             foreach (var foldoutElement in allFoldoutElements)
                 foldoutElement.Refresh();
 
-            UIUtils.SetElementDisplay(infoBoxContainer, m_UnlockFoldout.versions.Any());
+            UIUtils.SetElementDisplay(infoBoxContainer, m_UnlockFoldout.packages.Any());
             return true;
         }
 
@@ -191,8 +190,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnDeselectLockedSelectionsClicked()
         {
-            m_PageManager.activePage.RemoveSelection(m_UnlockFoldout.versions.Select(s => new PackageAndVersionIdPair(s.package.uniqueId, s.uniqueId)));
-            PackageManagerWindowAnalytics.SendEvent("deselectLocked", packageIds: m_UnlockFoldout.versions.Select(v => v.package.uniqueId));
+            var packageUniqueIds = m_UnlockFoldout.packages.Select(p => p.uniqueId).ToArray();
+            m_PageManager.activePage.RemoveSelection(packageUniqueIds);
+            PackageManagerWindowAnalytics.SendEvent("deselectLocked", packageIds: packageUniqueIds);
         }
 
         private VisualElementCache cache { get; }

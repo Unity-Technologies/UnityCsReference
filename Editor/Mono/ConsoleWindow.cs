@@ -745,6 +745,7 @@ namespace UnityEditor
                         {
                             SetActiveEntry(entry);
                             m_LastActiveEntryIndex = entry.globalLineIndex;
+                            activeEntryChanged?.Invoke();
                         }
 
 
@@ -1090,6 +1091,8 @@ namespace UnityEditor
             AddStackTraceLoggingMenu(menu);
         }
 
+        internal ListViewState GetListViewState() { return m_ListView; }
+
         private static void OnFontButtonValueChange()
         {
             m_UseMonospaceFont = !m_UseMonospaceFont;
@@ -1257,6 +1260,8 @@ namespace UnityEditor
         }
 
         internal static event EntryDoubleClickedDelegate entryWithManagedCallbackDoubleClicked;
+
+        internal static event Action activeEntryChanged;
 
         [UsedImplicitly, RequiredByNativeCode]
         private static void SendEntryDoubleClicked(LogEntry entry)

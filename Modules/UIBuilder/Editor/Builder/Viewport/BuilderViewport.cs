@@ -432,7 +432,7 @@ namespace Unity.UI.Builder
         void OnPick(MouseDownEvent evt)
         {
             // Do not prevent zoom and pan
-            if (evt.button == 2 || (evt.actionKey && evt.altKey || (evt.button == (int)MouseButton.RightMouse && evt.altKey)))
+            if (evt.button == 2 || (evt.actionKey && evt.altKey || (evt.button == (int)MouseButton.RightMouse && evt.altKey)) || evt.button == 0 && evt.ctrlKey)
                 return;
 
             m_PickedElements.Clear();

@@ -400,6 +400,13 @@ namespace UnityEditor.Build.Profile
             // can access the classic profiles when copying the settings
             EditorUserBuildSettings.CopyToBuildProfile(buildProfile);
 
+            // Classic profile's shared settings should be populated by the existing shared profile
+            if (sharedProfile != null)
+            {
+                var sharedSettings = sharedProfile.platformBuildProfile as SharedPlatformSettings;
+                sharedSettings?.CopySharedSettingsToBuildProfile(buildProfile);
+            }
+
             // Created profile can also be populated by settings on the managed side
             string module = BuildTargetDiscovery.GetModuleNameForBuildTarget(buildProfile.buildTarget);
             var extension = ModuleManager.GetBuildProfileExtension(module);

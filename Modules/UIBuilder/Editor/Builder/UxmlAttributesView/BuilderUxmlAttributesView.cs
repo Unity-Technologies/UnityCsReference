@@ -1697,7 +1697,7 @@ namespace Unity.UI.Builder
             return m_CurrentUndoGroup.Value;
         }
 
-        void ProcessBatchedChanges()
+        internal void ProcessBatchedChanges()
         {
             if (m_BatchedChanges.Count == 0)
                 return;

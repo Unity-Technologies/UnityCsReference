@@ -13,8 +13,5 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public string displayName;
         public string packageUniqueId;
-        public string versionUniqueId;
-
-        public string uniqueId => string.IsNullOrEmpty(versionUniqueId) ? packageUniqueId : versionUniqueId;
     }
 }
