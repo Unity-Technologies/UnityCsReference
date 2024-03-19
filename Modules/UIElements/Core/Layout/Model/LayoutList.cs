@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -40,6 +40,12 @@ unsafe struct LayoutList<T> : IDisposable
 
             return ref m_Data->Values[index];
         }
+    }
+
+    public LayoutList()
+    {
+        m_Data = null;
+        m_Allocator = Allocator.Invalid;
     }
 
     public LayoutList(int initialCapacity, Allocator allocator)

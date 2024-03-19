@@ -115,10 +115,12 @@ namespace UnityEditor.SpeedTree.Importer
         /// </remarks>
         public delegate void OnCustomEditorSettings(ref SerializedProperty diffusionProfileAsset, ref SerializedProperty diffusionProfileHash);
 
+        [SerializeField]
+        internal SpeedTreeImporterOutputData m_OutputImporterData;
+
         // Cache main objects, created during import process.
         private AssetImportContext m_Context;
         private SpeedTree9Reader m_Tree;
-        private SpeedTreeImporterOutputData m_OutputImporterData;
         private Shader m_Shader;
         private SpeedTreeWindAsset m_WindAsset;
         private STRenderPipeline m_RenderPipeline;
@@ -213,6 +215,8 @@ namespace UnityEditor.SpeedTree.Importer
 
             ctx.AddObjectToAsset(m_OutputImporterData.name, m_OutputImporterData);
             ctx.DependsOnCustomDependency(ImporterSettings.kMaterialSettingsDependencyname);
+
+            AddDependencyOnExtractedMaterials();
 
             TriggerAllCabback();
         }
@@ -621,7 +625,7 @@ namespace UnityEditor.SpeedTree.Importer
                 // Explicity regenerate materials, should happen when bumping the material version for example.
                 if (regenerateMaterials)
                 {
-                    extractedMat = CreateMaterial(stMaterial, lodIndex, stMatName, m_PathFromDirectory);
+                    extractedMat = CreateMaterial(stMaterial, lodIndex, extractedMat.name, m_PathFromDirectory);
 
                     SetMaterialTextureAndColorProperties(stMaterial, extractedMat, lodIndex, m_PathFromDirectory);
                 }
@@ -630,10 +634,10 @@ namespace UnityEditor.SpeedTree.Importer
                     RetrieveMaterialSpecialProperties(extractedMat);
                 }
 
-                var existedMatIndex = m_OutputImporterData.lodMaterials.materials.FindIndex(m => m.material.name == stMatName);
+                var existedMatIndex = m_OutputImporterData.lodMaterials.materials.FindIndex(m => m.defaultName == stMatName);
                 if (existedMatIndex == -1)
                 {
-                    m_OutputImporterData.lodMaterials.materials.Add(new MaterialInfo { material = extractedMat, exported = true });
+                    m_OutputImporterData.lodMaterials.materials.Add(new MaterialInfo { material = extractedMat, defaultName = stMatName, exported = true });
                     m_OutputImporterData.lodMaterials.matNameToIndex[stMatName] = m_OutputImporterData.lodMaterials.materials.Count - 1;
                 }
                 else
@@ -646,7 +650,7 @@ namespace UnityEditor.SpeedTree.Importer
             {
                 Material newMat = CreateMaterial(stMaterial, lodIndex, stMatName, m_PathFromDirectory);
 
-                m_OutputImporterData.lodMaterials.materials.Add(new MaterialInfo { material = newMat, exported = false });
+                m_OutputImporterData.lodMaterials.materials.Add(new MaterialInfo { material = newMat, defaultName = stMatName, exported = false });
                 m_OutputImporterData.lodMaterials.matNameToIndex.Add(stMatName, m_OutputImporterData.lodMaterials.materials.Count - 1);
             }
 
@@ -675,7 +679,7 @@ namespace UnityEditor.SpeedTree.Importer
                     }
                 }
 
-                m_OutputImporterData.materialsIdentifiers.Add(new AssetIdentifier(matInfo.material.GetType(), matInfo.material.name));
+                m_OutputImporterData.materialsIdentifiers.Add(new AssetIdentifier(matInfo.material.GetType(), matInfo.defaultName));
             }
         }
 
@@ -738,7 +742,7 @@ namespace UnityEditor.SpeedTree.Importer
                 m_OutputImporterData.materialsIdentifiers.Add(new AssetIdentifier(matInfo.material.GetType(), matInfo.material.name));
 
                 // Remap the new material to the importer 'ExternalObjectMap'.
-                if (TryGetExternalMaterial(matInfo.material.name, out var extractedMat))
+                if (TryGetExternalMaterial(matInfo.defaultName, out var extractedMat))
                 {
                     string newMatPath = AssetDatabase.GetAssetPath(extractedMat);
 
@@ -750,7 +754,7 @@ namespace UnityEditor.SpeedTree.Importer
                         AssetDatabase.CreateAsset(matInfo.material, newMatPath);
                     }
 
-                    if (TryGetSourceAssetIdentifierFromName(matInfo.material.name, out var assetIdentifier))
+                    if (TryGetSourceAssetIdentifierFromName(matInfo.defaultName, out var assetIdentifier))
                     {
                         AddRemap(assetIdentifier, matInfo.material);
                     }
@@ -816,23 +820,52 @@ namespace UnityEditor.SpeedTree.Importer
             {
                 MaterialMap stMatMap = stMaterial.Maps[indexMap];
                 string mapPath = stMatMap.Path;
-                if (stMatMap.Used && !string.IsNullOrEmpty(mapPath))
+
+                if (!stMatMap.Used)
+                    return false;
+
+                if (!string.IsNullOrEmpty(mapPath))
                 {
-                    string finalTexturePath = path + mapPath;
+                    Texture2D texture = LoadTexture(mapPath, path);
 
-                    Texture2D tex = (m_Context != null)
-                        ? m_Context.GetReferenceToAssetMainObject(finalTexturePath) as Texture2D
-                        : AssetDatabase.LoadAssetAtPath(finalTexturePath, typeof(Texture2D)) as Texture2D;
-
-                    if (tex != null)
+                    if (texture != null)
                     {
-                        mat.SetTexture(property, tex);
+                        mat.SetTexture(property, texture);
                         return true;
                     }
                 }
             }
 
             return false;
+        }
+
+        private Texture2D LoadTexture(string mapPath, string path)
+        {
+            string texturePath = path + mapPath;
+
+            Texture2D texture = (m_Context != null)
+                ? m_Context.GetReferenceToAssetMainObject(texturePath) as Texture2D
+                : AssetDatabase.LoadAssetAtPath(texturePath, typeof(Texture2D)) as Texture2D;
+
+            if (texture != null)
+                return texture;
+
+            // Textures are not located near the asset, let's check if they were moved somewhere else.
+            string mapPathWithoutExtension = Path.GetFileNameWithoutExtension(mapPath);
+            string[] textureAssets = AssetDatabase.FindAssets(mapPathWithoutExtension);
+
+            if (textureAssets != null && textureAssets.Length > 0)
+            {
+                string assetPathFromGUID = AssetDatabase.GUIDToAssetPath(textureAssets[0]);
+
+                texture = (m_Context != null)
+                    ? m_Context.GetReferenceToAssetMainObject(assetPathFromGUID) as Texture2D
+                    : AssetDatabase.LoadAssetAtPath(assetPathFromGUID, typeof(Texture2D)) as Texture2D;
+
+                return texture;
+            }
+
+            return null;
         }
 
         private bool TryGetInstanceIDFromMaterialProperty(Material material, int propertyName, out int id)
@@ -1093,6 +1126,25 @@ namespace UnityEditor.SpeedTree.Importer
         {
             m_MaterialVersion = SPEEDTREE_9_MATERIAL_VERSION;
             MarkDirty();
+        }
+
+        private void AddDependencyOnExtractedMaterials()
+        {
+            Dictionary<SourceAssetIdentifier, UnityEngine.Object> extMap = GetExternalObjectMap();
+
+            foreach (var entry in extMap)
+            {
+                if (entry.Value != null)
+                {
+                    string matPath = AssetDatabase.GetAssetPath(entry.Value);
+
+                    m_Context.DependsOnImportedAsset(matPath);
+
+                    // Necessary to avoid the warning "Import of asset setup artifact dependency to but dependency isn't used
+                    // and therefore not registered in the asset database".
+                    AssetDatabase.LoadAssetAtPath(matPath, typeof(Material));
+                }
+            }
         }
         #endregion
 

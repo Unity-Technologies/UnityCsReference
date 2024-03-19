@@ -46,7 +46,7 @@ namespace UnityEngine.UIElements
                 TrickleDown.TrickleDown);
         }
 
-        public override void Update()
+        internal override void Update()
         {
             if (m_PanelSettings != null)
                 m_PanelSettings.ApplyPanelSettings();

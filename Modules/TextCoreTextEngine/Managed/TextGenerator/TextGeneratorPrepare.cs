@@ -57,13 +57,13 @@ namespace UnityEngine.TextCore.Text
             m_FontWeightInternal = (m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold ? TextFontWeight.Bold : generationSettings.fontWeight;
 
             // Find and cache Underline & Ellipsis characters.
-            GetSpecialCharacters(generationSettings);
+            if (!GetSpecialCharacters(generationSettings))
+                return false;
 
             //ParseInputText
             PopulateTextBackingArray(generationSettings.renderedText);
             PopulateTextProcessingArray(generationSettings);
-            bool success = PopulateFontAsset(generationSettings, m_TextProcessingArray);
-            return success;
+            return PopulateFontAsset(generationSettings, m_TextProcessingArray);
         }
 
         // This function parses through the Char[] to determine how many characters will be visible. It then makes sure the arrays are large enough for all those characters.
@@ -275,9 +275,7 @@ namespace UnityEngine.TextCore.Text
 
                     if (character == null)
                     {
-                        // Search for the missing glyph character in the Settings Fallback list.
-                        if (textSettings.fallbackFontAssets != null && textSettings.fallbackFontAssets.Count > 0)
-                            character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.fallbackFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, ligature);
+                        character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.fallbackFontAssets, textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, ligature);
                     }
 
                     if (character == null)
@@ -562,7 +560,7 @@ namespace UnityEngine.TextCore.Text
 
             // Search potential list of fallback font assets assigned to the font asset.
             if (fontAsset.m_FallbackFontAssetTable != null && fontAsset.m_FallbackFontAssetTable.Count > 0)
-                character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, fontAsset.m_FallbackFontAssetTable, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
+                character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, fontAsset.m_FallbackFontAssetTable, OSFallbackList: null, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
 
             if (character != null)
             {
@@ -593,7 +591,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Search list of potential fallback font assets assigned to the primary font asset.
                 if (generationSettings.fontAsset.m_FallbackFontAssetTable != null && generationSettings.fontAsset.m_FallbackFontAssetTable.Count > 0)
-                    character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, generationSettings.fontAsset.m_FallbackFontAssetTable, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
+                    character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, generationSettings.fontAsset.m_FallbackFontAssetTable, OSFallbackList: null, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
 
                 if (character != null)
                 {
@@ -613,9 +611,10 @@ namespace UnityEngine.TextCore.Text
                     return spriteCharacter;
             }
 
+            if (textSettings.GetStaticFallbackOSFontAsset() == null && !canWriteOnAsset)
+                return null;
             // Search for the character in the list of fallback assigned in the settings (General Fallbacks).
-            if (textSettings.fallbackFontAssets != null && textSettings.fallbackFontAssets.Count > 0)
-                character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, textSettings.fallbackFontAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
+            character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, textSettings.fallbackFontAssets, textSettings.fallbackOSFontAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
 
             if (character != null)
             {
@@ -1066,9 +1065,10 @@ namespace UnityEngine.TextCore.Text
 
                     if (character == null)
                     {
+                        if (textSettings.GetStaticFallbackOSFontAsset() == null && !canWriteOnAsset)
+                            return false;
                         // Search for the missing glyph character in the Settings Fallback list.
-                        if (textSettings.fallbackFontAssets != null && textSettings.fallbackFontAssets.Count > 0)
-                            character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.fallbackFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out _, ligature);
+                        character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.fallbackFontAssets, textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out _, ligature);
                     }
 
                     if (character == null)
@@ -1313,15 +1313,17 @@ namespace UnityEngine.TextCore.Text
         /// Method used to find and cache references to the Underline and Ellipsis characters.
         /// </summary>
         /// <param name=""></param>
-        protected void GetSpecialCharacters(TextGenerationSettings generationSettings)
+        protected bool GetSpecialCharacters(TextGenerationSettings generationSettings)
         {
-            GetEllipsisSpecialCharacter(generationSettings);
+            if (!GetEllipsisSpecialCharacter(generationSettings))
+                return false;
 
-            GetUnderlineSpecialCharacter(generationSettings);
+            return GetUnderlineSpecialCharacter(generationSettings);
         }
 
-        protected void GetEllipsisSpecialCharacter(TextGenerationSettings generationSettings)
+        protected bool GetEllipsisSpecialCharacter(TextGenerationSettings generationSettings)
         {
+            bool canWriteOnAsset = !IsExecutingJob;
             bool isUsingAlternativeTypeface;
 
             FontAsset fontAsset = m_CurrentFontAsset ?? generationSettings.fontAsset;
@@ -1335,14 +1337,15 @@ namespace UnityEngine.TextCore.Text
             {
                 // Search primary fallback list
                 if (fontAsset.m_FallbackFontAssetTable != null && fontAsset.m_FallbackFontAssetTable.Count > 0)
-                    character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(k_HorizontalEllipsis, fontAsset, fontAsset.m_FallbackFontAssetTable, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
+                    character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(k_HorizontalEllipsis, fontAsset, fontAsset.m_FallbackFontAssetTable, OSFallbackList: null, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
             }
 
             // Search the setting's general fallback list
             if (character == null)
             {
-                if (textSettings.fallbackFontAssets != null && textSettings.fallbackFontAssets.Count > 0)
-                    character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(k_HorizontalEllipsis, fontAsset, textSettings.fallbackFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
+                if (textSettings.GetStaticFallbackOSFontAsset() == null && !canWriteOnAsset)
+                    return false;
+                character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(k_HorizontalEllipsis, fontAsset, textSettings.fallbackFontAssets, textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
             }
 
             // Search the setting's default font asset
@@ -1354,10 +1357,13 @@ namespace UnityEngine.TextCore.Text
 
             if (character != null)
                 m_Ellipsis = new SpecialCharacter(character, 0);
+
+            return true;
         }
 
-        protected void GetUnderlineSpecialCharacter(TextGenerationSettings generationSettings)
+        protected bool GetUnderlineSpecialCharacter(TextGenerationSettings generationSettings)
         {
+            bool canWriteOnAsset = !IsExecutingJob;
             bool isUsingAlternativeTypeface;
 
             FontAsset fontAsset = m_CurrentFontAsset ?? generationSettings.fontAsset;
@@ -1367,8 +1373,13 @@ namespace UnityEngine.TextCore.Text
             // Search base font asset
             Character character = FontAssetUtilities.GetCharacterFromFontAsset(0x5F, fontAsset, false, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
 
+            if (character == null && !canWriteOnAsset)
+                return false;
+
             if (character != null)
                 m_Underline = new SpecialCharacter(character, m_CurrentMaterialIndex);
+
+            return true;
         }
 
         protected void DoMissingGlyphCallback(uint unicode, int stringIndex, FontAsset fontAsset, TextInfo textInfo)

@@ -74,15 +74,13 @@ namespace UnityEditor.UIElements
         }
     }
 
-    namespace Experimental
+    /// <summary>Utility that manages asset monitoring features of UI Toolkit panels.</summary>
+    public static class AssetMonitoringUtilities
     {
-        static class AssetMonitoringExtensions
-        {
-            /// <summary>Gets the state that controls if the panel of the EditorWindow should reset its rendering data when an asset changes.</summary>
-            public static bool GetResetPanelRenderingOnAssetChange(EditorWindow window) => window.resetPanelRenderingOnAssetChange;
+        /// <summary>Gets the state that controls if the panel of the EditorWindow should reset its rendering data when an asset changes.</summary>
+        public static bool GetResetPanelRenderingOnAssetChange(EditorWindow window) => window.resetPanelRenderingOnAssetChange;
 
-            /// <summary>Sets the state that controls if the panel of the EditorWindow should reset its rendering data when an asset changes.</summary>
-            public static void SetResetPanelRenderingOnAssetChange(EditorWindow window, bool reset) => window.resetPanelRenderingOnAssetChange = reset;
-        }
+        /// <summary>Sets the state that controls if the panel of the EditorWindow should reset its rendering data when an asset changes.</summary>
+        public static void SetResetPanelRenderingOnAssetChange(EditorWindow window, bool reset) => window.resetPanelRenderingOnAssetChange = reset;
     }
 }

@@ -1169,7 +1169,7 @@ namespace UnityEditor
 
             bool isActive = m_Panes[tabIndex] == EditorWindow.focusedWindow;
 
-            if (isActive)
+            if (isActive && !s_HasStaticTabsCapability)
                 UpdateWindowTitle(m_Panes[tabIndex]); // UnsavedChanges decoration already taken care of.
 
             Rect tabContentRect = new Rect(roundedPosX, tabPositionRect.y, roundedWidth, tabPositionRect.height);

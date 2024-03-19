@@ -5,7 +5,6 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
-using UnityEditor.Collaboration;
 using UnityEngine.UIElements;
 
 namespace UnityEditor
@@ -22,7 +21,6 @@ namespace UnityEditor
         class Properties
         {
             public static readonly GUIContent autoRefresh = EditorGUIUtility.TrTextContent("Auto Refresh", "Automatically import changed assets.");
-            public static readonly GUIContent autoRefreshHelpBox = EditorGUIUtility.TrTextContent("Auto Refresh must be set when using Collaboration feature.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public static readonly GUIContent desiredImportWorkerCountPctOfLogicalCPUs = EditorGUIUtility.TrTextContent("Import Worker Count %", "Desired asset import worker count for new projects in percentage of available logical CPU cores.");
             public static readonly GUIContent desiredImportWorkerCountPctOfLogicalCPUsLearnMore = new GUIContent("Learn more...", "Go to import worker documentation.");
             public static readonly GUIContent directoryMonitoring = EditorGUIUtility.TrTextContent("Directory Monitoring", "Monitor directories instead of scanning all project files to detect asset changes.");

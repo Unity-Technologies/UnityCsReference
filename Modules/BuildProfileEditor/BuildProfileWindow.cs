@@ -230,15 +230,18 @@ namespace UnityEditor.Build.Profile
 
         public void OnDisable()
         {
-            m_BuildProfileDataSource.Dispose();
+            m_BuildProfileDataSource?.Dispose();
             BuildProfileContext.instance.activeProfileChanged -= OnActiveProfileChanged;
 
             if (m_AssetImportWindow != null)
                 m_AssetImportWindow.Close();
 
             // Set list view's items source to null, so the items' unbind gets called
-            m_BuildProfilesListView.itemsSource = null;
-            m_BuildProfileClassicPlatformListView.itemsSource = null;
+            if (m_BuildProfilesListView != null)
+                m_BuildProfilesListView.itemsSource = null;
+
+            if (m_BuildProfileClassicPlatformListView != null)
+                m_BuildProfileClassicPlatformListView.itemsSource = null;
         }
 
         /// <summary>
@@ -337,7 +340,7 @@ namespace UnityEditor.Build.Profile
                     if (action.state != ActionState.Enabled)
                         continue;
 
-                    if(firstEnabledIndex < 0)
+                    if (firstEnabledIndex < 0)
                         firstEnabledIndex = i;
                     else
                         menu.AddItem(new GUIContent(action.displayName), action.isOn, () => action.callback());
@@ -382,7 +385,7 @@ namespace UnityEditor.Build.Profile
 
             // Rebuild the BuildProfile inspector, targeting the newly selected BuildProfile.
             DestroyImmediate(buildProfileEditor);
-            buildProfileEditor = (BuildProfileEditor) Editor.CreateEditor(profile, typeof(BuildProfileEditor));
+            buildProfileEditor = (BuildProfileEditor)Editor.CreateEditor(profile, typeof(BuildProfileEditor));
             buildProfileEditor.parentState = m_WindowState;
             buildProfileEditor.parent = this;
             m_BuildProfileInspectorElement.Clear();
@@ -500,8 +503,7 @@ namespace UnityEditor.Build.Profile
             }
             else
             {
-                m_WindowState.activateAction = (profile.platformBuildProfile != null)
-                    ? ActionState.Enabled : ActionState.Hidden;
+                m_WindowState.activateAction = profile.CanBuildLocally() ? ActionState.Enabled : ActionState.Hidden;
                 m_WindowState.buildAction = ActionState.Hidden;
                 m_WindowState.buildAndRunAction = ActionState.Hidden;
                 m_WindowState.Refresh();
@@ -580,7 +582,7 @@ namespace UnityEditor.Build.Profile
 
                 if (!BuildProfileContext.IsClassicPlatformProfile(profile))
                 {
-                    editableBuildProfileLabel.tooltip =  AssetDatabase.GetAssetPath(profile);
+                    editableBuildProfileLabel.tooltip = AssetDatabase.GetAssetPath(profile);
                 }
             };
 

@@ -140,7 +140,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 else
                     TriggerOnListUpdate(updated: new[] { package });
 
-                SetNewSelection(new[] { new PackageAndVersionIdPair(package.uniqueId, version?.uniqueId) });
+                SetNewSelection(new[] { package.uniqueId });
             }
         }
 
@@ -172,7 +172,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 TriggerOnListUpdate(added: new[] { package });
             else
                 TriggerOnListUpdate(updated: new[] { package });
-            SetNewSelection(new[] { new PackageAndVersionIdPair(package.uniqueId) });
+            SetNewSelection(new[] { package.uniqueId });
         }
 
         public void OnProductListFetched(AssetStorePurchases purchases)

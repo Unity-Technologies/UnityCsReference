@@ -114,6 +114,8 @@ namespace UnityEditor
             public static readonly GUIContent numberingHierarchyScheme = EditorGUIUtility.TrTextContent("Game Object Naming");
             public static readonly GUIContent numberingHierarchyDigits = EditorGUIUtility.TrTextContent("Game Object Digits");
             public static readonly GUIContent numberingProjectSpace = EditorGUIUtility.TrTextContent("Space Before Number in Asset Names");
+
+            public static GUIContent referencedClipsExactNaming = EditorGUIUtility.TrTextContent("Exactly Match Referenced Clip Names", "Controls how referenced clips are matched with models that are animated in Legacy mode. If turned on, the model name and the referenced clip names must exactly match. If turned off, only the start of the model name needs to match the referenced clip name. Also controls the behavior of the \"Update referenced clips\" button for models that are animated in Humanoid mode. See the documentation for EditorSettings.referencedClipsExactNaming for more details.");
         }
 
         internal struct PopupElement
@@ -737,6 +739,22 @@ namespace UnityEditor
                 if (oldSeconds != newSeconds)
                 {
                     EditorUserSettings.idleImportWorkerShutdownDelayMilliseconds = (int)(newSeconds * 1000.0f);
+                }
+            }
+
+            EditorGUI.BeginChangeCheck();
+            bool referencedClipsExactNaming = EditorSettings.referencedClipsExactNaming;
+            referencedClipsExactNaming = EditorGUILayout.Toggle(Content.referencedClipsExactNaming, referencedClipsExactNaming);
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (EditorUtility.DisplayDialog(
+                        "Warning: Long Import Times",
+                        "Changing this setting might result in several models being re-imported",
+                        $"Proceed",
+                        "Cancel"))
+                {
+                    EditorSettings.referencedClipsExactNaming = referencedClipsExactNaming;
+                    AssetDatabase.Refresh();
                 }
             }
         }

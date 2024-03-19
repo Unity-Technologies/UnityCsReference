@@ -81,9 +81,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         void Load(string packageUniqueId);
         void LoadExtraItems(IEnumerable<IPackage> packages);
 
-        bool SetNewSelection(IPackage package, IPackageVersion version = null, bool isExplicitUserSelection = false);
-        bool SetNewSelection(IEnumerable<PackageAndVersionIdPair> packageAndVersionIdPairs, bool isExplicitUserSelection = false);
-        void RemoveSelection(IEnumerable<PackageAndVersionIdPair> toRemove, bool isExplicitUserSelection = false);
+        bool SetNewSelection(IPackage package, bool isExplicitUserSelection = false);
+        bool SetNewSelection(IEnumerable<string> packageUniqueIds, bool isExplicitUserSelection = false);
+        void RemoveSelection(IEnumerable<string> packageUniqueIds, bool isExplicitUserSelection = false);
         bool ToggleSelection(string packageUniqueId, bool isExplicitUserSelection = false);
         bool UpdateSelectionIfCurrentSelectionIsInvalid();
         void TriggerOnSelectionChanged(bool isExplicitUserSelection = false);

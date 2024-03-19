@@ -98,9 +98,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onVisualStateChange -= RefreshVersionsHistory;
         }
 
-        public void Refresh(IPackage package, IPackageVersion version)
+        public void Refresh(IPackage package)
         {
-            m_Version = version;
+            m_Version = package.versions.primary;
             RefreshTabs();
         }
 

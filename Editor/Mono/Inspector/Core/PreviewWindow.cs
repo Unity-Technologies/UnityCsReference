@@ -16,6 +16,8 @@ namespace UnityEditor
 
         VisualElement previewElement => m_previewElement ?? (m_previewElement = rootVisualElement.Q(className: "unity-inspector-preview"));
 
+        internal bool IsFloatingWindow => parent is { window.rootView: not null, window.showMode: not ShowMode.MainWindow };
+
         private readonly string k_PreviewName = "preview-container";
         internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
         public void SetParentInspector(InspectorWindow inspector)
@@ -84,8 +86,7 @@ namespace UnityEditor
             CreatePreviewables();
 
             previewWindow = new InspectorPreviewWindow();
-            IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
-            IPreviewable editor = GetEditorThatControlsPreview(editorsWithPreviews);
+            IPreviewable editor = GetEditorThatControlsPreview(tracker.activeEditors);
             previewWindow = editor?.CreatePreview(previewWindow) as InspectorPreviewWindow;
 
             if (m_ParentInspectorWindow != null && previewWindow != null)
@@ -130,8 +131,7 @@ namespace UnityEditor
         {
             return new IMGUIContainer(() =>
             {
-                IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
-                IPreviewable editor = GetEditorThatControlsPreview(editorsWithPreviews);
+                IPreviewable editor = GetEditorThatControlsPreview(tracker.activeEditors);
 
                 if (drawToolbar)
                 {

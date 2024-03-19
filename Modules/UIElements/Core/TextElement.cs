@@ -186,11 +186,12 @@ namespace UnityEngine.UIElements
             AddToClassList(ussClassName);
 
             generateVisualContent += OnGenerateVisualContent;
+            edition.GetDefaultValueType = GetDefaultValueType;
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
-
+        string GetDefaultValueType() { return ""; }
 
         internal UITKTextHandle uitkTextHandle { get; set; }
 

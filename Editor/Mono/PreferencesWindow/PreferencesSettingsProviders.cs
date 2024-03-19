@@ -61,7 +61,7 @@ namespace UnityEditor
             public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");
             public static readonly GUIContent inputMaxProcessTime = EditorGUIUtility.TrTextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.");
             public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
-            public static readonly GUIContent enterPlayModeSettingsFocusGameView = EditorGUIUtility.TrTextContent("Create Game View On Play", "If enabled, a Game View window will be created when entering play mode if none exists");
+            public static readonly GUIContent enterPlayModeSettingsFocusGameView = EditorGUIUtility.TrTextContent("Open Game View On Play", "Open a Game view window when you enter Play mode.");
             public static readonly GUIContent enableExtendedDynamicHints = EditorGUIUtility.TrTextContent("Enable extended Dynamic Hints", "Check this to enable extended Dynamic Hints. If available, extended Dynamic Hints will display more information when a property, object or tool is hovered for enough time, or when a Dynamic Hint is displayed");
             public static readonly GUIContent[] interactionModes =
             {

@@ -65,6 +65,15 @@ namespace UnityEngine.Android
         public ulong                  bytesDownloaded { get; }
         public float                  transferProgress { get; }
         public AndroidAssetPackError  error { get; }
+
+        internal bool downloadInProgress => DownloadInProgress(status);
+        internal static bool DownloadInProgress(AndroidAssetPackStatus status)
+        {
+            return status != AndroidAssetPackStatus.Canceled
+                && status != AndroidAssetPackStatus.Completed
+                && status != AndroidAssetPackStatus.Failed
+                && status != AndroidAssetPackStatus.Unknown;
+        }
     }
 
     public class AndroidAssetPackState
@@ -108,10 +117,7 @@ namespace UnityEngine.Android
                         if (info == null)
                             return true;
 
-                        if (info.status != AndroidAssetPackStatus.Canceled
-                            && info.status != AndroidAssetPackStatus.Completed
-                            && info.status != AndroidAssetPackStatus.Failed
-                            && info.status != AndroidAssetPackStatus.Unknown)
+                        if (info.downloadInProgress)
                         {
                             return true;
                         }
@@ -137,10 +143,7 @@ namespace UnityEngine.Android
                     {
                         if (info == null)
                             continue;
-                        if (info.status == AndroidAssetPackStatus.Canceled
-                            || info.status == AndroidAssetPackStatus.Completed
-                            || info.status == AndroidAssetPackStatus.Failed
-                            || info.status == AndroidAssetPackStatus.Unknown)
+                        if (!info.downloadInProgress)
                         {
                             // We are counting the whole operation progress, so a failed subtask is "done" subtask in this case
                             downloadProgress += 1f;

@@ -39,7 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void Import(IPackage package);
         void RemoveImportedAssets(IPackage package);
-        void RemoveImportedAssets(IEnumerable<IPackageVersion> versions);
+        void RemoveImportedAssets(IEnumerable<IPackage> packages);
     }
 
     internal class PackageOperationDispatcher : BaseService<IPackageOperationDispatcher>, IPackageOperationDispatcher
@@ -197,12 +197,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStorePackageInstaller.Uninstall(package.product.id, true);
         }
 
-        public void RemoveImportedAssets(IEnumerable<IPackageVersion> versions)
+        public void RemoveImportedAssets(IEnumerable<IPackage> packages)
         {
-            if (versions?.Any() != true)
+            if (packages?.Any() != true)
                 return;
 
-            m_AssetStorePackageInstaller.Uninstall(versions.Select(v => v.package.product.id));
+            m_AssetStorePackageInstaller.Uninstall(packages.Select(p => p.product.id));
         }
     }
 }

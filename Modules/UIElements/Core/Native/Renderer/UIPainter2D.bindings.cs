@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     [NativeHeader("Modules/UIElements/Core/Native/Renderer/UIPainter2D.bindings.h")]
     internal static class UIPainter2D
     {
-        public static extern IntPtr Create();
+        public static extern IntPtr Create(bool computeBBox = false);
         public static extern void Destroy(IntPtr handle);
 
         public static extern void Reset(IntPtr handle);
@@ -50,6 +50,8 @@ namespace UnityEngine.UIElements
         public static extern void QuadraticCurveTo(IntPtr handle, Vector2 p1, Vector2 p2);
         public static extern void ClosePath(IntPtr handle);
 
+        public static extern Rect GetBBox(IntPtr handle);
+
         public static extern MeshWriteDataInterface Stroke(IntPtr handle);
         public static extern MeshWriteDataInterface Fill(IntPtr handle, FillRule fillRule);
 
@@ -58,8 +60,6 @@ namespace UnityEngine.UIElements
         public static extern void ClearSnapshots(IntPtr handle);
 
         [ThreadSafe] public static extern MeshWriteDataInterface ExecuteSnapshotFromJob(IntPtr painterHandle, int i);
-
-        public static extern Rect ComputeBBoxFromArcs(IntPtr meshes, int meshCount);
     }
 
     /// <summary>

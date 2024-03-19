@@ -27,10 +27,10 @@ internal class RemoveAction : PackageAction
         m_PageManager = pageManager;
     }
 
-    protected override bool TriggerActionImplementation(IList<IPackageVersion> versions)
+    protected override bool TriggerActionImplementation(IList<IPackage> packages)
     {
-        var isModules = versions.FirstOrDefault()?.HasTag(PackageTag.BuiltIn) == true;
-        var title = string.Format(L10n.Tr(isModules ? "Disabling {0} items" : "Removing {0} items"), versions.Count);
+        var isModules = packages.FirstOrDefault()?.versions.primary.HasTag(PackageTag.BuiltIn) == true;
+        var title = string.Format(L10n.Tr(isModules ? "Disabling {0} items" : "Removing {0} items"), packages.Count);
 
         var result = 0;
         if (!m_PackageManagerPrefs.skipMultiSelectRemoveConfirmation)
@@ -47,10 +47,10 @@ internal class RemoveAction : PackageAction
         if (result == 2)
             m_PackageManagerPrefs.skipMultiSelectRemoveConfirmation = true;
 
-        m_OperationDispatcher.Uninstall(versions.Select(v => v.package));
-        PackageManagerWindowAnalytics.SendEvent("uninstall", versions);
+        m_OperationDispatcher.Uninstall(packages);
+        PackageManagerWindowAnalytics.SendEvent("uninstall", packages.Select(p => p.versions.primary));
         // After a bulk removal, we want to deselect them to avoid installing them back by accident.
-        DeselectVersions(versions);
+        DeselectPackages(packages);
         return true;
     }
 
@@ -162,8 +162,8 @@ internal class RemoveAction : PackageAction
         yield return new DisableIfInstalledAsDependency(version);
     }
 
-    private void DeselectVersions(IList<IPackageVersion> versions)
+    private void DeselectPackages(IList<IPackage> packages)
     {
-        m_PageManager.activePage.RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.package.uniqueId, v.uniqueId)));
+        m_PageManager.activePage.RemoveSelection(packages.Select(p => p.uniqueId));
     }
 }

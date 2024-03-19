@@ -745,6 +745,7 @@ namespace UnityEditor
                         {
                             SetActiveEntry(entry);
                             m_LastActiveEntryIndex = entry.globalLineIndex;
+                            activeEntryChanged?.Invoke();
                         }
 
 
@@ -886,7 +887,7 @@ namespace UnityEditor
                                     filePathPart.Substring(lineIndex + 1, (endLineIndex) - (lineIndex + 1));
                                 string filePath = filePathPart.Substring(0, lineIndex);
 
-                                textWithHyperlinks.Append($"{lines[i].Substring(0, filePathIndex)}<color=#40a0ff><link=\"href='{filePath}' line='{lineString}'\">{filePath}:{lineString}</link></color>)\n");
+                                textWithHyperlinks.Append($"{lines[i].Substring(0, filePathIndex)}<color={EditorGUIUtility.GetHyperlinkColorForSkin()}><link=\"href='{filePath}' line='{lineString}'\">{filePath}:{lineString}</link></color>)\n");
 
                                 continue; // continue to evade the default case
                             }
@@ -1090,6 +1091,8 @@ namespace UnityEditor
             AddStackTraceLoggingMenu(menu);
         }
 
+        internal ListViewState GetListViewState() { return m_ListView; }
+
         private static void OnFontButtonValueChange()
         {
             m_UseMonospaceFont = !m_UseMonospaceFont;
@@ -1257,6 +1260,8 @@ namespace UnityEditor
         }
 
         internal static event EntryDoubleClickedDelegate entryWithManagedCallbackDoubleClicked;
+
+        internal static event Action activeEntryChanged;
 
         [UsedImplicitly, RequiredByNativeCode]
         private static void SendEntryDoubleClicked(LogEntry entry)

@@ -16,11 +16,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             inProgressFoldout.headerTextTemplate = L10n.Tr("Updating {0}...");
         }
 
-        public override bool AddPackageVersion(IPackageVersion version)
+        public override bool AddPackage(IPackage package)
         {
-            if (!version.HasTag(PackageTag.UpmFormat))
+            if (!package.versions.primary.HasTag(PackageTag.UpmFormat))
                 return false;
-            return base.AddPackageVersion(version);
+            return base.AddPackage(package);
         }
     }
 }

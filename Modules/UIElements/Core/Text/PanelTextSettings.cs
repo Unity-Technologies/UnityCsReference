@@ -23,12 +23,16 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                if (s_DefaultPanelTextSettings == null)
-                {
-                    s_DefaultPanelTextSettings = ScriptableObject.CreateInstance<PanelTextSettings>();
-                }
-
+                InitializeDefaultPanelTextSettingsIfNull();
                 return s_DefaultPanelTextSettings;
+            }
+        }
+
+        internal static void InitializeDefaultPanelTextSettingsIfNull()
+        {
+            if (s_DefaultPanelTextSettings == null)
+            {
+                s_DefaultPanelTextSettings = ScriptableObject.CreateInstance<PanelTextSettings>();
             }
         }
     }

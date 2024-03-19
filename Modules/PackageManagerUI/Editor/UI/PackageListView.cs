@@ -71,10 +71,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var visualState = item as VisualState;
                 var package = m_PackageDatabase.GetPackage(visualState?.packageUniqueId);
-                if (package != null)
-                    return new PackageAndVersionIdPair(package.uniqueId);
-                return null;
-            }).Where(s => s != null).ToArray();
+                return package?.uniqueId;
+            }).Where(s => !string.IsNullOrEmpty(s)).ToArray();
 
             // SelectionChange happens before BindItems, hence we use m_PageManager.SetSelected instead of packageItem.SelectMainItem
             // as PackageItems are null sometimes when SelectionChange is triggered
@@ -185,7 +183,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             // For now we want to just scroll to any of the selections, this behaviour might change in the future depending on how users react
-            var firstSelectedPackageUniqueId = m_PageManager.activePage.GetSelection().firstSelection?.packageUniqueId;
+            var firstSelectedPackageUniqueId = m_PageManager.activePage.GetSelection().firstSelection;
             if (string.IsNullOrEmpty(firstSelectedPackageUniqueId))
                 return;
 

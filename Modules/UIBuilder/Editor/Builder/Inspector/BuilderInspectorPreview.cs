@@ -42,13 +42,13 @@ namespace Unity.UI.Builder
             m_DefaultBackgroundElement = new VisualElement();
             m_DefaultBackgroundElement.AddToClassList(s_DefaultBackgroundClassName);
             m_DefaultBackgroundElement.style.display = DisplayStyle.None;
-            
+
             // preview text
             m_Text = new Label(s_PreviewTextContent);
             m_Text.AddToClassList(s_TextClassName);
             m_Text.RemoveFromClassList(Label.ussClassName);
             m_Text.RemoveFromClassList(TextElement.ussClassName);
-            
+
             // transparency toggle
             m_BackgroundToggle = new ToolbarToggle();
             m_BackgroundToggle.tooltip = BuilderConstants.PreviewTransparencyToggleTooltip;
@@ -61,7 +61,7 @@ namespace Unity.UI.Builder
             container.Add(m_CheckerboardBackgroundElement);
             container.Add(m_DefaultBackgroundElement);
             container.Add(m_Text);
-            
+
             Add(container);
         }
 
@@ -85,7 +85,7 @@ namespace Unity.UI.Builder
 
             pane.AppendActionToEllipsisMenu(BuilderConstants.PreviewMinimizeInInspector,
                 a => m_Inspector.TogglePreviewInInspector(),
-                a => !m_Inspector.showingPreview ? 
+                a => !m_Inspector.showingPreview ?
                     DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
         }
 
@@ -93,18 +93,18 @@ namespace Unity.UI.Builder
         {
             if (currentVisualElement == null)
                 return;
-            
+
             SetTextStyles();
         }
 
         public void ToggleBackground(ChangeEvent<bool> evt)
         {
             var value = evt.newValue;
-            
-            m_CheckerboardBackgroundElement.style.display = value ? DisplayStyle.None : DisplayStyle.Flex; 
+
+            m_CheckerboardBackgroundElement.style.display = value ? DisplayStyle.None : DisplayStyle.Flex;
             m_DefaultBackgroundElement.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
         }
-        
+
         private void SetTextStyles()
         {
             m_Text.style.unityFont = currentVisualElement.resolvedStyle.unityFont;

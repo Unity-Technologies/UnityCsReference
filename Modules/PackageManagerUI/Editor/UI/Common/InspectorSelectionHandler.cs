@@ -11,8 +11,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IInspectorSelectionHandler : IService
     {
-        PackageSelectionObject GetPackageSelectionObject(PackageAndVersionIdPair pair, bool createIfNotFound = false);
-        PackageSelectionObject GetPackageSelectionObject(IPackage package, IPackageVersion version = null, bool createIfNotFound = false);
+        PackageSelectionObject GetPackageSelectionObject(string packageUniqueId, bool createIfNotFound = false);
+        PackageSelectionObject GetPackageSelectionObject(IPackage package, bool createIfNotFound = false);
     }
 
     [Serializable]
@@ -42,24 +42,24 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnEditorSelectionChanged()
         {
-            var selectionIds = new List<PackageAndVersionIdPair>();
-            var selectedVersions = new List<IPackageVersion>();
+            var selectionIds = new List<string>();
+            var selectedPackages = new List<IPackage>();
             foreach (var selectionObject in m_Selection.objects)
             {
                 var packageSelectionObject = selectionObject as PackageSelectionObject;
                 if (packageSelectionObject == null)
                     return;
-                m_PackageDatabase.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out var package, out var version);
-                if (package == null && version == null)
+                var package = m_PackageDatabase.GetPackage(packageSelectionObject.packageUniqueId);
+                if (package == null)
                     continue;
-                selectedVersions.Add(version ?? package?.versions.primary);
-                selectionIds.Add(new PackageAndVersionIdPair(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId));
+                selectedPackages.Add(package);
+                selectionIds.Add(packageSelectionObject.packageUniqueId);
             }
 
             if (!selectionIds.Any())
                 return;
 
-            var page = m_PageManager.FindPage(selectedVersions);
+            var page = m_PageManager.FindPage(selectedPackages);
             if (page != null)
             {
                 m_PageManager.activePage = page;
@@ -83,19 +83,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public PackageSelectionObject GetPackageSelectionObject(PackageAndVersionIdPair pair, bool createIfNotFound = false)
+        public PackageSelectionObject GetPackageSelectionObject(string packageUniqueId, bool createIfNotFound = false)
         {
-            m_PackageDatabase.GetPackageAndVersion(pair?.packageUniqueId, pair?.versionUniqueId, out var package, out var version);
-            return GetPackageSelectionObject(package, version, createIfNotFound);
+            var package = m_PackageDatabase.GetPackage(packageUniqueId);
+            return GetPackageSelectionObject(package, createIfNotFound);
         }
 
         // The virtual keyword is needed for unit tests
-        public virtual PackageSelectionObject GetPackageSelectionObject(IPackage package, IPackageVersion version = null, bool createIfNotFound = false)
+        public virtual PackageSelectionObject GetPackageSelectionObject(IPackage package, bool createIfNotFound = false)
         {
             if (package == null)
                 return null;
 
-            var uniqueId = version?.uniqueId ?? package.uniqueId;
+            var uniqueId = package.uniqueId;
             var packageSelectionObject = m_PackageSelectionObjects.Get(uniqueId);
             if (packageSelectionObject == null && createIfNotFound)
             {
@@ -104,7 +104,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 packageSelectionObject.name = package.displayName;
                 packageSelectionObject.displayName = package.displayName;
                 packageSelectionObject.packageUniqueId = package.uniqueId;
-                packageSelectionObject.versionUniqueId = version?.uniqueId;
                 m_PackageSelectionObjects[uniqueId] = packageSelectionObject;
             }
             return packageSelectionObject;
@@ -117,7 +116,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var packageSelectionObject = GetPackageSelectionObject(package);
                 if (packageSelectionObject != null)
                 {
-                    m_PackageSelectionObjects.Remove(packageSelectionObject.uniqueId);
+                    m_PackageSelectionObjects.Remove(packageSelectionObject.packageUniqueId);
                     UnityEngine.Object.DestroyImmediate(packageSelectionObject);
                 }
             }
@@ -129,7 +128,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var packageSelectionObject = UnityEngine.Object.FindObjectFromInstanceID(id) as PackageSelectionObject;
                 if (packageSelectionObject != null)
-                    m_PackageSelectionObjects[packageSelectionObject.uniqueId] = packageSelectionObject;
+                    m_PackageSelectionObjects[packageSelectionObject.packageUniqueId] = packageSelectionObject;
             }
         }
 

@@ -244,7 +244,7 @@ namespace UnityEngine.UIElements
         /// This information is only used by the UI Builder as a hint to provide some completion to the data source path field when the effective data source cannot be specified at design time.
         /// </remarks>
         /// </summary>
-        internal Type dataSourceType { get; set; }
+        public Type dataSourceType { get; set; }
 
         internal string dataSourceTypeString
         {

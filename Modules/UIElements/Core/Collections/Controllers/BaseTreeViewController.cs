@@ -85,6 +85,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         protected BaseTreeView baseTreeView => view as BaseTreeView;
 
+        internal event Action<TreeViewExpansionChangedArgs> itemExpandedChanged;
+
         /// <summary>
         /// Constructor for a BaseTreeViewController
         /// </summary>
@@ -379,8 +381,19 @@ namespace UnityEngine.UIElements
 
             UpdateHierarchy();
             baseTreeView.RefreshItems();
+            RaiseItemExpandedChanged(GetIdForIndex(index), !wasExpanded, true);
 
             evt.StopPropagation();
+        }
+
+        private void RaiseItemExpandedChanged(int id, bool isExpanded, bool isAppliedToAllChildren)
+        {
+            itemExpandedChanged?.Invoke(new TreeViewExpansionChangedArgs
+            {
+                id = id,
+                isExpanded = isExpanded,
+                isAppliedToAllChildren = isAppliedToAllChildren
+            });
         }
 
         private void OnToggleValueChanged(ChangeEvent<bool> evt)
@@ -664,6 +677,7 @@ namespace UnityEngine.UIElements
             }
 
             baseTreeView.RefreshItems();
+            RaiseItemExpandedChanged(-1, true, true);
         }
 
         /// <summary>
@@ -681,6 +695,7 @@ namespace UnityEngine.UIElements
             }
 
             baseTreeView.RefreshItems();
+            RaiseItemExpandedChanged(-1, false, true);
         }
 
         // Once we update the TreeView to be 100% Hierarchy, we can replace ExpandItemByIndex with this method. Or, we
@@ -718,6 +733,8 @@ namespace UnityEngine.UIElements
 
             if (refresh)
                 baseTreeView.RefreshItems();
+
+            RaiseItemExpandedChanged(id, true, expandAllChildren);
         }
 
         // Once we update the TreeView to be 100% Hierarchy, we can replace CollapseItemByIndex with this method. Or, we
@@ -747,6 +764,8 @@ namespace UnityEngine.UIElements
 
             if (refresh)
                 baseTreeView.RefreshItems();
+
+            RaiseItemExpandedChanged(id, false, collapseAllChildren);
         }
 
         // Helps to determine which expandedItemsIds set to use (the serialized or the view model one).

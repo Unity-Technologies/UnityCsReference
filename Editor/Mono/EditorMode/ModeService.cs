@@ -137,7 +137,7 @@ namespace UnityEditor
         {
             Log("Initialize");
 
-            LoadModes(true);
+            LoadModes();
 
             modeChanged += OnModeChangeMenus;
             modeChanged += OnModeChangeLayouts;
@@ -360,18 +360,19 @@ namespace UnityEditor
             LoadModes();
         }
 
-        private static void LoadModes(bool checkStartupMode = false)
+        private static void LoadModes()
         {
             Log("LoadModes");
 
             ScanModes();
-
+            
             var currentModeIndex = GetSessionModeIndex();
             if (currentModeIndex == -1)
             {
                 currentModeIndex = LoadProjectPrefModeIndex();
             }
-            if (checkStartupMode && HasStartupMode())
+
+            if (!initialModeChanged && HasStartupMode())
             {
                 var requestEditorMode = Application.GetValueForARGV("editor-mode");
                 var modeIndex = GetModeIndexById(requestEditorMode);
@@ -387,6 +388,8 @@ namespace UnityEditor
 
         private static void SaveSessionMode()
         {
+            if (!HasCapability(ModeCapability.Remember, true))
+                return;
             SessionState.SetString(k_ModeCurrentIdKeyName, currentId);
         }
 

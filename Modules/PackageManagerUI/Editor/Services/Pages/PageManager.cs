@@ -28,8 +28,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         void AddExtensionPage(ExtensionPageArgs args);
         IPage GetPage(string pageId);
         IPage GetPage(RegistryInfo registryInfo);
-        IPage FindPage(IPackage package, IPackageVersion version = null);
-        IPage FindPage(IList<IPackageVersion> packageVersions);
+        IPage FindPage(IPackage package);
+        IPage FindPage(IList<IPackage> packages);
 
         void OnWindowDestroy();
     }
@@ -228,22 +228,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             GetPage(MyAssetsPage.k_Id).ClearFilters(true);
         }
 
-        public IPage FindPage(IPackage package, IPackageVersion version = null)
+        public IPage FindPage(IPackage package)
         {
-            return FindPage(new[] { version ?? package?.versions.primary });
+            return FindPage(new[] { package});
         }
 
-        public IPage FindPage(IList<IPackageVersion> packageVersions)
+        public IPage FindPage(IList<IPackage> packages)
         {
-            if (packageVersions?.Any() != true || packageVersions.All(v => activePage.visualStates.Contains(v.package.uniqueId) || activePage.ShouldInclude(v.package)))
+            if (packages?.Any() != true || packages.All(p => activePage.visualStates.Contains(p.uniqueId) || activePage.ShouldInclude(p)))
                 return activePage;
 
             var pageIdsToCheck = new[] { BuiltInPage.k_Id, InProjectPage.k_Id, UnityRegistryPage.k_Id, MyAssetsPage.k_Id, MyRegistriesPage.k_Id};
             foreach (var page in pageIdsToCheck.Select(GetPage).Where(p => !p.isActivePage))
-                if (packageVersions.All(v => page.ShouldInclude(v.package)))
+                if (packages.All(p => page.ShouldInclude(p)))
                     return page;
 
-            if (!m_SettingsProxy.enablePreReleasePackages && packageVersions.Any(v => v.version?.Prerelease.StartsWith("pre.") == true))
+            if (!m_SettingsProxy.enablePreReleasePackages && packages.Any(p => p.versions.primary.version?.Prerelease.StartsWith("pre.") == true))
                 Debug.Log(L10n.Tr("You must check \"Enable Pre-release Packages\" in Project Settings > Package Manager in order to see this package."));
             return null;
         }

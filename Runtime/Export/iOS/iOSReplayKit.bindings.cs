@@ -2,11 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Bindings;
 using uei = UnityEngine.Internal;
 
 namespace UnityEngine.Apple.ReplayKit
 {
+    [Obsolete("ReplayKit will be removed in future version of Unity")]
     [NativeHeader("PlatformDependent/iPhonePlayer/IOSScriptBindings.h")]
     public static partial class ReplayKit
     {

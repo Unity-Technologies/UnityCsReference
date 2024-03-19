@@ -123,6 +123,7 @@ namespace UnityEngine.UIElements
         internal void PrepareTextJobified(MeshGenerationContext mgc, object _)
         {
             TextHandle.InitThreadArrays();
+            PanelTextSettings.InitializeDefaultPanelTextSettingsIfNull();
             TextHandle.currentTime = Time.realtimeSinceStartup;
 
             k_PrepareMainThreadMarker.Begin();
@@ -164,15 +165,11 @@ namespace UnityEngine.UIElements
             k_UpdateMainThreadMarker.Begin();
             foreach (var textData in textJobDatas)
             {
-                if (!textData.prepareSuccess)
-                {
-                    textData.visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings();
-                    textData.visualElement.uitkTextHandle.PrepareFontAsset();
-                }
+                if (textData.prepareSuccess)
+                    continue;
 
-                var fa = TextUtilities.GetFontAsset(textData.visualElement);
-                if (fa.m_CharacterLookupDictionary == null)
-                    fa.ReadFontAssetDefinition();
+                textData.visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings();
+                textData.visualElement.uitkTextHandle.PrepareFontAsset();
             }
 
             FontAsset.UpdateFontAssetsInUpdateQueue();

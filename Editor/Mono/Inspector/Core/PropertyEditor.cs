@@ -23,6 +23,7 @@ using AssetImporterEditor = UnityEditor.AssetImporters.AssetImporterEditor;
 using JetBrains.Annotations;
 using Unity.Profiling;
 using UnityEditor.UIElements;
+using UnityEngine.Pool;
 
 namespace UnityEditor
 {
@@ -149,6 +150,7 @@ namespace UnityEditor
 
         EditorElementUpdater m_EditorElementUpdater;
         IPreviewable m_cachedPreviewEditor;
+        Delayer m_HasPreviewPeriodicCheckDelayer;
 
         public InspectorMode inspectorMode
         {
@@ -360,11 +362,31 @@ namespace UnityEditor
                 EditorApplication.CallDelayed(UpdateSupportedDataModesList);
 
             if (!m_AllPropertyEditors.Contains(this)) m_AllPropertyEditors.Add(this);
+
+            m_HasPreviewPeriodicCheckDelayer?.Dispose();
+            m_HasPreviewPeriodicCheckDelayer = Delayer.Throttle(HasPreviewPeriodicCheck, TimeSpan.FromMilliseconds(200));
+            EditorApplication.update += OnEditorUpdate;
         }
+
+        void HasPreviewPeriodicCheck(object _)
+        {
+            var previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
+
+            // Do we have a preview?
+            var hasPreview = previewEditor != null && previewEditor.HasPreviewGUI();
+            if (hasPreview != m_HasPreview)
+            {
+                m_HasPreview = hasPreview;
+                RebuildContentsContainers();
+            }
+        }
+
+        void OnEditorUpdate() => m_HasPreviewPeriodicCheckDelayer?.Execute(null);
 
         [UsedImplicitly]
         protected virtual void OnDisable()
         {
+            m_HasPreviewPeriodicCheckDelayer?.Dispose();
             hasFloatingPreviewWindow = false;
             ClearPreviewables();
 
@@ -388,6 +410,7 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
 
             m_AllPropertyEditors.Remove(this);
+            EditorApplication.update -= OnEditorUpdate; 
         }
 
         private void OnMouseEnter(MouseEnterEvent e) => HoveredPropertyEditor = this;
@@ -475,6 +498,13 @@ namespace UnityEditor
             return m_AllPropertyEditors.AsEnumerable();
         }
 
+        protected virtual void EnsureAppropriateTrackerIsInUse()
+        {
+            if (m_InspectorMode == InspectorMode.Normal)
+                m_Tracker = ActiveEditorTracker.sharedTracker;
+            else if (m_Tracker is null || m_Tracker.Equals(ActiveEditorTracker.sharedTracker))
+                m_Tracker = new ActiveEditorTracker();
+        }
 
         protected void SetMode(InspectorMode mode)
         {
@@ -485,7 +515,12 @@ namespace UnityEditor
                 // Clear the editors Element so that a real rebuild is done
                 editorsElement.Clear();
                 m_EditorElementUpdater.Clear();
-                tracker.inspectorMode = mode;
+
+                EnsureAppropriateTrackerIsInUse();
+
+                m_Tracker.inspectorMode = m_InspectorMode;
+                m_Tracker.ForceRebuild();
+
                 m_ResetKeyboardControl = true;
                 SceneView.SetActiveEditorsDirty(true);
             }
@@ -1134,8 +1169,7 @@ namespace UnityEditor
                 {
                     VisualElement previewItem = null;
                     CreatePreviewables();
-                    IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
-                    m_cachedPreviewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
+                    m_cachedPreviewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
 
                     if (m_cachedPreviewEditor != null && m_cachedPreviewEditor.HasPreviewGUI())
                     {
@@ -1266,8 +1300,7 @@ namespace UnityEditor
 
         internal void PrepareToolbar(InspectorPreviewWindow toolbar, bool isFloatingPreviewWindow = false)
         {
-            IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
-            IPreviewable previewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
+            IPreviewable previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
 
             if(!isFloatingPreviewWindow)
                 CreatePreviewEllipsisMenu(toolbar, this);
@@ -1275,8 +1308,7 @@ namespace UnityEditor
 
         internal void UpdateLabel(InspectorPreviewWindow toolbar)
         {
-            IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
-            IPreviewable previewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
+            IPreviewable previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
 
             string label;
             if (previewEditor != null && previewEditor.HasPreviewGUI())
@@ -1412,9 +1444,16 @@ namespace UnityEditor
             return lastInteractedEditor;
         }
 
-        protected IPreviewable GetEditorThatControlsPreview(IPreviewable[] editors)
+        protected IPreviewable GetEditorThatControlsPreview(Editor[] activeEditors)
         {
-            if (editors.Length == 0)
+            using var _ = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
+            GetEditorsWithPreviews(activeEditors, editorsWithPreviews);
+            return GetEditorThatControlsPreview(editorsWithPreviews);
+        }
+
+        protected IPreviewable GetEditorThatControlsPreview(List<IPreviewable> editors)
+        {
+            if (editors.Count == 0)
                 return null;
 
             if (m_SelectedPreview != null)
@@ -1470,9 +1509,10 @@ namespace UnityEditor
             return null;
         }
 
-        protected IPreviewable[] GetEditorsWithPreviews(Editor[] editors)
+        protected void GetEditorsWithPreviews(Editor[] editors, List<IPreviewable> outEditorsWithPreview)
         {
-            IList<IPreviewable> editorsWithPreview = new List<IPreviewable>();
+            outEditorsWithPreview.Clear();
+            if (m_Previews == null) return;
 
             int i = -1;
             foreach (Editor e in editors)
@@ -1501,19 +1541,15 @@ namespace UnityEditor
 
                 if (e.HasPreviewGUI())
                 {
-                    editorsWithPreview.Add(e);
+                    outEditorsWithPreview.Add(e);
                 }
             }
-
-            if (m_Previews == null) return new IPreviewable[] {};
 
             foreach (var previewable in m_Previews)
             {
                 if (previewable.HasPreviewGUI())
-                    editorsWithPreview.Add(previewable);
+                    outEditorsWithPreview.Add(previewable);
             }
-
-            return editorsWithPreview.ToArray();
         }
 
         internal virtual Object GetInspectedObject()
@@ -1569,7 +1605,8 @@ namespace UnityEditor
             CreatePreviewables();
             var hasPreview = BeginDrawPreviewAndLabels();
 
-            IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
+            using var _ = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
+            GetEditorsWithPreviews(tracker.activeEditors, editorsWithPreviews);
             IPreviewable previewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
 
             // Do we have a preview?
@@ -1613,7 +1650,7 @@ namespace UnityEditor
                 dragIconRect.height = Styles.dragHandle.fixedHeight;
 
                 //If we have more than one component with Previews, show a DropDown menu.
-                if (editorsWithPreviews.Length > 1)
+                if (editorsWithPreviews.Count > 1)
                 {
                     Vector2 foldoutSize = Styles.preDropDown.CalcSize(title);
                     float maxFoldoutWidth = (dragIconRect.xMax - dragRect.xMin) - dragPadding - minDragWidth;
@@ -1622,9 +1659,9 @@ namespace UnityEditor
                     dragRect.xMin += foldoutWidth;
                     dragIconRect.xMin += foldoutWidth;
 
-                    GUIContent[] panelOptions = new GUIContent[editorsWithPreviews.Length];
+                    GUIContent[] panelOptions = new GUIContent[editorsWithPreviews.Count];
                     int selectedPreview = -1;
-                    for (int index = 0; index < editorsWithPreviews.Length; index++)
+                    for (int index = 0; index < editorsWithPreviews.Count; index++)
                     {
                         IPreviewable currentEditor = editorsWithPreviews[index];
                         GUIContent previewTitle = currentEditor.GetPreviewTitle() ?? Styles.preTitle;
@@ -1750,8 +1787,7 @@ namespace UnityEditor
             bool hasLabels = assets.Length > 0;
             bool hasBundleName = assets.Any(a => !(a is MonoScript) && AssetDatabase.IsMainAsset(a));
 
-            IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
-            IPreviewable previewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
+            IPreviewable previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
 
             if (previewEditor == null || !previewEditor.HasPreviewGUI())
             {
@@ -2547,6 +2583,8 @@ namespace UnityEditor
                     if (!(ed.target is ParticleSystemRenderer))
                     {
                         currentElement.ReinitCulled(newEditorsIndex, editors);
+                        if (!InspectorElement.disabledThrottling)
+                            m_EditorElementUpdater.Add(currentElement);
 
                         // We need to move forward as the current element is the culled one, so we're not really
                         // interested in it.
@@ -2563,6 +2601,8 @@ namespace UnityEditor
 
                 editors[newEditorsIndex].propertyViewer = this;
                 currentElement.Reinit(newEditorsIndex, editors);
+                if (!InspectorElement.disabledThrottling)
+                    m_EditorElementUpdater.Add(currentElement);
                 editorToElementMap[ed.target.GetInstanceID()] = currentElement;
                 ++newEditorsIndex;
                 ++previousEditorsIndex;

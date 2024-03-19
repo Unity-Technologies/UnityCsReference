@@ -18,16 +18,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             headerTextTemplate = L10n.Tr("Checking update for {0}...");
         }
 
-        public override bool AddPackageVersion(IPackageVersion version)
+        public override bool AddPackage(IPackage package)
         {
-            var product = version.package.product;
+            var product = package.product;
             if(product == null)
                 return false;
 
             if (m_AssetStoreCache.GetLocalInfo(product.id) != null && m_AssetStoreCache.GetUpdateInfo(product.id) == null)
             {
                 m_BackgroundFetchHandler.PushToCheckUpdateStack(product.id);
-                return base.AddPackageVersion(version);
+                return base.AddPackage(package);
             }
             return false;
         }

@@ -368,7 +368,7 @@ namespace UnityEditor.Build.Profile
             {
                 var platformSettingsBase = profile.platformBuildProfile;
                 if (platformSettingsBase == null)
-                    return;
+                    continue;
 
                 switch (name)
                 {
@@ -401,7 +401,7 @@ namespace UnityEditor.Build.Profile
                         break;
                     case k_SettingCompressionType:
                     {
-                        var isStandalone = BuildTargetDiscovery.PlatformHasFlag(profile.buildTarget, TargetAttributes.IsStandalonePlatform);
+                        var isStandalone = BuildProfileModuleUtil.IsStandalonePlatform(profile.buildTarget);
                         if (isStandalone)
                         {
                             platformSettingsBase.compressionType = compressionType;
@@ -452,6 +452,45 @@ namespace UnityEditor.Build.Profile
                         break;
                 }
             }
+        }
+
+        // <summary>
+        // Copy shared settings to a build profile.
+        // </summary>
+        public void CopySharedSettingsToBuildProfile(BuildProfile profile)
+        {
+            if (profile == null)
+                return;
+
+            var platformSettings = profile.platformBuildProfile;
+            if (platformSettings == null)
+                return;
+
+            platformSettings.development = development;
+            platformSettings.connectProfiler = connectProfiler;
+            platformSettings.buildWithDeepProfilingSupport = buildWithDeepProfilingSupport;
+            platformSettings.allowDebugging = allowDebugging;
+            platformSettings.waitForManagedDebugger = waitForManagedDebugger;
+            platformSettings.managedDebuggerFixedPort = managedDebuggerFixedPort;
+            platformSettings.explicitNullChecks = explicitNullChecks;
+            platformSettings.explicitDivideByZeroChecks = explicitDivideByZeroChecks;
+            platformSettings.explicitArrayBoundsChecks = explicitArrayBoundsChecks;
+            if (BuildProfileModuleUtil.IsStandalonePlatform(profile.buildTarget))
+                platformSettings.compressionType = compressionType;
+            platformSettings.installInBuildFolder = installInBuildFolder;
+            platformSettings.SetSharedSetting(k_SettingWindowsDevicePortalAddress, windowsDevicePortalAddress);
+            platformSettings.SetSharedSetting(k_SettingWindowsDevicePortalUsername, windowsDevicePortalUsername);
+            platformSettings.SetSharedSetting(k_SettingWindowsDevicePortalPassword, windowsDevicePortalPassword);
+            platformSettings.SetSharedSetting(k_SettingForceInstallation, forceInstallation.ToString().ToLower());
+            platformSettings.SetSharedSetting(k_SettingiOSXcodeBuildConfig, iOSXcodeBuildConfig.ToString());
+            platformSettings.SetSharedSetting(k_SettingSymlinkSources, symlinkSources.ToString().ToLower());
+            platformSettings.SetSharedSetting(k_SettingPreferredXcode, preferredXcode);
+            platformSettings.SetSharedSetting(k_SettingSymlinkTrampoline, symlinkTrampoline.ToString().ToLower());
+            platformSettings.SetSharedSetting(k_SettingRemoteDeviceInfo, remoteDeviceInfo.ToString().ToLower());
+            platformSettings.SetSharedSetting(k_SettingRemoteDeviceAddress, remoteDeviceAddress);
+            platformSettings.SetSharedSetting(k_SettingRemoteDeviceUsername, remoteDeviceUsername);
+            platformSettings.SetSharedSetting(k_SettingRemoteDeviceExports, remoteDeviceExports);
+            platformSettings.SetSharedSetting(k_SettingPathOnRemoteDevice, pathOnRemoteDevice);
         }
     }
 }

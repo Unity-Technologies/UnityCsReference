@@ -127,8 +127,6 @@ namespace UnityEditor
                 !IsNullOrEmpty(m_ReferencingInstanceIDs) ||
                 m_ImportLogFlags != ImportLogFlags.None;
 
-
-
             bool foldersActive = !IsNullOrEmpty(m_Folders);
 
             if (isSearchActive)
@@ -188,6 +186,7 @@ namespace UnityEditor
                 m_Folders = newFilter.m_Folders;
                 changed = true;
             }
+
             if (newFilter.m_AssetLabels != m_AssetLabels)
             {
                 m_AssetLabels = newFilter.m_AssetLabels;
@@ -271,7 +270,6 @@ namespace UnityEditor
 
             if (m_AssetLabels != null && m_AssetLabels.Length > 0)
                 result += "[Labels: " + m_AssetLabels[0] + "]";
-
 
             if (m_AssetBundleNames != null && m_AssetBundleNames.Length > 0)
                 result += "[AssetBundleNames: " + m_AssetBundleNames[0] + "]";

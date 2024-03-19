@@ -94,15 +94,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             versionContainer.Add(new PackageScopedRegistryTagLabel());
         }
 
-        public void Refresh(IPackage package, IPackageVersion version)
+        public void Refresh(IPackage package)
         {
             m_Package = package;
-            m_Version = version;
+            m_Version = package.versions.primary;
 
             detailTitle.SetValueWithoutNotify(m_Version.displayName);
             detailsLinks.Refresh(m_Version);
 
-            UIUtils.SetElementDisplay(disabledWarningBox, version.HasTag(PackageTag.Disabled));
+            UIUtils.SetElementDisplay(disabledWarningBox, m_Version.HasTag(PackageTag.Disabled));
 
             RefreshName();
             RefreshDependency();

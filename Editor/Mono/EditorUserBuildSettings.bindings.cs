@@ -199,7 +199,7 @@ namespace UnityEditor
 
      // Client browser type
      [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
-     public enum WebGLClientPlatform
+     internal enum WebGLClientPlatform
      {
          Desktop = 0,
          Android = 1,
@@ -551,7 +551,7 @@ namespace UnityEditor
             [NativeMethod("SetWebGLClientBrowserType")]
             set;
         }
-        public static extern WebGLClientPlatform webGLClientPlatform
+        internal static extern WebGLClientPlatform webGLClientPlatform
         {
             [NativeMethod("GetWebGLClientPlatform")]
             get;
@@ -1077,7 +1077,8 @@ namespace UnityEditor
             }
         }
 
-        internal static extern bool IsBuildProfileScriptingAvailable();
+        internal static extern bool isBuildProfileAvailable { get; set; }
+        internal static extern void CopyFromBuildProfile(ScriptableObject buildProfile);
         internal static extern void CopyToBuildProfile(ScriptableObject buildProfile);
     }
 }

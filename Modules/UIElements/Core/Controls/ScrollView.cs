@@ -524,6 +524,10 @@ namespace UnityEngine.UIElements
         private bool hasInertia => scrollDecelerationRate > 0f;
         private static readonly float k_DefaultScrollDecelerationRate = 0.135f;
         private float m_ScrollDecelerationRate = k_DefaultScrollDecelerationRate;
+        private float k_ScaledPixelsPerPointMultiplier = 10.0f;
+        // Equivalent to 240Hz.
+        private float k_TouchScrollInertiaBaseTimeInterval = 0.004167f;
+
         /// <summary>
         /// Controls the rate at which the scrolling movement slows after a user scrolls using a touch interaction.
         /// </summary>
@@ -843,6 +847,12 @@ namespace UnityEngine.UIElements
         private VisualElement m_ContentContainer;
         private VisualElement m_ContentAndVerticalScrollContainer;
 
+        private float previousVerticalTouchScrollTimeStamp = 0f;
+        private float previousHorizontalTouchScrollTimeStamp = 0f;
+
+        private float elapsedTimeSinceLastVerticalTouchScroll = 0f;
+        private float elapsedTimeSinceLastHorizontalTouchScroll = 0f;
+
         /// <summary>
         /// Contains full content, potentially partially visible.
         /// </summary>
@@ -1093,12 +1103,14 @@ namespace UnityEngine.UIElements
             if (evt.destinationPanel.contextType == ContextType.Player)
             {
                 m_ContentAndVerticalScrollContainer.RegisterCallback<PointerMoveEvent>(OnPointerMove);
-
                 contentContainer.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
                 contentContainer.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
                 contentContainer.RegisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
+
                 contentContainer.RegisterCallback<PointerCaptureEvent>(OnPointerCapture);
                 contentContainer.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
+
+                evt.destinationPanel.visualTree.RegisterCallback<PointerUpEvent>(OnRootPointerUp, TrickleDown.TrickleDown);
             }
         }
 
@@ -1117,13 +1129,15 @@ namespace UnityEngine.UIElements
 
             if (evt.originPanel.contextType == ContextType.Player)
             {
-                m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
                 m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
-                m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
-                m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
+                contentContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+                contentContainer.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
+                contentContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
 
                 contentContainer.UnregisterCallback<PointerCaptureEvent>(OnPointerCapture);
                 contentContainer.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
+
+                evt.originPanel.visualTree.UnregisterCallback<PointerUpEvent>(OnRootPointerUp, TrickleDown.TrickleDown);
             }
         }
 
@@ -1134,7 +1148,7 @@ namespace UnityEngine.UIElements
             if (m_CapturedTarget == null)
                 return;
 
-            m_ScrollingPointerId = evt.pointerId;
+            m_TouchPointerMoveAllowed = true;
             m_CapturedTarget.RegisterCallback(m_CapturedTargetPointerMoveCallback);
             m_CapturedTarget.RegisterCallback(m_CapturedTargetPointerUpCallback);
         }
@@ -1210,7 +1224,6 @@ namespace UnityEngine.UIElements
             m_FirstLayoutPass = -1;
         }
 
-        private int m_ScrollingPointerId = PointerId.invalidPointerId;
         private const float k_VelocityLerpTimeFactor = 10;
         internal const float ScrollThresholdSquared = 100;
         private Vector2 m_StartPosition;
@@ -1221,6 +1234,7 @@ namespace UnityEngine.UIElements
         private Vector2 m_HighBounds;
         private float m_LastVelocityLerpTime;
         private bool m_StartedMoving;
+        private bool m_TouchPointerMoveAllowed;
         private bool m_TouchStoppedVelocity;
         VisualElement m_CapturedTarget;
         EventCallback<PointerMoveEvent> m_CapturedTargetPointerMoveCallback;
@@ -1359,14 +1373,13 @@ namespace UnityEngine.UIElements
                 m_SpringBackVelocity = Vector2.zero;
                 return;
             }
-
             var newOffset = scrollOffset;
 
             if (newOffset.x < m_LowBounds.x)
             {
                 newOffset.x = Mathf.SmoothDamp(newOffset.x, m_LowBounds.x, ref m_SpringBackVelocity.x, elasticity,
-                    Mathf.Infinity, Time.unscaledDeltaTime);
-                if (Mathf.Abs(m_SpringBackVelocity.x) < 1)
+                    Mathf.Infinity, elapsedTimeSinceLastHorizontalTouchScroll);
+                if (Mathf.Abs(m_SpringBackVelocity.x) < scaledPixelsPerPoint)
                 {
                     m_SpringBackVelocity.x = 0;
                 }
@@ -1374,8 +1387,8 @@ namespace UnityEngine.UIElements
             else if (newOffset.x > m_HighBounds.x)
             {
                 newOffset.x = Mathf.SmoothDamp(newOffset.x, m_HighBounds.x, ref m_SpringBackVelocity.x, elasticity,
-                    Mathf.Infinity, Time.unscaledDeltaTime);
-                if (Mathf.Abs(m_SpringBackVelocity.x) < 1)
+                    Mathf.Infinity, elapsedTimeSinceLastHorizontalTouchScroll);
+                if (Mathf.Abs(m_SpringBackVelocity.x) < scaledPixelsPerPoint)
                 {
                     m_SpringBackVelocity.x = 0;
                 }
@@ -1388,8 +1401,8 @@ namespace UnityEngine.UIElements
             if (newOffset.y < m_LowBounds.y)
             {
                 newOffset.y = Mathf.SmoothDamp(newOffset.y, m_LowBounds.y, ref m_SpringBackVelocity.y, elasticity,
-                    Mathf.Infinity, Time.unscaledDeltaTime);
-                if (Mathf.Abs(m_SpringBackVelocity.y) < 1)
+                    Mathf.Infinity, elapsedTimeSinceLastVerticalTouchScroll);
+                if (Mathf.Abs(m_SpringBackVelocity.y) < scaledPixelsPerPoint)
                 {
                     m_SpringBackVelocity.y = 0;
                 }
@@ -1397,8 +1410,8 @@ namespace UnityEngine.UIElements
             else if (newOffset.y > m_HighBounds.y)
             {
                 newOffset.y = Mathf.SmoothDamp(newOffset.y, m_HighBounds.y, ref m_SpringBackVelocity.y, elasticity,
-                    Mathf.Infinity, Time.unscaledDeltaTime);
-                if (Mathf.Abs(m_SpringBackVelocity.y) < 1)
+                    Mathf.Infinity, elapsedTimeSinceLastVerticalTouchScroll);
+                if (Mathf.Abs(m_SpringBackVelocity.y) < scaledPixelsPerPoint)
                 {
                     m_SpringBackVelocity.y = 0;
                 }
@@ -1416,21 +1429,37 @@ namespace UnityEngine.UIElements
         {
             if (hasInertia && m_Velocity != Vector2.zero)
             {
-                m_Velocity *= Mathf.Pow(scrollDecelerationRate, Time.unscaledDeltaTime);
+                var additionalOffset = Vector2.zero;
+                var cumulativeDeltaTimeCovered = 0f;
+                while (cumulativeDeltaTimeCovered < elapsedTimeSinceLastVerticalTouchScroll)
+                {
+                    m_Velocity *= Mathf.Pow(scrollDecelerationRate, k_TouchScrollInertiaBaseTimeInterval);
+                    cumulativeDeltaTimeCovered += k_TouchScrollInertiaBaseTimeInterval;
+                    additionalOffset += m_Velocity * k_TouchScrollInertiaBaseTimeInterval;
+                }
 
-                if (Mathf.Abs(m_Velocity.x) < 1 ||
+                var remainingTimeDifference = elapsedTimeSinceLastVerticalTouchScroll - cumulativeDeltaTimeCovered;
+                if (remainingTimeDifference > 0 && remainingTimeDifference < k_TouchScrollInertiaBaseTimeInterval)
+                {
+                    m_Velocity *= Mathf.Pow(scrollDecelerationRate, remainingTimeDifference);
+                    additionalOffset += m_Velocity * remainingTimeDifference;
+                }
+
+                var scaledSpeedLimit = scaledPixelsPerPoint * k_ScaledPixelsPerPointMultiplier;
+
+                if (Mathf.Abs(m_Velocity.x) <= scaledSpeedLimit ||
                     touchScrollBehavior == TouchScrollBehavior.Elastic && (scrollOffset.x < m_LowBounds.x || scrollOffset.x > m_HighBounds.x))
                 {
                     m_Velocity.x = 0;
                 }
 
-                if (Mathf.Abs(m_Velocity.y) < 1 ||
+                if (Mathf.Abs(m_Velocity.y) <= scaledSpeedLimit ||
                     touchScrollBehavior == TouchScrollBehavior.Elastic && (scrollOffset.y < m_LowBounds.y || scrollOffset.y > m_HighBounds.y))
                 {
                     m_Velocity.y = 0;
                 }
 
-                scrollOffset += m_Velocity * Time.unscaledDeltaTime;
+                scrollOffset += additionalOffset;
             }
             else
             {
@@ -1440,6 +1469,11 @@ namespace UnityEngine.UIElements
 
         private void PostPointerUpAnimation()
         {
+            elapsedTimeSinceLastVerticalTouchScroll = Time.unscaledTime - previousVerticalTouchScrollTimeStamp;
+            previousVerticalTouchScrollTimeStamp = Time.unscaledTime;
+
+            elapsedTimeSinceLastHorizontalTouchScroll = Time.unscaledTime - previousHorizontalTouchScrollTimeStamp;
+            previousHorizontalTouchScrollTimeStamp = Time.unscaledTime;
             ApplyScrollInertia();
             SpringBack();
 
@@ -1447,6 +1481,10 @@ namespace UnityEngine.UIElements
             if (m_SpringBackVelocity == Vector2.zero && m_Velocity == Vector2.zero)
             {
                 m_PostPointerUpAnimation.Pause();
+                elapsedTimeSinceLastVerticalTouchScroll = 0f;
+                elapsedTimeSinceLastHorizontalTouchScroll = 0f;
+                previousVerticalTouchScrollTimeStamp = 0f;
+                previousHorizontalTouchScrollTimeStamp = 0f;
             }
         }
 
@@ -1455,16 +1493,16 @@ namespace UnityEngine.UIElements
             if (evt.pointerType == PointerType.mouse || !evt.isPrimary)
                 return;
 
-            if (m_ScrollingPointerId != PointerId.invalidPointerId)
+            if (evt.pointerId != PointerId.invalidPointerId)
             {
-                ReleaseScrolling(m_ScrollingPointerId, evt.target);
+                ReleaseScrolling(evt.pointerId, evt.target);
             }
 
             m_PostPointerUpAnimation?.Pause();
 
             var touchStopsVelocityOnly = Mathf.Abs(m_Velocity.x) > 10 || Mathf.Abs(m_Velocity.y) > 10;
 
-            m_ScrollingPointerId = evt.pointerId;
+            m_TouchPointerMoveAllowed = true;
             m_StartedMoving = false;
             InitTouchScrolling(evt.position);
 
@@ -1479,7 +1517,7 @@ namespace UnityEngine.UIElements
 
         void OnPointerMove(PointerMoveEvent evt)
         {
-            if (evt.pointerType == PointerType.mouse || !evt.isPrimary || evt.pointerId != m_ScrollingPointerId)
+            if (evt.pointerType == PointerType.mouse || !evt.isPrimary || !m_TouchPointerMoveAllowed)
                 return;
 
             if (evt.isHandledByDraggable)
@@ -1553,6 +1591,7 @@ namespace UnityEngine.UIElements
                 Mathf.Max(verticalScroller.lowValue, verticalScroller.highValue));
         }
 
+
         // Internal for tests.
         internal TouchScrollingResult ComputeTouchScrolling(Vector2 position)
         {
@@ -1573,6 +1612,9 @@ namespace UnityEngine.UIElements
                 newScrollOffset.y = ComputeElasticOffset(deltaPointer.y, m_StartPosition.y,
                     m_LowBounds.y, m_LowBounds.y - contentViewport.resolvedStyle.height,
                     m_HighBounds.y, m_HighBounds.y + contentViewport.resolvedStyle.height);
+
+                previousVerticalTouchScrollTimeStamp = Time.unscaledTime;
+                previousHorizontalTouchScrollTimeStamp = Time.unscaledTime;
             }
             else
             {
@@ -1618,7 +1660,7 @@ namespace UnityEngine.UIElements
 
                 m_LastVelocityLerpTime = Time.unscaledTime;
 
-                var deltaTime = Time.unscaledDeltaTime;
+                var deltaTime = k_TouchScrollInertiaBaseTimeInterval;
                 var newVelocity = (newScrollOffset - scrollOffset) / deltaTime;
                 m_Velocity = Vector2.Lerp(m_Velocity, newVelocity, deltaTime * k_VelocityLerpTimeFactor);
             }
@@ -1630,17 +1672,15 @@ namespace UnityEngine.UIElements
 
         bool ReleaseScrolling(int pointerId, IEventHandler target)
         {
-            if (pointerId != m_ScrollingPointerId)
-                return false;
-
-            m_ScrollingPointerId = PointerId.invalidPointerId;
-
             m_TouchStoppedVelocity = false;
             m_StartedMoving = false;
+            m_TouchPointerMoveAllowed = false;
 
             if (target != contentContainer || !contentContainer.HasPointerCapture(pointerId))
                 return false;
 
+            previousVerticalTouchScrollTimeStamp = Time.unscaledTime;
+            previousHorizontalTouchScrollTimeStamp = Time.unscaledTime;
             if (touchScrollBehavior == TouchScrollBehavior.Elastic || hasInertia)
             {
                 ExecuteElasticSpringAnimation();
@@ -1649,7 +1689,7 @@ namespace UnityEngine.UIElements
             contentContainer.ReleasePointer(pointerId);
             return true;
         }
-
+        
         void ExecuteElasticSpringAnimation()
         {
             ComputeInitialSpringBackVelocity();
@@ -1763,6 +1803,11 @@ namespace UnityEngine.UIElements
         void OnRootCustomStyleResolved(CustomStyleResolvedEvent evt)
         {
             ReadSingleLineHeight();
+        }
+
+        void OnRootPointerUp(PointerUpEvent evt)
+        {
+            m_TouchPointerMoveAllowed = false;
         }
 
         void ReadSingleLineHeight()

@@ -151,11 +151,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var currentView = this.currentView;
-            foreach (var item in args.selection.previousSelections.Where(s => !args.selection.Contains(s.packageUniqueId)).Concat(args.selection))
-                currentView.GetPackageItem(item.packageUniqueId)?.RefreshSelection();
+            foreach (var item in args.selection.previousSelections.Where(s => !args.selection.Contains(s)).Concat(args.selection))
+                currentView.GetPackageItem(item)?.RefreshSelection();
 
             if (args.selection.previousSelections.Count() == 1)
-                m_UpmCache.SetLoadAllVersions(args.selection.previousSelections.FirstOrDefault().packageUniqueId, false);
+                m_UpmCache.SetLoadAllVersions(args.selection.previousSelections.FirstOrDefault(), false);
         }
 
         private void OnCheckUpdateProgress()
@@ -224,7 +224,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ButtonAction = buttonAction;
             UIUtils.SetElementDisplay(emptyAreaButton, buttonAction != null);
 
-            m_PageManager.activePage.SetNewSelection(Enumerable.Empty<PackageAndVersionIdPair>());
+            m_PageManager.activePage.SetNewSelection(Enumerable.Empty<string>());
         }
 
         private void HideEmptyAreaShowList(bool skipListRebuild)

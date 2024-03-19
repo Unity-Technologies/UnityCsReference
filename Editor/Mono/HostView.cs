@@ -374,6 +374,7 @@ namespace UnityEditor
 
         protected override void OnBackingScaleFactorChanged()
         {
+            base.OnBackingScaleFactorChanged();
             if (m_ActualView != null)
                 m_ActualView.OnBackingScaleFactorChangedInternal();
         }

@@ -39,11 +39,13 @@ namespace UnityEditor.UIElements
             m_Panel.rootIMGUIContainer = imguiContainer;
         }
 
-        void IWindowBackend.SizeChanged()
+        public virtual void SizeChanged()
         {
             // The window backend isn't aware of the panel scaling, so the size only considers the native
             // pixels-per-point value. So for example, if a panel scaling of 2 is used, we must have twice
             // less points displayed, hence the division by 2.
+
+            OnBackingScaleFactorChanged();
             m_Panel.visualTree.SetSize(m_Model.size / m_Panel.scale);
         }
 
@@ -101,6 +103,12 @@ namespace UnityEditor.UIElements
                 }
             }
             return false;
+        }
+
+        public virtual void OnBackingScaleFactorChanged()
+        {
+            if (panel.UpdateScalingFromEditorWindow)
+                panel.pixelsPerPoint = (panel as EditorPanel).GetBackingScaleFactor() ?? 1;
         }
     }
 }

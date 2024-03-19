@@ -11,11 +11,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             headerTextTemplate = L10n.Tr("Unlock {0}");
         }
 
-        public override bool AddPackageVersion(IPackageVersion version)
+        public override bool AddPackage(IPackage package)
         {
-            if (!action.GetActionState(version, out _, out _).HasFlag(PackageActionState.Visible))
+            if (!action.GetActionState(package?.versions.primary, out _, out _).HasFlag(PackageActionState.Visible))
                 return false;
-            return base.AddPackageVersion(version);
+            return base.AddPackage(package);
         }
     }
 }

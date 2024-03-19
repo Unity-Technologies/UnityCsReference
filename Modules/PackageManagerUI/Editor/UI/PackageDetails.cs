@@ -142,21 +142,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (selections.Count == 1)
             {
                 var selection = selections.FirstOrDefault();
-                m_PackageDatabase.GetPackageAndVersion(selection.packageUniqueId, selection.versionUniqueId, out var package, out var version);
-                Refresh(package, version);
+                var package = m_PackageDatabase.GetPackage(selection);
+                RefreshUI(package);
             }
             else
             {
                 // We call Refresh(null, null) to make sure that all single package details elements are hidden properly
                 // We want to hide those elements when 1) there's nothing selected or 2) the multi select details view is visible.
-                Refresh(null, null);
+                RefreshUI(null);
                 UIUtils.SetElementDisplay(multiSelectDetails, multiSelectDetails.Refresh(selections));
             }
         }
 
-        private void Refresh(IPackage package, IPackageVersion version)
+        private void RefreshUI(IPackage package)
         {
-            version ??= package?.versions.primary;
+            var version = package?.versions.primary;
             var shouldDisplayProgress = inProgressView.ShouldDisplayProgress(package);
             inProgressView.Refresh(shouldDisplayProgress ? package : null);
 
@@ -165,14 +165,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (!detailVisible)
             {
-                RefreshExtensions(null, null);
+                RefreshExtensions(null);
             }
             else
             {
-                header.Refresh(package, version);
-                body.Refresh(package, version);
-                toolbar.Refresh(package, version);
-                RefreshExtensions(package, version);
+                header.Refresh(package);
+                body.Refresh(package);
+                toolbar.Refresh(package);
+                RefreshExtensions(package);
             }
 
             // Set visibility
@@ -185,7 +185,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshDetailError(package, version);
         }
 
-        void RefreshExtensions(IPackage package, IPackageVersion version)
+        void RefreshExtensions(IPackage package)
         {
             UIUtils.SetElementDisplay(customContainer, customContainer.childCount > 0); // ExtensionV1
             UIUtils.SetElementDisplay(extensionContainer, extensionContainer.childCount > 0); // ExtensionV2
@@ -194,6 +194,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // This way no single select UI will be displayed for multi-select. We might handle it differently in the future in a new story
             if (PackageManagerExtensions.extensionsGUICreated)
             {
+                var version = package?.versions.primary;
                 var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
                 PackageManagerExtensions.ExtensionCallback(() =>
                 {
@@ -202,7 +203,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 });
             }
 
-            m_ExtensionManager.SendPackageSelectionChangedEvent(package, version);
+            m_ExtensionManager.SendPackageSelectionChangedEvent(package);
         }
 
         private void OnPackagesChanged(PackagesChangeArgs args)

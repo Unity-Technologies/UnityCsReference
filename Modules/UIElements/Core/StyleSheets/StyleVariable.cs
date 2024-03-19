@@ -48,20 +48,38 @@ namespace UnityEngine.UIElements
 
         public void Add(StyleVariable sv)
         {
-            // Avoid duplicates. Otherwise the variable context explodes as hierarchy gets deeper.
             var hash = sv.GetHashCode();
+            int ComputeOrderSensitiveHash(int index)
+            {
+                unchecked
+                {
+                    // This needs to be reversible and order-sensitive. We use (index + 1) to avoid multiplying by 0.
+                    return (index + 1) * hash;
+                }
+            }
+
+            // Avoid duplicates. Otherwise the variable context explodes as hierarchy gets deeper.
             var hashIndex = m_SortedHash.BinarySearch(hash);
             if (hashIndex >= 0)
-                return;
-
-            m_SortedHash.Insert(~hashIndex, hash);
-
-            m_Variables.Add(sv);
-
-            unchecked
             {
-                m_VariableHash = m_Variables.Count == 0 ? sv.GetHashCode() : (m_VariableHash * 397) ^ sv.GetHashCode();
+                // UUM-32738: if the variable is already there, we need to move it to the end.
+                var index = m_Variables.IndexOf(sv);
+
+                // The new variable is already at the end. Nothing to update.
+                if (index == m_Variables.Count - 1)
+                    return;
+
+                // Otherwise, remove it and let it be re-added.
+                m_VariableHash ^= ComputeOrderSensitiveHash(index);
+                m_Variables.RemoveAt(index);
             }
+            else
+            {
+                m_SortedHash.Insert(~hashIndex, hash);
+            }
+
+            m_VariableHash ^= ComputeOrderSensitiveHash(m_Variables.Count);
+            m_Variables.Add(sv);
         }
 
         public void AddInitialRange(StyleVariableContext other)

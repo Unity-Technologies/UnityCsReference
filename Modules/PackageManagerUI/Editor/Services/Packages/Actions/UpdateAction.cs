@@ -33,12 +33,12 @@ internal class UpdateAction : PackageAction
         m_ShowVersion = showVersion;
     }
 
-    protected override bool TriggerActionImplementation(IList<IPackageVersion> versions)
+    protected override bool TriggerActionImplementation(IList<IPackage> packages)
     {
-        m_OperationDispatcher.Install(versions.Select(v => v?.package?.versions.GetUpdateTarget(v)));
+        m_OperationDispatcher.Install(packages.Select(p => p?.versions.GetUpdateTarget(p.versions.primary)));
         // The current multi-select UI does not allow users to install non-recommended versions
         // Should this change in the future, we'll need to update the analytics event accordingly.
-        PackageManagerWindowAnalytics.SendEvent("installUpdateRecommended", versions);
+        PackageManagerWindowAnalytics.SendEvent("installUpdateRecommended", packages.Select(p => p.versions.primary));
         return true;
     }
 

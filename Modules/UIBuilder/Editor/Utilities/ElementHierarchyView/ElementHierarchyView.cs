@@ -916,7 +916,7 @@ namespace Unity.UI.Builder
             return element;
         }
 
-        TreeViewItem FindElement(IEnumerable<TreeViewItem> list, VisualElement element)
+        public TreeViewItem FindElement(IEnumerable<TreeViewItem> list, VisualElement element)
         {
             if (list == null)
                 return default;

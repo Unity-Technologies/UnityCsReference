@@ -85,6 +85,7 @@ namespace UnityEditor.SpeedTree.Importer
     internal class MaterialInfo
     {
         public Material material = null;
+        public string defaultName = null;
         public bool exported = false;
     }
 

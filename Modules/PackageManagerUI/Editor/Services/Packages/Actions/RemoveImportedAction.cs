@@ -24,15 +24,15 @@ internal class RemoveImportedAction : PackageAction
         return true;
     }
 
-    protected override bool TriggerActionImplementation(IList<IPackageVersion> versions)
+    protected override bool TriggerActionImplementation(IList<IPackage> packages)
     {
         if (!m_Application.DisplayDialog("removeMultiImported", L10n.Tr("Removing imported packages"),
                 L10n.Tr("Remove all assets from these packages?\nAny changes you made to the assets will be lost."),
                 L10n.Tr("Remove"), L10n.Tr("Cancel")))
             return false;
 
-        m_OperationDispatcher.RemoveImportedAssets(versions);
-        PackageManagerWindowAnalytics.SendEvent("removeImported", versions);
+        m_OperationDispatcher.RemoveImportedAssets(packages);
+        PackageManagerWindowAnalytics.SendEvent("removeImported", packages.Select(p => p.versions.primary));
         return true;
     }
 

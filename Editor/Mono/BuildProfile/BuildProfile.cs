@@ -11,55 +11,61 @@ using UnityEngine.Scripting;
 namespace UnityEditor.Build.Profile
 {
     /// <summary>
-    /// TODO EPIC: https://jira.unity3d.com/browse/PLAT-5745
+    /// Provides a set of configuration settings you can use to build your application on a particular platform.
     /// </summary>
     [RequiredByNativeCode(GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
-    [VisibleToOtherModules]
-    internal sealed partial class BuildProfile : ScriptableObject
+    [ExcludeFromObjectFactory]
+    [ExcludeFromPreset]
+    public sealed partial class BuildProfile : ScriptableObject
     {
         /// <summary>
         /// Build Target used to fetch module and build profile extension.
         /// </summary>
         [SerializeField] BuildTarget m_BuildTarget = BuildTarget.NoTarget;
-        public BuildTarget buildTarget
+        [VisibleToOtherModules]
+        internal BuildTarget buildTarget
         {
             get => m_BuildTarget;
-            internal set => m_BuildTarget = value;
+            set => m_BuildTarget = value;
         }
 
         /// <summary>
         /// Subtarget, Default for all non-Standalone platforms.
         /// </summary>
         [SerializeField] StandaloneBuildSubtarget m_Subtarget;
-        public StandaloneBuildSubtarget subtarget
+        [VisibleToOtherModules]
+        internal StandaloneBuildSubtarget subtarget
         {
             get => m_Subtarget;
-            internal set => m_Subtarget = value;
+            set => m_Subtarget = value;
         }
 
         /// <summary>
         /// Module name used to fetch build profiles.
         /// </summary>
         [SerializeField] string m_ModuleName;
-        public string moduleName
+        [VisibleToOtherModules]
+        internal string moduleName
         {
             get => m_ModuleName;
-            internal set => m_ModuleName = value;
+            set => m_ModuleName = value;
         }
 
         /// <summary>
         /// Platform module specific build settings; e.g. AndroidBuildSettings.
         /// </summary>
         [SerializeReference] BuildProfilePlatformSettingsBase m_PlatformBuildProfile;
-        public BuildProfilePlatformSettingsBase platformBuildProfile
+        [VisibleToOtherModules]
+        internal BuildProfilePlatformSettingsBase platformBuildProfile
         {
             get => m_PlatformBuildProfile;
-            internal set => m_PlatformBuildProfile = value;
+            set => m_PlatformBuildProfile = value;
         }
 
         [SerializeField] private EditorBuildSettingsScene[] m_Scenes = Array.Empty<EditorBuildSettingsScene>();
-        public EditorBuildSettingsScene[] scenes
+        [VisibleToOtherModules]
+        internal EditorBuildSettingsScene[] scenes
         {
             get
             {
@@ -99,6 +105,14 @@ namespace UnityEditor.Build.Profile
             var profileModuleName = BuildProfileModuleUtil.GetModuleName(buildTarget);
             var activeModuleName = BuildProfileModuleUtil.GetModuleName(EditorUserBuildSettings.activeBuildTarget);
             return profileModuleName == activeModuleName && subtarget == EditorUserBuildSettings.standaloneBuildSubtarget;
+        }
+
+        [VisibleToOtherModules]
+        internal bool CanBuildLocally()
+        {
+            // Note: A platform build profile may have a non-null value even if its module is not installed.
+            // This scenario is true for server platform profiles, which are the same type as the standalone one.
+            return platformBuildProfile != null && BuildProfileModuleUtil.IsModuleInstalled(moduleName, subtarget);
         }
 
         void OnEnable()
@@ -144,7 +158,7 @@ namespace UnityEditor.Build.Profile
                     RemoveAt(i);
                     continue;
                 }
-                
+
                 if (!isGuidValid)
                     scene.guid = AssetDatabase.GUIDFromAssetPath(scene.path);
 

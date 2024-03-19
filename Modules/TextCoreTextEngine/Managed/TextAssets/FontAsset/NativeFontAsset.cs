@@ -91,12 +91,15 @@ namespace UnityEngine.TextCore.Text
             // Mark the node as visited
             visitedFontAssets.Add(fontAsset.instanceID);
 
-            // Recursively check children for recursion
-            foreach (var child in fontAsset.fallbackFontAssetTable)
+            if (fontAsset.fallbackFontAssetTable != null)
             {
-                if (HasRecursionInternal(child))
+                // Recursively check children for recursion
+                foreach (var child in fontAsset.fallbackFontAssetTable)
                 {
-                    return true;
+                    if (HasRecursionInternal(child))
+                    {
+                        return true;
+                    }
                 }
             }
 

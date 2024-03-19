@@ -27,8 +27,6 @@ namespace Unity.Properties.Internal
     /// </remarks>
     static class PropertyBagStore
     {
-        private static ConcurrentQueue<JobHandle> s_Handles = new ConcurrentQueue<JobHandle>();
-
         internal struct TypedStore<TContainer>
         {
             public static IPropertyBag<TContainer> PropertyBag;
@@ -72,9 +70,17 @@ namespace Unity.Properties.Internal
 
             if (null != TypedStore<TContainer>.PropertyBag)
             {
+                var currentPropertyBag = TypedStore<TContainer>.PropertyBag;
+                // When registering a property bag, prefer to use the one coming from its own assembly.
+                if (currentPropertyBag.GetType().Assembly == typeof(TContainer).Assembly)
+                    return;
+
                 if (propertyBag.GetType().GetCustomAttributes<System.Runtime.CompilerServices.CompilerGeneratedAttribute>().Any())
                 {
-                    return;
+                    // If there is already a property bag registered, only register the provided one
+                    // if it is contained in the same assembly as its target type.
+                    if (propertyBag.GetType().Assembly != typeof(TContainer).Assembly)
+                        return;
                 }
             }
 
@@ -235,26 +241,6 @@ namespace Unity.Properties.Internal
 
             propertyBag = GetPropertyBag(value.GetType());
             return null != propertyBag;
-        }
-
-        internal static void AddJobToWaitQueue(JobHandle handle)
-        {
-            var handles = s_Handles ??= new ConcurrentQueue<JobHandle>();
-            handles.Enqueue(handle);
-        }
-
-        static void WaitForJobs()
-        {
-            if (s_Handles is not {Count: > 0})
-                return;
-
-            foreach (var handle in s_Handles)
-            {
-                if (!handle.IsCompleted)
-                    handle.Complete();
-            }
-
-            s_Handles.Clear();
         }
     }
 }

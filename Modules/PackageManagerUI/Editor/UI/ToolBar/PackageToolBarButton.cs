@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 using System;
+using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -12,7 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public abstract void Refresh(IPackageVersion version);
 
-        public abstract void Refresh(IEnumerable<IPackageVersion> versions);
+        public abstract void Refresh(IEnumerable<IPackage> packages);
         public abstract event Action onActionTriggered;
     }
 
@@ -45,9 +46,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Versions.AddRange(versions);
         }
 
-        public override void Refresh(IEnumerable<IPackageVersion> versions)
+        public override void Refresh(IEnumerable<IPackage> packages)
         {
-            SetPackageVersions(versions);
+            SetPackageVersions(packages.Select(p => p.versions.primary));
             if (m_Versions.Count == 0)
                 return;
 
@@ -89,7 +90,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_Action.TriggerAction(m_Versions[0]);
                     break;
                 default:
-                    m_Action.TriggerAction(m_Versions);
+                    m_Action.TriggerAction(m_Versions.Select(v => v.package).ToArray());
                     break;
             }
         }

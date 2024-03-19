@@ -140,7 +140,7 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
     }
 
     [ExcludeFromCodeCoverage]
-    public override void Refresh(IEnumerable<IPackageVersion> versions)
+    public override void Refresh(IEnumerable<IPackage> packages)
     {
         // Do nothing since this button is not available for multi-select
     }

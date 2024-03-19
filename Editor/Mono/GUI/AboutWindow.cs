@@ -12,7 +12,10 @@ namespace UnityEditor
 {
     internal class AboutWindow : EditorWindow
     {
+        const int VersionBoxLineHeight = 13;
+        const int VersionBoxHeight = VersionBoxLineHeight * 4;
         static readonly Vector2 WindowSize = new Vector2(640, 265);
+        static readonly Vector2 WindowSizeExpanded = new Vector2(WindowSize.x, WindowSize.y + VersionBoxLineHeight * 2); // Adding 2 more lines to the version box
 
         [RequiredByNativeCode]
         internal static void ShowAboutWindow()
@@ -99,14 +102,20 @@ namespace UnityEditor
                         DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0, 0);
                         string branch = InternalEditorUtility.GetUnityBuildBranch();
                         EditorGUILayout.SelectableLabel(
-                            string.Format("{0}{1}\nRevision: {2} {3}\nBuilt: {4:r}",
-                                InternalEditorUtility.GetUnityDisplayVersionVerbose(), extensionVersion,
-                                branch, InternalEditorUtility.GetUnityBuildHash(), dt.AddSeconds(t)),
-                            Styles.versionStyle, GUILayout.MaxWidth(mainLayoutWidth), GUILayout.Height(38f));
+                            $"{InternalEditorUtility.GetUnityProductName()}\n" +
+                            $"{InternalEditorUtility.GetUnityDisplayVersionVerbose()}{extensionVersion}\n" +
+                            $"Revision: {branch} {InternalEditorUtility.GetUnityBuildHash()}\n" +
+                            $"Built: {dt.AddSeconds(t):r}",
+                            Styles.versionStyle,
+                            GUILayout.MaxWidth(mainLayoutWidth), GUILayout.Height(VersionBoxHeight));
+
+                        minSize = maxSize = WindowSizeExpanded;
                     }
                     else
                     {
-                        GUILayout.Label(string.Format("{0}{1}", InternalEditorUtility.GetUnityDisplayVersion(), extensionVersion), Styles.versionStyle);
+                        GUILayout.Label(
+                            $"{InternalEditorUtility.GetUnityProductName()}\n" +
+                            $"{InternalEditorUtility.GetUnityDisplayVersion()}{extensionVersion}", Styles.versionStyle);
                     }
 
                     if (evt.type == EventType.ValidateCommand)

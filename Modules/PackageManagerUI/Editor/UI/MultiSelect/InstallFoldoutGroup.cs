@@ -15,12 +15,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void Refresh()
         {
-            if (mainFoldout.versions.FirstOrDefault()?.HasTag(PackageTag.BuiltIn) == true)
+            if (mainFoldout.packages.FirstOrDefault()?.versions.primary.HasTag(PackageTag.BuiltIn) == true)
                 mainFoldout.headerTextTemplate = L10n.Tr("Enable {0}");
             else
                 mainFoldout.headerTextTemplate = L10n.Tr("Install {0}");
 
-            if (inProgressFoldout.versions.FirstOrDefault()?.HasTag(PackageTag.BuiltIn) == true)
+            if (inProgressFoldout.packages.FirstOrDefault()?.versions.primary.HasTag(PackageTag.BuiltIn) == true)
                 inProgressFoldout.headerTextTemplate = L10n.Tr("Enabling {0}");
             else
                 inProgressFoldout.headerTextTemplate = L10n.Tr("Installing {0}");
@@ -28,11 +28,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             base.Refresh();
         }
 
-        public override bool AddPackageVersion(IPackageVersion version)
+        public override bool AddPackage(IPackage package)
         {
-            if (!version.HasTag(PackageTag.UpmFormat))
+            if (!package.versions.primary.HasTag(PackageTag.UpmFormat))
                 return false;
-            return base.AddPackageVersion(version);
+            return base.AddPackage(package);
         }
     }
 }

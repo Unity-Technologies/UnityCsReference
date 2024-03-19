@@ -23,8 +23,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         IPackage GetPackage(long productId);
         void GetPackageAndVersionByIdOrName(string idOrName, out IPackage package, out IPackageVersion version, bool bruteForceSearch);
         IPackage GetPackageByIdOrName(string idOrName);
-        void GetPackageAndVersion(string packageUniqueId, string versionUniqueId, out IPackage package, out IPackageVersion version);
-        void GetPackageAndVersion(PackageAndVersionIdPair pair, out IPackage package, out IPackageVersion version);
         void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version);
         IEnumerable<IPackageVersion> GetReverseDependencies(IPackageVersion version, bool directDependenciesOnly = false);
         IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version);
@@ -87,22 +85,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IEnumerable<IPackage> allPackages => m_Packages.Values;
 
-        public IPackage GetPackage(string uniqueId)
-        {
-            return GetPackage(uniqueId, false);
-        }
-
         public IPackage GetPackage(long productId)
         {
-            return GetPackage(productId.ToString(), false);
+            return GetPackage(productId.ToString());
         }
 
-        private IPackage GetPackage(string uniqueId, bool retryWithIdMapper)
+        public IPackage GetPackage(string uniqueId)
         {
             if (string.IsNullOrEmpty(uniqueId))
                 return null;
             var package = m_Packages.Get(uniqueId);
-            if (package != null || !retryWithIdMapper)
+            if (package != null)
                 return package;
 
             // We only retry with productId now because in the case where productId and package Name both exist for a package
@@ -116,7 +109,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void GetPackageAndVersionByIdOrName(string idOrName, out IPackage package, out IPackageVersion version, bool bruteForceSearch)
         {
             // GetPackage by packageUniqueId itself is not an expensive operation, so we want to try and see if the input string is a packageUniqueId first.
-            package = GetPackage(idOrName, true);
+            package = GetPackage(idOrName);
             if (package != null)
             {
                 version = null;
@@ -128,9 +121,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (idOrDisplayNameSplit?.Length == 2)
             {
                 var packageUniqueId = idOrDisplayNameSplit[0];
-                GetPackageAndVersion(packageUniqueId, idOrName, out package, out version);
+                package = GetPackage(packageUniqueId);
                 if (package != null)
+                {
+                    version = package.versions.FirstOrDefault(v => v.uniqueId == idOrName);
                     return;
+                }
             }
 
             // If none of those find-by-index options work, we'll just have to find it the brute force way by matching the name & display name
@@ -142,17 +138,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             GetPackageAndVersionByIdOrName(idOrName, out var package, out _, false);
             return package;
-        }
-
-        public void GetPackageAndVersion(string packageUniqueId, string versionUniqueId, out IPackage package, out IPackageVersion version)
-        {
-            package = GetPackage(packageUniqueId, true);
-            version = package?.versions.FirstOrDefault(v => v.uniqueId == versionUniqueId);
-        }
-
-        public void GetPackageAndVersion(PackageAndVersionIdPair pair, out IPackage package, out IPackageVersion version)
-        {
-            GetPackageAndVersion(pair?.packageUniqueId, pair?.versionUniqueId, out package, out version);
         }
 
         public void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version)

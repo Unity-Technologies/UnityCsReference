@@ -241,6 +241,12 @@ namespace UnityEngine.UIElements
 
         public override VisualElement contentContainer => m_ButtonGroupContainer ?? this;
 
+        internal override void OnViewDataReady()
+        {
+            base.OnViewDataReady();
+            UpdateButtonStates(value);
+        }
+
         protected override void UpdateMixedValueContent()
         {
             if (showMixedValue)

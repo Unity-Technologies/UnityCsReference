@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
+using System.IO;
 using Object = UnityEngine.Object;
 using UnityEditor.AssetImporters;
 using System.Linq;
@@ -65,6 +66,8 @@ namespace UnityEditor
 
         private ExposeTransformEditor m_ExposeTransformEditor;
         private SerializedObject m_AvatarSourceSerializedObject;
+
+        string[] m_ReferencedClips;
 
         SerializedObject avatarSourceSerializedObject
         {
@@ -144,7 +147,7 @@ namespace UnityEditor
             public static GUIContent MinBoneWeight = EditorGUIUtility.TrTextContent("Min Bone Weight", "Bone weights smaller than this value are rejected. The remaining weights are scaled to add up to 1.0.");
             public static GUIContent OptimizeBones = EditorGUIUtility.TrTextContent("Strip Bones", "Only adds bones to SkinnedMeshRenderers that have skin weights assigned to them.");
 
-            public static GUIContent UpdateReferenceClips = EditorGUIUtility.TrTextContent("Update reference clips", "Click on this button to update all the @convention files referencing this file. Should set all these files to Copy From Other Avatar, set the source Avatar to this one and reimport all these files.");
+            public static GUIContent UpdateReferenceClips = EditorGUIUtility.TrTextContent("Update referenced clips", "Click on this button to update all the referenced clips matching this model. This will set all these clips to Copy From Other Avatar, set the source Avatar to this one and reimport all these files. See the documentation for EditorSettings.referenceClipsExactNaming for more details about how models are matched to referenced clips.");
 
             public static GUIContent ImportMessages = EditorGUIUtility.TrTextContent("Import Messages");
             public static GUIContent ExtraExposedTransform = EditorGUIUtility.TrTextContent("Extra Transforms to Expose", "Select the list of transforms to expose in the optimized GameObject hierarchy.");
@@ -177,14 +180,42 @@ namespace UnityEditor
 
             UpdateBipedMappingReport();
 
-            if (m_AnimationType.intValue == (int)ModelImporterAnimationType.Human && m_Avatar == null)
+            if (m_AnimationType.intValue == (int)ModelImporterAnimationType.Human)
             {
-                ResetAvatar();
+                if (m_Avatar == null)
+                {
+                    ResetAvatar();
+                }
+                UpdateReferencedClips();
+                ReferencedClipsPostProcessor.ReferencedClipsChanged += ReferencedClipsChanged;
+            }
+        }
+
+        void ReferencedClipsChanged(List<string> referencedClips)
+        {
+            if (referencedClips.Count == 0)
+                return;
+
+            // If any of the passed referenced clip is located in the same folder as this model,
+            // then refresh our list of referenced clips
+            var modelImporter = target as ModelImporter;
+            if (modelImporter)
+            {
+                var modelDirectory = Path.GetDirectoryName(modelImporter.assetPath);
+                foreach (var referencedClip in referencedClips)
+                {
+                    if (modelDirectory == Path.GetDirectoryName(referencedClip))
+                    {
+                        UpdateReferencedClips();
+                        return;
+                    }
+                }
             }
         }
 
         internal override void OnDisable()
         {
+            ReferencedClipsPostProcessor.ReferencedClipsChanged -= ReferencedClipsChanged;
             if (m_AvatarSourceSerializedObject != null)
                 m_AvatarSourceSerializedObject.Dispose();
         }
@@ -521,18 +552,58 @@ With this option, this model will not create any avatar but only import animatio
             return references[0];
         }
 
+        // We only populate the model's referenced clips for models using the Legacy animation type.
+        // Models using the Human animation type still need to be able to fetch their matching referenced clips
+        // and the editor needs to react when referenced clips are imported. This is done through this asset
+        // post-processor
+        class ReferencedClipsPostProcessor : AssetPostprocessor
+        {
+            public static event Action<List<string>> ReferencedClipsChanged;
+
+            static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths, bool didDomainReload)
+            {
+                if (ReferencedClipsChanged == null)
+                    return;
+
+                List<string> referencedClips = new();
+                foreach (var asset in importedAssets)
+                    if (asset.Contains('@'))
+                        referencedClips.Add(asset);
+                foreach (var asset in deletedAssets)
+                    if (asset.Contains('@'))
+                        referencedClips.Add(asset);
+                foreach (var asset in movedAssets)
+                    if (asset.Contains('@'))
+                        referencedClips.Add(asset);
+                foreach (var asset in movedFromAssetPaths)
+                    if (asset.Contains('@'))
+                        referencedClips.Add(asset);
+
+                ReferencedClipsChanged(referencedClips);
+            }
+        }
+
+        void UpdateReferencedClips()
+        {
+            ModelImporter importer = target as ModelImporter;
+            if (importer != null)
+                m_ReferencedClips = ModelImporter.GetReferencedClipsForModelPath(importer.assetPath);
+        }
         void ShowUpdateReferenceClip()
         {
-            if (targets.Length > 1 || m_AvatarSetup.intValue == (int)ModelImporterAvatarSetup.CopyFromOther || !m_Avatar || !m_Avatar.isValid)
-                return;
-
-            string[] paths = new string[0];
-            ModelImporter importer = target as ModelImporter;
-            if (importer.referencedClips.Length > 0)
+            if (targets.Length > 1
+                || m_AvatarSetup.intValue == (int)ModelImporterAvatarSetup.CopyFromOther
+                || !m_Avatar
+                || !m_Avatar.isValid
+                || animationType != ModelImporterAnimationType.Human
+               )
             {
-                foreach (string clipGUID in importer.referencedClips)
-                    ArrayUtility.Add(ref paths, AssetDatabase.GUIDToAssetPath(clipGUID));
+                return;
             }
+
+            string[] paths = new string[m_ReferencedClips.Length];
+            for (var i = 0; i < m_ReferencedClips.Length; i++)
+                paths[i] = AssetDatabase.GUIDToAssetPath(m_ReferencedClips[i]);
 
             // Show only button if some clip reference this avatar.
             if (paths.Length > 0 && GUILayout.Button(Styles.UpdateReferenceClips, GUILayout.Width(150)))
@@ -649,7 +720,7 @@ With this option, this model will not create any avatar but only import animatio
                     }
                 }
             }
-            
+
             if (importRigErrors.Length > 0 || importRigWarnings.Length > 0)
             {
                 EditorGUILayout.Space();

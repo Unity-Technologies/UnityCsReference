@@ -178,6 +178,11 @@ namespace UnityEditor
 
                 m_WindowBackend = value;
                 m_WindowBackend?.OnCreate(this);
+                // When the native side has triggered OnBackingScaleFactorChanged, it will not send it again even if we are adding view to a hostView.
+                // (Docking, domain reload)
+                // It also occurs that the event is sent when the backend is not yet set in the view
+                // lets trigger the sizeChanged and OnBackingScaleFactorChanged to remedy any scenario
+                windowBackend?.SizeChanged();
             }
         }
 
@@ -212,7 +217,10 @@ namespace UnityEditor
         // In that case, commands are not delegated (e.g., keyboard-based delete in Hierarchy/Project)
         protected virtual void OnGUI() {}
 
-        protected virtual void OnBackingScaleFactorChanged() { }
+        protected virtual void OnBackingScaleFactorChanged()
+        {
+            windowBackend?.OnBackingScaleFactorChanged();
+        }
 
         protected override void SetPosition(Rect newPos)
         {

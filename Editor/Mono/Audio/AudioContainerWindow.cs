@@ -122,21 +122,19 @@ sealed class AudioContainerWindow : EditorWindow
     void OnEnable()
     {
         Instance = this;
-
         m_DiceIconOff = EditorGUIUtility.IconContent("AudioRandomContainer On Icon").image as Texture2D;
         m_DiceIconOn = EditorGUIUtility.IconContent("AudioRandomContainer Icon").image as Texture2D;
-
         SetTitle();
-
-        m_IsInitializing = false;
-        m_Day0ElementsInitialized = false;
-        m_ContainerElementsInitialized = false;
     }
 
     void OnDisable()
     {
         Instance = null;
         State.OnDestroy();
+        UnsubscribeFromGUICallbacksAndEvents();
+        m_IsInitializing = false;
+        m_Day0ElementsInitialized = false;
+        m_ContainerElementsInitialized = false;
         m_CachedElements.Clear();
         m_AddedElements.Clear();
     }
@@ -272,6 +270,11 @@ sealed class AudioContainerWindow : EditorWindow
 
     void SubscribeToGUICallbacksAndEvents()
     {
+        if (!m_ContainerElementsInitialized || m_IsSubscribedToGUICallbacksAndEvents)
+        {
+            return;
+        }
+
         SubscribeToPreviewCallbacksAndEvents();
         SubscribeToVolumeCallbacksAndEvents();
         SubscribeToPitchCallbacksAndEvents();
@@ -283,6 +286,11 @@ sealed class AudioContainerWindow : EditorWindow
 
     void UnsubscribeFromGUICallbacksAndEvents()
     {
+        if (!m_ContainerElementsInitialized || !m_IsSubscribedToGUICallbacksAndEvents)
+        {
+            return;
+        }
+
         UnsubscribeFromPreviewCallbacksAndEvents();
         UnsubscribeFromVolumeCallbacksAndEvents();
         UnsubscribeFromPitchCallbacksAndEvents();

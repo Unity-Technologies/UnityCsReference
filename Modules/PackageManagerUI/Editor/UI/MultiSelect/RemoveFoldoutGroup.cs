@@ -19,12 +19,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void Refresh()
         {
-            if (mainFoldout.versions.FirstOrDefault()?.HasTag(PackageTag.BuiltIn) == true)
+            if (mainFoldout.packages.FirstOrDefault()?.versions.primary.HasTag(PackageTag.BuiltIn) == true)
                 mainFoldout.headerTextTemplate = L10n.Tr("Disable {0}");
             else
                 mainFoldout.headerTextTemplate = L10n.Tr("Remove {0}");
 
-            if (inProgressFoldout.versions.FirstOrDefault()?.HasTag(PackageTag.BuiltIn) == true)
+            if (inProgressFoldout.packages.FirstOrDefault()?.versions.primary.HasTag(PackageTag.BuiltIn) == true)
                 inProgressFoldout.headerTextTemplate = L10n.Tr("Disabling {0}");
             else
                 inProgressFoldout.headerTextTemplate = L10n.Tr("Removing {0}");
@@ -32,9 +32,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             base.Refresh();
         }
 
-        public override bool AddPackageVersion(IPackageVersion version)
+        public override bool AddPackage(IPackage package)
         {
-            return version.HasTag(PackageTag.UpmFormat) && base.AddPackageVersion(version);
+            return package.versions.primary.HasTag(PackageTag.UpmFormat) && base.AddPackage(package);
         }
     }
 }

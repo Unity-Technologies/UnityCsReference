@@ -25,12 +25,13 @@ internal class AddAction : PackageAction
         m_PackageDatabase = packageDatabase;
     }
 
-    protected override bool TriggerActionImplementation(IList<IPackageVersion> versions)
+    protected override bool TriggerActionImplementation(IList<IPackage> packages)
     {
-        m_OperationDispatcher.Install(versions);
+        var primaryVersions = packages.Select(p => p.versions.primary).ToArray();
+        m_OperationDispatcher.Install(primaryVersions);
         // The current multi-select UI does not allow users to install non-recommended versions
         // Should this change in the future, we'll need to update the analytics event accordingly.
-        PackageManagerWindowAnalytics.SendEvent("installNewRecommended", versions);
+        PackageManagerWindowAnalytics.SendEvent("installNewRecommended", primaryVersions);
         return true;
     }
 

@@ -6,9 +6,6 @@ using System;
 
 namespace UnityEditor.ShortcutManagement
 {
-    // shim for packages who access this through internal bridge
-    interface IShortcutToolContext : IShortcutContext { }
-
     abstract class ClutchShortcutContext : IShortcutContext
     {
         public bool active { get; internal set; }

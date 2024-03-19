@@ -246,7 +246,7 @@ namespace Unity.UI.Builder
         void CreateNewSelector(StyleSheet styleSheet)
         {
             var newValue = m_NewSelectorTextField.text;
-            if (newValue == BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage)
+            if (string.IsNullOrEmpty(newValue) || newValue == BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage)
                 return;
 
             if (styleSheet == null)

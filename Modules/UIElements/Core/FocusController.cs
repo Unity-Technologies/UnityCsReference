@@ -140,6 +140,7 @@ namespace UnityEngine.UIElements
             focusController?.Blur(this);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void BlurImmediately()
         {
             focusController?.Blur(this, dispatchMode: DispatchMode.Immediate);

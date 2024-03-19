@@ -100,19 +100,6 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Callback that determines if pending changes from a registered node type handler need to be applied to the hierarchy. When the hierarchy is updated, `ChangesPending` is called on all registered node ype handlers. If they return true, then `IntegrateChanges` is called on them. If they return false, then `IntegrateChanges` is not called on them.
-        /// </summary>
-        /// <returns><see langword="true"/> if changes are pending, <see langword="false"/> otherwise.</returns>
-        protected virtual bool ChangesPending() => false;
-
-        /// <summary>
-        /// Callback that determines if changes from an update need to be integrated into the hierarchy. `IntegrateChanges` is called after <see cref="ChangesPending"/> returns <see langword="true"/>. When the hierarchy is updated, `ChangesPending` is called on all registered node ype handlers. If they return true, then `IntegrateChanges` is called on them. If they return false, then `IntegrateChanges` is not called on them.
-        /// </summary>
-        /// <param name="cmdList">A hierarchy command list that can modify the hierarchy.</param>
-        /// <returns><see langword="true"/> if more invocations are needed to complete integrating changes, and <see langword="false"/> if the handler is done integrating changes.</returns>
-        protected virtual bool IntegrateChanges(HierarchyCommandList cmdList) => false;
-
-        /// <summary>
         /// Called when a new search query begins.
         /// </summary>
         /// <param name="query"></param>
@@ -187,17 +174,36 @@ namespace Unity.Hierarchy
         [UsedByNativeCode, RequiredMember]
         static HierarchyNodeFlags InvokeGetDefaultNodeFlags(IntPtr ptr, in HierarchyNode node, HierarchyNodeFlags defaultFlags) => GetHandlerFromPtr(ptr).GetDefaultNodeFlags(in node, defaultFlags);
 
+#pragma warning disable 618 // Remove this pragma once the corresponding public APIs below are removed
         [UsedByNativeCode, RequiredMember]
         static bool InvokeChangesPending(IntPtr ptr) => GetHandlerFromPtr(ptr).ChangesPending();
 
         [UsedByNativeCode, RequiredMember]
         static bool InvokeIntegrateChanges(IntPtr ptr, HierarchyCommandList cmdList) => GetHandlerFromPtr(ptr).IntegrateChanges(cmdList);
+#pragma warning restore 618
 
         [UsedByNativeCode, RequiredMember]
         static bool InvokeSearchMatch(IntPtr ptr, in HierarchyNode node) => GetHandlerFromPtr(ptr).SearchMatch(in node);
 
         [UsedByNativeCode, RequiredMember]
         static void InvokeSearchEnd(IntPtr ptr) => GetHandlerFromPtr(ptr).SearchEnd();
+        #endregion
+
+        #region Obsolete public APIs to remove in 2024
+        /// <summary>
+        /// Callback that determines if pending changes from a registered node type handler need to be applied to the hierarchy. When the hierarchy is updated, `ChangesPending` is called on all registered node ype handlers. If they return true, then `IntegrateChanges` is called on them. If they return false, then `IntegrateChanges` is not called on them.
+        /// </summary>
+        /// <returns><see langword="true"/> if changes are pending, <see langword="false"/> otherwise.</returns>
+        [Obsolete("ChangesPending is obsolete, it is replaced by adding commands into the hierarchy node type handler's CommandList.", false)]
+        protected virtual bool ChangesPending() => false;
+
+        /// <summary>
+        /// Callback that determines if changes from an update need to be integrated into the hierarchy. `IntegrateChanges` is called after <see cref="ChangesPending"/> returns <see langword="true"/>. When the hierarchy is updated, `ChangesPending` is called on all registered node ype handlers. If they return true, then `IntegrateChanges` is called on them. If they return false, then `IntegrateChanges` is not called on them.
+        /// </summary>
+        /// <param name="cmdList">A hierarchy command list that can modify the hierarchy.</param>
+        /// <returns><see langword="true"/> if more invocations are needed to complete integrating changes, and <see langword="false"/> if the handler is done integrating changes.</returns>
+        [Obsolete("IntegrateChanges is obsolete, it is replaced by adding commands into the hierarchy node type handler's CommandList.", false)]
+        protected virtual bool IntegrateChanges(HierarchyCommandList cmdList) => false;
         #endregion
     }
 }

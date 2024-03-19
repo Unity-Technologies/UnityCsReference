@@ -12,8 +12,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public string headerTextTemplate { get; set; }
 
-        private List<IPackageVersion> m_Versions = new();
-        public List<IPackageVersion> versions => m_Versions;
+        private List<IPackage> m_Packages = new();
+        public List<IPackage> packages => m_Packages;
 
         public PackageAction action { get; }
 
@@ -41,21 +41,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void Refresh()
         {
-            var isVisible = m_Versions.Any();
+            var isVisible = m_Packages.Any();
             UIUtils.SetElementDisplay(this, isVisible);
             if (!isVisible)
                 return;
 
             RefreshHeader();
             RefreshContent();
-            m_Button?.Refresh(m_Versions);
+            m_Button?.Refresh(m_Packages);
         }
 
         private void RefreshHeader()
         {
             if (string.IsNullOrEmpty(headerTextTemplate))
                 return;
-            var numItemsText = string.Format(m_Versions.Count > 1 ? L10n.Tr("{0} items") : L10n.Tr("{0} item"), m_Versions.Count);
+            var numItemsText = string.Format(m_Packages.Count > 1 ? L10n.Tr("{0} items") : L10n.Tr("{0} item"), m_Packages.Count);
             m_Toggle.text = string.Format(headerTextTemplate, numItemsText);
         }
 
@@ -65,23 +65,23 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             m_Container.Clear();
-            foreach (var version in m_Versions)
+            foreach (var version in m_Packages)
                 m_Container.Add(CreateMultiSelectItem(version));
         }
 
-        protected virtual MultiSelectItem CreateMultiSelectItem(IPackageVersion version) => new MultiSelectItem(version);
+        protected virtual MultiSelectItem CreateMultiSelectItem(IPackage package) => new (package);
 
         // Most foldouts are controlled by the group it belongs to, hence AddPackageVersion always return true.
         // For special standalone foldouts, the function should be overridden to provide their own logic.
-        public virtual bool AddPackageVersion(IPackageVersion version)
+        public virtual bool AddPackage(IPackage package)
         {
-            m_Versions.Add(version);
+            m_Packages.Add(package);
             return true;
         }
 
-        public void ClearVersions()
+        public void ClearPackages()
         {
-            m_Versions.Clear();
+            m_Packages.Clear();
         }
 
         private void SetExpanded(bool expanded)

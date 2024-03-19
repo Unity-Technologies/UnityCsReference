@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using UnityEditor;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -22,7 +21,7 @@ namespace UnityEngine
 
             EnsureDelayedCallWiredUp();
             var awaitable = Awaitable.NewManagedAwaitable();
-            _nextFrameAwaitables.Add(awaitable);
+            _nextFrameAwaitables.Add(awaitable, Time.frameCount + 1);
             if (cancellationToken.CanBeCanceled)
             {
                 WireupCancellation(awaitable, cancellationToken);
@@ -53,7 +52,7 @@ namespace UnityEngine
 
             EnsureDelayedCallWiredUp();
             var awaitable = Awaitable.NewManagedAwaitable();
-            _endOfFrameAwaitables.Add(awaitable);
+            _endOfFrameAwaitables.Add(awaitable, -1);
             if (cancellationToken.CanBeCanceled)
             {
                 WireupCancellation(awaitable, cancellationToken);
@@ -86,10 +85,22 @@ namespace UnityEngine
         private static readonly DoubleBufferedAwaitableList _nextFrameAwaitables = new();
         private static readonly DoubleBufferedAwaitableList _endOfFrameAwaitables = new();
 
+        private struct AwaitableAndFrameIndex
+        {
+            public Awaitable Awaitable { get; }
+            public int FrameIndex { get; }
+
+            public AwaitableAndFrameIndex(Awaitable awaitable, int frameIndex)
+            {
+                Awaitable = awaitable;
+                FrameIndex = frameIndex;
+            }
+        }
+
         class DoubleBufferedAwaitableList
         {
-            private List<Awaitable> _awaitables = new();
-            private List<Awaitable> _scratch = new();
+            private List<AwaitableAndFrameIndex> _awaitables = new();
+            private List<AwaitableAndFrameIndex> _scratch = new();
             public void SwapAndComplete()
             {
                 var oldScratch = _scratch;
@@ -100,8 +111,17 @@ namespace UnityEngine
                 {
                     foreach (var item in toIterate)
                     {
-                        if (!item.IsDettachedOrCompleted) // might already have been completed
-                            item.RaiseManagedCompletion();
+                        if (!item.Awaitable.IsDettachedOrCompleted)
+                        {
+                            if (Time.frameCount >= item.FrameIndex || item.FrameIndex == -1)
+                            {
+                                item.Awaitable.RaiseManagedCompletion();
+                            }
+                            else
+                            {
+                                oldScratch.Add(item);
+                            }
+                        }
                     }
                 }
                 finally
@@ -110,9 +130,9 @@ namespace UnityEngine
                 }
             }
 
-            public void Add(Awaitable item)
+            public void Add(Awaitable item, int frameIndex)
             {
-                _awaitables.Add(item);
+                _awaitables.Add(new AwaitableAndFrameIndex(item, frameIndex));
             }
             public void Clear()
             {

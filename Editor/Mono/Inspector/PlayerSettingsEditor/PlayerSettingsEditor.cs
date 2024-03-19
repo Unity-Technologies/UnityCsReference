@@ -897,7 +897,7 @@ namespace UnityEditor
                 {
                     EditorGUI.EndEditingActiveTextField();
                     GUIUtility.keyboardControl = 0;
-                    string[] defines = PlayerSettings.ConvertScriptingDefineStringToArray(EditorGUI.s_DelayedTextEditor.text);
+                    string[] defines = ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(EditorGUI.s_DelayedTextEditor.text);
                     SetScriptingDefineSymbolsForGroup(validPlatforms[oldPlatform].namedBuildTarget, defines);
                 }
                 // Reset focus when changing between platforms.
@@ -3044,9 +3044,11 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_ForceIOSSpeakersWhenRecording, SettingsContent.forceIOSSpeakersWhenRecording);
                     }
                     EditorGUILayout.PropertyField(m_UIRequiresPersistentWiFi, SettingsContent.UIRequiresPersistentWiFi);
-                    EditorGUILayout.PropertyField(m_IOSURLSchemes, SettingsContent.iOSURLSchemes, true);
                 }
             }
+
+            if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS || platform.namedBuildTarget == NamedBuildTarget.VisionOS)
+                EditorGUILayout.PropertyField(m_IOSURLSchemes, SettingsContent.iOSURLSchemes, true);
 
             if (settingsExtension != null)
                 settingsExtension.ConfigurationSectionGUI();
@@ -3104,7 +3106,7 @@ namespace UnityEditor
 
         private void SetScriptingDefineSymbolsForGroup(NamedBuildTarget buildTarget, string[] defines)
         {
-            m_ScriptingDefines.SetMapValue(buildTarget.TargetName, PlayerSettings.ConvertScriptingDefineArrayToString(defines));
+            m_ScriptingDefines.SetMapValue(buildTarget.TargetName, ScriptingDefinesHelper.ConvertScriptingDefineArrayToString(defines));
         }
 
         string[] GetAdditionalCompilerArgumentsForGroup(NamedBuildTarget buildTarget)
@@ -3857,7 +3859,7 @@ namespace UnityEditor
         {
             // Get Scripting Define Symbols data
             string defines = GetScriptingDefineSymbolsForGroup(namedBuildTarget);
-            scriptingDefinesList = new List<string>(PlayerSettings.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
+            scriptingDefinesList = new List<string>(ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
 
             // Initialize Reorderable List
             scriptingDefineSymbolsList = new ReorderableList(scriptingDefinesList, typeof(string), true, true, true, true);
@@ -3870,7 +3872,7 @@ namespace UnityEditor
 
         void UpdateScriptingDefineSymbolsLists()
         {
-            scriptingDefinesList = new List<string>(PlayerSettings.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
+            scriptingDefinesList = new List<string>(ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
             scriptingDefineSymbolsList.list = scriptingDefinesList;
             scriptingDefineSymbolsList.DoLayoutList();
             hasScriptingDefinesBeenModified = false;

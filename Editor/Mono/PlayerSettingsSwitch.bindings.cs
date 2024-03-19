@@ -261,7 +261,6 @@ namespace UnityEditor
             [NativeProperty("switchCompilerFlags", TargetType.Function)]
             extern private static string compilerFlagsInternal { get; set; }
 
-
             //Additional NSO Dependencies
             [NativeProperty("switchNSODependencies", TargetType.Function)]
             extern public static string nsoDependencies { get; set; }

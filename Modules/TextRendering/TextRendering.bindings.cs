@@ -378,6 +378,8 @@ namespace UnityEngine
 
         public static extern string[] GetOSInstalledFontNames();
         public static extern string[] GetPathsToOSFonts();
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
+        internal static extern string[] GetOSFallbacks();
 
         private static extern void Internal_CreateFont([Writable] Font self, string name);
         private static extern void Internal_CreateFontFromPath([Writable] Font self, string fontPath);

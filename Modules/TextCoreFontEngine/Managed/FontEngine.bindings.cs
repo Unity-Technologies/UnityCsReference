@@ -1171,22 +1171,11 @@ namespace UnityEngine.TextCore.LowLevel
             int padding, GlyphPackingMode packingMode, [Out] GlyphRect[] freeGlyphRects, ref int freeGlyphRectCount, [Out] GlyphRect[] usedGlyphRects, ref int usedGlyphRectCount,
             GlyphRenderMode renderMode, Texture2D texture);
 
-
         /// <summary>
         /// Internal function used to add multiple glyphs to atlas texture.
         /// </summary>
         [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static bool TryAddGlyphsToTexture(List<uint> glyphIndexes, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture, out Glyph[] glyphs)
-        {
-            return TryAddGlyphsToTexture(glyphIndexes, padding, packingMode, freeGlyphRects, usedGlyphRects, renderMode, texture, out glyphs);
-        }
-
-        /// <summary>
-        /// Internal function used to add multiple glyphs to atlas texture.
-        /// Also returns the glyphsAddedCount, since glyphIndexes.Count might not be exact.
-        /// </summary>
-        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
-        internal static bool TryAddGlyphsToTexture(List<uint> glyphIndexes, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture, out Glyph[] glyphs, out int glyphsAddedCount)
         {
             Profiler.BeginSample("FontEngine.TryAddGlyphsToTexture");
 
@@ -1195,7 +1184,6 @@ namespace UnityEngine.TextCore.LowLevel
             if (glyphIndexes == null || glyphIndexes.Count == 0)
             {
                 Profiler.EndSample();
-                glyphsAddedCount = 0;
                 return false;
             }
 
@@ -1270,7 +1258,6 @@ namespace UnityEngine.TextCore.LowLevel
             }
 
             glyphs = s_Glyphs;
-            glyphsAddedCount = glyphCount;
 
             Profiler.EndSample();
 

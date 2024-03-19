@@ -138,6 +138,7 @@ namespace UnityEditor
 
         protected override void OnBackingScaleFactorChanged()
         {
+            base.OnBackingScaleFactorChanged();
             CreateContents();
         }
 

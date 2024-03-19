@@ -28,20 +28,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal PackageGroup packageGroup { get; set; }
 
-        private IPackageVersion selectedVersion
-        {
-            get
-            {
-                if (package != null && m_PageManager.activePage.GetSelection().TryGetValue(package.uniqueId, out var selection))
-                {
-                    if (string.IsNullOrEmpty(selection.versionUniqueId))
-                        return package.versions.primary;
-                    return package.versions.FirstOrDefault(v => v.uniqueId == selection.versionUniqueId);
-                }
-                return null;
-            }
-        }
-
         private readonly IPageManager m_PageManager;
         private readonly IPackageDatabase m_PackageDatabase;
 
@@ -256,7 +242,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void RefreshSelection()
         {
-            var enable = selectedVersion != null;
+            var enable = package != null && m_PageManager.activePage.GetSelection().Contains(package.uniqueId);
             EnableInClassList(k_SelectedClassName, enable);
             m_MainItem.EnableInClassList(k_SelectedClassName, enable);
         }
@@ -271,7 +257,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void SelectMainItem()
         {
-            m_PageManager.activePage.SetNewSelection(package, null, true);
+            m_PageManager.activePage.SetNewSelection(package, true);
         }
 
         public void ToggleSelectMainItem()

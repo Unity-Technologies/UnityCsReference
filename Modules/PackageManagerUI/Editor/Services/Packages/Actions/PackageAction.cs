@@ -77,13 +77,13 @@ internal abstract class PackageAction
     // Returns true if the action is triggered, false otherwise.
     protected abstract bool TriggerActionImplementation(IPackageVersion version);
 
-    public void TriggerAction(IList<IPackageVersion> versions)
+    public void TriggerAction(IList<IPackage> packages)
     {
-        if (TriggerActionImplementation(versions))
+        if (TriggerActionImplementation(packages))
             onActionTriggered?.Invoke();
     }
     // By default buttons does not support bulk action
-    protected virtual bool TriggerActionImplementation(IList<IPackageVersion> versions) => false;
+    protected virtual bool TriggerActionImplementation(IList<IPackage> packages) => false;
 
     public abstract bool IsInProgress(IPackageVersion version);
 

@@ -1217,5 +1217,28 @@ namespace UnityEngine.UIElements
             UpdateListViewLabel();
             base.PostRefresh();
         }
+
+        private protected override bool HandleItemNavigation(bool moveIn, bool altPressed)
+        {
+            var hasChanges = false;
+
+            foreach (var index in selectedIndices)
+            {
+                foreach (var reusableCollectionItem in activeItems)
+                {
+                    if (reusableCollectionItem.index == index && GetProperty(internalBindingKey) != null)
+                    {
+                        var foldout = reusableCollectionItem.bindableElement.Q<Foldout>();
+                        if (foldout != null)
+                        {
+                            foldout.value = moveIn;
+                            hasChanges = true;
+                        }
+                    }
+                }
+            }
+
+            return hasChanges;
+        }
     }
 }

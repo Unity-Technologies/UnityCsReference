@@ -24,6 +24,9 @@ namespace UnityEngine
 
             [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             get;
+
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            set;
         }
 
         [NativeProperty("GetGUIState().m_OnGUIDepth", true, TargetType.Field)]

@@ -7,7 +7,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal interface IMultiSelectFoldoutElement
     {
         void Refresh();
-        bool AddPackageVersion(IPackageVersion version);
-        void ClearVersions();
+        bool AddPackage(IPackage package);
+        void ClearPackages();
     }
 }
