@@ -394,7 +394,7 @@ namespace UnityEngine.UIElements
                 //this approach results not showing leading 0s when input fields are updated from the UI Builder if there is a placeholder text
                 //however since this does not occur at run-time and inputfields are generally empty when placeholder text is set this should be ok
                 //if we want to fix this down the line then defaultValue needs to return null so we could differentiate an empty field vs. one with "0"
-                if (!string.IsNullOrEmpty(value) && text.Equals(edition.GetDefaultValueType()))
+                if (!string.IsNullOrEmpty(value) && (text == null || text.Equals(edition.GetDefaultValueType())))
                     text = "";
 
                 m_PlaceholderText = value;
@@ -517,10 +517,14 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                if (edition.hidePlaceholderOnFocus)
-                    return string.IsNullOrEmpty(text) && !hasFocus;
+                var isPlaceholderVisible = m_PlaceholderText.Length > 0;
+                var shouldHideOnFocus = edition.hidePlaceholderOnFocus && hasFocus;
+                var isTextEmpty = string.IsNullOrEmpty(text);
 
-                return string.IsNullOrEmpty(text);
+                if (!isPlaceholderVisible) return false;
+                if (shouldHideOnFocus) return false;
+
+                return isTextEmpty;
             }
         }
 
@@ -543,6 +547,7 @@ namespace UnityEngine.UIElements
             set => edition.autoCorrection = value;
         }
 
+		private const string ZeroWidthSpace = "\u200B";
         string m_RenderedText;
         internal string renderedText
         {

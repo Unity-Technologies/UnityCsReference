@@ -21,6 +21,13 @@ namespace UnityEditor.SearchService
         All = Assets | Scene
     }
 
+    [Flags]
+    public enum ObjectSelectorSearchEndSessionModes
+    {
+        None = 0,
+        CloseSelector = 1
+    }
+
     public partial class ObjectSelectorSearchContext : ISearchContext
     {
         public Guid guid { get; } = Guid.NewGuid();
@@ -31,6 +38,7 @@ namespace UnityEditor.SearchService
         public IEnumerable<string> requiredTypeNames { get; set; }
         public VisibleObjects visibleObjects { get; set; }
         public IEnumerable<int> allowedInstanceIds { get; set; }
+        public ObjectSelectorSearchEndSessionModes endSessionModes { get; set; }
         internal SearchFilter searchFilter { get; set; }
     }
 
@@ -133,6 +141,23 @@ namespace UnityEditor.SearchService
     {
         public ObjectSelectorSearchSessionHandler()
             : base(SearchEngineScope.ObjectSelector) {}
+
+        protected override void OnActiveEngineChanged(string newSearchEngineName)
+        {
+            CloseSelector();
+        }
+
+        public void CloseSelector()
+        {
+            if (context is ObjectSelectorSearchContext selectorContext)
+            {
+                // Context is set to null after EndSession, so no need to set the
+                // endSessionModes back to its original value. It is also valid that context
+                // is null when calling CloseSelector/EndSession if no session was started before.
+                selectorContext.endSessionModes |= ObjectSelectorSearchEndSessionModes.CloseSelector;
+            }
+            EndSession();
+        }
 
         public bool SelectObject(Action<Object, bool> onObjectSelectorClosed, Action<Object> onObjectSelectedUpdated)
         {

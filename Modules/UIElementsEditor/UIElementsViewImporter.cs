@@ -23,7 +23,7 @@ namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 15, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 16, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -849,6 +849,8 @@ namespace UnityEditor.UIElements
                 vta.FindElementsByNameInTemplate(templateAsset, elementNameAttr.Value, resolvedVisualElementAssetsInTemplate);
             }
 
+            UxmlSerializedDataDescription uxmlSerializedDataDescription = null;
+
             foreach (var attribute in attributeOverridesElt.Attributes())
             {
                 var attributeName = attribute.Name.LocalName;
@@ -863,17 +865,21 @@ namespace UnityEditor.UIElements
 
                 if (resolvedVisualElementAssetsInTemplate.Count > 0)
                 {
-                    if (s_UxmlAssetAttributeCache.GetAssetAttributeType(resolvedVisualElementAssetsInTemplate[0].fullTypeName, attributeName, out var assetType))
+                    Type assetType = null;
+                    uxmlSerializedDataDescription ??= UxmlSerializedDataRegistry.GetDescription(resolvedVisualElementAssetsInTemplate[0].fullTypeName);
+
+                    // Extract the asset type from the UxmlSerializedData
+                    if (uxmlSerializedDataDescription?.FindAttributeWithUxmlName(attributeName) is UxmlSerializedAttributeDescription attributeDescription &&
+                        attributeDescription.isUnityObject)
+                        assetType = attributeDescription.type;
+
+                    if (assetType != null || s_UxmlAssetAttributeCache.GetAssetAttributeType(resolvedVisualElementAssetsInTemplate[0].fullTypeName, attributeName, out assetType))
                     {
                         var (response, asset) = ValidateAndLoadResource(attributeOverridesElt, vta, attribute.Value, true);
 
                         if (response.result == URIValidationResult.OK && !vta.AssetEntryExists(attribute.Value, assetType))
                         {
-                            if (asset)
-                            {
-                                // Force loading using correct attribute type to support cases like Texture2D vs Sprite,
-                                asset = AssetDatabase.LoadAssetAtPath(response.resolvedProjectRelativePath, assetType);
-                            }
+                            asset = ExtractSubAssetFromParent(asset, assetType, response);
                             vta.RegisterAssetEntry(attribute.Value, assetType, asset);
                         }
                     }
@@ -1035,6 +1041,30 @@ namespace UnityEditor.UIElements
             return (default, null);
         }
 
+        static Object ExtractSubAssetFromParent(Object parent, Type assetType, URIHelpers.URIValidationResponse response)
+        {
+            if (parent && !assetType.IsAssignableFrom(parent.GetType()))
+            {
+                // Force loading using correct attribute type to support cases like Texture2D vs Sprite,
+                if (string.IsNullOrEmpty(response.resolvedSubAssetPath))
+                {
+                    // Force loading using correct attribute type to support cases like Texture2D vs Sprite,
+                    return AssetDatabase.LoadAssetAtPath(response.resolvedProjectRelativePath, assetType);
+                }
+
+                // Force load the sub assets and find the asset by name and type
+                var subAssets = AssetDatabase.LoadAllAssetsAtPath(response.resolvedProjectRelativePath);
+                foreach (var subAsset in subAssets)
+                {
+                    if (subAsset.name == response.resolvedSubAssetPath && assetType.IsAssignableFrom(subAsset.GetType()))
+                    {
+                        return subAsset;
+                    }
+                }
+            }
+            return parent;
+        }
+
         void ParseAttributes(XElement elt, UxmlAsset res, VisualTreeAsset vta, UxmlAsset parent)
         {
             // Since the import process depends on the existence of the type and any UXMLAssetAttributeDescription members
@@ -1069,27 +1099,7 @@ namespace UnityEditor.UIElements
 
                         if (response.result == URIValidationResult.OK && !vta.AssetEntryExists(xattr.Value, assetType))
                         {
-                            if (asset && !assetType.IsAssignableFrom(asset.GetType()))
-                            {
-                                if (string.IsNullOrEmpty(response.resolvedSubAssetPath))
-                                {
-                                    // Force loading using correct attribute type to support cases like Texture2D vs Sprite,
-                                    asset = AssetDatabase.LoadAssetAtPath(response.resolvedProjectRelativePath, assetType);
-                                }
-                                else
-                                {
-                                    // Force load the sub assets and find the asset by name and type
-                                    var subAssets = AssetDatabase.LoadAllAssetsAtPath(response.resolvedProjectRelativePath);
-                                    foreach (var subAsset in subAssets)
-                                    {
-                                        if (subAsset.name == response.resolvedSubAssetPath && assetType.IsAssignableFrom(subAsset.GetType()))
-                                        {
-                                            asset = subAsset;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
+                            asset = ExtractSubAssetFromParent(asset, assetType, response);
                             vta.RegisterAssetEntry(xattr.Value, assetType, asset);
                         }
                     }

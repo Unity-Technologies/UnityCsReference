@@ -160,6 +160,7 @@ namespace UnityEditorInternal
             {
                 showAddRemoveFooter = true,
                 reorderMode = ListViewReorderMode.Animated,
+                reorderable = true,
                 showBorder = true,
                 showFoldoutHeader = false,
                 showBoundCollectionSize = false,

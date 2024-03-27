@@ -133,7 +133,7 @@ namespace UnityEditor.SearchService
             }
         }
 
-        void OnActiveEngineChanged(string newSearchEngineName)
+        protected virtual void OnActiveEngineChanged(string newSearchEngineName)
         {
             EndSession();
         }

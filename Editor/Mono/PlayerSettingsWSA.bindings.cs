@@ -338,6 +338,16 @@ namespace UnityEditor
                 set;
             }
 
+            [NativeProperty("syncCapabilities", TargetType.Field)]
+            public static extern bool syncCapabilities
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
+
             private static extern void InternalSetCapability(string name, string value);
 
             private static extern string InternalGetCapability(string name);

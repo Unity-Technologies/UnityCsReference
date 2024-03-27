@@ -730,7 +730,7 @@ namespace UnityEditor.UIElements
                                 menu.m_OnBeforePerformAction?.Invoke(item.isSubmenu, menu.autoClose);
                                 item.PerformAction();
                             }
-                        }, k_SubmenuExpandDelay);
+                        }, TimeSpan.FromSeconds(k_SubmenuExpandDelay));
 
                         if (!item.isCustomContent)
                             s_CachedRect = GUIUtility.GUIToScreenRect(item.element.worldBound);
