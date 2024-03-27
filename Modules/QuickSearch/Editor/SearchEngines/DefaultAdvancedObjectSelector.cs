@@ -78,7 +78,7 @@ namespace UnityEditor.Search
             var selectHandler = parameters.selectorClosedHandler;
             var trackingHandler = parameters.trackingHandler;
 
-            var viewState = SearchViewState.CreatePickerState(null, 
+            var viewState = SearchViewState.CreatePickerState(null,
                 SearchService.CreateContext(GetObjectSelectorProviders(selectContext), searchQuery, searchFlags), selectHandler, trackingHandler,
                 selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First());
             if (parameters.context.currentObject)
@@ -91,6 +91,10 @@ namespace UnityEditor.Search
 
         static void EndSession(in AdvancedObjectSelectorParameters parameters)
         {
+            if ((parameters.context.endSessionModes & ObjectSelectorSearchEndSessionModes.CloseSelector) != 0)
+            {
+                s_Window?.Close();
+            }
             s_Window = null;
         }
 

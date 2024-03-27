@@ -574,6 +574,73 @@ namespace UnityEngine.TextCore.Text
         }
 
         /// <summary>
+        /// Create a List of Font Assets with a list of fallbacks defined by FamilyNames, all regular styles
+        /// </summary>
+        /// <param name="fallbacksFamilyNames">The desired fonts to be included, ordered by preferred fallback</param>
+        /// <param name="pointSize">Optional point size.</param>
+        /// <returns>A List of FontAsset containing the available fallbacks for the current platform.</returns>
+        internal static List<FontAsset> CreateFontAssetOSFallbackList(string[] fallbacksFamilyNames, Shader shader, int pointSize = 90)
+        {
+            List<FontAsset> fallbackList = new List<FontAsset>();
+            FontAsset currentFontAsset;
+
+            foreach (var familyName in fallbacksFamilyNames)
+            {
+                currentFontAsset = CreateFontAssetFromFamilyName(familyName, shader, pointSize);
+
+                if (currentFontAsset == null)
+                    continue;
+
+                fallbackList.Add(currentFontAsset);
+            }
+
+            return fallbackList;
+        }
+
+        internal static FontAsset CreateFontAssetWithOSFallbackList(string[] fallbacksFamilyNames, Shader shader, int pointSize = 90)
+        {
+            FontAsset mainFontAsset = null;
+            FontAsset currentFontAsset;
+
+            foreach (var familyName in fallbacksFamilyNames)
+            {
+                currentFontAsset = CreateFontAssetFromFamilyName(familyName, shader, pointSize);
+
+                if (currentFontAsset == null)
+                    continue;
+
+                if (mainFontAsset == null)
+                    mainFontAsset = currentFontAsset;
+
+                if (mainFontAsset.fallbackFontAssetTable == null)
+                    mainFontAsset.fallbackFontAssetTable = new List<FontAsset>();
+
+                mainFontAsset.fallbackFontAssetTable.Add(currentFontAsset);
+            }
+
+            return mainFontAsset;
+        }
+
+        private static FontAsset CreateFontAssetFromFamilyName(string familyName, Shader shader, int pointSize = 90)
+        {
+            FontAsset fontAsset = null;
+
+            if (FontEngine.TryGetSystemFontReference(familyName, null, out FontReference fontRef))
+                fontAsset = CreateFontAsset(fontRef.filePath, fontRef.faceIndex, pointSize, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.DynamicOS, true);
+
+            if (fontAsset == null)
+                return null;
+
+            fontAsset.hideFlags = HideFlags.DontSave;
+            fontAsset.atlasTextures[0].hideFlags = HideFlags.DontSave;
+            fontAsset.material.hideFlags = HideFlags.DontSave;
+            fontAsset.isMultiAtlasTexturesEnabled = true;
+            fontAsset.material.shader = shader;
+
+            return fontAsset;
+        }
+
+        /// <summary>
         /// Creates a new font asset instance from the font file at the given file path.
         /// </summary>
         /// <param name="fontFilePath">The file path of the font file.</param>
@@ -616,6 +683,11 @@ namespace UnityEngine.TextCore.Text
             return CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024);
         }
 
+        internal static FontAsset CreateFontAsset(Font font, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, Shader shader, AtlasPopulationMode atlasPopulationMode = AtlasPopulationMode.Dynamic, bool enableMultiAtlasSupport = true)
+        {
+            return CreateFontAsset(font, 0, samplingPointSize, atlasPadding, renderMode, atlasWidth, atlasHeight, shader, atlasPopulationMode, enableMultiAtlasSupport);
+        }
+
         /// <summary>
         /// Creates a new font asset instance from the provided font object.
         /// </summary>
@@ -630,28 +702,30 @@ namespace UnityEngine.TextCore.Text
         /// <returns>An instance of the newly created font asset.</returns>
         public static FontAsset CreateFontAsset(Font font, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode = AtlasPopulationMode.Dynamic, bool enableMultiAtlasSupport = true)
         {
-            return CreateFontAsset(font, 0, samplingPointSize, atlasPadding, renderMode, atlasWidth, atlasHeight, atlasPopulationMode, enableMultiAtlasSupport);
+            return CreateFontAsset(font, 0, samplingPointSize, atlasPadding, renderMode, atlasWidth, atlasHeight, null, atlasPopulationMode, enableMultiAtlasSupport);
         }
 
-        static FontAsset CreateFontAsset(Font font, int faceIndex, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode = AtlasPopulationMode.Dynamic, bool enableMultiAtlasSupport = true)
+        static FontAsset CreateFontAsset(Font font, int faceIndex, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, Shader shader, AtlasPopulationMode atlasPopulationMode = AtlasPopulationMode.Dynamic, bool enableMultiAtlasSupport = true)
         {
+            if (font.name == "LegacyRuntime")
+            {
+                var fonts = Font.GetOSFallbacks();
+                if (FontEngine.LoadFontFace(font, samplingPointSize, faceIndex) == FontEngineError.Success)
+                {
+                    var mainFontAssset = CreateFontAssetInstance(font, atlasPadding, renderMode, atlasWidth, atlasHeight, atlasPopulationMode, enableMultiAtlasSupport);
+                    var fallbacks = CreateFontAssetOSFallbackList(fonts, shader, samplingPointSize);
+                    mainFontAssset.fallbackFontAssetTable = fallbacks;
+                    return mainFontAssset;
+                }
+
+                var fontAsset = CreateFontAssetWithOSFallbackList(fonts, shader, samplingPointSize);
+                if (fontAsset != null)
+                    return fontAsset;
+            }
+
             // Load Font Face
             if (FontEngine.LoadFontFace(font, samplingPointSize, faceIndex) != FontEngineError.Success)
             {
-                if (font.name == "LegacyRuntime")
-                {
-                    RuntimePlatform platform = Application.platform;
-
-                    switch (platform)
-                    {
-                        case RuntimePlatform.LinuxPlayer:
-                            return FontAsset.CreateFontAsset("Liberation Sans", "Regular");
-                        case RuntimePlatform.Switch:
-                            return FontAsset.CreateFontAsset("nintendo_udsg-r_std_003", "R");
-                        default:
-                            return FontAsset.CreateFontAsset("Arial", "Regular");
-                    }
-                }
                 FontAsset systemFontAsset = CreateFontAsset(font.name, "Regular");
                 if (systemFontAsset != null)
                     return systemFontAsset;

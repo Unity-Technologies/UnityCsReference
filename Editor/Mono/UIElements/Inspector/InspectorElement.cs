@@ -329,7 +329,7 @@ namespace UnityEditor.UIElements
 
         void OnAttachToPanel(AttachToPanelEvent evt)
         {
-            if (boundObject != null && m_Editor == null)
+            if (boundObject != null && boundObject.isValid && m_Editor == null)
             {
                 m_Rebind = true;
                 this.Bind(boundObject);
@@ -376,7 +376,7 @@ namespace UnityEditor.UIElements
             }
 
             // Determine if we need to rebuild. This should only be done when our serialized object target changes or something forces us to rebuild (i.e. backend changing).
-            var shouldRebuildElements = m_Rebind || m_BoundObject != bindEvent.bindObject;
+            var shouldRebuildElements = bindEvent.bindObject != null && bindEvent.bindObject.isValid && (m_Rebind || m_BoundObject != bindEvent.bindObject);
 
             if (shouldRebuildElements)
             {

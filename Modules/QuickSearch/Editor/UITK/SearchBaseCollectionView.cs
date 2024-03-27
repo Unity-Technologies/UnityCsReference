@@ -43,7 +43,7 @@ namespace UnityEditor.Search
             m_Throttler = Delayer.Throttle(o =>
             {
                 UpdateView();
-            }, SearchView.resultViewUpdateThrottleDelay, true);
+            }, TimeSpan.FromSeconds(SearchView.resultViewUpdateThrottleDelay), true);
 
             m_ListView.selectedIndicesChanged += HandleItemsSelected;
             m_ListView.itemsChosen += OnItemsChosen;

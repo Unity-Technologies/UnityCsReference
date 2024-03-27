@@ -87,7 +87,21 @@ namespace UnityEngine.Accessibility
         /// Sets the node that contains the native accessibility node with the
         /// given ID.
         /// </summary>
-        internal static extern void SetParent(int id, int parentId);
+        /// <remarks>
+        /// If a valid parent ID and index are provided, the node will be
+        /// inserted at the given index in its parent's child list.
+        ///
+        /// If the parent ID is valid and the index is not, the node will be
+        /// added at the end of its parent's child list.
+        ///
+        /// If the index is valid and the parent ID is not, the node will be
+        /// inserted at the given index as a root node.
+        ///
+        /// If neither the parent ID nor the index are valid, the node will be
+        /// added as a root node at the end of the root node list.
+        /// </remarks>
+        /// </summary>
+        internal static extern void SetParent(int id, int parentId, int index = -1);
 
         /// <summary>
         /// Sets the nodes contained by the native accessibility node with the

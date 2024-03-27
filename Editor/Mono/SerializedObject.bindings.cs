@@ -227,11 +227,9 @@ namespace UnityEditor
             set;
         }
 
-        internal extern bool isValid
-        {
-            [NativeMethod("IsValid")]
-            get;
-        }
+        internal extern bool IsValid();
+
+        internal bool isValid => m_NativeObjectPtr != IntPtr.Zero && IsValid();
 
         internal extern uint objectVersion
         {

@@ -6158,6 +6158,9 @@
     <Compile Include="..\..\Modules\Licensing\UI\Data\Events\Base\NotificationWithDetails.cs">
       <Link>Modules\Licensing\UI\Data\Events\Base\NotificationWithDetails.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\BorrowFeatureStatusNotification.cs">
+      <Link>Modules\Licensing\UI\Data\Events\BorrowFeatureStatusNotification.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Licensing\UI\Data\Events\LicenseExpiredNotification.cs">
       <Link>Modules\Licensing\UI\Data\Events\LicenseExpiredNotification.cs</Link>
     </Compile>

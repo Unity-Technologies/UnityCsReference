@@ -19,7 +19,7 @@ namespace UnityEngine.Networking
         extern private static IntPtr Create([Unmarshalled] CertificateHandler obj);
 
         [NativeMethod(IsThreadSafe = true)]
-        extern private void Release();
+        extern private void ReleaseFromScripting();
 
         protected CertificateHandler()
         {
@@ -46,7 +46,7 @@ namespace UnityEngine.Networking
         {
             if (m_Ptr != IntPtr.Zero)
             {
-                Release();
+                ReleaseFromScripting();
                 m_Ptr = IntPtr.Zero;
             }
         }
