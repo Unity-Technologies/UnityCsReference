@@ -229,7 +229,7 @@ namespace UnityEngine.UIElements
         }
 
         private VisualElement m_RootVisualElement;
-        private BaseRuntimePanel m_RuntimePanel;
+        private RuntimePanel m_RuntimePanel;
 
         /// <summary>
         /// The root visual element where the UI hierarchy starts.
@@ -340,8 +340,16 @@ namespace UnityEngine.UIElements
         void ResolveRuntimePanel()
         {
             if (m_RuntimePanel == null)
-                m_RuntimePanel = rootVisualElement.panel as BaseRuntimePanel;
+                m_RuntimePanel = rootVisualElement.panel as RuntimePanel;
         }
+
+        /// <summary>
+        /// The runtime panel that this UIDocument is attached to.
+        /// </summary>
+        /// <remarks>
+        /// Null will be returned if the UIDocument is not enabled or if the panel has not been created yet.
+        /// </remarks>
+        public IRuntimePanel runtimePanel { get { ResolveRuntimePanel(); return  m_RuntimePanel; } }
 
         bool m_RootHasWorldTransform;
 

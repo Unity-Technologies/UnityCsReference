@@ -32,13 +32,13 @@ namespace UnityEditor
             };
             public static readonly GUIContent[] kTextureMipmapLimitGroupsOffsetModeItems =
             {
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -3", "Upload 3 mips extra compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -2", "Upload 2 mips extra compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -1", "Upload 1 mip extra compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -3", "Upload 3 mipmap levels extra compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -2", "Upload 2 mipmap levels extra compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -1", "Upload 1 mipmap level extra compared to the Global Mipmap Limit."),
                 EditorGUIUtility.TrTextContent("Use Global Mipmap Limit", "No offset or override occurs, simply use the Global Mipmap Limit. (Default)"),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +1", "Upload 1 mip less compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +2", "Upload 2 mips less compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +3", "Upload 3 mips less compared to the Global Mipmap Limit.")
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +1", "Upload 1 mipmap level less compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +2", "Upload 2 mipmap levels less compared to the Global Mipmap Limit."),
+                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +3", "Upload 3 mipmap levels less compared to the Global Mipmap Limit.")
             };
             public static readonly GUIContent kTextureMipmapLimitGroupsOptions = EditorGUIUtility.TrIconContent("_Menu", "Show additional options");
             public static readonly GUIContent kTextureMipmapLimitGroupsOptionsIdentify = EditorGUIUtility.TrTextContent("Identify textures");
@@ -55,7 +55,7 @@ namespace UnityEditor
             public static readonly string kTextureMipmapLimitGroupsDialogMessageOnUpdateAssetsError = L10n.Tr("An error occured while updating texture assets: {0}");
             public static readonly string kTextureMipmapLimitGroupsDialogMessageOnIdentifyFail = L10n.Tr("No textures are linked to the mipmap limit group '{0}'.");
 
-            public static readonly GUIContent kStreamingMipmapsActive = EditorGUIUtility.TrTextContent("Texture Streaming", "When enabled, Unity only streams texture mipmaps relevant to the current Camera's position in a Scene. This reduces the total amount of memory Unity needs for textures. Individual textures must also have 'Streaming Mip Maps' enabled in their Import Settings.");
+            public static readonly GUIContent kStreamingMipmapsActive = EditorGUIUtility.TrTextContent("Texture Streaming", "When enabled, Unity only streams texture mipmap levels relevant to the current Camera's position in a Scene. This reduces the total amount of memory Unity needs for textures. Individual textures must also have 'Stream Mipmap Levels' enabled in their Import Settings.");
             public static readonly GUIContent kStreamingMipmapsMemoryBudget = EditorGUIUtility.TrTextContent("Memory Budget", "The amount of memory (in megabytes) to allocate for all loaded textures.");
             public static readonly GUIContent kStreamingMipmapsRenderersPerFrame = EditorGUIUtility.TrTextContent("Renderers Per Frame", "The number of renderers to process each frame. A lower number decreases the CPU load but delays mipmap loading.");
             public static readonly GUIContent kStreamingMipmapsAddAllCameras = EditorGUIUtility.TrTextContent("Add All Cameras", "When enabled, Unity uses texture streaming for every Camera in the Scene. Otherwise, Unity only uses texture streaming for Cameras that have an attached Streaming Controller component.");
@@ -71,7 +71,7 @@ namespace UnityEditor
             public static readonly GUIContent kLODBiasLabel = EditorGUIUtility.TrTextContent("LOD Bias", "The bias Unity uses to determine which model to render when a GameObject’s on-screen size is between two LOD levels. Values between 0 and 1 favor the less detailed model. Values greater than 1 favor the more detailed model.");
             public static readonly GUIContent kMaximumLODLevelLabel = EditorGUIUtility.TrTextContent("Maximum LOD Level", "The highest LOD to use in the application.");
             public static readonly GUIContent kEnableLODCrossFadeLabel = EditorGUIUtility.TrTextContent("LOD Cross Fade", "Enables or disables LOD Cross Fade.");
-            public static readonly GUIContent kMipStrippingHint = EditorGUIUtility.TrTextContent("Detected platforms with textures that never use their highest resolution mips. Enable Texture Mipmap Stripping in the Player Settings to reduce the package size of those platforms.");
+            public static readonly GUIContent kMipStrippingHint = EditorGUIUtility.TrTextContent("Detected platforms with textures that never use their highest resolution mipmap levels. Enable Texture Mipmap Stripping in the Player Settings to reduce the package size of those platforms.");
 
             public static readonly GUIContent kAsyncUploadTimeSlice = EditorGUIUtility.TrTextContent("Time Slice", "The amount of time (in milliseconds) Unity spends uploading Texture and Mesh data to the GPU per frame.");
             public static readonly GUIContent kAsyncUploadBufferSize = EditorGUIUtility.TrTextContent("Buffer Size", "The size (in megabytes) of the upload buffer Unity uses to stream Texture and Mesh data to GPU.");

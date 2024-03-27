@@ -58,6 +58,16 @@ namespace UnityEngine.Android
     [StaticAccessor("GameStateHelper::Get()", StaticAccessorType.Dot)]
     public static partial class AndroidGame
     {
+        [StaticAccessor("GameStateHelper::Get()", StaticAccessorType.Dot)]
+        public static partial class Automatic
+        {
+            /// <summary>
+            /// <para>Set current GameState mode which will be used for automated GameState hinting.</para>
+            /// </summary>
+            /// <param name="mode">GameState mode value.</param>
+            [NativeMethod("SetGameStateMode")]
+            public static extern void SetGameState(AndroidGameState mode);
+        }
         // Required for automated SetGameState calls, indicates to the operating system when the application is in loading state, level is the type of loading
         internal static extern void StartLoading(int label);
         // Required for automated SetGameState calls, indicates to the operating system when loading state is ended, level is the type of loading

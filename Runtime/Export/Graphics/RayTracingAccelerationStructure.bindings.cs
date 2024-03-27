@@ -375,6 +375,7 @@ namespace UnityEngine.Rendering
             public int layerMask;
             public RayTracingAccelerationStructureBuildFlags buildFlagsStaticGeometries { get; set; }
             public RayTracingAccelerationStructureBuildFlags buildFlagsDynamicGeometries { get; set; }
+            public bool enableCompaction { get; set; }
 
             public Settings()
             {
@@ -383,6 +384,7 @@ namespace UnityEngine.Rendering
                 layerMask = -1;
                 buildFlagsStaticGeometries = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
                 buildFlagsDynamicGeometries = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
+                enableCompaction = true;
             }
 
             public Settings(ManagementMode sceneManagementMode, RayTracingModeMask rayTracingModeMask, int layerMask)
@@ -392,6 +394,7 @@ namespace UnityEngine.Rendering
                 this.layerMask = layerMask;
                 buildFlagsStaticGeometries = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
                 buildFlagsDynamicGeometries = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
+                enableCompaction = true;
             }
             public Settings(ManagementMode sceneManagementMode, RayTracingModeMask rayTracingModeMask, int layerMask, RayTracingAccelerationStructureBuildFlags buildFlagsStaticGeometries, RayTracingAccelerationStructureBuildFlags buildFlagsDynamicGeometries)
             {
@@ -400,6 +403,7 @@ namespace UnityEngine.Rendering
                 this.layerMask = layerMask;
                 this.buildFlagsStaticGeometries = buildFlagsStaticGeometries;
                 this.buildFlagsDynamicGeometries = buildFlagsDynamicGeometries;
+                enableCompaction = true;
             }
         }
 

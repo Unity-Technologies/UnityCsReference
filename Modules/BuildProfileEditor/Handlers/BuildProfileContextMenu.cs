@@ -94,7 +94,6 @@ namespace UnityEditor.Build.Profile.Handlers
 
             string newName = buildProfileLabelName;
             m_ProfileDataSource.RenameAsset(buildProfile, newName);
-            m_ProfileSelection.ClearListViewSelection(BuildProfileWindowSelection.ListViewSelectionType.ClassicAndCustom);
             SelectBuildProfileInView(buildProfile, isClassic: false, shouldAppend: false);
             return true;
         }
@@ -128,15 +127,26 @@ namespace UnityEditor.Build.Profile.Handlers
             }
 
             if (targetIndex >= 0)
-                m_ProfileSelection.SelectBuildProfileInViewByIndex(targetIndex, isClassic: true, shouldAppend: false);
+                m_ProfileSelection.visualElement.SelectInstalledPlatform(targetIndex);
         }
 
         void SelectBuildProfileInView(BuildProfile buildProfile, bool isClassic, bool shouldAppend)
         {
             var targetProfiles = isClassic ? m_ProfileDataSource.classicPlatforms : m_ProfileDataSource.customBuildProfiles;
             var index = targetProfiles.IndexOf(buildProfile);
-            if (index >= 0)
-                m_ProfileSelection.SelectBuildProfileInViewByIndex(index, isClassic, shouldAppend);
+            if (index < 0)
+                return;
+
+            if (isClassic)
+            {
+                m_ProfileSelection.visualElement.SelectInstalledPlatform(index);
+                return;
+            }
+
+            if (shouldAppend)
+                m_ProfileSelection.visualElement.AppendBuildProfileSelection(index);
+            else
+                m_ProfileSelection.visualElement.SelectBuildProfile(index);
         }
 
         void HandleDeleteSelectedProfiles()

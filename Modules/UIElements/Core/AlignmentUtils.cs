@@ -4,7 +4,10 @@
 
 namespace UnityEngine.UIElements
 {
-    static class AlignmentUtils
+    /// <summary>
+    /// Static class containing utility methods for aligning visual elements.
+    /// </summary>
+    public static class AlignmentUtils
     {
         // round(-0.52 to 0.48) returns 0 => round(0.5 +/- eps) returns 1
         internal static float RoundToPixelGrid(float v, float pixelsPerPoint, float offset = 0.02f)
@@ -23,5 +26,54 @@ namespace UnityEngine.UIElements
         {
             return Mathf.Floor(v * pixelsPerPoint + offset) / pixelsPerPoint;
         }
+
+        /// <summary>
+        /// Round the value so that it is a whole number of pixels on the target when rendered.
+        /// </summary>
+        /// <remarks>
+        /// It will only work on visualElements inside a panel.
+        ///
+        /// Is is used to get dimensions repesenting whole pixels used for layout values, translations or in the generation of the visual Content.
+        /// It does not consider the transform of the element and its ancestors. 
+        ///
+        /// This method uses the scaling from [see cref="VisualElement.scaledPixelsPerPoint"/> and uses the same rounding thresholds as the layout engine.
+        /// </remarks>
+        public static float RoundToPanelPixelSize(this VisualElement ve, float v)
+        {
+            return RoundToPixelGrid(v, ve.scaledPixelsPerPoint);
+        }
+
+        /// <summary>
+        /// Return the next larger value representing a whole number of pixels on the target when rendered.
+        /// </summary>
+        /// <remarks>
+        /// It will only work on visualElements inside a panel.
+        ///
+        /// Is is used to get dimensions repesenting whole pixels used for layout values, translations or in the generation of the visual Content.
+        /// It does not consider the transform of the element and its ancestors. 
+        ///
+        /// This method uses the scaling from [see cref="VisualElement.scaledPixelsPerPoint"/> and uses the same rounding thresholds as the layout engine.
+        /// </remarks>
+        public static float CeilToPanelPixelSize(this VisualElement ve, float v)
+        {
+            return CeilToPixelGrid(v, ve.scaledPixelsPerPoint);
+        }
+
+        /// <summary>
+        /// Return the next smaller value representing a whole number of pixels on the target when rendered.
+        /// </summary>
+        /// <remarks>
+        /// It will only work on visualElements inside a panel.
+        ///
+        /// Is is used to get dimensions repesenting whole pixels used for layout values, translations or in the generation of the visual Content.
+        /// It does not consider the transform of the element and its ancestors. 
+        ///
+        /// This method uses the scaling from [see cref="VisualElement.scaledPixelsPerPoint"/> and uses the same rounding thresholds as the layout engine.
+        /// </remarks>
+        public static float FloorToPanelPixelSize(this VisualElement ve, float v)
+        {
+            return FloorToPixelGrid(v, ve.scaledPixelsPerPoint);
+        }
+
     }
 }

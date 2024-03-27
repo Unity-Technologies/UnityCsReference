@@ -3,11 +3,16 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEngine;
+using UnityEditor.Build.Profile.Elements;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Profile.Handlers
 {
+    /// <summary>
+    /// Track selected profiles in build profile window and updates GUI state based
+    /// on current selection. <see cref="BuildProfileContextMenu"/> references this
+    /// class when duplicating or deleting profiles.
+    /// </summary>
     internal class BuildProfileWindowSelection
     {
         internal enum ListViewSelectionType
@@ -19,10 +24,7 @@ namespace UnityEditor.Build.Profile.Handlers
             All
         }
 
-        readonly ListView m_BuildProfileClassicPlatformListView;
-        readonly ListView m_MissingClassicPlatformListView;
-        readonly ListView m_BuildProfilesListView;
-
+        readonly PlatformListView m_PlatformListViews;
         readonly Image m_SelectedProfileImage;
         readonly Label m_SelectedProfileNameLabel;
         readonly Label m_SelectedProfilePlatformLabel;
@@ -32,11 +34,14 @@ namespace UnityEditor.Build.Profile.Handlers
         internal bool IsMultipleSelection() => m_SelectedBuildProfiles.Count > 1;
         internal bool HasSelection() => m_SelectedBuildProfiles.Count > 0;
 
-        internal BuildProfileWindowSelection(VisualElement rootVisualElement, ListView classicPlatformListView, ListView buildProfilesListView, ListView missingPlatformListView)
+        /// <summary>
+        /// Visual element tied to the selection.
+        /// </summary>
+        internal PlatformListView visualElement {  get => m_PlatformListViews; }
+
+        internal BuildProfileWindowSelection(VisualElement rootVisualElement, PlatformListView platformListView)
         {
-            m_BuildProfileClassicPlatformListView = classicPlatformListView;
-            m_MissingClassicPlatformListView = missingPlatformListView;
-            m_BuildProfilesListView = buildProfilesListView;
+            m_PlatformListViews = platformListView;
             m_SelectedBuildProfiles = new List<BuildProfile>();
             m_SelectedProfileImage = rootVisualElement.Q<Image>("selected-profile-image");
             m_SelectedProfileNameLabel = rootVisualElement.Q<Label>("selected-profile-name");
@@ -61,7 +66,6 @@ namespace UnityEditor.Build.Profile.Handlers
                     m_SelectedProfileNameLabel.text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(
                         profile.moduleName, profile.subtarget);
                     m_SelectedProfilePlatformLabel.Hide();
-                    ClearListViewSelection(ListViewSelectionType.Custom);
                 }
                 else
                 {
@@ -69,7 +73,6 @@ namespace UnityEditor.Build.Profile.Handlers
                     m_SelectedProfilePlatformLabel.text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(
                         profile.moduleName, profile.subtarget);
                     m_SelectedProfilePlatformLabel.Show();
-                    ClearListViewSelection(ListViewSelectionType.Classic);
                 }
             }
         }
@@ -84,18 +87,6 @@ namespace UnityEditor.Build.Profile.Handlers
             m_SelectedProfileImage.image = BuildProfileModuleUtil.GetPlatformIcon(moduleName, subtarget);
             m_SelectedProfileNameLabel.text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(moduleName, subtarget);
             m_SelectedProfilePlatformLabel.Hide();
-        }
-
-        /// <summary>
-        /// Check custom profiles and classic platforms to select the active one
-        /// </summary>
-        internal void SelectActiveProfile(IList<BuildProfile> customProfiles, IList<BuildProfile> classicPlatforms)
-        {
-            bool setActive = TrySelectActiveProfile(customProfiles);
-            if (!setActive)
-            {
-                TrySelectActiveProfile(classicPlatforms);
-            }
         }
 
         /// <summary>
@@ -125,26 +116,24 @@ namespace UnityEditor.Build.Profile.Handlers
             switch (listViewSelectionType)
             {
                 case ListViewSelectionType.ClassicAndCustom:
-                    m_BuildProfilesListView.ClearSelection();
-                    m_BuildProfileClassicPlatformListView.ClearSelection();
+                    m_PlatformListViews.ClearProfileSelection();
+                    m_PlatformListViews.ClearPlatformSelection();
                     break;
-
                 case ListViewSelectionType.Classic:
-                    m_BuildProfileClassicPlatformListView.ClearSelection();
+                    m_PlatformListViews.ClearPlatformSelection();
                     break;
 
                 case ListViewSelectionType.Custom:
-                    m_BuildProfilesListView.ClearSelection();
+                    m_PlatformListViews.ClearProfileSelection();
                     break;
 
                 case ListViewSelectionType.MissingClassic:
-                    m_MissingClassicPlatformListView.ClearSelection();
+                    m_PlatformListViews.ClearPlatformSelection();
                     break;
 
                 case ListViewSelectionType.All:
-                    m_MissingClassicPlatformListView.ClearSelection();
-                    m_BuildProfileClassicPlatformListView.ClearSelection();
-                    m_BuildProfilesListView.ClearSelection();
+                    m_PlatformListViews.ClearPlatformSelection();
+                    m_PlatformListViews.ClearProfileSelection();
                     break;
 
                 default:
@@ -168,66 +157,18 @@ namespace UnityEditor.Build.Profile.Handlers
         }
 
         /// <summary>
-        /// Selects the active build profile. Must be called after the list views have been updated,
-        /// as <see cref="m_ActiveProfileListIndex"/> is dependent on latest list view state.
+        /// Add selected build profiles
         /// </summary>
-        internal void SelectActiveProfile(int activeProfileListIndex)
+        /// <param name="selectedItems"></param>
+        internal void SelectItem(BuildProfile selectedItem)
         {
-            if (activeProfileListIndex < 0)
-            {
-                m_BuildProfileClassicPlatformListView.SetSelection(0);
-                Debug.LogWarning("[BuildProfile] Failed to find an active profile.");
-                return;
-            }
-
-            if (BuildProfileContext.instance.activeProfile is not null
-                && activeProfileListIndex < m_BuildProfilesListView.itemsSource.Count)
-            {
-                m_BuildProfilesListView.SetSelection(activeProfileListIndex);
-            }
-            else if (activeProfileListIndex < m_BuildProfileClassicPlatformListView.itemsSource.Count)
-            {
-                m_BuildProfileClassicPlatformListView.SetSelection(activeProfileListIndex);
-            }
-            else
-            {
-                Debug.LogWarning("[BuildProfile] Active profile not found in build profile window data source.");
-            }
+            ClearSelectedProfiles();
+            m_SelectedBuildProfiles.Add(selectedItem);
         }
 
-        /// <summary>
-        /// Set or add build profile to list view selection by index
-        /// </summary>
-        internal void SelectBuildProfileInViewByIndex(int index, bool isClassic, bool shouldAppend)
-        {
-            var targetView = isClassic ? m_BuildProfileClassicPlatformListView : m_BuildProfilesListView;
-            if (shouldAppend)
-            {
-                targetView.AddToSelection(index);
-            }
-            else
-            {
-                targetView.SetSelection(index);
-            }
-        }
-
-        void ClearSelectedProfiles()
+        internal void ClearSelectedProfiles()
         {
             m_SelectedBuildProfiles.Clear();
-        }
-
-        bool TrySelectActiveProfile(IList<BuildProfile> buildProfiles)
-        {
-            for (int i = 0; i < buildProfiles.Count; ++i)
-            {
-                if (buildProfiles[i].IsActiveBuildProfileOrPlatform())
-                {
-                    SelectActiveProfile(i);
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }

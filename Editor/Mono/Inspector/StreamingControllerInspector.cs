@@ -15,7 +15,7 @@ namespace UnityEditor
 
         internal static class Styles
         {
-            public static GUIContent streamingMipmapBias = EditorGUIUtility.TrTextContent("Mip Map Bias", "When texture streaming is active, Unity loads mipmap levels for textures based on their distance from all active cameras. This bias is added to all textures visible from this camera and allows you to force smaller or larger mipmap levels to be loaded for textures visible from this camera.");
+            public static GUIContent streamingMipmapBias = EditorGUIUtility.TrTextContent("Mipmap Bias", "When texture streaming is active, Unity loads mipmap levels for textures based on their distance from all active cameras. This bias is added to all textures visible from this camera and allows you to force smaller or larger mipmap levels to be loaded for textures visible from this camera.");
         }
 
         public void OnEnable()

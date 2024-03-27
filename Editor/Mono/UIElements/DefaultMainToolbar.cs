@@ -14,9 +14,14 @@ namespace UnityEditor
         {
             get
             {
+                //Modules/EditorToolbar/ToolbarElements/*.cs
                 yield return "Services/Account";
                 yield return "Services/Cloud";
+                //com.unity.collab-proxy/Editor/PlasticSCM/Toolbar/ToolbarButton.cs
+                yield return "Services/Version Control";
+                //Modules/EditorToolbar/ToolbarElements/*.cs
                 yield return "Editor Utility/Store";
+                //Editor/Mono/GUI/Toolbars/MainToolbarImguiContainer.cs
                 yield return "Editor Utility/Imgui Subtoolbars";
             }
         }
@@ -41,7 +46,7 @@ namespace UnityEditor
                 yield return "Editor Utility/Modes";
                 yield return "Package Manager/PreviewPackagesInUse";
                 yield return "Editor Utility/Undo";
-                // Modules/Multiplayer/MultiplayerRoleDrwopdown.cs
+                // Modules/Multiplayer/MultiplayerRoleDropdown.cs
                 yield return "Multiplayer/MultiplayerRole";
             }
         }

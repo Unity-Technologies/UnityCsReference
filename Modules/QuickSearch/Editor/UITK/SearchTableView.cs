@@ -202,6 +202,9 @@ namespace UnityEditor.Search
 
         private void SortColumns()
         {
+            if (tableConfig?.columns == null)
+                return;
+
             var sorter = new SearchTableViewColumnSorter();
 
             foreach (var c in tableConfig.columns)
@@ -315,6 +318,7 @@ namespace UnityEditor.Search
 
         private void EditColumn(int columnIndex)
         {
+            if (tableConfig?.columns == null) return;
             if (TryGetViewModelColumn(tableConfig.columns[columnIndex], out var viewColumn))
                 ColumnEditor.ShowWindow(viewColumn, (_column) => UpdateColumnSettings(columnIndex, _column));
         }
@@ -397,11 +401,12 @@ namespace UnityEditor.Search
             if (tableConfig == null)
                 return;
 
-            var uniqueColumns = newColumns.Where(newColumn => tableConfig.columns.All(c => c.selector != newColumn.selector)).ToList();
+            var oldColumns = tableConfig.columns ?? Array.Empty<SearchColumn>();
+            var uniqueColumns = newColumns.Where(newColumn => oldColumns.All(c => c.selector != newColumn.selector)).ToList();
             if (uniqueColumns.Count == 0)
                 return;
 
-            var searchColumns = new List<SearchColumn>(tableConfig.columns);
+            var searchColumns = new List<SearchColumn>(oldColumns);
             if (insertColumnAt == -1)
                 insertColumnAt = searchColumns.Count;
             var columnCountBefore = searchColumns.Count;
@@ -433,7 +438,7 @@ namespace UnityEditor.Search
         {
             var columns = new Columns();
 
-            if (tableConfig == null)
+            if (tableConfig?.columns == null)
                 return columns;
 
             foreach (var sc in tableConfig.columns)
@@ -446,6 +451,9 @@ namespace UnityEditor.Search
         {
             if (clear)
                 columns.Clear();
+
+            if (tableConfig?.columns == null)
+                return;
 
             foreach (var sc in tableConfig.columns)
             {
@@ -486,7 +494,7 @@ namespace UnityEditor.Search
 
         internal void SetupColumns(IList<SearchField> fields)
         {
-            var searchColumns = new List<SearchColumn>(tableConfig.columns.Where(c =>
+            var searchColumns = tableConfig?.columns != null ? new List<SearchColumn>(tableConfig.columns.Where(c =>
             {
                 var fp = fields.IndexOf(new SearchField(c.selector));
                 if (fp != -1)
@@ -500,7 +508,7 @@ namespace UnityEditor.Search
                 }
 
                 return (c.options & SearchColumnFlags.Volatile) == 0;
-            }));
+            })) : new List<SearchColumn>();
 
             foreach (var f in fields)
             {
@@ -518,7 +526,8 @@ namespace UnityEditor.Search
 
             if (searchColumns.Count > 0)
             {
-                tableConfig.columns = searchColumns.ToArray();
+                if (tableConfig != null)
+                    tableConfig.columns = searchColumns.ToArray();
                 BuildColumns(viewColumns, tableConfig, clear: true);
                 ExportTableConfig();
             }
@@ -526,7 +535,7 @@ namespace UnityEditor.Search
 
         public void RemoveColumn(int removeColumnAt)
         {
-            if (tableConfig == null || removeColumnAt == -1)
+            if (tableConfig?.columns == null || removeColumnAt == -1)
                 return;
 
             var columnToRemove = tableConfig.columns[removeColumnAt];
@@ -544,7 +553,7 @@ namespace UnityEditor.Search
 
         public void SwapColumns(int columnIndex, int swappedColumnIndex)
         {
-            if (tableConfig == null || swappedColumnIndex == -1)
+            if (tableConfig?.columns == null || swappedColumnIndex == -1)
                 return;
 
             var temp = tableConfig.columns[columnIndex];
@@ -556,7 +565,7 @@ namespace UnityEditor.Search
 
         private void UpdateColumnSettings(int columnIndex, Column columnSettings)
         {
-            if (tableConfig == null || columnIndex >= tableConfig.columns.Length)
+            if (tableConfig?.columns == null || columnIndex >= tableConfig.columns.Length)
                 return;
 
             var searchColumn = tableConfig.columns[columnIndex];

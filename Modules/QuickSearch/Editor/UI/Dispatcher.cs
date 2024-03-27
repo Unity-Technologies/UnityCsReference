@@ -61,7 +61,7 @@ namespace UnityEditor.Search
         {
             if (!UnityEditorInternal.InternalEditorUtility.CurrentThreadIsMainThread())
                 return false;
-            if (!s_ExecutionQueue.TryDequeue(out var task) && task.valid)
+            if (!s_ExecutionQueue.TryDequeue(out var task) || !task.valid)
                 return false;
             return Process(task);
         }

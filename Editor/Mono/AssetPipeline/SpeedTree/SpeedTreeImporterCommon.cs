@@ -20,13 +20,6 @@ namespace UnityEditor.SpeedTree.Importer
 
     static class SpeedTreeImporterCommon
     {
-        internal enum STRenderPipeline
-        {
-            Legacy,
-            URP,
-            HDRP
-        }
-
         internal enum STUnitConversion
         {
             kLeaveAsIs = 0,
@@ -83,41 +76,6 @@ namespace UnityEditor.SpeedTree.Importer
             internal static readonly string VBSetupBillboardID = "VB_SETUP_BILLBOARD";
             internal static readonly string VBSetupID = "VB_SETUP";
             internal static readonly string BillboardID = "_BILLBOARD";
-        }
-
-        internal static STRenderPipeline GetCurrentRenderPipelineType()
-        {
-            var renderPipelineAsset = GraphicsSettings.renderPipelineAsset;
-            if (renderPipelineAsset != null)
-            {
-                if (renderPipelineAsset.name.Contains("UniversalRP") ||
-                    renderPipelineAsset.name.Contains("URP"))
-                {
-                    return STRenderPipeline.URP;
-                }
-                else if (renderPipelineAsset.name.Contains("HDRenderPipeline") ||
-                         renderPipelineAsset.name.Contains("HDRP"))
-                {
-                    return STRenderPipeline.HDRP;
-                }
-            }
-
-            renderPipelineAsset = QualitySettings.renderPipeline;
-            if (renderPipelineAsset != null)
-            {
-                if (renderPipelineAsset.name.Contains("UniversalRP") ||
-                    renderPipelineAsset.name.Contains("URP"))
-                {
-                    return STRenderPipeline.URP;
-                }
-                else if (renderPipelineAsset.name.Contains("HDRenderPipeline") ||
-                         renderPipelineAsset.name.Contains("HDRP"))
-                {
-                    return STRenderPipeline.HDRP;
-                }
-            }
-
-            return STRenderPipeline.Legacy;
         }
     }
 

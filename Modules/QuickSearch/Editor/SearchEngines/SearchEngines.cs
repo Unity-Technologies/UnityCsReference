@@ -14,16 +14,27 @@ namespace UnityEditor.Search
 {
     class SearchApiSession : IDisposable
     {
+        public delegate IEnumerable<string> SearchItemConverter(IEnumerable<SearchItem> items);
+
         bool m_Disposed;
 
         public SearchContext context { get; private set; }
 
+        public object userData { get; set; }
+
         public Action<IEnumerable<string>> onAsyncItemsReceived { get; set; }
 
+        SearchItemConverter m_SearchItemConverter;
+
         public SearchApiSession(ISearchContext searchContext, params SearchProvider[] providers)
+            : this(searchContext, DefaultSearchItemConverter, providers)
+        {}
+
+        public SearchApiSession(ISearchContext searchContext, SearchItemConverter searchItemConverter, params SearchProvider[] providers)
         {
             context = new SearchContext(providers);
             context.runtimeContext = new RuntimeSearchContext() { searchEngineContext = searchContext };
+            m_SearchItemConverter = searchItemConverter;
         }
 
         ~SearchApiSession()
@@ -47,7 +58,7 @@ namespace UnityEditor.Search
 
         private void OnAsyncItemsReceived(SearchContext context, IEnumerable<SearchItem> items)
         {
-            onAsyncItemsReceived?.Invoke(items.Select(item => item.id));
+            onAsyncItemsReceived?.Invoke(m_SearchItemConverter(items));
         }
 
         protected virtual void Dispose(bool disposing)
@@ -65,6 +76,11 @@ namespace UnityEditor.Search
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        public static IEnumerable<string> DefaultSearchItemConverter(IEnumerable<SearchItem> items)
+        {
+            return items.Select(item => item.id);
         }
     }
 
@@ -148,7 +164,7 @@ namespace UnityEditor.Search
             var engineProvider = SearchService.GetProvider(providerId);
 
             var adbProvider = SearchService.GetProvider(AdbProvider.type);
-            var searchSession = new SearchApiSession(context, adbProvider, engineProvider);
+            var searchSession = new SearchApiSession(context, SearchItemConverter, adbProvider, engineProvider);
             searchSessions.Add(context.guid, searchSession);
         }
 
@@ -195,11 +211,22 @@ namespace UnityEditor.Search
             }
 
             var items = SearchService.GetItems(searchSession.context);
-            return items.Select(item => ToPath(item));
+            return SearchItemConverter(items);
         }
 
-        private string ToPath(SearchItem item)
+        static IEnumerable<string> SearchItemConverter(IEnumerable<SearchItem> items)
         {
+            return items.Select(ToPath);
+        }
+
+        static string ToPath(SearchItem item)
+        {
+            if (item.data is AssetProvider.AssetMetaInfo ami)
+            {
+                if (!string.IsNullOrEmpty(ami.path))
+                    return ami.path;
+            }
+
             if (GlobalObjectId.TryParse(item.id, out var gid))
                 return AssetDatabase.GUIDToAssetPath(gid.assetGUID);
             return item.id;
@@ -274,51 +301,57 @@ namespace UnityEditor.Search
     {
         public override string providerId => "asset";
 
-        AdvancedObjectSelector m_CurrentSelector;
-
         public override void BeginSearch(ISearchContext context, string query) {}
 
         public override void BeginSession(ISearchContext context)
         {
-            m_CurrentSelector = null;
+            if (searchSessions.ContainsKey(context.guid))
+                return;
+
             var objectSelectorContext = context as ObjectSelectorSearchContext;
             if (objectSelectorContext == null)
                 return;
 
-            if (!TryGetValidHandler(objectSelectorContext, out m_CurrentSelector))
+            if (!TryGetValidHandler(objectSelectorContext, out var selector))
                 return;
 
+            var session = new SearchApiSession(context) { userData = selector };
+            searchSessions[context.guid] = session;
             var selectorArgs = new AdvancedObjectSelectorParameters(objectSelectorContext);
-            m_CurrentSelector.handler(AdvancedObjectSelectorEventType.BeginSession, selectorArgs);
+            selector.handler(AdvancedObjectSelectorEventType.BeginSession, selectorArgs);
         }
         public override void EndSearch(ISearchContext context) {}
 
         public override void EndSession(ISearchContext context)
         {
-            if (m_CurrentSelector == null)
+            if (!searchSessions.TryGetValue(context.guid, out var session))
                 return;
+            var selector = (AdvancedObjectSelector)session.userData;
             var selectorArgs = new AdvancedObjectSelectorParameters(context);
-            m_CurrentSelector.handler(AdvancedObjectSelectorEventType.EndSession, selectorArgs);
-            m_CurrentSelector = null;
+            selector.handler(AdvancedObjectSelectorEventType.EndSession, selectorArgs);
+
+            base.EndSession(context);
         }
 
         public bool SelectObject(ISearchContext context,
             Action<Object, bool> selectHandler, Action<Object> trackingHandler)
         {
-            if (m_CurrentSelector == null)
+            if (!searchSessions.TryGetValue(context.guid, out var session))
                 return false;
+            var selector = (AdvancedObjectSelector)session.userData;
             var selectorArgs = new AdvancedObjectSelectorParameters(context, selectHandler, trackingHandler);
-            m_CurrentSelector.handler(AdvancedObjectSelectorEventType.OpenAndSearch, selectorArgs);
-            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, m_CurrentSelector.id, "object", "ObjectSelectorEngine");
+            selector.handler(AdvancedObjectSelectorEventType.OpenAndSearch, selectorArgs);
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, selector.id, "object", "ObjectSelectorEngine");
             return true;
         }
 
         public void SetSearchFilter(ISearchContext context, string searchFilter)
         {
-            if (m_CurrentSelector == null)
+            if (!searchSessions.TryGetValue(context.guid, out var session))
                 return;
+            var selector = (AdvancedObjectSelector)session.userData;
             var selectorArgs = new AdvancedObjectSelectorParameters(context, searchFilter);
-            m_CurrentSelector.handler(AdvancedObjectSelectorEventType.SetSearchFilter, selectorArgs);
+            selector.handler(AdvancedObjectSelectorEventType.SetSearchFilter, selectorArgs);
         }
 
         static bool TryGetValidHandler(ObjectSelectorSearchContext context, out AdvancedObjectSelector selector)

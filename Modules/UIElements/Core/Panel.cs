@@ -362,6 +362,18 @@ namespace UnityEngine.UIElements
         /// This method doesn't verify if any bindings have been updated, if there are any pending transitions, or if any referenced assets (such as renderTexture, panelSettings, or textSettings) have been modified.
         /// </remarks>
         bool isDirty { get; }
+
+        /// <summary>
+        /// Gives the current scaled pixels per point value of the panel.
+        /// </summary>
+        /// <remarks>
+        /// Return the resulting scaling that considers all effective inputs like the screen scaling factor from the operating system and the customizable scaling factor.
+        /// The screen scaling factor could be overriden in the editor settings by the user and is not available in the player.
+        /// The customizable scaling factor is set in the panel settings for runtime UI and always set to 1 in the editor.
+        /// </remarks>
+        float scaledPixelsPerPoint { get; }
+
+
     }
 
     /// <summary>

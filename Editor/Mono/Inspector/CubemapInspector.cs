@@ -124,12 +124,14 @@ namespace UnityEditor
             faceSize = EditorGUILayout.IntPopup("Face size", faceSize, kSizes, kSizesValues);
 
             int mipMaps = TextureUtil.GetMipmapCount(c);
-            bool useMipMap = EditorGUILayout.Toggle("MipMaps", mipMaps > 1);
+            bool useMipMap = EditorGUILayout.Toggle("Generate Mipmap", mipMaps > 1);
 
             bool streamingMipmaps = TextureUtil.GetCubemapStreamingMipmaps(c);
             if (useMipMap)
             {
-                streamingMipmaps = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Streaming Mipmaps", "Don't load image data immediately but wait till image data is requested from script."), streamingMipmaps);
+                EditorGUI.indentLevel++;
+                streamingMipmaps = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Stream Mipmap Levels", "Don't load image data immediately but wait till image data is requested from script."), streamingMipmaps);
+                EditorGUI.indentLevel--;
             }
 
             bool linear = TextureUtil.GetLinearSampled(c);

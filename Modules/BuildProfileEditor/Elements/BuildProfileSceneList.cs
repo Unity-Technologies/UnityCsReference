@@ -27,15 +27,17 @@ namespace UnityEditor.Build.Profile.Elements
             m_Target = target;
         }
 
-        public VisualElement GetSceneListGUI(IResolvedStyle container, bool showOpenScenes)
+        public VisualElement GetSceneListGUI(bool showOpenScenes)
         {
             TreeViewState m_TreeViewState = new TreeViewState();
             m_SceneTreeView = new BuildProfileSceneTreeView(m_TreeViewState, m_Target);
             m_SceneTreeView.Reload();
-            
+
             return new IMGUIContainer(() =>
             {
-                Rect rect = GUILayoutUtility.GetRect(0, container.width, 0, m_SceneTreeView.totalHeight, GUILayout.MinHeight(50));
+                Rect rect = GUILayoutUtility.GetRect(
+                    10000, m_SceneTreeView.totalHeight,
+                    GUILayout.MinHeight(50));
                 m_SceneTreeView.OnGUI(rect);
 
                 if (showOpenScenes)

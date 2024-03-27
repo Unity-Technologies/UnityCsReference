@@ -555,7 +555,7 @@ namespace UnityEditor
                 if (value < 1.86f)
                 {
                     Debug.LogWarning($"Maximum Aspect Ratio must be greater or equal to 1.86. {value} is too small, setting to 1.86 instead.");
-                    SetAndroidMinAspectRatio(1.86f);
+                    SetAndroidMaxAspectRatio(1.86f);
                 }
                 else
                 {

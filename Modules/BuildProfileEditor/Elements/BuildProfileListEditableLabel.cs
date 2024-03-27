@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Build.Profile.Handlers;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Profile.Elements
@@ -29,6 +30,13 @@ namespace UnityEditor.Build.Profile.Elements
             m_TextField.Hide();
 
             m_RenameOverlay = new BuildProfileRenameOverlay(m_TextField);
+            this.AddToClassList("pl-large");
+        }
+
+        internal BuildProfileListEditableLabel(Func<object, string, bool> onNameChanged, IManipulator manipulator)
+            : this(onNameChanged)
+        {
+            this.AddManipulator(manipulator);
         }
 
         internal void UnbindItem()

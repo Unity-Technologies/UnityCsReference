@@ -18,11 +18,6 @@ namespace UnityEditor.Toolbars
         public const string elementLabelClassName = elementClassName + "__label";
         public const string elementTextIconClassName = elementClassName + "__text-icon";
 
-        static readonly string[] k_DeprecatedElements = new[]
-        {
-            "SceneView/Snap Increment"
-        };
-
         string[] m_ToolbarElements;
         readonly EditorWindow m_Context;
         VisualElement m_RootVisualElement;
@@ -80,10 +75,6 @@ namespace UnityEditor.Toolbars
                 ve.AddToClassList(elementClassName);
                 return true;
             }
-
-            if(Array.IndexOf(k_DeprecatedElements, id) < 0)
-                Debug.LogError($"Failed to load EditorToolbar ID '{id}' for window '{ctx}'. "
-                    + "No element with that ID and target toolbar was registered using the EditorToolbarElement attribute.");
 
             return false;
         }
