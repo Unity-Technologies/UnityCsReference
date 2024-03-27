@@ -197,7 +197,7 @@ namespace UnityEngine
 
             if (!font)
             {
-                font = settings.textSettings.GetEditorFont();
+                font = GUIStyle.GetDefaultFont();
             }
 
             settings.fontAsset = settings.textSettings.GetCachedFontAsset(font, TextShaderUtilities.ShaderRef_MobileSDF_IMGUI);
@@ -245,8 +245,8 @@ namespace UnityEngine
 
             if (style.fontSize > 0)
                 settings.fontSize = style.fontSize;
-            else if (style.font)
-                settings.fontSize = style.font.fontSize;
+            else if (font)
+                settings.fontSize = font.fontSize;
             else
                 settings.fontSize = sFallbackFontSize;
 

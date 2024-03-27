@@ -1265,6 +1265,11 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
+        internal void AddCharacterToLookupCache(uint unicode, Character character)
+        {
+            AddCharacterToLookupCache(unicode, character, FontStyles.Normal, TextFontWeight.Regular);
+        }
+
         internal void AddCharacterToLookupCache(uint unicode, Character character, FontStyles fontStyle, TextFontWeight fontWeight)
         {
             if (m_CharacterLookupDictionary == null)

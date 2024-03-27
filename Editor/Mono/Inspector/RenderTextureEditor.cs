@@ -24,8 +24,8 @@ namespace UnityEditor
             public readonly GUIContent depthStencilFormat = EditorGUIUtility.TrTextContent("Depth Stencil Format", "Format of the depth stencil buffer.");
             public readonly GUIContent enableCompatibleFormat = EditorGUIUtility.TrTextContent("Enable Compatible Format", "Lets the color and depth stencil formats be changed to compatible and supported formats for the target platform automatically, if the target platform doesn't support the input format.");
             public readonly GUIContent dimension = EditorGUIUtility.TrTextContent("Dimension", "Is the texture 2D, Cube or 3D?");
-            public readonly GUIContent enableMipmaps = EditorGUIUtility.TrTextContent("Enable Mip Maps", "This render texture will have Mip Maps.");
-            public readonly GUIContent autoGeneratesMipmaps = EditorGUIUtility.TrTextContent("Auto generate Mip Maps", "This render texture automatically generates its Mip Maps.");
+            public readonly GUIContent enableMipmaps = EditorGUIUtility.TrTextContent("Mipmap", "This render texture will have a mipmap.");
+            public readonly GUIContent autoGeneratesMipmaps = EditorGUIUtility.TrTextContent("Auto-generate", "This render texture automatically generate its mipmap.");
             public readonly GUIContent useDynamicScale = EditorGUIUtility.TrTextContent("Dynamic Scaling", "Allow the texture to be automatically resized by ScalableBufferManager, to support dynamic resolution.");
             public readonly GUIContent enableRandomWrite = EditorGUIUtility.TrTextContent("Random Write", "Enable/disable random access write into the color buffer of this render texture.");
             public readonly GUIContent shadowSamplingMode = EditorGUIUtility.TrTextContent("Shadow Sampling Mode", "Enable/disable shadow depth-compare sampling and percentage closer filtering.");

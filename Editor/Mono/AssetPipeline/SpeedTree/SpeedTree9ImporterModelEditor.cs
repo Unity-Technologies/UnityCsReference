@@ -280,14 +280,19 @@ namespace UnityEditor.SpeedTree.Importer
                 importerArray.Add(importer);
             }
 
-            var renderPipeline = SpeedTreeImporterCommon.GetCurrentRenderPipelineType();
+            string defaultShaderName = String.Empty;
+            if (TryGetShaderForCurrentRenderPipeline(out var shader))
+            {
+                defaultShaderName = shader.name;
+            }
+            else
+            {
+                Debug.LogWarning("SpeedTree9 shader is invalid, cannot create Materials for this SpeedTree asset.");
+            }
 
             // In tests assetTargets can become null
             for (int i = 0; i < Math.Min(importerArray.Count, prefabs?.Length ?? 0); ++i)
             {
-                var im = importerArray[i];
-                var defaultShaderName = im.GetShaderNameFromPipeline(renderPipeline);
-
                 foreach (var mr in prefabs[i].transform.GetComponentsInChildren<MeshRenderer>())
                 {
                     foreach (var mat in mr.sharedMaterials)

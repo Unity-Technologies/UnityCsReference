@@ -442,6 +442,11 @@ namespace UnityEditor
 
         internal void Show(UnityObject obj, Type[] requiredTypes, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
         {
+            // We can't rely on the fact that the window will always be closed when we call Show. For example,
+            // if a user clicks on multiple object fields without closing the window first, there is no guarantee
+            // that the auxiliary window will close before the click event is processed. And since closing the window
+            // cleans up the undo state, we have to force close the window if it wasn't already closed.
+            CloseOpenedWindow();
             m_ObjectSelectorReceiver = null;
             m_AllowSceneObjects = allowSceneObjects;
             m_IsShowingAssets = true;
@@ -599,6 +604,24 @@ namespace UnityEditor
                 m_ListArea.InitSelection(new[] { initialSelection });
                 if (initialSelection != 0)
                     m_ListArea.Frame(initialSelection, true, false);
+            }
+        }
+
+        void CloseOpenedWindow()
+        {
+            // We check m_ModalUndoGroup as it is the only value that will be reliably set when the window is open
+            // and unset when the window is closed. Checking m_OnObjectSelectorClosed or m_ObjectSelectorReceiver is not enough
+            // as they are not always set.
+            if (m_ModalUndoGroup >= 0)
+            {
+                if (ObjectSelectorSearch.HasEngineOverride())
+                {
+                    m_SearchSessionHandler.CloseSelector();
+                }
+                else
+                {
+                    NotifySelectorClosed(false);
+                }
             }
         }
 
@@ -1114,12 +1137,16 @@ namespace UnityEditor
             if (m_ObjectSelectorReceiver != null)
             {
                 m_ObjectSelectorReceiver.OnSelectionClosed(selectedObject);
+                m_ObjectSelectorReceiver = null;
             }
 
             m_OnObjectSelectorClosed?.Invoke(selectedObject);
+            m_OnObjectSelectorClosed = null;
+            m_OnObjectSelectorUpdated = null;
 
             SendEvent(ObjectSelectorClosedCommand, exitGUI);
             Undo.CollapseUndoOperations(m_ModalUndoGroup);
+            m_ModalUndoGroup = -1;
         }
     }
 }

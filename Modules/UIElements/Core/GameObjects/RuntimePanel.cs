@@ -4,11 +4,10 @@
 
 namespace UnityEngine.UIElements
 {
-    //TODO: make IRuntimePanel public when UGUI EventSystem support lands in trunk
     /// <summary>
     /// Interface for classes implementing UI runtime panels.
     /// </summary>
-    internal interface IRuntimePanel
+    public interface IRuntimePanel : IPanel
     {
         /// <summary>
         /// The <see cref="UnityEngine.UIElements.PanelSettings"/> asset associated with this panel.

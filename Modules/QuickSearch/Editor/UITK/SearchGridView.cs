@@ -360,7 +360,7 @@ namespace UnityEditor.Search
         {
             if (m_ViewModel == null || m_ViewModel.selection == null)
                 return;
-            
+
             var selectedIndexes = m_ViewModel.selection.indexes;
             if (m_GridView.selectedIndices.SequenceEqual(selectedIndexes))
                 return;
@@ -379,6 +379,7 @@ namespace UnityEditor.Search
         {
             m_GridView.fixedItemHeight = m_ViewModel.itemIconSize + m_LabelHeight;
             m_GridView.fixedItemWidth = m_ViewModel.itemIconSize;
+            m_GridView.ComputeGridSize();
             m_GridView.RefreshItems();
         }
 

@@ -340,14 +340,18 @@ namespace UnityEditor.Search
             m_SearchView?.Refresh(flags);
         }
 
-        private void SetContext(SearchContext newContext)
+        private void SetContext(SearchContext newContext, bool onEnabled = false)
         {
             if (context == null || context != newContext)
             {
                 var searchText = context?.searchText ?? string.Empty;
                 context?.Dispose();
                 m_ViewState.context = newContext ?? SearchService.CreateContext(searchText);
-                Dispatcher.Emit(SearchEvent.SearchContextChanged, new SearchEventPayload(this));
+
+                // Don't emit event when initializing the window, as all the views will initialize
+                // with the correct context anyway. Emitting when the window is initializing causes issues with tests.
+                if (!onEnabled)
+                    Dispatcher.Emit(SearchEvent.SearchContextChanged, new SearchEventPayload(this));
             }
 
             m_SearchView?.Reset();
@@ -465,7 +469,7 @@ namespace UnityEditor.Search
                 m_LastFocusedWindow = m_LastFocusedWindow ?? focusedWindow;
                 m_ViewState = s_GlobalViewState ?? m_ViewState ?? SearchViewState.LoadDefaults();
 
-                SetContext(m_ViewState.context);
+                SetContext(m_ViewState.context, true);
                 LoadSessionSettings(m_ViewState);
 
                 SearchSettings.SortActionsPriority();
@@ -539,7 +543,7 @@ namespace UnityEditor.Search
             catch
             {
             }
-            
+
             selectCallback = null;
 
             SaveSessionSettings();
@@ -771,7 +775,7 @@ namespace UnityEditor.Search
             SearchSettings.keepOpen = !SearchSettings.keepOpen;
             SendEvent(SearchAnalytics.GenericEventType.PreferenceChanged, nameof(SearchSettings.keepOpen), SearchSettings.keepOpen.ToString());
         }
-        
+
         private void ToggleDebugQuery()
         {
             if (context.debug)

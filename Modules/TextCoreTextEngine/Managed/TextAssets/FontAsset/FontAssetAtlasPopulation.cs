@@ -426,6 +426,20 @@ namespace UnityEngine.TextCore.Text
         /// <param name="getFontFeatures">Determines if Ligatures are populated or not</param>
         /// <param name="populateLigatures"></param>
         /// <returns>Returns true if the character has been added. False otherwise.</returns>
+        internal bool TryAddCharacterInternal(uint unicode, out Character character)
+        {
+            return TryAddCharacterInternal(unicode, FontStyles.Normal, TextFontWeight.Regular, out character);
+        }
+
+        /// <summary>
+        /// Try adding character using Unicode value to font asset.
+        /// Function assumes internal user has already checked to make sure the character is not already contained in the font asset.
+        /// </summary>
+        /// <param name="unicode">The Unicode value of the character.</param>
+        /// <param name="character">The character data if successfully added to the font asset. Null otherwise.</param>
+        /// <param name="getFontFeatures">Determines if Ligatures are populated or not</param>
+        /// <param name="populateLigatures"></param>
+        /// <returns>Returns true if the character has been added. False otherwise.</returns>
         internal bool TryAddCharacterInternal(uint unicode, FontStyles fontStyle, TextFontWeight fontWeight, out Character character, bool populateLigatures = true)
         {
             using (k_TryAddCharacterMarker.Auto())

@@ -30,23 +30,16 @@ namespace UnityEditor.SpeedTree.Importer
         internal static class ImporterSettings
         {
             internal const string kGameObjectName = "SpeedTree";
-            internal const string kHDRPShaderName = "HDRP/Nature/SpeedTree9_HDRP";
-            internal const string kURPShaderName = "Universal Render Pipeline/Nature/SpeedTree9_URP";
             internal const string kLegacyShaderName = "Nature/SpeedTree9";
             internal const string kWindAssetName = "SpeedTreeWind";
-            internal const string kSRPDependencyName = "srp/default-pipeline";
+            internal const string kSRPDependencyName = "SpeedTree9Importer_DefaultShader";
             internal const string kMaterialSettingsDependencyname = "SpeedTree9Importer_MaterialSettings";
-
-            // In some very specific scenarios, the Shader cannot be found using "Shader.Find" (e.g project upgrade).
-            // Adding an extra-security is necessary to avoid that, by manually forcing the load of the Shader using
-            // "AssetDatabase.LoadAssetAtPath". It only happens for SRPs during project upgrades.
-            internal const string kHDRPShaderPath = "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Nature/SpeedTree9_HDRP.shadergraph";
-            internal const string kURPShaderPath = "Packages/com.unity.render-pipelines.universal/Shaders/Nature/SpeedTree9_URP.shadergraph";
+            internal const string kIconName = "UnityEditor/SpeedTree9Importer Icon";
         }
 
         private static class Styles
         {
-            internal static readonly Texture2D kIcon = EditorGUIUtility.FindTexture("UnityEditor/SpeedTree9Importer Icon");
+            internal static readonly Texture2D kIcon = EditorGUIUtility.FindTexture(ImporterSettings.kIconName);
         }
 
         private struct STMeshGeometry
@@ -118,12 +111,15 @@ namespace UnityEditor.SpeedTree.Importer
         [SerializeField]
         internal SpeedTreeImporterOutputData m_OutputImporterData;
 
+        private static ulong s_DefaultShaderHash;
+        private static readonly TimeSpan k_CheckDependencyFrequency = TimeSpan.FromSeconds(5);
+        private static DateTime s_LastCheck;
+
         // Cache main objects, created during import process.
         private AssetImportContext m_Context;
         private SpeedTree9Reader m_Tree;
         private Shader m_Shader;
         private SpeedTreeWindAsset m_WindAsset;
-        private STRenderPipeline m_RenderPipeline;
 
         // Values cached at the begining of the import process.
         private bool m_HasFacingData;
@@ -157,11 +153,9 @@ namespace UnityEditor.SpeedTree.Importer
 
             CacheTreeImporterValues(ctx.assetPath);
 
-            m_RenderPipeline = GetCurrentRenderPipelineType();
-
             ctx.DependsOnCustomDependency(ImporterSettings.kSRPDependencyName);
 
-            if (!TryGetShaderForCurrentRenderPipeline(m_RenderPipeline, out m_Shader))
+            if (!TryGetShaderForCurrentRenderPipeline(out m_Shader))
             {
                 ctx.LogImportError("SpeedTree9 shader is invalid, cannot create Materials for this SpeedTree asset.");
                 return;
@@ -270,6 +264,61 @@ namespace UnityEditor.SpeedTree.Importer
             finally
             {
                 AssetDatabase.StopAssetEditing();
+            }
+        }
+
+        [InitializeOnLoadMethod]
+        static void InitializeEditorCallback()
+        {
+            EditorApplication.update += DirtyCustomDependencies;
+            s_DefaultShaderHash = ComputeDefaultShaderHash();
+            AssetDatabase.RegisterCustomDependency(ImporterSettings.kSRPDependencyName, new Hash128(s_DefaultShaderHash, 0));
+        }
+
+
+        static ulong CombineHash(ulong h1, ulong h2)
+        {
+            unchecked
+            {
+                return h1 ^ h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2); // Similar to c++ boost::hash_combine
+            }
+        }
+
+        static ulong ComputeDefaultShaderHash()
+        {
+            ulong newDefaultShaderHash = 0UL;
+            if (GraphicsSettings.currentRenderPipeline == null || GraphicsSettings.currentRenderPipeline.defaultSpeedTree9Shader == null)
+            {
+                newDefaultShaderHash = 0;
+            }
+            else
+            {
+                if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(GraphicsSettings.currentRenderPipeline.defaultSpeedTree9Shader, out var guid,
+                        out long fileId))
+                {
+                    newDefaultShaderHash = CombineHash((ulong)guid.GetHashCode(), (ulong)fileId);
+                }
+            }
+
+            return newDefaultShaderHash;
+        }
+
+        static void DirtyCustomDependencies()
+        {
+            DateTime now = DateTime.Now;
+            if (Application.isPlaying || now - s_LastCheck < k_CheckDependencyFrequency)
+            {
+                return;
+            }
+
+            s_LastCheck = now;
+
+            ulong newDefaultShaderHash = ComputeDefaultShaderHash();
+            if (s_DefaultShaderHash != newDefaultShaderHash)
+            {
+                s_DefaultShaderHash = newDefaultShaderHash;
+                AssetDatabase.RegisterCustomDependency(ImporterSettings.kSRPDependencyName, new Hash128(s_DefaultShaderHash, 0));
+                AssetDatabase.Refresh();
             }
         }
 
@@ -717,9 +766,7 @@ namespace UnityEditor.SpeedTree.Importer
 
             CacheTreeImporterValues(assetPath);
 
-            m_RenderPipeline = GetCurrentRenderPipelineType();
-
-            if (!TryGetShaderForCurrentRenderPipeline(m_RenderPipeline, out m_Shader))
+            if (!TryGetShaderForCurrentRenderPipeline(out m_Shader))
             {
                 Debug.LogError("SpeedTree9 shader is invalid, cannot create Materials for this SpeedTree asset.");
                 return;
@@ -999,22 +1046,24 @@ namespace UnityEditor.SpeedTree.Importer
             }
             mat.SetFloat(MaterialProperties.LeafFacingKwToggleID, m_HasFacingData ? 1.0f : 0.0f);
 
-            if (m_RenderPipeline == STRenderPipeline.HDRP)
-            {
+            if (mat.HasFloat(MaterialProperties.DoubleSidedToggleID))
                 mat.SetFloat(MaterialProperties.DoubleSidedToggleID, stMaterial.TwoSided ? 1.0f : 0.0f);
+
+            if (mat.HasFloat(MaterialProperties.DoubleSidedNormalModeID))
                 mat.SetFloat(MaterialProperties.DoubleSidedNormalModeID, stMaterial.FlipNormalsOnBackside ? 0.0f : 2.0f);
 
+            if (mat.HasVector(MaterialProperties.DiffusionProfileAssetID))
                 mat.SetVector(MaterialProperties.DiffusionProfileAssetID, m_MaterialSettings.diffusionProfileAssetID);
+
+            if (mat.HasFloat(MaterialProperties.DiffusionProfileID))
                 mat.SetFloat(MaterialProperties.DiffusionProfileID, m_MaterialSettings.diffusionProfileID);
-            }
-            else if (m_RenderPipeline == STRenderPipeline.URP)
-            {
+
+            if (mat.HasFloat(MaterialProperties.BackfaceNormalModeID))
                 mat.SetFloat(MaterialProperties.BackfaceNormalModeID, stMaterial.FlipNormalsOnBackside ? 0.0f : 2.0f);
-            }
-            else // legacy rendering pipeline
-            {
+
+            if (mat.HasFloat(MaterialProperties.TwoSidedID))
                 mat.SetFloat(MaterialProperties.TwoSidedID, stMaterial.TwoSided ? 0.0f : 2.0f); // matches cull mode. 0: no cull
-            }
+
             mat.enableInstancing = true;
             mat.doubleSidedGI = stMaterial.TwoSided;
         }
@@ -1106,20 +1155,6 @@ namespace UnityEditor.SpeedTree.Importer
         internal string GetMaterialFolderPath()
         {
             return FileUtil.DeleteLastPathNameComponent(assetPath) + "/";
-        }
-
-        internal string GetShaderNameFromPipeline(STRenderPipeline renderPipeline)
-        {
-            switch (renderPipeline)
-            {
-                case STRenderPipeline.HDRP:
-                    return ImporterSettings.kHDRPShaderName;
-                case STRenderPipeline.URP:
-                    return ImporterSettings.kURPShaderName;
-                case STRenderPipeline.Legacy:
-                default:
-                    return ImporterSettings.kLegacyShaderName;
-            }
         }
 
         internal void SetMaterialsVersionToCurrent()
@@ -1353,27 +1388,17 @@ namespace UnityEditor.SpeedTree.Importer
             return false;
         }
 
-        private bool TryGetShaderForCurrentRenderPipeline(STRenderPipeline renderPipeline, out Shader shader)
+        internal static bool TryGetShaderForCurrentRenderPipeline(out Shader shader)
         {
-            switch (renderPipeline)
+            shader = null;
+            if (GraphicsSettings.currentRenderPipeline != null)
             {
-                case STRenderPipeline.URP:
-                    shader = Shader.Find(ImporterSettings.kURPShaderName);
-                    if (shader == null)
-                    {
-                        shader = m_Context.GetReferenceToAssetMainObject(ImporterSettings.kURPShaderPath) as Shader;
-                    }
-                    break;
-                case STRenderPipeline.HDRP:
-                    shader = Shader.Find(ImporterSettings.kHDRPShaderName);
-                    if (shader == null)
-                    {
-                        shader = m_Context.GetReferenceToAssetMainObject(ImporterSettings.kHDRPShaderPath) as Shader;
-                    }
-                    break;
-                default:
-                    shader = Shader.Find(ImporterSettings.kLegacyShaderName);
-                    break;
+                shader = GraphicsSettings.currentRenderPipeline.defaultSpeedTree9Shader;
+            }
+
+            if (shader == null)
+            {
+                shader = Shader.Find(ImporterSettings.kLegacyShaderName);
             }
 
             return shader != null;

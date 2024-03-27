@@ -71,6 +71,8 @@ namespace UnityEngine.Rendering
 
         public virtual Shader defaultSpeedTree8Shader => null;
 
+        public virtual Shader defaultSpeedTree9Shader => null;
+
         public virtual string renderPipelineShaderTag => string.Empty;
 
         protected abstract RenderPipeline CreatePipeline();

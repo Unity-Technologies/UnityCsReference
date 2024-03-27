@@ -4449,6 +4449,9 @@
     <Compile Include="..\..\Modules\BuildProfileEditor\Elements\DropdownButton.cs">
       <Link>Modules\BuildProfileEditor\Elements\DropdownButton.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Elements\PlatformListView.cs">
+      <Link>Modules\BuildProfileEditor\Elements\PlatformListView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\Handlers\BuildProfileContextMenu.cs">
       <Link>Modules\BuildProfileEditor\Handlers\BuildProfileContextMenu.cs</Link>
     </Compile>

@@ -39,7 +39,6 @@ namespace UnityEditor.Search
         private float m_FixedItemHeight;
         private float m_FixedItemWidth;
         private float m_MaximumScrollViewHeight;
-        private const float k_DefaultItemSize = 30f;
         private IList m_ItemsSource;
 
         private List<ReusableGridViewRow> m_RowPool;
@@ -61,6 +60,11 @@ namespace UnityEditor.Search
         public event Action<IEnumerable<object>> selectionChanged;
         public event Action<IEnumerable<int>> selectedIndicesChanged;
         public event Action itemsBuilt;
+
+        public int rowCount => m_RowCount;
+        public int columnCount => m_ColumnCount;
+
+        public const float defaultItemSize = 30f;
 
         public Action<VisualElement, int> unbindItem { get; set; }
 
@@ -98,9 +102,12 @@ namespace UnityEditor.Search
                 if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(fixedItemHeight), L10n.Tr("Value needs to be positive for virtualization."));
 
-                if (Math.Abs(m_FixedItemHeight - value) > float.Epsilon)
+                var tempVal = value == 0 ? defaultItemSize : value;
+
+                if (!Mathf.Approximately(m_FixedItemHeight, tempVal))
                 {
-                    m_FixedItemHeight = value;
+                    m_FixedItemHeight = tempVal;
+                    ComputeGridSize();
                     RefreshItems();
                 }
             }
@@ -114,9 +121,12 @@ namespace UnityEditor.Search
                 if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(fixedItemWidth), L10n.Tr("Value needs to be positive for virtualization."));
 
-                if (Math.Abs(m_FixedItemWidth - value) > float.Epsilon)
+                var tempVal = value == 0 ? defaultItemSize : value;
+
+                if (!Mathf.Approximately(m_FixedItemWidth, tempVal))
                 {
-                    m_FixedItemWidth = value;
+                    m_FixedItemWidth = tempVal;
+                    ComputeGridSize();
                     RefreshItems();
                 }
             }
@@ -190,10 +200,10 @@ namespace UnityEditor.Search
                 throw new ArgumentOutOfRangeException(nameof(itemFixedHeight), L10n.Tr("Value needs to be positive for virtualization."));
 
             if (itemFixedWidth == 0)
-                itemFixedWidth = k_DefaultItemSize;
+                itemFixedWidth = defaultItemSize;
 
             if (itemFixedHeight == 0)
-                itemFixedHeight = k_DefaultItemSize;
+                itemFixedHeight = defaultItemSize;
 
             m_ItemsSource = itemsSource;
             m_FixedItemHeight = itemFixedHeight;
@@ -232,7 +242,7 @@ namespace UnityEditor.Search
             m_ScrollView.RegisterCallback<PointerDownEvent>(OnPointerDown);
             m_ScrollView.RegisterCallback<PointerUpEvent>(OnPointerUp);
 
-            BuildItems();
+            ResetAndBuildItems();
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -428,7 +438,7 @@ namespace UnityEditor.Search
             if (!HasValidDataAndBindings() || m_RowPool == null)
                 return;
 
-            if (m_RowPool.Count == 0 || itemIndex < -1)
+            if (m_RowPool.Count == 0 || m_ColumnCount == 0 || itemIndex < -1)
                 return;
 
             var rowIndex = itemIndex / m_ColumnCount;
@@ -745,6 +755,9 @@ namespace UnityEditor.Search
 
         internal int GetIndexByPosition(Vector2 localPosition)
         {
+            if (m_ColumnCount == 0 || m_RowCount == 0)
+                return -1;
+
             var resolvedRowWidth = m_ScrollView.contentContainer.boundingBox.width;
             var calculatedRowWidth = m_ColumnCount * m_FixedItemWidth;
             var delta = resolvedRowWidth - calculatedRowWidth;
@@ -840,6 +853,9 @@ namespace UnityEditor.Search
 
         private void ScrollingDown()
         {
+            if (m_RowPool == null || m_RowPool.Count == 0)
+                return;
+
             // When scrolling down, if the last item in the last row is already undefined
             // (because it is already outside the range of source items), then don't bind
             // items from the start.
@@ -868,6 +884,9 @@ namespace UnityEditor.Search
 
         private void ScrollingUp()
         {
+            if (m_RowPool == null || m_RowPool.Count == 0)
+                return;
+
             var itemIndex = m_RowPool.First().GetFirstItemInRow().index - 1;
             var row = m_RowPool.Last();
             for (int i = 0; i < m_ColumnCount; i++)
@@ -906,9 +925,7 @@ namespace UnityEditor.Search
 
             RefreshSelection();
 
-            var newRowCount = Mathf.CeilToInt(m_ScrollView.contentViewport.layout.height / m_FixedItemHeight) + k_ExtraRows;
-            m_ColumnCount = Mathf.FloorToInt(m_ScrollView.contentViewport.layout.width / m_FixedItemWidth);
-            ResizeScrollView(newRowCount);
+            ResizeScrollView();
             ResizeColumns();
             ResizeRows();
 
@@ -991,10 +1008,13 @@ namespace UnityEditor.Search
 
         private void ResizeColumns()
         {
-            var previousColumnCount = m_RowPool[0].bindableElement.childCount;
+            if (m_RowPool == null)
+                return;
+
+            var previousColumnCount = m_RowPool.Count > 0 ? m_RowPool[0].bindableElement.childCount : 0;
             if (previousColumnCount > m_ColumnCount) // Column Shrink
             {
-                var removeColumnCount = previousColumnCount - m_ColumnCount;
+                var removeColumnCount = Math.Clamp(previousColumnCount - m_ColumnCount, 0, previousColumnCount);
                 foreach (var row in m_RowPool)
                 {
                     row.UpdateRow(m_FixedItemWidth, m_FixedItemHeight, m_ColumnCount);
@@ -1021,10 +1041,13 @@ namespace UnityEditor.Search
 
         private void ResizeRows()
         {
+            if (m_RowPool == null)
+                return;
+
             var previousRowCount = m_RowPool.Count;
             if (previousRowCount > m_RowCount) // Row Shrink
             {
-                var removeRowCount = previousRowCount - m_RowCount;
+                var removeRowCount = Math.Clamp(previousRowCount - m_RowCount, 0, previousRowCount);
                 for (int i = 0; i < removeRowCount; i++)
                 {
                     var reusableRow = m_RowPool.Last();
@@ -1052,12 +1075,10 @@ namespace UnityEditor.Search
             }
         }
 
-        private void ResizeScrollView(int newRowCount)
+        private void ResizeScrollView()
         {
-            var minRowCount = Mathf.CeilToInt((float)m_ItemsSource.Count / m_ColumnCount);
-            m_RowCount = Math.Min(minRowCount, newRowCount);
-
-            m_MaximumScrollViewHeight = minRowCount * m_FixedItemHeight;
+            var realRowCount = GetRealRowCount(m_ColumnCount);
+            m_MaximumScrollViewHeight = realRowCount * m_FixedItemHeight;
             m_ScrollView.contentContainer.style.height = m_MaximumScrollViewHeight;
 
             var minVisibleItemCount = Mathf.CeilToInt(m_ScrollView.contentViewport.layout.height / m_FixedItemHeight) * m_ColumnCount;
@@ -1146,7 +1167,7 @@ namespace UnityEditor.Search
                 return;
             }
 
-            BuildItems();
+            ResetAndBuildItems();
         }
 
         private void ResetGridViewState()
@@ -1164,13 +1185,19 @@ namespace UnityEditor.Search
             m_ScrollView.contentContainer.Clear();
         }
 
-        private void BuildItems()
+        private void ResetAndBuildItems()
         {
             ResetGridViewState();
 
             var scrollViewWidth = m_ScrollView.contentViewport.resolvedStyle.width;
             var scrollViewHeight = m_ScrollView.contentViewport.resolvedStyle.height;
-            BuildItems(scrollViewWidth, scrollViewHeight);
+
+            // When first attached, the size of the scrollView is NaN.
+            if (float.IsNaN(scrollViewWidth) || float.IsNaN(scrollViewHeight))
+                return;
+
+            ComputeGridSize(scrollViewWidth, scrollViewHeight);
+            BuildItems();
         }
 
         private void OnSizeChanged(GeometryChangedEvent evt)
@@ -1182,27 +1209,23 @@ namespace UnityEditor.Search
                 Mathf.Approximately(evt.newRect.height, evt.oldRect.height))
                 return;
 
+            ComputeGridSize();
+
             if (m_RowPool == null)
                 BuildItems();
             else
                 RefreshItems();
         }
 
-        private void BuildItems(float gridViewWidth, float gridViewHeight)
+        private void BuildItems()
         {
             if (!HasValidDataAndBindings())
                 return;
 
-            if (!float.IsNaN(gridViewHeight))
-                m_RowCount = Mathf.CeilToInt(gridViewHeight / m_FixedItemHeight) + k_ExtraRows;
-
-            if (!float.IsNaN(gridViewWidth))
-                m_ColumnCount = Mathf.FloorToInt(gridViewWidth / m_FixedItemWidth);
-
             if (m_RowCount == 0 || m_ColumnCount == 0)
                 return;
 
-            ResizeScrollView(m_RowCount);
+            ResizeScrollView();
 
             m_ItemsSourceIds = new List<int>();
             foreach (var item in m_ItemsSource)
@@ -1233,6 +1256,48 @@ namespace UnityEditor.Search
 
             OnScroll(m_ScrollOffset);
             itemsBuilt?.Invoke();
+        }
+
+        internal void ComputeGridSize()
+        {
+            var scrollViewWidth = m_ScrollView.contentViewport.layout.width;
+            var scrollViewHeight = m_ScrollView.contentViewport.layout.height;
+
+            // When first attached, the size of the scrollView is NaN.
+            if (float.IsNaN(scrollViewWidth) || float.IsNaN(scrollViewHeight))
+                return;
+            ComputeGridSize(scrollViewWidth, scrollViewHeight);
+        }
+
+        internal void ComputeGridSize(float gridViewWidth, float gridViewHeight)
+        {
+            if (float.IsNaN(gridViewWidth) || gridViewWidth < 0)
+                throw new ArgumentOutOfRangeException(nameof(gridViewWidth), "Specified gridview width should be non-negative.");
+            if (float.IsNaN(gridViewHeight) || gridViewHeight < 0)
+                throw new ArgumentOutOfRangeException(nameof(gridViewHeight), "Specified gridview height should be non-negative.");
+
+
+            var newColumnCount = Mathf.FloorToInt(gridViewWidth / m_FixedItemWidth);
+            var displayableRowCount = Mathf.CeilToInt(gridViewHeight / m_FixedItemHeight) + k_ExtraRows;
+            var realRowCount = GetRealRowCount(newColumnCount);
+            var newRowCount = Math.Min(realRowCount, displayableRowCount);
+            SetGridSize(newColumnCount, newRowCount);
+        }
+
+        internal void SetGridSize(int newColumnCount, int newRowCount)
+        {
+            if (newColumnCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(newColumnCount), "Specified column count should be non-negative.");
+            if (newRowCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(newRowCount), "Specified row count should be non-negative.");
+
+            m_ColumnCount = newColumnCount;
+            m_RowCount = newRowCount;
+        }
+
+        int GetRealRowCount(int columnCount)
+        {
+            return columnCount <= 0 ? 0 : Mathf.CeilToInt((float)m_ItemsSource.Count / columnCount);
         }
 
         internal class ReusableGridViewItem : ReusableCollectionItem

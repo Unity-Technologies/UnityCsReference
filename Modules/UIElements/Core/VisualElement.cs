@@ -705,7 +705,12 @@ namespace UnityEngine.UIElements
             private set => m_Flags = value ? m_Flags | VisualElementFlags.LayoutManual : m_Flags & ~VisualElementFlags.LayoutManual;
         }
 
-        internal float scaledPixelsPerPoint
+        /// <summary>
+        /// Return the resulting scaling from the panel that considers the screen DPI and the customizable scaling factor, but not the transform scale of the element and its ancestors.
+        /// See <see cref="Panel.scaledPixelsPerPoint"/>.
+        /// This should only be called on elements that are part of a panel.
+        /// </summary>
+        public float scaledPixelsPerPoint
         {
             get
             {

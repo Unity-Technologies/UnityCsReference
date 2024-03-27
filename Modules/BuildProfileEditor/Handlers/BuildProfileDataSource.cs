@@ -18,7 +18,7 @@ namespace UnityEditor.Build.Profile.Handlers
 
         List<BuildProfile> m_DuplicatedProfiles;
 
-        const string k_AssetFolderPath = "Assets/Settings/BuildProfiles";
+        const string k_AssetFolderPath = "Assets/Settings/Build Profiles";
 
         static string GetNewProfileName(string displayName) => $"{k_AssetFolderPath}/{displayName}.asset";
 
@@ -38,7 +38,6 @@ namespace UnityEditor.Build.Profile.Handlers
         }
 
         /// <summary>
-        /// Called by the Build Project Window when a null custom profile is detected.
         /// Removes all null unity objects from the custom profiles list.
         /// </summary>
         internal bool ClearDeletedProfiles()
@@ -287,7 +286,7 @@ namespace UnityEditor.Build.Profile.Handlers
                 AssetDatabase.CreateFolder("Assets", "Settings");
 
             if (!AssetDatabase.IsValidFolder(k_AssetFolderPath))
-                AssetDatabase.CreateFolder("Assets/Settings", "BuildProfiles");
+                AssetDatabase.CreateFolder("Assets/Settings", "Build Profiles");
         }
     }
 }

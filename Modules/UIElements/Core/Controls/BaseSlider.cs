@@ -476,7 +476,15 @@ namespace UnityEngine.UIElements
             else
                 normalizedDragElementPosition = dragElementPos / totalRange;
 
+            var oldValue = value;
             value = SliderLerpDirectionalUnclamped(lowValue, highValue, normalizedDragElementPosition);
+
+            // Even if the value remains unchanged, we need to update the position of the drag element to ensure
+            // it's at a valid position (UUM-21303)
+            if (EqualityComparer<TValueType>.Default.Equals(value, oldValue))
+            {
+                UpdateDragElementPosition();
+            }
         }
 
         // Handles slider clicks and page scrolls

@@ -100,6 +100,7 @@ namespace UnityEditor
             base.OnDisable();
 
             EditorPrefs.SetBool("TextureImporterShowAdvanced", m_ShowAdvanced);
+            EditorPrefs.SetBool("TextureImporterShowMipmapGenerationSettings", m_ShowMipmapGenerationSettings);
         }
 
         // Don't show the imported texture as a separate editor
@@ -274,10 +275,10 @@ namespace UnityEditor
             public readonly GUIContent mipmapFadeEndMip = EditorGUIUtility.TrTextContent("Fade End Mip");
             public readonly GUIContent mipmapFadeOut = EditorGUIUtility.TrTextContent("Fade Range");
             public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
-            public readonly GUIContent useMipmapLimits = EditorGUIUtility.TrTextContent("Use Mipmap Limits", "Disable this if the number of mips to upload should not be limited by the quality settings. (effectively: always upload at full resolution, regardless of the global mipmap limit or mipmap limit groups)");
-            public readonly GUIContent mipmapLimitGroupName = EditorGUIUtility.TrTextContent("Mipmap Limit Group", "Select a Mipmap Limit Group for this texture. If you do not add this texture to a Mipmap Limit Group, or Unity cannot find the group name you provide, Unity limits the number of mips it uploads to the maximum defined by the Global Texture Mipmap Limit (see Quality Settings). If Unity can find the Mipmap Limit Group you specify, it respects that group's limit.");
+            public readonly GUIContent useMipmapLimits = EditorGUIUtility.TrTextContent("Mipmap Limit", "Disable this if the number of mipmap levels to upload should not be limited by the quality settings. (effectively: always upload at full resolution, regardless of the global mipmap limit or mipmap limit groups)");
+            public readonly GUIContent mipmapLimitGroupName = EditorGUIUtility.TrTextContent("Mipmap Limit Group", "Select a Mipmap Limit Group for this texture. If you do not add this texture to a Mipmap Limit Group, or Unity cannot find the group name you provide, Unity limits the number of mipmap levels it uploads to the maximum defined by the Global Texture Mipmap Limit (see Quality Settings). If Unity can find the Mipmap Limit Group you specify, it respects that group's limit.");
             public readonly GUIContent mipmapLimitGroupWarning = EditorGUIUtility.TrTextContent("This texture takes the default mipmap limit settings because Unity cannot find the mipmap limit group you have designated. Consult your project's Quality Settings for a list of mipmap limit groups.");
-            public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Mip Streaming", "Only load larger mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings.");
+            public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Stream Mipmap Levels", "Only load larger mipmap levels as needed to render the current game cameras. Requires Texture Mipmap Streamer to be enabled in quality settings.");
             public readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Priority", "Mipmap streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
             public readonly GUIContent vtOnly = EditorGUIUtility.TrTextContent("Virtual Texture Only", "Texture is optimized for use as a virtual texture and can only be used as a virtual texture.");
 
@@ -307,7 +308,8 @@ namespace UnityEditor
                 (int)TextureImporterSingleChannelComponent.Red,
             };
 
-            public readonly GUIContent generateMipMaps = EditorGUIUtility.TrTextContent("Generate Mipmaps", "Create progressively smaller versions of the texture, for reduced texture shimmering and better GPU performance when the texture is viewed at a distance.");
+            public readonly GUIContent generateMipMaps = EditorGUIUtility.TrTextContent("Generate Mipmap", "Create progressively smaller versions of the texture, for reduced texture shimmering and better GPU performance when the texture is viewed at a distance.");
+            public readonly GUIContent showMipmapGenerationSettings = EditorGUIUtility.TrTextContent("Generation Settings", "Set up how the mipmap levels are generated from the imported image.");
             public readonly GUIContent sRGBTexture = EditorGUIUtility.TrTextContent("sRGB (Color Texture)", "Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).");
             public readonly GUIContent sRGBForEtc1Warning = EditorGUIUtility.TrTextContent("Unity does not support importing textures as ETC when that texture is in the sRGB color space and the project is set to use a Linear color space. One or more of the textures you have selected are imported as ETC2 instead.");
             public readonly GUIContent borderMipMaps = EditorGUIUtility.TrTextContent("Replicate Border", "Replicate pixel values from texture borders into smaller mipmap levels. Mostly used for Cookie texture types.");
@@ -488,6 +490,7 @@ namespace UnityEditor
         }
 
         bool m_ShowAdvanced = false;
+        bool m_ShowMipmapGenerationSettings = true;
 
         int     m_TextureWidth = 0;
         int     m_TextureHeight = 0;
@@ -660,6 +663,7 @@ namespace UnityEditor
             s_DefaultPlatformName = TextureImporter.defaultPlatformName; // Can't be called everywhere so we save it here for later use.
 
             m_ShowAdvanced = EditorPrefs.GetBool("TextureImporterShowAdvanced", m_ShowAdvanced);
+            m_ShowMipmapGenerationSettings = EditorPrefs.GetBool("TextureImporterShowMipmapGenerationSettings", m_ShowMipmapGenerationSettings);
 
             CacheSerializedProperties();
 
@@ -1055,6 +1059,64 @@ namespace UnityEditor
             }
         }
 
+        void MipmapGenerationGUI()
+        {
+            EditorGUILayout.Popup(m_MipMapMode, s_Styles.mipMapFilterOptions, s_Styles.mipMapFilter);
+
+            ToggleFromInt(m_MipMapsPreserveCoverage, s_Styles.mipMapsPreserveCoverage);
+            if (m_MipMapsPreserveCoverage.intValue != 0 && !m_MipMapsPreserveCoverage.hasMultipleDifferentValues)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(m_AlphaTestReferenceValue, s_Styles.alphaTestReferenceValue);
+                EditorGUI.indentLevel--;
+            }
+
+            ToggleFromInt(m_BorderMipMap, s_Styles.borderMipMaps);
+
+            // Mipmap fadeout
+            ToggleFromInt(m_FadeOut, s_Styles.mipmapFadeOutToggle);
+            if (m_FadeOut.intValue > 0)
+            {
+                const int minLimit = 0;
+                const int maxLimit = 10;
+
+                // For presets, we need two separate controls as we have 2 separate SerializedProperties.
+                EditorGUI.indentLevel++;
+                if (Presets.Preset.IsEditorTargetAPreset(target))
+                {
+                    // Fade Start
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUILayout.PropertyField(m_MipMapFadeDistanceStart, s_Styles.mipmapFadeStartMip);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        m_MipMapFadeDistanceStart.intValue = Math.Clamp(m_MipMapFadeDistanceStart.intValue, minLimit, m_MipMapFadeDistanceEnd.intValue);
+                    }
+
+                    // Fade End
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUILayout.PropertyField(m_MipMapFadeDistanceEnd, s_Styles.mipmapFadeEndMip);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        m_MipMapFadeDistanceEnd.intValue = Math.Clamp(m_MipMapFadeDistanceEnd.intValue, m_MipMapFadeDistanceStart.intValue, maxLimit);
+                    }
+                }
+                else
+                {
+                    // Fade Range
+                    EditorGUI.BeginChangeCheck();
+                    float min = m_MipMapFadeDistanceStart.intValue;
+                    float max = m_MipMapFadeDistanceEnd.intValue;
+                    EditorGUILayout.MinMaxSlider(s_Styles.mipmapFadeOut, ref min, ref max, minLimit, maxLimit);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        m_MipMapFadeDistanceStart.intValue = Mathf.RoundToInt(min);
+                        m_MipMapFadeDistanceEnd.intValue = Mathf.RoundToInt(max);
+                    }
+                }
+                EditorGUI.indentLevel--;
+            }
+        }
+
         void StreamingMipmapsGUI()
         {
             // only 2D & Cubemap shapes support streaming mipmaps right now
@@ -1208,8 +1270,8 @@ namespace UnityEditor
                 s_Styles = new Styles();
 
             // The property itself is "ignoreMipmapLimit". However, in the UI, we display it
-            // as "Use Mipmap Limits" as it makes more sense to hide the group names dropdown
-            // when "Use Mipmap Limits" is toggled off rather than when "Ignore Mipmap Limit"
+            // as "use" Mipmap Limit as it makes more sense to hide the group names dropdown
+            // when "Mipmap Limit" is toggled off rather than when "Ignore Mipmap Limit"
             // is toggled on.
             Rect rect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight);
             GUIContent label = EditorGUI.BeginProperty(rect, s_Styles.useMipmapLimits, ignoreMipmapLimitProp);
@@ -1288,7 +1350,15 @@ namespace UnityEditor
             if (EditorGUILayout.BeginFadeGroup(m_ShowMipMapSettings.faded))
             {
                 EditorGUI.indentLevel++;
-                
+
+                m_ShowMipmapGenerationSettings = EditorGUILayout.Foldout(m_ShowMipmapGenerationSettings, s_Styles.showMipmapGenerationSettings, true);
+                if (m_ShowMipmapGenerationSettings)
+                {
+                    EditorGUI.indentLevel++;
+                    MipmapGenerationGUI();
+                    EditorGUI.indentLevel--;
+                }
+
                 bool supportsMipmapLimits =
                     ((TextureImporterShape)m_TextureShape.intValue == TextureImporterShape.Texture2D && !m_VTOnly.boolValue) // If VTOnly, then we don't show the MipmapLimits GUI since its values are ignored anyway
                     || (TextureImporterShape)m_TextureShape.intValue == TextureImporterShape.Texture2DArray;
@@ -1300,60 +1370,6 @@ namespace UnityEditor
 
                 StreamingMipmapsGUI();
 
-                EditorGUILayout.Popup(m_MipMapMode, s_Styles.mipMapFilterOptions, s_Styles.mipMapFilter);
-
-                ToggleFromInt(m_MipMapsPreserveCoverage, s_Styles.mipMapsPreserveCoverage);
-                if (m_MipMapsPreserveCoverage.intValue != 0 && !m_MipMapsPreserveCoverage.hasMultipleDifferentValues)
-                {
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(m_AlphaTestReferenceValue, s_Styles.alphaTestReferenceValue);
-                    EditorGUI.indentLevel--;
-                }
-
-                ToggleFromInt(m_BorderMipMap, s_Styles.borderMipMaps);
-
-                // Mipmap fadeout
-                ToggleFromInt(m_FadeOut, s_Styles.mipmapFadeOutToggle);
-                if (m_FadeOut.intValue > 0)
-                {
-                    const int minLimit = 0;
-                    const int maxLimit = 10;
-
-                    // For presets, we need two separate controls as we have 2 separate SerializedProperties.
-                    EditorGUI.indentLevel++;
-                    if (Presets.Preset.IsEditorTargetAPreset(target))
-                    {
-                        // Fade Start
-                        EditorGUI.BeginChangeCheck();
-                        EditorGUILayout.PropertyField(m_MipMapFadeDistanceStart, s_Styles.mipmapFadeStartMip);
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            m_MipMapFadeDistanceStart.intValue = Math.Clamp(m_MipMapFadeDistanceStart.intValue, minLimit, m_MipMapFadeDistanceEnd.intValue);
-                        }
-
-                        // Fade End
-                        EditorGUI.BeginChangeCheck();
-                        EditorGUILayout.PropertyField(m_MipMapFadeDistanceEnd, s_Styles.mipmapFadeEndMip);
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            m_MipMapFadeDistanceEnd.intValue = Math.Clamp(m_MipMapFadeDistanceEnd.intValue, m_MipMapFadeDistanceStart.intValue, maxLimit);
-                        }
-                    }
-                    else
-                    {
-                        // Fade Range
-                        EditorGUI.BeginChangeCheck();
-                        float min = m_MipMapFadeDistanceStart.intValue;
-                        float max = m_MipMapFadeDistanceEnd.intValue;
-                        EditorGUILayout.MinMaxSlider(s_Styles.mipmapFadeOut, ref min, ref max, minLimit, maxLimit);
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            m_MipMapFadeDistanceStart.intValue = Mathf.RoundToInt(min);
-                            m_MipMapFadeDistanceEnd.intValue = Mathf.RoundToInt(max);
-                        }
-                    }
-                    EditorGUI.indentLevel--;
-                }
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFadeGroup();

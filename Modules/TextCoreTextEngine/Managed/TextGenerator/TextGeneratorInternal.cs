@@ -351,16 +351,11 @@ namespace UnityEngine.TextCore.Text
         /// <summary>
         /// Method to add the underline geometry.
         /// </summary>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
-        /// <param name="index"></param>
-        /// <param name="startScale"></param>
-        /// <param name="endScale"></param>
-        /// <param name="maxScale"></param>
-        /// <param name="sdfScale"></param>
-        /// <param name="underlineColor"></param>
-        /// <param name="generationSettings"></param>
-        /// <param name="textInfo"></param>
+        /// <param name="start">Start position in panel points. Includes padding that has been scaled with startScale.</param>
+        /// <param name="end">Start position in panel points. Includes padding that has been scaled with endScale.</param>
+        /// <param name="startScale">Scaling of the first character.</param>
+        /// <param name="endScale">Scaling of the last character.</param>
+        /// <param name="maxScale">Maximum scaling of any of the characters being underlined. Defines the thickness of the underline.</param>
         void DrawUnderlineMesh(Vector3 start, Vector3 end, float startScale, float endScale, float maxScale, float sdfScale, Color32 underlineColor, TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             // Get Underline special character from the primary font asset.
@@ -391,62 +386,84 @@ namespace UnityEngine.TextCore.Text
             GlyphMetrics underlineGlyphMetrics = m_Underline.character.glyph.metrics;
             GlyphRect underlineGlyphRect = m_Underline.character.glyph.glyphRect;
 
-            float segmentWidth = underlineGlyphMetrics.width / 2 * maxScale;
-
-            if (end.x - start.x < underlineGlyphMetrics.width * maxScale)
-            {
-                segmentWidth = (end.x - start.x) / 2f;
-            }
-
-            float startPadding = m_Padding * startScale / maxScale;
-            float endPadding = m_Padding * endScale / maxScale;
-
             float underlineThickness = m_Underline.fontAsset.faceInfo.underlineThickness;
+
+            // The underline is built from three parts. The left part goes from the left of the character minus padding
+            // to the center of the character. The right part does something similar, going from the center of the
+            // character to the right of the character plus padding. The middle part fills the gap between the two, but
+            // samples only the center of the underline character.
+
+            // Modify start.x and end.x to make it look like it was computed for maxScale for both start and end.
+            start.x += (startScale - maxScale) * m_Padding;
+            end.x += (maxScale - endScale) * m_Padding;
+
+            float segmentWidth = (underlineGlyphMetrics.width * 0.5f + m_Padding) * maxScale;
+            float segmentRatio = 1; // How much of the normal segment is really being used
+
+            // When we underline something very that is narrower than the segment width, we keep the padding, but sample
+            // less of the underline character. In this situation, we create a discontinuity in the underline. The
+            // middle part quad is collapsed but the left and right quads sample the left and right tips of the
+            // underline character
+            float segmentWidthSum = 2 * segmentWidth;
+            float meshWidth = end.x - start.x;
+            if (meshWidth < segmentWidthSum)
+            {
+                segmentRatio = meshWidth / segmentWidthSum;
+                segmentWidth *= segmentRatio;
+            }
 
             // UNDERLINE VERTICES FOR (3) LINE SEGMENTS
             #region UNDERLINE VERTICES
             var vertexData = textInfo.meshInfo[m_CurrentMaterialIndex].vertexData;
 
+            float posLeft = start.x;
+            float posMidLeft = start.x + segmentWidth;
+            float posMidRight = end.x - segmentWidth;
+            float posRight = end.x;
+
+            float posBottom = start.y - (underlineThickness + m_Padding) * maxScale;
+            float posTop = start.y + m_Padding * maxScale;
+
             if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
-                // Front Part of the Underline
-                vertexData[index + 0].position = start + new Vector3(0, 0 - (underlineThickness + m_Padding) * maxScale, 0); // BL
-                vertexData[index + 1].position = start + new Vector3(0, m_Padding * maxScale, 0); // TL
-                vertexData[index + 2].position = vertexData[index + 1].position + new Vector3(segmentWidth, 0, 0); // TR
-                vertexData[index + 3].position = vertexData[index + 0].position + new Vector3(segmentWidth, 0, 0); // BR
+                // Left part of the underline
+                vertexData[index + 0].position = new Vector3(posLeft, posBottom);    // BL
+                vertexData[index + 1].position = new Vector3(posLeft, posTop);       // TL
+                vertexData[index + 2].position = new Vector3(posMidLeft, posTop);    // TR
+                vertexData[index + 3].position = new Vector3(posMidLeft, posBottom); // BR
 
-                // Middle Part of the Underline
-                vertexData[index + 4].position = vertexData[index + 3].position; // BL
-                vertexData[index + 5].position = vertexData[index + 2].position; // TL
-                vertexData[index + 6].position = end + new Vector3(-segmentWidth, m_Padding * maxScale, 0); // TR
-                vertexData[index + 7].position = end + new Vector3(-segmentWidth, -(underlineThickness + m_Padding) * maxScale, 0); // BR
+                // Middle part of the underline
+                vertexData[index + 4].position = new Vector3(posMidLeft, posBottom);  // BL
+                vertexData[index + 5].position = new Vector3(posMidLeft, posTop);     // TL
+                vertexData[index + 6].position = new Vector3(posMidRight, posTop);    // TR
+                vertexData[index + 7].position = new Vector3(posMidRight, posBottom); // BR
 
-                // End Part of the Underline
-                vertexData[index + 8].position = vertexData[index + 7].position; // BL
-                vertexData[index + 9].position = vertexData[index + 6].position; // TL
-                vertexData[index + 10].position = end + new Vector3(0, m_Padding * maxScale, 0); // TR
-                vertexData[index + 11].position = end + new Vector3(0, -(underlineThickness + m_Padding) * maxScale, 0); // BR
+                // Right part of the underline
+                vertexData[index + 8].position = new Vector3(posMidRight, posBottom); // BL
+                vertexData[index + 9].position = new Vector3(posMidRight, posTop);    // TL
+                vertexData[index + 10].position = new Vector3(posRight, posTop);      // TR
+                vertexData[index + 11].position = new Vector3(posRight, posBottom);   // BR
             }
             else
             {
                 Vector3[] vertices = textInfo.meshInfo[m_CurrentMaterialIndex].vertices;
-                // Front Part of the Underline
-                vertices[index + 0] = start + new Vector3(0, 0 - (underlineThickness + m_Padding) * maxScale, 0); // BL
-                vertices[index + 1] = start + new Vector3(0, m_Padding * maxScale, 0); // TL
-                vertices[index + 2] = vertices[index + 1] + new Vector3(segmentWidth, 0, 0); // TR
-                vertices[index + 3] = vertices[index + 0] + new Vector3(segmentWidth, 0, 0); // BR
+                // Left part of the underline
+                vertices[index + 0] = new Vector3(posLeft, posBottom);    // BL
+                vertices[index + 1] = new Vector3(posLeft, posTop);       // TL
+                vertices[index + 2] = new Vector3(posMidLeft, posTop);    // TR
+                vertices[index + 3] = new Vector3(posMidLeft, posBottom); // BR
 
-                // Middle Part of the Underline
-                vertices[index + 4] = vertices[index + 3]; // BL
-                vertices[index + 5] = vertices[index + 2]; // TL
-                vertices[index + 6] = end + new Vector3(-segmentWidth, m_Padding * maxScale, 0); // TR
-                vertices[index + 7] = end + new Vector3(-segmentWidth, -(underlineThickness + m_Padding) * maxScale, 0); // BR
+                // Middle part of the underline
+                vertices[index + 4] = new Vector3(posMidLeft, posBottom);  // BL
+                vertices[index + 5] = new Vector3(posMidLeft, posTop);     // TL
+                vertices[index + 6] = new Vector3(posMidRight, posTop);    // TR
+                vertices[index + 7] = new Vector3(posMidRight, posBottom); // BR
 
-                // End Part of the Underline
-                vertices[index + 8] = vertices[index + 7]; // BL
-                vertices[index + 9] = vertices[index + 6]; // TL
-                vertices[index + 10] = end + new Vector3(0, m_Padding * maxScale, 0); // TR
-                vertices[index + 11] = end + new Vector3(0, -(underlineThickness + m_Padding) * maxScale, 0); // BR
+                // Right part of the underline
+                vertices[index + 8] = new Vector3(posMidRight, posBottom); // BL
+                vertices[index + 9] = new Vector3(posMidRight, posTop);    // TL
+                vertices[index + 10] = new Vector3(posRight, posTop);      // TR
+                vertices[index + 11] = new Vector3(posRight, posBottom);   // BR
             }
             #endregion
 
@@ -479,61 +496,63 @@ namespace UnityEngine.TextCore.Text
             // UNDERLINE UV0
             #region HANDLE UV0
 
-            int atlasWidth = m_Underline.fontAsset.atlasWidth;
-            int atlasHeight = m_Underline.fontAsset.atlasHeight;
-
-            float xScale = Mathf.Abs(sdfScale);
+            float invAtlasWidth = 1f / m_Underline.fontAsset.atlasWidth;
+            float invAtlasHeight = 1f / m_Underline.fontAsset.atlasHeight;
 
             // Calculate UV required to setup the 3 Quads for the Underline.
-            Vector4 uv0 = new Vector4((underlineGlyphRect.x - startPadding) / atlasWidth, (underlineGlyphRect.y - m_Padding) / atlasHeight, 0, xScale);  // bottom left
-            Vector4 uv1 = new Vector4(uv0.x, (underlineGlyphRect.y + underlineGlyphRect.height + m_Padding) / atlasHeight, 0, xScale);  // top left
-            Vector4 uv2 = new Vector4((underlineGlyphRect.x - startPadding + (float)underlineGlyphRect.width / 2) / atlasWidth, uv1.y, 0, xScale); // Mid Top Left
-            Vector4 uv3 = new Vector4(uv2.x, uv0.y, 0, xScale); // Mid Bottom Left
-            Vector4 uv4 = new Vector4((underlineGlyphRect.x + endPadding + (float)underlineGlyphRect.width / 2) / atlasWidth, uv1.y, 0, xScale); // Mid Top Right
-            Vector4 uv5 = new Vector4(uv4.x, uv0.y, 0, xScale); // Mid Bottom right
-            Vector4 uv6 = new Vector4((underlineGlyphRect.x + endPadding + underlineGlyphRect.width) / atlasWidth, uv1.y, 0, xScale); // End Part - Bottom Right
-            Vector4 uv7 = new Vector4(uv6.x, uv0.y, 0, xScale); // End Part - Top Right
+            float uvSegmentWidth = (underlineGlyphRect.width * 0.5f + m_Padding) * segmentRatio * invAtlasWidth;
+
+            float uvLeft0 = (underlineGlyphRect.x - m_Padding) * invAtlasWidth;
+            float uvLeft1 = uvLeft0 + uvSegmentWidth;
+            float uvMid = (underlineGlyphRect.x + underlineGlyphRect.width * 0.5f) * invAtlasWidth;
+            float uvRight1 = (underlineGlyphRect.x + underlineGlyphRect.width + m_Padding) * invAtlasWidth;
+            float uvRight0 = uvRight1 - uvSegmentWidth;
+
+            float uvBottom = (underlineGlyphRect.y - m_Padding) * invAtlasHeight; // Why not use maxScale?
+            float uvTop = (underlineGlyphRect.y + underlineGlyphRect.height + m_Padding) * invAtlasHeight;
 
             if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
-                // Left Part of the Underline
-                vertexData[0 + index].uv0 = uv0; // BL
-                vertexData[1 + index].uv0 = uv1; // TL
-                vertexData[2 + index].uv0 = uv2; // TR
-                vertexData[3 + index].uv0 = uv3; // BR
+                // Left part of the underline
+                vertexData[0 + index].uv0 = new Vector4(uvLeft0, uvBottom); // BL
+                vertexData[1 + index].uv0 = new Vector4(uvLeft0, uvTop);    // TL
+                vertexData[2 + index].uv0 = new Vector4(uvLeft1, uvTop);    // TR
+                vertexData[3 + index].uv0 = new Vector4(uvLeft1, uvBottom); // BR
 
-                // Middle Part of the Underline
-                vertexData[4 + index].uv0 = new Vector4(uv2.x - uv2.x * 0.001f, uv0.y, 0, xScale);
-                vertexData[5 + index].uv0 = new Vector4(uv2.x - uv2.x * 0.001f, uv1.y, 0, xScale);
-                vertexData[6 + index].uv0 = new Vector4(uv2.x + uv2.x * 0.001f, uv1.y, 0, xScale);
-                vertexData[7 + index].uv0 = new Vector4(uv2.x + uv2.x * 0.001f, uv0.y, 0, xScale);
+                // Middle part of the underline
+                vertexData[4 + index].uv0 = new Vector4(uvMid, uvBottom); // BL
+                vertexData[5 + index].uv0 = new Vector4(uvMid, uvTop);    // TL
+                vertexData[6 + index].uv0 = new Vector4(uvMid, uvTop);    // TR
+                vertexData[7 + index].uv0 = new Vector4(uvMid, uvBottom); // BR
 
-                // Right Part of the Underline
-                vertexData[8 + index].uv0 = uv5;
-                vertexData[9 + index].uv0 = uv4;
-                vertexData[10 + index].uv0 = uv6;
-                vertexData[11 + index].uv0 = uv7;
+                // Right part of the underline
+                vertexData[8 + index].uv0 = new Vector4(uvRight0, uvBottom);  // BL
+                vertexData[9 + index].uv0 = new Vector4(uvRight0, uvTop);     // TL
+                vertexData[10 + index].uv0 = new Vector4(uvRight1, uvTop);    // TR
+                vertexData[11 + index].uv0 = new Vector4(uvRight1, uvBottom); // BR
             }
             else
             {
+                float xScale = Mathf.Abs(sdfScale);
                 Vector4[] uvs0 = textInfo.meshInfo[m_CurrentMaterialIndex].uvs0;
-                // Left Part of the Underline
-                uvs0[0 + index] = uv0; // BL
-                uvs0[1 + index] = uv1; // TL
-                uvs0[2 + index] = uv2; // TR
-                uvs0[3 + index] = uv3; // BR
 
-                // Middle Part of the Underline
-                uvs0[4 + index] = new Vector4(uv2.x - uv2.x * 0.001f, uv0.y, 0, xScale);
-                uvs0[5 + index] = new Vector4(uv2.x - uv2.x * 0.001f, uv1.y, 0, xScale);
-                uvs0[6 + index] = new Vector4(uv2.x + uv2.x * 0.001f, uv1.y, 0, xScale);
-                uvs0[7 + index] = new Vector4(uv2.x + uv2.x * 0.001f, uv0.y, 0, xScale);
+                // Left part of the underline
+                uvs0[0 + index] = new Vector4(uvLeft0, uvBottom, 0, xScale); // BL
+                uvs0[1 + index] = new Vector4(uvLeft0, uvTop, 0, xScale);    // TL
+                uvs0[2 + index] = new Vector4(uvLeft1, uvTop, 0, xScale);    // TR
+                uvs0[3 + index] = new Vector4(uvLeft1, uvBottom, 0, xScale); // BR
 
-                // Right Part of the Underline
-                uvs0[8 + index] = uv5;
-                uvs0[9 + index] = uv4;
-                uvs0[10 + index] = uv6;
-                uvs0[11 + index] = uv7;
+                // Middle part of the underline
+                uvs0[4 + index] = new Vector4(uvMid, uvBottom, 0, xScale); // BL
+                uvs0[5 + index] = new Vector4(uvMid, uvTop, 0, xScale);    // TL
+                uvs0[6 + index] = new Vector4(uvMid, uvTop, 0, xScale);    // TR
+                uvs0[7 + index] = new Vector4(uvMid, uvBottom, 0, xScale); // BR
+
+                // Right part of the underline
+                uvs0[8 + index] = new Vector4(uvRight0, uvBottom, 0, xScale);  // BL
+                uvs0[9 + index] = new Vector4(uvRight0, uvTop, 0, xScale);     // TL
+                uvs0[10 + index] = new Vector4(uvRight1, uvTop, 0, xScale);    // TR
+                uvs0[11 + index] = new Vector4(uvRight1, uvBottom, 0, xScale); // BR
             }
             #endregion
 
@@ -542,24 +561,26 @@ namespace UnityEngine.TextCore.Text
             // UV1 contains Face / Border UV layout.
             float min_UvX = 0;
 
+            float invMeshWidth = 1f / meshWidth;
+
             if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
-                float max_UvX = (vertexData[index + 2].position.x - start.x) / (end.x - start.x);
+                float max_UvX = (vertexData[index + 2].position.x - start.x) * invMeshWidth;
 
                 vertexData[0 + index].uv2 = new Vector2(0, 0);
                 vertexData[1 + index].uv2 = new Vector2(0, 1);
                 vertexData[2 + index].uv2 = new Vector2(max_UvX, 1);
                 vertexData[3 + index].uv2 = new Vector2(max_UvX, 0);
 
-                min_UvX = (vertexData[index + 4].position.x - start.x) / (end.x - start.x);
-                max_UvX = (vertexData[index + 6].position.x - start.x) / (end.x - start.x);
+                min_UvX = (vertexData[index + 4].position.x - start.x) * invMeshWidth;
+                max_UvX = (vertexData[index + 6].position.x - start.x) * invMeshWidth;
 
                 vertexData[4 + index].uv2 = new Vector2(min_UvX, 0);
                 vertexData[5 + index].uv2 = new Vector2(min_UvX, 1);
                 vertexData[6 + index].uv2 = new Vector2(max_UvX, 1);
                 vertexData[7 + index].uv2 = new Vector2(max_UvX, 0);
 
-                min_UvX = (vertexData[index + 8].position.x - start.x) / (end.x - start.x);
+                min_UvX = (vertexData[index + 8].position.x - start.x) * invMeshWidth;
 
                 vertexData[8 + index].uv2 = new Vector2(min_UvX, 0);
                 vertexData[9 + index].uv2 = new Vector2(min_UvX, 1);
@@ -569,7 +590,7 @@ namespace UnityEngine.TextCore.Text
             else
             {
                 Vector3[] vertices = textInfo.meshInfo[m_CurrentMaterialIndex].vertices;
-                float max_UvX = (vertices[index + 2].x - start.x) / (end.x - start.x);
+                float max_UvX = (vertices[index + 2].x - start.x) * invMeshWidth;
 
                 Vector2[] uvs2 = textInfo.meshInfo[m_CurrentMaterialIndex].uvs2;
 
@@ -578,15 +599,15 @@ namespace UnityEngine.TextCore.Text
                 uvs2[2 + index] = new Vector2(max_UvX, 1);
                 uvs2[3 + index] = new Vector2(max_UvX, 0);
 
-                min_UvX = (vertices[index + 4].x - start.x) / (end.x - start.x);
-                max_UvX = (vertices[index + 6].x - start.x) / (end.x - start.x);
+                min_UvX = (vertices[index + 4].x - start.x) * invMeshWidth;
+                max_UvX = (vertices[index + 6].x - start.x) * invMeshWidth;
 
                 uvs2[4 + index] = new Vector2(min_UvX, 0);
                 uvs2[5 + index] = new Vector2(min_UvX, 1);
                 uvs2[6 + index] = new Vector2(max_UvX, 1);
                 uvs2[7 + index] = new Vector2(max_UvX, 0);
 
-                min_UvX = (vertices[index + 8].x - start.x) / (end.x - start.x);
+                min_UvX = (vertices[index + 8].x - start.x) * invMeshWidth;
 
                 uvs2[8 + index] = new Vector2(min_UvX, 0);
                 uvs2[9 + index] = new Vector2(min_UvX, 1);

@@ -226,7 +226,7 @@ namespace UnityEditor.Build.Profile
                 ? new BuildProfileSceneList()
                 : new BuildProfileSceneList(profile);
             Undo.undoRedoEvent += m_SceneList.OnUndoRedo;
-            var container = m_SceneList.GetSceneListGUI(sceneListFoldout, isEnable);
+            var container = m_SceneList.GetSceneListGUI(isEnable);
             container.SetEnabled(isEnable);
             root.Q<VisualElement>(k_SceneListFoldoutRoot).Add(container);
 
