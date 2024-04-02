@@ -26,6 +26,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a distance value.
     /// </summary>
+    [Serializable]
     public struct Length : IEquatable<Length>
     {
         // Float clamping value (2 ^ 23).
@@ -123,7 +124,9 @@ namespace UnityEngine.UIElements
             m_Unit = unit;
         }
 
+        [SerializeField]
         private float m_Value;
+        [SerializeField]
         private Unit m_Unit;
 
         /// <undoc/>

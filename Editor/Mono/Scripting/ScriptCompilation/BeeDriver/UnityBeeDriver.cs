@@ -25,7 +25,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal static readonly string BeeBackendExecutable = new NPath($"{EditorApplication.applicationContentsPath}/bee_backend{BeeScriptCompilation.ExecutableExtension}").ToString();
         internal static readonly string BeeCacheToolExecutable = $"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline/BeeLocalCacheTool{BeeScriptCompilation.ExecutableExtension}";
         internal static readonly string BeeCacheDirEnvVar = "BEE_CACHE_DIRECTORY";
-        internal static string BeeCacheDir => Environment.GetEnvironmentVariable(BeeCacheDirEnvVar) ?? new NPath($"{InternalEditorUtility.userAppDataFolder}/cache/bee").ToString(SlashMode.Native);
+        internal static string BeeCacheDir => Environment.GetEnvironmentVariable(BeeCacheDirEnvVar) ?? new NPath($"{OSUtil.GetDefaultCachePath()}/bee").ToString(SlashMode.Native);
 
         [Serializable]
         internal class BeeBackendInfo

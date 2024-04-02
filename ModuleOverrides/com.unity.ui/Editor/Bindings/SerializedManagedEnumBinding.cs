@@ -194,7 +194,7 @@ class SerializedManagedEnumBinding : SerializedObjectBindingToBaseField<Enum, Ba
             BindingsStyleHelpers.UnregisterRightClickMenu(saveField);
 
             field = null;
-            saveField.value = null;
+            saveField.SetValueWithoutNotify(null);
             FieldBinding = null;
         }
 

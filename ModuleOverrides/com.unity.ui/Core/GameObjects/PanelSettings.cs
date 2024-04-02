@@ -455,6 +455,8 @@ namespace UnityEngine.UIElements
 
         internal BaseRuntimePanel panel => m_PanelAccess.panel;
 
+        internal bool isInitialized => m_PanelAccess?.isInitialized ?? false;
+
         /// <summary>
         /// The top level visual element.
         /// </summary>

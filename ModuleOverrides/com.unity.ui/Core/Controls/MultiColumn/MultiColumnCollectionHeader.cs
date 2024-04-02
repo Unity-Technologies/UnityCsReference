@@ -31,7 +31,7 @@ namespace UnityEngine.UIElements.Internal
                 public int index;
                 public string name;
                 public float actualWidth;
-                public float width;
+                public Length width;
                 public bool visible;
             }
 
@@ -57,7 +57,7 @@ namespace UnityEngine.UIElements.Internal
 
                 foreach (var column in header.columns.displayList)
                 {
-                    var columnState = new ColumnState() { index = column.index, name = column.name, actualWidth = column.desiredWidth, width = column.width.value, visible = column.visible };
+                    var columnState = new ColumnState() { index = column.index, name = column.name, actualWidth = column.desiredWidth, width = column.width, visible = column.visible };
 
                     m_OrderedColumnStates.Add(columnState);
                 }

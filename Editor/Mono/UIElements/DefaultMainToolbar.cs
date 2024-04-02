@@ -14,8 +14,12 @@ namespace UnityEditor
         {
             get
             {
+                //Modules/EditorToolbar/ToolbarElements/*.cs
                 yield return "Services/Account";
                 yield return "Services/Cloud";
+                //com.unity.collab-proxy/Editor/PlasticSCM/Toolbar/ToolbarButton.cs
+                yield return "Services/Version Control";
+                //Editor/Mono/GUI/Toolbars/MainToolbarImguiContainer.cs
                 yield return "Editor Utility/Imgui Subtoolbars";
             }
         }

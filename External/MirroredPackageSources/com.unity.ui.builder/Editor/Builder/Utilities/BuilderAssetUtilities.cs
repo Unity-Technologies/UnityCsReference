@@ -564,13 +564,14 @@ namespace Unity.UI.Builder
 
             while (parent != null)
             {
-                if (parent is TemplateContainer templateContainer)
+                if (parent is TemplateContainer templateContainer && templateContainer.GetVisualElementAsset() != null)
                 {
-                    if (templateContainer.GetVisualElementAsset() != null)
-                    {
-                        templateContainerParent = templateContainer;
-                    }
+                    templateContainerParent = templateContainer;
+                    break;
+                }
 
+                if (BuilderSharedStyles.IsDocumentElement(parent))
+                {
                     break;
                 }
 
@@ -579,6 +580,29 @@ namespace Unity.UI.Builder
 
             return templateContainerParent;
         }
+        
+        public static bool HasDynamicallyCreatedTemplateAncestor(VisualElement visualElement)
+        {
+            var parent = visualElement.parent;
+            while (parent != null)
+            {
+                if (BuilderSharedStyles.IsDocumentElement(parent))
+                {
+                    return false;
+                }
+
+                if (parent is TemplateContainer
+                    && !parent.HasProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName)
+                    && parent.GetVisualElementAsset() == null)
+                {
+                    return true;
+                }
+
+                parent = parent.parent;
+            }
+
+            return false;
+        }        
 
         public static bool HasAttributeOverrideInRootTemplate(VisualElement visualElement, string attributeName)
         {

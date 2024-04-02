@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     [NativeHeader("ModuleOverrides/com.unity.ui/Core/Native/Renderer/UIPainter2D.bindings.h")]
     internal static class UIPainter2D
     {
-        public static extern IntPtr Create(float maxArcRadius);
+        public static extern IntPtr Create(bool computeBBox = false);
         public static extern void Destroy(IntPtr handle);
 
         public static extern void Reset(IntPtr handle);
@@ -50,10 +50,10 @@ namespace UnityEngine.UIElements
         public static extern void QuadraticCurveTo(IntPtr handle, Vector2 p1, Vector2 p2);
         public static extern void ClosePath(IntPtr handle);
 
+        public static extern Rect GetBBox(IntPtr handle);
+
         public static extern MeshWriteDataInterface Stroke(IntPtr handle);
         public static extern MeshWriteDataInterface Fill(IntPtr handle, FillRule fillRule);
-
-        public static extern Rect ComputeBBoxFromArcs(IntPtr meshes, int meshCount);
     }
 
     /// <summary>

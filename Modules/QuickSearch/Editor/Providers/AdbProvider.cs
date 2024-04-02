@@ -106,6 +106,7 @@ namespace UnityEditor.Search.Providers
                     path = Utils.RemoveInvalidCharsFromPath($"{filename}/{label}", ' ');
                     flags |= SearchDocumentFlags.Nested;
                 }
+                // If this ever changes and we no longer use the AssetProvider to create items, please update the test SearchEngineTests.ProjectSearch_AlwaysReturnsPaths
                 var item = AssetProvider.CreateItem("ADB", context, provider, context.filterType, gid, path, 998, flags);
                 if (label != null)
                 {
@@ -135,6 +136,7 @@ namespace UnityEditor.Search.Providers
                 var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
                 if (gid.identifierType == 0)
                     continue;
+                // If this ever changes and we no longer use the AssetProvider to create items, please update the test SearchEngineTests.ProjectSearch_AlwaysReturnsPaths
                 yield return AssetProvider.CreateItem("Resources", context, provider, gid.ToString(), null, 1998, SearchDocumentFlags.Resources);
             }
         }

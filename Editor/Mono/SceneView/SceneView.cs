@@ -190,7 +190,7 @@ namespace UnityEditor
 
         static void OnNonSelectedObjectWasDestroyed(int instanceID)
         {
-            if (s_CachedChildRenderersFromSelection != null && s_CachedChildRenderersFromSelection.Contains(instanceID))
+            if (s_CachedChildRenderersFromSelectionHashSet != null && s_CachedChildRenderersFromSelectionHashSet.Contains(instanceID))
             {
                 s_ActiveEditorsDirty = true;
                 s_SelectionCacheDirty = true;
@@ -386,6 +386,7 @@ namespace UnityEditor
         private bool m_WasFocused = false;
 
         private static int[] s_CachedParentRenderersFromSelection, s_CachedChildRenderersFromSelection;
+        private static readonly HashSet<int> s_CachedChildRenderersFromSelectionHashSet = new HashSet<int>();
 
         [Serializable]
         public class SceneViewState
@@ -2150,6 +2151,8 @@ namespace UnityEditor
                     if (s_SelectionCacheDirty)
                     {
                         HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersFromSelection, out s_CachedChildRenderersFromSelection);
+                        s_CachedChildRenderersFromSelectionHashSet.Clear();
+                        s_CachedChildRenderersFromSelectionHashSet.UnionWith(s_CachedChildRenderersFromSelection);
                         s_SelectionCacheDirty = false;
                     }
 
@@ -2264,6 +2267,8 @@ namespace UnityEditor
                 if (s_SelectionCacheDirty)
                 {
                     HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersFromSelection, out s_CachedChildRenderersFromSelection);
+                    s_CachedChildRenderersFromSelectionHashSet.Clear();
+                    s_CachedChildRenderersFromSelectionHashSet.UnionWith(s_CachedChildRenderersFromSelection);
                     s_SelectionCacheDirty = false;
                 }
 

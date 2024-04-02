@@ -7,6 +7,7 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using JetBrains.Annotations;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -22,14 +23,14 @@ namespace UnityEditor
         [PublicAPI] // Used by packages with internal access. Not actually intended for users.
         internal static event System.Action postProcessSelectionMetadata;
 
-        [UsedImplicitly]
+        [UsedImplicitly, RequiredByNativeCode]
         private static void Internal_SelectedObjectWasDestroyed(int instanceID)
         {
             if (selectedObjectWasDestroyed != null)
                 selectedObjectWasDestroyed(instanceID);
         }
 
-        [UsedImplicitly]
+        [UsedImplicitly, RequiredByNativeCode]
         private static void Internal_NonSelectedObjectWasDestroyed(int instanceID)
         {
             nonSelectedObjectWasDestroyed?.Invoke(instanceID);

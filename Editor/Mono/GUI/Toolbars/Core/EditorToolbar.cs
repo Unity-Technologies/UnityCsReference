@@ -75,9 +75,6 @@ namespace UnityEditor.Toolbars
                 return true;
             }
 
-            Debug.LogError($"Failed to load EditorToolbar ID '{id}' for window '{ctx}'. "
-                + "No element with that ID and target toolbar was registered using the EditorToolbarElement attribute.");
-
             return false;
         }
     }
