@@ -10,5 +10,6 @@ enum NotificationType
     LicenseUpdate,
     LicenseExpired,
     LicenseOfflineValidityEnding,
+    BorrowFeatureStatus,
 }
 }

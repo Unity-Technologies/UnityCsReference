@@ -11,7 +11,14 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public virtual void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback)
         {
-            UnityOAuth.GetAuthorizationCodeAsync(clientId, callback);
+            try
+            {
+                UnityOAuth.GetAuthorizationCodeAsync(clientId, callback);
+            }
+            catch (Exception e)
+            {
+                callback?.Invoke(new UnityOAuth.AuthCodeResponse { Exception = e});
+            }
         }
     }
 }

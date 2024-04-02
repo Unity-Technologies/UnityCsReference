@@ -5167,6 +5167,9 @@
     <Compile Include="..\..\Modules\Licensing\UI\Data\Events\Base\NotificationWithDetails.cs">
       <Link>Modules\Licensing\UI\Data\Events\Base\NotificationWithDetails.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\BorrowFeatureStatusNotification.cs">
+      <Link>Modules\Licensing\UI\Data\Events\BorrowFeatureStatusNotification.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Licensing\UI\Data\Events\LicenseExpiredNotification.cs">
       <Link>Modules\Licensing\UI\Data\Events\LicenseExpiredNotification.cs</Link>
     </Compile>
@@ -5559,6 +5562,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ClientProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ClientProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\DateTimeProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\DateTimeProxy.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\HttpClientFactory.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\HttpClientFactory.cs</Link>

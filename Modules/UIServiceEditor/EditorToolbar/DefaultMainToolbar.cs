@@ -24,6 +24,7 @@ namespace UnityEditor
             m_LeftToolbar = new EditorToolbar(null, leftContainer,
                 "Services/Account",
                 "Services/Cloud",
+                "Services/Version Control",
                 "Editor Utility/Imgui Subtoolbars");
 
             m_CenterToolbar = new EditorToolbar(null, root.Q("ToolbarZonePlayMode"),

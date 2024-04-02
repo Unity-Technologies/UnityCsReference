@@ -43,6 +43,7 @@ namespace UnityEditor.IMGUI.Controls
         internal Rect m_SearchRect;
         internal Rect m_HeaderRect;
 
+        internal Rect areaRect { get; set; }
         internal virtual float searchHeight => m_SearchRect.height;
         internal virtual float headerHeight => m_HeaderRect.height;
         internal virtual GUIStyle lineStyle => Styles.itemStyle;
@@ -57,12 +58,21 @@ namespace UnityEditor.IMGUI.Controls
         internal virtual void DrawItem(AdvancedDropdownItem item, string name, Texture2D icon, bool enabled, bool drawArrow, bool selected, bool hasSearch)
         {
             var content = item.content;
-            var imgTemp = content.image;
-            //we need to pretend we have an icon to calculate proper width in case
+
+            // We need to pretend we have an icon to calculate proper width in case
+            var lastContentImage = content.image;
             if (content.image == null)
                 content.image = Texture2D.whiteTexture;
+
+            // Clamp the rect width
             var rect = GUILayoutUtility.GetRect(content, lineStyle, GUILayout.ExpandWidth(true));
-            content.image = imgTemp;
+            var maxWidth = areaRect.width - GUI.skin.verticalScrollbar.fixedWidth; // todo: find a way to detect if we have a scrollbar
+            if (drawArrow)
+                maxWidth -= Styles.rightArrow.fixedWidth + Styles.rightArrow.margin.right;
+            if (maxWidth > 0)
+                rect.width = Math.Min(rect.width, maxWidth);
+
+            content.image = lastContentImage;
 
             if (!string.IsNullOrEmpty(content.tooltip) && rect.Contains(Event.current.mousePosition) &&
                 !string.Equals(content.tooltip, content.text, StringComparison.Ordinal))
@@ -71,7 +81,7 @@ namespace UnityEditor.IMGUI.Controls
             if (Event.current.type != EventType.Repaint)
                 return;
 
-            var imageTemp = content.image;
+            lastContentImage = content.image;
             if (m_DataSource.selectedIDs.Any() && m_DataSource.selectedIDs.Contains(item.id))
             {
                 var checkMarkRect = new Rect(rect);
@@ -80,7 +90,7 @@ namespace UnityEditor.IMGUI.Controls
                 rect.x += iconSize.x + 1;
                 rect.width -= iconSize.x + 1;
 
-                //don't draw the icon if the check mark is present
+                // Don't draw the icon if the check mark is present
                 content.image = null;
             }
             else if (content.image == null)
@@ -89,19 +99,28 @@ namespace UnityEditor.IMGUI.Controls
                 rect.x += iconSize.x + 1;
                 rect.width -= iconSize.x + 1;
             }
+
             EditorGUI.BeginDisabled(!enabled);
+
+            var lastStyleClipping = lineStyle.clipping;
+            lineStyle.clipping = TextClipping.Clip;
+
             lineStyle.Draw(rect, content, false, false, selected, selected);
-            content.image = imageTemp;
+
+            lineStyle.clipping = lastStyleClipping;
+            content.image = lastContentImage;
+
             if (drawArrow)
             {
                 var yOffset = (lineStyle.fixedHeight - Styles.rightArrow.fixedHeight) / 2;
                 Rect arrowRect = new Rect(
-                    rect.xMax - Styles.rightArrow.fixedWidth - Styles.rightArrow.margin.right,
+                    rect.xMax,
                     rect.y + yOffset,
                     Styles.rightArrow.fixedWidth,
                     Styles.rightArrow.fixedHeight);
                 Styles.rightArrow.Draw(arrowRect, false, false, false, false);
             }
+
             EditorGUI.EndDisabled();
         }
 

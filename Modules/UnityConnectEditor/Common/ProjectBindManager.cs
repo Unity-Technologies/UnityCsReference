@@ -542,6 +542,22 @@ namespace UnityEditor.Connect
                                     }
                                 }
 
+                                foreach (var rawProject in json.AsDict()[k_JsonProjectsNodeName].AsList())
+                                {
+                                    var project = rawProject.AsDict();
+                                    if (!project[k_JsonArchivedNodeName].AsBool()
+                                        && !sortedOrganizationNames.Contains(project[k_JsonOrgNameNodeName].AsString()))
+                                    {
+                                        sortedOrganizationNames.Add(project[k_JsonOrgNameNodeName].AsString());
+                                        m_OrgIdByName.Add(new OrgData()
+                                        {
+                                            Name = project[k_JsonOrgNameNodeName].AsString(),
+                                            Id = project[k_JsonOrgIdNodeName].AsString(),
+                                            IsManager = false
+                                        });
+                                    }
+                                }
+
                                 sortedOrganizationNames.Sort();
                                 var popUpChoices = new List<string> { L10n.Tr(k_SelectOrganizationText) };
                                 popUpChoices.AddRange(sortedOrganizationNames);

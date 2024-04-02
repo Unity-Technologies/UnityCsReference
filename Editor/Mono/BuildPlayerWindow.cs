@@ -69,7 +69,7 @@ namespace UnityEditor
             public GUIContent autoconnectProfiler = EditorGUIUtility.TrTextContent("Autoconnect Profiler", "When the build is started, an open Profiler Window will automatically connect to the Player and start profiling. The \"Build And Run\" option will also automatically open the Profiler Window.");
             public GUIContent autoconnectProfilerDisabled = EditorGUIUtility.TrTextContent("Autoconnect Profiler", "Profiling is only enabled in a Development Player.");
             public GUIContent buildWithDeepProfiler = EditorGUIUtility.TrTextContent("Deep Profiling Support", "Build Player with Deep Profiling Support. This might affect Player performance.");
-            public GUIContent buildWithDeepProfilerDisabled = EditorGUIUtility.TrTextContent("Deep Profiling", "Profiling is only enabled in a Development Player.");
+            public GUIContent buildWithDeepProfilerDisabled = EditorGUIUtility.TrTextContent("Deep Profiling Support", "Profiling is only enabled in a Development Player.");
             public GUIContent allowDebugging = EditorGUIUtility.TrTextContent("Script Debugging", "Enable this setting to allow your script code to be debugged.");
             public GUIContent waitForManagedDebugger = EditorGUIUtility.TrTextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution. Can also use volume Up or Down button to confirm on Android.");
             public GUIContent managedDebuggerFixedPort = EditorGUIUtility.TrTextContent("Managed Debugger Fixed Port", "Use the specified port to attach to the managed debugger. If 0, the port will be automatically selected.");

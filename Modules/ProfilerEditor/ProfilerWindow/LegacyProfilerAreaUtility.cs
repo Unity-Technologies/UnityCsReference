@@ -18,7 +18,7 @@ namespace Unity.Profiling.Editor
             { ProfilerArea.Audio, ProfilerCategory.Audio.Name },
             { ProfilerArea.Video, ProfilerCategory.Video.Name },
             { ProfilerArea.Physics, ProfilerCategory.Physics.Name },
-            { ProfilerArea.Physics2D, ProfilerCategory.Physics.Name },
+            { ProfilerArea.Physics2D, ProfilerCategory.Physics2D.Name },
             { ProfilerArea.NetworkMessages, ProfilerCategory.Network.Name },
             { ProfilerArea.NetworkOperations, ProfilerCategory.Network.Name },
             { ProfilerArea.UI, ProfilerCategory.Gui.Name },

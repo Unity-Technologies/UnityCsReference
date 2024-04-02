@@ -245,8 +245,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void HandleHttpRequest(Func<IAsyncHTTPClient> httpRequestCreate, Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
         {
-            m_AssetStoreOAuth.FetchUserInfo(
-                userInfo =>
+            m_AssetStoreOAuth.FetchAccessToken(
+                token =>
                 {
                     var maxRetryCount = k_MaxRetries;
 
@@ -255,7 +255,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var httpRequest = httpRequestCreate();
 
                         httpRequest.header["Content-Type"] = "application/json";
-                        httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken;
+                        httpRequest.header["Authorization"] = "Bearer " + token.accessToken;
                         httpRequest.doneCallback = request =>
                         {
                             // Ignore if aborted
@@ -283,7 +283,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                                 return;
                             }
 
-                            var parsedResult = AssetStoreUtils.ParseResponseAsDictionary(request);
+                            var parsedResult = m_HttpClientFactory.ParseResponseAsDictionary(request);
                             if (parsedResult == null)
                                 retryCallbackAction?.Invoke(responseCode);
                             else

@@ -61,5 +61,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return Get<string>(dict, key);
         }
+
+        public static long GetStringAsLong(this IDictionary<string, object> dict, string key, long fallbackValue = default(long))
+        {
+            var stringValue = Get<string>(dict, key);
+            return long.TryParse(stringValue, out var result) ? result : fallbackValue;
+        }
     }
 }
