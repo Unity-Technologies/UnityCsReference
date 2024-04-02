@@ -25,18 +25,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private PackageFiltering m_PackageFiltering;
         [NonSerialized]
+        private UpmCache m_UpmCache;
+        [NonSerialized]
         private AssetStoreClient m_AssetStoreClient;
         [NonSerialized]
         private AssetStoreCache m_AssetStoreCache;
         public void ResolveDependencies(ApplicationProxy application,
             UnityConnectProxy unityConnect,
             PackageFiltering packageFiltering,
+            UpmCache upmCache,
             AssetStoreClient assetStoreClient,
             AssetStoreCache assetStoreCache)
         {
             m_Application = application;
             m_UnityConnect = unityConnect;
             m_PackageFiltering = packageFiltering;
+            m_UpmCache = upmCache;
             m_AssetStoreClient = assetStoreClient;
             m_AssetStoreCache = assetStoreCache;
         }
@@ -61,6 +65,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnEnable()
         {
+            m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
+
             m_PackageFiltering.onFilterTabChanged += OnFilterChanged;
             m_AssetStoreCache.onLocalInfosChanged += OnLocalInfosChanged;
             m_Application.update += ProcessCallQueue;
@@ -68,6 +74,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnDisable()
         {
+            m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
+
             m_PackageFiltering.onFilterTabChanged -= OnFilterChanged;
             m_AssetStoreCache.onLocalInfosChanged -= OnLocalInfosChanged;
             m_Application.update -= ProcessCallQueue;
@@ -95,6 +103,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             // don't always load all purchases and we don't want to waste time checking updates for items that are not visible.
             // In the future if we want to check update for all downloaded assets, we can remove the purchase info check here.
             InsertToCheckUpdateQueue(addedOrUpdated?.Where(info => m_AssetStoreCache.GetPurchaseInfo(info.id) != null && m_AssetStoreCache.GetUpdateInfo(info.uploadId) == null).Select(info => info.id));
+        }
+
+        private void OnUserLoginStateChange(bool isUserInfoReady, bool isUserLoggedIn)
+        {
+            if (!isUserLoggedIn)
+                return;
+
+            foreach (var productId in m_UpmCache.installedPackageInfos.Select(info => info.assetStore?.productId).Where(id => !string.IsNullOrEmpty(id) && m_AssetStoreCache.GetProductInfo(id) == null))
+                AddToFetchDetailsQueue(productId);
         }
 
         public virtual void AddToFetchDetailsQueue(string packageUniqueId)

@@ -129,6 +129,7 @@ namespace Unity.Profiling
         /// GPU category.
         /// </summary>
         internal static ProfilerCategory GPU => new ProfilerCategory(ProfilerUnsafeUtility.CategoryGPU);
+        internal static ProfilerCategory Physics2D => new ProfilerCategory(ProfilerUnsafeUtility.CategoryPhysics2D);
 
         /// <summary>
         /// Utility operator that simplifies usage of the ProfilerCategory with ProfilerUnsafeUtility.

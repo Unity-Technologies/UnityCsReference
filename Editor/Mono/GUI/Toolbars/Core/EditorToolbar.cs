@@ -100,6 +100,8 @@ namespace UnityEditor.Toolbars
         {
             if (!EditorToolbarManager.instance.Exists(id))
             {
+                if(id == "Services/Version Control") return; //Silently return, as the version control button is optional
+
                 Debug.LogError($"Trying to add the id '{id}' to the toolbar {GetType().FullName}. " +
                     "No element with that Id was registered using the EditorToolbarElement attribute.");
                 return;
