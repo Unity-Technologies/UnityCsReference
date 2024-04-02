@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.Bindings;
@@ -119,6 +120,21 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
         }
         // We unbind here
         Release();
+    }
+
+    protected override void OnFieldAttached()
+    {
+        var previousValue = field.value;
+
+        base.OnFieldAttached();
+
+        if (EqualityComparer<TValue>.Default.Equals(previousValue, field.value)
+            && field is VisualElement handler)
+        {
+            using var evt = ChangeEvent<TValue>.GetPooled(field.value, field.value);
+            evt.target = handler;
+            handler.SendEvent(evt);
+        }
     }
 
     public override void Update()

@@ -289,6 +289,13 @@ namespace UnityEngine
             return Mathf.Floor((v * GUIUtility.pixelsPerPoint) + kNearestRoundingOffset) / GUIUtility.pixelsPerPoint;
         }
 
+        internal static float RoundToPixelGrid(float v, float scale)
+        {
+            // Using same rounding constant as GUITexture::AlignPointToDevice
+            const float kNearestRoundingOffset = 0.48f;
+            return Mathf.Floor((v * scale) + kNearestRoundingOffset) / scale;
+        }
+
         // Convert a point from GUI position to screen space.
         public static Vector2 GUIToScreenPoint(Vector2 guiPoint)
         {

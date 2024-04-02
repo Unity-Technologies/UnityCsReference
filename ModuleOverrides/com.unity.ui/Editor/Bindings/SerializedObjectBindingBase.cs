@@ -99,8 +99,8 @@ internal abstract class SerializedObjectBindingBase : IBinding
 
     protected SerializedObjectBindingBase()
     {
-        m_OnFieldAttachedToPanel = OnFieldAttached;
-        m_OnFieldDetachedFromPanel = OnFieldDetached;
+        m_OnFieldAttachedToPanel = OnAttachToPanel;
+        m_OnFieldDetachedFromPanel = OnDetachFromPanel;
     }
 
     protected IBindable boundElement
@@ -196,13 +196,23 @@ internal abstract class SerializedObjectBindingBase : IBinding
         }
     }
 
-    private void OnFieldAttached(AttachToPanelEvent evt)
+    private void OnAttachToPanel(AttachToPanelEvent evt)
+    {
+        OnFieldAttached();
+    }
+
+    private void OnDetachFromPanel(DetachFromPanelEvent evt)
+    {
+        OnFieldDetached();
+    }
+
+    protected virtual void OnFieldAttached()
     {
         isFieldAttached = true;
         ResetCachedValues();
     }
 
-    private void OnFieldDetached(DetachFromPanelEvent evt)
+    private void OnFieldDetached()
     {
         isFieldAttached = false;
     }
@@ -231,11 +241,10 @@ internal abstract class SerializedObjectBindingBase : IBinding
 
             if (isFieldAttached != attached)
             {
-                isFieldAttached = attached;
                 if (attached)
-                {
-                    ResetCachedValues();
-                }
+                    OnFieldAttached();
+                else
+                    OnFieldDetached();
             }
         }
         else
@@ -243,12 +252,11 @@ internal abstract class SerializedObjectBindingBase : IBinding
             //we're not dealing with VisualElement
             if (m_Field != null && !isFieldAttached)
             {
-                isFieldAttached = true;
-                ResetCachedValues();
+                OnFieldAttached();
             }
             else
             {
-                isFieldAttached = false;
+                OnFieldDetached();
             }
         }
     }

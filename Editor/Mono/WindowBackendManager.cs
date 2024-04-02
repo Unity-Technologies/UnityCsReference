@@ -21,6 +21,8 @@ namespace UnityEditor
         Action onGUIHandler { get; }
 
         IWindowBackend windowBackend { get; set; }
+
+        bool resetPanelRenderingOnAssetChange { get; }
     }
 
     internal interface IEditorWindowModel : IWindowModel
@@ -48,6 +50,7 @@ namespace UnityEditor
 
         void SizeChanged();
         void EventInterestsChanged();
+        void ResetPanelRenderingOnAssetChangeChanged();
     }
 
     internal interface IEditorWindowBackend : IWindowBackend

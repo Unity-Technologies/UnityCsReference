@@ -218,7 +218,7 @@ namespace UnityEditor.Connect
             InitializeProjectsDropdown();
 
             FetchOrganizations();
-            
+
             EditorGameServicesAnalytics.SendProjectBindDisplayEvent();
         }
 
@@ -541,6 +541,22 @@ namespace UnityEditor.Connect
                                             IsManager = k_AtLeastManagerFilter.Contains(org[k_JsonRoleNodeName].AsString())
                                         });
 
+                                    }
+                                }
+
+                                foreach (var rawProject in json.AsDict()[k_JsonProjectsNodeName].AsList())
+                                {
+                                    var project = rawProject.AsDict();
+                                    if (!project[k_JsonArchivedNodeName].AsBool()
+                                        && !sortedOrganizationNames.Contains(project[k_JsonOrgNameNodeName].AsString()))
+                                    {
+                                        sortedOrganizationNames.Add(project[k_JsonOrgNameNodeName].AsString());
+                                        m_OrgIdByName.Add(new OrgData()
+                                        {
+                                            Name = project[k_JsonOrgNameNodeName].AsString(),
+                                            Id = project[k_JsonOrgIdNodeName].AsString(),
+                                            IsManager = false
+                                        });
                                     }
                                 }
 

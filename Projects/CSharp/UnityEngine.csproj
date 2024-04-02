@@ -2605,6 +2605,9 @@
     <Compile Include="..\..\Runtime\Export\Camera\ScriptableRuntimeReflectionSystemWrapper.cs">
       <Link>Runtime\Export\Camera\ScriptableRuntimeReflectionSystemWrapper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Collections\CollectionExtensions.cs">
+      <Link>Runtime\Export\Collections\CollectionExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Collections\NativeCollectionAccessPolicies.cs">
       <Link>Runtime\Export\Collections\NativeCollectionAccessPolicies.cs</Link>
     </Compile>

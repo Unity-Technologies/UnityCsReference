@@ -121,23 +121,11 @@ class SerializedDefaultEnumBinding : SerializedObjectBindingToBaseField<string, 
         }
 
 
-        var originalValue = this.lastFieldValueIndex = c.index;
+        this.lastFieldValueIndex = c.index;
 
         BindingsStyleHelpers.RegisterRightClickMenu(c, property);
 
         this.field = c;
-
-        if (originalValue == c.index) //the value hasn't changed, but we want the binding to send an event no matter what
-        {
-            if (c is VisualElement handler)
-            {
-                using (ChangeEvent<string> evt = ChangeEvent<string>.GetPooled(c.value, c.value))
-                {
-                    evt.target = handler;
-                    handler.SendEvent(evt);
-                }
-            }
-        }
     }
 
     protected override void SyncPropertyToField(PopupField<string> c, SerializedProperty p)

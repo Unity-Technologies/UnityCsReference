@@ -69,7 +69,7 @@ namespace UnityEngine.UIElements
         // Instantiated internally by UIR, users shouldn't derive from this class.
         internal Painter2D(MeshGenerationContext ctx)
         {
-            m_Handle = new SafeHandleAccess(UIPainter2D.Create(maxArcRadius));
+            m_Handle = new SafeHandleAccess(UIPainter2D.Create());
             m_Ctx = ctx;
             Reset();
         }
@@ -79,7 +79,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Painter2D()
         {
-            m_Handle = new SafeHandleAccess(UIPainter2D.Create(maxArcRadius));
+            // Create the Painter2D with computeBBox flag set to true,
+            // This allows other APIs (such as SaveToVectorImage) to know the size of the content.
+            m_Handle = new SafeHandleAccess(UIPainter2D.Create(true));
             m_DetachedAllocator = new DetachedAllocator();
             isPainterActive = true;
             Reset();
@@ -110,6 +112,7 @@ namespace UnityEngine.UIElements
             }
 
             m_DetachedAllocator.Clear();
+            Reset();
         }
 
 
@@ -245,7 +248,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Begins a new path and empties the list of recorded sub-paths and resets the pen position to (0,0).
+        /// Begins a new path and empties the list of recorded sub-paths.
         /// </summary>
         public void BeginPath()
         {
@@ -439,14 +442,7 @@ namespace UnityEngine.UIElements
             // of the additional buffer around the shapes used for anti-aliasing. The
             // ComputeBoundingBoxFromArcs() method peeks into the arc data for more precise measurements.
             // This is a native method for performance reasons.
-            Rect bbox = Rect.zero;
-            NativeArray<MeshWriteDataInterface> nativeMeshes;
-            using (nativeMeshes = new NativeArray<MeshWriteDataInterface>(meshes.Count, Allocator.Temp, NativeArrayOptions.UninitializedMemory))
-            {
-                for (int i = 0; i < meshes.Count; ++i)
-                    nativeMeshes[i] = MeshWriteDataInterface.FromMeshWriteData(meshes[i]);
-                bbox = UIPainter2D.ComputeBBoxFromArcs(new IntPtr(nativeMeshes.GetUnsafePtr()), nativeMeshes.Length);
-            }
+            Rect bbox = UIPainter2D.GetBBox(m_Handle);
 
             // Allocate + copy
             var allVerts = new VectorImageVertex[vertCount];

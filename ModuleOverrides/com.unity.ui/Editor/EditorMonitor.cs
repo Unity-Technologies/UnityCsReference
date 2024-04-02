@@ -29,8 +29,8 @@ namespace UnityEditor.UIElements
                 while (it.MoveNext())
                 {
                     Panel panel = it.Current.Value;
-                    (panel.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater)?.DestroyRenderChain();
-                    panel.atlas?.Reset();
+                    if (colorSpaceChanged || (importCountChanged && panel.resetPanelRenderingOnAssetChange) || renderTexturesTrashed)
+                        panel.ResetRendering();
                 }
             }
         }
@@ -72,5 +72,15 @@ namespace UnityEditor.UIElements
 
             return false;
         }
+    }
+
+    /// <summary>Utility that manages asset monitoring features of UI Toolkit panels.</summary>
+    public static class AssetMonitoringUtilities
+    {
+        /// <summary>Gets the state that controls if the panel of the EditorWindow should reset its rendering data when an asset changes.</summary>
+        public static bool GetResetPanelRenderingOnAssetChange(EditorWindow window) => window.resetPanelRenderingOnAssetChange;
+
+        /// <summary>Sets the state that controls if the panel of the EditorWindow should reset its rendering data when an asset changes.</summary>
+        public static void SetResetPanelRenderingOnAssetChange(EditorWindow window, bool reset) => window.resetPanelRenderingOnAssetChange = reset;
     }
 }

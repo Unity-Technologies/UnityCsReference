@@ -115,6 +115,7 @@ namespace UnityEngine.Pool
             }
             else
             {
+                CountAll--;
                 m_ActionOnDestroy?.Invoke(element);
             }
         }

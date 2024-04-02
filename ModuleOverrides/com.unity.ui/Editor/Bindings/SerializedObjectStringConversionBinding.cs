@@ -44,24 +44,10 @@ class SerializedObjectStringConversionBinding<TValue> : SerializedObjectBindingP
             BindingsStyleHelpers.RegisterRightClickMenu(bf, property);
         }
 
-        var previousFieldValue = field.value;
-
         // In this subclass implementation the lastFieldValue is in fact the propertyValue assigned to the field.
         // this is made to compare TValues instead of strings
         UpdateLastFieldValue();
         AssignValueToField(lastFieldValue);
-
-        if (previousFieldValue == field.value) //the value hasn't changed, but we want the binding to send an event no matter what
-        {
-            if (this.field is VisualElement handler)
-            {
-                using (ChangeEvent<string> evt = ChangeEvent<string>.GetPooled(previousFieldValue, previousFieldValue))
-                {
-                    evt.target = handler;
-                    handler.SendEvent(evt);
-                }
-            }
-        }
     }
 
     protected override void UpdateLastFieldValue()

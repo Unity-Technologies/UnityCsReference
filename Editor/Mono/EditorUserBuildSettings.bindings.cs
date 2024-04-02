@@ -668,7 +668,48 @@ namespace UnityEditor
             set;
         }
 
-        public static extern string windowsDevicePortalUsername
+        internal static string EncodeBase64(string plainText)
+        {
+            if (plainText == null)
+            {
+                plainText = string.Empty;
+            }
+
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            return Convert.ToBase64String(plainTextBytes);
+        }
+
+        internal static string DecodeBase64(string base64Text)
+        {
+            if (base64Text == null)
+            {
+                base64Text = string.Empty;
+            }
+
+            try
+            {
+                var base64EncodedBytes = System.Convert.FromBase64String(base64Text);
+                return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
+            }
+            catch (FormatException)
+            {
+                return string.Empty;
+            }
+        }
+
+        public static string windowsDevicePortalUsername
+        {
+            get
+            {
+                return DecodeBase64(internal_windowsDevicePortalUsername);
+            }
+            set
+            {
+                internal_windowsDevicePortalUsername = EncodeBase64(value);
+            }
+        }
+
+        private static extern string internal_windowsDevicePortalUsername
         {
             [NativeMethod("GetWindowsDevicePortalUsername")]
             get;
@@ -677,7 +718,19 @@ namespace UnityEditor
         }
 
         // WDP password is not to be saved with other settings and only stored in memory until Editor is closed
-        public static string windowsDevicePortalPassword { get; set; }
+        private static string internal_windowsDevicePortalPassword;
+
+        public static string windowsDevicePortalPassword
+        {
+            get
+            {
+                return DecodeBase64(internal_windowsDevicePortalPassword);
+            }
+            set
+            {
+                internal_windowsDevicePortalPassword = EncodeBase64(value);
+            }
+        }
 
         // *undocumented*
         public static extern WSABuildAndRunDeployTarget wsaBuildAndRunDeployTarget

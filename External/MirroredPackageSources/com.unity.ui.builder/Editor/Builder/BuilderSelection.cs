@@ -82,7 +82,8 @@ namespace Unity.UI.Builder
                 if (selectedElement.GetVisualElementAsset() == null)
                 {
                     if (selectedElement.HasProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName)
-                        && BuilderAssetUtilities.GetVisualElementRootTemplate(selectedElement) != null)
+                        && BuilderAssetUtilities.GetVisualElementRootTemplate(selectedElement) != null
+                        && !BuilderAssetUtilities.HasDynamicallyCreatedTemplateAncestor(selectedElement))
                     {
                         return BuilderSelectionType.ElementInTemplateInstance;
                     }
