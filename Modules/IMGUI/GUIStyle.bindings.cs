@@ -106,6 +106,7 @@ namespace UnityEngine
         [FreeFunction(Name = "GUIStyle_Bindings::IsTooltipActive")] internal static extern bool IsTooltipActive(string tooltip);
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetCursorFlashOffset")] private static extern float Internal_GetCursorFlashOffset();
         [FreeFunction(Name = "GUIStyle::SetDefaultFont")] internal static extern void SetDefaultFont(Font font);
+        [FreeFunction(Name = "GUIStyle::GetDefaultFont")] internal static extern Font GetDefaultFont();
 
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_DestroyTextGenerator")]
         internal static extern void Internal_DestroyTextGenerator(int meshInfoId);

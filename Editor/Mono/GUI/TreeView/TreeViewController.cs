@@ -514,7 +514,7 @@ namespace UnityEditor.IMGUI.Controls
                 case EventType.ContextClick:
                     if (rect.Contains(evt.mousePosition))
                     {
-                        SelectionClick(item, false);
+                        SelectionClick(item, true);
                         // Do not use the event so the client can react to the context click (here we just handled the treeview selection)
                         if (contextClickItemCallback != null)
                             contextClickItemCallback(item.id);
