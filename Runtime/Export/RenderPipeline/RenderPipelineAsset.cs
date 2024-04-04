@@ -74,7 +74,14 @@ namespace UnityEngine.Rendering
 
         public virtual Shader defaultSpeedTree8Shader => null;
 
-        public virtual string renderPipelineShaderTag => string.Empty;
+        public virtual string renderPipelineShaderTag
+        {
+            get
+            {
+                Debug.LogWarning($"The property {nameof(renderPipelineShaderTag)} has not been overridden. At build time, any shader variants that use any RenderPipeline tag will be stripped.");
+                return string.Empty;
+            }
+        }
 
         protected abstract RenderPipeline CreatePipeline();
 
@@ -82,7 +89,7 @@ namespace UnityEngine.Rendering
         {
             get
             {
-                Debug.LogWarning($"You must either inherit from {nameof(RenderPipelineAsset)}<TRenderPipeline> or override {nameof(pipelineType)} property");
+                Debug.LogWarning($"You must either inherit from {nameof(RenderPipelineAsset)}<TRenderPipeline> or override {nameof(pipelineType)} property.");
                 return null;
             }
         }
