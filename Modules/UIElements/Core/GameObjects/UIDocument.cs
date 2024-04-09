@@ -825,6 +825,15 @@ namespace UnityEngine.UIElements
 
         private void OnValidate()
         {
+            // UUM-57741. Don't try to validate the UI Document if the panel isn't initialized. Otherwise,
+            // the assignment of the visualTreeAsset below will indirectly create the panel. There are other
+            // systems listening to the panel creation to initialize themselves, which may do invalid
+            // operations for an OnValidate() call (e.g., the EventSystem will create GameObjects).
+            if (m_PanelSettings == null || !m_PanelSettings.isInitialized)
+            {
+                return;
+            }
+
             if (!gameObject.activeInHierarchy)
             {
                 return;

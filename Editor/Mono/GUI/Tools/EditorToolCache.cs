@@ -121,9 +121,12 @@ namespace UnityEditor.EditorTools
             {
                 if (additionalEditors == null)
                     return inspector.targets;
+
                 List<UnityObject> objects = new List<UnityObject>(inspector.targets);
-                foreach (var insp in additionalEditors)
-                    objects.AddRange(insp.targets);
+                foreach (var additionalInspector in additionalEditors)
+                    foreach (var additionalTarget in additionalInspector.targets)
+                        if (!objects.Contains(additionalTarget))
+                            objects.Add(additionalTarget);
                 return objects.ToArray();
             }
         }

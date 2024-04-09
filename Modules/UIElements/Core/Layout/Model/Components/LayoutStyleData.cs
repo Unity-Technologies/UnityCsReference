@@ -23,7 +23,6 @@ struct LayoutStyleData
         FlexWrap = LayoutWrap.NoWrap,
         Overflow = LayoutOverflow.Visible,
         Display = LayoutDisplay.Flex,
-        Flex = float.NaN,
         FlexGrow = float.NaN,
         FlexShrink = float.NaN,
         FlexBasis = LayoutValue.Auto()
@@ -41,7 +40,6 @@ struct LayoutStyleData
     public LayoutWrap FlexWrap;
     public LayoutOverflow Overflow;
     public LayoutDisplay Display;
-    public float Flex;
     public float FlexGrow;
     public float FlexShrink;
     public LayoutValue FlexBasis;

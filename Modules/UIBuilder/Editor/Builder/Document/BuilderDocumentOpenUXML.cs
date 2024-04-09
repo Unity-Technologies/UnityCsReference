@@ -930,7 +930,22 @@ namespace Unity.UI.Builder
             if (documentRootElement == null)
                 return;
 
+
             documentRootElement.Clear();
+
+            if (documentRootElement is TemplateContainer rootTemplate)
+            {
+                // If the contentContainer was set then
+                if (documentRootElement.contentContainer != documentRootElement)
+                {
+                    // Clear the hierarchy
+                    documentRootElement.hierarchy.Clear();
+
+                    // Reset the content container
+                    rootTemplate.SetContentContainer(rootTemplate);
+                }
+            }
+
             ResetCanvasDocumentRootElementStyleSheets(documentRootElement);
             BuilderSharedStyles.ClearContainer(documentRootElement);
 

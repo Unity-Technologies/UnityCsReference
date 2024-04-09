@@ -29,7 +29,10 @@ namespace UnityEditorInternal
         // Otherwise, evaluate AnimationWindowCurve at current time.
         public static object GetCurrentValue(AnimationWindowState state, AnimationWindowCurve curve)
         {
-            if (state.previewing && curve.rootGameObject != null)
+            // UUM-66112 - state.linkedWithSequencer - Padding for issue in Timeline where muscle
+            // values are not updated in the editor when previewing in the Animation Window.
+            // Fallback to curve values.
+            if (state.previewing && curve.rootGameObject != null && !state.linkedWithSequencer)
             {
                 return GetCurrentValue(state, curve.binding);
             }

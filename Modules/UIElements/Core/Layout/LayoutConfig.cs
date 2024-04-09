@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 namespace UnityEngine.UIElements.Layout;
 
@@ -29,16 +29,6 @@ readonly struct LayoutConfig
     /// Returns the handle for this node.
     /// </summary>
     public LayoutHandle Handle => m_Handle;
-
-    /// <summary>
-    /// Gets or sets if configured nodes should use web default settings.
-    /// </summary>
-    public ref bool UseWebDefaults => ref m_Access.GetConfigData(m_Handle).UseWebDefaults;
-
-    /// <summary>
-    /// Gets or sets if configured nodes should legacy stretching behavior.
-    /// </summary>
-    public ref bool UseLegacyStretchBehaviour => ref m_Access.GetConfigData(m_Handle).UseLegacyStretchBehaviour;
 
     /// <summary>
     /// Gets or sets the shared point scale factor for configured nodes.

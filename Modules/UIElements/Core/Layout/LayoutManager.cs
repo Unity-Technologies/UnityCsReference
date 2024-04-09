@@ -195,7 +195,8 @@ internal class LayoutManager : IDisposable
     readonly ManagedObjectStore<LayoutBaselineFunction> m_ManagedBaselineFunctions = new();
     readonly ManagedObjectStore<WeakReference<VisualElement>> m_ManagedOwners = new();
 
-    int m_HighMark;
+    // Last allocated index in the store (0 mean index 0 is valid aka a node was allocated)
+    int m_HighMark = -1;
 
     internal static LayoutManager GetManager(int index)
         => (uint) index < s_Managers.Count ? s_Managers[index] : null;
@@ -233,15 +234,16 @@ internal class LayoutManager : IDisposable
 
         unsafe
         {
+            // if m_HighMark == 0, then a single node was allocated and we need to dispose it
             for (var i = 0; i <= m_HighMark; i++)
             {
-                ref var data = ref ((LayoutNodeData*) m_Nodes.GetComponentDataPtr(i, (int)LayoutNodeDataType.Node))[0];
+                var data = (LayoutNodeData*) m_Nodes.GetComponentDataPtr(i, (int)LayoutNodeDataType.Node);
 
-                if (!data.Children.IsCreated)
+                if (!data->Children.IsCreated)
                     continue;
 
-                data.Children.Dispose();
-                data.Children = default;
+                data->Children.Dispose();
+                data->Children = new();
             }
         }
 
@@ -293,7 +295,7 @@ internal class LayoutManager : IDisposable
         TryFreeNodes();
 
         var handle = m_Nodes.Allocate(
-            new LayoutNodeData { Config = configHandle },
+            new LayoutNodeData { Config = configHandle , Children= new() },
             LayoutStyleData.Default,
             LayoutComputedData.Default,
             LayoutCacheData.Default,
@@ -306,8 +308,7 @@ internal class LayoutManager : IDisposable
 
         var node = new LayoutNode(GetAccess(), handle);
 
-        node.InitializeStyle();
-
+        Debug.Assert(!GetAccess().GetNodeData(handle).Children.IsCreated, "memory is not initialized" );
         return node;
     }
 
@@ -349,7 +350,7 @@ internal class LayoutManager : IDisposable
         if (data.Children.IsCreated)
         {
             data.Children.Dispose();
-            data.Children = default;
+            data.Children = new();
         }
 
         // Defer the shared resource free until later.

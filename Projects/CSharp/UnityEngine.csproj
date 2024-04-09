@@ -1130,6 +1130,9 @@
     <Compile Include="..\..\Modules\Properties\Runtime\Reflection\Internal\ReflectedPropertyBagProvider.cs">
       <Link>Modules\Properties\Runtime\Reflection\Internal\ReflectedPropertyBagProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Reflection\Internal\ReflectionUtilities.cs">
+      <Link>Modules\Properties\Runtime\Reflection\Internal\ReflectionUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Properties\Runtime\Utility\TypeConversion.cs">
       <Link>Modules\Properties\Runtime\Utility\TypeConversion.cs</Link>
     </Compile>
