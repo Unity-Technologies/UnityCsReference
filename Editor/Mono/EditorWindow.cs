@@ -48,6 +48,7 @@ namespace UnityEditor
         internal Rect m_Pos = new Rect(0, 0, 320, 550);
 
         [SerializeField]
+        [HideInInspector]
         internal DataModeController m_SerializedDataModeController;
         public IDataModeController dataModeController => GetDataModeController_Internal(); // For each editor window.
         internal DataModeController GetDataModeController_Internal()  // For HostView to use internally.

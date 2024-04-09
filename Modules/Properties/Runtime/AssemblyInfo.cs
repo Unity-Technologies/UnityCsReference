@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.PropertiesModule")]
 
 [assembly: InternalsVisibleTo("Unity.Properties.CodeGen.IntegrationTests")]
+[assembly: InternalsVisibleTo("PropertyBags.GenerationTests")]
 [assembly: InternalsVisibleTo("Unity.Properties.Reflection.Tests")]
 [assembly: InternalsVisibleTo("Unity.Properties.Tests")]
 

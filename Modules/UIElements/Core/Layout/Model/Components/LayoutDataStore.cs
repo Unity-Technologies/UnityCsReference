@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections;
@@ -111,6 +111,7 @@ unsafe partial struct LayoutDataStore : IDisposable
                     m_Chunks[i] = new Chunk
                     {
                         Buffer = (byte*)UnsafeUtility.Malloc(k_ChunkSize, 4, Allocator)
+                        // memory is cleared when we call Allocate with some data
                     };
                 }
 
@@ -218,11 +219,6 @@ unsafe partial struct LayoutDataStore : IDisposable
         return m_Data->Components[componentIndex].GetComponentDataPtr(index);
     }
 
-    public LayoutHandle Allocate()
-    {
-        return Allocate(null, 0);
-    }
-
     LayoutHandle Allocate(byte** data, int count)
     {
         // Fetch the next available index. This is the element we are about to initialize.
@@ -244,8 +240,11 @@ unsafe partial struct LayoutDataStore : IDisposable
 
         m_Data->NextFreeIndex = nextIndex;
 
+        Debug.Assert(m_Data->ComponentCount == count, "All components must be initialized");
+        Debug.Assert(data != null);
         for (var i = 0; i < count; i++)
         {
+            Debug.Assert(data[i] != null);
             var ptr = m_Data->Components[i].GetComponentDataPtr(index);
             UnsafeUtility.MemCpy(ptr, data[i], m_Data->Components[i].Size);
         }

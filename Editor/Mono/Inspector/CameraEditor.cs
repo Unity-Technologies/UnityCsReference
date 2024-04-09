@@ -62,7 +62,7 @@ namespace UnityEditor
             public static readonly GUIContent deferredMSAAWarning = EditorGUIUtility.TrTextContent("The target texture is using MSAA. Note that this will not affect MSAA behaviour of this camera. MSAA rendering for cameras is configured through the 'MSAA' camera setting and related project settings. The target texture will always contain resolved pixel data.");
             public static readonly GUIContent dynamicResolutionTimingWarning = EditorGUIUtility.TrTextContent("It is recommended to enable Frame Timing Statistics under Rendering Player Settings when using dynamic resolution cameras.");
 
-            public static readonly GUIStyle invisibleButton = "InvisibleButton";
+            public static GUIStyle invisibleButton;
 
             public const string k_CameraEditorUxmlPath = "UXML/InspectorWindow/CameraEditor.uxml";
 
@@ -773,6 +773,7 @@ namespace UnityEditor
                         rowRect.xMax = minusRect.x;
                         GUI.Label(rowRect, string.Format("{0}: {1} ({2})", ce, cb.name, EditorUtility.FormatBytes(cb.sizeInBytes)), EditorStyles.miniLabel);
                         // and a button to remove it
+                        Styles.invisibleButton ??= new GUIStyle("InvisibleButton");
                         if (GUI.Button(minusRect, Styles.iconRemove, Styles.invisibleButton))
                         {
                             camera.RemoveCommandBuffer(ce, cb);

@@ -281,6 +281,8 @@ namespace UnityEditor.UIElements
 
             m_ChildField?.Unbind();
             m_ChildField = null;
+            m_CustomPropertyGUI?.Unbind();
+            m_CustomPropertyGUI = null;
             m_DecoratorDrawersContainer = null;
 
             Clear();
@@ -301,6 +303,7 @@ namespace UnityEditor.UIElements
                 {
                     handler.propertyDrawer.m_PreferredLabel = label ?? serializedProperty.localizedDisplayName;
                     customPropertyGUI = handler.propertyDrawer.CreatePropertyGUI(m_SerializedProperty);
+                    m_CustomPropertyGUI = customPropertyGUI;
 
                     if (customPropertyGUI == null)
                     {
@@ -329,7 +332,8 @@ namespace UnityEditor.UIElements
 
             if (m_SerializedProperty.propertyType == SerializedPropertyType.ManagedReference)
             {
-                BindingExtensions.TrackPropertyValue(m_ChildField, m_SerializedProperty,
+                var fieldToBind = m_ChildField == null ? m_CustomPropertyGUI : m_ChildField;
+                BindingExtensions.TrackPropertyValue(fieldToBind, m_SerializedProperty,
                     (e) => this.Bind(m_SerializedProperty.serializedObject));
             }
         }
@@ -552,6 +556,7 @@ namespace UnityEditor.UIElements
         /// stores the child field if there is only a single child. Used for updating bindings when this field is rebound.
         /// </summary>
         private VisualElement m_ChildField;
+        private VisualElement m_CustomPropertyGUI;
 
         private VisualElement m_imguiChildField;
         private VisualElement m_ChildrenContainer;

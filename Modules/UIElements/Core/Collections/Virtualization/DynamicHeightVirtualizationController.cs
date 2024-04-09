@@ -495,7 +495,7 @@ namespace UnityEngine.UIElements
 
             for (var i = firstVisibleIndex; i < itemsCount; i++)
             {
-                if (contentOffset >= viewportMaxOffset)
+                if (contentOffset > viewportMaxOffset || (contentOffset == viewportMaxOffset && !m_StickToBottom))
                     break;
 
                 contentOffset += GetExpectedItemHeight(i);
@@ -538,7 +538,7 @@ namespace UnityEngine.UIElements
             // Change the visibility of items under the current content to fill the viewport below.
             for (var i = firstVisibleIndex; i < itemsCount; i++)
             {
-                if (contentOffset >= viewportMaxOffset)
+                if (contentOffset > viewportMaxOffset || (contentOffset == viewportMaxOffset && !m_StickToBottom))
                     break;
 
                 contentOffset += GetExpectedItemHeight(i);

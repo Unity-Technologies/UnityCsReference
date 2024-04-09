@@ -61,12 +61,20 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     /// <summary>
     /// Gets or sets the dirty flag for this node. Used when calculating layout.
     /// </summary>
-    public ref bool IsDirty => ref m_Access.GetNodeData(m_Handle).IsDirty;
+    public bool IsDirty
+    {
+        get => m_Access.GetNodeData(m_Handle).IsDirty;
+        set => m_Access.GetNodeData(m_Handle).IsDirty = value;
+    }
 
     /// <summary>
     /// Gets or sets the new layout flag for this node. Used when calculating layout.
     /// </summary>
-    public ref bool HasNewLayout => ref m_Access.GetNodeData(m_Handle).HasNewLayout;
+    public bool HasNewLayout
+    {
+        get => m_Access.GetNodeData(m_Handle).HasNewLayout;
+        set => m_Access.GetNodeData(m_Handle).HasNewLayout = value;
+    }
 
     /// <summary>
     /// Returns <see langword="true"/> if a custom measurement method is defined.
@@ -147,21 +155,8 @@ partial struct LayoutNode : IEquatable<LayoutNode>
         HasNewLayout = false;
     }
 
-    /// <summary>
-    /// Initialize the style based on the config.
-    /// </summary>
-    public void InitializeStyle()
-    {
-        if (!Config.IsUndefined && Config.UseWebDefaults)
-        {
-            Style.FlexDirection = LayoutFlexDirection.Row;
-            Style.AlignContent = LayoutAlign.Stretch;
-        }
-    }
-
     public void CopyFromComputedStyle(ComputedStyle style)
     {
-        Flex = float.NaN;
         FlexGrow = style.flexGrow;
         FlexShrink = style.flexShrink;
         FlexBasis = style.flexBasis.ToLayoutValue();
@@ -284,8 +279,6 @@ partial struct LayoutNode : IEquatable<LayoutNode>
         StyleBorders = LayoutStyleBorderData.Default;
         StyleMargins = LayoutStyleMarginData.Default;
         StyleDimensions = LayoutStyleDimensionData.Default;
-
-        InitializeStyle();
     }
 
     public bool Equals(LayoutNode other)

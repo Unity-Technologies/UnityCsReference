@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 ﻿using System;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -123,23 +124,54 @@ namespace UnityEditor.UIElements
                     marginRight = 0
                 }
             };
+            m_ObjectField.SelectorClosed += (obj, canceled) =>
+            {
+                if (canceled)
+                    return; // User pressed the Escape Key
+
+                // Delay the change call to avoid calling DestroyImmediate from the ObjectSelector.
+                EditorApplication.delayCall += () => ChangeObject(obj);
+            };
             m_ObjectField.RegisterValueChangedCallback(evt =>
             {
-                if (EditorUtility.DisplayDialog(title, message, "Confirm", "Cancel"))
-                    value = evt.newValue;
-                else
-                    m_ObjectField.SetValueWithoutNotify(value);
+                if (!ObjectSelector.isVisible)
+                {
+                   // If the Object Selector is NOT visible that means that the user performed a Drag&Drop into the field with a valid asset.
+                    if (ChangeObject(evt.newValue))
+                        return;
+                }
 
-                if (EditorWindow.HasOpenInstances<ObjectSelector>())
-                    ObjectSelector.get.Cancel();
+                // The UI with the actual backend value might be out of sync as the ObjectSelector or the Drag&Drop might
+                // have changed the display value. Keep them in sync.
+                m_ObjectField.SetValueWithoutNotify(value);
             });
             Add(m_ObjectField);
+        }
+
+        private static StringBuilder s_MessageBuilder = new StringBuilder();
+
+        private bool ChangeObject(Object newValue)
+        {
+            if (value != newValue)
+            {
+                s_MessageBuilder.Clear();
+                s_MessageBuilder.AppendLine(message);
+                s_MessageBuilder.AppendLine();
+                s_MessageBuilder.AppendLine($"Current Value: {(value ? value.name : "None")}.");
+                s_MessageBuilder.AppendLine($"New Value: {(newValue ? newValue.name : "None")}.");
+                if (EditorUtility.DisplayDialog(title, s_MessageBuilder.ToString(), "Confirm", "Cancel"))
+                {
+                    value = newValue;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public override void SetValueWithoutNotify(Object newValue)
         {
             base.SetValueWithoutNotify(newValue);
-
             m_ObjectField.SetValueWithoutNotify(newValue);
         }
     }

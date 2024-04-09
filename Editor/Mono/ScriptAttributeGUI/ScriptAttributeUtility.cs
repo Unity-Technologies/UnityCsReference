@@ -585,8 +585,7 @@ namespace UnityEditor
                     handler.HandleAttribute(property, attributes[i], field, propertyType);
             }
 
-            // Field has no CustomPropertyDrawer attribute with matching drawer so look for default drawer for field type
-            if (!handler.hasPropertyDrawer && propertyType != null)
+            if (propertyType != null)
                 handler.HandleDrawnType(property, propertyType, propertyType, field, null);
 
             if (handler.empty)
