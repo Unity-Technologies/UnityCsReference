@@ -88,6 +88,7 @@ namespace UnityEditor
             m_Tracker.dataMode = GetDataModeController_Internal().dataMode;
 
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             Selection.selectionChanged += OnSelectionChanged;
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
         }
@@ -105,6 +106,15 @@ namespace UnityEditor
             // so we don't rebuild it. When removing the CanEditMultipleObjects, the refresh sees that the editor was the custom inspector
             // but its instance is no longer valid, so it rebuilds the inspector.
             if (EditorsForMultiEditingChanged())
+                tracker.ForceRebuild();
+        }
+
+        void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            // Case UUM-64580: unable to interact with the inspector after exiting play mode.
+            // Somehow the inspector is still showing the last selected object, but the tracker does not respond anymore.
+            // Forcing a rebuild of the tracker after exiting play mode ensures that it is put back in a valid state.
+            if (state == PlayModeStateChange.EnteredEditMode)
                 tracker.ForceRebuild();
         }
 
@@ -176,6 +186,7 @@ namespace UnityEditor
             m_LockTracker?.lockStateChanged.RemoveListener(LockStateChanged);
 
             EditorApplication.projectWasLoaded -= OnProjectWasLoaded;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             Selection.selectionChanged -= OnSelectionChanged;
             AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
         }
