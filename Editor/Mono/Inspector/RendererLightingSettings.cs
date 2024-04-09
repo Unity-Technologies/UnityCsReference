@@ -323,9 +323,6 @@ namespace UnityEditor
                         ShowAtlasGUI(m_Renderers[0].GetInstanceID(), true);
                         ShowRealtimeLMGUI(m_Renderers[0]);
 
-                        if (Lightmapping.HasZeroAreaMesh(m_Renderers[0]))
-                            EditorGUILayout.HelpBox(Styles.zeroAreaPackingMesh.text, MessageType.Warning);
-
                         DisplayMeshWarning();
 
                         if (showEnlightenSettings)
@@ -814,14 +811,6 @@ namespace UnityEditor
             {
                 EditorGUILayout.HelpBox(Styles.noNormalsNoLightmapping.text, MessageType.Warning);
                 return;
-            }
-
-            if (showEnlightenSettings)
-            {
-                if (Lightmapping.HasZeroAreaMesh(m_Renderers[0]))
-                {
-                    EditorGUILayout.HelpBox(Styles.zeroAreaPackingMesh.text, MessageType.Warning);
-                }
             }
         }
 
