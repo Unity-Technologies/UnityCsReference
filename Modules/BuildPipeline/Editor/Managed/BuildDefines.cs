@@ -6,6 +6,8 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
+using UnityEditor.Build.Profile;
+using System;
 
 namespace UnityEditor.Build
 {
@@ -25,6 +27,19 @@ namespace UnityEditor.Build
             var array = new string[hashSet.Count];
             hashSet.CopyTo(array);
             return array;
+        }
+
+        [RequiredByNativeCode]
+        public static string[] GetBuildProfileScriptDefines()
+        {
+            if (!EditorUserBuildSettings.isBuildProfileAvailable)
+                return EditorUserBuildSettings.GetActiveProfileYamlScriptingDefines();
+
+            if (BuildProfileContext.instance.activeProfile == null)
+                return Array.Empty<string>();
+
+            var profile = BuildProfileContext.instance.activeProfile;
+            return profile.scriptingDefines;
         }
     }
 }

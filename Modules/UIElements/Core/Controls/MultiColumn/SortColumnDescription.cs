@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Properties;
 using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
@@ -26,8 +27,12 @@ namespace UnityEngine.UIElements
     /// This represents a description on what column to sort and in which order.
     /// </summary>
     [Serializable, UxmlObject]
-    public class SortColumnDescription
+    public class SortColumnDescription : INotifyBindablePropertyChanged
     {
+        static readonly BindingId columnNameProperty = nameof(columnName);
+        static readonly BindingId columnIndexProperty = nameof(columnIndex);
+        static readonly BindingId directionProperty = nameof(direction);
+
         [ExcludeFromDocs, Serializable]
         public class UxmlSerializedData : UIElements.UxmlSerializedData
         {
@@ -95,8 +100,14 @@ namespace UnityEngine.UIElements
         SortDirection m_SortDirection;
 
         /// <summary>
+        /// Called when a property has changed.
+        /// </summary>
+        public event EventHandler<BindablePropertyChangedEventArgs> propertyChanged;
+
+        /// <summary>
         /// The name of the column.
         /// </summary>
+        [CreateProperty]
         public string columnName
         {
             get => m_ColumnName;
@@ -106,12 +117,14 @@ namespace UnityEngine.UIElements
                     return;
                 m_ColumnName = value;
                 changed?.Invoke(this);
+                NotifyPropertyChanged(columnNameProperty);
             }
         }
 
         /// <summary>
         /// The index of the column to be used to find the column only if the <see cref="SortColumnDescription.columnName">columnName</see> isn't set.
         /// </summary>
+        [CreateProperty]
         public int columnIndex
         {
             get => m_ColumnIndex;
@@ -121,6 +134,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_ColumnIndex = value;
                 changed?.Invoke(this);
+                NotifyPropertyChanged(columnIndexProperty);
             }
         }
 
@@ -132,6 +146,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The sort direction.
         /// </summary>
+        [CreateProperty]
         public SortDirection direction
         {
             get => m_SortDirection;
@@ -141,6 +156,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_SortDirection = value;
                 changed?.Invoke(this);
+                NotifyPropertyChanged(directionProperty);
             }
         }
 
@@ -176,6 +192,11 @@ namespace UnityEngine.UIElements
         {
             this.columnName = columnName;
             this.direction = direction;
+        }
+
+        void NotifyPropertyChanged(in BindingId property)
+        {
+            propertyChanged?.Invoke(this, new BindablePropertyChangedEventArgs(property));
         }
     }
 }

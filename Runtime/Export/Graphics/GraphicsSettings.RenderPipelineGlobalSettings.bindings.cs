@@ -5,6 +5,7 @@
 using System;
 using UnityEngine.Bindings;
 using UnityEngine.Events;
+using UnityEngine.Scripting;
 
 namespace UnityEngine.Rendering
 {
@@ -156,6 +157,7 @@ namespace UnityEngine.Rendering
         }
 
         [NativeName("SetAllRenderPipelineSettingsDirty")] internal static extern void Internal_SetAllRenderPipelineSettingsDirty();
+        [RequiredByNativeCode] private static string GetCurrentRenderPipelineTypeFullName() => currentRenderPipeline != null ? currentRenderPipeline.pipelineTypeFullName : string.Empty;
 
     }
 }

@@ -619,11 +619,13 @@ namespace UnityEngine.LightTransport
                 // Read back from GPU memory into CPU memory.
                 using var shInputBuffer = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
                 using var shOutputBuffer = new NativeArray<SphericalHarmonicsL2>(probeCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                EventID eventId = context.ReadBuffer(shIn, shInputBuffer);
+                EventID eventId = context.CreateEvent();
+                context.ReadBuffer(shIn, shInputBuffer, eventId);
 				bool flushResult = context.Flush();
                 Debug.Assert(flushResult, "Failed to flush context.");
                 bool waitResult = context.Wait(eventId);
                 Debug.Assert(waitResult, "Failed to read SH from context.");
+                context.DestroyEvent(eventId);
 
                 // Currently windowing is done on CPU since the algorithm is not GPU friendly.
                 // Since we aren't attempting to port this to GPU, we are using the jobified CPU version.
@@ -636,9 +638,11 @@ namespace UnityEngine.LightTransport
                 jobHandle.Complete();
 
                 // Write back to GPU.
-                eventId = context.WriteBuffer(shOut, shOutputBuffer);
+                eventId = context.CreateEvent();
+                context.WriteBuffer(shOut, shOutputBuffer, eventId);
                 waitResult = context.Wait(eventId);
                 Debug.Assert(waitResult, "Failed to write SH to context.");
+                context.DestroyEvent(eventId);
                 return true;
             }
 

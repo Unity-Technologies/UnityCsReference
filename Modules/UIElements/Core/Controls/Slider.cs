@@ -165,7 +165,12 @@ namespace UnityEngine.UIElements
 
         internal override float SliderNormalizeValue(float currentValue, float lowerValue, float higherValue)
         {
-            return (currentValue - lowerValue) / (higherValue - lowerValue);
+            var range = higherValue - lowerValue;
+
+            // Avoid divide by zero
+            if (Mathf.Approximately(range, 0.0f))
+                return 1.0f;
+            return (currentValue - lowerValue) / range;
         }
 
         internal override float SliderRange()

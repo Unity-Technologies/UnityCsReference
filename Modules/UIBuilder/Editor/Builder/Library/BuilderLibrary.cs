@@ -32,25 +32,42 @@ namespace Unity.UI.Builder
 
         const string k_UssClassName = "unity-builder-library";
         const string k_ContentContainerName = "content";
+        const string k_SearchFieldName = "search-field";
+        const string k_NoResultsName = "no-results-label";
 
         readonly BuilderPaneWindow m_PaneWindow;
         readonly VisualElement m_DocumentElement;
         readonly BuilderSelection m_Selection;
         readonly BuilderLibraryDragger m_Dragger;
         readonly BuilderTooltipPreview m_TooltipPreview;
+        readonly TextField m_SearchField;
 
         readonly ToggleButtonGroup m_HeaderButtonStrip;
         readonly VisualElement m_LibraryContentContainer;
+        readonly VisualElement m_NoResultsLabel;
 
         BuilderLibraryTreeView m_ProjectTreeView;
         BuilderLibraryPlainView m_ControlsPlainView;
         BuilderLibraryTreeView m_ControlsTreeView;
+        BuilderLibraryView currentView
+        {
+            get
+            {
+                if (m_ActiveTab == BuilderLibraryTab.Standard && m_ViewMode == LibraryViewMode.TreeView)
+                    return controlsTreeView;
+                if (m_ActiveTab == BuilderLibraryTab.Standard && m_ViewMode == LibraryViewMode.IconTile)
+                    return controlsPlainView;
+                return projectTreeView;
+            }
+        }
 
         bool m_EditorExtensionMode;
 
         [SerializeField] bool m_ShowPackageTemplates;
         [SerializeField] LibraryViewMode m_ViewMode = LibraryViewMode.IconTile;
         [SerializeField] BuilderLibraryTab m_ActiveTab = BuilderLibraryTab.Standard;
+
+        internal TextField searchField => m_SearchField;
 
         int defaultVisualElementType => EditorPrefs.GetInt(BuilderConstants.LibraryDefaultVisualElementType, (int)DefaultVisualElementType.Styled);
 
@@ -81,6 +98,12 @@ namespace Unity.UI.Builder
             m_LibraryContentContainer = this.Q<VisualElement>(k_ContentContainerName);
 
             m_HeaderButtonStrip = this.Q<ToggleButtonGroup>();
+
+            m_SearchField = this.Q<TextField>(k_SearchFieldName);
+            m_SearchField.RegisterValueChangedCallback(e => UpdateSearchFilter(e.newValue));
+
+            m_NoResultsLabel = this.Q<Label>(k_NoResultsName);
+            m_NoResultsLabel.style.display = DisplayStyle.None;
 
             var libraryItems = new[] { BuilderConstants.LibraryStandardControlsTabName, BuilderConstants.LibraryProjectTabName };
             foreach (var item in libraryItems)
@@ -314,6 +337,8 @@ namespace Unity.UI.Builder
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+
+            UpdateSearchFilter(m_SearchField.value);
         }
 
         void SetActiveView(BuilderLibraryView builderLibraryView)
@@ -321,6 +346,12 @@ namespace Unity.UI.Builder
             m_LibraryContentContainer.Add(builderLibraryView);
             builderLibraryView.Refresh();
             primaryFocusable = builderLibraryView.primaryFocusable;
+        }
+
+        void UpdateSearchFilter(string value)
+        {
+            currentView.FilterView(value);
+            m_NoResultsLabel.style.display = currentView.visibleItems.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         public void ResetCurrentlyLoadedUxmlStyles()

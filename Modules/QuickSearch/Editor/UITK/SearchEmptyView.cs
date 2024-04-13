@@ -13,7 +13,6 @@ namespace UnityEditor.Search
 {
     class SearchEmptyView : SearchElement, IResultView
     {
-        const string k_All = "all";
         public static readonly string ussClassName = "search-empty-view";
         public static readonly string headerClassName = ussClassName.WithUssElement("header");
         public static readonly string noResultsRowContainerClassName = ussClassName.WithUssElement("no-results-row-container");
@@ -168,7 +167,7 @@ namespace UnityEditor.Search
         {
             m_QueriesContainer = new VisualElement();
             m_QueriesContainer.name = "QueryHelpersContainer";
-            if (GetActiveHelperProviders(viewState.queryBuilderEnabled).Count() > 1)
+            if (GetActiveHelperProviders(viewState.queryBuilderEnabled).Count() > 0)
             {
                 Add(CreateHeader(k_NarrowYourSearchLabel));
                 Add(CreateProviderHelpers(viewState.queryBuilderEnabled));
@@ -282,7 +281,7 @@ namespace UnityEditor.Search
         private IEnumerable<QueryHelperSearchGroup.QueryData> GetFilteredQueries(IEnumerable<QueryHelperSearchGroup.QueryData> queries, string currentAreaFilterId, bool blockMode)
         {
             var activeProviders = GetActiveHelperProviders(blockMode);
-            var isAll = k_All == currentAreaFilterId;
+            var isAll = GroupedSearchList.allGroupId == currentAreaFilterId;
             if (isAll)
             {
                 // Keep only query matching one of the active providers.
@@ -329,11 +328,12 @@ namespace UnityEditor.Search
             providersContainer.style.flexShrink = 0f;
 
             m_Areas = new QueryBuilder(string.Empty);
-            var allArea = new QueryAreaBlock(m_Areas, k_All, string.Empty);
+            var allArea = new QueryAreaBlock(m_Areas, GroupedSearchList.allGroupId, string.Empty);
             allArea.RegisterCallback<ClickEvent>(OnProviderClicked);
             m_Areas.AddBlock(allArea);
 
-            foreach (var p in GetActiveHelperProviders(blockMode))
+            var providers = SearchUtils.SortProvider(GetActiveHelperProviders(blockMode));
+            foreach (var p in providers)
             {
                 var providerBlock = new QueryAreaBlock(m_Areas, p);
                 providerBlock.RegisterCallback<ClickEvent>(OnProviderClicked);
@@ -411,17 +411,11 @@ namespace UnityEditor.Search
 
         private IEnumerable<SearchProvider> GetActiveHelperProviders(bool blockMode)
         {
-            var allProviders = m_ViewModel?.context?.GetProviders() ?? SearchService.GetActiveProviders();
-            var generalProviders = allProviders.Where(p => !p.isExplicitProvider);
-            var explicitProviders = allProviders.Where(p => p.isExplicitProvider);
-            var providers = generalProviders.Concat(explicitProviders);
-
+            var allProviders = m_ViewModel?.context?.GetProviders() ?? SearchService.Providers;
             if (!blockMode)
-                return providers;
-
-            var builtinSearches = SearchTemplateAttribute.GetAllQueries();
-            return providers.Where(p => p.id != "expression" && (p.fetchPropositions != null ||
-                    builtinSearches.Any(sq => sq.searchText.StartsWith(p.filterId) || sq.GetProviderIds().Any(pid => p.id == pid))));
+                return allProviders;
+            var filtered = allProviders.Where(p => p.id != "expression");
+            return filtered;
         }
 
         private static Label CreateHeader(in string text)

@@ -10,7 +10,7 @@ namespace UnityEditor.Overlays
     {
         public const string className = "unity-overlay-drop-zone";
         const string k_HoveredState = "unity-overlay-drop-zone--hovered";
-        const string k_HiddenState = "unity-overlay-drop-zone--hidden";
+        internal const string hiddenState = "unity-overlay-drop-zone--hidden"; // Used in tests.
 
         protected OverlayInsertIndicator insertIndicator { get; private set; }
         protected OverlayContainer originContainer { get; private set; }
@@ -76,13 +76,13 @@ namespace UnityEditor.Overlays
 
         protected void SetHidden(bool hidden)
         {
-            EnableInClassList(k_HiddenState, hidden);
+            EnableInClassList(hiddenState, hidden);
         }
 
         public virtual void Deactivate(Overlay draggedOverlay)
         {
             visible = false;
-            pickingMode = PickingMode.Ignore; 
+            pickingMode = PickingMode.Ignore;
         }
     }
 }

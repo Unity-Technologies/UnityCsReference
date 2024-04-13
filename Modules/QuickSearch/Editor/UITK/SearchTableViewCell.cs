@@ -198,8 +198,6 @@ namespace UnityEditor.Search
             if (getValueProperty == null)
                 throw new Exception($"Cannot fetch value for {m_BindedItem} using {m_SearchColumn}");
             var value = getValueProperty.GetValue(evt);
-            Debug.LogWarning($"{m_SearchColumn.path} > {m_BindedItem} > {m_ColumnInvokeArgs.value} > {value} >  {value?.GetType()}");
-
             if (SetValue(value) && evt is EventBase eb)
             {
                 eb.StopPropagation();

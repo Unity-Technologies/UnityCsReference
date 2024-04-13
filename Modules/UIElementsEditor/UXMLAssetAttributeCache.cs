@@ -39,13 +39,24 @@ namespace UnityEditor.UIElements
             m_Cache.Clear();
             m_CurrentTypeName = fullTypeName;
 
-            static void CacheEnumerable(IEnumerable<UxmlAttributeDescription> attributes, Dictionary<string, Type> cache)
+            static void CacheEnumerableTraits(IEnumerable<UxmlAttributeDescription> attributes, Dictionary<string, Type> cache)
             {
-                foreach (UxmlAttributeDescription description in attributes)
+                foreach (var description in attributes)
                 {
                     if (description != null && description is IUxmlAssetAttributeDescription assetAttributeDescription)
                     {
                         cache[description.name] = assetAttributeDescription.assetType;
+                    }
+                }
+            }
+
+            static void CacheEnumerableSerialization(IEnumerable<UxmlSerializedAttributeDescription> attributes, Dictionary<string, Type> cache)
+            {
+                foreach (var description in attributes)
+                {
+                    if (description.isUnityObject)
+                    {
+                        cache[description.name] = description.type;
                     }
                 }
             }
@@ -59,7 +70,7 @@ namespace UnityEditor.UIElements
                     if (!UxmlCodeDependencies.instance.HasAnyAssetAttributes(factory))
                         continue;
 
-                    CacheEnumerable(factory.uxmlAttributesDescription, m_Cache);
+                    CacheEnumerableTraits(factory.uxmlAttributesDescription, m_Cache);
                 }
             }
             #pragma warning restore CS0618 // Type or member is obsolete
@@ -71,7 +82,16 @@ namespace UnityEditor.UIElements
                     if (!UxmlCodeDependencies.instance.HasAnyAssetAttributes(factory))
                         continue;
 
-                    CacheEnumerable(factory.uxmlAttributesDescription, m_Cache);
+                    CacheEnumerableTraits(factory.uxmlAttributesDescription, m_Cache);
+                }
+            }
+            // Uxml Serialization
+            else
+            {
+                var description = UxmlSerializedDataRegistry.GetDescription(m_CurrentTypeName);
+                if (description != null && UxmlCodeDependencies.instance.HasAnyAssetAttributes(description))
+                {
+                    CacheEnumerableSerialization(description.serializedAttributes, m_Cache);
                 }
             }
         }

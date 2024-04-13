@@ -21,6 +21,9 @@ namespace UnityEditor
         // use of this property.
         string TargetName { get; }
 
+        // This property is the unique identifier for the BuildTarget. This should be used for any access identification and serilization.
+        GUID Guid { get; }
+
         // This property is used as a suffix for il2cpp profiles. Should a more suited place for it exist, move it
         string RootSystemType { get; }
 

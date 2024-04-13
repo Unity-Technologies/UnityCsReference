@@ -11,7 +11,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.LightTransport
 {
     [StructLayout(LayoutKind.Sequential)]
-    public class RadeonRaysContext : IDeviceContext, IDisposable
+    public class RadeonRaysContext : IDeviceContext
     {
         internal IntPtr m_Ptr;
         internal bool m_OwnsPtr;
@@ -64,26 +64,48 @@ namespace UnityEngine.LightTransport
         public extern void DestroyBuffer(BufferID id);
 
         [NativeMethod(IsThreadSafe = true)]
-        private unsafe extern EventID EnqueueBufferRead(BufferID id, void* result, UInt64 length, UInt64 offset);
+        private unsafe extern void EnqueueBufferRead(BufferID id, void* result, UInt64 length, UInt64 offset, EventID* eventId);
 
-        public unsafe EventID ReadBuffer<T>(BufferSlice<T> src, NativeArray<T> dst)
+        public unsafe void ReadBuffer<T>(BufferSlice<T> src, NativeArray<T> dst)
             where T: struct
         {
             void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(dst);
             UInt64 sizeofElem = (UInt64)UnsafeUtility.SizeOf<T>();
-            return EnqueueBufferRead(src.Id, ptr, (UInt64)dst.Length * sizeofElem, src.Offset * sizeofElem);
+            EnqueueBufferRead(src.Id, ptr, (UInt64)dst.Length * sizeofElem, src.Offset * sizeofElem, null);
+        }
+
+        public unsafe void ReadBuffer<T>(BufferSlice<T> src, NativeArray<T> dst, EventID id)
+            where T : struct
+        {
+            void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(dst);
+            UInt64 sizeofElem = (UInt64)UnsafeUtility.SizeOf<T>();
+            EnqueueBufferRead(src.Id, ptr, (UInt64)dst.Length * sizeofElem, src.Offset * sizeofElem, &id);
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        private extern unsafe EventID EnqueueBufferWrite(BufferID id, void* result, UInt64 length, UInt64 offset);
+        private extern unsafe void EnqueueBufferWrite(BufferID id, void* result, UInt64 length, UInt64 offset, EventID* eventId);
 
-        public unsafe EventID WriteBuffer<T>(BufferSlice<T> dst, NativeArray<T> src)
+        public unsafe void WriteBuffer<T>(BufferSlice<T> dst, NativeArray<T> src)
             where T: struct
         {
             void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(src);
             UInt64 sizeofElem = (UInt64)UnsafeUtility.SizeOf<T>();
-            return EnqueueBufferWrite(dst.Id, ptr, (UInt64)src.Length * sizeofElem, dst.Offset * sizeofElem);
+            EnqueueBufferWrite(dst.Id, ptr, (UInt64)src.Length * sizeofElem, dst.Offset * sizeofElem, null);
         }
+
+        public unsafe void WriteBuffer<T>(BufferSlice<T> dst, NativeArray<T> src, EventID id)
+            where T : struct
+        {
+            void* ptr = NativeArrayUnsafeUtility.GetUnsafePtr(src);
+            UInt64 sizeofElem = (UInt64)UnsafeUtility.SizeOf<T>();
+            EnqueueBufferWrite(dst.Id, ptr, (UInt64)src.Length * sizeofElem, dst.Offset * sizeofElem, &id);
+        }
+
+        [NativeMethod(IsThreadSafe = true, Name = "CreateEventInternal")]
+        public extern EventID CreateEvent();
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern void DestroyEvent(EventID id);
 
         [NativeMethod(IsThreadSafe = true)]
         public extern bool IsCompleted(EventID id);

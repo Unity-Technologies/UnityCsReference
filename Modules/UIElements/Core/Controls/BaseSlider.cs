@@ -37,14 +37,35 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId showInputFieldProperty = nameof(showInputField);
         internal static readonly BindingId directionProperty = nameof(direction);
         internal static readonly BindingId invertedProperty = nameof(inverted);
+        internal static readonly BindingId fillProperty = nameof(fill);
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new abstract class UxmlSerializedData : BaseField<TValueType>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] bool fill;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fill_UxmlAttributeFlags;
+            #pragma warning restore 649
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (BaseSlider<TValueType>)obj;
+                if (ShouldWriteAttributeValue(fill_UxmlAttributeFlags))
+                    e.fill = fill;
+            }
+        }
 
         internal VisualElement dragContainer { get; private set; }
         internal VisualElement dragElement { get; private set; }
         internal VisualElement trackElement { get; private set; }
         internal VisualElement dragBorderElement { get; private set; }
         internal TextField inputTextField { get; private set; }
+        internal VisualElement fillElement { get; private set; }
 
         bool m_IsEditingTextField;
+        bool m_Fill;
 
         [SerializeField, DontCreateProperty]
         private TValueType m_LowValue;
@@ -174,6 +195,33 @@ namespace UnityEngine.UIElements
                     UpdateTextFieldVisibility();
                     NotifyPropertyChanged(showInputFieldProperty);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Enables fill to set the color and shape of a slider.
+        /// </summary>
+        [CreateProperty]
+        public bool fill
+        {
+            get => m_Fill;
+            set
+            {
+                if (m_Fill == value)
+                    return;
+                m_Fill = value;
+
+                if (value)
+                {
+                    UpdateDragElementPosition();
+                }
+                else if (fillElement != null)
+                {
+                    fillElement.RemoveFromHierarchy();
+                    fillElement = null;
+                }
+
+                NotifyPropertyChanged(fillProperty);
             }
         }
 
@@ -347,6 +395,10 @@ namespace UnityEngine.UIElements
         /// USS class name of the text field element in elements of this type.
         /// </summary>
         public static readonly string textFieldClassName = ussClassName + "__text-field";
+        /// <summary>
+        /// USS class name of fill element in elements of this type.
+        /// </summary>
+        public static readonly string fillUssClassName = ussClassName + "__fill";
 
         internal BaseSlider(string label, TValueType start, TValueType end, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
             : base(label, null)
@@ -361,20 +413,20 @@ namespace UnityEngine.UIElements
             highValue = end;
             pickingMode = PickingMode.Ignore;
 
-            dragContainer = new VisualElement() { name = "unity-drag-container" };
+            dragContainer = new VisualElement { name = "unity-drag-container" };
             dragContainer.AddToClassList(dragContainerUssClassName);
             dragContainer.RegisterCallback<GeometryChangedEvent>(UpdateDragElementPosition);
             visualInput.Add(dragContainer);
 
-            trackElement = new VisualElement() { name = "unity-tracker", usageHints = UsageHints.DynamicColor };
+            trackElement = new VisualElement { name = "unity-tracker", usageHints = UsageHints.DynamicColor };
             trackElement.AddToClassList(trackerUssClassName);
             dragContainer.Add(trackElement);
 
-            dragBorderElement = new VisualElement() { name = "unity-dragger-border" };
+            dragBorderElement = new VisualElement { name = "unity-dragger-border" };
             dragBorderElement.AddToClassList(draggerBorderUssClassName);
             dragContainer.Add(dragBorderElement);
 
-            dragElement = new VisualElement() { name = "unity-dragger", usageHints = UsageHints.DynamicTransform };
+            dragElement = new VisualElement { name = "unity-dragger", usageHints = UsageHints.DynamicTransform };
             dragElement.RegisterCallback<GeometryChangedEvent>(UpdateDragElementPosition);
             dragElement.AddToClassList(draggerUssClassName);
             dragContainer.Add(dragElement);
@@ -720,6 +772,37 @@ namespace UnityEngine.UIElements
                     dragElement.transform.position = newPos;
                     dragBorderElement.transform.position = newPos;
                 }
+            }
+
+            UpdateFill(normalizedPosition);
+        }
+
+        void UpdateFill(float normalizedValue)
+        {
+            if (!fill)
+                return;
+
+            if (fillElement == null)
+            {
+                fillElement = new VisualElement { name = "unity-fill", usageHints = UsageHints.DynamicColor };
+                fillElement.AddToClassList(fillUssClassName);
+                trackElement.Add(fillElement);
+            }
+
+            float inverseNormalizedValue = 1.0f - normalizedValue;
+            if (direction == SliderDirection.Vertical)
+            {
+                fillElement.style.right = 0;
+                fillElement.style.left = 0;
+                fillElement.style.bottom = 0;
+                fillElement.style.top = Length.Percent(inverseNormalizedValue * 100.0f);
+            }
+            else
+            {
+                fillElement.style.top = 0;
+                fillElement.style.bottom = 0;
+                fillElement.style.left = 0;
+                fillElement.style.right = Length.Percent(inverseNormalizedValue * 100.0f);
             }
         }
 

@@ -26,6 +26,7 @@ namespace UnityEditor.Build.Content
         internal bool m_SubtractiveUsed;
         internal bool m_HybridRendererPackageUsed;
         internal bool m_BuildForServer;
+        internal bool m_LODFadeCrossfade;
 
         public static BuildUsageTagGlobal operator|(BuildUsageTagGlobal x, BuildUsageTagGlobal y)
         {
@@ -41,6 +42,7 @@ namespace UnityEditor.Build.Content
             results.m_HybridRendererPackageUsed = x.m_HybridRendererPackageUsed | y.m_HybridRendererPackageUsed;
             results.m_BrgShaderStripModeMask = x.m_BrgShaderStripModeMask | y.m_BrgShaderStripModeMask;
             results.m_BuildForServer = x.m_BuildForServer | y.m_BuildForServer;
+            results.m_LODFadeCrossfade = x.m_LODFadeCrossfade | y.m_LODFadeCrossfade;
             return results;
         }
     }

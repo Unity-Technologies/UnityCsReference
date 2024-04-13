@@ -99,10 +99,13 @@ namespace UnityEngine.VFX
         TransformDir,
         TransformVector4,
 
-        Vector3sToMatrix,
-        Vector4sToMatrix,
-        MatrixToVector3s,
-        MatrixToVector4s,
+        // Construct/Split matrices
+        RowToMatrix,
+        ColumnToMatrix,
+        AxisToMatrix,
+        MatrixToRow,
+        MatrixToColumn,
+        MatrixToAxis,
 
         // Sampling and baking
         SampleCurve,

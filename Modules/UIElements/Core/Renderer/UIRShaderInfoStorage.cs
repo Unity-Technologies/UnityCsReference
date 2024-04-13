@@ -172,6 +172,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 name = "UIR Shader Info " + s_TextureCounter++,
                 hideFlags = HideFlags.HideAndDontSave,
+                filterMode = FilterMode.Point, // UUM-68128: Make sure to prevent any filtering and precision issues
             };
 
             if (copy)

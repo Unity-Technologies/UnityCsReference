@@ -34,6 +34,13 @@ namespace UnityEditor.Build.Profile
         public static readonly string openSceneList = L10n.Tr("Open Scene List");
         public static readonly string compilingMessage = L10n.Tr("Cannot build player while editor is importing assets or compiling scripts.");
         public static readonly string invalidVirtualTexturingSettingMessage = L10n.Tr("Cannot build player because Virtual Texturing is enabled, but the target platform or graphics API does not support Virtual Texturing. Go to Player Settings to resolve the incompatibility.");
+        public static readonly string scriptingDefines = L10n.Tr("Scripting Defines");
+        public static readonly string scriptingDefinesTooltip = L10n.Tr("Preprocessor defines passed to the C# script compiler");
+        public static readonly string scriptingDefinesModified = L10n.Tr("Build Profile Scripting Defines Have Been Modified");
+        public static readonly string scriptingDefinesModifiedBody = L10n.Tr("Do you want to apply changes now?");
+        public static readonly string scriptingDefinesWarningHelpbox = L10n.Tr("Additional scripting defines are specified in Player Settings.");
+        public static readonly string apply = L10n.Tr("Apply");
+        public static readonly string revert = L10n.Tr("Revert");
 
         // Platform Discovery Window
         public static readonly string platformDiscoveryTitle = L10n.Tr("Platform Browser");

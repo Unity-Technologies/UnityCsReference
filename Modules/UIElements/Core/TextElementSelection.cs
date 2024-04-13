@@ -135,7 +135,7 @@ namespace UnityEngine.UIElements
         }
 
         [CreateProperty]
-        private bool isSelectable
+        internal bool isSelectable
         {
             get => selection.isSelectable;
             set => selection.isSelectable = value;
@@ -223,7 +223,7 @@ namespace UnityEngine.UIElements
         }
 
         [CreateProperty]
-        private bool doubleClickSelectsWord
+        internal bool doubleClickSelectsWord
         {
             get => selection.doubleClickSelectsWord;
             set => selection.doubleClickSelectsWord = value;
@@ -244,7 +244,7 @@ namespace UnityEngine.UIElements
         }
 
         [CreateProperty]
-        private bool tripleClickSelectsLine
+        internal bool tripleClickSelectsLine
         {
             get => selection.tripleClickSelectsLine;
             set => selection.tripleClickSelectsLine = value;

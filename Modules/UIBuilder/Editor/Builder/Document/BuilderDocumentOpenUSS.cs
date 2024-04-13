@@ -17,7 +17,6 @@ namespace Unity.UI.Builder
         StyleSheet m_StyleSheet;
 
         // Used to restore in-memory StyleSheet asset if closing without saving.
-        [SerializeField]
         StyleSheet m_BackupStyleSheet;
 
         // This is for automatic style path fixing after a uss file name change.
@@ -164,7 +163,7 @@ namespace Unity.UI.Builder
             // This will only be null (not empty) if the UXML is invalid in some way.
             if (ussText == null)
                 return false;
-                
+
             return WriteUSSToFile(ussPath, ussText);
         }
 
@@ -177,12 +176,12 @@ namespace Unity.UI.Builder
 
             return BuilderAssetUtilities.WriteTextFileToDisk(ussPath, ussText);
         }
-        
+
         public int GetComplexSelectorsCount()
         {
             if (m_StyleSheet == null || m_StyleSheet.complexSelectors == null)
                 return 0;
-            
+
             var nbComplexSelectorsCount = 0;
             for (var complexSelectorIndex = 0;
                  complexSelectorIndex < m_StyleSheet.complexSelectors.Length;

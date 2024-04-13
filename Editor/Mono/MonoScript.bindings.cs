@@ -34,9 +34,21 @@ namespace UnityEditor
             return FromScriptedObject(scriptableObject);
         }
 
+        // Returns the MonoScript object containing the specified Type.
+        // Note we only store one type per MonoScript. Therefore, if the file contains multiple types, we will return null for the other types.
+        internal static MonoScript FromType(Type type)
+        {
+            if (type == null)
+                return null;
+            return FromTypeInternal(type.Name, type.Namespace, type.Assembly.GetName().Name);
+        }
+
         // Returns the MonoScript object used by the given scripted object
         [FreeFunction]
         internal static extern MonoScript FromScriptedObject(UnityEngine.Object obj);
+
+        [FreeFunction]
+        internal static extern MonoScript FromTypeInternal(string className, string nameSpace, string assemblyName);
 
         internal extern bool GetScriptTypeWasJustCreatedFromComponentMenu();
 

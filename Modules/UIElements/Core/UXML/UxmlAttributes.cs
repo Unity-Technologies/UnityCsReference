@@ -195,6 +195,19 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
+    /// Used to indicate the data binding path for an attribute, used by UI Builder.
+    /// </summary>
+    internal class UxmlAttributeBindingPathAttribute : Attribute
+    {
+        public string path { get; private set; }
+
+        public UxmlAttributeBindingPathAttribute(string bindingPath) 
+        {
+            path = bindingPath;
+        }
+    }
+
+    /// <summary>
     /// Provides information about the expected type when applied to a Type field or property that has the <see cref="UxmlAttributeAttribute"/> attribute.
     /// </summary>
     /// <remarks>

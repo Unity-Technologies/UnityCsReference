@@ -132,29 +132,10 @@ namespace UnityEditor.Build
             }
 
             var suffix = namedBuildTarget == NamedBuildTarget.Server ? " Server" : "";
-
-            switch (target)
-            {
-                case BuildTarget.StandaloneWindows:
-                case BuildTarget.StandaloneWindows64:
-                    return $"Windows{suffix}";
-                case BuildTarget.StandaloneOSX:
-                    // Deprecated
-#pragma warning disable 612, 618
-                case BuildTarget.StandaloneOSXIntel:
-                case BuildTarget.StandaloneOSXIntel64:
-#pragma warning restore 612, 618
-                    return $"macOS{suffix}";
-                    // Deprecated
-#pragma warning disable 612, 618
-                case BuildTarget.StandaloneLinux:
-                case BuildTarget.StandaloneLinuxUniversal:
-#pragma warning restore 612, 618
-                case BuildTarget.StandaloneLinux64:
-                    return $"Linux{suffix}";
-            }
-
-            return "Unsupported Target";
+#pragma warning disable CS0618 // Member is obsolete
+            string targetName = BuildTargetDiscovery.BuildPlatformDisplayName(target) + suffix;
+#pragma warning restore CS0618
+            return targetName.Length == 0 ? "Unsupported Target" : targetName;
         }
 
         public string GetModuleDisplayName(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)

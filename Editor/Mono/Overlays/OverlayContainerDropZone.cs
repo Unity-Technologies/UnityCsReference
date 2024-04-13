@@ -31,10 +31,16 @@ namespace UnityEditor.Overlays
             m_HideIfHovered = hideIfHovered;
         }
 
+        public override void Activate(Overlay draggedOverlay)
+        {
+            base.Activate(draggedOverlay);
+
+            SetHidden(false);
+        }
+
         protected override bool ShouldEnable(Overlay draggedOverlay)
         {
-            return (originContainer != m_Container || originSection != GetSection())
-                && !m_Container.HasVisibleOverlays(GetSection())
+            return !m_Container.HasVisibleOverlays(GetSection())
                 && !m_Container.ContainsOverlay(draggedOverlay, GetSection());
         }
 

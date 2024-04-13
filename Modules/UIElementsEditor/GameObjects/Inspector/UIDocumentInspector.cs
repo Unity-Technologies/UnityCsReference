@@ -17,11 +17,10 @@ namespace UnityEditor.UIElements.Inspector
         private const string k_StyleClassWithParentHidden = "unity-ui-document-inspector--with-parent--hidden";
         private const string k_StyleClassPanelMissing = "unity-ui-document-inspector--panel-missing--hidden";
 
-        private static StyleSheet k_DefaultStyleSheet = null;
+        private static StyleSheet s_DefaultStyleSheet;
+        private static VisualTreeAsset s_InspectorUxml;
 
         private VisualElement m_RootVisualElement;
-
-        private VisualTreeAsset m_InspectorUxml;
 
         private ObjectField m_PanelSettingsField;
         private ObjectField m_ParentField;
@@ -89,27 +88,20 @@ namespace UnityEditor.UIElements.Inspector
 
         public override VisualElement CreateInspectorGUI()
         {
-            if (m_RootVisualElement == null)
+            m_RootVisualElement = new VisualElement();
+
+            if (s_InspectorUxml == null)
             {
-                m_RootVisualElement = new VisualElement();
-            }
-            else
-            {
-                m_RootVisualElement.Clear();
+                s_InspectorUxml = EditorGUIUtility.Load(k_InspectorVisualTreeAssetPath) as VisualTreeAsset;
             }
 
-            if (m_InspectorUxml == null)
+            if (s_DefaultStyleSheet == null)
             {
-                m_InspectorUxml = EditorGUIUtility.Load(k_InspectorVisualTreeAssetPath) as VisualTreeAsset;
+                s_DefaultStyleSheet = EditorGUIUtility.Load(k_DefaultStyleSheetPath) as StyleSheet;
             }
+            m_RootVisualElement.styleSheets.Add(s_DefaultStyleSheet);
 
-            if (k_DefaultStyleSheet == null)
-            {
-                k_DefaultStyleSheet = EditorGUIUtility.Load(k_DefaultStyleSheetPath) as StyleSheet;
-            }
-            m_RootVisualElement.styleSheets.Add(k_DefaultStyleSheet);
-
-            m_InspectorUxml.CloneTree(m_RootVisualElement);
+            s_InspectorUxml.CloneTree(m_RootVisualElement);
             ConfigureFields();
             BindFields();
             UpdateValues();

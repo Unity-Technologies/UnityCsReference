@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -65,7 +65,6 @@ namespace Unity.UI.Builder
         readonly VisualElement m_ContentContainer;
         readonly List<LibraryPlainViewItem> m_DummyItems = new List<LibraryPlainViewItem>();
         readonly List<LibraryPlainViewItem> m_PlainViewItems = new List<LibraryPlainViewItem>();
-        readonly IEnumerable<TreeViewItem> m_Items;
 
         LibraryPlainViewItem m_SelectedItem;
 
@@ -74,7 +73,7 @@ namespace Unity.UI.Builder
 
         public override VisualElement primaryFocusable => m_ContentContainer;
 
-        public BuilderLibraryPlainView(IEnumerable<TreeViewItem> items)
+        public BuilderLibraryPlainView(IList<TreeViewItem> items)
         {
             var builderTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.LibraryUIPath + "/BuilderLibraryPlainView.uxml");
             builderTemplate.CloneTree(this);
@@ -214,7 +213,7 @@ namespace Unity.UI.Builder
                 evt.StopImmediatePropagation();
                 return;
             }
-            
+
             var libraryItem = GetLibraryTreeItem(evt.elementTarget);
 
             evt.menu.AppendAction(
@@ -224,5 +223,13 @@ namespace Unity.UI.Builder
         }
 
         public override void Refresh() {}
+
+        public override void FilterView(string value)
+        {
+            m_ContentContainer.Clear();
+            m_PlainViewItems.Clear();
+            m_VisibleItems = string.IsNullOrEmpty(value) ? m_Items : FilterTreeViewItems(m_Items, value);
+            FillView(m_VisibleItems);
+        }
     }
 }

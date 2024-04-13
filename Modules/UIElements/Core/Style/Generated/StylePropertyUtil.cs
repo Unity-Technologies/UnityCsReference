@@ -1057,6 +1057,18 @@ namespace UnityEngine.UIElements.StyleSheets
                         return true;
                     }
 
+                    if (string.Equals(value, "pre", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)WhiteSpace.Pre;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "pre-wrap", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)WhiteSpace.PreWrap;
+                        return true;
+                    }
+
                     break;
                 case StyleEnumType.Wrap:
                     if (string.Equals(value, "nowrap", StringComparison.OrdinalIgnoreCase))

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Unity.Properties;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -16,6 +17,7 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class PropertyField : VisualElement, IBindable
     {
+        static readonly BindingId labelProperty = nameof(label);
         private static readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
         internal static readonly string foldoutTitleBoundLabelProperty = "unity-foldout-bound-title";
         internal static readonly string decoratorDrawersContainerClassName = "unity-decorator-drawers-container";
@@ -100,8 +102,19 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Optionally overwrite the label of the generate property field. If no label is provided the string will be taken from the SerializedProperty.
         /// </summary>
-        public string label { get; set; }
+        [CreateProperty]
+        public string label
+        {
+            get => m_Label;
+            set
+            {
+                if (m_Label == value) return;
+                m_Label = value;
+                NotifyPropertyChanged(labelProperty);
+            }
+        }
 
+        string m_Label;
         SerializedObject m_SerializedObject;
         internal SerializedObject serializedObject => m_SerializedObject;
 
@@ -279,6 +292,8 @@ namespace UnityEditor.UIElements
 
             m_ChildField?.Unbind();
             m_ChildField = null;
+            m_CustomPropertyGUI?.Unbind();
+            m_CustomPropertyGUI = null;
             m_DecoratorDrawersContainer = null;
 
             Clear();
@@ -298,7 +313,11 @@ namespace UnityEditor.UIElements
                 if (handler.hasPropertyDrawer)
                 {
                     handler.propertyDrawer.m_PreferredLabel = label ?? serializedProperty.localizedDisplayName;
-                    customPropertyGUI = handler.propertyDrawer.CreatePropertyGUI(m_SerializedProperty);
+
+                    // UUM-12851: copy the property, as user code may iterate on it or leave it in a different state.
+                    customPropertyGUI = handler.propertyDrawer.CreatePropertyGUI(m_SerializedProperty.Copy());
+
+                    m_CustomPropertyGUI = customPropertyGUI;
 
                     if (customPropertyGUI == null)
                     {
@@ -327,7 +346,8 @@ namespace UnityEditor.UIElements
 
             if (m_SerializedProperty.propertyType == SerializedPropertyType.ManagedReference)
             {
-                BindingExtensions.TrackPropertyValue(m_ChildField, m_SerializedProperty,
+                var fieldToBind = m_ChildField == null ? m_CustomPropertyGUI : m_ChildField;
+                BindingExtensions.TrackPropertyValue(fieldToBind, m_SerializedProperty,
                     (e) => this.Bind(m_SerializedProperty.serializedObject));
             }
         }
@@ -550,6 +570,7 @@ namespace UnityEditor.UIElements
         /// stores the child field if there is only a single child. Used for updating bindings when this field is rebound.
         /// </summary>
         private VisualElement m_ChildField;
+        private VisualElement m_CustomPropertyGUI;
 
         private VisualElement m_imguiChildField;
         private VisualElement m_ChildrenContainer;
@@ -777,6 +798,7 @@ namespace UnityEditor.UIElements
             {
                 buttonGroup = factory();
                 buttonGroup.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
+                buttonGroup.AddToClassList(ToggleButtonGroup.ussClassName + "--fixed-size");
                 buttonGroup.RegisterValueChangedCallback(OnToggleGroupChanged);
             }
 

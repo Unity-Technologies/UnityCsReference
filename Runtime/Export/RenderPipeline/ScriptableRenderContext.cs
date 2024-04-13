@@ -340,7 +340,14 @@ namespace UnityEngine.Rendering
                 if (length > 0 && infos.projectionType == BatchCullingProjectionType.Unknown)
                 {
                     throw new UnityException($"ShadowCastersCullingInfos.perLightInfos[{i}].projectionType == {infos.projectionType}. "
-                        + $"The range however appears to be valid. splitRange.start ({range.start}) splitRange.length ({range.length})\n");
+                        + $"The range however appears to be valid. splitRange.start ({range.start}) splitRange.length ({range.length}).");
+                }
+
+                if ((infos.splitExclusionMask >> length) != 0)
+                {
+                    string exclusionSplitMaskBinStr = Convert.ToString(infos.splitExclusionMask, 2);
+                    throw new UnityException($"ShadowCastersCullingInfos.perLightInfos[{i}].splitExclusionMask == 0b{exclusionSplitMaskBinStr}. "
+                        + $"The highest bit set must be less than the split count. splitRange.start ({range.start}) splitRange.length ({range.length}).");
                 }
             }
         }

@@ -100,7 +100,10 @@ namespace UnityEditor
 
         static bool IsTypeCompatible(Type type)
         {
-            if (type == null || !(type.IsSubclassOf(typeof(MonoBehaviour)) || type.IsSubclassOf(typeof(ScriptableObject))))
+            if (type == null ||
+                !(type.IsSubclassOf(typeof(MonoBehaviour)) ||
+                type.IsSubclassOf(typeof(ScriptableObject)) ||
+                type.IsSubclassOf(typeof(PropertyDrawer))))
                 return false;
             return true;
         }

@@ -23,6 +23,7 @@ namespace UnityEditor
         ARM64 = 1 << 1,
 
         // x86
+        [Obsolete("X86 is no longer supported.")]
         X86 = 1 << 2,
 
         // x86_64
@@ -33,6 +34,7 @@ namespace UnityEditor
     }
 
     // Target devices.
+    [Obsolete("AndroidTargetDevices is deprecated since ChromeOS is no longer supported.")]
     public enum AndroidTargetDevices
     {
         // All devices. The Android aplication is allowed to run on all devices.
@@ -360,8 +362,8 @@ namespace UnityEditor
             // Gamepad support level for Android TV
             internal static extern AndroidGamepadSupportLevel androidGamepadSupportLevel { get; set; }
 
-            // Disable Chrome OS's default behaviour of converting mouse and touchpad input events into touchscreen input events.
-            public static extern bool chromeosInputEmulation { get; set; }
+            [Obsolete("ChromeOS is no longer supported.")]
+            public static bool chromeosInputEmulation { get; set; }
 
             // Returns Android banner list
             internal static extern AndroidBanner[] GetAndroidBanners();
@@ -418,7 +420,8 @@ namespace UnityEditor
                 set;
             }
 
-            public static extern AndroidTargetDevices androidTargetDevices { get; set; }
+            [Obsolete("androidTargetDevices is deprecated since ChromeOS is no longer supported.")]
+            public static AndroidTargetDevices androidTargetDevices { get; set; }
 
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
             [NativeProperty("androidSplashScreen", TargetType.Field)]

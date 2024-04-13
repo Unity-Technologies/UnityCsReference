@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEditor.Modules;
 using UnityEngine;
@@ -23,6 +24,7 @@ namespace UnityEditor.Build.Profile
         const string k_BuildSettingsPlatformIconFormat = "BuildSettings.{0}";
         static readonly string k_NoModuleLoaded = L10n.Tr("No {0} module loaded.");
         static readonly string k_EditorWillNeedToBeReloaded = L10n.Tr("Note: Editor will need to be restarted to load any newly installed modules");
+        static readonly string k_BuildProfileRecompileReason = L10n.Tr("Active build profile scripting defines changes.");
         static readonly GUIContent k_OpenDownloadPage = EditorGUIUtility.TrTextContent("Open Download Page");
         static readonly GUIContent k_InstallModuleWithHub = EditorGUIUtility.TrTextContent("Install with Unity Hub");
         static Dictionary<string, BuildTargetDiscovery.DiscoveredTargetInfo> s_DiscoveredTargetInfos = InitializeDiscoveredTargetDict();
@@ -303,6 +305,15 @@ namespace UnityEditor.Build.Profile
             return supportedAPI;
         }
 
+        /// <summary>
+        /// Remove player settings for deleted build profile assets. For example, when deleting them
+        /// in the project folder
+        /// </summary>
+        public static void CleanUpPlayerSettingsForDeletedBuildProfiles(IList<BuildProfile> currentBuildProfiles)
+        {
+            BuildProfile.CleanUpPlayerSettingsForDeletedBuildProfiles(currentBuildProfiles);
+        }
+
         /// Retrieve string of filename invalid characters
         /// </summary>
         /// <returns></returns>
@@ -311,7 +322,32 @@ namespace UnityEditor.Build.Profile
             return EditorUtility.GetInvalidFilenameChars();
         }
 
-        internal static BuildTarget GetBuildTarget(string moduleName)
+        /// <summary>
+        /// On the next editor update recompile scripts.
+        /// </summary>
+        public static void RequestScriptCompilation(BuildProfile profile)
+        {
+            if (profile != null)
+                BuildProfileContext.instance.cachedEditorScriptingDefines = profile.scriptingDefines;
+            else
+                BuildProfileContext.instance.cachedEditorScriptingDefines = Array.Empty<string>();
+
+            EditorApplication.delayCall += TryRecompileScripts;
+        }
+
+        /// <summary>
+        /// Recompile scripts if the active build profile scripting defines
+        /// differs from the last compilation defines.
+        /// </summary>
+        static void TryRecompileScripts()
+        {
+            if (EditorApplication.isCompiling)
+                return;
+
+            PlayerSettings.RecompileScripts(k_BuildProfileRecompileReason);
+        }
+
+        public static BuildTarget GetBuildTarget(string moduleName)
         {
             return s_DiscoveredTargetInfos[moduleName].buildTargetPlatformVal;
         }

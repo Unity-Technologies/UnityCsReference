@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
 
@@ -13,6 +14,9 @@ namespace UnityEditor
     public class MonoImporter : AssetImporter
     {
         public extern void SetDefaultReferences(string[] name, Object[] target);
+
+        [FreeFunction("MonoImporterBindings::GetDefaultReferencesInternal")]
+        internal static extern void GetDefaultReferencesInternal([NotNull] MonoScript script, List<string> names, List<Object> targets);
 
         [FreeFunction("MonoImporterBindings::GetAllRuntimeMonoScripts")]
         public static extern MonoScript[] GetAllRuntimeMonoScripts();

@@ -484,6 +484,7 @@ namespace UnityEngine.Rendering
             ulong inViewID,
             uint inCullingLayerMask,
             ulong inSceneCullingMask,
+            byte inExclusionSplitMask,
             int inReceiverPlaneOffset,
             int inReceiverPlaneCount,
             IntPtr inOcclusionBuffer)
@@ -498,6 +499,7 @@ namespace UnityEngine.Rendering
             viewID = new BatchPackedCullingViewID { handle = inViewID };
             cullingLayerMask = inCullingLayerMask;
             sceneCullingMask = inSceneCullingMask;
+            splitExclusionMask = inExclusionSplitMask;
             receiverPlaneOffset = inReceiverPlaneOffset;
             receiverPlaneCount = inReceiverPlaneCount;
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -516,6 +518,7 @@ namespace UnityEngine.Rendering
         readonly public BatchPackedCullingViewID viewID;
         readonly public uint cullingLayerMask;
         readonly public ulong sceneCullingMask;
+        readonly public ushort splitExclusionMask;
         [System.Obsolete("BatchCullingContext.isOrthographic is deprecated. Use BatchCullingContext.projectionType instead.")]
         readonly public byte isOrthographic;
         readonly public int receiverPlaneOffset;
@@ -549,6 +552,7 @@ namespace UnityEngine.Rendering
         public BatchCullingFlags cullingFlags;
         public ulong viewID;
         public uint  cullingLayerMask;
+        public byte  splitExclusionMask;
         public ulong sceneCullingMask;
         public BatchCullingOutputDrawCommands* drawCommands;
         public uint brgId;
@@ -714,6 +718,7 @@ namespace UnityEngine.Rendering
                         context.viewID,
                         context.cullingLayerMask,
                         context.sceneCullingMask,
+                        context.splitExclusionMask,
                         context.receiverPlaneOffset,
                         context.receiverPlaneCount,
                         context.occlusionBuffer

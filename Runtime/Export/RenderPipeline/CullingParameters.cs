@@ -586,6 +586,7 @@ namespace UnityEngine.Rendering
     {
         public RangeInt splitRange;
         public BatchCullingProjectionType projectionType;
+        public ushort splitExclusionMask;
     }
 
     [StructLayout(LayoutKind.Sequential)]

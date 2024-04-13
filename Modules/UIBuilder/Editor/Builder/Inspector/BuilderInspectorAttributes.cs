@@ -117,8 +117,12 @@ namespace Unity.UI.Builder
                     var fieldElement = styleRow.GetLinkedFieldElements()[0]; // Assume default case of only 1 field per row.
                     var csPropertyName = fieldElement.GetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName) as string;
                     var container = currentElement;
-                    var isBindableElement = UxmlSerializedDataRegistry.GetDescription(attributesUxmlOwner.fullTypeName) != null;
-                    var isBindableProperty = PropertyContainer.IsPathValid(ref container, csPropertyName);
+
+                    var description = UxmlSerializedDataRegistry.GetDescription(attributesUxmlOwner.fullTypeName);
+                    var isBindableElement = description != null;
+                    var attributeDesc = description?.FindAttributeWithPropertyName(csPropertyName);
+                    var bindingPath = attributeDesc?.bindingPath;
+                    var isBindableProperty = attributeDesc != null && PropertyContainer.IsPathValid(ref container, bindingPath);
 
                     // Do show binding related actions if the underlying property is not bindable or if the element is
                     // not using the new serialization system to define attributes.
@@ -129,21 +133,21 @@ namespace Unity.UI.Builder
 
                         if (vea != null)
                         {
-                            hasDataBinding = BuilderBindingUtility.TryGetBinding(csPropertyName, out _, out _);
+                            hasDataBinding = BuilderBindingUtility.TryGetBinding(bindingPath, out _, out _);
                         }
 
                         if (hasDataBinding)
                         {
                             menu.AppendAction(BuilderConstants.ContextMenuEditBindingMessage,
-                                (a) => BuilderBindingUtility.OpenBindingWindowToEdit(csPropertyName, inspector),
+                                (a) => BuilderBindingUtility.OpenBindingWindowToEdit(bindingPath, inspector),
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
                             menu.AppendAction(BuilderConstants.ContextMenuRemoveBindingMessage,
-                                (a) => { BuilderBindingUtility.DeleteBinding(fieldElement, csPropertyName); },
+                                (a) => { BuilderBindingUtility.DeleteBinding(fieldElement, bindingPath); },
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
 
-                            DataBindingUtility.TryGetLastUIBindingResult(new BindingId(csPropertyName), inspector.currentVisualElement,
+                            DataBindingUtility.TryGetLastUIBindingResult(new BindingId(bindingPath), inspector.currentVisualElement,
                                 out var bindingResult);
 
                             if (bindingResult.status == BindingStatus.Success)
@@ -174,7 +178,7 @@ namespace Unity.UI.Builder
                         else
                         {
                             menu.AppendAction(BuilderConstants.ContextMenuAddBindingMessage,
-                                (a) => BuilderBindingUtility.OpenBindingWindowToCreate(csPropertyName, inspector),
+                                (a) => BuilderBindingUtility.OpenBindingWindowToCreate(bindingPath, inspector),
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
                         }

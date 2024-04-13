@@ -106,10 +106,12 @@ namespace UnityEngine.Rendering
 
         private void Dispose(bool disposing)
         {
-            // we don't have any managed references, so 'disposing' part of
-            // standard IDisposable pattern does not apply
             // Release native resources
-            ReleaseBuffer();
+            if (disposing)
+                ReleaseBuffer();
+            else
+                ReleaseBufferOnMain();
+
             m_Ptr = IntPtr.Zero;
         }
 
@@ -123,6 +125,9 @@ namespace UnityEngine.Rendering
 
         internal void UploadData(IntPtr data, int size)
         {
+            if (m_Ptr == IntPtr.Zero)
+                throw new ObjectDisposedException("GraphicsTexture");
+
             if (data == IntPtr.Zero || size == 0)
             {
                 Debug.LogError("No texture data provided to GraphicsTexture.UploadData");
@@ -134,6 +139,9 @@ namespace UnityEngine.Rendering
 
         internal void UploadData(byte[] data)
         {
+            if (m_Ptr == IntPtr.Zero)
+                throw new ObjectDisposedException("GraphicsTexture");
+
             if (data == null || data.Length == 0)
             {
                 Debug.LogError("No texture data provided to GraphicsTexture.UploadData");
@@ -167,6 +175,9 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("GraphicsTexture_Bindings::ReleaseBuffer", HasExplicitThis = true, IsThreadSafe = true)]
         extern private void ReleaseBuffer();
+
+        [FreeFunction("GraphicsTexture_Bindings::ReleaseBufferOnMain", HasExplicitThis = true, IsThreadSafe = true)]
+        extern private void ReleaseBufferOnMain();
 
         [FreeFunction("GraphicsTexture_Bindings::UploadBuffer", HasExplicitThis = true, ThrowsException = true)]
         extern private bool UploadBuffer(IntPtr data, ulong size);

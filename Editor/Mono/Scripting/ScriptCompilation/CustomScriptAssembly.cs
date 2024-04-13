@@ -300,6 +300,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static List<CustomScriptAssemblyPlatform> Platforms { get; private set; }
         public static CustomScriptAssemblyPlatform[] DeprecatedPlatforms { get; private set; }
+        public static string[] RenamedPlatforms { get; private set; }
 
         static CustomScriptAssembly()
         {
@@ -359,6 +360,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 new CustomScriptAssemblyPlatform("LinuxStandaloneUniversal", BuildTarget.StandaloneLinuxUniversal),
                 new CustomScriptAssemblyPlatform("Lumin", BuildTarget.Lumin),
                 new CustomScriptAssemblyPlatform("Stadia", BuildTarget.Stadia),
+            };
+            RenamedPlatforms = new string[]
+            {
+                "Bratwurst",
             };
 #pragma warning restore 0618
         }
@@ -518,6 +523,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             foreach (var platform in DeprecatedPlatforms)
                 if (string.Equals(platform.Name, name, System.StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+            foreach(var platformName in RenamedPlatforms)
+                if (string.Equals(platformName, name, System.StringComparison.OrdinalIgnoreCase))
                     return true;
 
             return false;

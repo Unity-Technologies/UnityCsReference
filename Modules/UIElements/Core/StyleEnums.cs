@@ -243,18 +243,26 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Word wrapping over multiple lines if not enough space is available to draw the text of an element.
+    /// Controls how white space and line breaks within an element's text are handled.
     /// </summary>
     public enum WhiteSpace
     {
         /// <summary>
-        /// Text will wrap when necessary.
+        /// Sequences of whitespace will collapse into a single whitespace. Text will wrap when necessary. This is the default behavior.
         /// </summary>
         Normal = 0,
         /// <summary>
-        /// Text will never wrap to the next line.
+        /// Sequences of whitespace will collapse into a single whitespace. Text will never wrap to the next line.
         /// </summary>
-        NoWrap = 1
+        NoWrap = 1,
+        /// <summary>
+        ///  Whitespace is preserved. Text will only wrap on line breaks.
+        /// </summary>
+        Pre = 2,
+        /// <summary>
+        /// Whitespace is preserved. Text will wrap when necessary.
+        /// </summary>
+        PreWrap = 3,
     }
 
     // Display already exists in UnityEngine and would force fully qualified usage every time

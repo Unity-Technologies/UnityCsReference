@@ -52,13 +52,13 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindingMode_UxmlAttributeFlags;
 
             [UxmlAttribute("source-to-ui-converters")]
-            [SerializeField, HideInInspector, ConverterDrawer(isConverterToSource = false)]
+            [SerializeField, HideInInspector, ConverterDrawer(isConverterToSource = false), UxmlAttributeBindingPath(nameof(uiToSourceConverters))]
             [Tooltip(k_SourceToUiConvertersTooltip)]
             string sourceToUiConvertersString;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sourceToUiConvertersString_UxmlAttributeFlags;
 
             [UxmlAttribute("ui-to-source-converters")]
-            [SerializeField, HideInInspector, ConverterDrawer(isConverterToSource = true)]
+            [SerializeField, HideInInspector, ConverterDrawer(isConverterToSource = true), UxmlAttributeBindingPath(nameof(sourceToUiConverters))]
             [Tooltip(k_UiToSourceConvertersTooltip)]
             string uiToSourceConvertersString;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags uiToSourceConvertersString_UxmlAttributeFlags;

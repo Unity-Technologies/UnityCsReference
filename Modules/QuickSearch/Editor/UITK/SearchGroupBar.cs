@@ -442,7 +442,7 @@ namespace UnityEditor.Search
             var supportsSync = providerSupportsSync && searchViewSyncEnabled && !viewState.isPicker;
             if (!supportsSync)
                 return;
-            var syncButtonTooltip = m_ViewModel.currentGroup == "all" ? m_SyncSearchAllGroupTabTooltip :
+            var syncButtonTooltip = m_ViewModel.currentGroup == GroupedSearchList.allGroupId ? m_SyncSearchAllGroupTabTooltip :
                 !providerSupportsSync ? m_SyncSearchProviderNotSupportedTooltip :
                 !searchViewSyncEnabled ? m_SyncSearchViewNotEnabledTooltip :
                 m_ViewModel.syncSearch ? m_SyncSearchOnButtonTooltip : m_SyncSearchButtonTooltip;
@@ -552,7 +552,7 @@ namespace UnityEditor.Search
             TogglePackages();
         }
 
-        private void TogglePackages()
+        internal void TogglePackages()
         {
             if (m_ViewModel.context.showPackages)
             {

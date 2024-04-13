@@ -15,15 +15,17 @@ namespace UnityEngine.UIElements
     {
         public readonly string uxmlName;
         public readonly string cSharpName;
+        public readonly string overriddenCSharpName;
         public readonly FieldInfo serializedField;
         public readonly FieldInfo serializedFieldAttributeFlags;
         public readonly Type fieldType;
         public readonly string[] obsoleteNames;
 
-        public UxmlDescription(string uxmlName, string cSharpName, FieldInfo serializedField, string[] obsoleteNames = null)
+        public UxmlDescription(string uxmlName, string cSharpName, string overriddenCSharpName, FieldInfo serializedField, string[] obsoleteNames = null)
         {
             this.uxmlName = uxmlName;
             this.cSharpName = cSharpName;
+            this.overriddenCSharpName = overriddenCSharpName;
             this.serializedField = serializedField;
             serializedFieldAttributeFlags = serializedField.DeclaringType.GetField(serializedField.Name + UxmlSerializedData.AttributeFlagSuffix, BindingFlags.Instance | BindingFlags.NonPublic);
 
@@ -65,13 +67,29 @@ namespace UnityEngine.UIElements
 
             foreach (var fieldInfo in serializedFields)
             {
-                if (!TryCreateSerializedAttributeDescription(fieldInfo, out var description))
+                if (fieldInfo.GetCustomAttribute<UxmlIgnoreAttribute>() != null)
                 {
                     continue;
                 }
 
-                var attributeName = description.uxmlName;
-                if (uxmlNameToIndex.TryGetValue(attributeName, out var index))
+                var cSharpName = fieldInfo.Name;
+                var uxmlNames = GetUxmlNames(fieldInfo);
+                if (!uxmlNames.valid)
+                {
+                    continue;
+                }
+
+                var attributeName = uxmlNames.uxmlName;
+                var attributeIsOverridden = uxmlNameToIndex.TryGetValue(attributeName, out var index);
+                string overriddenCSharpName = null;
+                if (attributeIsOverridden)
+                {
+                    overriddenCSharpName = attributeDescriptions[index].overriddenCSharpName ?? attributeDescriptions[index].cSharpName;
+                }
+
+                var description = new UxmlDescription(uxmlNames.uxmlName, cSharpName, overriddenCSharpName, fieldInfo, uxmlNames.obsoleteNames);
+
+                if (attributeIsOverridden)
                 {
                     // Override base class attribute
                     attributeDescriptions[index] = description;
@@ -85,26 +103,6 @@ namespace UnityEngine.UIElements
 
                 cSharpNameToIndex[fieldInfo.Name] = index;
             }
-        }
-
-        private static bool TryCreateSerializedAttributeDescription(FieldInfo fieldInfo, out UxmlDescription description)
-        {
-            if (fieldInfo.GetCustomAttribute<UxmlIgnoreAttribute>() != null)
-            {
-                description = default;
-                return false;
-            }
-
-            var cSharpName = fieldInfo.Name;
-            var uxmlNames = GetUxmlNames(fieldInfo);
-            if (!uxmlNames.valid)
-            {
-                description = default;
-                return false;
-            }
-
-            description = new UxmlDescription(uxmlNames.uxmlName, cSharpName, fieldInfo, uxmlNames.obsoleteNames);
-            return true;
         }
 
         internal static (bool valid, string uxmlName, string[] obsoleteNames) GetUxmlNames(FieldInfo fieldInfo)
@@ -198,6 +196,11 @@ namespace UnityEngine.UIElements
                 s_UxmlDescriptions.Add(type, description = new UxmlTypeDescription(type));
 
             return description;
+        }
+
+        public static void Clear()
+        {
+            s_UxmlDescriptions.Clear();
         }
     }
 }

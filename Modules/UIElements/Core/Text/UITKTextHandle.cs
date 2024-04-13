@@ -405,7 +405,7 @@ namespace UnityEngine.UIElements
                 return false;
             }
             var style = m_TextElement.computedStyle;
-            var renderedText = m_TextElement.isElided && !TextLibraryCanElide() ? 
+            var renderedText = m_TextElement.isElided && !TextLibraryCanElide() ?
                 new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
             nativeSettings.text = renderedText.CreateString();
             nativeSettings.screenWidth = (int)(m_TextElement.contentRect.width * 64);
@@ -413,7 +413,7 @@ namespace UnityEngine.UIElements
             nativeSettings.fontSize = style.fontSize.value > 0
                 ? style.fontSize.value
                 : fa.faceInfo.pointSize;
-            nativeSettings.wrapText = m_TextElement.computedStyle.whiteSpace == WhiteSpace.Normal;
+            nativeSettings.wordWrap = m_TextElement.computedStyle.whiteSpace.toTextCore();
             nativeSettings.horizontalAlignment = TextGeneratorUtilities.GetHorizontalAlignment(style.unityTextAlign);
             nativeSettings.verticalAlignment = TextGeneratorUtilities.GetVerticalAlignment(style.unityTextAlign);
 
@@ -473,7 +473,7 @@ namespace UnityEngine.UIElements
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             tgs.screenRect = new Rect(0, 0, m_TextElement.contentRect.width, m_TextElement.contentRect.height);
             tgs.extraPadding = GetTextEffectPadding(tgs.fontAsset);
-            tgs.renderedText = m_TextElement.isElided && !TextLibraryCanElide() ? 
+            tgs.renderedText = m_TextElement.isElided && !TextLibraryCanElide() ?
                 new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
             tgs.isPlaceholder = m_TextElement.showPlaceholderText;
 
@@ -484,9 +484,7 @@ namespace UnityEngine.UIElements
             tgs.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
             tgs.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(style.unityTextAlign);
 
-            tgs.wordWrap = style.whiteSpace == WhiteSpace.Normal;
-            tgs.textWrappingMode = TextWrappingMode.Normal;
-
+            tgs.textWrappingMode = style.whiteSpace.toTextWrappingMode();
             tgs.wordWrappingRatio = 0.4f;
             tgs.richText = m_TextElement.enableRichText;
             tgs.overflowMode = GetTextOverflowMode();
@@ -623,8 +621,8 @@ namespace UnityEngine.UIElements
             }
 
             // Case 1215962: round up as yoga could decide to round down and text would start wrapping
-            float roundedWidth = AlignmentUtils.CeilToPixelGrid(measuredWidth, pixelsPerPoint, 0.0f);
-            float roundedHeight = AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint, 0.0f);
+            float roundedWidth = AlignmentUtils.CeilToPixelGrid(measuredWidth, pixelsPerPoint);
+            float roundedHeight = AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint);
             var roundedValues = new Vector2(roundedWidth, roundedHeight);
 
             te.uitkTextHandle.MeasuredSizes = new Vector2(measuredWidth, measuredHeight);
@@ -715,6 +713,30 @@ namespace UnityEngine.UIElements
                 underlayColor = computedStyle.textShadow.color,
                 underlayOffset = underlayOffset,
                 underlaySoftness = underlaySoftness
+            };
+        }
+
+        public static TextWrappingMode toTextWrappingMode(this WhiteSpace whiteSpace)
+        {
+            return whiteSpace switch
+            {
+                WhiteSpace.Normal => TextWrappingMode.Normal,
+                WhiteSpace.NoWrap => TextWrappingMode.NoWrap,
+                WhiteSpace.PreWrap => TextWrappingMode.PreserveWhitespace,
+                WhiteSpace.Pre => TextWrappingMode.PreserveWhitespaceNoWrap,
+                _ => TextWrappingMode.Normal
+            };
+        }
+
+        public static TextCore.WhiteSpace toTextCore(this WhiteSpace whiteSpace)
+        {
+            return whiteSpace switch
+            {
+                WhiteSpace.Normal => TextCore.WhiteSpace.Normal,
+                WhiteSpace.NoWrap => TextCore.WhiteSpace.NoWrap,
+                WhiteSpace.PreWrap => TextCore.WhiteSpace.PreWrap,
+                WhiteSpace.Pre => TextCore.WhiteSpace.Pre,
+                _ => TextCore.WhiteSpace.Normal
             };
         }
     }

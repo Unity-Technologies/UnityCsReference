@@ -1756,6 +1756,18 @@ namespace UnityEditor
             set;
         }
 
+        [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetOverridePlayerSettingsInternal(PlayerSettings playerSettings);
+
+        [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+        internal static extern bool IsGlobalManagerPlayerSettings(PlayerSettings playerSettings);
+
+        [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+        internal static extern string SerializeAsYAMLString(PlayerSettings playerSettings);
+
+        [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+        internal static extern PlayerSettings DeserializeFromYAMLString(string yamlSettings);
+
         internal static extern bool platformRequiresReadableAssets { get; set; }
     }
 }

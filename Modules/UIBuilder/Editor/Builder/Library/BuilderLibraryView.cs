@@ -2,9 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
+using TreeViewItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
 
 namespace Unity.UI.Builder
 {
@@ -17,6 +20,11 @@ namespace Unity.UI.Builder
 
         protected BuilderPaneWindow m_PaneWindow;
         protected BuilderLibraryDragger m_Dragger;
+
+        protected IList<TreeViewItem> m_Items;
+        protected IList<TreeViewItem> m_VisibleItems;
+
+        internal IList<TreeViewItem> visibleItems => m_VisibleItems;
 
         public abstract VisualElement primaryFocusable { get; }
 
@@ -33,6 +41,7 @@ namespace Unity.UI.Builder
         }
 
         public abstract void Refresh();
+        public abstract void FilterView(string value);
 
         protected void RegisterControlContainer(VisualElement element)
         {
@@ -129,6 +138,33 @@ namespace Unity.UI.Builder
         {
             m_TooltipPreview.Clear();
             m_TooltipPreview.Hide();
+        }
+
+        protected static IList<TreeViewItem> FilterTreeViewItems(IEnumerable<TreeViewItem> items, string searchText)
+        {
+            var filteredItems = new List<TreeViewItem>();
+
+            foreach (var item in items)
+            {
+                if (item.data.name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                {
+                    filteredItems.Add(item);
+                }
+                else if (item.children != null && item.children.GetCount() > 0)
+                {
+                    // Recursively filter children
+                    var filteredChildren = FilterTreeViewItems(item.children, searchText);
+                    if (filteredChildren.Count > 0)
+                    {
+                        // If any children match, add a copy of the parent item with filtered children
+                        var itemCopy = new TreeViewItem(item.id, item.data);
+                        itemCopy.AddChildren(filteredChildren);
+                        filteredItems.Add(itemCopy);
+                    }
+                }
+            }
+
+            return filteredItems;
         }
     }
 }

@@ -33,7 +33,7 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags template_UxmlAttributeFlags;
 
             // This allows reading template attribute as a string as well as VisualTreeAsset
-            [SerializeField, FormerlySerializedAs("template"), UxmlAttribute("template")] string templateId;
+            [SerializeField, FormerlySerializedAs("template"), UxmlAttribute("template"), UxmlAttributeBindingPath(nameof(templateId))] string templateId;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags templateId_UxmlAttributeFlags;
             #pragma warning restore 649
 

@@ -5,6 +5,7 @@
 using System;
 using System.Text;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
@@ -52,6 +53,8 @@ namespace UnityEngine.UIElements
         internal Action<bool> UpdateScrollOffset { get; set; }
         internal Action UpdateValueFromText { get; set; }
         internal Action UpdateTextFromValue { get; set; }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Action MoveFocusToCompositeRoot { get; set; }
         internal Func<string> GetDefaultValueType { get; set; }
 
@@ -555,12 +558,19 @@ namespace UnityEngine.UIElements
                     return new RenderedText(m_PlaceholderText, ZeroWidthSpace);
                 }
 
-                if (effectiveMaskChar != char.MinValue)
+                if (effectiveMaskChar != char.MinValue) // Password
                 {
                     return new RenderedText(effectiveMaskChar, m_RenderedText?.Length ?? 0, ZeroWidthSpace);
                 }
 
-                return new RenderedText(m_RenderedText, ZeroWidthSpace);
+                if (!isReadOnly) // TextField
+                {
+                    return new RenderedText(m_RenderedText, ZeroWidthSpace);
+                }
+                else
+                {
+                    return new RenderedText(m_RenderedText);
+                }
             }
         }
 

@@ -227,7 +227,7 @@ namespace Unity.UI.Builder
             m_ConvertersToSource = null;
 
             var desc = bindingUxmlSerializedDataDescription;
-            var root = new UxmlAssetSerializedDataRoot { dataDescription = desc, rootPath = bindingSerializedPropertyPathRoot + "." };
+            var root = new UxmlAssetSerializedDataRoot { dataDescription = desc, rootPath = bindingSerializedPropertyRootPath };
 
             if (m_AdvancedSettings == null)
             {
@@ -254,31 +254,31 @@ namespace Unity.UI.Builder
                 base.GenerateSerializedAttributeFields();
 
                 var attribute = desc.FindAttributeWithUxmlName(k_BindingAttr_BindingMode);
-                CreateSerializedAttributeRow(attribute, $"{root.rootPath}{attribute.serializedField.Name}", root);
+                CreateSerializedAttributeRow(attribute, $"{root.rootPath}.{attribute.serializedField.Name}", root);
 
                 root.Add(new VisualElement() { classList = { BuilderConstants.SeparatorLineStyleClassName } });
                 root.Add(m_AdvancedSettings);
 
                 attribute = desc.FindAttributeWithUxmlName(k_BindingAttr_UpdateTrigger);
-                var row = CreateSerializedAttributeRow(attribute, $"{root.rootPath}{attribute.serializedField.Name}", m_AdvancedSettings);
+                var row = CreateSerializedAttributeRow(attribute, $"{root.rootPath}.{attribute.serializedField.Name}", m_AdvancedSettings);
                 m_RequiresConstantUpdateField = row.GetLinkedFieldElements()[0];
 
                 m_AdvancedSettings.Add(m_ConvertersGroupBox);
                 m_AdvancedSettings.Add(m_ConverterGroupWarningBox);
 
                 attribute = desc.FindAttributeWithUxmlName(k_BindingAttr_ConvertersToUi);
-                row = CreateSerializedAttributeRow(attribute, $"{root.rootPath}{attribute.serializedField.Name}", m_ConvertersGroupBox);
+                row = CreateSerializedAttributeRow(attribute, $"{root.rootPath}.{attribute.serializedField.Name}", m_ConvertersGroupBox);
                 m_ConvertersToUiField = row.GetLinkedFieldElements()[0];
 
                 attribute = desc.FindAttributeWithUxmlName(k_BindingAttr_ConvertersToSource);
-                row = CreateSerializedAttributeRow(attribute, $"{root.rootPath}{attribute.serializedField.Name}", m_ConvertersGroupBox);
+                row = CreateSerializedAttributeRow(attribute, $"{root.rootPath}.{attribute.serializedField.Name}", m_ConvertersGroupBox);
                 m_ConvertersToSourceField = row.GetLinkedFieldElements()[0];
             }
 
             fieldsContainer.Add(root);
 
             // Add any additional fields from inherited types.
-            var property = m_CurrentElementSerializedObject.FindProperty(bindingSerializedPropertyPathRoot);
+            var property = m_CurrentElementSerializedObject.FindProperty(bindingSerializedPropertyRootPath);
             CreateUxmlObjectField(property, uxmlSerializedDataDescription, root);
 
             if (!isDataBinding)
@@ -286,7 +286,7 @@ namespace Unity.UI.Builder
                 root.Add(m_AdvancedSettings);
 
                 var attribute = desc.FindAttributeWithUxmlName(k_BindingAttr_UpdateTrigger);
-                var row = CreateSerializedAttributeRow(attribute, $"{root.rootPath}{attribute.serializedField.Name}", m_AdvancedSettings);
+                var row = CreateSerializedAttributeRow(attribute, $"{root.rootPath}.{attribute.serializedField.Name}", m_AdvancedSettings);
                 m_RequiresConstantUpdateField = row.GetLinkedFieldElements()[0];
             }
 

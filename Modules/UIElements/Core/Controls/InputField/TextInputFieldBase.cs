@@ -17,11 +17,13 @@ namespace UnityEngine.UIElements
     {
         internal static readonly BindingId autoCorrectionProperty = nameof(autoCorrection);
         internal static readonly BindingId hideMobileInputProperty = nameof(hideMobileInput);
+        internal static readonly BindingId hidePlaceholderOnFocusProperty = nameof(hidePlaceholderOnFocus);
         internal static readonly BindingId keyboardTypeProperty = nameof(keyboardType);
         internal static readonly BindingId isReadOnlyProperty = nameof(isReadOnly);
         internal static readonly BindingId isPasswordFieldProperty = nameof(isPasswordField);
         internal static readonly BindingId textSelectionProperty = nameof(textSelection);
         internal static readonly BindingId textEditionProperty = nameof(textEdition);
+        internal static readonly BindingId placeholderTextProperty = nameof(placeholderText);
         internal static readonly BindingId selectionColorProperty = nameof(selectionColor);
         internal static readonly BindingId cursorColorProperty = nameof(cursorColor);
         internal static readonly BindingId cursorIndexProperty = nameof(cursorIndex);
@@ -232,20 +234,32 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// DO NOT USE placeholderText, use textEdition.placeholder instead. This property was added so it can be picked up properly by the UI Builder.
         /// </summary>
+        [CreateProperty]
         internal string placeholderText
         {
             get => textEdition.placeholder;
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            set => textEdition.placeholder = value;
+            set
+            {
+                if (textEdition.placeholder == value) return;
+                textEdition.placeholder = value;
+                NotifyPropertyChanged(placeholderTextProperty);
+            }
         }
 
         /// <summary>
         /// DO NOT USE hidePlaceholderOnFocus, use textEdition.hidePlaceholderOnFocus instead. This property was added so it can be picked up properly by the UI Builder.
         /// </summary>
+        [CreateProperty]
         internal bool hidePlaceholderOnFocus
         {
             get => textEdition.hidePlaceholderOnFocus;
-            set => textEdition.hidePlaceholderOnFocus = value;
+            set
+            {
+                if (textEdition.hidePlaceholderOnFocus == value) return;
+                textEdition.hidePlaceholderOnFocus = value;
+                NotifyPropertyChanged(hidePlaceholderOnFocusProperty);
+            }
         }
 
         #endregion
@@ -1168,7 +1182,7 @@ namespace UnityEngine.UIElements
                 textElement.RemoveFromClassList(verticalHorizontalVariantInnerTextElementUssClassName);
                 textElement.RemoveFromClassList(horizontalVariantInnerTextElementUssClassName);
 
-                if (textEdition.multiline && computedStyle.whiteSpace == WhiteSpace.Normal)
+                if (textEdition.multiline && (computedStyle.whiteSpace == WhiteSpace.Normal || computedStyle.whiteSpace == WhiteSpace.PreWrap))
                 {
                     textElement.AddToClassList(verticalVariantInnerTextElementUssClassName);
                     scrollView.mode = ScrollViewMode.Vertical;
@@ -1189,7 +1203,7 @@ namespace UnityEngine.UIElements
             {
                 if (multilineContainer != null)
                 {
-                    if (computedStyle.whiteSpace == WhiteSpace.Normal)
+                    if (computedStyle.whiteSpace == WhiteSpace.Normal || computedStyle.whiteSpace == WhiteSpace.PreWrap)
                         style.overflow = Overflow.Hidden;
                     else
                         style.overflow = (Overflow)OverflowInternal.Scroll;

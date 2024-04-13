@@ -163,6 +163,10 @@ namespace UnityEngine.UIElements
 
                         var (changed, version) = GetDataSourceVersion(source);
 
+                        // Getting the version can trigger an update, for example by refreshing the SerializedObject
+                        // in that case the element with the binding might disappear (a managed reference changed type for example)
+                        if (bindingData.binding == null) continue;
+
                         // We want to track the earliest version of the source, in case one of the bindings changes it
                         if (null != source && m_TrackedObjects.Add(source))
                             m_VersionChanges.Add(new VersionInfo(source, version));

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -12,6 +13,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class MultiColumnListView : BaseListView
     {
+        static readonly BindingId columnsProperty = nameof(columns);
+        static readonly BindingId sortColumnDescriptionsProperty = nameof(sortColumnDescriptions);
+        static readonly BindingId sortingModeProperty = nameof(sortingMode);
+
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseListView.UxmlSerializedData
         {
@@ -34,12 +39,13 @@ namespace UnityEngine.UIElements
 
                 var e = (MultiColumnListView)obj;
 
-                if (ShouldWriteAttributeValue(sortingEnabled_UxmlAttributeFlags))
+                if (ShouldWriteAttributeValue(sortingMode_UxmlAttributeFlags))
+                    e.sortingMode = sortingMode;
+                else if (ShouldWriteAttributeValue(sortingEnabled_UxmlAttributeFlags))
                 {
-                    var mode = sortingEnabled ? ColumnSortingMode.Custom : ColumnSortingMode.None;
-                    if (ShouldWriteAttributeValue(sortingMode_UxmlAttributeFlags) && sortingMode != ColumnSortingMode.None)
-                        mode = sortingMode;
-                    e.sortingMode = mode;
+                    #pragma warning disable CS0618 // Type or member is obsolete
+                    e.sortingEnabled = sortingEnabled;
+                    #pragma warning restore CS0618
                 }
 
                 if (ShouldWriteAttributeValue(sortColumnDescriptions_UxmlAttributeFlags) && sortColumnDescriptions != null)
@@ -139,11 +145,15 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The collection of columns for the multi-column header.
         /// </summary>
+        [CreateProperty]
         public Columns columns
         {
             get => m_Columns;
             private set
             {
+                if (m_Columns != null)
+                    m_Columns.propertyChanged -= ColumnsChanged;
+
                 if (value == null)
                 {
                     m_Columns.Clear();
@@ -151,17 +161,21 @@ namespace UnityEngine.UIElements
                 }
 
                 m_Columns = value;
+                m_Columns.propertyChanged += ColumnsChanged;
 
                 if (m_Columns.Count > 0)
                 {
                     GetOrCreateViewController();
                 }
+
+                NotifyPropertyChanged(columnsProperty);
             }
         }
 
         /// <summary>
         /// The collection of sorted columns by default.
         /// </summary>
+        [CreateProperty]
         public SortColumnDescriptions sortColumnDescriptions
         {
             get => m_SortColumnDescriptions;
@@ -180,6 +194,8 @@ namespace UnityEngine.UIElements
                     viewController.columnController.header.sortDescriptions = value;
                     RaiseColumnSortingChanged();
                 }
+
+                NotifyPropertyChanged(sortColumnDescriptionsProperty);
             }
         }
 
@@ -201,16 +217,22 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// __Note__: If there is at least one sorted column, reordering is temporarily disabled.
         /// </remarks>
+        [CreateProperty]
         public ColumnSortingMode sortingMode
         {
             get => m_SortingMode;
             set
             {
+                if (sortingMode == value)
+                    return;
+
                 m_SortingMode = value;
                 if (viewController != null)
                 {
                     viewController.columnController.sortingMode = value;
                 }
+
+                NotifyPropertyChanged(sortingModeProperty);
             }
         }
 
@@ -264,6 +286,12 @@ namespace UnityEngine.UIElements
         void RaiseColumnSortingChanged()
         {
             columnSortingChanged?.Invoke();
+        }
+
+        void ColumnsChanged(object sender, BindablePropertyChangedEventArgs args)
+        {
+            // Forward the event
+            NotifyPropertyChanged(args.propertyName);
         }
 
         void RaiseHeaderContextMenuPopulate(ContextualMenuPopulateEvent evt, Column column)

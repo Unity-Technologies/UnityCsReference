@@ -88,6 +88,7 @@ namespace UnityEditor
             m_Tracker.dataMode = GetDataModeController_Internal().dataMode;
 
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             Selection.selectionChanged += OnSelectionChanged;
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
         }
@@ -105,6 +106,15 @@ namespace UnityEditor
             // so we don't rebuild it. When removing the CanEditMultipleObjects, the refresh sees that the editor was the custom inspector
             // but its instance is no longer valid, so it rebuilds the inspector.
             if (EditorsForMultiEditingChanged())
+                tracker.ForceRebuild();
+        }
+
+        void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            // Case UUM-64580: unable to interact with the inspector after exiting play mode.
+            // Somehow the inspector is still showing the last selected object, but the tracker does not respond anymore.
+            // Forcing a rebuild of the tracker after exiting play mode ensures that it is put back in a valid state.
+            if (state == PlayModeStateChange.EnteredEditMode)
                 tracker.ForceRebuild();
         }
 
@@ -176,6 +186,7 @@ namespace UnityEditor
             m_LockTracker?.lockStateChanged.RemoveListener(LockStateChanged);
 
             EditorApplication.projectWasLoaded -= OnProjectWasLoaded;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             Selection.selectionChanged -= OnSelectionChanged;
             AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
         }
@@ -341,36 +352,60 @@ namespace UnityEditor
 
         protected override void CreatePreviewEllipsisMenu(InspectorPreviewWindow window, PropertyEditor editor)
         {
-            if (editor.previewWindow != null)
-            {
-                window.ClearEllipsisMenu();
-                window.AppendActionToEllipsisMenu(
-                    "Convert to Floating Window",
-                    (e) =>
-                    {
-                        if (m_PreviewWindow == null)
-                        {
-                            DetachPreview(false);
-                            hasFloatingPreviewWindow = true;
-                            window.parent.Remove(window);
-                        }
-                        else
-                        {
-                            hasFloatingPreviewWindow = false;
-                            m_PreviewWindow.Close();
-                        }
-                    },
-                    a => hasFloatingPreviewWindow ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+            if (editor.previewWindow == null)
+                return;
 
-                window.AppendActionToEllipsisMenu(
-                    "Minimize in Inspector",
-                    (e) =>
+            var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
+            var previewContainer = m_SplitView.Q(s_PreviewContainer);
+
+            window.ClearEllipsisMenu();
+            window.AppendActionToEllipsisMenu(
+                "Convert to Floating Window",
+                (e) =>
+                {
+                    if (m_PreviewWindow == null)
                     {
-                        editor.ExpandCollapsePreview();
-                    },
-                    a => !editor.showingPreview ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal
-                );
-            }
+                        PopupPreviewWindow(window);
+
+                        previewContainer.style.display = DisplayStyle.None;
+                        draglineAnchor.style.display = DisplayStyle.None;
+                    }
+                    else
+                    {
+                        hasFloatingPreviewWindow = false;
+                        m_PreviewWindow.Close();
+
+                        previewContainer.style.display = DisplayStyle.Flex;
+                        draglineAnchor.style.display = DisplayStyle.Flex;
+                    }
+                },
+                a => hasFloatingPreviewWindow ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+
+            window.AppendActionToEllipsisMenu(
+                "Minimize in Inspector",
+                (e) =>
+                {
+                    editor.ExpandCollapsePreview();
+                },
+                a => !editor.showingPreview ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal
+            );
+
+            draglineAnchor.RegisterCallback<PointerUpEvent, InspectorPreviewWindow>(OnDraglineChange, window);
+        }
+
+        void OnDraglineChange(PointerUpEvent evt, InspectorPreviewWindow window)
+        {
+            if (m_PreviewWindow != null || evt.button != (int)MouseButton.RightMouse)
+                return;
+
+            PopupPreviewWindow(window);
+        }
+
+        void PopupPreviewWindow(InspectorPreviewWindow window)
+        {
+            DetachPreview(false);
+            hasFloatingPreviewWindow = true;
+            window.parent.Remove(window);
         }
 
         private void DetachPreview(bool exitGUI = true)

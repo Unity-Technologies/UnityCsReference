@@ -616,16 +616,7 @@ namespace UnityEditor.Search
                     }
 
                     loadTask.Report($"Checking for changes...", -1);
-                    var diff = SearchMonitor.GetDiff(newIndex.timestamp, deletedAssets, path =>
-                    {
-                        if (newIndex.SkipEntry(path, true))
-                            return false;
-
-                        if (!newIndex.TryGetHash(path, out var hash) || !hash.isValid)
-                            return true;
-
-                        return hash != newIndex.GetDocumentHash(path);
-                    });
+                    var diff = SearchMonitor.GetDiff(newIndex.timestamp, deletedAssets, path => KeepChangesetPredicate(path, newIndex));
                     if (!diff.empty)
                         IncrementalUpdate(diff);
 
@@ -991,7 +982,7 @@ namespace UnityEditor.Search
             if (!this || settings.options.disabled)
                 return;
 
-            var changeset = new AssetIndexChangeSet(updated, removed, moved, p => !index.SkipEntry(p, true));
+            var changeset = new AssetIndexChangeSet(updated, removed, moved, p => KeepChangesetPredicate(p, index));
             if (changeset.empty)
                 return;
             IncrementalUpdate(changeset);
@@ -1151,6 +1142,17 @@ namespace UnityEditor.Search
         public IDisposable GetImmutableScope()
         {
             return new ReadLockScope(m_ImmutableLock);
+        }
+
+        static bool KeepChangesetPredicate(string path, ObjectIndexer index)
+        {
+            if (index.SkipEntry(path, true))
+                return false;
+
+            if (!index.TryGetHash(path, out var hash) || !hash.isValid)
+                return true;
+
+            return hash != index.GetDocumentHash(path);
         }
     }
 }

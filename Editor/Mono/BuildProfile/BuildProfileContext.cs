@@ -31,10 +31,25 @@ namespace UnityEditor.Build.Profile
         [SerializeField]
         BuildProfile m_ActiveProfile;
 
+        [SerializeField]
+        string[] m_CachedEditorScriptingDefines = Array.Empty<string>();
+
         /// <summary>
         /// Cached mapping of module name to classic platform build profile.
         /// </summary>
         Dictionary<(string, StandaloneBuildSubtarget), BuildProfile> m_BuildModuleNameToClassicPlatformProfile = new();
+
+        /// <summary>
+        /// Cached editor scripting defines for the active profile.
+        /// On disk changes to build profile asset, cached value is referenced
+        /// when determining if a recompilation is required.
+        /// </summary>
+        [VisibleToOtherModules]
+        internal string[] cachedEditorScriptingDefines
+        {
+            get => m_CachedEditorScriptingDefines;
+            set => m_CachedEditorScriptingDefines = value;
+        }
 
         /// <summary>
         /// Specifies the custom build profile used by the build pipeline and editor APIs when getting build settings.
@@ -65,9 +80,12 @@ namespace UnityEditor.Build.Profile
                 var prev = m_ActiveProfile;
                 if (value == null || value.platformBuildProfile == null)
                 {
+                    m_ActiveProfile.UpdateGlobalManagerPlayerSettings(activeWillBeRemoved: true);
                     m_ActiveProfile = null;
                     Save();
+                    EditorUserBuildSettings.SetBuildProfilePath(string.Empty);
                     activeProfileChanged?.Invoke(prev, m_ActiveProfile);
+                    BuildProfileModuleUtil.RequestScriptCompilation(null);
                     return;
                 }
 
@@ -80,7 +98,23 @@ namespace UnityEditor.Build.Profile
 
                 m_ActiveProfile = value;
                 Save();
+                EditorUserBuildSettings.SetBuildProfilePath(AssetDatabase.GetAssetPath(m_ActiveProfile));
                 activeProfileChanged?.Invoke(prev, m_ActiveProfile);
+                m_ActiveProfile.UpdateGlobalManagerPlayerSettings();
+                BuildProfileModuleUtil.RequestScriptCompilation(m_ActiveProfile);
+            }
+        }
+
+        internal static void HandlePendingChangesBeforeEnterPlaymode()
+        {
+            if (!EditorUserBuildSettings.isBuildProfileAvailable)
+                return;
+
+            var defines = BuildDefines.GetBuildProfileScriptDefines();
+            if (!ArrayUtility.ArrayEquals(defines, instance.cachedEditorScriptingDefines))
+            {
+                instance.cachedEditorScriptingDefines = defines;
+                PlayerSettings.RecompileScripts("Build profile has been modified.");
             }
         }
 
@@ -274,6 +308,8 @@ namespace UnityEditor.Build.Profile
         void OnDisable()
         {
             Save();
+            EditorUserBuildSettings.SetBuildProfilePath((m_ActiveProfile != null) ?
+                AssetDatabase.GetAssetPath(m_ActiveProfile) : string.Empty);
 
             // Platform profiles must be manually serialized for changes to persist.
             foreach (var kvp in m_BuildModuleNameToClassicPlatformProfile)
@@ -488,6 +524,10 @@ namespace UnityEditor.Build.Profile
 
             System.Diagnostics.Debug.Assert(s_Instance != null);
             s_Instance.CheckInstalledBuildPlatforms();
+
+            EditorUserBuildSettings.SetBuildProfilePath((s_Instance.m_ActiveProfile != null) ?
+                AssetDatabase.GetAssetPath(s_Instance.m_ActiveProfile) : string.Empty);
+            s_Instance.cachedEditorScriptingDefines = BuildDefines.GetBuildProfileScriptDefines();
         }
 
         [RequiredByNativeCode, UsedImplicitly]
@@ -530,6 +570,15 @@ namespace UnityEditor.Build.Profile
                 string value = platformProfile?.GetRawPlatformSetting(settingName);
                 return value != null ? value : string.Empty;
             }
+
+            return string.Empty;
+        }
+
+        [RequiredByNativeCode]
+        static string GetActiveBuildProfilePath()
+        {
+            if (instance.activeProfile)
+                return AssetDatabase.GetAssetPath(instance.activeProfile);
 
             return string.Empty;
         }

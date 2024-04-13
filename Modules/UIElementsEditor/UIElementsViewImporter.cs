@@ -461,7 +461,7 @@ namespace UnityEditor.UIElements
                 for (var i = 1; i < veaCount; i++)
                 {
                     var vea = vta.visualElementAssets[i];
-                    var dependencyKeyName = UxmlSerializedDataRegistry.GetDependencyKeyName(vea.fullTypeName);
+                    var dependencyKeyName = UxmlCodeDependencies.instance.FormatSerializedDependencyKeyName(vea.fullTypeName);
                     m_Context.DependsOnCustomDependency(dependencyKeyName);
                 }
             }

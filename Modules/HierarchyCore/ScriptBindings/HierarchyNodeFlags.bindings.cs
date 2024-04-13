@@ -28,6 +28,10 @@ namespace Unity.Hierarchy
         /// <summary>
         /// The hierarchy node is cut.
         /// </summary>
-        Cut = 1 << 2
+        Cut = 1 << 2,
+        /// <summary>
+        /// The hierarchy node is hidden (also hides children).
+        /// </summary>
+        Hidden = 1 << 3,
     }
 }

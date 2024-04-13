@@ -23,6 +23,7 @@ using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
+using UnityEditor.Build.Profile;
 
 // ************************************* READ BEFORE EDITING **************************************
 //
@@ -105,7 +106,7 @@ namespace UnityEditor
             public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOnWarning = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable Profiler GPU Recorders and the GPU Profiler.");
             public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOffInfo = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable the GPU Profiler.");
             public static readonly GUIContent openGLFrameTimingStatsOffGPURecordersOnInfo = EditorGUIUtility.TrTextContent("On OpenGL, Profiler GPU Recorders may disable the GPU Profiler.");
-            public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TrTextContent("Use Animated Autorotation", "If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately.");
+            public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TrTextContent("Use Animated Autorotation (Deprecated)", "If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately. This is has no effect on iOS 16 later versions as autorotation is always animated. This option is deprecated and will be removed in a future release.");
             public static readonly GUIContent defaultScreenWidth = EditorGUIUtility.TrTextContent("Default Screen Width");
             public static readonly GUIContent defaultScreenHeight = EditorGUIUtility.TrTextContent("Default Screen Height");
             public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TrTextContent("Mac Retina Support");
@@ -263,7 +264,7 @@ namespace UnityEditor
             public static readonly string undoChangedDefaultShaderChunkCountString  = L10n.Tr("Changed Shader Chunk Count Default Setting");
         }
 
-        class RecompileReason
+        internal class RecompileReason
         {
             public static readonly string scriptingDefineSymbolsModified             = L10n.Tr("Scripting define symbols setting modified");
             public static readonly string suppressCommonWarningsModified             = L10n.Tr("Suppress common warnings setting modified");
@@ -729,6 +730,9 @@ namespace UnityEditor
             {
                 editor.HandlePendingChangesRequiringRecompilation();
             }
+
+            // Handle build profile pending recompilation.
+            BuildProfileContext.HandlePendingChangesBeforeEnterPlaymode();
         }
 
         private void HandlePendingChangesRequiringRecompilation()
@@ -1407,7 +1411,7 @@ namespace UnityEditor
         private bool CheckApplyGraphicsJobsModeChange()
         {
             bool doRestart = false;
-            
+
             // If we have dirty scenes we need to save or discard changes before we restart editor.
             // Otherwise user will get a dialog later on where they can click cancel and put editor in a bad device state.
             var dirtyScenes = new List<Scene>();

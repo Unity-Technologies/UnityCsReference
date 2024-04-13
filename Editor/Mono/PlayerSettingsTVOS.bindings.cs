@@ -33,6 +33,7 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings()")]
         public partial class tvOS
         {
+            // Sdk Version
             private static extern int sdkVersionInt
             {
                 [NativeMethod("GettvOSSdkVersion")]
@@ -40,11 +41,24 @@ namespace UnityEditor
                 [NativeMethod("SettvOSSdkVersion")]
                 set;
             }
-
             public static tvOSSdkVersion sdkVersion
             {
                 get { return (tvOSSdkVersion)sdkVersionInt; }
                 set { sdkVersionInt = (int)value; }
+            }
+
+            // Simulator Architectures
+            private extern static int simulatorSdkArchitectureInternal
+            {
+                [NativeMethod("GettvOSSimulatorArchitecture")]
+                get;
+                [NativeMethod("SettvOSSimulatorArchitecture")]
+                set;
+            }
+            public static AppleMobileArchitectureSimulator simulatorSdkArchitecture
+            {
+                get { return (AppleMobileArchitectureSimulator)simulatorSdkArchitectureInternal; }
+                set { simulatorSdkArchitectureInternal = (int)value; }
             }
 
             // tvOS bundle build number

@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Properties;
 using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
@@ -40,8 +41,14 @@ namespace UnityEngine.UIElements
     /// Represents a collection of columns.
     /// </summary>
     [UxmlObject]
-    public class Columns : ICollection<Column>
+    public class Columns : ICollection<Column>, INotifyBindablePropertyChanged
     {
+        static readonly BindingId primaryColumnNameProperty = nameof(primaryColumnName);
+        static readonly BindingId reorderableProperty = nameof(reorderable);
+        static readonly BindingId resizableProperty = nameof(resizable);
+        static readonly BindingId resizePreviewProperty = nameof(resizePreview);
+        static readonly BindingId stretchModeProperty = nameof(stretchMode);
+
         /// <summary>
         /// Indicates how the size of a stretchable column in this collection should get automatically adjusted as other columns or its containing view get resized.
         /// The default value is <see cref="StretchMode.Grow"/>.
@@ -165,12 +172,18 @@ namespace UnityEngine.UIElements
         internal IList<Column> columns => m_Columns;
 
         /// <summary>
+        /// Called when a property has changed.
+        /// </summary>
+        public event EventHandler<BindablePropertyChangedEventArgs> propertyChanged;
+
+        /// <summary>
         /// Indicates the column that needs to be considered as the primary column, by ID.
         /// </summary>
         /// <remarks>
         /// Needs to match a <see cref="Column"/>'s id, otherwise will be ignored.
         /// The primary column cannot be hidden and will contain the expand arrow for tree views.
         /// </remarks>
+        [CreateProperty]
         public string primaryColumnName
         {
             get => m_PrimaryColumnName;
@@ -181,6 +194,7 @@ namespace UnityEngine.UIElements
 
                 m_PrimaryColumnName = value;
                 NotifyChange(ColumnsDataType.PrimaryColumn);
+                NotifyPropertyChanged(primaryColumnNameProperty);
             }
         }
 
@@ -190,6 +204,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Reordering columns can be cancelled by pressing ESC key.
         /// </remarks>
+        [CreateProperty]
         public bool reorderable
         {
             get => m_Reorderable;
@@ -199,6 +214,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_Reorderable = value;
                 NotifyChange(ColumnsDataType.Reorderable);
+                NotifyPropertyChanged(reorderableProperty);
             }
         }
 
@@ -209,6 +225,7 @@ namespace UnityEngine.UIElements
         /// The resize behaviour of a specific column in the column collection can be specified by setting <see cref="Column.resizable"/>.
         /// A column is effectively resizable if both <see cref="Column.resizable"/> and <see cref="Columns.resizable"/> are both true.
         /// </remarks>
+        [CreateProperty]
         public bool resizable
         {
             get => m_Resizable;
@@ -218,6 +235,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_Resizable = value;
                 NotifyChange(ColumnsDataType.Resizable);
+                NotifyPropertyChanged(resizableProperty);
             }
         }
 
@@ -227,6 +245,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// When enabled, resizing can be cancelled by pressing ESC key.
         /// </remarks>
+        [CreateProperty]
         public bool resizePreview
         {
             get => m_ResizePreview;
@@ -236,6 +255,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_ResizePreview = value;
                 NotifyChange(ColumnsDataType.ResizePreview);
+                NotifyPropertyChanged(resizePreviewProperty);
             }
         }
 
@@ -272,6 +292,7 @@ namespace UnityEngine.UIElements
         /// Indicates how the size of columns in this collection is automatically adjusted as other columns or the containing view get resized.
         /// The default value is <see cref="StretchMode.GrowAndFill"/>
         /// </summary>
+        [CreateProperty]
         public StretchMode stretchMode
         {
             get => m_StretchMode;
@@ -281,6 +302,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_StretchMode = value;
                 NotifyChange(ColumnsDataType.StretchMode);
+                NotifyPropertyChanged(stretchModeProperty);
             }
         }
 
@@ -404,12 +426,24 @@ namespace UnityEngine.UIElements
                 m_VisibleColumns?.Remove(column);
 
                 column.collection = null;
+                column.propertyChanged -= OnColumnsPropertyChanged;
                 column.changed -= OnColumnChanged;
                 column.resized -= OnColumnResized;
                 columnRemoved?.Invoke(column);
                 return true;
             }
             return false;
+        }
+
+        void OnColumnsPropertyChanged(object sender, BindablePropertyChangedEventArgs args)
+        {
+            var c = (Column)sender;
+            var index = m_Columns.IndexOf(c);
+            if (index > 0)
+            {
+                var fullPath = $"columns[{index}].{args.propertyName}";
+                NotifyPropertyChanged(fullPath);
+            }
         }
 
         void OnColumnChanged(Column column, ColumnDataType type)
@@ -468,6 +502,7 @@ namespace UnityEngine.UIElements
                 DirtyVisibleColumns();
             }
             column.collection = this;
+            column.propertyChanged += OnColumnsPropertyChanged;
             column.changed += OnColumnChanged;
             column.resized += OnColumnResized;
             columnAdded?.Invoke(column, index);
@@ -566,6 +601,11 @@ namespace UnityEngine.UIElements
         void NotifyChange(ColumnsDataType type)
         {
             changed?.Invoke(type);
+        }
+
+        void NotifyPropertyChanged(in BindingId property)
+        {
+            propertyChanged?.Invoke(this, new BindablePropertyChangedEventArgs(property));
         }
     }
 }

@@ -151,6 +151,7 @@ namespace UnityEditor.Build.Profile
 
         public void OnDisable()
         {
+            DestroyImmediate(buildProfileEditor);
             BuildProfileContext.instance.activeProfileChanged -= OnActiveProfileChanged;
             m_BuildProfileDataSource?.Dispose();
 
@@ -158,6 +159,7 @@ namespace UnityEditor.Build.Profile
                 m_AssetImportWindow.Close();
 
             m_ProfileListViews?.Unbind();
+            SendWorkflowReport();
         }
 
         /// <summary>
@@ -428,11 +430,14 @@ namespace UnityEditor.Build.Profile
             if (!m_BuildProfileSelection.HasSelection())
                 return;
 
-            if (!m_BuildProfileSelection.Get(0).IsActiveBuildProfileOrPlatform())
+            var profile = m_BuildProfileSelection.Get(0);
+            if (!profile.IsActiveBuildProfileOrPlatform())
             {
                 Debug.LogWarning("[BuildProfile] Attempted to build with a non-active build profile.");
                 return;
             }
+
+            BuildProfileModuleUtil.SwitchLegacySelectedBuildTargets(profile);
 
             BuildProfileModuleUtil.CallInternalBuildMethods(m_ShouldAskForBuildLocation, optionFlags);
         }
@@ -490,6 +495,39 @@ namespace UnityEditor.Build.Profile
             // This was used by different UX to update default build target group tabs
             // based on legacy Build Setting window state.
             BuildProfileModuleUtil.SwitchLegacySelectedBuildTargets(profile);
+        }
+
+        void SendWorkflowReport()
+        {
+            if (m_BuildProfileDataSource.customBuildProfiles.Count == 0)
+            {
+                EditorAnalytics.SendAnalytic(new BuildProfileWorkflowReport());
+                return;
+            }
+
+            Dictionary<(BuildTarget, StandaloneBuildSubtarget), BuildProfileWorkflowReport> modules = new();
+            foreach (var profile in m_BuildProfileDataSource.customBuildProfiles)
+            {
+                if (modules.TryGetValue((profile.buildTarget, profile.subtarget), out var report))
+                {
+                    report.Increment();
+                    continue;
+                }
+
+                modules.Add((profile.buildTarget, profile.subtarget),
+                    new BuildProfileWorkflowReport(new BuildProfileWorkflowReport.Payload()
+                {
+                    buildTarget = profile.buildTarget,
+                    buildTargetString = profile.buildTarget.ToString(),
+                    standaloneSubtarget = profile.subtarget,
+                    count = 1
+                }));
+            }
+
+            foreach (var report in modules.Values)
+            {
+                EditorAnalytics.SendAnalytic(report);
+            }
         }
 
         DropdownButton CreateBuildDropdownButton()

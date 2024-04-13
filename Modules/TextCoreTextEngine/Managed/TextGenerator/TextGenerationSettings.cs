@@ -44,7 +44,6 @@ namespace UnityEngine.TextCore.Text
 
         public TextAlignment textAlignment = TextAlignment.TopLeft;
         public TextOverflowMode overflowMode = TextOverflowMode.Overflow;
-        public bool wordWrap = false;
         public float wordWrappingRatio;
 
         public Color color = Color.white;
@@ -113,7 +112,6 @@ namespace UnityEngine.TextCore.Text
             textSettings = tgs.textSettings;
             textAlignment = tgs.textAlignment;
             overflowMode = tgs.overflowMode;
-            wordWrap = tgs.wordWrap;
             wordWrappingRatio = tgs.wordWrappingRatio;
             fontColorGradient = tgs.fontColorGradient;
             fontColorGradientPreset = tgs.fontColorGradientPreset;
@@ -164,7 +162,7 @@ namespace UnityEngine.TextCore.Text
                 && Equals(spriteAsset, other.spriteAsset) && Equals(styleSheet, other.styleSheet)
                 && fontStyle == other.fontStyle && Equals(textSettings, other.textSettings)
                 && textAlignment == other.textAlignment && overflowMode == other.overflowMode
-                && wordWrap == other.wordWrap && wordWrappingRatio.Equals(other.wordWrappingRatio)
+                && wordWrappingRatio.Equals(other.wordWrappingRatio)
                 && color.Equals(other.color) && Equals(fontColorGradient, other.fontColorGradient)
                 && Equals(fontColorGradientPreset, other.fontColorGradientPreset) && tintSprites == other.tintSprites
                 && overrideRichTextColors == other.overrideRichTextColors
@@ -210,7 +208,6 @@ namespace UnityEngine.TextCore.Text
             hashCode.Add(textSettings);
             hashCode.Add((int)textAlignment);
             hashCode.Add((int)overflowMode);
-            hashCode.Add(wordWrap);
             hashCode.Add(wordWrappingRatio);
             hashCode.Add(color);
             hashCode.Add(fontColorGradient);
@@ -265,7 +262,7 @@ namespace UnityEngine.TextCore.Text
 
         public override string ToString()
         {
-            return $"{nameof(text)}: {text}\n {nameof(screenRect)}: {screenRect}\n {nameof(margins)}: {margins}\n {nameof(scale)}: {scale}\n {nameof(fontAsset)}: {fontAsset}\n {nameof(material)}: {material}\n {nameof(spriteAsset)}: {spriteAsset}\n {nameof(styleSheet)}: {styleSheet}\n {nameof(fontStyle)}: {fontStyle}\n {nameof(textSettings)}: {textSettings}\n {nameof(textAlignment)}: {textAlignment}\n {nameof(overflowMode)}: {overflowMode}\n {nameof(wordWrap)}: {wordWrap}\n {nameof(wordWrappingRatio)}: {wordWrappingRatio}\n {nameof(color)}: {color}\n {nameof(fontColorGradient)}: {fontColorGradient}\n {nameof(fontColorGradientPreset)}: {fontColorGradientPreset}\n {nameof(tintSprites)}: {tintSprites}\n {nameof(overrideRichTextColors)}: {overrideRichTextColors}\n {nameof(shouldConvertToLinearSpace)}: {shouldConvertToLinearSpace}\n {nameof(fontSize)}: {fontSize}\n {nameof(autoSize)}: {autoSize}\n {nameof(fontSizeMin)}: {fontSizeMin}\n {nameof(fontSizeMax)}: {fontSizeMax}\n {nameof(richText)}: {richText}\n {nameof(isRightToLeft)}: {isRightToLeft}\n {nameof(extraPadding)}: {extraPadding}\n {nameof(parseControlCharacters)}: {parseControlCharacters}\n {nameof(isOrthographic)}: {isOrthographic}\n {nameof(tagNoParsing)}: {tagNoParsing}\n {nameof(characterSpacing)}: {characterSpacing}\n {nameof(wordSpacing)}: {wordSpacing}\n {nameof(lineSpacing)}: {lineSpacing}\n {nameof(paragraphSpacing)}: {paragraphSpacing}\n {nameof(lineSpacingMax)}: {lineSpacingMax}\n {nameof(textWrappingMode)}: {textWrappingMode}\n {nameof(maxVisibleCharacters)}: {maxVisibleCharacters}\n {nameof(maxVisibleWords)}: {maxVisibleWords}\n {nameof(maxVisibleLines)}: {maxVisibleLines}\n {nameof(firstVisibleCharacter)}: {firstVisibleCharacter}\n {nameof(useMaxVisibleDescender)}: {useMaxVisibleDescender}\n {nameof(fontWeight)}: {fontWeight}\n {nameof(pageToDisplay)}: {pageToDisplay}\n {nameof(horizontalMapping)}: {horizontalMapping}\n {nameof(verticalMapping)}: {verticalMapping}\n {nameof(uvLineOffset)}: {uvLineOffset}\n {nameof(geometrySortingOrder)}: {geometrySortingOrder}\n {nameof(inverseYAxis)}: {inverseYAxis}\n {nameof(charWidthMaxAdj)}: {charWidthMaxAdj}\n {nameof(inputSource)}: {inputSource}\n {nameof(isPlaceholder)}: {isPlaceholder}";
+            return $"{nameof(text)}: {text}\n {nameof(screenRect)}: {screenRect}\n {nameof(margins)}: {margins}\n {nameof(scale)}: {scale}\n {nameof(fontAsset)}: {fontAsset}\n {nameof(material)}: {material}\n {nameof(spriteAsset)}: {spriteAsset}\n {nameof(styleSheet)}: {styleSheet}\n {nameof(fontStyle)}: {fontStyle}\n {nameof(textSettings)}: {textSettings}\n {nameof(textAlignment)}: {textAlignment}\n {nameof(overflowMode)}: {overflowMode}\n {nameof(wordWrappingRatio)}: {wordWrappingRatio}\n {nameof(color)}: {color}\n {nameof(fontColorGradient)}: {fontColorGradient}\n {nameof(fontColorGradientPreset)}: {fontColorGradientPreset}\n {nameof(tintSprites)}: {tintSprites}\n {nameof(overrideRichTextColors)}: {overrideRichTextColors}\n {nameof(shouldConvertToLinearSpace)}: {shouldConvertToLinearSpace}\n {nameof(fontSize)}: {fontSize}\n {nameof(autoSize)}: {autoSize}\n {nameof(fontSizeMin)}: {fontSizeMin}\n {nameof(fontSizeMax)}: {fontSizeMax}\n {nameof(richText)}: {richText}\n {nameof(isRightToLeft)}: {isRightToLeft}\n {nameof(extraPadding)}: {extraPadding}\n {nameof(parseControlCharacters)}: {parseControlCharacters}\n {nameof(isOrthographic)}: {isOrthographic}\n {nameof(tagNoParsing)}: {tagNoParsing}\n {nameof(characterSpacing)}: {characterSpacing}\n {nameof(wordSpacing)}: {wordSpacing}\n {nameof(lineSpacing)}: {lineSpacing}\n {nameof(paragraphSpacing)}: {paragraphSpacing}\n {nameof(lineSpacingMax)}: {lineSpacingMax}\n {nameof(textWrappingMode)}: {textWrappingMode}\n {nameof(maxVisibleCharacters)}: {maxVisibleCharacters}\n {nameof(maxVisibleWords)}: {maxVisibleWords}\n {nameof(maxVisibleLines)}: {maxVisibleLines}\n {nameof(firstVisibleCharacter)}: {firstVisibleCharacter}\n {nameof(useMaxVisibleDescender)}: {useMaxVisibleDescender}\n {nameof(fontWeight)}: {fontWeight}\n {nameof(pageToDisplay)}: {pageToDisplay}\n {nameof(horizontalMapping)}: {horizontalMapping}\n {nameof(verticalMapping)}: {verticalMapping}\n {nameof(uvLineOffset)}: {uvLineOffset}\n {nameof(geometrySortingOrder)}: {geometrySortingOrder}\n {nameof(inverseYAxis)}: {inverseYAxis}\n {nameof(charWidthMaxAdj)}: {charWidthMaxAdj}\n {nameof(inputSource)}: {inputSource}\n {nameof(isPlaceholder)}: {isPlaceholder}";
         }
     }
 }

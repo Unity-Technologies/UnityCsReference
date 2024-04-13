@@ -2,10 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
@@ -19,29 +21,58 @@ namespace UnityEditor.UIElements
     #pragma warning disable CS0618 // Type or member is obsolete
     class UxmlCodeDependencies
     {
-        const string k_DefaultDependencyPrefix = "UxmlFactory/";
+        const string k_UxmlTraitsDependencyPrefix = "UxmlFactory/";
+        const string k_UxmlSerializedDataDependencyPrefix = "UxmlSerializedData/";
 
-        internal static UxmlCodeDependencies instance { get; } = Build(k_DefaultDependencyPrefix);
+        internal static UxmlCodeDependencies instance { get; } = Build();
 
-        string m_DependencyPrefix;
-        HashSet<string> m_Set;
+        readonly HashSet<string> m_Set;
 
-        UxmlCodeDependencies(string customDependencyPrefix)
+        UxmlCodeDependencies()
         {
-            m_DependencyPrefix = customDependencyPrefix;
             m_Set = new();
         }
 
-        internal static UxmlCodeDependencies Build(string customDependencyPrefix)
+        private static UxmlCodeDependencies Build()
         {
             // Since we will rebuild dependencies, clear any existing values registered with Asset Database first
-            AssetDatabase.UnregisterCustomDependencyPrefixFilter(customDependencyPrefix);
-            return new UxmlCodeDependencies(customDependencyPrefix);
+            AssetDatabase.UnregisterCustomDependencyPrefixFilter(k_UxmlTraitsDependencyPrefix);
+            return new UxmlCodeDependencies();
         }
 
-        internal string FormatDependencyKeyName(string uxmlQualifiedName) => m_DependencyPrefix + uxmlQualifiedName;
+        internal string FormatDependencyKeyName(string uxmlQualifiedName) => k_UxmlTraitsDependencyPrefix + uxmlQualifiedName;
+        internal string FormatSerializedDependencyKeyName(string uxmlQualifiedName) => k_UxmlSerializedDataDependencyPrefix + uxmlQualifiedName;
 
-        static ProfilerMarker s_RegisterMarker = new("UxmlCodeDependencies.RegisterAssetAttributeDependencies");
+        static ProfilerMarker s_UxmlTraitsRegisterMarker = new("UxmlCodeDependencies.UxmlTraits.RegisterAssetAttributeDependencies");
+        static ProfilerMarker s_UxmlSerializationRegisterMarker = new("UxmlCodeDependencies.UxmlSerialization.RegisterAssetAttributeDependencies");
+
+        internal void RegisterUxmlSerializedDataDependencies(Dictionary<string, Type> serializedDataTypes)
+        {
+            AssetDatabase.UnregisterCustomDependencyPrefixFilter(k_UxmlSerializedDataDependencyPrefix);
+
+            using var _ = s_UxmlSerializationRegisterMarker.Auto();
+
+            foreach (var typeName in serializedDataTypes.Keys)
+            {
+                var type = UxmlSerializedDataRegistry.GetDataType(typeName);
+                var desc = UxmlDescriptionRegistry.GetDescription(type);
+                var dependencyKeyName = FormatSerializedDependencyKeyName(typeName);
+                var valueHash = Hash128.Compute(typeName);
+
+                foreach (var attribute in desc.attributeDescriptions)
+                {
+                    if (typeof(Object).IsAssignableFrom(attribute.fieldType))
+                    {
+                        valueHash.Append(attribute.uxmlName);
+                        valueHash.Append(attribute.fieldType.AssemblyQualifiedName);
+                        m_Set.Add(dependencyKeyName);
+                    }
+                }
+
+                // This actually will cause a reimport if the value hash has changed since last import of UXML
+                AssetDatabase.RegisterCustomDependency(dependencyKeyName, valueHash);
+            }
+        }
 
         internal void RegisterAssetAttributeDependencies(IBaseUxmlFactory factory)
         {
@@ -49,7 +80,7 @@ namespace UnityEditor.UIElements
             if (uxmlAttributesDescription == null)
                 return;
 
-            using var _ = s_RegisterMarker.Auto();
+            using var _ = s_UxmlTraitsRegisterMarker.Auto();
 
             var dependencyKeyName = FormatDependencyKeyName(factory.uxmlQualifiedName);
             var valueHash = new Hash128();
@@ -91,6 +122,12 @@ namespace UnityEditor.UIElements
         internal bool HasAnyAssetAttributes(IBaseUxmlFactory factory)
         {
             var dependencyKeyName = FormatDependencyKeyName(factory.uxmlQualifiedName);
+            return m_Set.Contains(dependencyKeyName);
+        }
+
+        internal bool HasAnyAssetAttributes(UxmlSerializedDataDescription description)
+        {
+            var dependencyKeyName = FormatSerializedDependencyKeyName(description.uxmlFullName);
             return m_Set.Contains(dependencyKeyName);
         }
     }

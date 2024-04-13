@@ -1855,6 +1855,7 @@ namespace UnityEngine.UIElements
         ///
         /// To enhance the RTL functionality of this property, users can explore available third-party plugins in the Unity Asset Store and make use of <see cref="ITextElementExperimentalFeatures.renderedText"/>
         /// </remarks>
+        [CreateProperty]
         public LanguageDirection languageDirection
         {
             get => m_LanguageDirection;
@@ -1865,6 +1866,7 @@ namespace UnityEngine.UIElements
 
                 m_LanguageDirection = value;
                 localLanguageDirection = m_LanguageDirection;
+                NotifyPropertyChanged(languageDirectionProperty);
             }
         }
 
