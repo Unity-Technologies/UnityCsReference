@@ -202,7 +202,7 @@ namespace UnityEditor.Search
             var ignoreErrors = m_ViewModel.results.Count > 0 || hasProgress;
             var alwaysPrintError = currentGroup == null ||
                 !string.IsNullOrEmpty(context.filterId) ||
-                (m_ViewModel.totalCount == 0 && string.Equals("all", currentGroup, StringComparison.Ordinal));
+                (m_ViewModel.totalCount == 0 && string.Equals(GroupedSearchList.allGroupId, currentGroup, StringComparison.Ordinal));
             if (!ignoreErrors && m_ViewModel.GetAllVisibleErrors().FirstOrDefault(e => alwaysPrintError || e.provider.type == m_ViewModel.currentGroup) is SearchQueryError err)
             {
                 error = err;

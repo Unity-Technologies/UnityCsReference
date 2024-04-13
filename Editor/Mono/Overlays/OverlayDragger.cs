@@ -78,10 +78,18 @@ namespace UnityEditor.Overlays
 
                 m_Hovered = hovered;
 
-                //Remove dropzone f we have a different container
-                if (m_Hovered == null || m_Hovered.targetContainer != m_OriginContainer)
-                    m_OriginGhostDropZone?.RemoveFromHierarchy();
-                
+                // Remove dropzone if we have a different container
+                if ((m_Hovered == null || m_Hovered.targetContainer != m_OriginContainer)
+                    && m_OriginGhostDropZone != null && !(m_OriginGhostDropZone.targetContainer is ToolbarOverlayContainer))
+                {
+                    m_OriginGhostDropZone.RemoveFromHierarchy();
+                    foreach (var dropZone in m_DropZones)
+                    {
+                        if (dropZone.targetContainer == m_OriginContainer)
+                            dropZone.Activate(m_TargetOverlay);
+                    }
+                }
+
                 if (m_Hovered != null)
                     m_Hovered.BeginHover();
 
@@ -236,7 +244,7 @@ namespace UnityEditor.Overlays
 
             if (delayPositionUpdate)
                 m_Overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent, Rect>(DelayedPositionUpdate, targetRect);
-            else 
+            else
                 m_Overlay.rootVisualElement.transform.position = OverlayUtilities.ClampRectToRect(targetRect, floatingContainer.rect).position;
 
             m_DockOperation.UpdateHover(dropZone);
@@ -267,7 +275,7 @@ namespace UnityEditor.Overlays
                 {
                     CancelDrag();
                     return;
-                }    
+                }
 
                 m_Overlay.container?.RemoveOverlay(m_Overlay);
                 m_Overlay.rootVisualElement.transform.position = Vector2.zero;

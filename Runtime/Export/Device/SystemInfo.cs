@@ -190,6 +190,7 @@ namespace UnityEngine.Device
         public static bool supportsGraphicsFence => ShimManager.systemInfoShim.supportsGraphicsFence;
 
         public static bool supportsAsyncGPUReadback => ShimManager.systemInfoShim.supportsAsyncGPUReadback;
+        public static bool supportsParallelPSOCreation => ShimManager.systemInfoShim.supportsParallelPSOCreation;
         public static bool supportsRayTracingShaders => ShimManager.systemInfoShim.supportsRayTracingShaders;
         public static bool supportsRayTracing => ShimManager.systemInfoShim.supportsRayTracing;
         public static bool supportsInlineRayTracing => ShimManager.systemInfoShim.supportsInlineRayTracing;

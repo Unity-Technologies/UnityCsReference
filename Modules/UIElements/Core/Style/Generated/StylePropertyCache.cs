@@ -108,7 +108,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-text-outline-width", "<length>"},
             {"-unity-text-overflow-position", "start | middle | end"},
             {"visibility", "visible | hidden"},
-            {"white-space", "normal | nowrap"},
+            {"white-space", "normal | nowrap | pre | pre-wrap"},
             {"width", "<length-percentage> | auto"},
             {"word-spacing", "<length>"}
         };

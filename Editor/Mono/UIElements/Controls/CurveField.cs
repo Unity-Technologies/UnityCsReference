@@ -369,7 +369,7 @@ namespace UnityEditor.UIElements
                 m_Content.SetMesh(m_Mesh);
             }
 
-            if (curve.keys.Length < 2)
+            if (curve == null || curve.keys.Length < 2)
                 return;
             Vector3[] vertices = m_Mesh.vertices;
             Vector3[] normals = m_Mesh.normals;

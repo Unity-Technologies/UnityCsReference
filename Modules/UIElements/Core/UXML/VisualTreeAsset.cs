@@ -187,9 +187,13 @@ namespace UnityEngine.UIElements
             }
         }
 
-#pragma warning disable 0649
-        [SerializeField] private List<UsingEntry> m_Usings = new List<UsingEntry>();
-#pragma warning restore 0649
+        [SerializeField] List<UsingEntry> m_Usings = new List<UsingEntry>();
+
+        internal List<UsingEntry> usings
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => m_Usings;
+        }
 
         /// <summary>
         /// The UXML templates used by this VisualTreeAsset.
@@ -335,7 +339,7 @@ namespace UnityEngine.UIElements
             {
                 var newAsset = new UxmlObjectAsset(fullTypeName, false, xmlNamespace);
                 newAsset.parentId = parent.id;
-                newAsset.id = GetNextUxmlObjectId(parent.parentId);
+                newAsset.id = GetNextUxmlObjectId(parent.id);
                 entry.uxmlObjectAssets.Add(newAsset);
                 return newAsset;
             }
@@ -346,7 +350,7 @@ namespace UnityEngine.UIElements
                 fieldAsset = new UxmlObjectAsset(fieldUxmlName, true, xmlNamespace);
                 entry.uxmlObjectAssets.Add(fieldAsset);
                 fieldAsset.parentId = parent.id;
-                fieldAsset.id = GetNextUxmlObjectId(parent.parentId);
+                fieldAsset.id = GetNextUxmlObjectId(parent.id);
             }
 
             return AddUxmlObject(fieldAsset, null, fullTypeName, xmlNamespace);

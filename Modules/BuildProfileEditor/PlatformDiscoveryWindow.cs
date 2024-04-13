@@ -23,6 +23,7 @@ namespace UnityEditor.Build.Profile
         Image m_SelectedCardImage;
         Label m_SelectedDisplayNameLabel;
         Button m_AddBuildProfileButton;
+        BuildProfilePlatformBrowserClosed m_CloseEvent;
 
         /// <summary>
         /// Warning message displayed when the selected card's platform
@@ -36,12 +37,18 @@ namespace UnityEditor.Build.Profile
             window.minSize = new Vector2(900, 500);
         }
 
+        public void OnDisable()
+        {
+            EditorAnalytics.SendAnalytic(m_CloseEvent);
+        }
+
         public void CreateGUI()
         {
             var windowUxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
             var windowUss = EditorGUIUtility.LoadRequired(Util.k_StyleSheet) as StyleSheet;
             rootVisualElement.styleSheets.Add(windowUss);
             windowUxml.CloneTree(rootVisualElement);
+            m_CloseEvent = new BuildProfilePlatformBrowserClosed();
 
             // Capture static visual element reference.
             m_AddBuildProfileButton = rootVisualElement.Q<Button>("add-build-profile-button");
@@ -62,6 +69,15 @@ namespace UnityEditor.Build.Profile
             m_AddBuildProfileButton.clicked += () =>
             {
                 OnAddBuildProfileClicked(m_SelectedCard);
+                var buildTarget = BuildProfileModuleUtil.GetBuildTarget(m_SelectedCard.moduleName);
+                m_CloseEvent = new BuildProfilePlatformBrowserClosed(new BuildProfilePlatformBrowserClosed.Payload()
+                {
+                    wasProfileCreated = true,
+                    moduleName = m_SelectedCard.moduleName,
+                    buildTarget = buildTarget,
+                    buildTargetString = buildTarget.ToString(),
+                    standaloneSubtarget = m_SelectedCard.subtarget,
+                });
                 Close();
             };
 
@@ -122,6 +138,15 @@ namespace UnityEditor.Build.Profile
         static void OnAddBuildProfileClicked(BuildProfileCard card)
         {
             BuildProfileDataSource.CreateAsset(card.moduleName, card.subtarget, card.displayName);
+            var buildTarget = BuildProfileModuleUtil.GetBuildTarget(card.moduleName);
+            EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
+            {
+                creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,
+                moduleName = card.moduleName,
+                buildTarget = buildTarget,
+                buildTargetString = buildTarget.ToString(),
+                standaloneSubtarget = card.subtarget
+            }));
         }
 
         static BuildProfileCard[] FindAllVisiblePlatforms()

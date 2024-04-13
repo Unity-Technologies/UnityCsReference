@@ -405,6 +405,8 @@ namespace Unity.UI.Builder
                 {$"-unity-text-align{FieldTooltipDictionarySeparator}lower", "Aligns text to the lower edge of the container."},
                 {$"white-space{FieldTooltipDictionarySeparator}normal", "Consecutive white spaces are collapsed into one and text wraps to fit the container."},
                 {$"white-space{FieldTooltipDictionarySeparator}nowrap", "Consecutive white spaces are collapsed into one, and text doesn't wrap and continues on the same line in the container."},
+                {$"white-space{FieldTooltipDictionarySeparator}pre", "Whitespace is preserved. Text will only wrap on line breaks."},
+                {$"white-space{FieldTooltipDictionarySeparator}pre-wrap", "Whitespace is preserved. Text will wrap when necessary."},
                 {$"text-overflow{FieldTooltipDictionarySeparator}clip", "Text that extends beyond the boundaries of its container will be cut off and will not be visible."},
                 {$"text-overflow{FieldTooltipDictionarySeparator}ellipsis", "Text that extends beyond the boundaries of its container will be truncated with an ellipsis."},
                 {$"-unity-background-scale-mode{FieldTooltipDictionarySeparator}stretch-to-fill", "Stretches an image to cover the entire container. "},

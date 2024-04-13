@@ -383,7 +383,7 @@ internal class LayoutManager : IDisposable
 
     public void SetMeasureFunction(LayoutHandle handle, LayoutMeasureFunction value)
     {
-        if (GetAccess().GetNodeData(handle).ManagedOwnerIndex == 0) Debug.LogWarning("Settomg Measure method on a node with no Owner");
+        if (GetAccess().GetNodeData(handle).ManagedOwnerIndex == 0) Debug.LogWarning("Setting Measure method on a node with no Owner");
         ref var index = ref GetAccess().GetNodeData(handle).ManagedMeasureFunctionIndex;
         m_ManagedMeasureFunctions.UpdateValue(ref index, value);
     }

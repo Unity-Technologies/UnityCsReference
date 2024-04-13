@@ -10,7 +10,7 @@ namespace UnityEditor.Overlays
 
         protected override bool ShouldEnable(Overlay draggedOverlay)
         {
-            return targetContainer != originContainer && !targetContainer.HasVisibleOverlays();
+            return !targetContainer.HasVisibleOverlays();
         }
 
         public override void Activate(Overlay draggedOverlay)

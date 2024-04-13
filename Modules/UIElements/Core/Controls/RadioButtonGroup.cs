@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BaseField<int>.UxmlSerializedData
         {
             #pragma warning disable 649
-            [UxmlAttribute("choices")]
+            [UxmlAttribute("choices"), UxmlAttributeBindingPath(nameof(choices))]
             [SerializeField] List<string> choicesList;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags choicesList_UxmlAttributeFlags;
             #pragma warning restore 649

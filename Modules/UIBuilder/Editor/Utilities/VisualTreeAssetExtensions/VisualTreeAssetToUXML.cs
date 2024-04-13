@@ -13,6 +13,7 @@ using System.Linq;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine.Pool;
 using Object = UnityEngine.Object;
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -135,39 +136,13 @@ namespace Unity.UI.Builder
         static void AppendTemplateRegistrations(
             VisualTreeAsset vta, string vtaPath, StringBuilder stringBuilder, HashSet<string> templatesFilter = null)
         {
-            var templateAliases = new List<string>();
+            using var hashSetPool = HashSetPool<string>.Get(out var templateAliases);
 
-            if (vta.templateAssets != null && vta.templateAssets.Count > 0)
+            if (vta.templateAssets?.Count > 0)
             {
                 foreach (var templateAsset in vta.templateAssets)
                 {
-                    if (!templateAliases.Contains(templateAsset.templateAlias))
-                        templateAliases.Add(templateAsset.templateAlias);
-                }
-            }
-
-            if (vta.uxmlObjectEntries != null && vta.uxmlObjectEntries.Count > 0)
-            {
-                foreach (var entry in vta.uxmlObjectEntries)
-                {
-                    if (entry.uxmlObjectAssets == null)
-                        continue;
-
-                    foreach (var uxmlObjectAsset in entry.uxmlObjectAssets)
-                    {
-                        if (uxmlObjectAsset.fullTypeName != k_ColumnFullName)
-                            continue;
-
-                        var templateAlias = uxmlObjectAsset.GetAttributeValue(Column.k_HeaderTemplateAttributeName);
-
-                        if (!string.IsNullOrEmpty(templateAlias) && !templateAliases.Contains(templateAlias))
-                            templateAliases.Add(templateAlias);
-
-                        templateAlias = uxmlObjectAsset.GetAttributeValue(Column.k_CellTemplateAttributeName);
-
-                        if (!string.IsNullOrEmpty(templateAlias) && !templateAliases.Contains(templateAlias))
-                            templateAliases.Add(templateAlias);
-                    }
+                    templateAliases.Add(templateAsset.templateAlias);
                 }
             }
 
@@ -193,31 +168,23 @@ namespace Unity.UI.Builder
 
                 AppendElementAttribute(BuilderConstants.UxmlNameAttr, templateAlias, stringBuilder);
 
-                var fieldInfo = VisualTreeAssetExtensions.UsingsListFieldInfo;
-                if (fieldInfo != null)
+                var usings = vta.usings;
+                if (usings?.Count > 0)
                 {
-                    var usings = fieldInfo.GetValue(vta) as List<VisualTreeAsset.UsingEntry>;
-                    if (usings != null && usings.Count > 0)
+                    var lookingFor = new VisualTreeAsset.UsingEntry(templateAlias, string.Empty);
+                    int index = usings.BinarySearch(lookingFor, VisualTreeAsset.UsingEntry.comparer);
+                    if (index >= 0)
                     {
-                        var lookingFor = new VisualTreeAsset.UsingEntry(templateAlias, string.Empty);
-                        int index = usings.BinarySearch(lookingFor, VisualTreeAsset.UsingEntry.comparer);
-                        if (index >= 0)
-                        {
-                            var usingEntry = usings[index];
+                        var usingEntry = usings[index];
 
-                            var path = GetProcessedPathForSrcAttribute(usingEntry.asset, vtaPath, usingEntry.path);
-                            AppendElementAttribute("src", path, stringBuilder);
-                        }
+                        var path = GetProcessedPathForSrcAttribute(usingEntry.asset, vtaPath, usingEntry.path);
+                        AppendElementAttribute("src", path, stringBuilder);
                     }
                 }
-                else
-                {
-                    Debug.LogError("UI Builder: VisualTreeAsset.m_Usings field has not been found! Update the reflection code!");
-                }
+
                 stringBuilder.Append(BuilderConstants.UxmlEndTagSymbol);
                 stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
             }
-
         }
 
         static void GatherUsedTemplates(

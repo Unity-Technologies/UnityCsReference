@@ -13,20 +13,6 @@ namespace Unity.Hierarchy
     [NativeType(Header = "Modules/HierarchyCore/HierarchyTestsHelper.h")]
     internal static class HierarchyTestsHelper
     {
-        [Flags]
-        internal enum Capabilities
-        {
-            None = 0,
-            Initialize = 1 << 0,
-            Dispose = 1 << 1,
-            GetNodeTypeName = 1 << 2,
-            GetDefaultNodeFlags = 1 << 3,
-            ChangesPending = 1 << 4,
-            IntegrateChanges = 1 << 5,
-            SearchMatch = 1 << 6,
-            SearchEnd = 1 << 7
-        }
-
         [NativeType(Header = "Modules/HierarchyCore/HierarchyTestsHelper.h")]
         internal enum SortOrder
         {
@@ -116,18 +102,6 @@ namespace Unity.Hierarchy
             var handler = model.Hierarchy.GetNodeTypeHandlerBase(in node);
             return handler?.Internal_SearchMatch(in node) ?? false;
         }
-
-        [NativeMethod(IsThreadSafe = true)]
-        internal static extern void SetCapabilitiesScriptingHandler(Hierarchy hierarchy, string nodeTypeName, int cap);
-
-        [NativeMethod(IsThreadSafe = true)]
-        internal static extern void SetCapabilitiesNativeHandler(Hierarchy hierarchy, string nodeTypeName, int cap);
-
-        [NativeMethod(IsThreadSafe = true)]
-        internal static extern int GetCapabilitiesScriptingHandler(Hierarchy hierarchy, string nodeTypeName);
-
-        [NativeMethod(IsThreadSafe = true)]
-        internal static extern int GetCapabilitiesNativeHandler(Hierarchy hierarchy, string nodeTypeName);
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern object GetHierarchyScriptingObject(Hierarchy hierarchy);

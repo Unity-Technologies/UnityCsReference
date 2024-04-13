@@ -16,8 +16,6 @@ namespace UnityEditor.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class UxmlSerializedDataRegistry
     {
-        const string k_DefaultDependencyPrefix = "UxmlSerializedData/";
-
         static bool s_Registered;
 
         static readonly Dictionary<string, Type> s_MovedTypes = new();
@@ -33,13 +31,7 @@ namespace UnityEditor.UIElements
                 return;
 
             Register();
-
-            AssetDatabase.UnregisterCustomDependencyPrefixFilter(k_DefaultDependencyPrefix);
-            foreach (var typeName in SerializedDataTypes.Keys)
-            {
-                var keyName = GetDependencyKeyName(typeName);
-                AssetDatabase.RegisterCustomDependency(keyName, Hash128.Compute(typeName));
-            }
+            UxmlCodeDependencies.instance.RegisterUxmlSerializedDataDependencies(SerializedDataTypes);
         }
 
         // Used for testing
@@ -57,6 +49,7 @@ namespace UnityEditor.UIElements
         public static void ClearDescriptionCache()
         {
             s_DescriptionsCache.Clear();
+            UxmlDescriptionRegistry.Clear();
         }
 
         public static UxmlSerializedDataDescription GetDescription(string typeName)
@@ -75,7 +68,16 @@ namespace UnityEditor.UIElements
             return desc;
         }
 
-        public static string GetDependencyKeyName(string typeName) => k_DefaultDependencyPrefix + typeName;
+        public static Type GetDataType(string typeName)
+        {
+            if (!s_Registered)
+                Register();
+
+            if (!SerializedDataTypes.TryGetValue(typeName, out var type) && !s_MovedTypes.TryGetValue(typeName, out type))
+                return null;
+
+            return type;
+        }
 
         public static void Register()
         {

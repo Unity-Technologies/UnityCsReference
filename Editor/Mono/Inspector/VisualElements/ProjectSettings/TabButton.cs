@@ -114,9 +114,12 @@ namespace UnityEditor.UIElements.ProjectSettings
 
         void RecalculateBottomBarPosition()
         {
+            //we need to calculate the width of the bottom bar based on the tab width and remove border width from left and right
             m_BottomBar.style.width = layout.width - resolvedStyle.borderRightWidth - resolvedStyle.borderLeftWidth;
-            m_BottomBar.style.top = parent.layout.height;
-            m_BottomBar.style.left = m_BottomBar.parent.resolvedStyle.paddingLeft + resolvedStyle.borderLeftWidth + layout.x;
+            //we extract additional padding from the parent to get the correct position + tab height
+            m_BottomBar.style.top = (parent.worldBound.y - parent.parent.worldBound.y) + parent.layout.height;
+            //we extract additional padding from the parent to get the correct position + tab position x + border width
+            m_BottomBar.style.left = (parent.worldBound.x - parent.parent.worldBound.x) + layout.x + resolvedStyle.borderLeftWidth;
         }
 
         public void Deselect()

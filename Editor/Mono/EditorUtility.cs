@@ -626,7 +626,7 @@ namespace UnityEditor
 
         internal static void ConfigurePreviewObjectSRP(GameObject go)
         {
-            if (GraphicsSettings.renderPipelineAsset != null &&
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled &&
                 go.TryGetComponent<Renderer>(out var renderer))
             {
                 // Case 1297670: Force the ambient probe for object preview in SRP.

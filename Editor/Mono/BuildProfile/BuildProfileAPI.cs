@@ -27,6 +27,11 @@ namespace UnityEditor.Build.Profile
         public static void SetActiveBuildProfile(BuildProfile buildProfile)
         {
             BuildProfileContext.instance.activeProfile = buildProfile;
+
+            if (buildProfile == null)
+                return;
+
+            BuildProfileModuleUtil.SwitchLegacyActiveFromBuildProfile(buildProfile);
         }
     }
 }

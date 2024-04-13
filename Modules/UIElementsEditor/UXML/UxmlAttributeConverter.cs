@@ -64,6 +64,7 @@ namespace UnityEditor.UIElements
             // Special handling for Unity Object
             if (typeof(Object).IsAssignableFrom(type))
             {
+                // Optional support for referencing by template alias
                 if (type == typeof(VisualTreeAsset))
                 {
                     result = cc.visualTreeAsset.ResolveTemplate(value);
@@ -106,29 +107,9 @@ namespace UnityEditor.UIElements
             if (typeof(Object).IsAssignableFrom(type))
             {
                 var obj = value as Object;
-
-                if (type == typeof(VisualTreeAsset))
-                {
-                    result = AssetDatabase.GetAssetPath(obj);
-                    if (visualTreeAsset != null && !string.IsNullOrEmpty(result) && !visualTreeAsset.TemplateExists(obj.name) && visualTreeAsset.name != obj.name)
-                    {
-                        var resolvedAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(result);
-                        if (resolvedAsset)
-                        {
-                            visualTreeAsset.RegisterTemplate(obj.name, resolvedAsset);
-                        }
-                    }
-                }
-
                 result = URIHelpers.MakeAssetUri(obj);
                 if (visualTreeAsset != null && !string.IsNullOrEmpty(result) && !visualTreeAsset.AssetEntryExists(result, type))
                     visualTreeAsset.RegisterAssetEntry(result, type, obj);
-
-                // attributes referencing a template use the VTA name instead of the path
-                // the path is used in the template's own attributes
-                if (type == typeof(VisualTreeAsset) && obj != null && obj.name != null)
-                    result = obj.name;
-
                 return true;
             }
 

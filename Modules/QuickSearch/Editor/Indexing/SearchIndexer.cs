@@ -44,7 +44,8 @@ namespace UnityEditor.Search
         // 25- Fix SearchDocument concurrency
         // 26- Index all dir tokens in combination for dir: filter.
         // 27- Use AssemblyQualifiedName for PropertyType in IndexProperty<TProperty, TPropertyOwner>
-        internal const int version = 0x027;
+        // 28- Improve Properties indexing (supports more types)
+        internal const int version = 0x028;
 
         public enum Type : byte
         {
@@ -1219,6 +1220,13 @@ namespace UnityEditor.Search
                     indexes = new List<SearchIndexEntry>(m_Indexes);
             }
 
+            // Remove the removedDocuments from the source documents. It is possible for some assets to get removed and then added back with the same
+            // path and file content (for example removing and re-adding a package), in which case when fetching the changeset from the SearchMonitor
+            // we check for the source document's existence and if the file hashes match to know if there needs to be an update. Therefore, we should definitely
+            // remove the source document to avoid this kind of issue (UUM-66122).
+            foreach (var removedDocument in removeDocuments)
+                m_SourceDocuments.TryRemove(removedDocument, out _);
+
             if (other.documentCount > 0)
             {
                 var count = updatedDocIndexes.Count;
@@ -1641,6 +1649,13 @@ namespace UnityEditor.Search
                     }
 
                     FilterOrphanEntries(m_Indexes, removedDocIndexes, m_BatchIndexes);
+
+                    // Remove the removedDocuments from the source documents. It is possible for some assets to get removed and then added back with the same
+                    // path and file content (for example removing and re-adding a package), in which case when fetching the changeset from the SearchMonitor
+                    // we check for the source document's existence and if the file hashes match to know if there needs to be an update. Therefore, we should definitely
+                    // remove the source document to avoid this kind of issue (UUM-66122).
+                    foreach (var removedDocument in removedDocuments)
+                        m_SourceDocuments.TryRemove(removedDocument, out _);
                 }
                 else
                 {

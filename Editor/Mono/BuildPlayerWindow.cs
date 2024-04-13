@@ -582,7 +582,9 @@ namespace UnityEditor
         };
         static public string GetPlaybackEngineDownloadURL(string moduleName)
         {
-            if (moduleName == "PS4" || moduleName == "PS5" || moduleName == "XboxOne")
+#pragma warning disable CS0618 // Member is obsolete
+            if (!BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(BuildTargetDiscovery.GetBuildTargetByName(moduleName)))
+#pragma warning restore CS0618
                 return "https://unity3d.com/platform-installation";
 
             string fullVersion = InternalEditorUtility.GetFullUnityVersion();
@@ -958,8 +960,9 @@ namespace UnityEditor
         {
             GUILayout.Label(EditorGUIUtility.TextContent(string.Format(noModuleLoaded, BuildPlatforms.instance.GetModuleDisplayName(namedBuildTarget, buildTarget))));
             string url = "";
-
-            if (!isEditorinstalledWithHub || (moduleName == "PS4" || moduleName == "PS5" || moduleName == "XboxOne"))
+#pragma warning disable CS0618 // Member is obsolete
+            if (!isEditorinstalledWithHub || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(buildTarget))
+#pragma warning restore CS0618
             {
                 if (GUILayout.Button(openDownloadPage, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                 {

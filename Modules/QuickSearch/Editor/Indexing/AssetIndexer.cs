@@ -104,6 +104,7 @@ namespace UnityEditor.Search
             var subObjDocumentIndex = AddDocument(id, objPathName, containerPath, checkIfDocumentExists, SearchDocumentFlags.Nested | SearchDocumentFlags.Asset);
 
             IndexTypes(subObj.GetType(), subObjDocumentIndex, isPrefabDocument, exact: true);
+            IndexFolder(subObjDocumentIndex, containerPath);
             if (subObj is GameObject subGo)
             {
                 IndexComponents(subObjDocumentIndex, subGo);

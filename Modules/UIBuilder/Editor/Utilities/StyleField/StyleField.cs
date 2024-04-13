@@ -129,6 +129,7 @@ namespace Unity.UI.Builder
 
             RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
             RegisterCallback<FocusEvent>(OnFocus, TrickleDown.TrickleDown);
+            RegisterCallback<NavigationMoveEvent>(OnNavigationMove, TrickleDown.TrickleDown);
         }
 
         protected virtual bool SetInnerValueFromValue(string val)
@@ -212,6 +213,16 @@ namespace Unity.UI.Builder
             value = evt.newValue;
 
             evt.StopImmediatePropagation();
+        }
+
+        void OnNavigationMove(NavigationMoveEvent evt)
+        {
+            // When the popup is focused, we prevent event propagation to avoid TextInputFieldBase.HandleEventBubbleUp handling the event and switching the focus back to the Popupp leading to a persistent focus on the popup. (UUM-63696)
+            if (evt.elementTarget.parent == m_OptionsPopup)
+            {
+                //focusController.SwitchFocusOnEvent(this, evt);
+                evt.StopPropagation();
+            }
         }
 
         void OnFocus(FocusEvent evt)

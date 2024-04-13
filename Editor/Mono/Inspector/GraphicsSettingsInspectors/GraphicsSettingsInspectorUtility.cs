@@ -300,8 +300,35 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                 return;
 
             var settingsWindow = EditorWindow.GetWindow<ProjectSettingsWindow>(null, false);
-            if (settingsWindow.GetCurrentProvider() is GraphicsSettingsProvider provider)
-                provider.Reload();
+            if (settingsWindow.GetCurrentProvider() is not GraphicsSettingsProvider provider)
+                return;
+
+            if (provider.inspector == null)
+                return;
+
+            provider.inspector.Reload(ComputeRenderPipelineGlobalSettingsListHash(provider.inspector.serializedObject));
+        }
+
+        internal static uint ComputeRenderPipelineGlobalSettingsListHash(SerializedObject graphicsSettingsSerializedObject)
+        {
+            if (graphicsSettingsSerializedObject == null)
+                return 0u;
+
+            bool haveSettings = GraphicsSettingsInspectorUtility.GatherGlobalSettingsFromSerializedObject(graphicsSettingsSerializedObject, out var settingsContainers);
+            if (!haveSettings)
+                return 0u;
+
+            uint currentHash = 2166136261u;
+            foreach (var globalsettings in settingsContainers)
+            {
+                TryGetSettingsListFromRenderPipelineGlobalSettings(
+                    globalsettings.serializedObject.targetObject as RenderPipelineGlobalSettings,
+                    out SerializedObject _,
+                    out SerializedProperty _,
+                    out SerializedProperty settingsListInContainer);
+                currentHash *= 16777619u ^ settingsListInContainer.contentHash;
+            }
+            return currentHash;
         }
 
         #endregion

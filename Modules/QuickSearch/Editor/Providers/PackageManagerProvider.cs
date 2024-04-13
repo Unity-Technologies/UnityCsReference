@@ -26,6 +26,7 @@ namespace UnityEditor.Search.Providers
             {
                 priority = 90,
                 filterId = "pkg:",
+                active = false,
                 isExplicitProvider = true,
 
                 onEnable = () =>

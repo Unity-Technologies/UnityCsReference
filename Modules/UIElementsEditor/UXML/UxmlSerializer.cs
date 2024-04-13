@@ -37,6 +37,7 @@ namespace UnityEditor.UIElements
         bool? m_IsUxmlObject;
         bool m_DefaultValueSet;
         object m_DefaultValue;
+        string m_BindingPath;
 
         /// <summary>
         /// The <see cref="UxmlAttributeDescription"/> that this attribute is part of.
@@ -54,6 +55,31 @@ namespace UnityEditor.UIElements
         /// The FieldInfo for the UxmlSerializedData attribute flags.
         /// </summary>
         public FieldInfo serializedFieldAttributeFlags { get; set; }
+
+        /// <summary>
+        /// If this attribute is overriding then this will contain the name of the original property/field.
+        /// </summary>
+        public string overriddenFieldName { get; set; }
+
+        /// <summary>
+        /// The name of the field/property that data bindings should use.
+        /// </summary>
+        public string bindingPath
+        {
+            get
+            {
+                if (m_BindingPath == null)
+                {
+                    var bindingPathAttribute = serializedField.GetCustomAttribute<UxmlAttributeBindingPathAttribute>();
+                    if (bindingPathAttribute != null)
+                        m_BindingPath = bindingPathAttribute.path;
+                    else
+                        m_BindingPath = overriddenFieldName ?? serializedField.Name;
+                }
+
+                return m_BindingPath;
+            }
+        }
 
         /// <summary>
         /// The field/property value for the VisualElement/UxmlObject.

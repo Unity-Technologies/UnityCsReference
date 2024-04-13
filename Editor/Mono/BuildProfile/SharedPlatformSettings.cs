@@ -198,12 +198,14 @@ namespace UnityEditor.Build.Profile
 
         public string windowsDevicePortalUsername
         {
-            get => m_WindowsDevicePortalUsername;
+            get =>  EditorUserBuildSettings.DecodeBase64(m_WindowsDevicePortalUsername);
             set
             {
-                if (m_WindowsDevicePortalUsername != value)
+                string encodedString = EditorUserBuildSettings.EncodeBase64(value);
+
+                if (m_WindowsDevicePortalUsername != encodedString)
                 {
-                    m_WindowsDevicePortalUsername = value;
+                    m_WindowsDevicePortalUsername = EditorUserBuildSettings.EncodeBase64(value);
                     SyncSharedSettings(k_SettingWindowsDevicePortalUsername);
                 }
             }
@@ -211,12 +213,14 @@ namespace UnityEditor.Build.Profile
 
         public string windowsDevicePortalPassword
         {
-            get => m_WindowsDevicePortalPassword;
+            get => EditorUserBuildSettings.DecodeBase64(m_WindowsDevicePortalPassword);
             set
             {
-                if (m_WindowsDevicePortalPassword != value)
+                string encodedString = EditorUserBuildSettings.EncodeBase64(value);
+
+                if (m_WindowsDevicePortalPassword != encodedString)
                 {
-                    m_WindowsDevicePortalPassword = value;
+                    m_WindowsDevicePortalPassword = encodedString;
                     SyncSharedSettings(k_SettingWindowsDevicePortalPassword);
                 }
             }

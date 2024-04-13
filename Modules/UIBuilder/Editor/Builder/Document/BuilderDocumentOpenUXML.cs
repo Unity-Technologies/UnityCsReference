@@ -9,8 +9,8 @@ using UnityEditor;
 using System;
 using System.IO;
 using UnityEditor.UIElements;
+using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
-using VisualElement = UnityEngine.UIElements.VisualElement;
 
 namespace Unity.UI.Builder
 {
@@ -28,8 +28,8 @@ namespace Unity.UI.Builder
         [SerializeField]
         string m_OpenendVisualTreeAssetOldPath;
 
-        [SerializeField]
-        VisualTreeAsset m_VisualTreeAsset;
+        [SerializeField, FormerlySerializedAs("m_VisualTreeAsset")]
+        LazyLoadReference<VisualTreeAsset> m_VisualTreeAssetRef;
 
         [SerializeField]
         StyleSheet m_ActiveStyleSheet;
@@ -51,8 +51,9 @@ namespace Unity.UI.Builder
         bool m_DocumentBeingSavedExplicitly;
         BuilderUXMLFileSettings m_FileSettings;
         BuilderDocument m_Document;
-        VisualElement m_CurrentDocumentRootElement;
+        VisualTreeAsset m_VisualTreeAsset;
         VisualTreeAsset m_VisualTreeAssetBackup;
+        VisualElement m_CurrentDocumentRootElement;
 
         //
         // Getters
@@ -134,7 +135,7 @@ namespace Unity.UI.Builder
 
         public string uxmlPath
         {
-            get { return AssetDatabase.GetAssetPath(m_VisualTreeAsset); }
+            get { return AssetDatabase.GetAssetPath(visualTreeAsset); }
         }
 
         public List<string> ussPaths
@@ -152,7 +153,12 @@ namespace Unity.UI.Builder
         {
             get
             {
-                if (m_VisualTreeAsset == null)
+                if (m_VisualTreeAsset != null)
+                    return m_VisualTreeAsset;
+
+                if (m_VisualTreeAssetRef.isSet && m_VisualTreeAssetRef.asset != null)
+                    m_VisualTreeAsset = m_VisualTreeAssetRef.asset;
+                else
                     m_VisualTreeAsset = VisualTreeAssetUtilities.CreateInstance();
 
                 return m_VisualTreeAsset;
@@ -256,6 +262,7 @@ namespace Unity.UI.Builder
                     m_VisualTreeAsset.Destroy();
 
                 m_VisualTreeAsset = null;
+                m_VisualTreeAssetRef = null;
             }
 
             m_OpenUSSFiles.Clear();
@@ -465,7 +472,7 @@ namespace Unity.UI.Builder
             }
 
             // Reorder document after reimporting
-            VisualTreeAssetUtilities.ReOrderDocument(m_VisualTreeAsset);
+            VisualTreeAssetUtilities.ReOrderDocument(visualTreeAsset);
 
             // Check if any USS assets have changed reload them.
             foreach (var openUSSFile in savedUSSFiles)
@@ -487,7 +494,7 @@ namespace Unity.UI.Builder
                 }
 
                 // Reset asset name.
-                m_VisualTreeAsset.name = Path.GetFileNameWithoutExtension(newUxmlPath);
+                visualTreeAsset.name = Path.GetFileNameWithoutExtension(newUxmlPath);
                 m_OpenendVisualTreeAssetOldPath = newUxmlPath;
             }
 
@@ -509,7 +516,7 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            var inlineSheet = m_VisualTreeAsset.inlineSheet;
+            var inlineSheet = visualTreeAsset.inlineSheet;
             var vea = ve.GetVisualElementAsset();
 
             if (vea != null && vea.ruleIndex != -1)
@@ -534,7 +541,7 @@ namespace Unity.UI.Builder
             if (isReplacingFile)
             {
                 var replacedVTA = EditorGUIUtility.Load(newTemplatePath) as VisualTreeAsset;
-                isReplacingFileInHierarchy = replacedVTA.TemplateExists(m_VisualTreeAsset);
+                isReplacingFileInHierarchy = replacedVTA.TemplateExists(visualTreeAsset);
 
                 if (isReplacingFileInHierarchy && hasUnsavedChanges)
                 {
@@ -647,15 +654,16 @@ namespace Unity.UI.Builder
 
             m_VisualTreeAssetBackup = visualTreeAsset.DeepCopy();
             m_VisualTreeAsset = visualTreeAsset;
+            m_VisualTreeAssetRef = visualTreeAsset;
 
             // Re-stamp orderInDocument values using BuilderConstants.VisualTreeAssetOrderIncrement
-            VisualTreeAssetUtilities.ReOrderDocument(m_VisualTreeAsset);
+            VisualTreeAssetUtilities.ReOrderDocument(visualTreeAsset);
 
             PostLoadDocumentStyleSheetCleanup();
 
             hasUnsavedChanges = false;
 
-            m_OpenendVisualTreeAssetOldPath = AssetDatabase.GetAssetPath(m_VisualTreeAsset);
+            m_OpenendVisualTreeAssetOldPath = AssetDatabase.GetAssetPath(visualTreeAsset);
 
             m_Settings = BuilderDocumentSettings.CreateOrLoadSettingsObject(m_Settings, uxmlPath);
 
@@ -664,12 +672,12 @@ namespace Unity.UI.Builder
 
         public void PostLoadDocumentStyleSheetCleanup()
         {
-            m_VisualTreeAsset.UpdateUsingEntries();
+            visualTreeAsset.UpdateUsingEntries();
 
             m_OpenUSSFiles.Clear();
 
             // Load styles.
-            var styleSheetsUsed = m_VisualTreeAsset.GetAllReferencedStyleSheets();
+            var styleSheetsUsed = visualTreeAsset.GetAllReferencedStyleSheets();
             for (int i = 0; i < styleSheetsUsed.Count; ++i)
                 AddStyleSheetToDocument(styleSheetsUsed[i], null);
 
@@ -701,7 +709,7 @@ namespace Unity.UI.Builder
             if (m_DocumentBeingSavedExplicitly)
                 return;
 
-            var newVisualTreeAsset = m_VisualTreeAsset;
+            var newVisualTreeAsset = visualTreeAsset;
             var isCurrentDocumentBeingProcessed = assetPath == uxmlOldPath;
             var wasCurrentDocumentRenamed = uxmlPath == assetPath && assetPath != uxmlOldPath;
 
@@ -776,7 +784,7 @@ namespace Unity.UI.Builder
         public void OnAfterBuilderDeserialize(VisualElement documentRootElement)
         {
             // Refresh StyleSheets.
-            var styleSheetsUsed = m_VisualTreeAsset.GetAllReferencedStyleSheets();
+            var styleSheetsUsed = visualTreeAsset.GetAllReferencedStyleSheets();
             while (m_OpenUSSFiles.Count < styleSheetsUsed.Count)
                 m_OpenUSSFiles.Add(new BuilderDocumentOpenUSS());
 
@@ -817,13 +825,13 @@ namespace Unity.UI.Builder
 
         public void OnAfterLoadFromDisk()
         {
-            if (m_VisualTreeAsset != null)
+            if (m_VisualTreeAssetRef.isSet && m_VisualTreeAssetRef.asset != null)
             {
                 // Very important we convert asset references to paths here after a restore.
-                m_VisualTreeAsset.UpdateUsingEntries();
+                m_VisualTreeAssetRef.asset.UpdateUsingEntries();
 
                 // Make sure we have a backup after loading from disk
-                m_VisualTreeAssetBackup = m_VisualTreeAsset.DeepCopy();
+                m_VisualTreeAssetBackup = m_VisualTreeAssetRef.asset.DeepCopy();
             }
         }
 
@@ -839,7 +847,7 @@ namespace Unity.UI.Builder
             if (m_VisualTreeAsset != null && m_VisualTreeAssetBackup != null)
             {
                 m_VisualTreeAssetBackup.DeepOverwrite(m_VisualTreeAsset);
-                EditorUtility.SetDirty(m_VisualTreeAsset);
+                EditorUtility.SetDirty(visualTreeAsset);
                 if (hasUnsavedChanges && !isAnonymousDocument)
                 {
                     BuilderAssetUtilities.LiveReload(BuilderAssetUtilities.LiveReloadChanges.Hierarchy |
@@ -853,8 +861,11 @@ namespace Unity.UI.Builder
         // internal because it's used in tests
         internal void ClearBackups()
         {
-            m_VisualTreeAssetBackup.Destroy();
-            m_VisualTreeAssetBackup = null;
+            if (m_VisualTreeAssetBackup != null)
+            {
+                m_VisualTreeAssetBackup.Destroy();
+                m_VisualTreeAssetBackup = null;
+            }
 
             foreach (var openUSSFile in m_OpenUSSFiles)
                 openUSSFile.ClearBackup();
@@ -1048,19 +1059,20 @@ namespace Unity.UI.Builder
         void PreSaveSyncBackup()
         {
             if (m_VisualTreeAssetBackup == null)
-                m_VisualTreeAssetBackup = m_VisualTreeAsset.DeepCopy();
+                m_VisualTreeAssetBackup = visualTreeAsset.DeepCopy();
             else
-                m_VisualTreeAsset.DeepOverwrite(m_VisualTreeAssetBackup);
+                visualTreeAsset.DeepOverwrite(m_VisualTreeAssetBackup);
         }
 
         bool PostSaveToDiskChecksAndFixes(string newUxmlPath, bool needsFullRefresh)
         {
-            var oldVTAReference = m_VisualTreeAsset;
+            var oldVTAReference = visualTreeAsset;
             var oldUxmlPath = uxmlPath;
             var hasNewUxmlPath = !string.IsNullOrEmpty(newUxmlPath) && newUxmlPath != oldUxmlPath;
             var localUxmlPath = !string.IsNullOrEmpty(newUxmlPath) ? newUxmlPath : oldUxmlPath;
 
             m_VisualTreeAsset = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(localUxmlPath);
+            m_VisualTreeAssetRef = m_VisualTreeAsset;
             var newIsDifferentFromOld = m_VisualTreeAsset != oldVTAReference;
 
             // If we have a new uxmlPath, it means we're saving as and we need to reset the

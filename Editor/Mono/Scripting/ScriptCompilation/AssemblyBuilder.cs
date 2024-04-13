@@ -119,7 +119,7 @@ namespace UnityEditor.Compilation
                 editorCompilation,
                 $"{(int)assembly.BuildTarget}{"AB"}",
                 UnityBeeDriver.CacheMode.Off,
-                beeAssemblyBuilderDirectory,
+                beeAssemblyBuilderDirectoryInProjectDirectory,
                 useScriptUpdater:false);
             buildRequest.DataForBuildProgram.Add(() => BeeScriptCompilation.ScriptCompilationDataFor(
                 editorCompilation,

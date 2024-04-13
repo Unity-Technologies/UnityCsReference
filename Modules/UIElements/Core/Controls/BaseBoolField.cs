@@ -59,6 +59,7 @@ namespace UnityEngine.UIElements
         public bool toggleOnLabelClick { get; set; } = true;
 
         // Used by foldout
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool toggleOnTextClick { get; set; } = true;
 
         /// <summary>

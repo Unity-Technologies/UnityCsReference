@@ -183,12 +183,14 @@ namespace Unity.UI.Builder
                 {
                     case KeyCode.Return:
                     case KeyCode.KeypadEnter:
-                        if (Application.platform == RuntimePlatform.OSXEditor)
+                        if (explorerItem.IsRenamingActive())
+                            // end renaming and return focus
+                            Focus();
+                        else if (Application.platform == RuntimePlatform.OSXEditor)
                         {
                             explorerItem.ActivateRenameElementMode();
                             evt.StopPropagation();
                         }
-
                         break;
                     case KeyCode.F2:
                         if (Application.platform != RuntimePlatform.OSXEditor)
@@ -196,6 +198,10 @@ namespace Unity.UI.Builder
                             explorerItem.ActivateRenameElementMode();
                             evt.StopPropagation();
                         }
+                        break;
+                    case KeyCode.Escape:
+                        if (explorerItem.IsRenamingActive())
+                            Focus();
                         break;
                 }
             }, TrickleDown.TrickleDown);

@@ -22,7 +22,7 @@ namespace UnityEngine.TextCore
         public int screenWidth;
         public int screenHeight;
         public float fontSize;
-        public bool wrapText;
+        public WhiteSpace wordWrap;
         public LanguageDirection languageDirection;
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -48,7 +48,7 @@ namespace UnityEngine.TextCore
             fontSize = tgs.fontSize;
             screenWidth = tgs.screenWidth;
             screenHeight = tgs.screenHeight;
-            wrapText = tgs.wrapText;
+            wordWrap = tgs.wordWrap;
             horizontalAlignment = tgs.horizontalAlignment;
             verticalAlignment = tgs.verticalAlignment;
             color = tgs.color;
@@ -71,7 +71,7 @@ namespace UnityEngine.TextCore
                $"{nameof(screenWidth)}: {screenWidth}\n" +
                $"{nameof(screenHeight)}: {screenHeight}\n" +
                $"{nameof(fontSize)}: {fontSize}\n" +
-               $"{nameof(wrapText)}: {wrapText}\n" +
+               $"{nameof(wordWrap)}: {wordWrap}\n" +
                $"{nameof(languageDirection)}: {languageDirection}\n";
         }
 
@@ -82,7 +82,7 @@ namespace UnityEngine.TextCore
                    screenWidth == other.screenWidth &&
                    screenHeight == other.screenHeight &&
                    fontSize.Equals(other.fontSize) &&
-                   wrapText == other.wrapText &&
+                   wordWrap == other.wordWrap &&
                    languageDirection == other.languageDirection &&
                    horizontalAlignment == other.horizontalAlignment &&
                    verticalAlignment == other.verticalAlignment &&
@@ -104,7 +104,7 @@ namespace UnityEngine.TextCore
             hashCode.Add(screenWidth);
             hashCode.Add(screenHeight);
             hashCode.Add(fontSize);
-            hashCode.Add(wrapText);
+            hashCode.Add(wordWrap);
             hashCode.Add((int)languageDirection);
             hashCode.Add((int)horizontalAlignment);
             hashCode.Add((int)verticalAlignment);
@@ -146,6 +146,15 @@ namespace UnityEngine.TextCore
         /// Right-to-left language direction.
         /// </summary>
         RTL
+    }
+
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    internal enum WhiteSpace
+    {
+        Normal,
+        NoWrap,
+        Pre,
+        PreWrap
     }
 
 }

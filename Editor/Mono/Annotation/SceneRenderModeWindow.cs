@@ -163,7 +163,7 @@ namespace UnityEditor
                 modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show) +
                         SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show);
 
-                return UpdatedHeight(headers, modes, GraphicsSettings.renderPipelineAsset != null);
+                return UpdatedHeight(headers, modes, GraphicsSettings.isScriptableRenderPipelineEnabled);
             }
         }
 
@@ -295,7 +295,7 @@ namespace UnityEditor
                 }
             }
 
-            if (GraphicsSettings.renderPipelineAsset != null)
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
                 DrawSeparator(ref drawPos);
                 DrawRenderingDebuggerShortCut(drawPos);
@@ -339,7 +339,7 @@ namespace UnityEditor
                 }
             }
 
-            return UpdatedHeight(headers, modes, GraphicsSettings.renderPipelineAsset != null);
+            return UpdatedHeight(headers, modes, GraphicsSettings.isScriptableRenderPipelineEnabled);
         }
 
         private float UpdatedHeight(int headers, int modes, bool isSRP)

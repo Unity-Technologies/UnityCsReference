@@ -37,18 +37,16 @@ namespace UnityEngine.TextCore.Text
             m_CharWidthAdjDelta = 0;
 
             Vector2 margin = new Vector2(m_MarginWidth != 0 ? m_MarginWidth : TextGeneratorUtilities.largePositiveFloat, m_MarginHeight != 0 ? m_MarginHeight : TextGeneratorUtilities.largePositiveFloat);
-            TextWrappingMode wrapMode = generationSettings.wordWrap ? TextWrappingMode.Normal : TextWrappingMode.NoWrap;
-
             m_AutoSizeIterationCount = 0;
 
-            return CalculatePreferredValues(ref fontSize, margin, generationSettings.autoSize, wrapMode, generationSettings, textInfo);
+            return CalculatePreferredValues(ref fontSize, margin, generationSettings.autoSize, generationSettings, textInfo);
         }
 
         /// <summary>
         /// Method to calculate the preferred width and height of the text object.
         /// </summary>
         /// <returns></returns>
-        protected virtual Vector2 CalculatePreferredValues(ref float fontSize, Vector2 marginSize, bool isTextAutoSizingEnabled, TextWrappingMode textWrapMode, TextGenerationSettings generationSettings, TextInfo textInfo)
+        protected virtual Vector2 CalculatePreferredValues(ref float fontSize, Vector2 marginSize, bool isTextAutoSizingEnabled, TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             Profiler.BeginSample("TextGenerator.CalculatePreferredValues");
 
@@ -139,6 +137,7 @@ namespace UnityEngine.TextCore.Text
 
             m_Width = -1;
             float widthOfTextArea = marginWidth + 0.0001f - m_MarginLeft - m_MarginRight;
+            var textWrapMode = generationSettings.textWrappingMode;
 
             // Used by Unity's Auto Layout system.
             float renderedWidth = 0;

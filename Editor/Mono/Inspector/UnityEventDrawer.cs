@@ -55,12 +55,6 @@ namespace UnityEditorInternal
         internal const string kBoolArgument = "m_BoolArgument";
         internal const string kObjectArgumentAssemblyTypeName = "m_ObjectArgumentAssemblyTypeName";
 
-        //property path splits and separators
-        private const string kDotString = ".";
-        private const string kArrayDataString = "Array.data[";
-        private static readonly char[] kDotSeparator = { '.' };
-        private static readonly char[] kClosingSquareBraceSeparator = { ']' };
-
         // uss names
         internal const string kUssClassName = "unity-event";
         internal const string kLeftColumnClassName = kUssClassName + "__left-column";
@@ -160,6 +154,7 @@ namespace UnityEditorInternal
             {
                 showAddRemoveFooter = true,
                 reorderMode = ListViewReorderMode.Animated,
+                reorderable = true,
                 showBorder = true,
                 showFoldoutHeader = false,
                 showBoundCollectionSize = false,

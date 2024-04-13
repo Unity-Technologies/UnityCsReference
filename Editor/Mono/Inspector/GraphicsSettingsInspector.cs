@@ -36,9 +36,11 @@ namespace UnityEditor
         readonly VisibilityControllerBasedOnRenderPipeline m_VisibilityController = new();
         TabbedView m_TabbedView;
         VisualElement m_CurrentRoot;
+        ScrollView m_ScrollView;
         List<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> m_GlobalSettings;
 
         bool m_FinishedInitialization;
+        uint m_LastListsHash;
 
         // As we use multiple IMGUI container while porting everything to UITK we will call serializedObject.Update in first separate IMGUI container.
         // This way we don't need to do it in each following containers.
@@ -47,13 +49,20 @@ namespace UnityEditor
             return new IMGUIContainer(() => serializedObject.Update());
         }
 
-        internal void Reload()
+        internal void Initialization()
         {
-            if (m_FinishedInitialization)
+            m_LastListsHash = GraphicsSettingsInspectorUtility.ComputeRenderPipelineGlobalSettingsListHash(serializedObject);
+        }
+
+        internal void Reload(uint hashToCheck)
+        {
+            if (m_FinishedInitialization && m_LastListsHash != hashToCheck)
             {
                 Dispose();
 
                 Create(m_CurrentRoot);
+
+                m_LastListsHash = hashToCheck;
             }
         }
 
@@ -120,8 +129,8 @@ namespace UnityEditor
             GraphicsSettingsInspectorUtility.LocalizeVisualTree(m_CurrentRoot);
 
             // Register a callback on the Geometry Change event of the content container.It will be called when the size of all children will be known.
-            var mainScrollView = m_CurrentRoot.Q<ScrollView>("MainScrollView");
-            mainScrollView.RegisterCallbackOnce<GeometryChangedEvent>(OnMainScrollViewGeometryChanged);
+            m_ScrollView = m_CurrentRoot.Q<ScrollView>("MainScrollView");
+            m_ScrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(OnMainScrollViewGeometryChanged);
 
             m_CurrentRoot.Bind(serializedObject);
         }
@@ -177,13 +186,38 @@ namespace UnityEditor
             }
         }
 
+        int m_GeometryChangedEventCounter;
+
         void OnMainScrollViewGeometryChanged(GeometryChangedEvent evt)
         {
-            if (evt.elementTarget is not ScrollView mainScrollView)
-                throw new InvalidCastException();
+            void Unregister()
+            {
+                m_ScrollView.contentContainer.UnregisterCallback<GeometryChangedEvent>(OnMainScrollViewGeometryChanged);
+                m_GeometryChangedEventCounter = 0;
+                m_FinishedInitialization = true;
+            }
 
-            mainScrollView.scrollOffset = UserSettings.FromConfig().scrollOffset;
-            m_FinishedInitialization = true;
+            void UnregisterAfterLastGeometryChange()
+            {
+                if (m_GeometryChangedEventCounter > 1)
+                {
+                    m_GeometryChangedEventCounter--;
+                    return;
+                }
+
+                Unregister();
+            }
+
+            var savedScrollOffset = UserSettings.FromConfig().scrollOffset;
+            if (m_ScrollView.scrollOffset != savedScrollOffset)
+            {
+                m_ScrollView.scrollOffset = savedScrollOffset;
+
+                m_GeometryChangedEventCounter++;
+                m_ScrollView.contentContainer.schedule.Execute(UnregisterAfterLastGeometryChange).ExecuteLater(500);
+            }
+            else
+                Unregister();
         }
 
         void BindEnumFieldWithFadeGroup(VisualElement content, string id, Action buttonCallback)
@@ -224,12 +258,12 @@ namespace UnityEditor
                 var userSettings = new UserSettings();
 
                 var mainScrollView = root.Q<ScrollView>("MainScrollView");
-                if (mainScrollView != null)
-                {
-                    userSettings.scrollOffset = mainScrollView.scrollOffset;
-                }
-
                 var tabbedView = root.Q<TabbedView>("PipelineSpecificSettings");
+                if (mainScrollView == null)
+                    return;
+
+                userSettings.scrollOffset = mainScrollView.scrollOffset;
+
                 if (tabbedView != null && tabbedView.ActiveTab != null)
                 {
                     userSettings.pipelineFullTypeName = tabbedView.ActiveTab.userData.ToString();
@@ -397,6 +431,7 @@ namespace UnityEditor
                     return;
 
                 inspector = Editor.CreateEditor(settingsObj) as GraphicsSettingsInspector;
+                inspector.Initialization();
 
                 var content = inspector.Create(root);
                 this.keywords = CreateKeywordsList(content);
@@ -404,14 +439,11 @@ namespace UnityEditor
             deactivateHandler = (() =>
             {
                 if (inspector != null)
+                {
                     inspector.Dispose();
+                    inspector = null;
+                }
             });
-        }
-
-        internal void Reload()
-        {
-            if(inspector != null)
-                inspector.Reload();
         }
 
         List<string> CreateKeywordsList(VisualElement content)

@@ -78,7 +78,7 @@ namespace UnityEditor.Overlays
 
         public override void DropOverlay(Overlay overlay)
         {
-            
+
             m_TargetOverlay.container.GetOverlayIndex(m_TargetOverlay, out var section, out _);
             if (ShouldDockAfter(section))
             {

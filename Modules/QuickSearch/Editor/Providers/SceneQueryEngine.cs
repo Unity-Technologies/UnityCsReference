@@ -82,6 +82,7 @@ namespace UnityEditor.Search.Providers
             m_QueryEngine.AddFilter("size", GetSize);
             m_QueryEngine.AddFilter("components", GetComponentCount);
             m_QueryEngine.AddFilter("layer", GetLayer);
+            m_QueryEngine.AddFilter<string>("renderinglayer", OnRenderingLayer, new[] { ":" });
             m_QueryEngine.AddFilter("tag", GetTag);
             m_QueryEngine.AddFilter<PrefabFilter>("prefab", OnPrefabFilter, new[] { ":" });
             m_QueryEngine.AddFilter<string>("i", OnAttributeFilter, new[] { "=", ":" });
@@ -117,7 +118,7 @@ namespace UnityEditor.Search.Providers
             }
 
             var tagFilter = m_QueryEngine.GetFilter("tag")
-                .SetGlobalPropositionData(category: "Tags", icon: Utils.LoadIcon("AssetLabelIcon"), color: QueryColors.typeIcon);
+                .SetGlobalPropositionData(category: "Tags", icon: QueryLabelBlock.GetLabelIcon(), color: QueryColors.typeIcon);
             foreach (var t in InternalEditorUtility.tags)
             {
                 tagFilter.AddOrUpdatePropositionData(category: "Tags", label: ObjectNames.NicifyVariableName(t), replacement: "tag=" + SearchUtils.GetListMarkerReplacementText(t, InternalEditorUtility.tags, "AssetLabelIcon", QueryColors.typeIcon));
@@ -226,6 +227,22 @@ namespace UnityEditor.Search.Providers
                 god.layer = go.layer;
 
             return god.layer.Value;
+        }
+
+        bool OnRenderingLayer(GameObject go, QueryFilterOperator op, string layerName)
+        {
+            // We only supports `:` (contains) as op
+            // We check if layerName is a flag contains into renderingLayerMask
+
+            var renderer = go.GetComponent<Renderer>();
+            if (!renderer)
+                return false;
+            var layerValue = QueryRenderingLayerBlock.GetValueForLayerName(layerName);
+            if (layerValue != -1)
+            {
+                return (renderer.renderingLayerMask & layerValue) > 0;
+            }
+            return false;
         }
 
         float GetSize(GameObject go)

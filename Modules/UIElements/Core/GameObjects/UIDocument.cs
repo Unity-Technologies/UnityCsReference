@@ -383,7 +383,10 @@ namespace UnityEngine.UIElements
             }
 
             rootVisualElement.uiRenderer = renderer;
-            renderer.skipRendering = (parentUI != null); // Don't render embedded documents which will be rendered as part of their parents
+
+            // Don't render embedded documents which will be rendered as part of their parents
+            // Don't render documents with invalid PPU
+            renderer.skipRendering = (parentUI != null) || (pixelsPerUnit < Mathf.Epsilon);
 
             BaseRuntimePanel rtp = (BaseRuntimePanel)m_RootVisualElement.panel;
             if (rtp == null)
@@ -456,10 +459,19 @@ namespace UnityEngine.UIElements
             m_RootHasWorldTransform = false;
         }
 
+        float pixelsPerUnit => m_RuntimePanel == null ? 1.0f : m_RuntimePanel.pixelsPerUnit;
+
         void ComputeTransform(Transform transform, out Matrix4x4 matrix)
         {
             // This is the root, apply the pixels-per-unit scaling, and the y-flip.
-            float ppu = m_RuntimePanel == null ? 1.0f : m_RuntimePanel.pixelsPerUnit;
+            float ppu = pixelsPerUnit;
+            if (ppu < Mathf.Epsilon)
+            {
+                // This isn't a valid PPU, return the identity here, but the skipRendering flag will be set on the renderer
+                matrix = Matrix4x4.identity;
+                return;
+            }
+
             float ppuScale = 1.0f / ppu;
 
             var scale = Vector3.one * ppuScale;
@@ -883,6 +895,15 @@ namespace UnityEngine.UIElements
 
         private void OnValidate()
         {
+            // UUM-57741. Don't try to validate the UI Document if the panel isn't initialized. Otherwise,
+            // the assignment of the visualTreeAsset below will indirectly create the panel. There are other
+            // systems listening to the panel creation to initialize themselves, which may do invalid
+            // operations for an OnValidate() call (e.g., the EventSystem will create GameObjects).
+            if (m_PanelSettings == null || !m_PanelSettings.isInitialized)
+            {
+                return;
+            }
+
             if (!gameObject.activeInHierarchy)
             {
                 return;

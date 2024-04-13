@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -63,9 +64,11 @@ namespace UnityEditor.Build.Profile
             set => m_PlatformBuildProfile = value;
         }
 
+        /// <summary>
+        /// List of scenes specified in the build profile.
+        /// </summary>
         [SerializeField] private EditorBuildSettingsScene[] m_Scenes = Array.Empty<EditorBuildSettingsScene>();
-        [VisibleToOtherModules]
-        internal EditorBuildSettingsScene[] scenes
+        public EditorBuildSettingsScene[] scenes
         {
             get
             {
@@ -83,6 +86,32 @@ namespace UnityEditor.Build.Profile
                 if (this == BuildProfileContext.instance.activeProfile)
                     EditorBuildSettings.SceneListChanged();
             }
+        }
+
+        /// <summary>
+        /// Scripting Compilation Defines used during player and editor builds.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="EditorUserBuildSettings.GetActiveProfileYamlScriptingDefines"/> fetches active profile
+        /// define be deserializing the YAML file and assumes defines will be found under "m_ScriptingDefines" node.
+        /// </remarks>
+        [SerializeField] private string[] m_ScriptingDefines = Array.Empty<string>();
+        [VisibleToOtherModules] internal string[] scriptingDefines
+        {
+            get => m_ScriptingDefines;
+            set => m_ScriptingDefines = value;
+        }
+
+        [SerializeField]
+        PlayerSettingsYaml m_PlayerSettingsYaml = new();
+
+        PlayerSettings m_PlayerSettings;
+        [VisibleToOtherModules]
+        internal PlayerSettings playerSettings
+        {
+            get { return m_PlayerSettings; }
+
+            set { m_PlayerSettings = value; }
         }
 
         /// <summary>
@@ -124,6 +153,33 @@ namespace UnityEditor.Build.Profile
 
             CheckSceneListConsistency();
             onBuildProfileEnable?.Invoke(this);
+            LoadPlayerSettings();
+
+            if (!EditorUserBuildSettings.isBuildProfileAvailable
+                || BuildProfileContext.instance.activeProfile != this)
+                return;
+
+            // On disk changes invoke OnEnable,
+            // Check against the last observed editor defines.
+            string[] lastCompiledDefines = BuildProfileContext.instance.cachedEditorScriptingDefines;
+            if (ArrayUtility.ArrayEquals(m_ScriptingDefines, lastCompiledDefines))
+            {
+                return;
+            }
+            BuildProfileContext.instance.cachedEditorScriptingDefines = m_ScriptingDefines;
+            BuildProfileModuleUtil.RequestScriptCompilation(this);
+        }
+
+        void OnDisable()
+        {
+            RemovePlayerSettings();
+
+            // Active profile YAML may be read from disk during startup or
+            // Asset Database refresh, flush pending changes to disk.
+            if (BuildProfileContext.instance.activeProfile != this)
+                return;
+
+            AssetDatabase.SaveAssetIfDirty(this);
         }
 
         /// <summary>

@@ -48,7 +48,10 @@ namespace UnityEditor
         UpdatePrefabInstances = 11,
 
         // Children order change
-        ChangeChildrenOrder = 12
+        ChangeChildrenOrder = 12,
+
+        // Root order change
+        ChangeRootOrder = 13,
     }
 
     public static class ObjectChangeEvents
@@ -135,6 +138,22 @@ namespace UnityEditor
         public Scene scene => m_Scene;
 
         public ChangeChildrenOrderEventArgs(int instanceId, Scene scene)
+        {
+            m_InstanceId = instanceId;
+            m_Scene = scene;
+        }
+
+        private int m_InstanceId;
+        private Scene m_Scene;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ChangeRootOrderEventArgs
+    {
+        public int instanceId => m_InstanceId;
+        public Scene scene => m_Scene;
+
+        public ChangeRootOrderEventArgs(int instanceId, Scene scene)
         {
             m_InstanceId = instanceId;
             m_Scene = scene;
@@ -387,6 +406,9 @@ namespace UnityEditor
 
         public void GetChangeChildrenOrderEvent(int eventIdx, out ChangeChildrenOrderEventArgs data) =>
             ExtractEvent(eventIdx, ObjectChangeKind.ChangeChildrenOrder, out data);
+
+        public void GetChangeRootOrderEvent(int eventIdx, out ChangeRootOrderEventArgs data) =>
+            ExtractEvent(eventIdx, ObjectChangeKind.ChangeRootOrder, out data);
 
         public void GetChangeGameObjectOrComponentPropertiesEvent(int eventIdx, out ChangeGameObjectOrComponentPropertiesEventArgs data) =>
             ExtractEvent(eventIdx, ObjectChangeKind.ChangeGameObjectOrComponentProperties, out data);

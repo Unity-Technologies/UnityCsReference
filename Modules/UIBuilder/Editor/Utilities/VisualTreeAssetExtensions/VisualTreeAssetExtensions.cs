@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -16,9 +15,6 @@ namespace Unity.UI.Builder
 {
     internal static class VisualTreeAssetExtensions
     {
-        public static readonly FieldInfo UsingsListFieldInfo =
-            typeof(VisualTreeAsset).GetField("m_Usings", BindingFlags.Instance | BindingFlags.NonPublic);
-
         static readonly IComparer<VisualTreeAsset.UsingEntry> s_UsingEntryPathComparer = new UsingEntryPathComparer();
 
         class UsingEntryPathComparer : IComparer<VisualTreeAsset.UsingEntry>
@@ -204,26 +200,18 @@ namespace Unity.UI.Builder
 
         public static void UpdateUsingEntries(this VisualTreeAsset vta)
         {
-            var fieldInfo = UsingsListFieldInfo;
-            if (fieldInfo != null)
+            var usings = vta.usings;
+            if (usings != null && usings.Count > 0)
             {
-                var usings = fieldInfo.GetValue(vta) as List<VisualTreeAsset.UsingEntry>;
-                if (usings != null && usings.Count > 0)
+                for (int i = 0; i < usings.Count; ++i)
                 {
-                    for (int i = 0; i < usings.Count; ++i)
-                    {
-                        if (usings[i].asset == null)
-                            continue;
+                    if (usings[i].asset == null)
+                        continue;
 
-                        var u = usings[i];
-                        u.path = AssetDatabase.GetAssetPath(u.asset);
-                        usings[i] = u;
-                    }
+                    var u = usings[i];
+                    u.path = AssetDatabase.GetAssetPath(u.asset);
+                    usings[i] = u;
                 }
-            }
-            else
-            {
-                Debug.LogError("UI Builder: VisualTreeAsset.m_Usings field has not been found! Update the reflection code!");
             }
         }
 
@@ -281,23 +269,15 @@ namespace Unity.UI.Builder
 
         public static string GetTemplateNameFromPath(this VisualTreeAsset vta, string path)
         {
-            var fieldInfo = UsingsListFieldInfo;
-            if (fieldInfo != null)
+            var usings = vta.usings;
+            if (usings != null && usings.Count > 0)
             {
-                var usings = fieldInfo.GetValue(vta) as List<VisualTreeAsset.UsingEntry>;
-                if (usings != null && usings.Count > 0)
+                var lookingFor = new VisualTreeAsset.UsingEntry(null, path);
+                int index = usings.BinarySearch(lookingFor, s_UsingEntryPathComparer);
+                if (index >= 0 && usings[index].path == path)
                 {
-                    var lookingFor = new VisualTreeAsset.UsingEntry(null, path);
-                    int index = usings.BinarySearch(lookingFor, s_UsingEntryPathComparer);
-                    if (index >= 0 && usings[index].path == path)
-                    {
-                        return usings[index].alias;
-                    }
+                    return usings[index].alias;
                 }
-            }
-            else
-            {
-                Debug.LogError("UI Builder: VisualTreeAsset.m_Usings field has not been found! Update the reflection code!");
             }
 
             return Path.GetFileNameWithoutExtension(path);
@@ -324,10 +304,9 @@ namespace Unity.UI.Builder
 
         internal static bool TemplateExists(this VisualTreeAsset parentTemplate, VisualTreeAsset templateToCheck, HashSet<VisualTreeAsset> checkedTemplates)
         {
-            var fieldInfo = UsingsListFieldInfo;
-            if (fieldInfo != null && templateToCheck != null)
+            if (templateToCheck != null)
             {
-                var usings = fieldInfo.GetValue(templateToCheck) as List<VisualTreeAsset.UsingEntry>;
+                var usings = templateToCheck.usings;
                 if (usings != null && usings.Count > 0)
                 {
                     checkedTemplates.Add(templateToCheck);

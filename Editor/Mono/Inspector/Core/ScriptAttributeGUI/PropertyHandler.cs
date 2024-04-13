@@ -9,12 +9,16 @@ using System.Reflection;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.Bindings;
+using Object = UnityEngine.Object;
+using UnityEngine.Pool;
 
 namespace UnityEditor
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class PropertyHandler : IDisposable
     {
+        readonly static Dictionary<Type, List<(FieldInfo fieldInfo, Object objectReference)>> s_DefaultObjectReferenceCache = new();
+
         List<PropertyDrawer> m_PropertyDrawers;
         List<DecoratorDrawer> m_DecoratorDrawers;
         public string tooltip;
@@ -126,7 +130,7 @@ namespace UnityEditor
                     if (propertyType != null && propertyType.IsArrayOrList() && !attribute.applyToCollection)
                         return;
 
-                    var propertyDrawerForType = (PropertyDrawer)System.Activator.CreateInstance(drawerType);
+                    var propertyDrawerForType = CreatePropertyDrawerWithDefaultObjectReferences(drawerType);
                     propertyDrawerForType.m_FieldInfo = field;
 
                     // Will be null by design if default type drawer!
@@ -150,6 +154,47 @@ namespace UnityEditor
                     m_DecoratorDrawers.Add(decoratorDrawerForType);
                 }
             }
+        }
+
+        static PropertyDrawer CreatePropertyDrawerWithDefaultObjectReferences(Type drawerType)
+        {
+            var propertyDrawer = (PropertyDrawer)Activator.CreateInstance(drawerType);
+
+            // We cache the default values for the object references in the drawer as the lookup process can be slow.
+            if (!s_DefaultObjectReferenceCache.TryGetValue(drawerType, out var defaultObjectReferences))
+            {
+                var monoScript = MonoScript.FromType(drawerType);
+                if (monoScript != null)
+                {
+                    using var namePool = ListPool<string>.Get(out var names);
+                    using var targetsPool = ListPool<Object>.Get(out var targets);
+
+                    MonoImporter.GetDefaultReferencesInternal(monoScript, names, targets);
+                    Debug.Assert(names.Count == targets.Count);
+
+                    for (int i = 0; i < names.Count; i++)
+                    {
+                        defaultObjectReferences ??= new List<(FieldInfo, Object)>();
+                        var field = drawerType.GetField(names[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        if (field != null)
+                        {
+                            defaultObjectReferences.Add((field, targets[i]));
+                        }
+                    }
+                }
+
+                s_DefaultObjectReferenceCache[drawerType] = defaultObjectReferences;
+            }
+
+            if (defaultObjectReferences != null)
+            {
+                foreach (var (field, value) in defaultObjectReferences)
+                {
+                    field.SetValue(propertyDrawer, value);
+                }
+            }
+
+            return propertyDrawer;
         }
 
         // returns true if children needs to be drawn separately

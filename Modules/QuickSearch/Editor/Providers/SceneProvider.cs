@@ -407,6 +407,9 @@ namespace UnityEditor.Search.Providers
             foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryMissingBlock)))
                 yield return f;
 
+            foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryRenderingLayerBlock)))
+                yield return f;
+
             foreach (var p in queryEngine.engine.GetPropositions())
                 yield return p;
 
@@ -441,7 +444,7 @@ namespace UnityEditor.Search.Providers
         [Shortcut("Help/Search/Hierarchy")]
         internal static void OpenQuickSearch()
         {
-            SearchUtils.OpenWithContextualProvider(type);
+            SearchUtils.OpenWithProviders(type);
         }
 
         [SearchTemplate(description = "Find mesh object", providerId = type)] internal static string ST1() => @"t=MeshFilter vertices>=1024";

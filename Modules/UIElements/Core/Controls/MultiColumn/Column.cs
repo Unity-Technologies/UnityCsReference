@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
@@ -73,8 +74,22 @@ namespace UnityEngine.UIElements
     /// cell in this column are represented.
     /// </summary>
     [UxmlObject]
-    public class Column
+    public class Column : INotifyBindablePropertyChanged
     {
+        static readonly BindingId nameProperty = nameof(name);
+        static readonly BindingId titleProperty = nameof(title);
+        static readonly BindingId iconProperty = nameof(icon);
+        static readonly BindingId visibleProperty = nameof(visible);
+        static readonly BindingId widthProperty = nameof(width);
+        static readonly BindingId minWidthProperty = nameof(minWidth);
+        static readonly BindingId maxWidthProperty = nameof(maxWidth);
+        static readonly BindingId sortableProperty = nameof(sortable);
+        static readonly BindingId stretchableProperty = nameof(stretchable);
+        static readonly BindingId optionalProperty = nameof(optional);
+        static readonly BindingId resizableProperty = nameof(resizable);
+        static readonly BindingId headerTemplateProperty = nameof(headerTemplate);
+        static readonly BindingId cellTemplateProperty = nameof(cellTemplate);
+
         internal const string k_HeaderTemplateAttributeName = "header-template";
         internal const string k_CellTemplateAttributeName = "cell-template";
 
@@ -316,8 +331,14 @@ namespace UnityEngine.UIElements
         Action<VisualElement, int> m_UnbindCellItem;
 
         /// <summary>
+        /// Called when a property has changed.
+        /// </summary>
+        public event EventHandler<BindablePropertyChangedEventArgs> propertyChanged;
+
+        /// <summary>
         /// The name of the column.
         /// </summary>
+        [CreateProperty]
         public string name
         {
             get => m_Name;
@@ -327,12 +348,14 @@ namespace UnityEngine.UIElements
                     return;
                 m_Name = value;
                 NotifyChange(ColumnDataType.Name);
+                NotifyPropertyChanged(nameProperty);
             }
         }
 
         /// <summary>
         /// The title of the column.
         /// </summary>
+        [CreateProperty]
         public string title
         {
             get => m_Title;
@@ -342,12 +365,14 @@ namespace UnityEngine.UIElements
                     return;
                 m_Title = value;
                 NotifyChange(ColumnDataType.Title);
+                NotifyPropertyChanged(titleProperty);
             }
         }
 
         /// <summary>
         /// The icon of the column.
         /// </summary>
+        [CreateProperty]
         public Background icon
         {
             get => m_Icon;
@@ -357,6 +382,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_Icon = value;
                 NotifyChange(ColumnDataType.Icon);
+                NotifyPropertyChanged(iconProperty);
             }
         }
 
@@ -402,6 +428,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The default value is true.
         /// </remarks>
+        [CreateProperty]
         public bool visible
         {
             get => m_Visible;
@@ -411,6 +438,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_Visible = value;
                 NotifyChange(ColumnDataType.Visibility);
+                NotifyPropertyChanged(visibleProperty);
             }
         }
 
@@ -420,6 +448,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The default value is 0.
         /// </remarks>
+        [CreateProperty]
         public Length width
         {
             get => m_Width;
@@ -430,6 +459,7 @@ namespace UnityEngine.UIElements
                 m_Width = value;
                 desiredWidth = float.NaN;
                 NotifyChange(ColumnDataType.Width);
+                NotifyPropertyChanged(widthProperty);
             }
         }
 
@@ -439,6 +469,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The default value is 35px.
         /// </remarks>
+        [CreateProperty]
         public Length minWidth
         {
             get => m_MinWidth;
@@ -448,12 +479,14 @@ namespace UnityEngine.UIElements
                     return;
                 m_MinWidth = value;
                 NotifyChange(ColumnDataType.MinWidth);
+                NotifyPropertyChanged(minWidthProperty);
             }
         }
 
         /// <summary>
         /// The maximum width of the column.
         /// </summary>
+        [CreateProperty]
         public Length maxWidth
         {
             get => m_MaxWidth;
@@ -463,6 +496,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_MaxWidth = value;
                 NotifyChange(ColumnDataType.MaxWidth);
+                NotifyPropertyChanged(maxWidthProperty);
             }
         }
 
@@ -484,6 +518,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Indicates whether the column can be sorted.
         /// </summary>
+        [CreateProperty]
         public bool sortable
         {
             get => m_Sortable;
@@ -493,12 +528,14 @@ namespace UnityEngine.UIElements
                     return;
                 m_Sortable = value;
                 NotifyChange(ColumnDataType.Sortable);
+                NotifyPropertyChanged(sortableProperty);
             }
         }
 
         /// <summary>
         /// Indicates whether the column will be automatically resized to fill the available space within its container.
         /// </summary>
+        [CreateProperty]
         public bool stretchable
         {
             get => m_Stretchable;
@@ -508,12 +545,14 @@ namespace UnityEngine.UIElements
                     return;
                 m_Stretchable = value;
                 NotifyChange(ColumnDataType.Stretchable);
+                NotifyPropertyChanged(stretchableProperty);
             }
         }
 
         /// <summary>
         /// Indicates whether the column is optional. Optional columns be shown or hidden interactively by the user.
         /// </summary>
+        [CreateProperty]
         public bool optional
         {
             get => m_Optional;
@@ -523,6 +562,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_Optional = value;
                 NotifyChange(ColumnDataType.Optional);
+                NotifyPropertyChanged(optionalProperty);
             }
         }
 
@@ -533,6 +573,7 @@ namespace UnityEngine.UIElements
         /// The resize behaviour of all columns in a column collection can be specified by setting <see cref="Columns.resizable"/>.
         /// A column is effectively resizable if both <see cref="Column.resizable"/> and <see cref="Columns.resizable"/> are both true.
         /// </remarks>
+        [CreateProperty]
         public bool resizable
         {
             get => m_Resizable;
@@ -542,6 +583,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_Resizable = value;
                 NotifyChange(ColumnDataType.Resizable);
+                NotifyPropertyChanged(resizableProperty);
             }
         }
 
@@ -553,6 +595,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The VisualElement that is the template for the header of the column.
         /// </summary>
+        [CreateProperty]
         public VisualTreeAsset headerTemplate
         {
             get => m_HeaderTemplate;
@@ -562,12 +605,14 @@ namespace UnityEngine.UIElements
                     return;
                 m_HeaderTemplate = value;
                 NotifyChange(ColumnDataType.HeaderTemplate);
+                NotifyPropertyChanged(headerTemplateProperty);
             }
         }
 
         /// <summary>
         /// The VisualElement that is the template for each cell of the column.
         /// </summary>
+        [CreateProperty]
         public VisualTreeAsset cellTemplate
         {
             get => m_CellTemplate;
@@ -577,6 +622,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_CellTemplate = value;
                 NotifyChange(ColumnDataType.CellTemplate);
+                NotifyPropertyChanged(cellTemplateProperty);
             }
         }
 
@@ -712,6 +758,11 @@ namespace UnityEngine.UIElements
         void NotifyChange(ColumnDataType type)
         {
             changed?.Invoke(this, type);
+        }
+
+        void NotifyPropertyChanged(in BindingId property)
+        {
+            propertyChanged?.Invoke(this, new BindablePropertyChangedEventArgs(property));
         }
 
         internal float GetWidth(float layoutWidth)

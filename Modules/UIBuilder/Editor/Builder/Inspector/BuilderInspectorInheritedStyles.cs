@@ -390,6 +390,12 @@ namespace Unity.UI.Builder
                     text = selectorStr,
                     viewDataKey = "builder-inspector-rule-foldout__" + ruleIndex
                 };
+
+                // Enable selection of the label so its value can be copied. (UUM-64871)
+                ruleFoldout.toggle.boolFieldLabelElement.selection.isSelectable = true;
+                ruleFoldout.toggle.toggleOnLabelClick = false;
+                ruleFoldout.toggle.toggleOnTextClick = false;
+
                 ruleIndex++;
                 container.Add(ruleFoldout);
 

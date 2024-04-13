@@ -12,7 +12,7 @@ using UnityEngine.Scripting;
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Hierarchy", useTypeNameAsIconName = true)]
-    internal class SceneHierarchyWindow : SearchableEditorWindow, IHasCustomMenu, IPropertySourceOpener
+    internal class SceneHierarchyWindow : SearchableEditorWindow, IHasCustomMenu, IPropertySourceOpener, ISearchableContainer
     {
         public static SceneHierarchyWindow lastInteractedHierarchyWindow { get { return s_LastInteractedHierarchy; } }
         static SceneHierarchyWindow s_LastInteractedHierarchy;
@@ -37,6 +37,8 @@ namespace UnityEditor
         public SceneHierarchy sceneHierarchy { get { return m_SceneHierarchy; } }
 
         bool showingStageHeader { get { return !(StageNavigationManager.instance.currentStage is MainStage); } }
+
+        public string searchText => m_SearchFilter;
 
         void Awake()
         {

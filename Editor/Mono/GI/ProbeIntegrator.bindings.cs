@@ -79,9 +79,11 @@ namespace UnityEngine.LightTransport
             Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
             var wmContext = context as WintermuteContext;
             using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            EventID eventId = context.ReadBuffer(_positions, positions);
+            EventID eventId = context.CreateEvent();
+            context.ReadBuffer(_positions, positions, eventId);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
+            context.DestroyEvent(eventId);
             var positionsPtr = (Vector3*)positions.GetUnsafePtr();
             using var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* shPtr = NativeArrayUnsafeUtility.GetUnsafePtr(radianceBuffer);
@@ -96,9 +98,11 @@ namespace UnityEngine.LightTransport
             if (lightBakerResult.type != LightBaker.ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
-            eventId = context.WriteBuffer(radianceEstimateOut, radianceBuffer);
+            eventId = context.CreateEvent();
+            context.WriteBuffer(radianceEstimateOut, radianceBuffer, eventId);
             waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
+            context.DestroyEvent(eventId);
             if (!waitResult)
                 lightBakerResult = new LightBaker.Result {type = LightBaker.ResultType.IOFailed, message = "Failed to write radiance to context."};
 
@@ -111,9 +115,11 @@ namespace UnityEngine.LightTransport
             Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
             var wmContext = context as WintermuteContext;
             using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            EventID eventId = context.ReadBuffer(_positions, positions);
+            EventID eventId = context.CreateEvent();
+            context.ReadBuffer(_positions, positions, eventId);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
+            context.DestroyEvent(eventId);
             var positionsPtr = (Vector3*)NativeArrayUnsafeUtility.GetUnsafePtr(positions);
             using var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* shPtr = NativeArrayUnsafeUtility.GetUnsafePtr(radianceBuffer);
@@ -128,9 +134,11 @@ namespace UnityEngine.LightTransport
             if (lightBakerResult.type != LightBaker.ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
-            eventId = context.WriteBuffer(radianceEstimateOut, radianceBuffer);
+            eventId = context.CreateEvent();
+            context.WriteBuffer(radianceEstimateOut, radianceBuffer, eventId);
             waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
+            context.DestroyEvent(eventId);
             if (!waitResult)
                 lightBakerResult = new LightBaker.Result {type = LightBaker.ResultType.IOFailed, message = "Failed to write radiance to context."};
 
@@ -142,9 +150,11 @@ namespace UnityEngine.LightTransport
             Debug.Assert(context is WintermuteContext, "Expected RadeonRaysContext but got something else.");
             var wmContext = context as WintermuteContext;
             using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            EventID eventId = context.ReadBuffer(_positions, positions);
+            EventID eventId = context.CreateEvent();
+            context.ReadBuffer(_positions, positions, eventId);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
+            context.DestroyEvent(eventId);
             void* positionsPtr = NativeArrayUnsafeUtility.GetUnsafePtr(positions);
             using var validityBuffer = new NativeArray<float>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* validityPtr = NativeArrayUnsafeUtility.GetUnsafePtr(validityBuffer);
@@ -158,9 +168,11 @@ namespace UnityEngine.LightTransport
             if (lightBakerResult.type != LightBaker.ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
-            eventId = context.WriteBuffer(validityEstimateOut, validityBuffer);
+            eventId = context.CreateEvent();
+            context.WriteBuffer(validityEstimateOut, validityBuffer, eventId);
             waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to write validity to context.");
+            context.DestroyEvent(eventId);
             if (!waitResult)
                 lightBakerResult = new LightBaker.Result {type = LightBaker.ResultType.IOFailed, message = "Failed to write validity to context."};
 
@@ -199,9 +211,11 @@ namespace UnityEngine.LightTransport
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
             using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            EventID eventId = context.ReadBuffer(_positions, positions);
+            EventID eventId = context.CreateEvent();
+            context.ReadBuffer(_positions, positions, eventId);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
+            context.DestroyEvent(eventId);
             UnityEngine.Vector3* positionsPtr = (Vector3*)NativeArrayUnsafeUtility.GetUnsafePtr(positions);
             using var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* shPtr = NativeArrayUnsafeUtility.GetUnsafePtr(radianceBuffer);
@@ -216,9 +230,11 @@ namespace UnityEngine.LightTransport
             if (lightBakerResult.type != LightBaker.ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
-            eventId = context.WriteBuffer(radianceEstimateOut, radianceBuffer);
+            eventId = context.CreateEvent();
+            context.WriteBuffer(radianceEstimateOut, radianceBuffer, eventId);
             waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
+            context.DestroyEvent(eventId);
             if (!waitResult)
                 lightBakerResult = new LightBaker.Result {type = LightBaker.ResultType.IOFailed, message = "Failed to write radiance to context."};
 
@@ -231,9 +247,11 @@ namespace UnityEngine.LightTransport
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
             using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            EventID eventId = context.ReadBuffer(_positions, positions);
+            EventID eventId = context.CreateEvent();
+            context.ReadBuffer(_positions, positions, eventId);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
+            context.DestroyEvent(eventId);
             UnityEngine.Vector3* positionsPtr = (Vector3*)NativeArrayUnsafeUtility.GetUnsafePtr(positions);
             using var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* shPtr = NativeArrayUnsafeUtility.GetUnsafePtr(radianceBuffer);
@@ -248,9 +266,11 @@ namespace UnityEngine.LightTransport
             if (lightBakerResult.type != LightBaker.ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
-            eventId = context.WriteBuffer(radianceEstimateOut, radianceBuffer);
+            eventId = context.CreateEvent();
+            context.WriteBuffer(radianceEstimateOut, radianceBuffer, eventId);
             waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to write radiance to context.");
+            context.DestroyEvent(eventId);
             if (!waitResult)
                 lightBakerResult = new LightBaker.Result {type = LightBaker.ResultType.IOFailed, message = "Failed to write radiance to context."};
 
@@ -262,9 +282,11 @@ namespace UnityEngine.LightTransport
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
             using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            EventID eventId = context.ReadBuffer(_positions, positions);
+            EventID eventId = context.CreateEvent();
+            context.ReadBuffer(_positions, positions, eventId);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
+            context.DestroyEvent(eventId);
             void* positionsPtr = NativeArrayUnsafeUtility.GetUnsafePtr(positions);
             using var validityBuffer = new NativeArray<float>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             void* validityPtr = NativeArrayUnsafeUtility.GetUnsafePtr(validityBuffer);
@@ -278,9 +300,11 @@ namespace UnityEngine.LightTransport
             if (lightBakerResult.type != LightBaker.ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
-            eventId = context.WriteBuffer(validityEstimateOut, validityBuffer);
+            eventId = context.CreateEvent();
+            context.WriteBuffer(validityEstimateOut, validityBuffer, eventId);
             waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to write validity to context.");
+            context.DestroyEvent(eventId);
             if (!waitResult)
                 lightBakerResult = new LightBaker.Result {type = LightBaker.ResultType.IOFailed, message = "Failed to write validity to context."};
 
