@@ -68,9 +68,17 @@ namespace Unity.Properties.Internal
 
             if (null != TypedStore<TContainer>.PropertyBag)
             {
+                var currentPropertyBag = TypedStore<TContainer>.PropertyBag;
+                // When registering a property bag, prefer to use the one coming from its own assembly.
+                if (currentPropertyBag.GetType().Assembly == typeof(TContainer).Assembly)
+                    return;
+
                 if (propertyBag.GetType().GetCustomAttributes<System.Runtime.CompilerServices.CompilerGeneratedAttribute>().Any())
                 {
-                    return;
+                    // If there is already a property bag registered, only register the provided one
+                    // if it is contained in the same assembly as its target type.
+                    if (propertyBag.GetType().Assembly != typeof(TContainer).Assembly)
+                        return;
                 }
             }
 

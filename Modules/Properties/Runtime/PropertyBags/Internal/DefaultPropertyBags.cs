@@ -10,6 +10,10 @@ namespace Unity.Properties.Internal
     {
         internal static void Initialize()
         {
+            PropertyBag.Register(new ColorPropertyBag());
+            PropertyBag.Register(new Vector2PropertyBag());
+            PropertyBag.Register(new Vector3PropertyBag());
+            PropertyBag.Register(new Vector4PropertyBag());
             PropertyBag.Register(new Vector2IntPropertyBag());
             PropertyBag.Register(new Vector3IntPropertyBag());
             PropertyBag.Register(new RectPropertyBag());
@@ -19,6 +23,152 @@ namespace Unity.Properties.Internal
             PropertyBag.Register(new SystemVersionPropertyBag());
         }
     }
+
+    class ColorPropertyBag : ContainerPropertyBag<Color>
+    {
+        public ColorPropertyBag()
+        {
+            AddProperty(new RProperty());
+            AddProperty(new GProperty());
+            AddProperty(new BProperty());
+            AddProperty(new AProperty());
+        }
+
+        class RProperty : Property<Color, float>
+        {
+            public override string Name => nameof(Color.r);
+            public override bool IsReadOnly => false;
+            public override float GetValue(ref Color container) => container.r;
+            public override void SetValue(ref Color container, float value) => container.r = value;
+        }
+
+        class GProperty : Property<Color, float>
+        {
+            public override string Name => nameof(Color.g);
+            public override bool IsReadOnly => false;
+            public override float GetValue(ref Color container) => container.g;
+            public override void SetValue(ref Color container, float value) => container.g = value;
+        }
+
+        class BProperty : Property<Color, float>
+        {
+            public override string Name => nameof(Color.b);
+            public override bool IsReadOnly => false;
+            public override float GetValue(ref Color container) => container.b;
+            public override void SetValue(ref Color container, float value) => container.b = value;
+        }
+
+        class AProperty : Property<Color, float>
+        {
+            public override string Name => nameof(Color.a);
+            public override bool IsReadOnly => false;
+            public override float GetValue(ref Color container) => container.a;
+            public override void SetValue(ref Color container, float value) => container.a = value;
+        }
+    }
+
+    class Vector2PropertyBag : ContainerPropertyBag<Vector2>
+    {
+        public Vector2PropertyBag()
+        {
+            AddProperty(new XProperty());
+            AddProperty(new YProperty());
+        }
+
+        class XProperty : Property<Vector2, float>
+        {
+            public override string Name => nameof(Vector2.x);
+            public override bool IsReadOnly => false;
+            public override float GetValue(ref Vector2 container) => container.x;
+            public override void SetValue(ref Vector2 container, float value) => container.x = value;
+        }
+
+        class YProperty : Property<Vector2, float>
+        {
+            public override string Name => nameof(Vector2.y);
+            public override bool IsReadOnly => false;
+            public override float GetValue(ref Vector2 container) => container.y;
+            public override void SetValue(ref Vector2 container, float value) => container.y = value;
+        }
+    }
+
+    class Vector3PropertyBag : ContainerPropertyBag<Vector3>
+    {
+        public Vector3PropertyBag()
+        {
+            AddProperty(new XProperty());
+            AddProperty(new YProperty());
+            AddProperty(new ZProperty());
+        }
+
+        class XProperty : Property<Vector3, float>
+        {
+            public override string Name => nameof(Vector3.x);
+            public override bool IsReadOnly => false;
+            public override float GetValue(ref Vector3 container) => container.x;
+            public override void SetValue(ref Vector3 container, float value) => container.x = value;
+        }
+
+        class YProperty : Property<Vector3, float>
+        {
+            public override string Name => nameof(Vector3.y);
+            public override bool IsReadOnly => false;
+            public override float GetValue(ref Vector3 container) => container.y;
+            public override void SetValue(ref Vector3 container, float value) => container.y = value;
+        }
+
+        class ZProperty : Property<Vector3, float>
+        {
+            public override string Name => nameof(Vector3.z);
+            public override bool IsReadOnly => false;
+            public override float GetValue(ref Vector3 container) => container.z;
+            public override void SetValue(ref Vector3 container, float value) => container.z = value;
+        }
+    }
+
+    class Vector4PropertyBag : ContainerPropertyBag<Vector4>
+    {
+        public Vector4PropertyBag()
+        {
+            AddProperty(new XProperty());
+            AddProperty(new YProperty());
+            AddProperty(new ZProperty());
+            AddProperty(new WProperty());
+        }
+
+        class XProperty : Property<Vector4, float>
+        {
+            public override string Name => nameof(Vector4.x);
+            public override bool IsReadOnly => false;
+            public override float GetValue(ref Vector4 container) => container.x;
+            public override void SetValue(ref Vector4 container, float value) => container.x = value;
+        }
+
+        class YProperty : Property<Vector4, float>
+        {
+            public override string Name => nameof(Vector4.y);
+            public override bool IsReadOnly => false;
+            public override float GetValue(ref Vector4 container) => container.y;
+            public override void SetValue(ref Vector4 container, float value) => container.y = value;
+        }
+
+        class ZProperty : Property<Vector4, float>
+        {
+            public override string Name => nameof(Vector4.z);
+            public override bool IsReadOnly => false;
+            public override float GetValue(ref Vector4 container) => container.z;
+            public override void SetValue(ref Vector4 container, float value) => container.z = value;
+        }
+
+        class WProperty : Property<Vector4, float>
+        {
+            public override string Name => nameof(Vector4.w);
+            public override bool IsReadOnly => false;
+            public override float GetValue(ref Vector4 container) => container.w;
+            public override void SetValue(ref Vector4 container, float value) => container.w = value;
+        }
+    }
+
 
     class Vector2IntPropertyBag : ContainerPropertyBag<Vector2Int>
     {

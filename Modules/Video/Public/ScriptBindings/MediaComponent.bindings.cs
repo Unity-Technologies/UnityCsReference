@@ -93,6 +93,7 @@ namespace UnityEngineInternal.Video
         extern public UInt16 GetAudioTrackCount();
         extern public UInt16 GetAudioChannelCount(UInt16 trackIdx);
         extern public UInt32 GetAudioSampleRate(UInt16 trackIdx);
+        extern public string GetAudioLanguageCode(UInt16 trackIdx);
         extern public void SetAudioTarget(UInt16 trackIdx, bool enabled, bool softwareOutput, AudioSource audioSource);
         extern private UInt32 GetAudioSampleProviderId(UInt16 trackIndex);
         public AudioSampleProvider GetAudioSampleProvider(ushort trackIndex)

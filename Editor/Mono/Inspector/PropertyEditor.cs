@@ -462,6 +462,13 @@ namespace UnityEditor
             return m_AllPropertyEditors.AsEnumerable();
         }
 
+        protected virtual void EnsureAppropriateTrackerIsInUse()
+        {
+            if (m_InspectorMode == InspectorMode.Normal)
+                m_Tracker = ActiveEditorTracker.sharedTracker;
+            else if (m_Tracker is null || m_Tracker.Equals(ActiveEditorTracker.sharedTracker))
+                m_Tracker = new ActiveEditorTracker();
+        }
 
         protected void SetMode(InspectorMode mode)
         {
@@ -472,7 +479,12 @@ namespace UnityEditor
                 // Clear the editors Element so that a real rebuild is done
                 editorsElement.Clear();
                 m_EditorElementUpdater.Clear();
-                tracker.inspectorMode = mode;
+
+                EnsureAppropriateTrackerIsInUse();
+
+                m_Tracker.inspectorMode = m_InspectorMode;
+                m_Tracker.ForceRebuild();
+
                 m_ResetKeyboardControl = true;
                 SceneView.SetActiveEditorsDirty(true);
             }

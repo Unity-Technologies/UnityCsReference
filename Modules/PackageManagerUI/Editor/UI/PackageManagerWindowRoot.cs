@@ -246,16 +246,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnRefreshOperationFinish()
         {
-            if (m_FilterToSelectAfterLoad != null && m_PageManager.GetRefreshTimestamp(m_FilterToSelectAfterLoad) > 0)
-                SelectPackageAndFilter();
+            if ((m_FilterToSelectAfterLoad != null || !string.IsNullOrEmpty(m_PackageToSelectOnLoaded)) && m_PageManager.GetRefreshTimestamp(m_FilterToSelectAfterLoad) > 0)
+                SelectPackageAndFilter(true);
         }
 
-        private void SelectPackageAndFilter()
+        private void SelectPackageAndFilter(bool clearPackageSelectionIfNotFoundInDatabase = false)
         {
             IPackageVersion version = null;
             IPackage package = null;
             if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
+            {
                 m_PackageDatabase.GetPackageAndVersionByIdOrName(m_PackageToSelectOnLoaded, out package, out version);
+
+                if (package == null && clearPackageSelectionIfNotFoundInDatabase)
+                    m_PackageToSelectOnLoaded = null;
+            }
 
             if (m_FilterToSelectAfterLoad == PackageFilterTab.AssetStore)
             {
@@ -270,7 +275,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
 
                 m_FilterToSelectAfterLoad = null;
-                m_PackageToSelectOnLoaded = null;
                 m_SubPageToSelectAfterLoad = null;
                 return;
             }
@@ -377,11 +381,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                         if (!m_SettingsProxy.enablePreReleasePackages && semVersion.HasValue && (semVersion.Value.Major == 0 || semVersion.Value.Prerelease.StartsWith("preview")))
                         {
                             Debug.Log("You must check \"Enable Preview Packages\" in Project Settings > Package Manager in order to see this package.");
-                            filterTab = m_PackageFiltering.currentFilterTab;
                             packageToSelect = null;
                         }
-                        else
-                            filterTab = PackageFilterTab.UnityRegistry;
+                        filterTab = m_PackageFiltering.currentFilterTab;
                     }
                 }
 
