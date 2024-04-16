@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Unity.Properties.Internal;
 using Unity.Collections;
 
 using System.Reflection.Emit;
@@ -63,10 +64,11 @@ namespace Unity.Properties
         public FieldMember(FieldInfo fieldInfo)
         {
             m_FieldInfo = fieldInfo;
+            Name = ReflectionUtilities.SanitizeMemberName(m_FieldInfo);
         }
 
         /// <inheritdoc/>
-        public string Name => m_FieldInfo.Name;
+        public string Name { get; }
 
         /// <inheritdoc/>
         public bool IsReadOnly => m_FieldInfo.IsInitOnly;
@@ -89,7 +91,7 @@ namespace Unity.Properties
         internal readonly PropertyInfo m_PropertyInfo;
 
         /// <inheritdoc/>
-        public string Name => m_PropertyInfo.Name;
+        public string Name { get; }
 
         /// <inheritdoc/>
         public bool IsReadOnly => !m_PropertyInfo.CanWrite;
@@ -101,7 +103,11 @@ namespace Unity.Properties
         /// Initializes a new <see cref="PropertyMember"/> instance.
         /// </summary>
         /// <param name="propertyInfo">The backing <see cref="PropertyInfo"/> object.</param>
-        public PropertyMember(PropertyInfo propertyInfo) => m_PropertyInfo = propertyInfo;
+        public PropertyMember(PropertyInfo propertyInfo)
+        {
+            m_PropertyInfo = propertyInfo;
+            Name = ReflectionUtilities.SanitizeMemberName(m_PropertyInfo);
+        }
 
         /// <inheritdoc/>
         public object GetValue(object obj) => m_PropertyInfo.GetValue(obj);
