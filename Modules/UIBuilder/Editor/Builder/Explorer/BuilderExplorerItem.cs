@@ -107,14 +107,13 @@ namespace Unity.UI.Builder
 
             m_RenameTextField.RegisterCallback<KeyDownEvent>((e) =>
             {
-                if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter || e.keyCode == KeyCode.Escape)
+                if (e.character == '\n')
                 {
-                    Focus();
-                    return;
+                    // Ignoring the second keydown evt sent because it will cause the textfield
+                    // to lose focus when it just received it.
+                    e.StopPropagation();
                 }
-
-                e.StopImmediatePropagation();
-            });
+            }, TrickleDown.TrickleDown);
 
             m_RenameTextField.RegisterCallback<FocusOutEvent>(e =>
             {
@@ -126,6 +125,9 @@ namespace Unity.UI.Builder
                 // Stop propagation when clicking on the text field so we don't get back focus to the TreeView
                 e.StopImmediatePropagation();
             });
+
+            // When escaping to cancel rename, we don't want to refocus on parent element, we want to refocus on the TreeView.
+            m_RenameTextField.textEdition.MoveFocusToCompositeRoot = null;
 
             return m_RenameTextField;
         }
@@ -201,6 +203,7 @@ namespace Unity.UI.Builder
             }
 
             selection.NotifyOfHierarchyChange();
+            m_RenameTextField.AddToClassList(BuilderConstants.HiddenStyleClassName);
         }
 
         public VisualElement row()

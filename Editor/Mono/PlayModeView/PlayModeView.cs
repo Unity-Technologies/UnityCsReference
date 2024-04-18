@@ -341,6 +341,7 @@ namespace UnityEditor
                     DestroyImmediate(this, true);
                 }
             }
+            RemoveDisabledWindows();
         }
 
         private void ClearTargetTexture()
