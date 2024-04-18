@@ -20,6 +20,7 @@ namespace UnityEditor
     [NativeHeader("Runtime/Camera/RenderSettings.h")]
     [NativeHeader("Runtime/Input/TimeManager.h")]
     [NativeHeader("Editor/Src/ProjectVersion.h")]
+    [NativeHeader("Runtime/Misc/BuildSettings.h")]
     [StaticAccessor("EditorApplicationBindings", StaticAccessorType.DoubleColon)]
     public sealed partial class EditorApplication
     {
@@ -360,5 +361,11 @@ namespace UnityEditor
 
         [FreeFunction("GetProjectVersion().Write")]
         internal static extern void WriteVersion();
+
+        internal static extern GUID buildSessionGUID
+        {
+            [FreeFunction("GetBuildSettings().GetBuildSessionGUID")]
+            get;
+        }
     }
 }

@@ -777,6 +777,8 @@ namespace UnityEngine.UIElements
     // Default panel implementation
     internal class Panel : BaseVisualElementPanel
     {
+        internal const int k_DefaultPixelsPerUnit = 100;
+
         private VisualElement m_RootContainer;
         private VisualTreeUpdater m_VisualTreeUpdater;
         private IStylePropertyAnimationSystem m_StylePropertyAnimationSystem;

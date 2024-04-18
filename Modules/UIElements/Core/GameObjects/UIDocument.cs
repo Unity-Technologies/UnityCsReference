@@ -359,7 +359,10 @@ namespace UnityEngine.UIElements
             }
 
             rootVisualElement.uiRenderer = renderer;
-            renderer.skipRendering = (parentUI != null); // Don't render embedded documents which will be rendered as part of their parents
+
+            // Don't render embedded documents which will be rendered as part of their parents
+            // Don't render documents with invalid PPU
+            renderer.skipRendering = (parentUI != null) || (pixelsPerUnit < Mathf.Epsilon);
 
             BaseRuntimePanel rtp = (BaseRuntimePanel)m_RootVisualElement.panel;
             if (rtp == null)
@@ -368,6 +371,9 @@ namespace UnityEngine.UIElements
             Debug.Assert(rtp.drawsInCameras);
 
             float ppu = m_RuntimePanel == null ? 1.0f : m_RuntimePanel.pixelsPerUnit;
+            if (ppu < UIRUtility.k_Epsilon)
+                ppu = Panel.k_DefaultPixelsPerUnit;
+
             float ppuScale = 1.0f / ppu;
 
             // TODO: Compute actual aabb by accounting for 3D transforms.
@@ -427,10 +433,19 @@ namespace UnityEngine.UIElements
             m_RootHasWorldTransform = false;
         }
 
+        float pixelsPerUnit => m_RuntimePanel == null ? 1.0f : m_RuntimePanel.pixelsPerUnit;
+
         void ComputeTransform(Transform transform, out Matrix4x4 matrix)
         {
             // This is the root, apply the pixels-per-unit scaling, and the y-flip.
-            float ppu = m_RuntimePanel == null ? 1.0f : m_RuntimePanel.pixelsPerUnit;
+            float ppu = pixelsPerUnit;
+            if (ppu < Mathf.Epsilon)
+            {
+                // This isn't a valid PPU, return the identity here, but the skipRendering flag will be set on the renderer
+                matrix = Matrix4x4.identity;
+                return;
+            }
+
             float ppuScale = 1.0f / ppu;
 
             var scale = Vector3.one * ppuScale;
