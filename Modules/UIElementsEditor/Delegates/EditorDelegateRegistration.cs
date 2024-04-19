@@ -42,6 +42,14 @@ namespace UnityEditor.UIElements
             DropdownUtility.MakeDropdownFunc = CreateGenericOSMenu;
 
             UIToolkitProjectSettings.onEnableAdvancedTextChanged += SetICUdataAssetOnAllPanelSettings;
+
+            EditorApplication.playModeStateChanged += stateChange =>
+            {
+                if (stateChange == PlayModeStateChange.EnteredPlayMode)
+                    UIElementsRuntimeUtility.OnEnteredPlayMode();
+                if (stateChange == PlayModeStateChange.ExitingPlayMode)
+                    UIElementsRuntimeUtility.OnExitingPlayMode();
+            };
         }
 
         private static GenericOSMenu CreateGenericOSMenu()

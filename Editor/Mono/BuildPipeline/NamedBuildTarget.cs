@@ -142,6 +142,26 @@ namespace UnityEditor.Build
             return NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
         }
 
+        internal static NamedBuildTarget FromTargetAndSubtarget(BuildTarget target, int subtarget)
+        {
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
+            if (buildTargetGroup == BuildTargetGroup.Standalone)
+            {
+                var standaloneSubtarget = (StandaloneBuildSubtarget)subtarget;
+                switch (standaloneSubtarget)
+                {
+                    case StandaloneBuildSubtarget.Player:
+                        return NamedBuildTarget.Standalone;
+                    case StandaloneBuildSubtarget.Server:
+                        return NamedBuildTarget.Server;
+                    default:
+                        throw new ArgumentException($"'{standaloneSubtarget}' is not a valid subtarget for the Standalone build target");
+                }
+            }
+
+            return NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+        }
+
         public static bool operator==(NamedBuildTarget lhs, NamedBuildTarget rhs)
         {
             return lhs.Equals(rhs);

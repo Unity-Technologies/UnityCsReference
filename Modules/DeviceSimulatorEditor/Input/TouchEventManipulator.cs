@@ -40,6 +40,7 @@ namespace UnityEditor.DeviceSimulation
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+            target.RegisterCallback<MouseEnterEvent>(OnMouseEnter);
             target.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
         }
 
@@ -48,6 +49,7 @@ namespace UnityEditor.DeviceSimulation
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+            target.UnregisterCallback<MouseEnterEvent>(OnMouseEnter);
             target.UnregisterCallback<MouseLeaveEvent>(OnMouseLeave);
         }
 
@@ -66,9 +68,15 @@ namespace UnityEditor.DeviceSimulation
             SendMouseEvent(evt, MousePhase.End);
         }
 
+        private void OnMouseEnter(MouseEnterEvent evt)
+        {
+            m_InputManagerBackend?.EnableTouchSimulation(true);
+        }
+
         private void OnMouseLeave(MouseLeaveEvent evt)
         {
             SendMouseEvent(evt, MousePhase.End);
+            m_InputManagerBackend?.EnableTouchSimulation(false);
         }
 
         private void SendMouseEvent(IMouseEvent evt, MousePhase phase)

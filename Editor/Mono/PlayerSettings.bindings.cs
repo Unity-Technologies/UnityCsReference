@@ -369,7 +369,7 @@ namespace UnityEditor
 
         internal static SerializedObject GetSerializedObject()
         {
-            if (_serializedObject == null)
+            if (_serializedObject == null || _serializedObject.targetObject != InternalGetPlayerSettingsObject())
                 _serializedObject = new SerializedObject(InternalGetPlayerSettingsObject());
             return _serializedObject;
         }

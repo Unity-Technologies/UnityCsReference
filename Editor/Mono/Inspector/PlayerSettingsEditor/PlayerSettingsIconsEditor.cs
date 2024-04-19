@@ -436,7 +436,7 @@ namespace UnityEditor
                             // consider the icon overridden for this platform
                             EditorGUI.BeginChangeCheck();
                             overrideIcons = (icons.Length == widths.Length);
-                            overrideIcons = GUILayout.Toggle(overrideIcons, string.Format(L10n.Tr("Override for {0}"), platform.title.text));
+                            overrideIcons = GUILayout.Toggle(overrideIcons, IsInBuildProfileEditor() ? L10n.Tr("Override") : string.Format(L10n.Tr("Override for {0}"), platform.title.text));
                             EditorGUI.BeginDisabled(!overrideIcons);
                             var changed = EditorGUI.EndChangeCheck();
                             if (changed || (!overrideIcons && icons.Length > 0))
@@ -574,6 +574,14 @@ namespace UnityEditor
                         SetPlatformIcons(iconFieldGroup.targetGroup, key.m_Kind, iconFieldGroup.m_PlatformIconsByKind[key.m_Kind], ref m_AllIcons);
                 }
             }
+        }
+
+        /// <summary>
+        /// Check if this class belongs to the build profile editor
+        /// </summary>
+        bool IsInBuildProfileEditor()
+        {
+            return m_Owner.IsBuildProfile();
         }
     }
 }

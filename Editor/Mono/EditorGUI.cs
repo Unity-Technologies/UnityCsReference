@@ -7681,19 +7681,7 @@ namespace UnityEditor
                     }
                     case SerializedPropertyType.RenderingLayerMask:
                     {
-                        var names = RenderingLayerMask.GetDefinedRenderingLayerNames();
-                        var values = RenderingLayerMask.GetDefinedRenderingLayerValues();
-                        MaskFieldGUI.GetMaskButtonValue((int) property.uintValue, names, values, out var toggleLabel, out var toggleLabelMixed);
-                        if (label != null)
-                            position = PrefixLabel(position, label, EditorStyles.label);
-
-                        var toggleLabelContent = property.hasMultipleDifferentValues ? mixedValueContent : MaskFieldGUI.DoMixedLabel(toggleLabel, toggleLabelMixed, position, EditorStyles.layerMaskField);
-                        bool toggled = DropdownButton(position, toggleLabelContent, FocusType.Keyboard, EditorStyles.layerMaskField);
-                        if (toggled)
-                        {
-                            PopupWindowWithoutFocus.Show(position, new MaskFieldDropDown(property));
-                            GUIUtility.ExitGUI();
-                        }
+                        RenderingLayerMaskField(position, label, property);
                         break;
                     }
                     case SerializedPropertyType.Character:

@@ -63,6 +63,11 @@ namespace UnityEditor.Build.Profile
             {
                 return m_Settings.Count > 0;
             }
+
+            internal void Clear()
+            {
+                m_Settings.Clear();
+            }
         }
 
         const string k_ProjectSettingsAssetPath = "ProjectSettings/ProjectSettings.asset";
@@ -92,16 +97,19 @@ namespace UnityEditor.Build.Profile
             UpdateGlobalManagerPlayerSettings();
         }
 
-        void RemovePlayerSettings()
+        internal void RemovePlayerSettings(bool clearYaml = false)
         {
             if (BuildProfileContext.IsClassicPlatformProfile(this))
                 return;
 
             if (m_PlayerSettings != null)
             {
-                DestroyImmediate(m_PlayerSettings);
+                DestroyImmediate(m_PlayerSettings, true);
                 s_LoadedPlayerSettings.Remove(m_PlayerSettings);
                 m_PlayerSettings = null;
+
+                if (clearYaml)
+                    m_PlayerSettingsYaml.Clear();
             }
 
             UpdateGlobalManagerPlayerSettings(activeWillBeRemoved: true);
@@ -133,7 +141,7 @@ namespace UnityEditor.Build.Profile
                 if (shouldDelete)
                 {
                     s_LoadedPlayerSettings.RemoveAt(i);
-                    DestroyImmediate(loadedPlayerSettings);
+                    DestroyImmediate(loadedPlayerSettings, true);
                 }
             }
         }
@@ -179,6 +187,13 @@ namespace UnityEditor.Build.Profile
             TryLoadProjectSettingsAssetPlayerSettings();
             if (!PlayerSettings.IsGlobalManagerPlayerSettings(s_GlobalPlayerSettings))
                 PlayerSettings.SetOverridePlayerSettingsInternal(s_GlobalPlayerSettings);
+        }
+
+        internal static bool IsDataEqualToProjectSettings(PlayerSettings targetPlayerSettings)
+        {
+            var projectSettingsYaml = PlayerSettings.SerializeAsYAMLString(s_GlobalPlayerSettings);
+            var targetSettingsYaml = PlayerSettings.SerializeAsYAMLString(targetPlayerSettings);
+            return projectSettingsYaml == targetSettingsYaml;
         }
 
         static void TryLoadProjectSettingsAssetPlayerSettings()

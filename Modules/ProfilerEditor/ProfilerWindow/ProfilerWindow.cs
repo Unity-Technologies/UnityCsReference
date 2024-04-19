@@ -215,6 +215,9 @@ namespace UnityEditor
 
         public string selectedModuleIdentifier => selectedModule?.Identifier ?? null;
 
+        const string kJobsProfilerIdentifier = "JobsProfilerModule, Unity.JobsProfiler.Editor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+        internal ProfilerModule jobsProfilerModule { get; private set; }
+
         internal ProfilerModule selectedModule
         {
             get
@@ -480,6 +483,9 @@ namespace UnityEditor
                     module.Initialize(args);
 
                     modules.Add(module);
+
+                    if (moduleIdentifier == kJobsProfilerIdentifier)
+                        jobsProfilerModule = module;
                 }
                 catch (Exception e)
                 {
@@ -1415,6 +1421,9 @@ namespace UnityEditor
                 var module = m_AllModules[i];
                 if (module.active)
                 {
+                    if (module.Identifier == kJobsProfilerIdentifier)
+                        continue;
+
                     totalMinimumChartHeight += module.GetMinimumChartHeight();
                     activeModuleCount++;
                     lastActiveModuleIndex = i;
@@ -1439,6 +1448,9 @@ namespace UnityEditor
                     var module = m_AllModules[i];
                     if (module.active)
                     {
+                        if (module.Identifier == kJobsProfilerIdentifier)
+                            continue;
+
                         // Calculate final chart height.
                         var chartHeight = module.GetMinimumChartHeight();
                         if (requiresChartHeightExpansion)
@@ -1886,7 +1898,7 @@ namespace UnityEditor
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"Unable to create a details view for the module '{moduleToSelect.DisplayName}'. {e.Message}");
+                    Debug.LogError($"Unable to create a details view for the module '{moduleToSelect.DisplayName}'. {e.Message}\n{e.StackTrace}");
                 }
 
                 m_SelectedModuleIndex = moduleIndexToSelect;
@@ -1972,6 +1984,7 @@ namespace UnityEditor
         long IProfilerWindowController.selectedFrameIndex { get => selectedFrameIndex; set => selectedFrameIndex = value; }
         ProfilerModule IProfilerWindowController.selectedModule { get => selectedModule; set => selectedModule = value; }
         ProfilerModule IProfilerWindowController.GetProfilerModuleByType(Type T) => GetProfilerModuleByType(T);
+        ProfilerModule IProfilerWindowController.GetJobsProfilerModule() => jobsProfilerModule;
         void IProfilerWindowController.Repaint() => Repaint();
 
 

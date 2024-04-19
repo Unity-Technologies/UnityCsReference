@@ -285,7 +285,6 @@ namespace UnityEditor
 
                 var window = Resources.FindObjectsOfTypeAll<ContainerWindow>().FirstOrDefault(w => w.windowID == windowId);
                 InitContainerWindow(ref window, windowId, layoutData);
-                window.m_IsMppmCloneWindow = true;
                 GenerateLayout(window, ShowMode.Utility, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo, layoutData);
                 window.m_DontSaveToLayout = !Convert.ToBoolean(layoutData["restore_saved_layout"]);
                 return window;
@@ -1771,7 +1770,7 @@ namespace UnityEditor
         [MenuItem("Window/General/Scene %1", false, 1)]
         static void ShowSceneView()
         {
-            EditorWindow.GetWindow<SceneView>();
+            EditorWindow.GetWindowWithExactType<SceneView>();
         }
 
         [MenuItem("Window/General/Game %2", false, 2)]

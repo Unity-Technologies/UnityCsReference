@@ -4434,6 +4434,9 @@
     <Compile Include="..\..\Modules\BuildProfileEditor\BuildProfileEditor.cs">
       <Link>Modules\BuildProfileEditor\BuildProfileEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\BuildProfilePlayerSettingsEditor.cs">
+      <Link>Modules\BuildProfileEditor\BuildProfilePlayerSettingsEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\BuildProfileWindow.cs">
       <Link>Modules\BuildProfileEditor\BuildProfileWindow.cs</Link>
     </Compile>
@@ -6782,6 +6785,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\StandardDetailsViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\StandardDetailsViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\SwitchableLegacyDetailsViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\SwitchableLegacyDetailsViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Video\VideoProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Video\VideoProfilerModule.cs</Link>

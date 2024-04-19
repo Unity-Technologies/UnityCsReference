@@ -254,7 +254,7 @@ namespace UnityEditor
             if (w &&
                 w.m_Parent &&
                 w.m_Parent.window &&
-                !w.m_Parent.window.m_IsMppmCloneWindow &&
+                !w.m_Parent.window.IsMultiplayerClone() &&
                 w.titleContent != null)
             {
                 w.m_Parent.window.title = w.titleContent.text;

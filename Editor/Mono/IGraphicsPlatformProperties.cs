@@ -25,4 +25,10 @@ internal interface IGraphicsPlatformProperties : IPlatformProperties
 
     // The PlayerSettingsEditor.OtherSectionRenderingGUI method uses this property to determine whether or not to display unsupportedMSAAFallback
     bool HasUnsupportedMSAAFallback => false;
+
+    // The PlayerSettingsEditor.OtherSectionRenderingGUI method uses this property to determine whether or not to display colorGamut
+    bool SupportsColorGamut => false;
+
+    // The PlayerSettings.ResolutionSectionGUI method uses this property to determine whether or not to display retina support
+    bool RetinaSupport => false;
 }

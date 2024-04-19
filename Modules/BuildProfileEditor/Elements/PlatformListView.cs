@@ -21,8 +21,7 @@ namespace UnityEditor.Build.Profile.Elements
             public BuildProfile data;
             public string text;
             public Texture2D icon;
-            public string moduleName;
-            public StandaloneBuildSubtarget subtarget;
+            public string platformId;
         }
 
         internal enum ListItemType
@@ -93,7 +92,7 @@ namespace UnityEditor.Build.Profile.Elements
                         m_Parent.OnClassicPlatformSelected(data.data);
                         break;
                     case ListItemType.MissingPlatform:
-                        m_Parent.OnMissingClassicPlatformSelected(data.moduleName, data.subtarget);
+                        m_Parent.OnMissingClassicPlatformSelected(data.platformId);
                         break;
                 }
             };
@@ -112,7 +111,7 @@ namespace UnityEditor.Build.Profile.Elements
                 editableBuildProfileLabel.dataSource = profile;
                 UnityEngine.Assertions.Assert.IsNotNull(editableBuildProfileLabel, "Build profile label is null");
 
-                var icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.moduleName, profile.subtarget);
+                var icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.platformId);
                 editableBuildProfileLabel.Set(profile.name, icon);
 
                 if (profile.IsActiveBuildProfileOrPlatform())
@@ -220,20 +219,19 @@ namespace UnityEditor.Build.Profile.Elements
                 {
                     type = ListItemType.InstalledPlatform,
                     data = profile,
-                    text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.moduleName, profile.subtarget),
-                    icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.moduleName, profile.subtarget)
+                    text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformId),
+                    icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.platformId)
                 });
             }
 
-            foreach (var (moduleName, subtarget) in BuildProfileContext.instance.GetMissingKnownPlatformModules())
+            foreach (var platformId in BuildProfileContext.instance.GetMissingKnownPlatformModules())
             {
                 result.Add(new ClassicItemData()
                 {
                     type = ListItemType.MissingPlatform,
-                    text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(moduleName, subtarget),
-                    icon = BuildProfileModuleUtil.GetPlatformIconSmall(moduleName, subtarget),
-                    moduleName = moduleName,
-                    subtarget = subtarget
+                    text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),
+                    icon = BuildProfileModuleUtil.GetPlatformIconSmall(platformId),
+                    platformId = platformId
                 });
             }
 

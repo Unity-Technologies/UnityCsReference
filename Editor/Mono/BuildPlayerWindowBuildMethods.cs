@@ -14,6 +14,7 @@ using UnityEditor.Build.Reporting;
 using UnityEditor.Connect;
 using UnityEditor.Profiling;
 using UnityEditor.Utils;
+using UnityEditor.Build.Profile;
 
 namespace UnityEditor
 {
@@ -230,53 +231,15 @@ namespace UnityEditor
                 BuildTargetGroup buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
                 int subtarget = EditorUserBuildSettings.GetSelectedSubtargetFor(buildTarget);
 
-                // Pick location for the build
-                string newLocation = "";
+                options.options = BuildProfileModuleUtil.GetBuildOptions(buildTarget, buildTargetGroup, string.Empty, options.options);
 
-                //Check if Lz4 is supported for the current buildtargetgroup and enable it if need be
-                if (PostprocessBuildPlayer.SupportsLz4Compression(buildTarget))
-                {
-                    var compression = EditorUserBuildSettings.GetCompressionType(buildTargetGroup);
-                    if (compression < 0)
-                        compression = PostprocessBuildPlayer.GetDefaultCompression(buildTarget);
-                    if (compression == Compression.Lz4)
-                        options.options |= BuildOptions.CompressWithLz4;
-                    else if (compression == Compression.Lz4HC)
-                        options.options |= BuildOptions.CompressWithLz4HC;
-                }
-
-                bool developmentBuild = EditorUserBuildSettings.development;
-                if (developmentBuild)
-                    options.options |= BuildOptions.Development;
-                if (EditorUserBuildSettings.allowDebugging && developmentBuild)
-                    options.options |= BuildOptions.AllowDebugging;
-                if (EditorUserBuildSettings.symlinkSources)
-                    options.options |= BuildOptions.SymlinkSources;
-
-                if(BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out IBuildTarget iBuildTarget))
-                {
-                    if (EditorUserBuildSettings.connectProfiler && (developmentBuild || (iBuildTarget.PlayerConnectionPlatformProperties?.ForceAllowProfilerConnection ?? false)) )
-                        options.options |= BuildOptions.ConnectWithProfiler;
-                }
-
-                if (EditorUserBuildSettings.buildWithDeepProfilingSupport && developmentBuild)
-                    options.options |= BuildOptions.EnableDeepProfilingSupport;
-                if (EditorUserBuildSettings.buildScriptsOnly)
-                    options.options |= BuildOptions.BuildScriptsOnly;
-                if (!string.IsNullOrEmpty(ProfilerUserSettings.customConnectionID) && developmentBuild)
-                    options.options |= BuildOptions.CustomConnectionID;
-
-
-                if (IsInstallInBuildFolderOption())
-                {
-                    options.options |= BuildOptions.InstallInBuildFolder;
-                }
-                else if ((options.options & BuildOptions.PatchPackage) == 0)
+                if ((options.options & BuildOptions.InstallInBuildFolder) == 0 &&
+                    (options.options & BuildOptions.PatchPackage) == 0)
                 {
                     if (askForBuildLocation && !PickBuildLocation(buildTargetGroup, buildTarget, subtarget, options.options, out updateExistingBuild))
                         throw new BuildMethodException();
 
-                    newLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
+                    var newLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
 
                     if (newLocation.Length == 0)
                     {

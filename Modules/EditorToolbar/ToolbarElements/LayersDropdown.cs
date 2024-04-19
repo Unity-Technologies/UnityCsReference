@@ -6,14 +6,15 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    [EditorToolbarElement("Editor Utility/Layers", typeof(DefaultMainToolbar))]
+    [EditorToolbarElement("SceneView/Layers", typeof(SceneView))]
     sealed class LayersDropdown : EditorToolbarDropdown
     {
         public LayersDropdown()
         {
             name = "LayersDropdown";
             tooltip = L10n.Tr("Which layers are visible in the Scene views");
-            text = L10n.Tr("Layers");
+            icon = EditorGUIUtility.LoadIconRequired("Icons/Overlays/SceneLayersToggle.png");
+
             clicked += () => LayerVisibilityWindow.ShowAtPosition(worldBound);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);

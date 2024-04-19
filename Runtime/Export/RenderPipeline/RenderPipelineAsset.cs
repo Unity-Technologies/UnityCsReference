@@ -115,5 +115,7 @@ namespace UnityEngine.Rendering
         where TRenderPipeline : RenderPipeline
     {
         public sealed override Type pipelineType => typeof(TRenderPipeline);
+
+        public override string renderPipelineShaderTag => typeof(TRenderPipeline).Name;
     }
 }

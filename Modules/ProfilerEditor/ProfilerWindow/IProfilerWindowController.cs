@@ -17,6 +17,7 @@ namespace UnityEditorInternal
         Timeline = 1,
         RawHierarchy = 2,
         InvertedHierarchy = 3,
+        TimelineV2 = 4
     }
 
     internal interface IProfilerWindowController
@@ -24,6 +25,7 @@ namespace UnityEditorInternal
         long selectedFrameIndex { get; set; }
         ProfilerModule selectedModule { get; set; }
         ProfilerModule GetProfilerModuleByType(Type T);
+        ProfilerModule GetJobsProfilerModule();
 
         event Action frameDataViewAboutToBeDisposed;
 

@@ -23,24 +23,14 @@ namespace UnityEditor.Build.Profile
             public bool wasProfileCreated;
 
             /// <summary>
-            /// Module name of the created profile.
+            /// Platform ID of the target build profile.
             /// </summary>
-            public string moduleName;
+            public string platformId;
 
             /// <summary>
-            /// Build target of the created profile.
+            /// Platform display name of the target build profile.
             /// </summary>
-            public BuildTarget buildTarget;
-
-            /// <summary>
-            /// Build target string for the build profile.
-            /// </summary>
-            public string buildTargetString;
-
-            /// <summary>
-            /// Standalone subtarget of the created profile.
-            /// </summary>
-            public StandaloneBuildSubtarget standaloneSubtarget;
+            public string platformDisplayName;
         }
 
         Payload m_Payload;
@@ -49,9 +39,8 @@ namespace UnityEditor.Build.Profile
         {
             m_Payload = new Payload()
             {
-                buildTarget = BuildTarget.NoTarget,
-                buildTargetString = string.Empty,
-                standaloneSubtarget = StandaloneBuildSubtarget.Default,
+                platformId = new GUID(string.Empty).ToString(),
+                platformDisplayName = string.Empty,
                 wasProfileCreated = false
             };
         }
@@ -80,19 +69,14 @@ namespace UnityEditor.Build.Profile
         internal struct Payload : IAnalytic.IData
         {
             /// <summary>
-            /// Build target of the built profile.
+            /// Platform ID of the target build profile.
             /// </summary>
-            public BuildTarget buildTarget;
+            public string platformId;
 
             /// <summary>
-            /// Build target as string.
+            /// Platform display name of the target build profile.
             /// </summary>
-            public string buildTargetString;
-
-            /// <summary>
-            /// Standalone subtarget of the built profile.
-            /// </summary>
-            public StandaloneBuildSubtarget standaloneSubtarget;
+            public string platformDisplayName;
 
             /// <summary>
             /// Count of profiles in project matching the current build target.
@@ -107,9 +91,8 @@ namespace UnityEditor.Build.Profile
             this.m_Payload = new Payload()
             {
                 count = 0,
-                buildTarget = BuildTarget.NoTarget,
-                buildTargetString = string.Empty,
-                standaloneSubtarget = StandaloneBuildSubtarget.Default
+                platformId = new GUID(string.Empty).ToString(),
+                platformDisplayName = string.Empty
             };
         }
 
@@ -148,24 +131,14 @@ namespace UnityEditor.Build.Profile
         internal struct Payload : IAnalytic.IData
         {
             /// <summary>
-            /// Module name of the created profile.
+            /// Platform ID of the created profile.
             /// </summary>
-            public string moduleName;
+            public string platformId;
 
             /// <summary>
-            /// Build target of the created profile.
+            /// Platform display name of the target build profile.
             /// </summary>
-            public BuildTarget buildTarget;
-
-            /// <summary>
-            /// Build target as string.
-            /// </summary>
-            public string buildTargetString;
-
-            /// <summary>
-            /// Standalone subtarget of the created profile.
-            /// </summary>
-            public StandaloneBuildSubtarget standaloneSubtarget;
+            public string platformDisplayName;
 
             /// <summary>
             /// Source of build profile creation.

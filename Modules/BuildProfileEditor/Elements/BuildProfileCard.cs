@@ -12,20 +12,14 @@ namespace UnityEditor.Build.Profile.Elements
         internal string displayName { get; set; }
 
         /// <summary>
-        /// Module name for target profile creation.
+        /// Platform ID of the target build profile.
         /// </summary>
-        public string moduleName { get; set; }
-
-        /// <summary>
-        /// StandaloneBuildSubtarget for the target build profile.
-        /// </summary>
-        public StandaloneBuildSubtarget subtarget { get; set; }
+        public string platformId { get; set; }
 
         public BuildProfileCard()
         {
             displayName = string.Empty;
-            moduleName = string.Empty;
-            subtarget = StandaloneBuildSubtarget.Default;
+            platformId = new GUID(string.Empty).ToString();
         }
     }
 }

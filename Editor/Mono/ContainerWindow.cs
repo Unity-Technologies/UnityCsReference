@@ -29,7 +29,7 @@ namespace UnityEditor
         [SerializeField] Vector2 m_MaxSize = new Vector2(8192, 8192);
         [SerializeField] bool m_Maximized;
 
-        internal bool m_IsMppmCloneWindow;
+        static readonly bool k_IsMultiplayerClone = Array.Exists(Environment.GetCommandLineArgs(), arg => arg == "--virtual-project-clone");
 
         internal bool m_DontSaveToLayout = false;
         private bool m_HasUnsavedChanges = false;
@@ -45,6 +45,7 @@ namespace UnityEditor
 
         static internal bool s_Modal = false;
         private static ContainerWindow s_MainWindow;
+
         static internal ContainerWindow mainWindow { get => s_MainWindow; }
 
         static readonly string s_ContextMenuID = "UnityEditor.UIElements.EditorMenuExtensions+ContextMenu";
@@ -429,7 +430,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         internal bool IsMultiplayerClone()
         {
-            return m_IsMppmCloneWindow;
+            return k_IsMultiplayerClone;
         }
 
         private static List<EditorWindow> FindUnsavedChanges(View view)

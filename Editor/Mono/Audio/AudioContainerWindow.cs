@@ -139,6 +139,14 @@ sealed class AudioContainerWindow : EditorWindow
         m_AddedElements.Clear();
     }
 
+    private void OnFocus()
+    {
+        if (State.AudioContainer != null)
+        {
+            UpdateTransportButtonStates();
+        }
+    }
+
     void Update()
     {
         if (!m_IsVisible)

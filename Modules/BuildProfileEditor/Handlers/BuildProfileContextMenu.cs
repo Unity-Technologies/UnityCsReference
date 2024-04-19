@@ -113,23 +113,6 @@ namespace UnityEditor.Build.Profile.Handlers
             }
         }
 
-        internal void SelectClassicBuildProfileInViewForModule(string moduleName)
-        {
-            var targetIndex = -1;
-            for (int i = 0; i < m_ProfileDataSource.classicPlatforms.Count; ++i)
-            {
-                var platform = m_ProfileDataSource.classicPlatforms[i];
-                if (platform.moduleName == moduleName)
-                {
-                    targetIndex = i;
-                    break;
-                }
-            }
-
-            if (targetIndex >= 0)
-                m_ProfileSelection.visualElement.SelectInstalledPlatform(targetIndex);
-        }
-
         void SelectBuildProfileInView(BuildProfile buildProfile, bool isClassic, bool shouldAppend)
         {
             var targetProfiles = isClassic ? m_ProfileDataSource.classicPlatforms : m_ProfileDataSource.customBuildProfiles;

@@ -141,14 +141,17 @@ class SerializedDefaultEnumBinding : SerializedObjectBindingToBaseField<string, 
         }
 
         int propValueIndex = p.enumValueIndex;
+        int newIndex;
         if (propValueIndex >= 0 && propValueIndex < enumIndexToDisplayIndex.Count)
-        {
-            c.index = lastFieldValueIndex = enumIndexToDisplayIndex[propValueIndex];
-        }
+            newIndex = lastFieldValueIndex = enumIndexToDisplayIndex[propValueIndex];
         else
-        {
-            c.index = lastFieldValueIndex = kDefaultValueIndex;
-        }
+            newIndex = lastFieldValueIndex = kDefaultValueIndex;
+
+        // We dont want to trigger a change event as this will cause the value to be applied to all targets.
+        if (p.hasMultipleDifferentValues)
+            c.SetIndexWithoutNotify(newIndex);
+        else
+            c.index = newIndex;
     }
 
     protected override void UpdateLastFieldValue()

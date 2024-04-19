@@ -716,6 +716,7 @@ namespace UnityEditor.Experimental
         [NativeName("Bake")]
         static extern bool BakeScene(Scene targetScene);
 
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
         public static event Action additionalBakedProbesCompleted;
 
         [RequiredByNativeCode]
@@ -728,7 +729,7 @@ namespace UnityEditor.Experimental
         [FreeFunction]
         internal unsafe static extern bool GetAdditionalBakedProbes(int id, void* outBakedProbeSH, void* outBakedProbeValidity, void* outBakedProbeOctahedralDepth, int outBakedProbeCount);
 
-        [Obsolete("Please use the new GetAdditionalBakedProbes with added octahedral depth map data.", false)]
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
         public unsafe static bool GetAdditionalBakedProbes(int id, NativeArray<SphericalHarmonicsL2> outBakedProbeSH, NativeArray<float> outBakedProbeValidity)
         {
             const int octahedralDepthMapTexelCount = 64; // 8*8
@@ -737,7 +738,7 @@ namespace UnityEditor.Experimental
             outBakedProbeOctahedralDepth.Dispose();
             return success;
         }
-
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
         public unsafe static bool GetAdditionalBakedProbes(int id, Span<SphericalHarmonicsL2> outBakedProbeSH, Span<float> outBakedProbeValidity, Span<float> outBakedProbeOctahedralDepth)
         {
             const int octahedralDepthMapTexelCount = 64; // 8*8
@@ -762,6 +763,7 @@ namespace UnityEditor.Experimental
                 return GetAdditionalBakedProbes(id, shPtr, validityPtr, octahedralDepthPtr, outBakedProbeSH.Length);
             }
         }
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
         public unsafe static bool GetAdditionalBakedProbes(int id, NativeArray<SphericalHarmonicsL2> outBakedProbeSH, NativeArray<float> outBakedProbeValidity, NativeArray<float> outBakedProbeOctahedralDepth)
         {
             if (outBakedProbeSH == null || !outBakedProbeSH.IsCreated ||
@@ -794,16 +796,18 @@ namespace UnityEditor.Experimental
 
             return GetAdditionalBakedProbes(id, shPtr, validityPtr, octahedralDepthPtr, outBakedProbeSH.Length);
         }
-
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
         public static void SetAdditionalBakedProbes(int id, Vector3[] positions)
         {
             SetAdditionalBakedProbes(id, positions.AsSpan(), true);
         }
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
         public static void SetAdditionalBakedProbes(int id, ReadOnlySpan<Vector3> positions)
         {
             SetAdditionalBakedProbes(id, positions, true);
         }
         [FreeFunction]
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
         public static extern void SetAdditionalBakedProbes(int id, ReadOnlySpan<Vector3> positions, bool dering);
 
         [FreeFunction]

@@ -449,11 +449,16 @@ namespace UnityEngine
         [Obsolete("eatKeyPressOnTextFieldFocus property is deprecated, and only provided to support legacy behavior.")]
         public extern static bool eatKeyPressOnTextFieldFocus { get; set; }
 
-        public extern static bool mousePresent
-        {
-            [FreeFunction("GetMousePresent")]
-            get;
-        }
+        internal static bool simulateTouchEnabled { get; set; }
+
+        [FreeFunction("GetMousePresent")]
+        private extern static bool GetMousePresentInternal();
+
+        [FreeFunction("IsTouchSupported")]
+        private extern static bool GetTouchSupportedInternal();
+
+        public static bool mousePresent => !simulateTouchEnabled && GetMousePresentInternal();
+        public static bool touchSupported => simulateTouchEnabled || GetTouchSupportedInternal();
 
         public extern static int penEventCount
         {
@@ -474,11 +479,6 @@ namespace UnityEngine
         public extern static bool stylusTouchSupported
         {
             [FreeFunction("IsStylusTouchSupported")]
-            get;
-        }
-        public extern static bool touchSupported
-        {
-            [FreeFunction("IsTouchSupported")]
             get;
         }
         public extern static bool multiTouchEnabled

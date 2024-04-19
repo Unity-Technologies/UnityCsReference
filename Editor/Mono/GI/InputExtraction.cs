@@ -42,5 +42,10 @@ namespace UnityEngine.LightTransport
             bakeInput = new BakeInput(lightBakerBakeInput);
             return LightBaker.Deserialize(path, bakeInput.bakeInput);
         }
+
+        public static int[] ComputeOcclusionLightIndicesFromBakeInput(BakeInput bakeInput, Vector3[] probePositions, uint maxLightsPerProbe = 4)
+        {
+            return UnityEditor.LightBaking.InputExtraction.ComputeOcclusionLightIndicesFromBakeInput(bakeInput.bakeInput, probePositions, maxLightsPerProbe);
+        }
     }
 }

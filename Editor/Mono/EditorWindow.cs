@@ -753,10 +753,25 @@ namespace UnityEditor
         }
 
         // Returns the first EditorWindow of type /t/ which is currently on the screen.
-        static EditorWindow GetWindowPrivate(System.Type t, bool utility, string title, bool focus)
+        static EditorWindow GetWindowPrivate(System.Type t, bool utility, string title, bool focus, bool includeInheritingClasses = true)
         {
             UnityEngine.Object[] wins = Resources.FindObjectsOfTypeAll(t);
             EditorWindow win = wins.Length > 0 ? (EditorWindow)(wins[0]) : null;
+
+            if(win != null && !includeInheritingClasses)
+            {
+                if(win.GetType().IsSubclassOf(t))
+                {
+                    win = null;
+                    for(int i = 1; i<wins.Length && win == null; ++i)
+                    {
+                        if(wins[i] != null && !wins[i].GetType().IsSubclassOf(t))
+                        {
+                            win = (EditorWindow)(wins[i]);
+                        }
+                    }
+                }
+            }
 
             if (!win)
             {
@@ -823,6 +838,11 @@ namespace UnityEditor
         public static EditorWindow GetWindowWithRect(System.Type windowType, Rect rect)
         {
             return GetWindowWithRectPrivate(windowType, rect, false, null);
+        }
+
+        internal static T GetWindowWithExactType<T>() where T : EditorWindow
+        {
+            return GetWindowPrivate(typeof(T), false, null, true, false) as T;
         }
 
         public static T GetWindow<T>() where T : EditorWindow

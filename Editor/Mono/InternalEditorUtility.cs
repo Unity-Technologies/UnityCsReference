@@ -666,6 +666,8 @@ namespace UnityEditorInternal
         }
 
         private static Material blitSceneViewCaptureMat;
+
+        [Obsolete("Use CaptureEditorWindow instead", false)]
         public static bool CaptureSceneView(SceneView sv, RenderTexture rt)
         {
             if (!sv.hasFocus)
@@ -686,6 +688,27 @@ namespace UnityEditorInternal
             return true;
         }
 
+        public static bool CaptureEditorWindow(EditorWindow window, RenderTexture rt)
+        {
+            if (!window.hasFocus)
+            {
+                Debug.LogError("CaptureEditorWindow: window must have focus");
+                return false;
+            }
+
+            blitSceneViewCaptureMat = blitSceneViewCaptureMat ?? (Material)EditorGUIUtility.LoadRequired("SceneView/BlitSceneViewCapture.mat");
+
+            // Grab SceneView framebuffer into a temporary RT.
+            RenderTexture tmp = RenderTexture.GetTemporary(rt.descriptor);
+            Rect rect = new Rect(0, 0, window.position.width, window.position.height);
+            window.m_Parent.GrabPixels(tmp, rect);
+
+            // Blit it into the target RT, it will be flipped by the shader if necessary.
+            Graphics.Blit(tmp, rt, blitSceneViewCaptureMat);
+            RenderTexture.ReleaseTemporary(tmp);
+
+            return true;
+        }
 
         static readonly Regex k_UnityAssemblyRegex = new("^(Unity|UnityEditor|UnityEngine).", RegexOptions.Compiled);
         internal static bool IsUnityAssembly(Type type)

@@ -52,7 +52,7 @@ namespace UnityEditor.Build.Profile.Handlers
         {
             if (IsMultipleSelection())
             {
-                m_SelectedProfileImage.image = BuildProfileModuleUtil.GetPlatformIcon(string.Empty, StandaloneBuildSubtarget.Default);
+                m_SelectedProfileImage.image = BuildProfileModuleUtil.GetPlatformIcon(string.Empty);
                 m_SelectedProfileNameLabel.text = $"{m_SelectedBuildProfiles.Count} Build Profiles";
             }
             else
@@ -60,18 +60,17 @@ namespace UnityEditor.Build.Profile.Handlers
                 // Selected profile could be a custom or classic platform.
                 // Classic platforms only display the platform name, while custom show file name and platform name.
                 // When a selection is made, we clear the currently selection in the opposite list view.
-                m_SelectedProfileImage.image = BuildProfileModuleUtil.GetPlatformIcon(profile.moduleName, profile.subtarget);
+                m_SelectedProfileImage.image = BuildProfileModuleUtil.GetPlatformIcon(profile.platformId);
+                var platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformId);
                 if (BuildProfileContext.IsClassicPlatformProfile(profile))
                 {
-                    m_SelectedProfileNameLabel.text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(
-                        profile.moduleName, profile.subtarget);
+                    m_SelectedProfileNameLabel.text = platformDisplayName;
                     m_SelectedProfilePlatformLabel.Hide();
                 }
                 else
                 {
                     m_SelectedProfileNameLabel.text = profile.name;
-                    m_SelectedProfilePlatformLabel.text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(
-                        profile.moduleName, profile.subtarget);
+                    m_SelectedProfilePlatformLabel.text = platformDisplayName;
                     m_SelectedProfilePlatformLabel.Show();
                 }
             }
@@ -80,12 +79,12 @@ namespace UnityEditor.Build.Profile.Handlers
         /// <summary>
         /// Update selected profile for missing platform
         /// </summary>
-        internal void MissingPlatformSelected(string moduleName, StandaloneBuildSubtarget subtarget)
+        internal void MissingPlatformSelected(string platformId)
         {
             ClearSelectedProfiles();
 
-            m_SelectedProfileImage.image = BuildProfileModuleUtil.GetPlatformIcon(moduleName, subtarget);
-            m_SelectedProfileNameLabel.text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(moduleName, subtarget);
+            m_SelectedProfileImage.image = BuildProfileModuleUtil.GetPlatformIcon(platformId);
+            m_SelectedProfileNameLabel.text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId);
             m_SelectedProfilePlatformLabel.Hide();
         }
 

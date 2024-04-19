@@ -18,24 +18,14 @@ namespace UnityEditor.Build.Profile
         internal struct Payload : IAnalytic.IData
         {
             /// <summary>
-            /// Module name.
+            /// Platform ID of the target build profile.
             /// </summary>
-            public string moduleName;
+            public string platformId;
 
             /// <summary>
-            /// Build target of the built profile.
+            /// Platform display name of the target build profile.
             /// </summary>
-            public BuildTarget buildTarget;
-
-            /// <summary>
-            /// Build target string for the build profile.
-            /// </summary>
-            public string buildTargetString;
-
-            /// <summary>
-            /// StandaloneBuildSubtarget of the built profile.
-            /// </summary>
-            public StandaloneBuildSubtarget standaloneSubtarget;
+            public string platformDisplayName;
 
             /// <summary>
             /// Unique identifier of the profile asset. Not available
@@ -70,10 +60,8 @@ namespace UnityEditor.Build.Profile
 
             EditorAnalytics.SendAnalytic(new BuildProfileBuildTimeEvent(new BuildProfileBuildTimeEvent.Payload
             {
-                moduleName = profile.moduleName,
-                buildTarget = profile.buildTarget,
-                buildTargetString = profile.buildTarget.ToString(),
-                standaloneSubtarget = profile.subtarget,
+                platformId = profile.platformId,
+                platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformId),
                 profileAssetGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(profile))
             }));
         }
