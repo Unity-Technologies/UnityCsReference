@@ -92,6 +92,7 @@ namespace UnityEditorInternal.Profiling
             k_RawHierarchyViewAnalyticsName = DisplayName + ".RawHierarchy";
             k_InvertedHierarchyViewAnalyticsName = DisplayName + ".InvertedHierarchy";
             k_TimelineViewAnalyticsName = DisplayName + ".Timeline";
+            k_TimelineV2ViewAnalyticsName = DisplayName + ".TimelineV2";
         }
 
         protected bool fetchData
@@ -103,6 +104,7 @@ namespace UnityEditorInternal.Profiling
         string k_RawHierarchyViewAnalyticsName { get; set; }
         string k_InvertedHierarchyViewAnalyticsName { get; set; }
         string k_TimelineViewAnalyticsName { get; set; }
+        string k_TimelineV2ViewAnalyticsName { get; set; }
 
         protected const string k_MainThreadName = "Main Thread";
 
@@ -289,7 +291,18 @@ namespace UnityEditorInternal.Profiling
             ProfilerDriver.profileCleared -= ProfileCleared;
             ProfilerDriver.profileCleared += ProfileCleared;
 
-            m_ViewType = (ProfilerViewType)EditorPrefs.GetInt(ViewTypeSettingsKey, (int)DefaultViewTypeSetting);
+
+            ProfilerViewType loaded = (ProfilerViewType)EditorPrefs.GetInt(ViewTypeSettingsKey, (int)DefaultViewTypeSetting);
+
+            // if viewtype is the timeline v2 then this is a domain reload and we don't want to switch away
+            if (m_ViewType != ProfilerViewType.TimelineV2)
+                m_ViewType = loaded;
+
+            // catches the case where jobs profiler has been removed from the project
+            var jobsProfilerModule = ProfilerWindow.jobsProfilerModule;
+            if (jobsProfilerModule == null && m_ViewType == ProfilerViewType.TimelineV2)
+                m_ViewType = ProfilerViewType.Timeline;
+
             m_ProfilerViewFilteringOptions = SessionState.GetInt(ProfilerViewFilteringOptionsKey, m_ProfilerViewFilteringOptions);
         }
 
@@ -304,7 +317,8 @@ namespace UnityEditorInternal.Profiling
         internal override void SaveViewSettings()
         {
             base.SaveViewSettings();
-            EditorPrefs.SetInt(ViewTypeSettingsKey, (int)m_ViewType);
+            ProfilerViewType saving_vt = (m_ViewType == ProfilerViewType.TimelineV2) ? ProfilerViewType.Timeline : m_ViewType;
+            EditorPrefs.SetInt(ViewTypeSettingsKey, (int)saving_vt);
             SessionState.SetInt(ProfilerViewFilteringOptionsKey, m_ProfilerViewFilteringOptions);
             m_FrameDataHierarchyView?.SaveViewSettings();
         }
@@ -1115,6 +1129,7 @@ namespace UnityEditorInternal.Profiling
                 ProfilerViewType.Timeline => k_TimelineViewAnalyticsName,
                 ProfilerViewType.RawHierarchy => k_RawHierarchyViewAnalyticsName,
                 ProfilerViewType.InvertedHierarchy => k_InvertedHierarchyViewAnalyticsName,
+                ProfilerViewType.TimelineV2 => k_TimelineV2ViewAnalyticsName,
                 _ => throw new ArgumentOutOfRangeException(nameof(viewtype), viewtype, null)
             };
             ProfilerWindowAnalytics.SwitchActiveView(viewName);

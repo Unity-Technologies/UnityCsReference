@@ -221,8 +221,7 @@ namespace UnityEngine.UIElements
         {
             if (showMixedValue)
             {
-                value = default;
-                textElement.text = mixedValueString;
+                ((INotifyValueChanged<string>)m_TextElement).SetValueWithoutNotify(mixedValueString);
             }
 
             textElement.EnableInClassList(mixedValueLabelUssClassName, showMixedValue);

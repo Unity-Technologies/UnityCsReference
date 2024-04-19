@@ -47,6 +47,8 @@ namespace UnityEngine.LightTransport
         public Result IntegrateIndirectRadiance(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
             bool ignoreIndirectEnvironment, BufferSlice<SphericalHarmonicsL2> radianceEstimateOut);
         public Result IntegrateValidity(IDeviceContext context, int positionOffset, int positionCount, int sampleCount, BufferSlice<float> validityEstimateOut);
+        public Result IntegrateOcclusion(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
+            int maxLightsPerProbe, BufferSlice<int> perProbeLightIndices, BufferSlice<float> probeOcclusionEstimateOut);
     }
     internal class WintermuteProbeIntegrator : IProbeIntegrator
     {
@@ -79,8 +81,10 @@ namespace UnityEngine.LightTransport
             Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
             var wmContext = context as WintermuteContext;
             using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            BufferSlice<Vector3> offsetPositions = _positions;
+            offsetPositions.Offset += (ulong)positionOffset;
             EventID eventId = context.CreateEvent();
-            context.ReadBuffer(_positions, positions, eventId);
+            context.ReadBuffer(offsetPositions, positions, eventId);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
             context.DestroyEvent(eventId);
@@ -91,7 +95,7 @@ namespace UnityEngine.LightTransport
             int giSampleCount = 0;
             int envSampleCount = 0;
             const bool ignoreIndirectEnvironment = true;
-            var lightBakerResult = LightBaker.IntegrateProbeDirectRadianceWintermute(positionsPtr, _integrationContext, positionOffset, positionCount, _pushoff,
+            var lightBakerResult = LightBaker.IntegrateProbeDirectRadianceWintermute(positionsPtr, _integrationContext, positionCount, _pushoff,
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, wmContext, _progress, shPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
@@ -115,8 +119,10 @@ namespace UnityEngine.LightTransport
             Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
             var wmContext = context as WintermuteContext;
             using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            BufferSlice<Vector3> offsetPositions = _positions;
+            offsetPositions.Offset += (ulong)positionOffset;
             EventID eventId = context.CreateEvent();
-            context.ReadBuffer(_positions, positions, eventId);
+            context.ReadBuffer(offsetPositions, positions, eventId);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
             context.DestroyEvent(eventId);
@@ -127,7 +133,7 @@ namespace UnityEngine.LightTransport
             const bool ignoreDirectEnvironment = false;
             int giSampleCount = sampleCount;
             int envSampleCount = ignoreIndirectEnvironment ? 0 : sampleCount;
-            var lightBakerResult = LightBaker.IntegrateProbeIndirectRadianceWintermute(positionsPtr, _integrationContext, positionOffset, positionCount, _pushoff,
+            var lightBakerResult = LightBaker.IntegrateProbeIndirectRadianceWintermute(positionsPtr, _integrationContext, positionCount, _pushoff,
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, wmContext, _progress, shPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
@@ -150,8 +156,10 @@ namespace UnityEngine.LightTransport
             Debug.Assert(context is WintermuteContext, "Expected RadeonRaysContext but got something else.");
             var wmContext = context as WintermuteContext;
             using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            BufferSlice<Vector3> offsetPositions = _positions;
+            offsetPositions.Offset += (ulong)positionOffset;
             EventID eventId = context.CreateEvent();
-            context.ReadBuffer(_positions, positions, eventId);
+            context.ReadBuffer(offsetPositions, positions, eventId);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
             context.DestroyEvent(eventId);
@@ -161,7 +169,7 @@ namespace UnityEngine.LightTransport
             int directSampleCount = 0;
             int giSampleCount = sampleCount;
             int envSampleCount = 0;
-            var lightBakerResult = LightBaker.IntegrateProbeValidityWintermute(positionsPtr, _integrationContext, positionOffset, positionCount, _pushoff,
+            var lightBakerResult = LightBaker.IntegrateProbeValidityWintermute(positionsPtr, _integrationContext, positionCount, _pushoff,
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, wmContext, _progress, validityPtr);
             
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
@@ -178,6 +186,54 @@ namespace UnityEngine.LightTransport
 
             return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
+
+        public unsafe IProbeIntegrator.Result IntegrateOcclusion(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
+            int maxLightsPerProbe, BufferSlice<int> perProbeLightIndices, BufferSlice<float> probeOcclusionEstimateOut)
+        {
+            Debug.Assert(context is WintermuteContext, "Expected RadeonRaysContext but got something else.");
+            var wmContext = context as WintermuteContext;
+            Debug.Assert(maxLightsPerProbe == 4, "WintermuteProbeIntegrator only supports 4 light per probe.");
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            BufferSlice<Vector3> offsetPositions = _positions;
+            offsetPositions.Offset += (ulong)positionOffset;
+            EventID eventId = context.CreateEvent();
+            context.ReadBuffer(offsetPositions, positions, eventId);
+            bool waitResult = context.Wait(eventId);
+            Debug.Assert(waitResult, "Failed to read positions from context.");
+            context.DestroyEvent(eventId);
+            void* positionsPtr = NativeArrayUnsafeUtility.GetUnsafePtr(positions);
+
+            using var perProbeLightIndicesArray = new NativeArray<int>(positionCount * 4, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            eventId = context.CreateEvent();
+            context.ReadBuffer(perProbeLightIndices, perProbeLightIndicesArray, eventId);
+            waitResult = context.Wait(eventId);
+            Debug.Assert(waitResult, "Failed to read indices from context.");
+            context.DestroyEvent(eventId);
+            void* perProbeLightIndicesPtr = NativeArrayUnsafeUtility.GetUnsafePtr(perProbeLightIndicesArray);
+
+            using var occlusionBuffer = new NativeArray<float>(positionCount * maxLightsPerProbe, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            void* occlusionPtr = NativeArrayUnsafeUtility.GetUnsafePtr(occlusionBuffer);
+            int directSampleCount = sampleCount;
+            int giSampleCount = 0;
+            int envSampleCount = 0;
+            var lightBakerResult = LightBaker.IntegrateProbeOcclusionWintermute(positionsPtr, perProbeLightIndicesPtr, positionCount,
+                _pushoff, _bounceCount, directSampleCount, giSampleCount, envSampleCount, wmContext, _progress, occlusionPtr);
+
+            // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
+            if (lightBakerResult.type != LightBaker.ResultType.Success)
+                return lightBakerResult.ConvertToIProbeIntegratorResult();
+
+            eventId = context.CreateEvent();
+            context.WriteBuffer(probeOcclusionEstimateOut, occlusionBuffer, eventId);
+            waitResult = context.Wait(eventId);
+            Debug.Assert(waitResult, "Failed to write validity to context.");
+            context.DestroyEvent(eventId);
+            if (!waitResult)
+                lightBakerResult = new LightBaker.Result { type = LightBaker.ResultType.IOFailed, message = "Failed to write validity to context." };
+
+            return lightBakerResult.ConvertToIProbeIntegratorResult();
+        }
+
         public void Dispose()
         {
         }
@@ -211,8 +267,10 @@ namespace UnityEngine.LightTransport
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
             using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            BufferSlice<Vector3> offsetPositions = _positions;
+            offsetPositions.Offset += (ulong)positionOffset;
             EventID eventId = context.CreateEvent();
-            context.ReadBuffer(_positions, positions, eventId);
+            context.ReadBuffer(offsetPositions, positions, eventId);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
             context.DestroyEvent(eventId);
@@ -223,7 +281,7 @@ namespace UnityEngine.LightTransport
             int giSampleCount = 0;
             int envSampleCount = 0;
             const bool ignoreIndirectEnvironment = true;
-            var lightBakerResult = LightBaker.IntegrateProbeDirectRadianceRadeonRays(positionsPtr, _integrationContext, positionOffset, positionCount, _pushoff,
+            var lightBakerResult = LightBaker.IntegrateProbeDirectRadianceRadeonRays(positionsPtr, _integrationContext, positionCount, _pushoff,
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, rrContext, _progress, shPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
@@ -247,8 +305,10 @@ namespace UnityEngine.LightTransport
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
             using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            BufferSlice<Vector3> offsetPositions = _positions;
+            offsetPositions.Offset += (ulong)positionOffset;
             EventID eventId = context.CreateEvent();
-            context.ReadBuffer(_positions, positions, eventId);
+            context.ReadBuffer(offsetPositions, positions, eventId);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
             context.DestroyEvent(eventId);
@@ -259,7 +319,7 @@ namespace UnityEngine.LightTransport
             const bool ignoreDirectEnvironment = false;
             int giSampleCount = sampleCount;
             int envSampleCount = ignoreIndirectEnvironment ? 0 : sampleCount;
-            var lightBakerResult = LightBaker.IntegrateProbeIndirectRadianceRadeonRays(positionsPtr, _integrationContext, positionOffset, positionCount, _pushoff,
+            var lightBakerResult = LightBaker.IntegrateProbeIndirectRadianceRadeonRays(positionsPtr, _integrationContext, positionCount, _pushoff,
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, rrContext, _progress, shPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
@@ -282,8 +342,10 @@ namespace UnityEngine.LightTransport
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
             using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            BufferSlice<Vector3> offsetPositions = _positions;
+            offsetPositions.Offset += (ulong)positionOffset;
             EventID eventId = context.CreateEvent();
-            context.ReadBuffer(_positions, positions, eventId);
+            context.ReadBuffer(offsetPositions, positions, eventId);
             bool waitResult = context.Wait(eventId);
             Debug.Assert(waitResult, "Failed to read positions from context.");
             context.DestroyEvent(eventId);
@@ -293,7 +355,7 @@ namespace UnityEngine.LightTransport
             int directSampleCount = 0;
             int giSampleCount = sampleCount;
             int envSampleCount = 0;
-            var lightBakerResult = LightBaker.IntegrateProbeValidityRadeonRays(positionsPtr, _integrationContext, positionOffset, positionCount, _pushoff,
+            var lightBakerResult = LightBaker.IntegrateProbeValidityRadeonRays(positionsPtr, _integrationContext, positionCount, _pushoff,
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, rrContext, _progress, validityPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
@@ -310,6 +372,54 @@ namespace UnityEngine.LightTransport
 
             return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
+
+        public unsafe IProbeIntegrator.Result IntegrateOcclusion(IDeviceContext context, int positionOffset, int positionCount, int sampleCount,
+            int maxLightsPerProbe, BufferSlice<int> perProbeLightIndices, BufferSlice<float> probeOcclusionEstimateOut)
+        {
+            Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
+            var rrContext = context as RadeonRaysContext;
+            Debug.Assert(maxLightsPerProbe == 4, "RadeonRaysProbeIntegrator only supports 4 light per probe.");
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            BufferSlice<Vector3> offsetPositions = _positions;
+            offsetPositions.Offset += (ulong)positionOffset;
+            EventID eventId = context.CreateEvent();
+            context.ReadBuffer(offsetPositions, positions, eventId);
+            bool waitResult = context.Wait(eventId);
+            Debug.Assert(waitResult, "Failed to read positions from context.");
+            context.DestroyEvent(eventId);
+            void* positionsPtr = NativeArrayUnsafeUtility.GetUnsafePtr(positions);
+
+            using var perProbeLightIndicesArray = new NativeArray<int>(positionCount * 4, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            eventId = context.CreateEvent();
+            context.ReadBuffer(perProbeLightIndices, perProbeLightIndicesArray, eventId);
+            waitResult = context.Wait(eventId);
+            Debug.Assert(waitResult, "Failed to read indices from context.");
+            context.DestroyEvent(eventId);
+            void* perProbeLightIndicesPtr = NativeArrayUnsafeUtility.GetUnsafePtr(perProbeLightIndicesArray);
+
+            using var occlusionBuffer = new NativeArray<float>(positionCount * maxLightsPerProbe, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            void* occlusionPtr = NativeArrayUnsafeUtility.GetUnsafePtr(occlusionBuffer);
+            int directSampleCount = sampleCount;
+            int giSampleCount = 0;
+            int envSampleCount = 0;
+            var lightBakerResult = LightBaker.IntegrateProbeOcclusionRadeonRays(positionsPtr, perProbeLightIndicesPtr, positionCount,
+                _pushoff, _bounceCount, directSampleCount, giSampleCount, envSampleCount, rrContext, _progress, occlusionPtr);
+
+            if (lightBakerResult.type != LightBaker.ResultType.Success)
+                return lightBakerResult.ConvertToIProbeIntegratorResult();
+
+            eventId = context.CreateEvent();
+            context.WriteBuffer(probeOcclusionEstimateOut, occlusionBuffer, eventId);
+            // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
+            waitResult = context.Wait(eventId);
+            Debug.Assert(waitResult, "Failed to write validity to context.");
+            context.DestroyEvent(eventId);
+            if (!waitResult)
+                lightBakerResult = new LightBaker.Result { type = LightBaker.ResultType.IOFailed, message = "Failed to write validity to context." };
+
+            return lightBakerResult.ConvertToIProbeIntegratorResult();
+        }
+
         public void Dispose()
         {
         }

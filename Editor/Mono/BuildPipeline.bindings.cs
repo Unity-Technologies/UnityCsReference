@@ -12,6 +12,7 @@ using Mono.Cecil;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Runtime.InteropServices;
 using UnityEditor.Build;
+using UnityEditor.Build.Profile;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -223,6 +224,14 @@ namespace UnityEditor
         public string[] extraScriptingDefines { get; set; }
     }
 
+    public struct BuildPlayerWithProfileOptions
+    {
+        public BuildProfile buildProfile { get; set; }
+        public string locationPathName { get; set; }
+        public string assetBundleManifestPath { get; set; }
+        public BuildOptions options { get; set; }
+    }
+
     internal struct BuildPlayerDataOptions
     {
         public string[] scenes { get; set; }
@@ -276,6 +285,10 @@ namespace UnityEditor
         [FreeFunction(IsThreadSafe = true)]
         internal static extern string GetEditorTargetName();
 
+        [NativeHeader("Editor/Src/BuildPipeline/BuildPlayerHelpers.h")]
+        [FreeFunction]
+        internal static extern void ShowBuildProfileWindow();
+
         [Obsolete("PushAssetDependencies has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
         [FreeFunction]
         public static extern void PushAssetDependencies();
@@ -300,6 +313,24 @@ namespace UnityEditor
             var buildPlayerContext = new BuildPlayerContext(buildPlayerOptions);
             BuildPipelineInterfaces.PreparePlayerBuild(buildPlayerContext);
             return buildPlayerContext;
+        }
+
+        /// <summary>
+        /// Builds a player.
+        /// </summary>
+        /// <param name="buildPlayerWithProfileOptions">The BuildPlayerWithProfileOptions to be built with.</param>
+        /// <returns>A BuildReport giving build process information.</returns>
+        /// <exception cref="ArgumentException">Throws if build profile is null.</exception>
+        public static BuildReport BuildPlayer(BuildPlayerWithProfileOptions buildPlayerWithProfileOptions)
+        {
+            var buildProfile = buildPlayerWithProfileOptions.buildProfile;
+            if (buildProfile == null)
+                throw new ArgumentException("Build profile is invalid.");
+
+            BuildProfileContext.instance.activeProfile = buildProfile;
+            var buildPlayerOptions = BuildProfileModuleUtil.GetBuildPlayerOptionsFromActiveProfile(
+                buildPlayerWithProfileOptions.locationPathName, buildPlayerWithProfileOptions.assetBundleManifestPath, buildPlayerWithProfileOptions.options);
+            return BuildPlayer(buildPlayerOptions);
         }
 
         public static BuildReport BuildPlayer(EditorBuildSettingsScene[] levels, string locationPathName, BuildTarget target, BuildOptions options)

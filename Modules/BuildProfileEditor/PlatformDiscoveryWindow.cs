@@ -69,14 +69,11 @@ namespace UnityEditor.Build.Profile
             m_AddBuildProfileButton.clicked += () =>
             {
                 OnAddBuildProfileClicked(m_SelectedCard);
-                var buildTarget = BuildProfileModuleUtil.GetBuildTarget(m_SelectedCard.moduleName);
                 m_CloseEvent = new BuildProfilePlatformBrowserClosed(new BuildProfilePlatformBrowserClosed.Payload()
                 {
                     wasProfileCreated = true,
-                    moduleName = m_SelectedCard.moduleName,
-                    buildTarget = buildTarget,
-                    buildTargetString = buildTarget.ToString(),
-                    standaloneSubtarget = m_SelectedCard.subtarget,
+                    platformId = m_SelectedCard.platformId,
+                    platformDisplayName = m_SelectedCard.displayName,
                 });
                 Close();
             };
@@ -93,8 +90,8 @@ namespace UnityEditor.Build.Profile
         {
             m_SelectedCard = card;
             m_SelectedDisplayNameLabel.text = card.displayName;
-            m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIcon(card.moduleName, card.subtarget);
-            Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.moduleName, card.subtarget);
+            m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIcon(card.platformId);
+            Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId);
         }
 
         ListView CreateCardListView()
@@ -119,7 +116,7 @@ namespace UnityEditor.Build.Profile
                 var cardDescription = m_Cards[index];
                 card.Set(
                     cardDescription.displayName,
-                    BuildProfileModuleUtil.GetPlatformIconSmall(cardDescription.moduleName, cardDescription.subtarget));
+                    BuildProfileModuleUtil.GetPlatformIconSmall(cardDescription.platformId));
             };
             cards.selectedIndicesChanged += (indices) =>
             {
@@ -137,28 +134,24 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         static void OnAddBuildProfileClicked(BuildProfileCard card)
         {
-            BuildProfileDataSource.CreateAsset(card.moduleName, card.subtarget, card.displayName);
-            var buildTarget = BuildProfileModuleUtil.GetBuildTarget(card.moduleName);
+            BuildProfileDataSource.CreateAsset(card.platformId, card.displayName);
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {
                 creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,
-                moduleName = card.moduleName,
-                buildTarget = buildTarget,
-                buildTargetString = buildTarget.ToString(),
-                standaloneSubtarget = card.subtarget
+                platformId = card.platformId,
+                platformDisplayName = card.displayName,
             }));
         }
 
         static BuildProfileCard[] FindAllVisiblePlatforms()
         {
             var cards = new List<BuildProfileCard>();
-            foreach (var (moduleName, subtarget) in BuildProfileModuleUtil.FindAllViewablePlatforms())
+            foreach (var platformId in BuildProfileModuleUtil.FindAllViewablePlatforms())
             {
                 cards.Add(new BuildProfileCard()
                 {
-                    displayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(moduleName, subtarget),
-                    moduleName = moduleName,
-                    subtarget = subtarget
+                    displayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),
+                    platformId = platformId
                 });
             }
             return cards.ToArray();

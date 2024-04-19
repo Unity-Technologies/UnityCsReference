@@ -566,90 +566,26 @@ namespace UnityEngine.TextCore.Text
         /// <param name="hexChars"></param>
         /// <param name="tagCount"></param>
         /// <returns></returns>
-        public static Color32 HexCharsToColor(char[] hexChars, int tagCount)
+        public static Color32 HexCharsToColor(char[] hexChars, int startIndex, int tagCount)
         {
             if (tagCount == 4)
             {
-                byte r = (byte)(HexToInt(hexChars[1]) * 16 + HexToInt(hexChars[1]));
-                byte g = (byte)(HexToInt(hexChars[2]) * 16 + HexToInt(hexChars[2]));
-                byte b = (byte)(HexToInt(hexChars[3]) * 16 + HexToInt(hexChars[3]));
+                byte r = (byte)(HexToInt(hexChars[startIndex + 1]) * 16 + HexToInt(hexChars[startIndex + 1]));
+                byte g = (byte)(HexToInt(hexChars[startIndex + 2]) * 16 + HexToInt(hexChars[startIndex + 2]));
+                byte b = (byte)(HexToInt(hexChars[startIndex + 3]) * 16 + HexToInt(hexChars[startIndex + 3]));
 
                 return new Color32(r, g, b, 255);
             }
             if (tagCount == 5)
             {
-                byte r = (byte)(HexToInt(hexChars[1]) * 16 + HexToInt(hexChars[1]));
-                byte g = (byte)(HexToInt(hexChars[2]) * 16 + HexToInt(hexChars[2]));
-                byte b = (byte)(HexToInt(hexChars[3]) * 16 + HexToInt(hexChars[3]));
-                byte a = (byte)(HexToInt(hexChars[4]) * 16 + HexToInt(hexChars[4]));
+                byte r = (byte)(HexToInt(hexChars[startIndex + 1]) * 16 + HexToInt(hexChars[startIndex + 1]));
+                byte g = (byte)(HexToInt(hexChars[startIndex + 2]) * 16 + HexToInt(hexChars[startIndex + 2]));
+                byte b = (byte)(HexToInt(hexChars[startIndex + 3]) * 16 + HexToInt(hexChars[startIndex + 3]));
+                byte a = (byte)(HexToInt(hexChars[startIndex + 4]) * 16 + HexToInt(hexChars[startIndex + 4]));
 
                 return new Color32(r, g, b, a);
             }
             if (tagCount == 7)
-            {
-                byte r = (byte)(HexToInt(hexChars[1]) * 16 + HexToInt(hexChars[2]));
-                byte g = (byte)(HexToInt(hexChars[3]) * 16 + HexToInt(hexChars[4]));
-                byte b = (byte)(HexToInt(hexChars[5]) * 16 + HexToInt(hexChars[6]));
-
-                return new Color32(r, g, b, 255);
-            }
-            if (tagCount == 9)
-            {
-                byte r = (byte)(HexToInt(hexChars[1]) * 16 + HexToInt(hexChars[2]));
-                byte g = (byte)(HexToInt(hexChars[3]) * 16 + HexToInt(hexChars[4]));
-                byte b = (byte)(HexToInt(hexChars[5]) * 16 + HexToInt(hexChars[6]));
-                byte a = (byte)(HexToInt(hexChars[7]) * 16 + HexToInt(hexChars[8]));
-
-                return new Color32(r, g, b, a);
-            }
-            if (tagCount == 10)
-            {
-                byte r = (byte)(HexToInt(hexChars[7]) * 16 + HexToInt(hexChars[7]));
-                byte g = (byte)(HexToInt(hexChars[8]) * 16 + HexToInt(hexChars[8]));
-                byte b = (byte)(HexToInt(hexChars[9]) * 16 + HexToInt(hexChars[9]));
-
-                return new Color32(r, g, b, 255);
-            }
-            if (tagCount == 11)
-            {
-                byte r = (byte)(HexToInt(hexChars[7]) * 16 + HexToInt(hexChars[7]));
-                byte g = (byte)(HexToInt(hexChars[8]) * 16 + HexToInt(hexChars[8]));
-                byte b = (byte)(HexToInt(hexChars[9]) * 16 + HexToInt(hexChars[9]));
-                byte a = (byte)(HexToInt(hexChars[10]) * 16 + HexToInt(hexChars[10]));
-
-                return new Color32(r, g, b, a);
-            }
-            if (tagCount == 13)
-            {
-                byte r = (byte)(HexToInt(hexChars[7]) * 16 + HexToInt(hexChars[8]));
-                byte g = (byte)(HexToInt(hexChars[9]) * 16 + HexToInt(hexChars[10]));
-                byte b = (byte)(HexToInt(hexChars[11]) * 16 + HexToInt(hexChars[12]));
-
-                return new Color32(r, g, b, 255);
-            }
-            if (tagCount == 15)
-            {
-                byte r = (byte)(HexToInt(hexChars[7]) * 16 + HexToInt(hexChars[8]));
-                byte g = (byte)(HexToInt(hexChars[9]) * 16 + HexToInt(hexChars[10]));
-                byte b = (byte)(HexToInt(hexChars[11]) * 16 + HexToInt(hexChars[12]));
-                byte a = (byte)(HexToInt(hexChars[13]) * 16 + HexToInt(hexChars[14]));
-
-                return new Color32(r, g, b, a);
-            }
-
-            return new Color32(255, 255, 255, 255);
-        }
-
-        /// <summary>
-        /// Method to convert Hex Color values to Color32
-        /// </summary>
-        /// <param name="hexChars"></param>
-        /// <param name="startIndex"></param>
-        /// <param name="length"></param>
-        /// <returns></returns>
-        public static Color32 HexCharsToColor(char[] hexChars, int startIndex, int length)
-        {
-            if (length == 7)
             {
                 byte r = (byte)(HexToInt(hexChars[startIndex + 1]) * 16 + HexToInt(hexChars[startIndex + 2]));
                 byte g = (byte)(HexToInt(hexChars[startIndex + 3]) * 16 + HexToInt(hexChars[startIndex + 4]));
@@ -657,7 +593,7 @@ namespace UnityEngine.TextCore.Text
 
                 return new Color32(r, g, b, 255);
             }
-            if (length == 9)
+            if (tagCount == 9)
             {
                 byte r = (byte)(HexToInt(hexChars[startIndex + 1]) * 16 + HexToInt(hexChars[startIndex + 2]));
                 byte g = (byte)(HexToInt(hexChars[startIndex + 3]) * 16 + HexToInt(hexChars[startIndex + 4]));

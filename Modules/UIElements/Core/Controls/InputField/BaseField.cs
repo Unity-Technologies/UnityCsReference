@@ -213,8 +213,9 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                if (!EqualityComparer<TValueType>.Default.Equals(m_Value, value))
+                if (!EqualityComparer<TValueType>.Default.Equals(m_Value, value) || showMixedValue)
                 {
+                    showMixedValue = false;
                     if (panel != null)
                     {
                         var previousValue = m_Value;

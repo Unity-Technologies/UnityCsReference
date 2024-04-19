@@ -10,12 +10,15 @@ namespace UnityEditor.Build.Profile
     internal static class BuildProfileCLI
     {
         [RequiredByNativeCode]
-        internal static void SetActiveBuildProfileFromPath(string buildProfilePath)
+        internal static bool SetActiveBuildProfileFromPath(string buildProfilePath)
         {
             if (LoadFromPath(buildProfilePath, out BuildProfile buildProfile))
             {
                 BuildProfileContext.instance.activeProfile = buildProfile;
+                return true;
             }
+
+            return false;
         }
 
         static bool LoadFromPath(string buildProfilePath, out BuildProfile buildProfile)
@@ -31,6 +34,19 @@ namespace UnityEditor.Build.Profile
             }
 
             return buildProfile != null;
+        }
+
+        [RequiredByNativeCode]
+        static void BuildActiveProfileWithPath(string locationPathName)
+        {
+            var options = new BuildPlayerWithProfileOptions()
+            {
+                buildProfile = BuildProfile.GetActiveBuildProfile(),
+                locationPathName = locationPathName,
+                options = BuildOptions.None
+            };
+
+            BuildPipeline.BuildPlayer(options);
         }
     }
 }

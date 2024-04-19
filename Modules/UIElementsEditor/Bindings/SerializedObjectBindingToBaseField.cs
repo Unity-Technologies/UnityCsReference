@@ -14,6 +14,8 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
 
     EventCallback<ChangeEvent<TValue>> m_FieldValueChanged;
 
+    private static EqualityComparer<TValue> s_EqualityComparer = EqualityComparer<TValue>.Default;
+
     protected override string bindingId { get; } = BindingExtensions.s_SerializedBindingId;
 
     protected TField field
@@ -129,8 +131,8 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
 
         base.OnFieldAttached();
 
-        if (EqualityComparer<TValue>.Default.Equals(previousValue, field.value)
-            && field is VisualElement handler)
+        if (field is VisualElement handler && !boundProperty.hasMultipleDifferentValues &&
+            s_EqualityComparer.Equals(previousValue, field.value))
         {
             using var evt = ChangeEvent<TValue>.GetPooled(field.value, field.value);
             evt.elementTarget = handler;

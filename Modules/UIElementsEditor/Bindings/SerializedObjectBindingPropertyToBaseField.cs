@@ -24,12 +24,17 @@ abstract class SerializedObjectBindingPropertyToBaseField<TProperty, TValue> : S
         }
 
         lastFieldValue = propGetValue(p);
-        AssignValueToField(lastFieldValue);
+
+        // We dont want to trigger a change event as this will cause the value to be applied to all targets.
+        if (p.hasMultipleDifferentValues)
+            AssignValueToFieldWithoutNotify(lastFieldValue);
+        else
+            AssignValueToField(lastFieldValue);
     }
 
     protected override bool SyncFieldValueToProperty()
     {
-        if (!propCompareValues(lastFieldValue, boundProperty, propGetValue))
+        if (boundProperty.hasMultipleDifferentValues || !propCompareValues(lastFieldValue, boundProperty, propGetValue))
         {
             propSetValue(boundProperty, lastFieldValue);
             boundProperty.m_SerializedObject.ApplyModifiedProperties();
@@ -45,6 +50,8 @@ abstract class SerializedObjectBindingPropertyToBaseField<TProperty, TValue> : S
     }
 
     protected abstract void AssignValueToField(TProperty lastValue);
+
+    protected abstract void AssignValueToFieldWithoutNotify(TProperty lastValue);
 
     public override void OnRelease()
     {

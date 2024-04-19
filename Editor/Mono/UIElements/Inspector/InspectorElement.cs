@@ -210,6 +210,8 @@ namespace UnityEditor.UIElements
         /// </summary>
         internal VisualElement livePropertyYellowBarsContainer { get; private set; }
 
+        internal EditorGUIUtility.ComparisonViewMode comparisonViewMode { get; set; }
+
         /// <summary>
         /// Gets or sets the default inspector framework to use for this inspector. This will take affect during the next bind.
         /// </summary>
@@ -680,7 +682,9 @@ namespace UnityEditor.UIElements
 
                     var originalViewWidth = EditorGUIUtility.currentViewWidth;
                     var originalHierarchyMode = EditorGUIUtility.hierarchyMode;
+                    var originalComparisonMode = EditorGUIUtility.comparisonViewMode;
                     EditorGUIUtility.hierarchyMode = true;
+                    EditorGUIUtility.comparisonViewMode = comparisonViewMode;
 
                     var originalWideMode = SetWideModeForWidth(inspector);
 
@@ -764,6 +768,7 @@ namespace UnityEditor.UIElements
                         EditorGUIUtility.wideMode = originalWideMode;
                         EditorGUIUtility.hierarchyMode = originalHierarchyMode;
                         EditorGUIUtility.currentViewWidth = originalViewWidth;
+                        EditorGUIUtility.comparisonViewMode = originalComparisonMode;
                     }
                 }
             };

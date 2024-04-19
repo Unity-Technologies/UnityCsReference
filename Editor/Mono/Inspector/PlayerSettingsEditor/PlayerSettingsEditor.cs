@@ -23,6 +23,7 @@ using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
+using UnityEngine.Bindings;
 using UnityEditor.Build.Profile;
 
 // ************************************* READ BEFORE EDITING **************************************
@@ -39,6 +40,7 @@ using UnityEditor.Build.Profile;
 namespace UnityEditor
 {
     [CustomEditor(typeof(PlayerSettings))]
+    [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
     internal partial class PlayerSettingsEditor : Editor
     {
         class Styles
@@ -262,6 +264,10 @@ namespace UnityEditor
             public static readonly string undoChangedPlatformShaderChunkCountString = L10n.Tr("Changed Shader Chunk Count Platform Setting");
             public static readonly string undoChangedDefaultShaderChunkSizeString   = L10n.Tr("Changed Shader Chunk Size Default Setting");
             public static readonly string undoChangedDefaultShaderChunkCountString  = L10n.Tr("Changed Shader Chunk Count Default Setting");
+
+            public static readonly string globalPlayerSettingsInfo =
+            L10n.Tr("Editing these global player settings will not affect the current state of the project, because the active build profile is using it's own customized player setitngs. Edit the build profile to change them.");
+            public static readonly string globalPlayerSettingsInfoButton = L10n.Tr("Edit Build Profile");
         }
 
         internal class RecompileReason
@@ -513,9 +519,21 @@ namespace UnityEditor
         private static Texture2D s_WarningIcon;
 
         // Preset check
-        bool isPreset = false;
         bool isPresetWindowOpen = false;
         bool hasPresetWindowClosed = false;
+
+        bool IsPreset() => playerSettingsType == PlayerSettingsType.Preset;
+
+        internal enum PlayerSettingsType
+        {
+            Global,
+            Preset,
+            ActiveBuildProfile,
+            NonActiveBuildProfile
+        }
+        internal PlayerSettingsType playerSettingsType = PlayerSettingsType.Global;
+        internal bool IsBuildProfile() => playerSettingsType == PlayerSettingsType.ActiveBuildProfile || playerSettingsType == PlayerSettingsType.NonActiveBuildProfile;
+        bool IsGlobalOrActiveProfile => playerSettingsType == PlayerSettingsType.Global || playerSettingsType == PlayerSettingsType.ActiveBuildProfile;
 
         const string kSelectedPlatform = "PlayerSettings.SelectedPlatform";
 
@@ -531,7 +549,8 @@ namespace UnityEditor
         void OnEnable()
         {
             s_activeEditors.Add(this);
-            isPreset = Preset.IsEditorTargetAPreset(target);
+            if (Preset.IsEditorTargetAPreset(target))
+                playerSettingsType = PlayerSettingsType.Preset;
             validPlatforms = BuildPlatforms.instance.GetValidPlatforms(true).ToArray();
 
             m_StripEngineCode               = FindPropertyAssert("stripEngineCode");
@@ -719,8 +738,43 @@ namespace UnityEditor
             HandlePendingChangesRequiringRecompilation();
 
             // Ensure script compilation handling is returned to to EditorOnlyPlayerSettings
-            if (!isPreset)
+            if (!IsPreset())
                 PlayerSettings.isHandlingScriptRecompile = true;
+        }
+
+        /// <summary>
+        /// Configures the player settings editor for a build profile, ensuring only one platform
+        /// tab is displayed in the platform grouping.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal void ConfigurePlayerSettingsForBuildProfile(string buildProfileModuleName, bool isServerBuildProfile, bool isActiveBuildProfile)
+        {
+            playerSettingsType = isActiveBuildProfile ? PlayerSettingsType.ActiveBuildProfile : PlayerSettingsType.NonActiveBuildProfile;
+
+            // We don't want to show other platform tabs that it's not the build profile one
+            bool gotValidPlatform = false;
+            string platformModuleName = string.Empty;
+            for (int i = 0; i < validPlatforms.Length; i++)
+            {
+                platformModuleName = ModuleManager.GetTargetStringFrom(validPlatforms[i].defaultTarget);
+                bool isServerPlatform = validPlatforms[i].namedBuildTarget == NamedBuildTarget.Server;
+                if (platformModuleName == buildProfileModuleName && isServerPlatform == isServerBuildProfile)
+                {
+                    var copy = (BuildPlatform)validPlatforms[i].Clone();
+                    copy.tooltip = string.Empty;
+                    validPlatforms[0] = copy;
+                    gotValidPlatform = true;
+                    break;
+                }
+            }
+
+            if (!gotValidPlatform)
+                return;
+
+            Array.Resize(ref validPlatforms, 1);
+            m_SettingsExtensions = new ISettingEditorExtension[1];
+            m_SettingsExtensions[0] = ModuleManager.GetEditorSettingsExtension(platformModuleName);
+            m_SettingsExtensions[0]?.OnEnable(this);
         }
 
         [RequiredByNativeCode]
@@ -806,7 +860,7 @@ namespace UnityEditor
 
         private void CheckUpdatePresetSelectorStatus()
         {
-            if (isPreset)
+            if (playerSettingsType != PlayerSettingsType.Global)
                 return;
 
             bool isOpen = PresetEditorHelper.presetEditorOpen;
@@ -819,7 +873,7 @@ namespace UnityEditor
 
         private void SetReason(string reason)
         {
-            if (isPreset)
+            if (!IsGlobalOrActiveProfile)
             {
                 return;
             }
@@ -840,7 +894,7 @@ namespace UnityEditor
 
         private void RecompileScripts()
         {
-            if (isPreset || isPresetWindowOpen)
+            if (!IsGlobalOrActiveProfile || isPresetWindowOpen)
             {
                 return;
             }
@@ -864,7 +918,7 @@ namespace UnityEditor
         {
             hasPresetWindowClosed = false;
 
-            if (isPreset)
+            if (playerSettingsType != PlayerSettingsType.Global)
                 return;
 
             if (HasReasonToCompile())
@@ -877,6 +931,8 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            DisplayBuildProfileHelpBoxIfNeeded();
+
             var serializedObjectUpdated = serializedObject.UpdateIfRequiredOrScript();
             EditorGUILayout.BeginVertical();
             {
@@ -913,12 +969,11 @@ namespace UnityEditor
 
             BuildPlatform platform = validPlatforms[selectedPlatformValue];
 
-            if (!isPreset)
-            {
+            if (playerSettingsType == PlayerSettingsType.Global)
                 CheckUpdatePresetSelectorStatus();
-            }
 
-            GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatformValue].title.text));
+            if (!IsBuildProfile())
+                GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatformValue].title.text));
 
             // Increase the offset to accomodate large labels, though keep a minimum of 150.
             EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
@@ -936,7 +991,7 @@ namespace UnityEditor
 
             m_IconsEditor.IconSectionGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatformValue], selectedPlatformValue, sectionIndex++);
 
-            ResolutionSectionGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+            ResolutionSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
             m_SplashScreenEditor.SplashSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
             DebugAndCrashReportingGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
             OtherSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
@@ -960,6 +1015,26 @@ namespace UnityEditor
             else if (HasReasonToCompile())
             {
                 RecompileScripts();
+            }
+        }
+
+        void DisplayBuildProfileHelpBoxIfNeeded()
+        {
+            if (playerSettingsType == PlayerSettingsType.Global && BuildProfileContext.instance.activeProfile?.playerSettings != null)
+            {
+                GUILayout.BeginHorizontal(EditorStyles.helpBox);
+                GUILayout.BeginVertical();
+                GUILayout.Space(5);
+                GUILayout.Label(EditorGUIUtility.GetHelpIcon(MessageType.Warning), GUILayout.ExpandWidth(false));
+                GUILayout.EndVertical();
+                GUILayout.Label(SettingsContent.globalPlayerSettingsInfo, EditorStyles.wordWrappedMiniLabel);
+                GUILayout.BeginVertical();
+                GUILayout.Space(5);
+                if (GUILayout.Button(SettingsContent.globalPlayerSettingsInfoButton))
+                    BuildPipeline.ShowBuildProfileWindow();
+                GUILayout.Space(5);
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
             }
         }
 
@@ -1030,8 +1105,9 @@ namespace UnityEditor
             return targetGroup == BuildTargetGroup.Standalone;
         }
 
-        public void ResolutionSectionGUI(NamedBuildTarget namedBuildTarget, ISettingEditorExtension settingsExtension, int sectionIndex = 0)
+        public void ResolutionSectionGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension, int sectionIndex = 0)
         {
+            NamedBuildTarget namedBuildTarget = platform.namedBuildTarget;
             if (BeginSettingsBox(sectionIndex, SettingsContent.resolutionPresentationTitle))
             {
                 // PLEASE DO NOT COPY SETTINGS TO APPEAR MULTIPLE PLACES IN THE CODE! See top of file for more info.
@@ -1091,7 +1167,9 @@ namespace UnityEditor
                         EditorGUILayout.EndFadeGroup();
                     }
 
-                    if (namedBuildTarget == NamedBuildTarget.Standalone)
+                    if (namedBuildTarget == NamedBuildTarget.Standalone &&
+                        BuildTargetDiscovery.TryGetProperties(platform.defaultTarget, out IGraphicsPlatformProperties properties) &&
+                        (properties?.RetinaSupport ?? false))
                         EditorGUILayout.PropertyField(m_MacRetinaSupport, SettingsContent.macRetinaSupport);
 
                     if (settingsExtension != null && settingsExtension.SupportsOrientation())
@@ -1500,7 +1578,7 @@ namespace UnityEditor
 
         void GraphicsAPIsGUIOnePlatform(BuildTargetGroup targetGroup, BuildTarget targetPlatform, string platformTitle)
         {
-            if (isPreset)
+            if (IsPreset())
                 return;
 
             GraphicsDeviceType[] availableDevices = PlayerSettings.GetSupportedGraphicsAPIs(targetPlatform);
@@ -1682,11 +1760,18 @@ namespace UnityEditor
             GUI.Label(rect, GetColorGamutDisplayString(targetGroup, (ColorGamut)colorGamut), EditorStyles.label);
         }
 
-        void ColorGamutGUI(BuildTargetGroup targetGroup)
+        void ColorGamutGUI(BuildPlatform platform)
         {
-            if (isPreset)
+            BuildTargetGroup targetGroup = platform.namedBuildTarget.ToBuildTargetGroup();
+
+            if (IsPreset())
                 return;
             if (!s_SupportedColorGamuts.ContainsKey(targetGroup))
+                return;
+
+            // Color gamut is not supported for other standalones besides Mac
+            if (!(BuildTargetDiscovery.TryGetProperties(platform.defaultTarget, out IGraphicsPlatformProperties properties) &&
+               (properties?.SupportsColorGamut ?? false)))
                 return;
 
             if (s_ColorGamutList == null)
@@ -1971,7 +2056,7 @@ namespace UnityEditor
             }
 
             // Output color spaces
-            ColorGamutGUI(platform.namedBuildTarget.ToBuildTargetGroup());
+            ColorGamutGUI(platform);
 
             // What we call "Metal Validation" is a random bunch of extra checks we do in editor in metal code
             if (Application.platform == RuntimePlatform.OSXEditor && BuildTargetDiscovery.BuildTargetSupportsRenderer(platform, GraphicsDeviceType.Metal))
@@ -1988,7 +2073,7 @@ namespace UnityEditor
                 BuildEnumPopup(m_FramebufferDepthMemorylessMode, SettingsContent.framebufferDepthMemorylessMode, memorylessModeValues, SettingsContent.memorylessModeNames);
             }
 
-            if (!isPreset)
+            if (!IsPreset())
             {
                 // Multithreaded rendering
                 if (settingsExtension != null && settingsExtension.SupportsMultithreadedRendering())
@@ -2188,7 +2273,7 @@ namespace UnityEditor
                 }
             }
 
-            if (!isPreset)
+            if (!IsPreset())
             {
                 EditorGUI.BeginChangeCheck();
                 GUIContent graphicsJobsGUI = SettingsContent.graphicsJobsNonExperimental;
@@ -2270,7 +2355,7 @@ namespace UnityEditor
                 }
             }
 
-            if ((settingsExtension != null && settingsExtension.SupportsCustomNormalMapEncoding()) && !isPreset)
+            if ((settingsExtension != null && settingsExtension.SupportsCustomNormalMapEncoding()) && !IsPreset())
             {
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
                 {
@@ -2288,7 +2373,7 @@ namespace UnityEditor
             }
 
             // Show Lightmap Encoding and HDR Cubemap Encoding quality options
-            if (hdrEncodingSupportedByPlatform && !isPreset)
+            if (hdrEncodingSupportedByPlatform && !IsPreset())
             {
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
                 {
@@ -2328,7 +2413,7 @@ namespace UnityEditor
                 }
             }
 
-            if (!isPreset)
+            if (!IsPreset())
             {
                 // Light map settings
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
@@ -2488,7 +2573,7 @@ namespace UnityEditor
                     }
                 }
             }
-            if (!isPreset)
+            if (!IsPreset())
                 EditorGUILayout.Space();
 
             Stereo360CaptureGUI(platform.namedBuildTarget.ToBuildTargetGroup());
@@ -2582,7 +2667,7 @@ namespace UnityEditor
 
                 EditorGUILayout.Space();
             }
-            else if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
+            else if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone && CanShowPlatformSettingsForHostPlatform(BuildTarget.StandaloneOSX, platform))
             {
                 // TODO this should be move to an extension if we have one for MacOS or Standalone target at some point.
                 GUILayout.Label(SettingsContent.macAppStoreTitle, EditorStyles.boldLabel);
@@ -2616,7 +2701,7 @@ namespace UnityEditor
                 return;
 
             GUILayout.Label(SettingsContent.vulkanSettingsTitle, EditorStyles.boldLabel);
-            if (!isPreset)
+            if (!IsPreset())
             {
                 PlayerSettings.vulkanEnableSetSRGBWrite = EditorGUILayout.Toggle(SettingsContent.vulkanEnableSetSRGBWrite, PlayerSettings.vulkanEnableSetSRGBWrite);
                 EditorGUILayout.PropertyField(m_VulkanNumSwapchainBuffers, SettingsContent.vulkanNumSwapchainBuffers);
@@ -3085,7 +3170,7 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
 
-            if (platform.namedBuildTarget == NamedBuildTarget.Standalone)
+            if (platform.namedBuildTarget == NamedBuildTarget.Standalone && CanShowPlatformSettingsForHostPlatform(BuildTarget.StandaloneOSX, platform))
             {
                 GUILayout.Label(SettingsContent.macConfigurationTitle, EditorStyles.boldLabel);
 
@@ -3379,12 +3464,12 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_BakeCollisionMeshes, SettingsContent.bakeCollisionMeshes);
 
-            if (isPreset)
+            if (IsPreset())
                 EditorGUI.indentLevel++;
 
             EditorGUILayout.PropertyField(m_PreloadedAssets, SettingsContent.preloadedAssets, true);
 
-            if (isPreset)
+            if (IsPreset())
                 EditorGUI.indentLevel--;
 
             bool platformUsesAOT =
@@ -3548,7 +3633,7 @@ namespace UnityEditor
                                 {
                                     logProperty.intValue = (int)stackTraceLogType;
 
-                                    if (!isPreset)
+                                    if (IsGlobalOrActiveProfile)
                                         PlayerSettings.SetGlobalStackTraceLogType(logType, stackTraceLogType);
                                 }
                             }
@@ -3964,6 +4049,14 @@ namespace UnityEditor
             }
 
             m_boxes.Sort((a, b) => a.order.CompareTo(b.order));
+        }
+
+        bool CanShowPlatformSettingsForHostPlatform(BuildTarget settingsBuildTarget, BuildPlatform currentPlatform)
+        {
+            if (IsBuildProfile() && currentPlatform.defaultTarget != settingsBuildTarget)
+                return false;
+
+            return BuildTargetDiscovery.BuildPlatformIsAvailableOnHostPlatform(settingsBuildTarget, SystemInfo.operatingSystemFamily);
         }
     }
 }

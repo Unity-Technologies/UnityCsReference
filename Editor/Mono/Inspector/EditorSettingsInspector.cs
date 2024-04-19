@@ -90,9 +90,21 @@ namespace UnityEditor
             public static GUIContent prefabModeUIEnvironment = EditorGUIUtility.TrTextContent("UI Environment");
 
             public static readonly GUIContent enterPlayModeSettings = EditorGUIUtility.TrTextContent("Enter Play Mode Settings");
-            public static readonly GUIContent enterPlayModeOptionsEnabled = EditorGUIUtility.TrTextContent("Enter Play Mode Options", "Enables options when Entering Play Mode");
-            public static readonly GUIContent enterPlayModeOptionsEnableDomainReload = EditorGUIUtility.TrTextContent("Reload Domain", "Enables Domain Reload when Entering Play Mode. Domain reload reinitializes game completely making loading behavior very close to the Player");
-            public static readonly GUIContent enterPlayModeOptionsEnableSceneReload = EditorGUIUtility.TrTextContent("Reload Scene", "Enables Scene Reload when Entering Play Mode. Scene reload makes loading behavior and performance characteristics very close to the Player");
+            public static readonly GUIContent enterPlayModeOptions = EditorGUIUtility.TrTextContent("When entering Play Mode", "Reload options when entering Play Mode.");
+            public static readonly GUIContent[] enterPlayModeOptionNames =
+            {
+                EditorGUIUtility.TrTextContent("Reload Domain and Scene"), // Default
+                EditorGUIUtility.TrTextContent("Reload Scene only"),
+                EditorGUIUtility.TrTextContent("Reload Domain only"),
+                EditorGUIUtility.TrTextContent("Do not reload Domain or Scene")
+            };
+            public static readonly int[] enterPlayModeOptionValues =
+            {
+                (int)EnterPlayModeOptions.None, // Default
+                (int)EnterPlayModeOptions.DisableDomainReload,
+                (int)EnterPlayModeOptions.DisableSceneReload,
+                (int)(EnterPlayModeOptions.DisableDomainReload | EnterPlayModeOptions.DisableSceneReload)
+            };
 
             public static readonly GUIContent numberingScheme = EditorGUIUtility.TrTextContent("Numbering Scheme");
 
@@ -987,25 +999,14 @@ namespace UnityEditor
             GUILayout.Label(Content.enterPlayModeSettings, EditorStyles.boldLabel);
 
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_EnterPlayModeOptionsEnabled, Content.enterPlayModeOptionsEnabled);
+
+            EditorGUILayout.IntPopup(m_EnterPlayModeOptions, Content.enterPlayModeOptionNames, Content.enterPlayModeOptionValues, Content.enterPlayModeOptions);
+
             if (EditorGUI.EndChangeCheck() && m_IsGlobalSettings)
-                EditorSettings.enterPlayModeOptionsEnabled = m_EnterPlayModeOptionsEnabled.boolValue;
-
-            EditorGUI.indentLevel++;
-            using (new EditorGUI.DisabledScope(!m_EnterPlayModeOptionsEnabled.boolValue))
             {
-                EnterPlayModeOptions options = (EnterPlayModeOptions)m_EnterPlayModeOptions.intValue;
-                options = ToggleEnterPlayModeOptions(options, EnterPlayModeOptions.DisableDomainReload, Content.enterPlayModeOptionsEnableDomainReload);
-                options = ToggleEnterPlayModeOptions(options, EnterPlayModeOptions.DisableSceneReload, Content.enterPlayModeOptionsEnableSceneReload);
-
-                if (m_EnterPlayModeOptions.intValue != (int)options)
-                {
-                    m_EnterPlayModeOptions.intValue = (int)options;
-                    if (m_IsGlobalSettings)
-                        EditorSettings.enterPlayModeOptions = options;
-                }
+                EditorSettings.enterPlayModeOptionsEnabled = m_EnterPlayModeOptionsEnabled.boolValue;
+                EditorSettings.enterPlayModeOptions = (EnterPlayModeOptions)m_EnterPlayModeOptions.intValue;
             }
-            EditorGUI.indentLevel--;
         }
 
         private void DoEnterInspectorSettings()
@@ -1245,23 +1246,6 @@ namespace UnityEditor
             m_LineEndingsForNewScripts.intValue = popupIndex;
             if (m_IsGlobalSettings)
                 EditorSettings.lineEndingsForNewScripts = (LineEndingsMode)popupIndex;
-        }
-
-        private EnterPlayModeOptions ToggleEnterPlayModeOptions(EnterPlayModeOptions options, EnterPlayModeOptions flag, GUIContent content)
-        {
-            bool isSet = ((options & flag) == flag);
-            isSet = EditorGUILayout.Toggle(content, !isSet);
-
-            if (isSet)
-            {
-                options &= ~flag;
-            }
-            else
-            {
-                options |= flag;
-            }
-
-            return options;
         }
 
         [SettingsProvider]

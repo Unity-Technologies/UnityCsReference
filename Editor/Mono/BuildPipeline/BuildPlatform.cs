@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 using DiscoveredTargetInfo = UnityEditor.BuildTargetDiscovery.DiscoveredTargetInfo;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
@@ -10,7 +11,7 @@ using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 namespace UnityEditor.Build
 {
     // All settings for a build platform.
-    internal class BuildPlatform
+    internal class BuildPlatform : ICloneable
     {
         // short name used for texture settings, etc.
         public string name;
@@ -38,12 +39,23 @@ namespace UnityEditor.Build
         {
             this.namedBuildTarget = namedBuildTarget;
             name = namedBuildTarget.TargetName;
-            m_Title = new ScalableGUIContent(locTitle, null, iconId);
+
+            // Workaround for some platforms which have | in their name which is also used as separator for tooltips
+            if (locTitle.Contains("|"))      
+                m_Title = new ScalableGUIContent(locTitle.Replace("|", " "), null, iconId);
+            else
+                m_Title = new ScalableGUIContent(locTitle, null, iconId);
+
             m_SmallTitle = new ScalableGUIContent(null, null, iconId + ".Small");
             this.tooltip = tooltip;
             this.hideInUi = hideInUi;
             this.defaultTarget = defaultTarget;
             this.installed = installed;
+        }
+
+        public object Clone()
+        {
+            return MemberwiseClone();
         }
     }
 

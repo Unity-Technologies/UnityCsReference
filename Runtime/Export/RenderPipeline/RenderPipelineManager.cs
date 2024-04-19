@@ -14,12 +14,12 @@ namespace UnityEngine.Rendering
     {
         static List<Camera> s_Cameras = new List<Camera>();
         private static bool s_CleanUpPipeline = false;
-        
+
         const string k_BuiltinPipelineName = "Built-in Pipeline";
         private static string s_CurrentPipelineType = k_BuiltinPipelineName;
         private static RenderPipelineAsset s_CurrentPipelineAsset;
         private static RenderPipeline s_CurrentPipeline = null;
-        
+
         internal static RenderPipelineAsset currentPipelineAsset => s_CurrentPipelineAsset;
         public static RenderPipeline currentPipeline
         {
@@ -110,13 +110,16 @@ namespace UnityEngine.Rendering
             if (!isCurrentPipelineValid)
                 return;
 
+            // This check prevents shader reloading through Builtin whenever we switch from one RP to another RP
+            if (GraphicsSettings.currentRenderPipeline == null)
+                Shader.globalRenderPipeline = string.Empty;
+
             activeRenderPipelineDisposed?.Invoke();
             currentPipeline.Dispose();
             currentPipeline = null;
             s_CleanUpPipeline = false;
-
             s_CurrentPipelineAsset = null;
-            SupportedRenderingFeatures.active = new SupportedRenderingFeatures();
+            SupportedRenderingFeatures.active = null;
         }
 
         [RequiredByNativeCode]
@@ -137,7 +140,7 @@ namespace UnityEngine.Rendering
         {
             if (!TryPrepareRenderPipeline(pipelineAsset))
                 return;
-            
+
             var loop = new ScriptableRenderContext(loopPtr
                 , safety
                 );
@@ -157,16 +160,16 @@ namespace UnityEngine.Rendering
         {
             HandleRenderPipelineChange(pipelineAsset);
 
-            if (IsPipelineRequireCreation())
-            {
-                currentPipeline = s_CurrentPipelineAsset.InternalCreatePipeline();
-                activeRenderPipelineCreated?.Invoke();
-            }
+            if (!IsPipelineRequireCreation())
+                return currentPipeline != null;
 
+            currentPipeline = s_CurrentPipelineAsset.InternalCreatePipeline();
+            Shader.globalRenderPipeline = s_CurrentPipelineAsset.renderPipelineShaderTag;
+            activeRenderPipelineCreated?.Invoke();
             return currentPipeline != null;
         }
 
-        private static bool isCurrentPipelineValid => currentPipeline != null && !currentPipeline.disposed;
+        private static bool isCurrentPipelineValid => currentPipeline is { disposed: false };
         static bool IsPipelineRequireCreation() => s_CurrentPipelineAsset != null && (currentPipeline == null || currentPipeline.disposed);
     }
 }

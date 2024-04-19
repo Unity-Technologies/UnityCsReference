@@ -205,5 +205,13 @@ namespace UnityEditor.Build.Profile
         {
             return null;
         }
+
+        /// <summary>
+        /// Get last path of a runnable build for this build profile
+        /// </summary>
+        public virtual string GetLastRunnableBuildPathKey()
+        {
+            return string.Empty;
+        }
     }
 }

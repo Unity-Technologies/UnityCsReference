@@ -129,11 +129,11 @@ namespace UnityEditor
         }
 
         public static BuildTarget[] StandaloneBuildTargets { get; internal set; } = new BuildTarget[]
-        {   
-            BuildTarget.StandaloneOSX,  
+        {
+            BuildTarget.StandaloneOSX,
             BuildTarget.StandaloneWindows,
-            BuildTarget.StandaloneWindows64,  
-            BuildTarget.StandaloneLinux64,  
+            BuildTarget.StandaloneWindows64,
+            BuildTarget.StandaloneLinux64,
         };
 
         [RequiredByNativeCode]
@@ -275,7 +275,7 @@ namespace UnityEditor
         {
             { BuildTarget.StandaloneOSX, s_platform_02 },
             { BuildTarget.StandaloneWindows, s_platform_05 },
-            { BuildTarget.StandaloneWindows64, s_platform_05 }, // return same build target GUID for Win and Win64 since we only have one 
+            { BuildTarget.StandaloneWindows64, s_platform_05 }, // return same build target GUID for Win and Win64 since we only have one
             { BuildTarget.iOS, s_platform_09 },
             { BuildTarget.Android, s_platform_13 },
             { BuildTarget.WebGL, s_platform_20 },
@@ -293,6 +293,30 @@ namespace UnityEditor
             { BuildTarget.VisionOS, s_platform_47 },
         };
 
+        static readonly Dictionary<GUID, (BuildTarget, StandaloneBuildSubtarget)> k_PlatformBuildTargetAndSubtargetGUIDData = new()
+        {
+            { s_platform_02, (BuildTarget.StandaloneOSX, StandaloneBuildSubtarget.Player) },
+            { s_platform_05, (BuildTarget.StandaloneWindows64, StandaloneBuildSubtarget.Player) },
+            { s_platform_09, (BuildTarget.iOS, StandaloneBuildSubtarget.Default) },
+            { s_platform_13, (BuildTarget.Android, StandaloneBuildSubtarget.Default) },
+            { s_platform_20, (BuildTarget.WebGL, StandaloneBuildSubtarget.Default) },
+            { s_platform_21, (BuildTarget.WSAPlayer, StandaloneBuildSubtarget.Default) },
+            { s_platform_24, (BuildTarget.StandaloneLinux64, StandaloneBuildSubtarget.Player) },
+            { s_platform_31, (BuildTarget.PS4, StandaloneBuildSubtarget.Default) },
+            { s_platform_37, (BuildTarget.tvOS, StandaloneBuildSubtarget.Default) },
+            { s_platform_38, (BuildTarget.Switch, StandaloneBuildSubtarget.Default) },
+            { s_platform_41, (BuildTarget.LinuxHeadlessSimulation, StandaloneBuildSubtarget.Default) },
+            { s_platform_42, (BuildTarget.GameCoreXboxSeries, StandaloneBuildSubtarget.Default) },
+            { s_platform_43, (BuildTarget.GameCoreXboxOne, StandaloneBuildSubtarget.Default) },
+            { s_platform_44, (BuildTarget.PS5, StandaloneBuildSubtarget.Default) },
+            { s_platform_45, (BuildTarget.EmbeddedLinux, StandaloneBuildSubtarget.Default) },
+            { s_platform_46, (BuildTarget.QNX, StandaloneBuildSubtarget.Default) },
+            { s_platform_47, (BuildTarget.VisionOS, StandaloneBuildSubtarget.Default) },
+            { s_platform_101, (BuildTarget.StandaloneLinux64, StandaloneBuildSubtarget.Server) },
+            { s_platform_100, (BuildTarget.StandaloneWindows64, StandaloneBuildSubtarget.Server) },
+            { s_platform_102, (BuildTarget.StandaloneOSX, StandaloneBuildSubtarget.Server) },
+        };
+
         static Dictionary<GUID, string> s_PlatformRequiredPackages = new()
         {
             {  s_platform_45, L10n.Tr("") }, //https://github.cds.internal.unity3d.com/unity/unity/blob/690ff735df474658b18a6ce362b64384dd09a889/PlatformDependent/EmbeddedLinux/Extensions/Managed/EmbeddedLinuxToolchainPackageInstaller.cs#L71 and https://github.cds.internal.unity3d.com/unity/unity/blob/690ff735df474658b18a6ce362b64384dd09a889/PlatformDependent/LinuxStandalone/Extensions/Managed/LinuxStandaloneToolchainPackageInstaller.cs#L16
@@ -305,22 +329,22 @@ namespace UnityEditor
 
         static Dictionary<GUID, string> s_PlatformDescription = new()
         {
-            {  s_platform_02, L10n.Tr("By leveraging the unified memory architecture of Apple silicon, your games can make the most use out of the latest generation M3 chips for advanced graphics and performance. With official Unity Editor support for Apple silicon, creators working on the latest Mac devices with M1 chips can now take advantage of an Editor specifically designed for their machine, ensuring that Unity projects would be future-proofed for this exciting new version of macOS.") },
-            {  s_platform_05, L10n.Tr("Unity’s platform support for Microsoft Windows provides an ecosystem of game development solutions for creators of all skill levels. This includes DX12 and inline ray tracing support as well as Windows GDK support to ensure you’re able to reach as many players as possible in the Microsoft ecosystem.") },
-            {  s_platform_09, L10n.Tr("n the competitive mobile game market, swift prototyping and access to player data boosts your chances for success. Beyond our industry-leading game engine, Unity meets you across the entire mobile game development lifecycle with tools and services for rapid iteration, performance optimization, player engagement, and revenue growth.") },
-            {  s_platform_13, L10n.Tr("In the competitive mobile game market, swift prototyping and access to player data boosts your chances for success. Beyond our industry-leading game engine, Unity meets you across the entire mobile game development lifecycle with tools and services for rapid iteration, performance optimization, player engagement, and revenue growth.") },
-            {  s_platform_20, L10n.Tr("Leverage Unity’s web solutions to offer your players’ near-instant access to their favorite games, no matter where they want to play. Our web platform support includes key advancements that reduce friction for more devices, and take advantage of the latest graphics API to ensure smooth frame rates and exceptional performance for even the most ambitious web games.") },
-            {  s_platform_21, L10n.Tr("Unity’s runtime for Microsoft Windows comes with UWP support to ensure you’re able to reach as many users as possible in the Microsoft ecosystem. UWP is mostly used for Hololens and Windows, amongst others in the Microsoft ecosystem.") },
-            {  s_platform_24, L10n.Tr("Unity’s platform support for Linux provides an ecosystem of game development solutions for creators of all skill levels.") },
-            {  s_platform_31, L10n.Tr("Create, launch, and operate your game with a comprehensive game development platform for PlayStation®4. Discover powerful creation tools to take your PlayStation game development to the next level.") },
-            {  s_platform_37, L10n.Tr("tvOS is the operating system used on Apple TVs. It’s based on the iOS operating system and has many similar frameworks, technologies, and concepts.") },
-            {  s_platform_38, L10n.Tr("From workflow and integration to dedicated forum support, Unity can help you bring your game to Nintendo Switch™.") },
+            {  s_platform_02, L10n.Tr("Take advantage of Unity’s support for the latest Mac devices with M series chips. The Mac Standalone platform also supports Intel-based Mac devices.") },
+            {  s_platform_05, L10n.Tr("Access an ecosystem of Unity-supported game development solutions for creators of all skill levels. This includes DirectX 12 and inline ray tracing support as well as GDK support on Windows, ensuring you’re able to reach as many players as possible in the Microsoft ecosystem.") },
+            {  s_platform_09, L10n.Tr("Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for iOS games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth.") },
+            {  s_platform_13, L10n.Tr("Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle with tools and services for rapid iteration, performance optimization, player engagement, and revenue growth.") },
+            {  s_platform_20, L10n.Tr("Leverage Unity’s web solutions to offer your players near-instant access to their favorite games, no matter where they want to play. Our web platform support includes key advances that reduce friction for more devices, and take advantage of the latest graphics API to ensure smooth frame rates and exceptional performance for even the most ambitious web games.") },
+            {  s_platform_21, L10n.Tr("Benefit from Unity’s runtime support for UWP, ensuring you’re able to reach as many users as possible in the Microsoft ecosystem. UWP is used for HoloLens and Windows 10 and 11 devices, among others.") },
+            {  s_platform_24, L10n.Tr("Leverage Unity’s platform support for Linux, including an ecosystem of game development solutions for creators of all skill levels.") },
+            {  s_platform_31, L10n.Tr("Create your game with a comprehensive game development platform for PlayStation®4. Discover powerful creation tools to take your PlayStation game development to the next level.") },
+            {  s_platform_37, L10n.Tr("Choose tvOS if you’re planning to develop applications for Apple TVs. tvOS is based on the iOS operating system and has many similar frameworks, technologies, and concepts.") },
+            {  s_platform_38, L10n.Tr("Bring your game to Nintendo Switch™ with Unity’s platform support for workflows, integration, and more, plus a dedicated forum.") },
             {  s_platform_41, L10n.Tr("") },
-            {  s_platform_42, L10n.Tr("Attract players around the world on the next generation of Xbox, Xbox Series X|S. Push the graphical fidelity of your games with inline ray tracing, all while maintaining performance with the latest optimizations for DX12.") },
-            {  s_platform_43, L10n.Tr("Attract and engage over 50 million players around the world on  Xbox One. ") },
-            {  s_platform_44, L10n.Tr("Create, launch, and operate your game with a comprehensive game development platform for PlayStation®5. Discover powerful creation tools to take your PlayStation game development to the next level.") },
-            {  s_platform_45, L10n.Tr("Embedded Linux is a compact version of Linux designed to use for embedded devices and appliances. It provides features and services that support building applications suited for embedded systems.") },
-            {  s_platform_46, L10n.Tr("QNX is a commercial and real-time operating system much like a Unix-like operating system.") },
+            {  s_platform_42, L10n.Tr("Attract players around the world on the latest generation of Xbox: Xbox Series X|S. Push the graphical fidelity of your games with inline ray tracing, all while maintaining performance with the latest optimizations for DirectX 12.") },
+            {  s_platform_43, L10n.Tr("Attract and engage over 50 million players around the world on Xbox One.") },
+            {  s_platform_44, L10n.Tr("Create your game with a comprehensive game development platform for PlayStation®5. Discover powerful creation tools to take your PlayStation game development to the next level.") },
+            {  s_platform_45, L10n.Tr("Choose Embedded Linux, a compact version of Linux, if you are planning to build applications for embedded devices and appliances.") },
+            {  s_platform_46, L10n.Tr("Deploy the Unity runtime to automotive and other embedded systems utilizing the Blackberry® QNX® real-time operating system.") },
             {  s_platform_100, L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Windows Server platform, including publishing multiplayer games.") },
             {  s_platform_101, L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Linux Server platform, including publishing multiplayer games.") },
             {  s_platform_102, L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Mac Server platform, including publishing multiplayer games.") },
@@ -360,7 +384,7 @@ namespace UnityEditor
             {  s_platform_102, L10n.Tr("*standard install form hub") },
         };
 
-        // Name changes here must be reflected in the platform [PLATFORM]BuildTarget.cs and [Platfrom]BuildTarget.cpp
+        // Name changes here must be reflected in the platform [PLATFORM]BuildTarget.cs and [Platfrom]BuildTarget.cpp respective DisplayName and niceName 
         static Dictionary<GUID, string> s_PlatformDisplayName = new()
         {
             {  s_platform_02, "macOS" },
@@ -375,10 +399,10 @@ namespace UnityEditor
             {  s_platform_38, "Nintendo Switch™" },
             {  s_platform_41, "Linux Headless Simulation" },
             {  s_platform_42, "Xbox Series X|S" },
-            {  s_platform_43, "Game Core Xbox One" },
+            {  s_platform_43, "Xbox One" },
             {  s_platform_44, "PlayStation®5" },
             {  s_platform_45, "Embedded Linux" },
-            {  s_platform_46, "QNX" },
+            {  s_platform_46, "QNX®" },
             {  s_platform_47, "visionOS" },
             {  s_platform_100, "Windows Server" },
             {  s_platform_101, "Linux Server" },
@@ -391,6 +415,29 @@ namespace UnityEditor
                 return value;
 
             return new GUID("");
+        }
+
+        public static GUID GetGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
+        {
+            if (namedBuildTarget == NamedBuildTarget.Server)
+            {
+                if (buildTarget == BuildTarget.StandaloneWindows || buildTarget == BuildTarget.StandaloneWindows64)
+                    return s_platform_100;
+                else if (buildTarget == BuildTarget.StandaloneLinux64)
+                    return s_platform_101;
+                else if (buildTarget == BuildTarget.StandaloneOSX)
+                    return s_platform_102;
+            }
+
+            return GetGUIDFromBuildTarget(buildTarget);
+        }
+
+        public static (BuildTarget, StandaloneBuildSubtarget) GetBuildTargetAndSubtargetFromGUID(GUID guid)
+        {
+            if (k_PlatformBuildTargetAndSubtargetGUIDData.TryGetValue(guid, out var value))
+                return value;
+
+            return (BuildTarget.NoTarget, StandaloneBuildSubtarget.Default);
         }
 
         //TODO: PLAT-8696 BuildPlatformIsInstalled does not support server platforms yet
@@ -434,7 +481,7 @@ namespace UnityEditor
         }
         public static bool BuildPlatformIsAvailableOnHostPlatform(IBuildTarget platform, UnityEngine.OperatingSystemFamily hostPlatform)
         {
-            // TODO: PLAT-8695 - Consoles are available only on x64 Windows. They can't build on Arm64. Windows.x64 and arm64 have different compability in platforms 
+            // TODO: PLAT-8695 - Consoles are available only on x64 Windows. They can't build on Arm64. Windows.x64 and arm64 have different compability in platforms
             if (hostPlatform == UnityEngine.OperatingSystemFamily.Windows)
                 foreach (var winTarget in WindowsBuildTargets)
                     if (winTarget == platform.Guid)
@@ -488,7 +535,7 @@ namespace UnityEditor
             foreach (var ndaTarget in NDABuildTargets)
                 if (ndaTarget == platform.Guid)
                     return true;
-            
+
             return false;
         }
 
@@ -600,6 +647,6 @@ namespace UnityEditor
                 return displayName;
 
             return "";
-        }       
+        }
     }
 }

@@ -225,7 +225,7 @@ namespace UnityEditor.Build.Profile
         /// <summary>
         /// Handles selection of unavailable and supported platform.
         /// </summary>
-        internal void OnMissingClassicPlatformSelected(string moduleName, StandaloneBuildSubtarget subtarget)
+        internal void OnMissingClassicPlatformSelected(string platformId)
         {
             m_ProfileListViews.ClearProfileSelection();
             UpdateFormButtonState(null);
@@ -237,11 +237,11 @@ namespace UnityEditor.Build.Profile
                 messageType = HelpBoxMessageType.Warning
             };
             warningHelpBox.AddToClassList("mx-medium");
-            Util.UpdatePlatformRequirementsWarningHelpBox(warningHelpBox, moduleName, subtarget);
+            Util.UpdatePlatformRequirementsWarningHelpBox(warningHelpBox, platformId);
             m_BuildProfileInspectorElement.Add(warningHelpBox);
 
             // Update details headers.
-            m_BuildProfileSelection.MissingPlatformSelected(moduleName, subtarget);
+            m_BuildProfileSelection.MissingPlatformSelected(platformId);
         }
 
         /// <summary>
@@ -418,10 +418,6 @@ namespace UnityEditor.Build.Profile
             UpdateFormButtonState(activateProfile);
             RebuildProfileListViews();
 
-            // Apply current asset import overrides if switching profile
-            // without applying. It should be called lastly since it can
-            // trigger a reimport.
-            m_AssetImportWindow?.ApplyCurrentAssetImportOverrides();
             UpdateToolbarButtonState();
         }
 
@@ -505,21 +501,20 @@ namespace UnityEditor.Build.Profile
                 return;
             }
 
-            Dictionary<(BuildTarget, StandaloneBuildSubtarget), BuildProfileWorkflowReport> modules = new();
+            Dictionary<string, BuildProfileWorkflowReport> modules = new();
             foreach (var profile in m_BuildProfileDataSource.customBuildProfiles)
             {
-                if (modules.TryGetValue((profile.buildTarget, profile.subtarget), out var report))
+                if (modules.TryGetValue(profile.platformId, out var report))
                 {
                     report.Increment();
                     continue;
                 }
 
-                modules.Add((profile.buildTarget, profile.subtarget),
+                modules.Add(profile.platformId,
                     new BuildProfileWorkflowReport(new BuildProfileWorkflowReport.Payload()
                 {
-                    buildTarget = profile.buildTarget,
-                    buildTargetString = profile.buildTarget.ToString(),
-                    standaloneSubtarget = profile.subtarget,
+                    platformId = profile.platformId,
+                    platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformId),
                     count = 1
                 }));
             }

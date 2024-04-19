@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine;
+
 namespace UnityEditor.Build.Profile
 {
     /// <summary>
@@ -41,6 +43,22 @@ namespace UnityEditor.Build.Profile
         public static readonly string scriptingDefinesWarningHelpbox = L10n.Tr("Additional scripting defines are specified in Player Settings.");
         public static readonly string apply = L10n.Tr("Apply");
         public static readonly string revert = L10n.Tr("Revert");
+
+        // Build Profile Player Settings
+        public static readonly string playerSettingsLabelText = L10n.Tr("Player Settings Overrides");
+        public static readonly string playerSettingsInfo =
+            L10n.Tr("Build Profiles can have custom player settings");
+        public static readonly string playerSettingsClassicInfo =
+            L10n.Tr("Platforms use the global player settings. To customize player settings, create a Build Profile for this platform.");
+        public static readonly string customizePlayerSettingsButton = "Customize player settings";
+        public static readonly string playerSettingsCancel = L10n.Tr("Cancel");
+        public static readonly string playerSettingsContinue = L10n.Tr("Continue");
+        public static readonly string removePlayerSettingsDialogTitle = L10n.Tr("Remove Player Settings Overrides");
+        public static readonly string removePlayerSettingsDialogMessage = L10n.Tr("This will remove all Player Settings overrides");
+        public static readonly string resetPlayerSettingsDialogTitle = L10n.Tr("Reset Player Settings to Globals");
+        public static readonly string resetPlayerSettingsDialogMessage = L10n.Tr("This will reset all Player Settings overrides and restore all global Player Settings.");
+        public static readonly GUIContent playerSettingsReset = EditorGUIUtility.TrTextContent("Reset to Globals");
+        public static readonly GUIContent playerSetttingsRemove = EditorGUIUtility.TrTextContent("Remove Overrides");
 
         // Platform Discovery Window
         public static readonly string platformDiscoveryTitle = L10n.Tr("Platform Browser");

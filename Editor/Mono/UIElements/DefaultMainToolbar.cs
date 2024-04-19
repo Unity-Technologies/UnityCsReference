@@ -41,7 +41,6 @@ namespace UnityEditor
             {
                 // Modules/EditorToolbar/ToolbarElements/*.cs
                 yield return "Editor Utility/Layout";
-                yield return "Editor Utility/Layers";
                 yield return "Editor Utility/Search";
                 yield return "Editor Utility/Modes";
                 yield return "Package Manager/PreviewPackagesInUse";

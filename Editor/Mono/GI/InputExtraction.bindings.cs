@@ -70,6 +70,8 @@ namespace UnityEditor.LightBaking
 
         public static extern bool ExtractFromScene(string outputFolderPath, LightBaker.BakeInput input, SourceMap map);
 
+        public static extern int[] ComputeOcclusionLightIndicesFromBakeInput(LightBaker.BakeInput bakeInput, UnityEngine.Vector3[] probePositions, uint maxLightsPerProbe);
+
         private static string LookupGameObjectName(SourceMap map, int instanceIndex)
         {
             if (map == null)

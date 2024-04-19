@@ -115,7 +115,7 @@ namespace UnityEditor.Build.Profile
             textureCompression.value = k_TextureCompressionLabels[texCompression];
         }
 
-        internal void ApplyCurrentAssetImportOverrides()
+        void ApplyCurrentAssetImportOverrides()
         {
             if (m_CurrOverrideMaxTextureSize < 0)
             {

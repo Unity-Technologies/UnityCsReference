@@ -49,6 +49,8 @@ namespace UnityEditor.Build.Profile
         IBuildProfileExtension m_PlatformExtension = null;
         Foldout m_PlayerScriptingDefinesFoldout;
 
+        BuildProfilePlayerSettingsEditor m_ProfilePlayerSettingsEditor = null;
+
         public BuildProfileEditor()
         {
             editorState = new BuildProfileWorkflowState((next) =>
@@ -115,10 +117,11 @@ namespace UnityEditor.Build.Profile
             {
                 var button = root.Q<Button>(k_SharedSettingsInfoHelpboxButton);
                 button.text = TrText.addBuildProfile;
-                button.clicked += parent.DuplicateSelectedClassicProfile;
+                button.clicked += DuplicateSelectedClassicProfile;
             }
 
-            bool hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, profile.moduleName, profile.subtarget);
+            bool hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, profile.platformId);
+            m_ProfilePlayerSettingsEditor = BuildProfilePlayerSettingsEditor.CreatePlayerSettingsUI(DuplicateSelectedClassicProfile, root, hasErrors ? null : serializedObject);
             if (hasErrors)
                 return root;
 
@@ -158,6 +161,8 @@ namespace UnityEditor.Build.Profile
             sectionLabel.text = TrText.sceneList;
 
             AddSceneList(root);
+
+            m_ProfilePlayerSettingsEditor = BuildProfilePlayerSettingsEditor.CreatePlayerSettingsUI(DuplicateSelectedClassicProfile, root, null);
             return root;
         }
 
@@ -168,6 +173,10 @@ namespace UnityEditor.Build.Profile
 
             if (m_PlatformExtension != null)
                 m_PlatformExtension.OnDisable();
+
+            // To prevent errors when entering play mode with the the build profile
+            // window open, we need to remove the player settings inspector.
+            m_ProfilePlayerSettingsEditor?.RemovePlayerSettingsInspector();
         }
 
         internal void OnActivateClicked()
@@ -177,6 +186,11 @@ namespace UnityEditor.Build.Profile
             editorState.UpdateBuildActionStates(ActionState.Disabled, ActionState.Disabled);
             recompileDefinesButton.Show();
             revertDefinesButton.Show();
+        }
+
+        internal void DuplicateSelectedClassicProfile()
+        {
+            parent.DuplicateSelectedClassicProfile();
         }
 
         void UpdateWarningsAndButtonStatesForActiveProfile()
@@ -217,7 +231,7 @@ namespace UnityEditor.Build.Profile
         void ShowPlatformSettings(BuildProfile profile, VisualElement platformSettingsBaseRoot)
         {
             var platformProperties = serializedObject.FindProperty(k_PlatformSettingPropertyName);
-            m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.buildTarget);
+            m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.moduleName);
             if (m_PlatformExtension != null)
             {
                 var settings = m_PlatformExtension.CreateSettingsGUI(

@@ -181,6 +181,8 @@ namespace UnityEngine.UIElements
         internal static Object activeEventSystem { get; private set; }
         internal static bool useDefaultEventSystem => activeEventSystem == null;
 
+        private static bool s_IsPlayMode = false;
+
         public static void RegisterEventSystem(Object eventSystem)
         {
             if (activeEventSystem != null && activeEventSystem != eventSystem && eventSystem.GetType().Name == "EventSystem")
@@ -207,9 +209,17 @@ namespace UnityEngine.UIElements
                 panel.Update();
             }
 
-            if (Application.isPlaying && useDefaultEventSystem)
+            if (s_IsPlayMode)
             {
-                defaultEventSystem.Update(DefaultEventSystem.UpdateMode.IgnoreIfAppNotFocused);
+                if (useDefaultEventSystem)
+                {
+                    defaultEventSystem.isInputReady = true;
+                    defaultEventSystem.Update(DefaultEventSystem.UpdateMode.IgnoreIfAppNotFocused);
+                }
+                else if (s_DefaultEventSystem != null)
+                {
+                    s_DefaultEventSystem.isInputReady = false;
+                }
             }
         }
 
@@ -236,7 +246,6 @@ namespace UnityEngine.UIElements
             }
 
             s_PotentiallyEmptyPanelSettings.Clear();
-
         }
 
         public static void RegisterPlayerloopCallback()
@@ -245,7 +254,6 @@ namespace UnityEngine.UIElements
             UIElementsRuntimeUtilityNative.UpdatePanelsCallback = UpdatePanels;
             UIElementsRuntimeUtilityNative.RepaintPanelsCallback = RepaintPanels;
             UIElementsRuntimeUtilityNative.RenderOffscreenPanelsCallback = RenderOffscreenPanels;
-            defaultEventSystem.isInputReady = true;
         }
 
         public static void UnregisterPlayerloopCallback()
@@ -254,7 +262,9 @@ namespace UnityEngine.UIElements
             UIElementsRuntimeUtilityNative.UpdatePanelsCallback = null;
             UIElementsRuntimeUtilityNative.RepaintPanelsCallback = null;
             UIElementsRuntimeUtilityNative.RenderOffscreenPanelsCallback = null;
-            defaultEventSystem.isInputReady = false;
+
+            if (s_DefaultEventSystem != null)
+                s_DefaultEventSystem.isInputReady = false;
         }
 
         internal static void SetPanelOrderingDirty()
@@ -340,6 +350,21 @@ namespace UnityEngine.UIElements
             // Flip deltas Y axis between input and UITK
             delta.y = -delta.y;
             return delta;
+        }
+
+        // Don't rely on Application.isPlaying because its value is true for a few extra frames
+        // where some objects are not created yet or already destroyed.
+        internal static void OnEnteredPlayMode()
+        {
+            s_IsPlayMode = true;
+        }
+
+        internal static void OnExitingPlayMode()
+        {
+            s_IsPlayMode = false;
+
+            if (s_DefaultEventSystem != null)
+                s_DefaultEventSystem.isInputReady = false;
         }
     }
 }
