@@ -310,10 +310,16 @@ namespace UnityEditor.Search
     [QueryListBlock("Labels", "label", "l", ":")]
     class QueryLabelBlock : QueryListBlock
     {
-       public QueryLabelBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+        static readonly Texture2D kLabelIcon = Utils.LoadIcon("QuickSearch/AssetLabelIconSquare");
+        public static Texture2D GetLabelIcon()
+        {
+            return kLabelIcon;
+        }
+
+        public QueryLabelBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
             : base(source, id, value, attr)
         {
-            icon = Utils.LoadIcon("QuickSearch/AssetLabelIconSquare");
+            icon = GetLabelIcon();
         }
 
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
@@ -331,7 +337,7 @@ namespace UnityEditor.Search
         public QueryTagBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
             : base(source, id, value, attr)
         {
-            icon = Utils.LoadIcon("QuickSearch/AssetLabelIconSquare");
+            icon = QueryLabelBlock.GetLabelIcon();
         }
 
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)

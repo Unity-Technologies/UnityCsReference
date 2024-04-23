@@ -463,6 +463,7 @@ namespace UnityEditor.Search
                 }
                 else
                 {
+                    var baseExpressionProviders = SearchService.GetActiveProviders().Where(p => char.IsLetter(p.filterId[0]));
                     searchQuery = SearchUtils.ParseSearchText(searchText, SearchService.GetActiveProviders(), out var filteredProvider);
                     if (filteredProvider != null)
                     {
