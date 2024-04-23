@@ -83,6 +83,16 @@ namespace UnityEditor.Search
             }
         }
 
+        internal bool isInspectorPanelVisible
+        {
+            get
+            {
+                if (flags.HasAny(SearchViewFlags.OpenInspectorPreview) && !context.options.HasAny(SearchFlags.HidePanels))
+                    return true;
+                return false;
+            }
+        }
+
         internal bool hasQueryBuilderToggle
         {
             get
@@ -95,7 +105,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public bool isQueryPanelVisible => hasQueryPanel && HasFlag(SearchViewFlags.OpenLeftSidePanel);
+        public bool isQueryPanelVisible => hasQueryPanel && HasFlag(SearchViewFlags.OpenLeftSidePanel) && !context.options.HasAny(SearchFlags.HidePanels);
 
         internal int[] m_SelectedIds;
         internal int[] selectedIds
@@ -201,7 +211,7 @@ namespace UnityEditor.Search
             context.filterType = filterType;
 
             selectHandler = (item, canceled) => selectObjectHandler?.Invoke(Utils.ToObject(item, filterType), canceled);
-            filterHandler = (item) => item == SearchItem.clear || (IsObjectMatchingType(item ?? SearchItem.clear, filterType ?? typeof(UnityEngine.Object)));
+            filterHandler = (item) => IsFilteredIn(this, item);
             trackingHandler = (item) => trackingObjectHandler?.Invoke(Utils.ToObject(item, filterType));
             title = filterType?.Name ?? typeName;
         }
@@ -336,6 +346,11 @@ namespace UnityEditor.Search
             if (flags.HasAny(SearchViewFlags.NoIndexing)) sf |= SearchFlags.NoIndexing;
             if (flags.HasAny(SearchViewFlags.Packages)) sf |= SearchFlags.Packages;
             return sf;
+        }
+
+        static bool IsFilteredIn(SearchViewState state, SearchItem item)
+        {
+            return item == SearchItem.clear || (IsObjectMatchingType(item ?? SearchItem.clear, state.context.filterType ?? typeof(UnityEngine.Object)));
         }
 
         static bool IsObjectMatchingType(in SearchItem item, in Type filterType)

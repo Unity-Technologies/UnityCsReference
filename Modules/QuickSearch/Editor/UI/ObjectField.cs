@@ -347,7 +347,7 @@ namespace UnityEditor.Search
 
             if (searchContext == null)
             {
-                searchContext = SearchService.CreateContext(runtimeContext, "");
+                searchContext = SearchService.CreateContext(runtimeContext, "", SearchFlags.None);
             }
 
             var newContext = new SearchContext(searchContext.providers, searchContext.searchText, searchContext.options, runtimeContext);

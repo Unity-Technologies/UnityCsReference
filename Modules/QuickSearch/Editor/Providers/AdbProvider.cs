@@ -172,8 +172,8 @@ namespace UnityEditor.Search.Providers
             };
         }
 
-        [MenuItem("Window/Search/Asset Database", priority = 1271)] static void OpenProvider() => SearchService.ShowContextual(type);
-        [ShortcutManagement.Shortcut("Help/Search/Asset Database")] static void OpenShortcut() => QuickSearch.OpenWithContextualProvider(type);
+        [MenuItem("Window/Search/Asset Database", priority = 1271)] static void OpenProvider() => SearchUtils.OpenWithProviders(type);
+        [ShortcutManagement.Shortcut("Help/Search/Asset Database")] static void OpenShortcut() => SearchUtils.OpenWithProviders(type);
     }
 
     [QueryListBlock(null, "area", "a", ":")]

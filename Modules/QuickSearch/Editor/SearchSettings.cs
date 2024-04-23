@@ -236,15 +236,15 @@ namespace UnityEditor.Search
             hideTabs = ReadSetting(settings, nameof(hideTabs), false);
             savedSearchesSortOrder = (SearchQuerySortOrder)ReadSetting(settings, nameof(savedSearchesSortOrder), 0);
             showSavedSearchPanel = ReadSetting(settings, nameof(showSavedSearchPanel), false);
-            queryBuilder = ReadSetting(settings, nameof(queryBuilder), false);
+            queryBuilder = ReadSetting(settings, nameof(queryBuilder), true);
             ignoredProperties = ReadSetting(settings, nameof(ignoredProperties), "id;name;classname;imagecontentshash");
-            helperWidgetCurrentArea = ReadSetting(settings, nameof(helperWidgetCurrentArea), "all");
+            helperWidgetCurrentArea = ReadSetting(settings, nameof(helperWidgetCurrentArea), GroupedSearchList.allGroupId);
             m_DisabledIndexersString = ReadSetting(settings, nameof(disabledIndexers), "");
             refreshSearchWindowsInPlayMode = ReadSetting(settings, nameof(refreshSearchWindowsInPlayMode), false);
             minIndexVariations = ReadSetting(settings, nameof(minIndexVariations), 2);
             findProviderIndexHelper = ReadSetting(settings, nameof(findProviderIndexHelper), true);
 
-            itemIconSize = EditorPrefs.GetFloat(itemIconSizePrefKey, itemIconSize);
+            itemIconSize = EditorPrefs.GetFloat(itemIconSizePrefKey, (float)DisplayMode.List);
 
 
             var searches = ReadSetting<object[]>(settings, nameof(recentSearches));
@@ -563,6 +563,19 @@ namespace UnityEditor.Search
 
         static SearchSettingsStorage s_SettingsStorage;
 
+        internal static SearchSettingsStorage settingsStorage {
+            get
+            {
+                return s_SettingsStorage;
+            }
+
+            set
+            {
+                s_SettingsStorage = value;
+                Load();
+            }
+        }
+
         // Per project settings
         internal static bool trackSelection
         {
@@ -697,8 +710,6 @@ namespace UnityEditor.Search
         // TODO: That's not good that it is public like that. Should have been a property.
         public static HashSet<string> searchItemFavorites = new();
 
-        internal static event Action<string, bool> providerActivationChanged;
-
         internal static int debounceMs
         {
             get => s_SettingsStorage.debounceMs;
@@ -707,7 +718,7 @@ namespace UnityEditor.Search
 
         static SearchSettings()
         {
-            s_SettingsStorage = new SearchSettingsStorage()
+            settingsStorage = new SearchSettingsStorage()
             {
                 settingsFolder = projectLocalSettingsFolder,
                 settingsPath = projectLocalSettingsPath,
@@ -715,12 +726,11 @@ namespace UnityEditor.Search
                 itemIconSize = (float)DisplayMode.List,
                 expandedQueries = Array.Empty<int>()
             };
-            Load();
         }
 
         internal static void Load()
         {
-            if (Application.HasARGV("cleanTestPrefs") || !File.Exists(projectLocalSettingsPath))
+            if (Application.HasARGV("cleanTestPrefs") || !File.Exists(s_SettingsStorage.settingsPath))
             {
                 s_SettingsStorage.ClearSettingsFile();
             }
@@ -800,7 +810,7 @@ namespace UnityEditor.Search
             {
                 guiHandler = DrawSearchSettings,
                 keywords = new[] { "quick", "search",  }
-                    .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>())
+                    .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>()) // If you change this or add a new class, please update the test SearchSettingsTests.ContentClass_OnlyHasGUIContent
                     .Concat(SearchService.OrderedObjectSelectors.Select(s => s.displayName))
                     .Concat(SearchService.OrderedProviders.Select(p => p.name))
                     .Concat(GetOrderedApis().Select(api => api.displayName))
@@ -887,16 +897,16 @@ namespace UnityEditor.Search
                     GUILayout.Space(20);
 
                     var wasActive = selector.active;
-                    var c = new GUIContent(selector.displayName, Styles.toggleObjectSelectorActiveContent.tooltip);
+                    var c = new GUIContent(selector.displayName, Content.toggleObjectSelectorActiveContent.tooltip);
                     if (EditorGUILayout.ToggleLeft(c, wasActive, GUILayout.Width(200)) != wasActive)
                     {
                         TogglePickerActive(selector);
                     }
 
-                    if (GUILayout.Button(Styles.increaseObjectSelectorPriorityContent, Styles.priorityButton))
+                    if (GUILayout.Button(Content.increaseObjectSelectorPriorityContent, Styles.priorityButton))
                         DecreaseObjectSelectorPriority(selector, SearchService.ObjectSelectors);
 
-                    if (GUILayout.Button(Styles.decreaseObjectSelectorPriorityContent, Styles.priorityButton))
+                    if (GUILayout.Button(Content.decreaseObjectSelectorPriorityContent, Styles.priorityButton))
                         IncreaseObjectSelectorPriority(selector, SearchService.ObjectSelectors);
 
                     GUILayout.Space(20);
@@ -906,7 +916,7 @@ namespace UnityEditor.Search
 
                 GUILayout.BeginHorizontal();
                 GUILayout.Space(20);
-                if (GUILayout.Button(Styles.resetObjectSelectorContent, GUILayout.MaxWidth(170)))
+                if (GUILayout.Button(Content.resetObjectSelectorContent, GUILayout.MaxWidth(170)))
                     ResetObjectSelectorSettings();
                 GUILayout.EndHorizontal();
             }
@@ -1013,10 +1023,10 @@ namespace UnityEditor.Search
                     GUILayout.Space(10);
                     EditorGUI.BeginChangeCheck();
                     {
-                        trackSelection = Toggle(Styles.trackSelectionContent, nameof(trackSelection), trackSelection);
-                        fetchPreview = Toggle(Styles.fetchPreviewContent, nameof(fetchPreview), fetchPreview);
-                        refreshSearchWindowsInPlayMode = Toggle(Styles.refreshSearchWindowsInPlayModeContent, nameof(refreshSearchWindowsInPlayMode), refreshSearchWindowsInPlayMode);
-                        var newDebounceMs = EditorGUILayout.IntSlider(Styles.debounceThreshold, debounceMs, 0, 1000);
+                        trackSelection = Toggle(Content.trackSelectionContent, nameof(trackSelection), trackSelection);
+                        fetchPreview = Toggle(Content.fetchPreviewContent, nameof(fetchPreview), fetchPreview);
+                        refreshSearchWindowsInPlayMode = Toggle(Content.refreshSearchWindowsInPlayModeContent, nameof(refreshSearchWindowsInPlayMode), refreshSearchWindowsInPlayMode);
+                        var newDebounceMs = EditorGUILayout.IntSlider(Content.debounceThreshold, debounceMs, 0, 1000);
                         if (newDebounceMs != debounceMs)
                             debounceMs = newDebounceMs;
 
@@ -1110,27 +1120,20 @@ namespace UnityEditor.Search
 
                 var content = p.name + " (" + $"{p.filterId}" + ")";
                 var wasActive = p.active;
-                p.active = EditorGUILayout.ToggleLeft(new GUIContent(content, Styles.toggleProviderActiveContent.tooltip), wasActive, GUILayout.Width(200));
-                if (p.active != wasActive)
-                {
-                    SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.PreferenceChanged, "activateProvider", p.id, p.active.ToString());
-                    settings.active = p.active;
-                    if (providerActivationChanged != null)
-                        providerActivationChanged.Invoke(p.id, p.active);
-                }
+                GUILayout.Label(new GUIContent(content, Content.toggleProviderActiveContent.tooltip), GUILayout.Width(200));
 
                 if (!p.isExplicitProvider)
                 {
-                    if (GUILayout.Button(Styles.increaseProviderPriorityContent, Styles.priorityButton))
+                    if (GUILayout.Button(Content.increaseProviderPriorityContent, Styles.priorityButton))
                         LowerProviderPriority(p);
 
-                    if (GUILayout.Button(Styles.decreaseProviderPriorityContent, Styles.priorityButton))
+                    if (GUILayout.Button(Content.decreaseProviderPriorityContent, Styles.priorityButton))
                         UpperProviderPriority(p);
                 }
                 else
                 {
-                    GUILayoutUtility.GetRect(Styles.increaseProviderPriorityContent, Styles.priorityButton);
-                    GUILayoutUtility.GetRect(Styles.increaseProviderPriorityContent, Styles.priorityButton);
+                    GUILayoutUtility.GetRect(Content.increaseProviderPriorityContent, Styles.priorityButton);
+                    GUILayoutUtility.GetRect(Content.increaseProviderPriorityContent, Styles.priorityButton);
                 }
 
                 GUILayout.Space(20);
@@ -1161,7 +1164,7 @@ namespace UnityEditor.Search
 
             GUILayout.BeginHorizontal();
             GUILayout.Space(20);
-            if (GUILayout.Button(Styles.resetProvidersContent, GUILayout.MaxWidth(170)))
+            if (GUILayout.Button(Content.resetProvidersContent, GUILayout.MaxWidth(170)))
                 ResetProviderSettings();
             GUILayout.EndHorizontal();
         }
@@ -1181,7 +1184,7 @@ namespace UnityEditor.Search
             return s_SettingsStorage.TryGetProviderSettings(providerId, out settings);
         }
 
-        private static void ResetProviderSettings()
+        internal static void ResetProviderSettings()
         {
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.PreferenceReset);
             s_SettingsStorage.ResetProviderSettings();
@@ -1293,9 +1296,10 @@ namespace UnityEditor.Search
                 alignment = TextAnchor.MiddleCenter,
                 richText = true
             };
+        }
 
-            public static GUIStyle browseBtn = new GUIStyle("Button") { fixedWidth = 70 };
-
+        internal class Content
+        {
             public static GUIContent toggleProviderActiveContent = EditorGUIUtility.TrTextContent("", "Enable or disable this provider. Disabled search provider will be completely ignored by the search service.");
             public static GUIContent resetProvidersContent = EditorGUIUtility.TrTextContent("Reset Providers Settings", "All search providers will restore their initial preferences (priority, active, default action)");
             public static GUIContent increaseProviderPriorityContent = EditorGUIUtility.TrTextContent("\u2191", "Increase the provider's priority");

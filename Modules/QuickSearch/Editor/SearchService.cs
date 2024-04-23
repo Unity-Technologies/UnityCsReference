@@ -53,7 +53,7 @@ namespace UnityEditor.Search
         {
             get
             {
-                return Providers.OrderBy(p => p.priority + (p.isExplicitProvider ? 100000 : 0));
+                return SearchUtils.SortProvider(Providers);
             }
         }
 
@@ -685,7 +685,6 @@ namespace UnityEditor.Search
             bool saveFilters = true, bool reuseExisting = false, bool multiselect = true, bool dockable = true)
         {
             var flags = SearchFlags.None;
-            if (saveFilters) flags |= SearchFlags.SaveFilters;
             if (reuseExisting) flags |= SearchFlags.ReuseExistingWindow;
             if (multiselect) flags |= SearchFlags.Multiselect;
             if (dockable) flags |= SearchFlags.Dockable;
@@ -710,7 +709,7 @@ namespace UnityEditor.Search
         /// <returns>Returns the QuickSearch window.</returns>
         public static ISearchView ShowContextual(params string[] providerIds)
         {
-            return QuickSearch.OpenWithContextualProvider(null, providerIds, SearchFlags.OpenContextual);
+            return SearchUtils.OpenWithProviders(null, providerIds);
         }
 
         /// <summary>
@@ -769,7 +768,7 @@ namespace UnityEditor.Search
 
         public static IEnumerable<SearchProvider> GetActiveProviders()
         {
-            return Providers.Where(p => p.active);
+            return SearchUtils.GetActiveProviders(Providers);
         }
 
         internal static IEnumerable<SearchProvider> GetProviders(params string[] providerIds)

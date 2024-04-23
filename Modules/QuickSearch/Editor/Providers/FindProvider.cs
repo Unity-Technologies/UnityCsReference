@@ -402,7 +402,7 @@ namespace UnityEditor.Search.Providers
         [MenuItem("Window/Search/Find Files", priority = 1269, secondaryPriority = 2)]
         internal static void OpenShortcut()
         {
-            SearchUtils.OpenWithContextualProvider(providerId);
+            SearchUtils.OpenWithProviders(providerId);
         }
     }
 }

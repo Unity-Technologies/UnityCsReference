@@ -21,7 +21,7 @@ namespace UnityEditor
 {
     // The title is also used for fetching the project window tab icon: Project.png
     [EditorWindowTitle(title = "Project", icon = "Project")]
-    internal class ProjectBrowser : EditorWindow, IHasCustomMenu
+    internal class ProjectBrowser : EditorWindow, IHasCustomMenu, ISearchableContainer
     {
         public const int kPackagesFolderInstanceId = int.MaxValue;
         public const int kAssetCreationInstanceID_ForNonExistingAssets = Int32.MaxValue - 1;
@@ -134,6 +134,8 @@ namespace UnityEditor
             get { return m_LockTracker.isLocked; }
             set { m_LockTracker.isLocked = value; }
         }
+
+        public string searchText => m_SearchFieldText;
 
         bool m_EnableOldAssetTree = true;
         bool m_FocusSearchField;
@@ -1582,10 +1584,10 @@ namespace UnityEditor
 
             m_SearchFilter.skipHidden = m_SkipHiddenPackages;
 
-            m_ListArea.InitForSearch(m_ListAreaRect, HierarchyType.Assets,
+            m_ListArea?.InitForSearch(m_ListAreaRect, HierarchyType.Assets,
                 m_SearchFilter, false,
                 s => AssetDatabase.GetMainAssetInstanceID(s));
-            m_ListArea.InitSelection(Selection.instanceIDs);
+            m_ListArea?.InitSelection(Selection.instanceIDs);
         }
 
         void OnInspectorUpdate()

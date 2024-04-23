@@ -116,7 +116,7 @@ namespace UnityEditor.Search.Providers
             }
 
             var tagFilter = m_QueryEngine.GetFilter("tag")
-                .SetGlobalPropositionData(category: "Tags", icon: Utils.LoadIcon("AssetLabelIcon"), color: QueryColors.typeIcon);
+                .SetGlobalPropositionData(category: "Tags", icon: QueryLabelBlock.GetLabelIcon(), color: QueryColors.typeIcon);
             foreach (var t in InternalEditorUtility.tags)
             {
                 tagFilter.AddOrUpdatePropositionData(category: "Tags", label: ObjectNames.NicifyVariableName(t), replacement: "tag=" + SearchUtils.GetListMarkerReplacementText(t, InternalEditorUtility.tags, "AssetLabelIcon", QueryColors.typeIcon));

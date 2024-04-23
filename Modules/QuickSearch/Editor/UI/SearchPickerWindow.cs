@@ -13,13 +13,12 @@ namespace UnityEditor.Search
     [EditorWindowTitle(title = "Search")]
     class SearchPickerWindow : QuickSearch
     {
-        internal const string k_SavedSearchTextPrefKey = "picker_search_text";
-        const string k_SavedWindowPositionPrefKey = "picker_window_position_offset";
-        const string k_PickerVisibilityFlags = "picker_visibility_flags";
-        const string k_PickerItemSize = "picker_item_size";
-        const string k_PickerInspector = "picker_inspector";
-        const string k_PickerCurrentGroup = "picker_current_group";
-        const int k_UniquePickerHash = 123456789;
+        internal const string k_SavedWindowPositionPrefKey = "picker_window_position_offset";
+        internal const string k_PickerVisibilityFlags = "picker_visibility_flags";
+        internal const string k_PickerItemSize = "picker_item_size";
+        internal const string k_PickerInspector = "picker_inspector";
+        internal const string k_PickerCurrentGroup = "picker_current_group";
+        internal const int k_UniquePickerHash = 123456789;
 
         protected override bool IsPicker()
         {
@@ -33,23 +32,20 @@ namespace UnityEditor.Search
             // If we get opened from an object field, the caller will steal our focus, so lets put it back in the picker.
             Utils.CallDelayed(() => { if (this) SelectSearch(); }, 0.1d);
         }
-        
-        protected override void LoadSessionSettings(SearchViewState args)
+        protected override void LoadSessionSettings()
         {
             var visibilityFlags = (SearchFlags)SearchSettings.GetScopeValue(k_PickerVisibilityFlags, m_ContextHash, (int)(SearchFlags.WantsMore | SearchFlags.Packages));
-            args.context.options |= visibilityFlags;
-            args.itemSize = SearchSettings.GetScopeValue(k_PickerItemSize, m_ContextHash, (int)DisplayMode.Grid);
+            m_ViewState.context.options |= visibilityFlags;
+            m_ViewState.itemSize = SearchSettings.GetScopeValue(k_PickerItemSize, m_ContextHash, (int)DisplayMode.Grid);
             if (SearchSettings.GetScopeValue(k_PickerInspector, m_ContextHash, 0) != 0)
             {
-                args.flags |= SearchViewFlags.OpenInspectorPreview;
+                m_ViewState.flags |= SearchViewFlags.OpenInspectorPreview;
             }
-            RestoreSearchText(args);
+            RestoreSearchText();
 
-            args.group = SearchSettings.GetScopeValue(k_PickerCurrentGroup, m_ContextHash, GroupedSearchList.allGroupId);
-
-            UpdateViewState(args);
+            m_ViewState.group = SearchSettings.GetScopeValue(k_PickerCurrentGroup, m_ContextHash, GroupedSearchList.allGroupId);
+            UpdateViewState(m_ViewState);
         }
-
 
         protected override void SaveSessionSettings()
         {
@@ -65,7 +61,7 @@ namespace UnityEditor.Search
             SearchSettings.SetScopeValue(k_PickerCurrentGroup, m_ContextHash, viewState.group);
         }
 
-        protected override void RestoreSearchText(SearchViewState viewState)
+        protected override void RestoreSearchText()
         {
             // We do not restore any text.
         }
