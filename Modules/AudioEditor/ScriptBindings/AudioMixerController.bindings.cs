@@ -113,5 +113,7 @@ namespace UnityEditor.Audio
 
         [FreeFunction("AudioMixerController::EditingTargetSnapshot")]
         public extern static bool EditingTargetSnapshot();
+        [NativeMethod]
+        internal extern bool HasValidSnapshots();
     }
 }

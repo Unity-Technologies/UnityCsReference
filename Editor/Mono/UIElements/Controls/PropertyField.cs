@@ -302,7 +302,10 @@ namespace UnityEditor.UIElements
                 if (handler.hasPropertyDrawer)
                 {
                     handler.propertyDrawer.m_PreferredLabel = label ?? serializedProperty.localizedDisplayName;
-                    customPropertyGUI = handler.propertyDrawer.CreatePropertyGUI(m_SerializedProperty);
+
+                    // UUM-12851: copy the property, as user code may iterate on it or leave it in a different state.
+                    customPropertyGUI = handler.propertyDrawer.CreatePropertyGUI(m_SerializedProperty.Copy());
+
                     m_CustomPropertyGUI = customPropertyGUI;
 
                     if (customPropertyGUI == null)

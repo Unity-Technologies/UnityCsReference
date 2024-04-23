@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Pool;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -139,6 +140,7 @@ namespace UnityEngine.UIElements
             focusController?.Blur(this);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void BlurImmediately()
         {
             focusController?.Blur(this, dispatchMode: DispatchMode.Immediate);

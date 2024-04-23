@@ -161,6 +161,7 @@ namespace UnityEditor.Media
             height = videoAttrs.height;
             includeAlpha = videoAttrs.includeAlpha;
             bitRateMode = videoAttrs.bitRateMode;
+            codecType = videoAttrs.codec;
             vp8.alphaLayout = videoAttrs.alphaLayout;
         }
     }

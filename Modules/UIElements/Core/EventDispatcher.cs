@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using JetBrains.Annotations;
-using UnityEngine.UIElements.Experimental;
+using UnityEngine.Bindings;
+using NotNullAttribute = JetBrains.Annotations.NotNullAttribute;
 
 namespace UnityEngine.UIElements
 {
@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements
     //
     // For example 2: A keydown with Textfocus in TextField C
     // result ==> Phase TrickleDown [ root, A], Phase Target [C], Phase BubbleUp [ A, root ]
-
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     enum DispatchMode
     {
         Default = Queued,

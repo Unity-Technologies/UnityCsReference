@@ -327,7 +327,6 @@ namespace Unity.UI.Builder
         {
             RefreshView();
         }
-
         public void SelectionChanged() { }
         public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType) { }
 
