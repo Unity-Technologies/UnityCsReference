@@ -138,6 +138,14 @@ sealed class AudioContainerWindow : EditorWindow
         m_AddedElements.Clear();
     }
 
+    private void OnFocus()
+    {
+        if (State.AudioContainer != null)
+        {
+            UpdateTransportButtonStates();
+        }
+    }
+
     void Update()
     {
         if (!m_IsVisible)
@@ -517,12 +525,14 @@ sealed class AudioContainerWindow : EditorWindow
             m_VolumeRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOn);
             m_VolumeRandomizationRangeSlider.SetEnabled(true);
             m_VolumeRandomizationRangeField.SetEnabled(true);
+            m_VolumeRandomRangeTracker.SetEnabled(true);
         }
         else
         {
             m_VolumeRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOff);
             m_VolumeRandomizationRangeSlider.SetEnabled(false);
             m_VolumeRandomizationRangeField.SetEnabled(false);
+            m_VolumeRandomRangeTracker.SetEnabled(false);
         }
     }
 
@@ -622,12 +632,14 @@ sealed class AudioContainerWindow : EditorWindow
             m_PitchRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOn);
             m_PitchRandomizationRangeSlider.SetEnabled(true);
             m_PitchRandomizationRangeField.SetEnabled(true);
+            m_PitchRandomRangeTracker.SetEnabled(true);
         }
         else
         {
             m_PitchRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOff);
             m_PitchRandomizationRangeSlider.SetEnabled(false);
             m_PitchRandomizationRangeField.SetEnabled(false);
+            m_PitchRandomRangeTracker.SetEnabled(false);
         }
     }
 
@@ -1155,12 +1167,14 @@ sealed class AudioContainerWindow : EditorWindow
             m_TimeRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOn);
             m_TimeRandomizationRangeSlider.SetEnabled(true);
             m_TimeRandomizationRangeField.SetEnabled(true);
+            m_TimeRandomRangeTracker.SetEnabled(true);
         }
         else
         {
             m_TimeRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOff);
             m_TimeRandomizationRangeSlider.SetEnabled(false);
             m_TimeRandomizationRangeField.SetEnabled(false);
+            m_TimeRandomRangeTracker.SetEnabled(false);
         }
     }
 

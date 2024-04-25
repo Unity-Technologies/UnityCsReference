@@ -1171,6 +1171,16 @@ namespace Unity.UI.Builder
             }
         }
 
+        public void BeforeSelectionChanged()
+        {
+            // Check whether the focused element is a field in the inspector. If so, then blur it immediately
+            // to commit its value (e.g: delayed text field such as the name field) before the selection changes
+            if (focusController is { focusedElement: VisualElement focusedElement } && Contains(focusedElement))
+            {
+                focusedElement.BlurImmediately();
+            }
+        }
+
         public void SelectionChanged()
         {
             if (isBoundFieldInlineValueBeingEdited)

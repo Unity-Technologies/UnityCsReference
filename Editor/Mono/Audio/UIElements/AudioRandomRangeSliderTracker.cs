@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Transactions;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
@@ -17,11 +18,12 @@ class AudioRandomRangeSliderTracker : VisualElement
     [Preserve]
     public new class UxmlTraits : VisualElement.UxmlTraits { }
 
-    static readonly CustomStyleProperty<Color> s_TrackerColorProperty = new("--tracker-color");
+    static readonly CustomStyleProperty<Color> s_TrackerEnabledColorProperty = new("--tracker-color");
 
     Slider m_ParentSlider;
     Vector2 m_Range = Vector2.zero;
-    Color m_TrackerColor;
+    Color m_TrackerEnabledColor;
+    Color m_TrackerDisabledColor = Color.gray;
 
     static void CustomStylesResolved(CustomStyleResolvedEvent evt)
     {
@@ -32,9 +34,9 @@ class AudioRandomRangeSliderTracker : VisualElement
 
     void UpdateCustomStyles()
     {
-        if (customStyle.TryGetValue(s_TrackerColorProperty, out var trackerColor))
+        if (customStyle.TryGetValue(s_TrackerEnabledColorProperty, out var trackerColor))
         {
-            m_TrackerColor = trackerColor;
+            m_TrackerEnabledColor = trackerColor;
         }
     }
 
@@ -55,6 +57,7 @@ class AudioRandomRangeSliderTracker : VisualElement
         rangeTracker.generateVisualContent += GenerateVisualContent;
         rangeTracker.RegisterCallback<CustomStyleResolvedEvent>(CustomStylesResolved);
         rangeTracker.m_ParentSlider.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+        rangeTracker.RegisterCallback<PropertyChangedEvent>(OnPropertyChanged);
 
         return rangeTracker;
     }
@@ -71,6 +74,16 @@ class AudioRandomRangeSliderTracker : VisualElement
         var sliderTracker = UIToolkitUtilities.GetChildByClassName<AudioRandomRangeSliderTracker>(evt.elementTarget, "unity-audio-random-range-slider-tracker");
 
         sliderTracker.SetRange(sliderTracker.m_Range);
+    }
+
+    static void OnPropertyChanged(PropertyChangedEvent evt)
+    {
+        var sliderTracker = evt.elementTarget;
+
+        if (evt.property == "enabledSelf")
+        {
+            sliderTracker.MarkDirtyRepaint();
+        }
     }
 
     // Maps 'x' from the range '[x_min; x_max]' to the range '[y_min; y_max]'.
@@ -103,7 +116,7 @@ class AudioRandomRangeSliderTracker : VisualElement
         right = Mathf.Clamp(right, contentRect.xMin, contentRect.xMax);
 
         // Draw the tracker.
-        painter2D.fillColor = sliderTracker.m_TrackerColor;
+        painter2D.fillColor = sliderTracker.enabledSelf ? sliderTracker.m_TrackerEnabledColor : sliderTracker.m_TrackerDisabledColor;
         painter2D.BeginPath();
         painter2D.MoveTo(new Vector2(left, contentRect.yMin));
         painter2D.LineTo(new Vector2(right, contentRect.yMin));
