@@ -27,8 +27,40 @@ namespace UnityEngine.UIElements
         public struct AttributeOverride
         {
             public string m_ElementName;
+            public string[] m_NamesPath;
             public string m_AttributeName;
             public string m_Value;
+
+            public bool NamesPathMatchesElementNamesPath(IList<string> elementNamesPath)
+            {
+                if (elementNamesPath == null || m_NamesPath == null
+                                             || elementNamesPath.Count == 0 || m_NamesPath.Length == 0)
+                {
+                    return false;
+                }
+
+                // Old overrides still match elements only by name
+                if (m_NamesPath.Length == 1)
+                {
+                    return m_NamesPath[0] == elementNamesPath[^1];
+                }
+
+                if (m_NamesPath.Length != elementNamesPath.Count)
+                {
+                    return false;
+                }
+
+                // New overrides match elements when path is the same
+                for (var i = elementNamesPath.Count - 1; i >= 0; --i)
+                {
+                    if (elementNamesPath[i] != m_NamesPath[i])
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
         }
 
         [SerializeField]
@@ -45,6 +77,7 @@ namespace UnityEngine.UIElements
         public struct UxmlSerializedDataOverride
         {
             public int m_ElementId;
+            public List<int> m_ElementIdsPath;
             [SerializeReference]
             public UxmlSerializedData m_SerializedData;
         }
@@ -90,9 +123,13 @@ namespace UnityEngine.UIElements
             if (null != cc.serializedDataOverrides)
                 serializedDataOverrideRanges.AddRange(cc.serializedDataOverrides);
             if (serializedDataOverrides.Count > 0)
-                serializedDataOverrideRanges.Add(new CreationContext.SerializedDataOverrideRange(cc.visualTreeAsset, serializedDataOverrides));
+                serializedDataOverrideRanges.Add(new CreationContext.SerializedDataOverrideRange(cc.visualTreeAsset, serializedDataOverrides, id));
 
-            tc.templateSource.CloneTree(tc, new CreationContext(cc.slotInsertionPoints, traitsOverrideRanges, serializedDataOverrideRanges, null, null));
+            var veaIdsPath = cc.veaIdsPath != null ? new List<int>(cc.veaIdsPath) : new List<int>();
+            var newCC = new CreationContext(cc.slotInsertionPoints, traitsOverrideRanges, serializedDataOverrideRanges,
+                null, null, veaIdsPath, null);
+
+            tc.templateSource.CloneTree(tc, newCC);
 
             return tc;
         }

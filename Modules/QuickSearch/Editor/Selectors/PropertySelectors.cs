@@ -83,7 +83,7 @@ namespace UnityEditor.Search
             }
 
             so = new SerializedObject(obj);
-            var property = so.FindProperty(propertyPath);
+            var property = so.FindPropertyIgnoreCase(propertyPath);
             if (property != null)
                 return property;
 
@@ -99,12 +99,12 @@ namespace UnityEditor.Search
                         return null;
                     }
 
-                    var resolvedProperty = so.FindProperty(resolvedPropertyPath);
+                    var resolvedProperty = so.FindPropertyIgnoreCase(resolvedPropertyPath);
                     if (resolvedProperty != null)
                         return resolvedProperty;
                 }
 
-                property = so.FindProperty($"m_{propertyPath}");
+                property = so.FindPropertyIgnoreCase($"m_{propertyPath}");
                 if (property != null)
                 {
                     view.StoreAlias(recordKey, property.propertyPath);
@@ -115,8 +115,8 @@ namespace UnityEditor.Search
                 var next = property.NextVisible(true);
                 while (next)
                 {
-                    if (property.name.EndsWith(propertyPath, StringComparison.OrdinalIgnoreCase) ||
-                        (property.name.Contains(" ") && property.name.Replace(" ", "").EndsWith(propertyPath, StringComparison.OrdinalIgnoreCase)))
+                    var propertyName = property.name.Replace(" ", "");
+                    if (propertyName.Equals(propertyPath, StringComparison.OrdinalIgnoreCase))
                     {
                         view.StoreAlias(recordKey, property.propertyPath);
                         return property;
@@ -127,6 +127,7 @@ namespace UnityEditor.Search
                 view.StoreAlias(recordKey, string.Empty);
                 so?.Dispose();
                 so = null;
+
                 return null;
             }
         }

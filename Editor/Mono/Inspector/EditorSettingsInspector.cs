@@ -75,9 +75,9 @@ namespace UnityEditor
 
             public static GUIContent lineEndingForNewScripts = EditorGUIUtility.TrTextContent("Line Endings For New Scripts");
 
-            public static GUIContent streamingSettings = EditorGUIUtility.TrTextContent("Streaming Settings");
-            public static GUIContent enablePlayModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Play Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode. This reduces GPU memory by streaming mips in and out as needed.");
-            public static GUIContent enableEditModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Edit Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Edit Mode. This reduces GPU memory by streaming mips in and out as needed.");
+            public static GUIContent streamingSettings = EditorGUIUtility.TrTextContent("Texture Streaming Settings");
+            public static GUIContent enablePlayModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Mipmap Streaming In Play Mode", "Texture Mipmap Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode. This reduces GPU memory by streaming mips in and out as needed.");
+            public static GUIContent enableEditModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Mipmap Streaming In Edit Mode", "Texture Mipmap Streaming must be enabled in Quality Settings for mipmap streaming to function in Edit Mode. This reduces GPU memory by streaming mips in and out as needed.");
             public static GUIContent enableEditorAsyncCPUTextureLoading = EditorGUIUtility.TrTextContent("Load texture data on demand", "While in Editor, load CPU side texture data for streaming textures from disk asynchronously on demand (will avoid some stalls and reduce CPU memory usage). Change requires Editor restart.");
 
             public static GUIContent shaderCompilation = EditorGUIUtility.TrTextContent("Shader Compilation");

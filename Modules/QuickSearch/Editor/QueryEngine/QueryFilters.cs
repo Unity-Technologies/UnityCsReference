@@ -609,17 +609,39 @@ namespace UnityEditor.Search
         }
     }
 
-    class DefaultFilter<TData> : Filter<TData, string>
+    class DefaultFilter<TData, TFilter> : Filter<TData, TFilter>
     {
-        public DefaultFilter(string token, Func<TData, string, string, string, bool> handler, QueryEngineImpl<TData> queryEngine)
+        public DefaultFilter(string token, Func<TData, string, TFilter> getDataFunc, QueryEngineImpl<TData> queryEngine)
+            : base(token, null, (o) => getDataFunc(o, token), queryEngine)
+        { }
+    }
+
+    class DefaultFilterResolver<TData, TFilter> : Filter<TData, TFilter>
+    {
+        public DefaultFilterResolver(string token, Func<TData, string, string, TFilter, bool> handler, QueryEngineImpl<TData> queryEngine)
             : base(token, null, (o, op, value) => handler(o, token, op, value), queryEngine)
         {}
     }
 
-    class DefaultParamFilter<TData> : Filter<TData, string, string>
+    class DefaultParamFilter<TData, TParam, TFilter> : Filter<TData, TParam, TFilter>
     {
-        public DefaultParamFilter(string token, Func<TData, string, string, string, string, bool> handler, QueryEngineImpl<TData> queryEngine)
+        public DefaultParamFilter(string token, Func<TData, string, TParam, TFilter> getDataFunc, QueryEngineImpl<TData> queryEngine)
+            : base(token, null, (o, p) => getDataFunc(o, token, p), queryEngine)
+        { }
+
+        public DefaultParamFilter(string token, Func<TData, string, TParam, TFilter> getDataFunc, Func<string, TParam> parameterTransformer, QueryEngineImpl<TData> queryEngine)
+            : base(token, null, (o, p) => getDataFunc(o, token, p), parameterTransformer, queryEngine)
+        { }
+    }
+
+    class DefaultParamFilterResolver<TData, TParam, TFilter> : Filter<TData, TParam, TFilter>
+    {
+        public DefaultParamFilterResolver(string token, Func<TData, string, TParam, string, TFilter, bool> handler, QueryEngineImpl<TData> queryEngine)
             : base(token, null, (o, param, op, value) => handler(o, token, param, op, value), queryEngine)
         {}
+
+        public DefaultParamFilterResolver(string token, Func<TData, string, TParam, string, TFilter, bool> handler, Func<string, TParam> parameterTransformer, QueryEngineImpl<TData> queryEngine)
+            : base(token, null, (o, param, op, value) => handler(o, token, param, op, value), parameterTransformer, queryEngine)
+        { }
     }
 }

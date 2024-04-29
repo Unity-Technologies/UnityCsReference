@@ -107,6 +107,32 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private static bool IdsPathMatchesAttributeOverrideIdsPath(List<int> idsPath, List<int> attributeOverrideIdsPath, int templateId)
+        {
+            if (idsPath == null || attributeOverrideIdsPath == null
+                                || idsPath.Count == 0 || attributeOverrideIdsPath.Count == 0)
+            {
+                return false;
+            }
+
+            var templateIdIndex = idsPath.IndexOf(templateId);
+
+            if (idsPath.Count != attributeOverrideIdsPath.Count + templateIdIndex + 1)
+            {
+                return false;
+            }
+
+            for (var i = idsPath.Count - 1; i > templateIdIndex; --i)
+            {
+                if (idsPath[i] != attributeOverrideIdsPath[i - templateIdIndex - 1])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal virtual VisualElement Instantiate(CreationContext cc)
         {
@@ -115,18 +141,20 @@ namespace UnityEngine.UIElements
 
             if (cc.hasOverrides)
             {
+                cc.veaIdsPath.Add(id);
                 // Applying the overrides in reverse order. This means that the deepest overrides, the ones from nested VisualTreeAssets,
                 // will be applied first and might be overridden by parent VisualTreeAssets.
                 for (var i = cc.serializedDataOverrides.Count - 1; i >= 0; --i)
                 {
                     foreach (var attributeOverride in cc.serializedDataOverrides[i].attributeOverrides)
                     {
-                        if (attributeOverride.m_ElementId == id)
+                        if (attributeOverride.m_ElementId == id && IdsPathMatchesAttributeOverrideIdsPath(cc.veaIdsPath, attributeOverride.m_ElementIdsPath, cc.serializedDataOverrides[i].templateId))
                         {
                             attributeOverride.m_SerializedData.Deserialize(ve);
                         }
                     }
                 }
+                cc.veaIdsPath.Remove(id);
             }
 
             if (hasStylesheetPaths)

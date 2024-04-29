@@ -46,8 +46,7 @@ namespace UnityEditor
         static readonly float k_LogoListUnityLogoMaxWidth = 220;
         static readonly float k_LogoListPropertyMinWidth = 230;
         static readonly float k_LogoListPropertyLabelWidth = 100;
-        static readonly float k_MinPersonalEditionOverlayOpacity = 0.5f;
-        static readonly float k_MinProEditionOverlayOpacity = 0.0f;
+        static readonly float k_MinOverlayOpacity = 0.0f;
         static readonly Color32 k_DarkOnLightBgColor = new Color32(204, 204, 204, 255);// #CCCCCC
         static readonly Color32 k_LightOnDarkBgColor = new Color32(35, 31, 32, 255);
 
@@ -345,12 +344,9 @@ namespace UnityEditor
         {
             EditorGUILayout.LabelField(k_Texts.splashTitle, EditorStyles.boldLabel);
 
-            using (new EditorGUI.DisabledScope(!licenseAllowsDisabling))
-            {
-                EditorGUILayout.PropertyField(m_ShowUnitySplashScreen, k_Texts.showSplash);
-                if (!m_ShowUnitySplashScreen.boolValue)
-                    return;
-            }
+            EditorGUILayout.PropertyField(m_ShowUnitySplashScreen, k_Texts.showSplash);
+            if (!m_ShowUnitySplashScreen.boolValue)
+                return;
 
             GUIContent buttonLabel = SplashScreen.isFinished ? k_Texts.previewSplash : k_Texts.cancelPreviewSplash;
             Rect previewButtonRect = GUILayoutUtility.GetRect(buttonLabel, "button");
@@ -404,20 +400,18 @@ namespace UnityEditor
 
             // Logos
             EditorGUILayout.LabelField(k_Texts.logosTitle, EditorStyles.boldLabel);
-            using (new EditorGUI.DisabledScope(!Application.HasProLicense()))
-            {
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_ShowUnitySplashLogo, k_Texts.showLogo);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    if (!m_ShowUnitySplashLogo.boolValue)
-                        RemoveUnityLogoFromLogosList();
-                    else if (m_SplashScreenDrawMode.intValue == (int)PlayerSettings.SplashScreen.DrawMode.AllSequential)
-                        AddUnityLogoToLogosList();
-                }
 
-                m_ShowLogoControlsAnimator.target = m_ShowUnitySplashLogo.boolValue;
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(m_ShowUnitySplashLogo, k_Texts.showLogo);
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (!m_ShowUnitySplashLogo.boolValue)
+                    RemoveUnityLogoFromLogosList();
+                else if (m_SplashScreenDrawMode.intValue == (int)PlayerSettings.SplashScreen.DrawMode.AllSequential)
+                    AddUnityLogoToLogosList();
             }
+
+            m_ShowLogoControlsAnimator.target = m_ShowUnitySplashLogo.boolValue;
 
             if (EditorGUILayout.BeginFadeGroup(m_ShowLogoControlsAnimator.faded))
             {
@@ -445,7 +439,7 @@ namespace UnityEditor
 
             // Background
             EditorGUILayout.LabelField(k_Texts.backgroundTitle, EditorStyles.boldLabel);
-            EditorGUILayout.Slider(m_SplashScreenOverlayOpacity, Application.HasProLicense() ? k_MinProEditionOverlayOpacity : k_MinPersonalEditionOverlayOpacity, 1.0f, k_Texts.overlayOpacity);
+            EditorGUILayout.Slider(m_SplashScreenOverlayOpacity, k_MinOverlayOpacity, 1.0f, k_Texts.overlayOpacity);
             m_ShowBackgroundColorAnimator.target = m_SplashScreenBackgroundLandscape.objectReferenceValue == null ||
                 (settingsExtension?.SupportsStaticSplashScreenBackgroundColor() ?? false);
             if (EditorGUILayout.BeginFadeGroup(m_ShowBackgroundColorAnimator.faded))

@@ -6915,8 +6915,17 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchDatabaseImporter.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchDatabaseImporter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchDocumentList.cs">
+      <Link>Modules\QuickSearch\Editor\Indexing\SearchDocumentList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchDocumentListTable.cs">
+      <Link>Modules\QuickSearch\Editor\Indexing\SearchDocumentListTable.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchIndexComparer.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchIndexComparer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchIndexEntryHeapEnumerator.cs">
+      <Link>Modules\QuickSearch\Editor\Indexing\SearchIndexEntryHeapEnumerator.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchIndexEntryImporter.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchIndexEntryImporter.cs</Link>
@@ -7058,6 +7067,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\DefaultNestedQueryAggregators.cs">
       <Link>Modules\QuickSearch\Editor\QueryEngine\DefaultNestedQueryAggregators.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\DefaultQueryFilterHandlers.cs">
+      <Link>Modules\QuickSearch\Editor\QueryEngine\DefaultQueryFilterHandlers.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\DefaultQueryHandler.cs">
       <Link>Modules\QuickSearch\Editor\QueryEngine\DefaultQueryHandler.cs</Link>

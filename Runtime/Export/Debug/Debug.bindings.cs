@@ -14,6 +14,25 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
+    // Must be kept in sync with enum in IntegrityCheck.h
+    [NativeHeader("Runtime/Diagnostics/IntegrityCheck.h")]
+    public enum IntegrityCheckLevel
+    {
+        Low = 1,
+        Medium = 2,
+        High = 3
+    }
+
+    // Must be kept in sync with enum in Validation.h
+    [NativeHeader("Runtime/Diagnostics/Validation.h")]
+    public enum ValidationLevel
+    {
+        None = 0,
+        Low = 1,
+        Medium = 2,
+        High = 3
+    }
+
     [NativeHeader("Runtime/Export/Debug/Debug.bindings.h")]
     internal sealed partial class DebugLogHandler
     {
@@ -24,6 +43,8 @@ namespace UnityEngine
     }
 
     [NativeHeader("Runtime/Export/Debug/Debug.bindings.h")]
+    [NativeHeader("Runtime/Diagnostics/IntegrityCheck.h")]
+    [NativeHeader("Runtime/Diagnostics/Validation.h")]
     // Class containing methods to ease debugging while developing a game.
     public partial class Debug
     {
@@ -308,5 +329,11 @@ namespace UnityEngine
 
         [FreeFunction("RetrieveStartupLogs")]
         extern public static StartupLog[] RetrieveStartupLogs();
+
+        [FreeFunction("CheckApplicationIntegrity")]
+        public static extern string CheckIntegrity(IntegrityCheckLevel level);
+
+        [FreeFunction("IsValidationLevelEnabled")]
+        public static extern bool IsValidationLevelEnabled(ValidationLevel level);
     }
 }

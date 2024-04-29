@@ -12,12 +12,6 @@ namespace UnityEditor
     [NativeHeader("Runtime/Graphics/DrawSplashScreenAndWatermarks.h")]
     internal partial class PlayerSettingsSplashScreenEditor
     {
-        internal static extern bool licenseAllowsDisabling
-        {
-            [FreeFunction("GetPlayerSettings().GetSplashScreenSettings().CanDisableSplashScreen")]
-            get;
-        }
-
         [FreeFunction("GetSplashScreenBackgroundColor")]
         internal static extern Color GetSplashScreenActualBackgroundColor();
 

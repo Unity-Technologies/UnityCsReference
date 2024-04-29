@@ -75,6 +75,20 @@ namespace UnityEditor.Search
         public static bool HasAll(this SearchPropositionFlags flags, SearchPropositionFlags all) => (flags & all) == all;
     }
 
+    [Flags]
+    enum SearchPropositionGenerationOptions
+    {
+        None = 0,
+        HideInTextMode = 1,
+        HideInQueryBuilderMode = 1 << 1
+    }
+
+    static class SearchPropositionGenerationOptionsExtensions
+    {
+        public static bool HasAny(this SearchPropositionGenerationOptions flags, SearchPropositionGenerationOptions f) => (flags & f) != 0;
+        public static bool HasAll(this SearchPropositionGenerationOptions flags, SearchPropositionGenerationOptions all) => (flags & all) == all;
+    }
+
     public readonly struct SearchProposition : IEquatable<SearchProposition>, IComparable<SearchProposition>
     {
         internal readonly string label;
@@ -86,6 +100,7 @@ namespace UnityEditor.Search
         internal readonly string category;
         internal readonly Color color;
         internal readonly Type type;
+        internal readonly SearchPropositionGenerationOptions generationOptions;
         public readonly object data;
 
         internal string path => string.IsNullOrEmpty(category) ? label : $"{category}/{label}";
@@ -110,6 +125,13 @@ namespace UnityEditor.Search
         public SearchProposition(string category = null, string label = null, string replacement = null, string help = null,
                                    int priority = 0, TextCursorPlacement moveCursor = TextCursorPlacement.MoveAutoComplete,
                                    Texture2D icon = null, Type type = null, object data = null, Color color = new Color())
+            : this(category, label, replacement, help, priority, moveCursor, icon, type, data, color, SearchPropositionGenerationOptions.None)
+        {
+        }
+
+        internal SearchProposition(string category, string label, string replacement, string help,
+            int priority, TextCursorPlacement moveCursor,
+            Texture2D icon, Type type, object data, Color color, SearchPropositionGenerationOptions generationOptions)
         {
             var kparts = label.Split(new char[] { '|' });
             this.label = kparts[0];
@@ -122,6 +144,7 @@ namespace UnityEditor.Search
             this.type = type;
             this.data = data;
             this.color = color;
+            this.generationOptions = generationOptions;
         }
 
         const string kSeparator = "-------------------------";
@@ -205,9 +228,8 @@ namespace UnityEditor.Search
                 {
                     if (p.fetchPropositions == null)
                         continue;
-                    var currentPropositions = p.fetchPropositions(context, options).Where(p => p.valid);
-                    if (currentPropositions != null)
-                        propositions.UnionWith(currentPropositions);
+                    var currentPropositions = p.fetchPropositions(context, options);
+                    FillPropositions(currentPropositions, propositions, options);
                 }
             }
 
@@ -219,9 +241,8 @@ namespace UnityEditor.Search
                 var defaultProvider = SearchService.GetDefaultProvider();
                 if (defaultProvider?.fetchPropositions == null)
                     return;
-                var props = defaultProvider.fetchPropositions(context, options).Where(p => p.valid);
-                if (props != null)
-                    propositions.UnionWith(props);
+                var props = defaultProvider.fetchPropositions(context, options);
+                FillPropositions(props, propositions, options);
             }
         }
 
@@ -235,6 +256,29 @@ namespace UnityEditor.Search
                 propositions.Add(new SearchProposition(label: rs, rs, "Recent search", priority: builtPriority, moveCursor: TextCursorPlacement.MoveLineEnd));
                 builtPriority += 10;
             }
+        }
+
+        static void FillPropositions(IEnumerable<SearchProposition> newPropositions, SortedSet<SearchProposition> propositions, SearchPropositionOptions options)
+        {
+            if (newPropositions == null)
+                return;
+            foreach (var p in newPropositions)
+            {
+                if (!IsPropositionVisible(p, options))
+                    continue;
+                propositions.Add(p);
+            }
+        }
+
+        static bool IsPropositionVisible(SearchProposition proposition, SearchPropositionOptions options)
+        {
+            if (!proposition.valid)
+                return false;
+            if (options.HasAny(SearchPropositionFlags.QueryBuilder) && proposition.generationOptions.HasAny(SearchPropositionGenerationOptions.HideInQueryBuilderMode))
+                return false;
+            if (!options.HasAny(SearchPropositionFlags.QueryBuilder) && proposition.generationOptions.HasAny(SearchPropositionGenerationOptions.HideInTextMode))
+                return false;
+            return true;
         }
     }
 

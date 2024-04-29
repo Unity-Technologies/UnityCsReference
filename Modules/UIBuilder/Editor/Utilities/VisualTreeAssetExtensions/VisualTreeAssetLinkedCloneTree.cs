@@ -90,8 +90,21 @@ namespace Unity.UI.Builder
 
                 foreach (VisualElementAsset childVea in children)
                 {
+                    var isNamedTemplate = false;
+                    if (childVea is TemplateAsset && childVea.TryGetAttributeValue("name", out _))
+                    {
+                        context.veaIdsPath.Add(childVea.id);
+                        isNamedTemplate = true;
+                    }
+
                     // this will fill the slotInsertionPoints mapping
                     var childVe = CloneSetupRecursively(vta, childVea, idToChildren, context);
+
+                    if (isNamedTemplate)
+                    {
+                        context.veaIdsPath.Remove(childVea.id);
+                    }
+
                     if (childVe == null)
                         continue;
 
@@ -172,8 +185,9 @@ namespace Unity.UI.Builder
             {
                 Assert.IsNotNull(rootElement);
 
+                var veaIds = new List<int>();
                 var rootVe = CloneSetupRecursively(vta, rootElement, idToChildren,
-                    new CreationContext(slotInsertionPoints, attributeOverridesRanges, vta, target));
+                    new CreationContext(slotInsertionPoints, attributeOverridesRanges, null, vta, target, veaIds, null));
 
                 if (rootVe == null)
                     continue;

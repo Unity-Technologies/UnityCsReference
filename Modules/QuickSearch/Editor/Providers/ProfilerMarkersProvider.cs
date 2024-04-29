@@ -259,10 +259,17 @@ namespace UnityEditor.Search.Providers
             return ProfilerRecorderInfoToUnitWithValue(pri, pri.GetAverageValue());
         }
 
+        static ValueWithUnit GetLastTime(SearchItem item)
+        {
+            var pri = GetRecorderInfo(item);
+            return ProfilerRecorderInfoToUnitWithValue(pri, 0);
+        }
+
         [SearchSelector(sampleCountSelector, provider: providerId, cacheable = false)] static object SelectCount(SearchSelectorArgs args) => GetSampleCount(args.current);
         [SearchSelector(samplePeakSelector, provider: providerId, cacheable = false)] static object SelectPeak(SearchSelectorArgs args) => GetMaxValue(args.current);
         [SearchSelector(sampleAvgSelector, provider: providerId, cacheable = false)] static object SelectAvg(SearchSelectorArgs args) => GetAverageValue(args.current);
         [SearchSelector(sampleTotalSelector, provider: providerId, cacheable = false)] static object SelectTotal(SearchSelectorArgs args) => GetTotalValue(args.current);
+        [SearchSelector(sampleTotalSelector, provider: providerId, cacheable = false)] static object SelectLastTime(SearchSelectorArgs args) => GetTotalValue(args.current);
 
         protected override string FetchDescription(SearchItem item, SearchContext context)
         {
@@ -362,6 +369,7 @@ namespace UnityEditor.Search.Providers
         protected override ValueWithUnit GetPerformanceTotalValue(ProfilerRecorderInfo pri) => ProfilerRecorderInfoToUnitWithValue(pri, pri.GetTotalValue());
         protected override ValueWithUnit GetPerformancePeakValue(ProfilerRecorderInfo pri) => ProfilerRecorderInfoToUnitWithValue(pri, pri.GetMaxValue());
         protected override ValueWithUnit GetPerformanceSampleCountValue(ProfilerRecorderInfo pri) => ProfilerRecorderInfoToUnitWithValue(pri, pri.GetSampleCount());
+        protected override ValueWithUnit GetPerformanceLastTimeValue(ProfilerRecorderInfo pri) => ProfilerRecorderInfoToUnitWithValue(pri, 0);
 
         static ValueWithUnit ProfilerRecorderInfoToUnitWithValue(ProfilerRecorderInfo pri, double value)
         {
