@@ -31,6 +31,7 @@ namespace UnityEditor.Search
             this.op = op;
         }
 
+        // TODO: Setting SearchIndexOperator.DoNotCompareScore messes number comparisons
         public int Compare(SearchIndexEntry item1, SearchIndexEntry item2)
         {
             var c = item1.type.CompareTo(item2.type);
@@ -72,6 +73,19 @@ namespace UnityEditor.Search
         public int GetHashCode(SearchIndexEntry obj)
         {
             return obj.GetHashCode();
+        }
+    }
+
+    struct SearchIndexEntryExactComparer : IComparer<SearchIndexEntry>
+    {
+        public int Compare(SearchIndexEntry x, SearchIndexEntry y)
+        {
+            var keyComparison = x.key.CompareTo(y.key);
+            if (keyComparison != 0) return keyComparison;
+            var crcComparison = x.crc.CompareTo(y.crc);
+            if (crcComparison != 0) return crcComparison;
+            var typeComparison = x.type.CompareTo(y.type);
+            return typeComparison;
         }
     }
 }

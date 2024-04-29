@@ -197,6 +197,8 @@ namespace UnityEngine
 
         public virtual bool supportsAsyncGPUReadback => UnityEngine.SystemInfo.supportsAsyncGPUReadback;
 
+        public virtual bool supportsParallelPSOCreation => UnityEngine.SystemInfo.supportsParallelPSOCreation;
+
         public virtual bool supportsRayTracing => UnityEngine.SystemInfo.supportsRayTracing;
 
         public virtual bool supportsRayTracingShaders => UnityEngine.SystemInfo.supportsRayTracingShaders;

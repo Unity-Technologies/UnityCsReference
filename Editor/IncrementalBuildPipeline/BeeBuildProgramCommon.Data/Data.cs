@@ -34,7 +34,6 @@ namespace BeeBuildProgramCommon.Data
         public string UnityVersion;
         public Version UnityVersionNumeric;
         public string UnitySourceCodePath;
-        public bool AdvancedLicense;
         public bool Batchmode;
         public bool EmitDataForBeeWhy;
         public string NamedPipeOrUnixSocket;

@@ -21,7 +21,7 @@ namespace UnityEditor.Build.Profile
         /// Helper function for setting the platform settings helpbox based on
         /// license and module installation status.
         /// </summary>
-        internal static bool UpdatePlatformRequirementsWarningHelpBox(HelpBox target, string moduleName, StandaloneBuildSubtarget subtarget)
+        internal static bool UpdatePlatformRequirementsWarningHelpBox(HelpBox target, string platformId)
         {
             if (target.childCount > k_HelBoxChildItemCount)
             {
@@ -30,7 +30,7 @@ namespace UnityEditor.Build.Profile
                 target[2].RemoveFromHierarchy();
             }
 
-            var licenseNotFoundElement = BuildProfileModuleUtil.CreateLicenseNotFoundElement(moduleName);
+            var licenseNotFoundElement = BuildProfileModuleUtil.CreateLicenseNotFoundElement(platformId);
             if (licenseNotFoundElement is not null)
             {
                 target.text = string.Empty;
@@ -39,15 +39,15 @@ namespace UnityEditor.Build.Profile
                 return true;
             }
 
-            if (!BuildProfileModuleUtil.IsModuleInstalled(moduleName, subtarget))
+            if (!BuildProfileModuleUtil.IsModuleInstalled(platformId))
             {
                 target.text = string.Empty;
-                target.Add(BuildProfileModuleUtil.CreateModuleNotInstalledElement(moduleName, subtarget));
+                target.Add(BuildProfileModuleUtil.CreateModuleNotInstalledElement(platformId));
                 target.Show();
                 return true;
             }
 
-            if (!BuildProfileModuleUtil.IsBuildProfileSupported(moduleName, subtarget))
+            if (!BuildProfileModuleUtil.IsBuildProfileSupported(platformId))
             {
                 target.text = TrText.notSupportedWarning;
                 target.Show();

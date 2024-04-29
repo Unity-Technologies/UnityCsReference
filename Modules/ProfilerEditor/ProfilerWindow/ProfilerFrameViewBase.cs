@@ -10,6 +10,7 @@ using UnityEditor.MPE;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
+using Unity.Profiling.Editor;
 
 namespace UnityEditorInternal.Profiling
 {
@@ -107,21 +108,33 @@ namespace UnityEditorInternal.Profiling
             EditorGUIUtility.TrTextContent("Timeline"),
             EditorGUIUtility.TrTextContent("Hierarchy"),
             EditorGUIUtility.TrTextContent("Inverted Hierarchy"),
-            EditorGUIUtility.TrTextContent("Raw Hierarchy"),
+            EditorGUIUtility.TrTextContent("Raw Hierarchy")
         };
+
+        static readonly GUIContent[] kCPUProfilerViewTypeNamesWithNewTimeline = new GUIContent[]
+        {
+            EditorGUIUtility.TrTextContent("Timeline"),
+            EditorGUIUtility.TrTextContent("Hierarchy"),
+            EditorGUIUtility.TrTextContent("Inverted Hierarchy"),
+            EditorGUIUtility.TrTextContent("Raw Hierarchy"),
+            EditorGUIUtility.TrTextContent("New Timeline (Experimental)"),
+        };
+
+        bool IsJobsProfilerRegistered() {
+            ProfilerModule pm = m_ProfilerWindow.GetJobsProfilerModule();
+            return pm != null;
+        }
 
         static GUIContent GetCPUProfilerViewTypeName(ProfilerViewType viewType)
         {
             switch (viewType)
             {
                 case ProfilerViewType.Hierarchy:
-                    return kCPUProfilerViewTypeNames[1];
                 case ProfilerViewType.Timeline:
-                    return kCPUProfilerViewTypeNames[0];
+                case ProfilerViewType.TimelineV2:
                 case ProfilerViewType.RawHierarchy:
-                    return kCPUProfilerViewTypeNames[3];
                 case ProfilerViewType.InvertedHierarchy:
-                    return kCPUProfilerViewTypeNames[2];
+                    return kCPUProfilerViewTypeNamesWithNewTimeline[(int) viewType];
                 default:
                     throw new NotImplementedException($"Lookup Not Implemented for {viewType}");
             }
@@ -133,6 +146,15 @@ namespace UnityEditorInternal.Profiling
             (int)ProfilerViewType.Hierarchy,
             (int)ProfilerViewType.InvertedHierarchy,
             (int)ProfilerViewType.RawHierarchy,
+        };
+
+        static readonly int[] kCPUProfilerViewTypesWithNewTimeline = new int[]
+        {
+            (int)ProfilerViewType.Timeline,
+            (int)ProfilerViewType.Hierarchy,
+            (int)ProfilerViewType.InvertedHierarchy,
+            (int)ProfilerViewType.RawHierarchy,
+            (int)ProfilerViewType.TimelineV2,
         };
 
         static readonly GUIContent[] kGPUProfilerViewTypeNames = new GUIContent[]
@@ -171,11 +193,14 @@ namespace UnityEditorInternal.Profiling
             ProfilerViewType newViewType;
             if (!gpuView)
             {
-                newViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)viewType, kCPUProfilerViewTypeNames, kCPUProfilerViewTypes, BaseStyles.viewTypeToolbarDropDown, GUILayout.Width(BaseStyles.viewTypeToolbarDropDown.fixedWidth));
+                if (IsJobsProfilerRegistered())
+                    newViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)viewType, kCPUProfilerViewTypeNamesWithNewTimeline, kCPUProfilerViewTypesWithNewTimeline, BaseStyles.viewTypeToolbarDropDown, GUILayout.Width(BaseStyles.viewTypeToolbarDropDown.fixedWidth));
+                else
+                    newViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)viewType, kCPUProfilerViewTypeNames, kCPUProfilerViewTypes, BaseStyles.viewTypeToolbarDropDown, GUILayout.Width(BaseStyles.viewTypeToolbarDropDown.fixedWidth));
             }
             else
             {
-                if (viewType == ProfilerViewType.Timeline || viewType == ProfilerViewType.InvertedHierarchy)
+                if (viewType == ProfilerViewType.Timeline || viewType == ProfilerViewType.InvertedHierarchy || viewType == ProfilerViewType.TimelineV2)
                     viewType = ProfilerViewType.Hierarchy;
                 newViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)viewType, kGPUProfilerViewTypeNames, kGPUProfilerViewTypes, BaseStyles.viewTypeToolbarDropDown, GUILayout.Width(BaseStyles.viewTypeToolbarDropDown.fixedWidth));
             }
@@ -334,6 +359,11 @@ namespace UnityEditorInternal.Profiling
                         menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.Hierarchy), false, () => { viewTypeChanged(ProfilerViewType.Hierarchy); });
                         menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.InvertedHierarchy), false, () => { viewTypeChanged(ProfilerViewType.InvertedHierarchy); });
                         menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.RawHierarchy), false, () => { viewTypeChanged(ProfilerViewType.RawHierarchy); });
+                        if (IsJobsProfilerRegistered())
+                        {
+                            menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.TimelineV2), false, () => { viewTypeChanged(ProfilerViewType.TimelineV2); });
+                        }
+
                         menu.AddSeparator("");
                         if (hasCallstack)
                             menu.AddItem(BaseStyles.showFullDetailsForCallStacks, showFullDetailsForCallStacks, () => showFullDetailsForCallStacks = !showFullDetailsForCallStacks);

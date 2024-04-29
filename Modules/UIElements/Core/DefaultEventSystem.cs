@@ -83,6 +83,9 @@ namespace UnityEngine.UIElements
         private InputForUIProcessor inputForUIProcessor => m_InputForUIProcessor ??= new InputForUIProcessor(this);
 
         private bool m_IsInputReady = false;
+        /// <summary>
+        /// Closely follows the PlayMode state from <see cref="UIElementsRuntimeUtility"/>. Don't clear in Reset().
+        /// </summary>
         internal bool isInputReady
         {
             get => m_IsInputReady;
@@ -103,6 +106,9 @@ namespace UnityEngine.UIElements
         }
 
         private bool m_UseInputForUI = true;
+        /// <summary>
+        /// Set by <see cref="UIToolkitInputConfiguration.SetRuntimeInputBackend"/>. Don't clear in Reset().
+        /// </summary>
         internal bool useInputForUI
         {
             get => m_UseInputForUI;

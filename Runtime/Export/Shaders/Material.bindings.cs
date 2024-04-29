@@ -151,7 +151,7 @@ namespace UnityEngine
         public bool HasConstantBuffer(int nameID) { return HasConstantBufferImpl(nameID); }
 
         extern public int renderQueue {[NativeName("GetActualRenderQueue")] get; [NativeName("SetCustomRenderQueue")] set; }
-        extern internal int rawRenderQueue {[NativeName("GetCustomRenderQueue")] get; }
+        extern public int rawRenderQueue {[NativeName("GetCustomRenderQueue")] get; }
 
         extern public void EnableKeyword(string keyword);
         extern public void DisableKeyword(string keyword);

@@ -407,6 +407,9 @@ namespace UnityEditor.Search.Providers
             foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryMissingBlock)))
                 yield return f;
 
+            foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryRenderingLayerBlock)))
+                yield return f;
+
             foreach (var p in queryEngine.engine.GetPropositions())
                 yield return p;
 
@@ -416,8 +419,18 @@ namespace UnityEditor.Search.Providers
 
             var sceneObjects = context.searchView?.results.Count > 0 && !context.searchInProgress ?
                 context.searchView.results.Select(r => r.ToObject()).Where(o => o) : SearchUtils.FetchGameObjects();
-            foreach (var p in SearchUtils.EnumeratePropertyPropositions(sceneObjects))
+            foreach (var p in SearchUtils.EnumeratePropertyPropositions(sceneObjects, IterateNonVisibleProperties))
                 yield return p;
+        }
+
+        static IEnumerable<SerializedProperty> IterateNonVisibleProperties(SerializedObject so)
+        {
+            if (so.targetObject is Transform)
+                yield break;
+
+            var sp = so.FindProperty("m_Enabled");
+            if (sp is { isValid: true })
+                yield return sp;
         }
     }
 
@@ -441,7 +454,7 @@ namespace UnityEditor.Search.Providers
         [Shortcut("Help/Search/Hierarchy")]
         internal static void OpenQuickSearch()
         {
-            SearchUtils.OpenWithContextualProvider(type);
+            SearchUtils.OpenWithProviders(type);
         }
 
         [SearchTemplate(description = "Find mesh object", providerId = type)] internal static string ST1() => @"t=MeshFilter vertices>=1024";

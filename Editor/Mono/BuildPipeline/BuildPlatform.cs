@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 using DiscoveredTargetInfo = UnityEditor.BuildTargetDiscovery.DiscoveredTargetInfo;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
@@ -10,7 +11,7 @@ using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 namespace UnityEditor.Build
 {
     // All settings for a build platform.
-    internal class BuildPlatform
+    internal class BuildPlatform : ICloneable
     {
         // short name used for texture settings, etc.
         public string name;
@@ -38,12 +39,23 @@ namespace UnityEditor.Build
         {
             this.namedBuildTarget = namedBuildTarget;
             name = namedBuildTarget.TargetName;
-            m_Title = new ScalableGUIContent(locTitle, null, iconId);
+
+            // Workaround for some platforms which have | in their name which is also used as separator for tooltips
+            if (locTitle.Contains("|"))      
+                m_Title = new ScalableGUIContent(locTitle.Replace("|", " "), null, iconId);
+            else
+                m_Title = new ScalableGUIContent(locTitle, null, iconId);
+
             m_SmallTitle = new ScalableGUIContent(null, null, iconId + ".Small");
             this.tooltip = tooltip;
             this.hideInUi = hideInUi;
             this.defaultTarget = defaultTarget;
             this.installed = installed;
+        }
+
+        public object Clone()
+        {
+            return MemberwiseClone();
         }
     }
 
@@ -132,29 +144,10 @@ namespace UnityEditor.Build
             }
 
             var suffix = namedBuildTarget == NamedBuildTarget.Server ? " Server" : "";
-
-            switch (target)
-            {
-                case BuildTarget.StandaloneWindows:
-                case BuildTarget.StandaloneWindows64:
-                    return $"Windows{suffix}";
-                case BuildTarget.StandaloneOSX:
-                    // Deprecated
-#pragma warning disable 612, 618
-                case BuildTarget.StandaloneOSXIntel:
-                case BuildTarget.StandaloneOSXIntel64:
-#pragma warning restore 612, 618
-                    return $"macOS{suffix}";
-                    // Deprecated
-#pragma warning disable 612, 618
-                case BuildTarget.StandaloneLinux:
-                case BuildTarget.StandaloneLinuxUniversal:
-#pragma warning restore 612, 618
-                case BuildTarget.StandaloneLinux64:
-                    return $"Linux{suffix}";
-            }
-
-            return "Unsupported Target";
+#pragma warning disable CS0618 // Member is obsolete
+            string targetName = BuildTargetDiscovery.BuildPlatformDisplayName(target) + suffix;
+#pragma warning restore CS0618
+            return targetName.Length == 0 ? "Unsupported Target" : targetName;
         }
 
         public string GetModuleDisplayName(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)

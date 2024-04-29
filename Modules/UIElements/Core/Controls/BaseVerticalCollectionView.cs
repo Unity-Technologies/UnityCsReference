@@ -1383,7 +1383,7 @@ namespace UnityEngine.UIElements
             if (!evt.isPrimary)
                 return;
 
-            if (evt.button != (int)MouseButton.LeftMouse)
+            if (evt.button is not ((int)MouseButton.LeftMouse or (int)MouseButton.RightMouse))
                 return;
 
             if (evt.pointerType != PointerType.mouse)
@@ -1392,7 +1392,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            DoSelect(evt.localPosition, evt.clickCount, evt.actionKey, evt.shiftKey);
+            DoSelect(evt.localPosition, evt.button, evt.clickCount, evt.actionKey, evt.shiftKey);
         }
 
         private void ProcessPointerUp(IPointerEvent evt)
@@ -1403,7 +1403,7 @@ namespace UnityEngine.UIElements
             if (!evt.isPrimary)
                 return;
 
-            if (evt.button != (int)MouseButton.LeftMouse)
+            if (evt.button is not ((int)MouseButton.LeftMouse or (int)MouseButton.RightMouse))
                 return;
 
             if (evt.pointerType != PointerType.mouse)
@@ -1411,13 +1411,14 @@ namespace UnityEngine.UIElements
                 var delta = evt.position - m_TouchDownPosition;
                 if (delta.sqrMagnitude <= ScrollView.ScrollThresholdSquared)
                 {
-                    DoSelect(evt.localPosition, evt.clickCount, evt.actionKey, evt.shiftKey);
+                    DoSelect(evt.localPosition, evt.button, evt.clickCount, evt.actionKey, evt.shiftKey);
                 }
             }
             else
             {
                 var clickedIndex = virtualizationController.GetIndexFromPosition(evt.localPosition);
                 if (selectionType == SelectionType.Multiple
+                    && evt.button == (int)MouseButton.LeftMouse
                     && !evt.shiftKey
                     && !evt.actionKey
                     && m_SelectedIndices.Count > 1
@@ -1428,7 +1429,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void DoSelect(Vector2 localPosition, int clickCount, bool actionKey, bool shiftKey)
+        private void DoSelect(Vector2 localPosition, int mouseButton, int clickCount, bool actionKey, bool shiftKey)
         {
             var clickedIndex = virtualizationController.GetIndexFromPosition(localPosition);
             var effectiveClickCount = (m_SelectedIndices.Count() > 0 && m_SelectedIndices.First() != clickedIndex) ? 1 : (clickCount > 2) ? 2 : clickCount;
@@ -1474,10 +1475,14 @@ namespace UnityEngine.UIElements
                         {
                             m_SelectionNotChanged?.Invoke();
                         }
+                        else
+                        {
+                            SetSelection(clickedIndex);
+                        }
 
-                        SetSelection(clickedIndex);
-                        if (allowSingleClickChoice)
-                            itemsChosen?.Invoke(m_SelectedItems);
+                        // Only choose on left mouse button
+                        if (allowSingleClickChoice && mouseButton == (int)MouseButton.LeftMouse)
+                                itemsChosen?.Invoke(m_SelectedItems);
                     }
 
                     break;
@@ -1501,7 +1506,7 @@ namespace UnityEngine.UIElements
                     if (!wasClickedIndexInSelection)
                         return;
 
-                    if (!allowSingleClickChoice)
+                    if (!allowSingleClickChoice && mouseButton == (int)MouseButton.LeftMouse)
                         itemsChosen?.Invoke(m_SelectedItems);
                     break;
             }

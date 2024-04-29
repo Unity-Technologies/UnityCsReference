@@ -66,6 +66,7 @@ namespace UnityEngine.UIElements
         }
 
         private static readonly Dictionary<string, VisualElement> s_TemporarySlotInsertionPoints = new Dictionary<string, VisualElement>();
+        private static readonly List<int> s_VeaIdsPath = new List<int>();
 
         [Serializable]
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -187,9 +188,13 @@ namespace UnityEngine.UIElements
             }
         }
 
-#pragma warning disable 0649
-        [SerializeField] private List<UsingEntry> m_Usings = new List<UsingEntry>();
-#pragma warning restore 0649
+        [SerializeField] List<UsingEntry> m_Usings = new List<UsingEntry>();
+
+        internal List<UsingEntry> usings
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => m_Usings;
+        }
 
         /// <summary>
         /// The UXML templates used by this VisualTreeAsset.
@@ -335,7 +340,7 @@ namespace UnityEngine.UIElements
             {
                 var newAsset = new UxmlObjectAsset(fullTypeName, false, xmlNamespace);
                 newAsset.parentId = parent.id;
-                newAsset.id = GetNextUxmlObjectId(parent.parentId);
+                newAsset.id = GetNextUxmlObjectId(parent.id);
                 entry.uxmlObjectAssets.Add(newAsset);
                 return newAsset;
             }
@@ -346,7 +351,7 @@ namespace UnityEngine.UIElements
                 fieldAsset = new UxmlObjectAsset(fieldUxmlName, true, xmlNamespace);
                 entry.uxmlObjectAssets.Add(fieldAsset);
                 fieldAsset.parentId = parent.id;
-                fieldAsset.id = GetNextUxmlObjectId(parent.parentId);
+                fieldAsset.id = GetNextUxmlObjectId(parent.id);
             }
 
             return AddUxmlObject(fieldAsset, null, fullTypeName, xmlNamespace);
@@ -653,11 +658,13 @@ namespace UnityEngine.UIElements
             TemplateContainer target = new TemplateContainer(name, this);
             try
             {
-                CloneTree(target, new CreationContext(s_TemporarySlotInsertionPoints));
+                var cc = new CreationContext(s_TemporarySlotInsertionPoints, null, null, null, null, s_VeaIdsPath, null);
+                CloneTree(target, cc);
             }
             finally
             {
                 s_TemporarySlotInsertionPoints.Clear();
+                s_VeaIdsPath.Clear();
             }
 
             return target;
@@ -719,12 +726,14 @@ namespace UnityEngine.UIElements
             firstElementIndex = target.childCount;
             try
             {
-                CloneTree(target, new CreationContext(s_TemporarySlotInsertionPoints));
+                var cc = new CreationContext(s_TemporarySlotInsertionPoints, null, null, null, null, s_VeaIdsPath, null);
+                CloneTree(target, cc);
             }
             finally
             {
                 elementAddedCount = target.childCount - firstElementIndex;
                 s_TemporarySlotInsertionPoints.Clear();
+                s_VeaIdsPath.Clear();
             }
         }
 
@@ -782,8 +791,22 @@ namespace UnityEngine.UIElements
             {
                 Assert.IsNotNull(rootElement);
 
+                var isNamedTemplate = false;
+                if (rootElement is TemplateAsset && rootElement.TryGetAttributeValue("name", out _))
+                {
+                    cc.veaIdsPath.Add(rootElement.id);
+                    isNamedTemplate = true;
+                }
+
+                var newCc = new CreationContext(cc.slotInsertionPoints, cc.attributeOverrides, cc.serializedDataOverrides,
+                    this, target, cc.veaIdsPath, null);
                 var rootVe = CloneSetupRecursively(rootElement, idToChildren,
-                    new CreationContext(cc.slotInsertionPoints, cc.attributeOverrides, cc.serializedDataOverrides, this, target));
+                    newCc);
+
+                if (isNamedTemplate)
+                {
+                    cc.veaIdsPath.Remove(rootElement.id);
+                }
 
                 if (rootVe == null)
                     continue;
@@ -851,12 +874,23 @@ namespace UnityEngine.UIElements
 
                 foreach (VisualElementAsset childVea in children)
                 {
+                    var isNamedTemplate = false;
+                    if (childVea is TemplateAsset && childVea.TryGetAttributeValue("name", out _))
+                    {
+                        context.veaIdsPath.Add(childVea.id);
+                        isNamedTemplate = true;
+                    }
+
                     // this will fill the slotInsertionPoints mapping
                     var childVe = CloneSetupRecursively(childVea, idToChildren, context);
 
+                    if (isNamedTemplate)
+                    {
+                        context.veaIdsPath.Remove(childVea.id);
+                    }
+
                     if (childVe == null)
                         continue;
-
                     // Save reference to the visualElementAsset so elements can be reinitialized when
                     // we set their attributes in the editor
                     childVe.SetProperty(LinkedVEAInTemplatePropertyName, childVea);
@@ -1185,15 +1219,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal struct SerializedDataOverrideRange
         {
             internal readonly VisualTreeAsset sourceAsset;
+            internal readonly int templateId;
             internal readonly List<TemplateAsset.UxmlSerializedDataOverride> attributeOverrides;
 
-            public SerializedDataOverrideRange(VisualTreeAsset sourceAsset, List<TemplateAsset.UxmlSerializedDataOverride> attributeOverrides)
+            public SerializedDataOverrideRange(VisualTreeAsset sourceAsset, List<TemplateAsset.UxmlSerializedDataOverride> attributeOverrides, int templateId)
             {
                 this.sourceAsset = sourceAsset;
                 this.attributeOverrides = attributeOverrides;
+                this.templateId = templateId;
             }
         }
 
@@ -1208,6 +1245,14 @@ namespace UnityEngine.UIElements
         /// </summary>
         public VisualElement target { get; private set; }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal List<int> veaIdsPath
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get;
+            private set;
+        }
+
         /// <summary>
         /// The target UXML file to clone or instantiate.
         /// </summary>
@@ -1220,6 +1265,8 @@ namespace UnityEngine.UIElements
         internal List<AttributeOverrideRange> attributeOverrides { get; private set; }
 
         internal List<SerializedDataOverrideRange> serializedDataOverrides { get; private set; }
+
+        internal List<string> namesPath { get; private set; }
 
         internal bool hasOverrides => attributeOverrides?.Count > 0 || serializedDataOverrides?.Count > 0;
 
@@ -1249,20 +1296,23 @@ namespace UnityEngine.UIElements
             Dictionary<string, VisualElement> slotInsertionPoints,
             List<AttributeOverrideRange> attributeOverrides,
             VisualTreeAsset vta, VisualElement target)
-            : this(slotInsertionPoints, attributeOverrides, null, vta, target)
+            : this(slotInsertionPoints, attributeOverrides, null, vta, target, null, null)
         { }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal CreationContext(
             Dictionary<string, VisualElement> slotInsertionPoints,
             List<AttributeOverrideRange> attributeOverrides,
             List<SerializedDataOverrideRange> serializedDataOverrides,
-            VisualTreeAsset vta, VisualElement target)
+            VisualTreeAsset vta, VisualElement target, List<int> veaIdsPath, List<string> namesPath)
         {
             this.target = target;
             this.slotInsertionPoints = slotInsertionPoints;
             this.attributeOverrides = attributeOverrides;
             this.serializedDataOverrides = serializedDataOverrides;
             visualTreeAsset = vta;
+            this.namesPath = namesPath;
+            this.veaIdsPath = veaIdsPath;
         }
 
         public override bool Equals(object obj)

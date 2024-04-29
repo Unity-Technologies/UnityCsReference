@@ -222,28 +222,28 @@ namespace UnityEngine.TextCore.Text
             // Color <#FFF> 3 Hex values (short form)
             if (m_HtmlTag[0] == k_NumberSign && tagCharCount == 4)
             {
-                m_HtmlColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, tagCharCount);
+                m_HtmlColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, 0, tagCharCount);
                 m_ColorStack.Add(m_HtmlColor);
                 return true;
             }
             // Color <#FFF7> 4 Hex values with alpha (short form)
             else if (m_HtmlTag[0] == k_NumberSign && tagCharCount == 5)
             {
-                m_HtmlColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, tagCharCount);
+                m_HtmlColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, 0, tagCharCount);
                 m_ColorStack.Add(m_HtmlColor);
                 return true;
             }
             // Color <#FF00FF>
             else if (m_HtmlTag[0] == k_NumberSign && tagCharCount == 7) // if Tag begins with # and contains 7 characters.
             {
-                m_HtmlColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, tagCharCount);
+                m_HtmlColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, 0, tagCharCount);
                 m_ColorStack.Add(m_HtmlColor);
                 return true;
             }
             // Color <#FF00FF00> with alpha
-            else if (m_HtmlTag[0] == k_NumberSign && tagCharCount == k_Tab) // if Tag begins with # and contains 9 characters.
+            else if (m_HtmlTag[0] == k_NumberSign && tagCharCount == 9) // if Tag begins with # and contains 9 characters.
             {
-                m_HtmlColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, tagCharCount);
+                m_HtmlColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, 0, tagCharCount);
                 m_ColorStack.Add(m_HtmlColor);
                 return true;
             }
@@ -962,31 +962,20 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.COLOR:
                         if (textInfo != null)
                             textInfo.hasMultipleColors = true;
-                        // <color=#FFF> 3 Hex (short hand)
-                        if (m_HtmlTag[6] == k_NumberSign && tagCharCount == k_LineFeed)
+
+                        if (m_HtmlTag[6] == k_NumberSign || m_HtmlTag[7] == k_NumberSign)
                         {
-                            m_HtmlColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, tagCharCount);
-                            m_ColorStack.Add(m_HtmlColor);
-                            return true;
-                        }
-                        // <color=#FFF7> 4 Hex (short hand)
-                        else if (m_HtmlTag[6] == k_NumberSign && tagCharCount == 11)
-                        {
-                            m_HtmlColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, tagCharCount);
-                            m_ColorStack.Add(m_HtmlColor);
-                            return true;
-                        }
-                        // <color=#FF00FF> 3 Hex pairs
-                        if (m_HtmlTag[6] == k_NumberSign && tagCharCount == k_CarriageReturn)
-                        {
-                            m_HtmlColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, tagCharCount);
-                            m_ColorStack.Add(m_HtmlColor);
-                            return true;
-                        }
-                        // <color=#FF00FF00> 4 Hex pairs
-                        else if (m_HtmlTag[6] == k_NumberSign && tagCharCount == 15)
-                        {
-                            m_HtmlColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, tagCharCount);
+                            int tagLength = tagCharCount;
+                            if (m_HtmlTag[6] == k_NumberSign)
+                            {
+                                startIndex = 6;
+                            }
+                            else
+                            {
+                                startIndex = 7;
+                                tagLength--;
+                            }
+                            m_HtmlColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, startIndex, tagLength - startIndex);
                             m_ColorStack.Add(m_HtmlColor);
                             return true;
                         }

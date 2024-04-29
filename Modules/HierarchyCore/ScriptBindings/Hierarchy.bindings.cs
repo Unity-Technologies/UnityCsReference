@@ -112,23 +112,18 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Registers a hierarchy node type handler for this hierarchy.
+        /// Get or create a hierarchy node type handler instance for this hierarchy.
         /// </summary>
         /// <remarks>
-        /// If a hierarchy node type handler with that type is already registered, the same instance is returned.
+        /// If a hierarchy node type handler with that type is already created, the same instance is returned.
         /// </remarks>
         /// <returns>The hierarchy node type handler instance for that type.</returns>
-        public T RegisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => (T)RegisterNodeTypeHandler(typeof(T));
-
-        /// <summary>
-        /// Removes a hierarchy node type handler from this hierarchy.
-        /// </summary>
-        public void UnregisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => UnregisterNodeTypeHandler(typeof(T));
+        public T GetOrCreateNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => (T)GetOrCreateNodeTypeHandler(typeof(T));
 
         /// <summary>
         /// Gets a hierarchy node type handler instance from this hierarchy.
         /// </summary>
-        /// <returns>If it was registered, the hierarchy node type handler instance for that type, <see langword="null"/> otherwise.</returns>
+        /// <returns>The hierarchy node type handler instance for that type if already created, <see langword="null"/> otherwise.</returns>
         public T GetNodeTypeHandlerBase<T>() where T : HierarchyNodeTypeHandlerBase => (T)GetNodeTypeHandlerFromType(typeof(T));
 
         /// <summary>
@@ -442,11 +437,8 @@ namespace Unity.Hierarchy
         public extern bool UpdateIncrementalTimed(double milliseconds);
 
         [return: Unmarshalled]
-        [FreeFunction("HierarchyBindings::RegisterNodeTypeHandler", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
-        extern HierarchyNodeTypeHandlerBase RegisterNodeTypeHandler(Type type);
-
-        [FreeFunction("HierarchyBindings::UnregisterNodeTypeHandler", HasExplicitThis = true, IsThreadSafe = true)]
-        extern void UnregisterNodeTypeHandler(Type type);
+        [FreeFunction("HierarchyBindings::GetOrCreateNodeTypeHandler", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern HierarchyNodeTypeHandlerBase GetOrCreateNodeTypeHandler(Type type);
 
         [return: Unmarshalled]
         [FreeFunction("HierarchyBindings::GetNodeTypeHandlerFromType", HasExplicitThis = true, IsThreadSafe = true)]
@@ -492,5 +484,23 @@ namespace Unity.Hierarchy
 
         [FreeFunction("HierarchyBindings::ClearProperty", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         internal extern void ClearProperty(in HierarchyPropertyId property, in HierarchyNode node);
+
+        #region Obsolete public APIs to remove in 2024
+        /// <summary>
+        /// Registers a hierarchy node type handler for this hierarchy.
+        /// </summary>
+        /// <remarks>
+        /// If a hierarchy node type handler with that type is already registered, the same instance is returned.
+        /// </remarks>
+        /// <returns>The hierarchy node type handler instance for that type.</returns>
+        [Obsolete("RegisterNodeTypeHandler has been renamed GetOrCreateNodeTypeHandler (UnityUpgradable) -> GetOrCreateNodeTypeHandler<T>()")]
+        public T RegisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => (T)GetOrCreateNodeTypeHandler(typeof(T));
+
+        /// <summary>
+        /// Removes a hierarchy node type handler from this hierarchy.
+        /// </summary>
+        [Obsolete("UnregisterNodeTypeHandler no longer has any effect and will be removed in a future release.")]
+        public void UnregisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase { }
+        #endregion
     }
 }

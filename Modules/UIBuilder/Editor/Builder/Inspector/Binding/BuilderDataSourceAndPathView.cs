@@ -120,7 +120,7 @@ namespace Unity.UI.Builder
         /// </summary>
         public string dataSourcePath => m_DataSourcePathField?.text;
 
-        public string bindingSerializedPropertyPathRoot { get; set; }
+        public string bindingSerializedPropertyRootPath { get; set; }
 
         public UxmlSerializedDataDescription bindingUxmlSerializedDataDescription { get; set; }
 
@@ -190,16 +190,25 @@ namespace Unity.UI.Builder
             {
                 case k_BindingAttr_DataSource:
                     m_DataSourceField = target.Q<BuilderObjectField>();
+                    if (m_DataSourceField == null)
+                    {
+                        break;
+                    }
+
                     if (m_DataSourceField.value == null)
                     {
                         m_DataSourceField.SetObjectWithoutNotify(inheritedDataSource);
                     }
+
                     UpdateWarningBox();
-                    UpdateCompleter();
-                    UpdateFoldoutOverride();
                     break;
                 case k_BindingAttr_DataSourceType:
                     m_DataSourceTypeField = target.Q<BaseField<string>>();
+                    if (m_DataSourceTypeField == null)
+                    {
+                        break;
+                    }
+
                     if (string.IsNullOrEmpty(m_DataSourceTypeField.value))
                     {
                         var type = inheritedDataSourceType;
@@ -208,17 +217,22 @@ namespace Unity.UI.Builder
                             m_DataSourceTypeField.SetValueWithoutNotify(type.GetFullNameWithAssembly());
                         }
                     }
-                    UpdateCompleter();
-                    UpdateFoldoutOverride();
+
                     break;
                 case k_BindingAttr_DataSourcePath:
                     m_DataSourcePathField = target.Q<TextField>();
+                    if (m_DataSourcePathField == null)
+                    {
+                        break;
+                    }
+
                     m_DataSourcePathField.isDelayed = true;
                     m_DataSourcePathCompleter = new BuilderDataSourcePathCompleter(m_DataSourcePathField);
-                    UpdateCompleter();
-                    UpdateFoldoutOverride();
                     break;
             }
+
+            UpdateCompleter();
+            UpdateFoldoutOverride();
         }
 
         /// <inheritdoc/>
@@ -231,7 +245,7 @@ namespace Unity.UI.Builder
         /// <inheritdoc/>
         protected override void GenerateSerializedAttributeFields()
         {
-            var path = bindingSerializedPropertyPathRoot == null ? serializedRootPath : bindingSerializedPropertyPathRoot + ".";
+            var path = bindingSerializedPropertyRootPath ?? serializedRootPath;
             var root = new UxmlAssetSerializedDataRoot { dataDescription = uxmlSerializedDataDescription, rootPath = path, classList = { InspectorElement.ussClassName }};
             fieldsContainer.Add(root);
             GenerateDataBindingFields(root);
@@ -326,7 +340,8 @@ namespace Unity.UI.Builder
             }
 
             var attributeDesc = uxmlSerializedDataDescription.FindAttributeWithUxmlName(attribute);
-            var path = (bindingSerializedPropertyPathRoot == null ? serializedRootPath : bindingSerializedPropertyPathRoot + ".") + attributeDesc.serializedField.Name;
+            var basePath = bindingSerializedPropertyRootPath ?? serializedRootPath;
+            var path = $"{basePath}.{attributeDesc.serializedField.Name}";
             return CreateSerializedAttributeRow(attributeDesc, path, parent);
         }
 
@@ -339,7 +354,8 @@ namespace Unity.UI.Builder
 
             var fieldElement = new UxmlSerializedDataAttributeField();
             var attributeDesc = uxmlSerializedDataDescription.FindAttributeWithUxmlName(attribute);
-            var path = (bindingSerializedPropertyPathRoot == null ? serializedRootPath : bindingSerializedPropertyPathRoot + ".") + attributeDesc.serializedField.Name;
+            var basePath = bindingSerializedPropertyRootPath ?? serializedRootPath;
+            var path = $"{basePath}.{attributeDesc.serializedField.Name}";
             var propertyField = new PropertyField
             {
                 name = builderSerializedPropertyFieldName,
@@ -455,7 +471,7 @@ namespace Unity.UI.Builder
 
             var currentUxmlAttributeOwner = attributesUxmlOwner;
 
-            var result = SynchronizePath(bindingSerializedPropertyPathRoot, false);
+            var result = SynchronizePath(bindingSerializedPropertyRootPath, false);
             if (isBinding && result.success)
             {
                 currentUxmlAttributeOwner = result.uxmlAsset;
@@ -536,12 +552,12 @@ namespace Unity.UI.Builder
             m_DataSourcePathCompleter.bindingDataSource = dataSource ? dataSource : inheritedDataSource;
             m_DataSourcePathCompleter.bindingDataSourceType = dataSourceType ?? inheritedDataSourceType;
 
-            if (bindingSerializedPropertyPathRoot != null)
+            if (bindingSerializedPropertyRootPath != null)
             {
                 CallDeserializeOnElement();
                 using (new DisableUndoScope(this))
                 {
-                    var result = SynchronizePath(bindingSerializedPropertyPathRoot, true);
+                    var result = SynchronizePath(bindingSerializedPropertyRootPath, true);
                     m_DataSourcePathCompleter.binding = result.attributeOwner as DataBinding;
                 }
             }

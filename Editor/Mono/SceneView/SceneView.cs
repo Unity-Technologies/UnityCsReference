@@ -1709,6 +1709,7 @@ namespace UnityEditor
                 if (s_AudioSceneView.m_PlayAudio)
                 {
                     s_AudioSceneView.m_PlayAudio = false;
+                    s_AudioSceneView.sceneAudioChanged?.Invoke(false);
                     s_AudioSceneView.Repaint();
                 }
             }

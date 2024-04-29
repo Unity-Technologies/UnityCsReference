@@ -250,6 +250,7 @@ namespace UnityEditor.DeviceSimulation
                 "supportsAsyncCompute",
                 "supportsGraphicsFence",
                 "supportsAsyncGPUReadback",
+                "supportsParallelPSOCreation",
                 "supportsRayTracing",
                 "supportsRayTracingShaders",
                 "supportsInlineRayTracing",

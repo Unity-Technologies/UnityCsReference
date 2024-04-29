@@ -20,6 +20,7 @@ using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.Connect;
 using UnityEditor.Utils;
+using UnityEditor.Build.Profile;
 
 namespace UnityEditor
 {
@@ -151,7 +152,7 @@ namespace UnityEditor
 
         static bool isEditorinstalledWithHub = IsEditorInstalledWithHub();
 
-        internal static event Action<NamedBuildTarget> drawingMultiplayerBuildOptions;
+        internal static event Action<BuildProfile> drawingMultiplayerBuildOptions;
 
         [UsedImplicitly, RequiredByNativeCode]
         public static void ShowBuildPlayerWindow()
@@ -162,9 +163,9 @@ namespace UnityEditor
 
         internal static bool WillDrawMultiplayerBuildOptions() => drawingMultiplayerBuildOptions != null;
 
-        internal static void DrawMultiplayerBuildOption(NamedBuildTarget namedBuildTarget)
+        internal static void DrawMultiplayerBuildOption(BuildProfile buildProfile)
         {
-            drawingMultiplayerBuildOptions?.Invoke(namedBuildTarget);
+            drawingMultiplayerBuildOptions?.Invoke(buildProfile);
         }
 
         static bool BuildLocationIsValid(string path)
@@ -582,7 +583,9 @@ namespace UnityEditor
         };
         static public string GetPlaybackEngineDownloadURL(string moduleName)
         {
-            if (moduleName == "PS4" || moduleName == "PS5" || moduleName == "XboxOne")
+#pragma warning disable CS0618 // Member is obsolete
+            if (!BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(BuildTargetDiscovery.GetBuildTargetByName(moduleName)))
+#pragma warning restore CS0618
                 return "https://unity3d.com/platform-installation";
 
             string fullVersion = InternalEditorUtility.GetFullUnityVersion();
@@ -939,7 +942,13 @@ namespace UnityEditor
                 GUILayout.EndHorizontal();
             }
 
-            drawingMultiplayerBuildOptions?.Invoke(namedBuildTarget);
+            var subtarget = StandaloneBuildSubtarget.Default;
+            if (namedBuildTarget == NamedBuildTarget.Standalone)
+                subtarget = StandaloneBuildSubtarget.Player;
+            else if (namedBuildTarget == NamedBuildTarget.Server)
+                subtarget = StandaloneBuildSubtarget.Server;
+
+            drawingMultiplayerBuildOptions?.Invoke(BuildProfileContext.instance.GetForClassicPlatform(buildTarget, subtarget));
 
             GUILayout.EndScrollView();
 
@@ -958,8 +967,9 @@ namespace UnityEditor
         {
             GUILayout.Label(EditorGUIUtility.TextContent(string.Format(noModuleLoaded, BuildPlatforms.instance.GetModuleDisplayName(namedBuildTarget, buildTarget))));
             string url = "";
-
-            if (!isEditorinstalledWithHub || (moduleName == "PS4" || moduleName == "PS5" || moduleName == "XboxOne"))
+#pragma warning disable CS0618 // Member is obsolete
+            if (!isEditorinstalledWithHub || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(buildTarget))
+#pragma warning restore CS0618
             {
                 if (GUILayout.Button(openDownloadPage, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                 {

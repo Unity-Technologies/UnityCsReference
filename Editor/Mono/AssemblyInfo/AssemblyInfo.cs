@@ -153,6 +153,9 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Muse.Common.Bridge")]
 [assembly: InternalsVisibleTo("Unity.Muse.Chat.Bridge")]
 
+[assembly: InternalsVisibleTo("Unity.Multiplayer.Playmode.Editor.Bridge")]
+[assembly: InternalsVisibleTo("Unity.DedicatedServer.Editor.Bridge")]
+
 [assembly: InternalsVisibleTo("Unity.Scenes")]
 
 // This should move with the AnimationWindow to a module at some point

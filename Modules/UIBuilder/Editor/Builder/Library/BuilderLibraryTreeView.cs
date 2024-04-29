@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -28,6 +29,9 @@ namespace Unity.UI.Builder
         readonly TreeView m_TreeView;
         readonly VisualTreeAsset m_TreeViewItemTemplate;
 
+        List<int> m_PreviouslyExpandedIds = new();
+        bool m_IsSearching;
+
         public override VisualElement primaryFocusable => m_TreeView;
 
         public BuilderLibraryTreeView(IList<TreeViewItem> items)
@@ -39,6 +43,7 @@ namespace Unity.UI.Builder
             m_TreeView.AddToClassList(k_TreeViewClassName);
             Add(m_TreeView);
 
+            m_Items = items;
             m_TreeView.viewDataKey = "samples-tree";
             m_TreeView.fixedItemHeight = 20;
             m_TreeView.SetRootItems(items);
@@ -59,7 +64,7 @@ namespace Unity.UI.Builder
                 evt.StopImmediatePropagation();
                 return;
             }
-            
+
             evt.menu.AppendAction(
                 "Add",
                 action => { AddItemToTheDocument(libraryItem); },
@@ -186,6 +191,35 @@ namespace Unity.UI.Builder
         }
 
         public override void Refresh() => m_TreeView.Rebuild();
+
+        public override void FilterView(string value)
+        {
+            m_VisibleItems = string.IsNullOrEmpty(value) ? m_Items : FilterTreeViewItems(m_Items, value);
+            m_TreeView.SetRootItems(m_VisibleItems);
+            m_TreeView.Rebuild();
+
+            if (string.IsNullOrEmpty(value) && m_IsSearching)
+            {
+                m_TreeView.viewController.CollapseAll();
+                foreach (var id in m_PreviouslyExpandedIds)
+                {
+                    m_TreeView.viewController.ExpandItem(id, false);
+                }
+                m_PreviouslyExpandedIds.Clear();
+                m_IsSearching = false;
+            }
+            else if (!string.IsNullOrEmpty(value))
+            {
+                if (!m_IsSearching)
+                    m_TreeView.viewController.GetExpandedItemIds(m_PreviouslyExpandedIds);
+                m_IsSearching = true;
+                m_TreeView.ExpandAll();
+            }
+            else
+            {
+                m_TreeView.ExpandRootItems();
+            }
+        }
 
         void AssignTreeItemIcon(VisualElement itemRoot, Texture2D icon)
         {

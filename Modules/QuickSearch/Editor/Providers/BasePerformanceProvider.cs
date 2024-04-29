@@ -166,6 +166,7 @@ namespace UnityEditor.Search.Providers
         public const string samplePeakSelector = "peak";
         public const string sampleAvgSelector = "avg";
         public const string sampleTotalSelector = "total";
+        public const string sampleLastTimeSelector = "lastTime";
 
         protected Dictionary<int, PerformanceLimit> m_PerformanceLimits = new();
 
@@ -236,6 +237,7 @@ namespace UnityEditor.Search.Providers
             yield return new SearchColumn("Performance/Peak", samplePeakSelector, nameof(PerformanceMetric));
             yield return new SearchColumn("Performance/Average", sampleAvgSelector, nameof(PerformanceMetric));
             yield return new SearchColumn("Performance/Total", sampleTotalSelector, nameof(PerformanceMetric));
+            yield return new SearchColumn("Performance/Last Time", sampleLastTimeSelector, nameof(PerformanceMetric));
         }
 
         protected virtual string FormatColumnValue(SearchColumnEventArgs args)
@@ -603,11 +605,14 @@ namespace UnityEditor.Search.Providers
                 .AddOrUpdatePropositionData(category: "Performance", label: "Peak", replacement: "peak>100", help: "Search by peak value", color: QueryColors.filter);
             qe.SetFilter(sampleCountSelector, GetPerformanceSampleCountValue, supportedOperators)
                 .AddOrUpdatePropositionData(category: "Performance", label: "Sample Count", replacement: "count>1000", help: "Search by sample count", color: QueryColors.filter);
+            qe.SetFilter(sampleLastTimeSelector, GetPerformanceLastTimeValue, supportedOperators)
+                .AddOrUpdatePropositionData(category: "Performance", label: "Last Time", replacement: "count>1000", help: "Search by last time", color: QueryColors.filter);
 
             SetupFilter(qe, sampleAvgSelector, CompareValuesWithUnit);
             SetupFilter(qe, sampleTotalSelector, CompareValuesWithUnit);
             SetupFilter(qe, samplePeakSelector, CompareValuesWithUnit);
             SetupFilter(qe, sampleCountSelector, CompareValuesWithUnit);
+            SetupFilter(qe, sampleLastTimeSelector, CompareValuesWithUnit);
             qe.SetSearchDataCallback(YieldPerformanceDataWords, StringComparison.OrdinalIgnoreCase);
             return qe;
         }
@@ -630,6 +635,7 @@ namespace UnityEditor.Search.Providers
         protected abstract ValueWithUnit GetPerformanceTotalValue(TPerformanceData data);
         protected abstract ValueWithUnit GetPerformancePeakValue(TPerformanceData data);
         protected abstract ValueWithUnit GetPerformanceSampleCountValue(TPerformanceData data);
+        protected abstract ValueWithUnit GetPerformanceLastTimeValue(TPerformanceData data);
 
         protected bool CompareValuesWithUnit(ValueWithUnit perfDataValue, ValueWithUnit filterValue, FilterOperatorType op)
         {

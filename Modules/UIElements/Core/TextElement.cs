@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.Serialization;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
@@ -22,12 +23,12 @@ namespace UnityEngine.UIElements
     /// </summary>
     public partial class TextElement : BindableElement, ITextElement, INotifyValueChanged<string>
     {
-        internal static readonly BindingId textProperty = nameof(text);
-        internal static readonly BindingId enableRichTextProperty = nameof(enableRichText);
-        internal static readonly BindingId emojiFallbackSupportProperty = nameof(emojiFallbackSupport);
-        internal static readonly BindingId parseEscapeSequencesProperty = nameof(parseEscapeSequences);
-        internal static readonly BindingId isElidedProperty = nameof(isElided);
         internal static readonly BindingId displayTooltipWhenElidedProperty = nameof(displayTooltipWhenElided);
+        internal static readonly BindingId emojiFallbackSupportProperty = nameof(emojiFallbackSupport);
+        internal static readonly BindingId enableRichTextProperty = nameof(enableRichText);
+        internal static readonly BindingId isElidedProperty = nameof(isElided);
+        internal static readonly BindingId parseEscapeSequencesProperty = nameof(parseEscapeSequences);
+        internal static readonly BindingId textProperty = nameof(text);
         internal static readonly BindingId valueProperty = nameof(value);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
@@ -42,12 +43,18 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags emojiFallbackSupport_UxmlAttributeFlags;
             [SerializeField] bool parseEscapeSequences;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags parseEscapeSequences_UxmlAttributeFlags;
-            [SerializeField] bool selectable;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectable_UxmlAttributeFlags;
-            [SerializeField] bool selectWordByDoubleClick;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectWordByDoubleClick_UxmlAttributeFlags;
-            [SerializeField] bool selectLineByTripleClick;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectLineByTripleClick_UxmlAttributeFlags;
+            [FormerlySerializedAs("selectable")]
+            [SerializeField, UxmlAttribute("selectable")] bool isSelectable;
+            [FormerlySerializedAs("selectable_UxmlAttributeFlags")]
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isSelectable_UxmlAttributeFlags;
+            [FormerlySerializedAs("selectWordByDoubleClick")]
+            [SerializeField, UxmlAttribute("double-click-selects-word", "select-word-by-double-click")] bool doubleClickSelectsWord;
+            [FormerlySerializedAs("selectWordByDoubleClick_UxmlAttributeFlags")]
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags doubleClickSelectsWord_UxmlAttributeFlags;
+            [FormerlySerializedAs("selectLineByTripleClick")]
+            [SerializeField, UxmlAttribute("triple-click-selects-line", "select-line-by-triple-click")] bool tripleClickSelectsLine;
+            [FormerlySerializedAs("selectLineByTripleClick_UxmlAttributeFlags")]
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tripleClickSelectsLine_UxmlAttributeFlags;
             [SerializeField] bool displayTooltipWhenElided;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags displayTooltipWhenElided_UxmlAttributeFlags;
             #pragma warning restore 649
@@ -67,12 +74,12 @@ namespace UnityEngine.UIElements
                     e.emojiFallbackSupport = emojiFallbackSupport;
                 if (ShouldWriteAttributeValue(parseEscapeSequences_UxmlAttributeFlags))
                     e.parseEscapeSequences = parseEscapeSequences;
-                if (ShouldWriteAttributeValue(selectable_UxmlAttributeFlags))
-                    e.selectable = selectable;
-                if (ShouldWriteAttributeValue(selectWordByDoubleClick_UxmlAttributeFlags))
-                    e.selectWordByDoubleClick = selectWordByDoubleClick;
-                if (ShouldWriteAttributeValue(selectLineByTripleClick_UxmlAttributeFlags))
-                    e.selectLineByTripleClick = selectLineByTripleClick;
+                if (ShouldWriteAttributeValue(isSelectable_UxmlAttributeFlags))
+                    e.isSelectable = isSelectable;
+                if (ShouldWriteAttributeValue(doubleClickSelectsWord_UxmlAttributeFlags))
+                    e.doubleClickSelectsWord = doubleClickSelectsWord;
+                if (ShouldWriteAttributeValue(tripleClickSelectsLine_UxmlAttributeFlags))
+                    e.tripleClickSelectsLine = tripleClickSelectsLine;
                 if (ShouldWriteAttributeValue(displayTooltipWhenElided_UxmlAttributeFlags))
                     e.displayTooltipWhenElided = displayTooltipWhenElided;
             }
@@ -120,46 +127,13 @@ namespace UnityEngine.UIElements
                 textElement.text = m_Text.GetValueFromBag(bag, cc);
                 textElement.enableRichText = m_EnableRichText.GetValueFromBag(bag, cc);
                 textElement.emojiFallbackSupport = m_EmojiFallbackSupport.GetValueFromBag(bag, cc);
-                textElement.selectable = m_Selectable.GetValueFromBag(bag, cc);
+                textElement.isSelectable = m_Selectable.GetValueFromBag(bag, cc);
                 textElement.parseEscapeSequences = m_ParseEscapeSequences.GetValueFromBag(bag, cc);
                 textElement.selection.doubleClickSelectsWord = m_SelectWordByDoubleClick.GetValueFromBag(bag, cc);
                 textElement.selection.tripleClickSelectsLine = m_SelectLineByTripleClick.GetValueFromBag(bag, cc);
                 textElement.displayTooltipWhenElided = m_DisplayTooltipWhenElided.GetValueFromBag(bag, cc);
             }
         }
-
-        #region Properties for UI Builder
-        // The UI Builder needs the property to be named exactly the same as the UXML attribute in order for
-        // serialization to work properly.
-
-        /// <summary>
-        /// DO NOT USE doubleClickSelectsWord, use selection.doubleClickSelectsWord instead. This property was added to make sure it is picked up by the UI Builder.
-        /// </summary>
-        internal bool selectWordByDoubleClick
-        {
-            get => selection.doubleClickSelectsWord;
-            set => selection.doubleClickSelectsWord = value;
-        }
-
-        /// <summary>
-        /// DO NOT USE tripleClickSelectsLine, use selection.tripleClickSelectsLine instead. This property was added to make sure it is picked up by the UI Builder.
-        /// </summary>
-        internal bool selectLineByTripleClick
-        {
-            get => selection.tripleClickSelectsLine;
-            set => selection.tripleClickSelectsLine = value;
-        }
-
-        /// <summary>
-        /// DO NOT USE selectable, use selection.isSelectable instead. This property was added to rename the property in the UI Builder.
-        /// </summary>
-        internal bool selectable
-        {
-            get => selection.isSelectable;
-            set => selection.isSelectable = value;
-        }
-
-        #endregion
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -553,7 +527,6 @@ namespace UnityEngine.UIElements
                     IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                 else
                     IncrementVersion(VersionChangeType.Repaint);
-
 
                 if (!string.IsNullOrEmpty(viewDataKey))
                     SaveViewData();

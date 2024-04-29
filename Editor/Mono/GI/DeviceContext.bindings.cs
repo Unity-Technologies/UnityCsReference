@@ -103,8 +103,12 @@ namespace UnityEngine.LightTransport
         bool Initialize();
         BufferID CreateBuffer(UInt64 size);
         void DestroyBuffer(BufferID id);
-        EventID WriteBuffer<T>(BufferSlice<T> dst, NativeArray<T> src) where T : struct;
-        EventID ReadBuffer<T>(BufferSlice<T> src, NativeArray<T> dst) where T : struct;
+        void WriteBuffer<T>(BufferSlice<T> dst, NativeArray<T> src) where T : struct;
+        void ReadBuffer<T>(BufferSlice<T> src, NativeArray<T> dst) where T : struct;
+        void WriteBuffer<T>(BufferSlice<T> dst, NativeArray<T> src, EventID id) where T : struct;
+        void ReadBuffer<T>(BufferSlice<T> src, NativeArray<T> dst, EventID id) where T : struct;
+        EventID CreateEvent();
+        void DestroyEvent(EventID id);
         bool IsCompleted(EventID id);
         bool Wait(EventID id);
         bool Flush();
@@ -142,21 +146,36 @@ namespace UnityEngine.LightTransport
             buffers[id].Dispose();
             buffers.Remove(id);
         }
-        public EventID WriteBuffer<T>(BufferSlice<T> dst, NativeArray<T> src)
+        public void WriteBuffer<T>(BufferSlice<T> dst, NativeArray<T> src)
             where T : struct
         {
             Debug.Assert(buffers.ContainsKey(dst.Id), "Invalid buffer ID given.");
             var dstBuffer = buffers[dst.Id].Reinterpret<T>(1);
             dstBuffer.GetSubArray((int)dst.Offset, dstBuffer.Length - (int)dst.Offset).CopyFrom(src);
-            return new EventID();
         }
-        public EventID ReadBuffer<T>(BufferSlice<T> src, NativeArray<T> dst)
+        public void ReadBuffer<T>(BufferSlice<T> src, NativeArray<T> dst)
             where T : struct
         {
             Debug.Assert(buffers.ContainsKey(src.Id), "Invalid buffer ID given.");
             var srcBuffer = buffers[src.Id].Reinterpret<T>(1);
             dst.CopyFrom(srcBuffer.GetSubArray((int)src.Offset, srcBuffer.Length - (int)src.Offset));
-            return new EventID { Value = nextFreeEventId++ };
+        }
+        public void WriteBuffer<T>(BufferSlice<T> dst, NativeArray<T> src, EventID id)
+            where T : struct
+        {
+            WriteBuffer(dst, src);
+        }
+        public void ReadBuffer<T>(BufferSlice<T> src, NativeArray<T> dst, EventID id)
+            where T : struct
+        {
+            ReadBuffer(src, dst);
+        }
+        public EventID CreateEvent()
+        {
+            return new EventID(nextFreeEventId++);
+        }
+        public void DestroyEvent(EventID id)
+        {
         }
         public bool IsCompleted(EventID id)
         {

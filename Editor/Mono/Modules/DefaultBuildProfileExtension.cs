@@ -99,8 +99,8 @@ namespace UnityEditor.Modules
             if (platformWarningsGUI != null)
                 settingsGUI.Add(platformWarningsGUI);
             settingsGUI.Add(platformSettingsGUI);
-            if (m_IsClassicProfile && BuildPlayerWindow.WillDrawMultiplayerBuildOptions())
-                settingsGUI.Add(CreateMultiplayerSettingsGUI());
+            if (BuildPlayerWindow.WillDrawMultiplayerBuildOptions())
+                settingsGUI.Add(CreateMultiplayerSettingsGUI(serializedObject.targetObject as BuildProfile));
             settingsGUI.Add(commonSettingsGUI);
             return settingsGUI;
         }
@@ -170,14 +170,14 @@ namespace UnityEditor.Modules
                 });
         }
 
-        VisualElement CreateMultiplayerSettingsGUI()
+        VisualElement CreateMultiplayerSettingsGUI(BuildProfile profile)
         {
             return new IMGUIContainer(
                 () =>
                 {
                     var oldLabelWidth = EditorGUIUtility.labelWidth;
                     EditorGUIUtility.labelWidth = labelWidth;
-                    BuildPlayerWindow.DrawMultiplayerBuildOption(m_NamedBuildTarget);
+                    BuildPlayerWindow.DrawMultiplayerBuildOption(profile);
                     EditorGUIUtility.labelWidth = oldLabelWidth;
                 });
         }

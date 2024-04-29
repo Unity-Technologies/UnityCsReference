@@ -46,6 +46,7 @@ namespace UnityEditor.Search.Providers
         [SearchSelector(samplePeakSelector, provider: providerId, cacheable = false)] static object SelectPeak(SearchSelectorArgs args) => TrackerToValueWithUnit(EditorPerformanceTracker.GetPeakTime(args.current.id));
         [SearchSelector(sampleAvgSelector, provider: providerId, cacheable = false)] static object SelectAvg(SearchSelectorArgs args) => TrackerToValueWithUnit(EditorPerformanceTracker.GetAverageTime(args.current.id));
         [SearchSelector(sampleTotalSelector, provider: providerId, cacheable = false)] static object SelectTotal(SearchSelectorArgs args) => TrackerToValueWithUnit(EditorPerformanceTracker.GetTotalTime(args.current.id));
+        [SearchSelector(sampleLastTimeSelector, provider: providerId, cacheable = false)] static object SelectLastTime(SearchSelectorArgs args) => TrackerToValueWithUnit(EditorPerformanceTracker.GetLastTime(args.current.id));
 
         static void CaptureCallstack(in SearchItem item, string callstack)
         {
@@ -104,6 +105,7 @@ namespace UnityEditor.Search.Providers
         protected override ValueWithUnit GetPerformanceTotalValue(string trackerName) => TrackerToValueWithUnit(EditorPerformanceTracker.GetTotalTime(trackerName));
         protected override ValueWithUnit GetPerformancePeakValue(string trackerName) => TrackerToValueWithUnit(EditorPerformanceTracker.GetPeakTime(trackerName));
         protected override ValueWithUnit GetPerformanceSampleCountValue(string trackerName) => TrackerToValueWithUnit(EditorPerformanceTracker.GetSampleCount(trackerName));
+        protected override ValueWithUnit GetPerformanceLastTimeValue(string trackerName) => TrackerToValueWithUnit(EditorPerformanceTracker.GetLastTime(trackerName));
 
         static ValueWithUnit TrackerToValueWithUnit(double value)
         {

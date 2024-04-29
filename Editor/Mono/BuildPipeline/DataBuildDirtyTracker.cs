@@ -39,6 +39,7 @@ namespace UnityEditor.Mono.BuildPipeline
         {
             public BuildDataInputFile[] scenes;
             public BuildDataInputFile[] inputFiles;
+            public BuildDataInputFile activeBuildProfile;
             public string[] enabledModules;
             public string[] resourcePaths;
             public BuildOptions buildOptions;
@@ -54,6 +55,7 @@ namespace UnityEditor.Mono.BuildPipeline
 
         private BuildData buildData;
         private string[] scenes;
+        private NPath activeBuildProfilePath;
         public BuildOptions buildOptions;
 
         bool CheckAssetDirty(BuildDataInputFile file)
@@ -135,12 +137,18 @@ namespace UnityEditor.Mono.BuildPipeline
                 return true;
             }
 
+            if ((activeBuildProfilePath != buildData.activeBuildProfile.path) || (!string.IsNullOrEmpty(buildData.activeBuildProfile.path) && CheckAssetDirty(buildData.activeBuildProfile)))
+            {
+                Console.WriteLine($"Rebuilding Data files because the active build profile have changed");
+                return true;
+            }
+
             Console.WriteLine("Not rebuilding Data files -- no changes");
             return false;
         }
 
         [RequiredByNativeCode]
-        static public void WriteBuildData(string buildDataPath, BuildReport report, string[] scenes, string[] prefabs)
+        static public void WriteBuildData(string buildDataPath, BuildReport report, string[] scenes, string[] prefabs, string activeBuildProfilePath)
         {
             var developmentBuild = report.summary.options.HasFlag(BuildOptions.Development);
             var inputScenes = new List<BuildDataInputFile>();
@@ -164,6 +172,7 @@ namespace UnityEditor.Mono.BuildPipeline
             {
                 scenes = inputScenes.ToArray(),
                 inputFiles = inputFiles.ToArray(),
+                activeBuildProfile = new BuildDataInputFile(activeBuildProfilePath, developmentBuild),
                 buildOptions = report.summary.options & BuildData.BuildOptionsMask,
                 unityVersion = Application.unityVersion,
                 resourcePaths = ResourcesAPIInternal.GetAllPaths("").OrderBy(p => p).ToArray(),
@@ -175,7 +184,7 @@ namespace UnityEditor.Mono.BuildPipeline
         }
 
         [RequiredByNativeCode]
-        static public bool CheckDirty(string buildDataPath, BuildOptions buildOptions, string[] scenes)
+        static public bool CheckDirty(string buildDataPath, BuildOptions buildOptions, string[] scenes, string activeBuildProfilePath)
         {
             NPath buildReportPath = buildDataPath;
             if (!buildReportPath.FileExists())
@@ -187,6 +196,7 @@ namespace UnityEditor.Mono.BuildPipeline
                 {
                     buildData = JsonUtility.FromJson<BuildData>(buildReportPath.ReadAllText()),
                     scenes = scenes,
+                    activeBuildProfilePath = activeBuildProfilePath,
                     buildOptions = buildOptions
                 };
                 return tracker.DoCheckDirty();

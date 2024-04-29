@@ -34,4 +34,6 @@ readonly struct LayoutConfig
     /// Gets or sets the shared point scale factor for configured nodes.
     /// </summary>
     public ref float PointScaleFactor => ref m_Access.GetConfigData(m_Handle).PointScaleFactor;
+
+    public ref bool ShouldLog => ref m_Access.GetConfigData(m_Handle).ShouldLog;
 }

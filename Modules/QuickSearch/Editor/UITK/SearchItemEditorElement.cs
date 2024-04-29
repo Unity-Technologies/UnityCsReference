@@ -100,6 +100,13 @@ namespace UnityEditor.Search
                 }
             };
 
+            var imguiContainer = inspectorElement.Q<IMGUIContainer>(className: InspectorElement.iMGUIContainerUssClassName);
+            if (imguiContainer != null)
+            {
+                // There might be some animations in the imguicontainer. Since we are not the inspector that is redrawn during an OnInspectorUpdate, we need to force a layout update.
+                imguiContainer.schedule.Execute(() => imguiContainer.MarkDirtyLayout()).Every(100);
+            }
+
             if (EditorNeedsVerticalOffset(editor, m_EditorTarget))
             {
                 inspectorElement.style.overflow = Overflow.Hidden;

@@ -18,6 +18,8 @@ internal abstract class BaseBuildTarget : IBuildTarget
 
     public abstract RuntimePlatform RuntimePlatform { get; }
     public abstract string TargetName { get; }
+    public abstract GUID Guid { get; }
+
     public abstract int GetLegacyId { get; }
 
     public virtual IBuildPlatformProperties BuildPlatformProperties => Properties as IBuildPlatformProperties;

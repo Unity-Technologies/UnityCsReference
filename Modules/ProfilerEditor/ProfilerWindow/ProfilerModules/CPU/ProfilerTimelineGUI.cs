@@ -2775,9 +2775,9 @@ namespace UnityEditorInternal
             }
         }
 
-        internal void DrawToolbar(ProfilerFrameDataIterator frameDataIterator, ref bool updateViewLive)
+        internal void DrawToolbar(ProfilerFrameDataIterator frameDataIterator, ref bool updateViewLive, ProfilerViewType type = ProfilerViewType.Timeline)
         {
-            DrawViewTypePopup(ProfilerViewType.Timeline);
+            DrawViewTypePopup(type);
             DrawLiveUpdateToggle(ref updateViewLive);
 
             GUILayout.FlexibleSpace();

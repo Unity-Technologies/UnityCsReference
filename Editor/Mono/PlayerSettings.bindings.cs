@@ -369,7 +369,7 @@ namespace UnityEditor
 
         internal static SerializedObject GetSerializedObject()
         {
-            if (_serializedObject == null)
+            if (_serializedObject == null || _serializedObject.targetObject != InternalGetPlayerSettingsObject())
                 _serializedObject = new SerializedObject(InternalGetPlayerSettingsObject());
             return _serializedObject;
         }
@@ -1755,6 +1755,18 @@ namespace UnityEditor
             [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
             set;
         }
+
+        [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetOverridePlayerSettingsInternal(PlayerSettings playerSettings);
+
+        [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+        internal static extern bool IsGlobalManagerPlayerSettings(PlayerSettings playerSettings);
+
+        [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+        internal static extern string SerializeAsYAMLString(PlayerSettings playerSettings);
+
+        [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+        internal static extern PlayerSettings DeserializeFromYAMLString(string yamlSettings);
 
         internal static extern bool platformRequiresReadableAssets { get; set; }
     }

@@ -73,10 +73,14 @@ namespace UnityEditorInternal.Profiling
             m_TimelineGUI = new ProfilerTimelineGUI();
             m_TimelineGUI.OnEnable(this, ProfilerWindow, false);
             // safety guarding against event registration leaks due to an imbalance of OnEnable/OnDisable Calls, by deregistering first
-            m_TimelineGUI.viewTypeChanged -= CPUOrGPUViewTypeChanged;
-            m_TimelineGUI.viewTypeChanged += CPUOrGPUViewTypeChanged;
+            m_TimelineGUI.viewTypeChanged -= CPUViewTypeChanged;
+            m_TimelineGUI.viewTypeChanged += CPUViewTypeChanged;
             m_TimelineGUI.selectionChanged -= SetSelectionWithoutIntegrityChecksOnSelectionChangeInDetailedView;
             m_TimelineGUI.selectionChanged += SetSelectionWithoutIntegrityChecksOnSelectionChangeInDetailedView;
+
+            FrameDataHierarchyView.viewTypeChanged -= CPUViewTypeChanged;
+            FrameDataHierarchyView.viewTypeChanged += CPUViewTypeChanged;
+
             TryRestoringSelection();
             UpdateSelectionHighlightLabel();
 
@@ -88,10 +92,27 @@ namespace UnityEditorInternal.Profiling
             base.OnDisable();
             if (m_TimelineGUI != null)
             {
-                m_TimelineGUI.viewTypeChanged -= CPUOrGPUViewTypeChanged;
+                m_TimelineGUI.viewTypeChanged -= CPUViewTypeChanged;
+                FrameDataHierarchyView.viewTypeChanged -= CPUViewTypeChanged;
                 m_TimelineGUI.selectionChanged -= SetSelectionWithoutIntegrityChecksOnSelectionChangeInDetailedView;
             }
         }
+
+        HybridLegacyDetailsViewController m_DetailsViewController = null;
+
+        public override ProfilerModuleViewController CreateDetailsViewController()
+        {
+            m_DetailsViewController = new HybridLegacyDetailsViewController(ProfilerWindow, this, m_ViewType);
+            return m_DetailsViewController;
+        }
+
+        protected void CPUViewTypeChanged(ProfilerViewType newViewType)
+        {
+            m_DetailsViewController.SetViewType(newViewType);
+
+            base.CPUOrGPUViewTypeChanged(newViewType);
+        }
+
 
         internal override void Clear()
         {
@@ -129,6 +150,24 @@ namespace UnityEditorInternal.Profiling
             Styles.whiteLabel.clipping = prevClipping;
         }
 
+        public override void DrawToolbar(Rect position)
+        {
+            if (m_ViewType == ProfilerViewType.TimelineV2)
+            {
+                using (var iter = fetchData ? new ProfilerFrameDataIterator() : null)
+                {
+                    int threadCount = fetchData ? iter.GetThreadCount(CurrentFrameIndex) : 0;
+                    iter?.SetRoot(CurrentFrameIndex, 0);
+
+                    EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+
+                    m_TimelineGUI.DrawToolbar(iter, ref updateViewLive, ProfilerViewType.TimelineV2);
+
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
+        }
+
         public override void DrawDetailsView(Rect position)
         {
             if (m_TimelineGUI != null && m_ViewType == ProfilerViewType.Timeline)
@@ -136,7 +175,7 @@ namespace UnityEditorInternal.Profiling
                 CurrentFrameIndex = (int)ProfilerWindow.selectedFrameIndex;
                 m_TimelineGUI.DoGUI(CurrentFrameIndex, position, fetchData, ref updateViewLive);
             }
-            else
+            else if (m_ViewType != ProfilerViewType.TimelineV2)
             {
                 base.DrawDetailsView(position);
             }

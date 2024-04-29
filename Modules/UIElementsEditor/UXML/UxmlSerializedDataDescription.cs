@@ -174,6 +174,7 @@ namespace UnityEditor.UIElements
                 uxmlAttributeDescription.dataDescription = this;
                 uxmlAttributeDescription.elementType = elementType;
                 uxmlAttributeDescription.name = attDescription.uxmlName;
+                uxmlAttributeDescription.overriddenFieldName = attDescription.overriddenCSharpName;
                 uxmlAttributeDescription.type = attDescription.fieldType;
                 uxmlAttributeDescription.serializedField = attDescription.serializedField;
                 uxmlAttributeDescription.serializedFieldAttributeFlags = attDescription.serializedFieldAttributeFlags;

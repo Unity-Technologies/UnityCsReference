@@ -142,7 +142,7 @@ namespace UnityEngine.TextCore.Text
 
             CharacterSubstitution characterToSubstitute = new CharacterSubstitution(-1, 0);
             bool isSoftHyphenIgnored = false;
-            var wordWrap = generationSettings.wordWrap ? TextWrappingMode.Normal : TextWrappingMode.NoWrap;
+            var wordWrap = generationSettings.textWrappingMode;
 
             // Save character and line state before we begin layout.
             SaveWordWrappingState(ref m_SavedWordWrapState, -1, -1, textInfo);

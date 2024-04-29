@@ -151,6 +151,7 @@ namespace UnityEditor.Build.Profile
 
         public void OnDisable()
         {
+            DestroyImmediate(buildProfileEditor);
             BuildProfileContext.instance.activeProfileChanged -= OnActiveProfileChanged;
             m_BuildProfileDataSource?.Dispose();
 
@@ -158,6 +159,7 @@ namespace UnityEditor.Build.Profile
                 m_AssetImportWindow.Close();
 
             m_ProfileListViews?.Unbind();
+            SendWorkflowReport();
         }
 
         /// <summary>
@@ -223,7 +225,7 @@ namespace UnityEditor.Build.Profile
         /// <summary>
         /// Handles selection of unavailable and supported platform.
         /// </summary>
-        internal void OnMissingClassicPlatformSelected(string moduleName, StandaloneBuildSubtarget subtarget)
+        internal void OnMissingClassicPlatformSelected(string platformId)
         {
             m_ProfileListViews.ClearProfileSelection();
             UpdateFormButtonState(null);
@@ -235,11 +237,11 @@ namespace UnityEditor.Build.Profile
                 messageType = HelpBoxMessageType.Warning
             };
             warningHelpBox.AddToClassList("mx-medium");
-            Util.UpdatePlatformRequirementsWarningHelpBox(warningHelpBox, moduleName, subtarget);
+            Util.UpdatePlatformRequirementsWarningHelpBox(warningHelpBox, platformId);
             m_BuildProfileInspectorElement.Add(warningHelpBox);
 
             // Update details headers.
-            m_BuildProfileSelection.MissingPlatformSelected(moduleName, subtarget);
+            m_BuildProfileSelection.MissingPlatformSelected(platformId);
         }
 
         /// <summary>
@@ -416,10 +418,6 @@ namespace UnityEditor.Build.Profile
             UpdateFormButtonState(activateProfile);
             RebuildProfileListViews();
 
-            // Apply current asset import overrides if switching profile
-            // without applying. It should be called lastly since it can
-            // trigger a reimport.
-            m_AssetImportWindow?.ApplyCurrentAssetImportOverrides();
             UpdateToolbarButtonState();
         }
 
@@ -428,11 +426,14 @@ namespace UnityEditor.Build.Profile
             if (!m_BuildProfileSelection.HasSelection())
                 return;
 
-            if (!m_BuildProfileSelection.Get(0).IsActiveBuildProfileOrPlatform())
+            var profile = m_BuildProfileSelection.Get(0);
+            if (!profile.IsActiveBuildProfileOrPlatform())
             {
                 Debug.LogWarning("[BuildProfile] Attempted to build with a non-active build profile.");
                 return;
             }
+
+            BuildProfileModuleUtil.SwitchLegacySelectedBuildTargets(profile);
 
             BuildProfileModuleUtil.CallInternalBuildMethods(m_ShouldAskForBuildLocation, optionFlags);
         }
@@ -490,6 +491,38 @@ namespace UnityEditor.Build.Profile
             // This was used by different UX to update default build target group tabs
             // based on legacy Build Setting window state.
             BuildProfileModuleUtil.SwitchLegacySelectedBuildTargets(profile);
+        }
+
+        void SendWorkflowReport()
+        {
+            if (m_BuildProfileDataSource.customBuildProfiles.Count == 0)
+            {
+                EditorAnalytics.SendAnalytic(new BuildProfileWorkflowReport());
+                return;
+            }
+
+            Dictionary<string, BuildProfileWorkflowReport> modules = new();
+            foreach (var profile in m_BuildProfileDataSource.customBuildProfiles)
+            {
+                if (modules.TryGetValue(profile.platformId, out var report))
+                {
+                    report.Increment();
+                    continue;
+                }
+
+                modules.Add(profile.platformId,
+                    new BuildProfileWorkflowReport(new BuildProfileWorkflowReport.Payload()
+                {
+                    platformId = profile.platformId,
+                    platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformId),
+                    count = 1
+                }));
+            }
+
+            foreach (var report in modules.Values)
+            {
+                EditorAnalytics.SendAnalytic(report);
+            }
         }
 
         DropdownButton CreateBuildDropdownButton()

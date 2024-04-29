@@ -75,6 +75,7 @@ namespace UnityEditor.Search
         /// <summary>
         /// Search View Flags
         /// </summary>
+        [Obsolete("Not used anymore", false)]
         SaveFilters = 1 << 25,
 
         /// <summary>
@@ -93,7 +94,7 @@ namespace UnityEditor.Search
         Dockable = 1 << 28,
 
         /// <summary>
-        /// Focus the search query when opening QuickSearch.
+        /// Select the contextual provider group when opening QuickSearch.
         /// </summary>
         FocusContext = 1 << 29,
 
@@ -103,9 +104,14 @@ namespace UnityEditor.Search
         HidePanels = 1 << 30,
 
         /// <summary>
+        /// This is a general purpose search window that has access to all Providers in the SearchService.
+        /// </summary>
+        GeneralSearchWindow = 1 << 31,
+
+        /// <summary>
         /// Default options when opening a QuickSearch window.
         /// </summary>
-        OpenDefault = SaveFilters | Multiselect | Dockable,
+        OpenDefault = GeneralSearchWindow | Multiselect | Dockable,
         /// <summary>
         /// Default options when opening a QuickSearch using the global shortcut.
         /// </summary>
@@ -117,7 +123,7 @@ namespace UnityEditor.Search
         /// <summary>
         /// Options when opening QuickSearch as an Object Picker.
         /// </summary>
-        OpenPicker = FocusContext | HidePanels
+        OpenPicker = FocusContext
     }
 
     static class SearchFlagsExtensions

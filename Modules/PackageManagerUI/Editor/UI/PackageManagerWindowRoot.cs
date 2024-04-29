@@ -14,7 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal class PackageManagerWindowRoot : VisualElement, IWindow
     {
-        private PackageAndPageSelectionArgs m_PendingPackageAndPageSelectionArgs;
+        private PackageAndPageSelectionArgs m_DelayedPackageAndPageSelectionArgs;
 
         private const string k_SelectedInInspectorClassName = "selectedInInspector";
         public const string k_FocusedClassName = "focus";
@@ -273,15 +273,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnRefreshOperationFinish()
         {
-            if (m_PendingPackageAndPageSelectionArgs == null || m_PageRefreshHandler.GetRefreshTimestamp(m_PendingPackageAndPageSelectionArgs.page) <= 0)
+            if (m_DelayedPackageAndPageSelectionArgs == null || m_PageRefreshHandler.GetRefreshTimestamp(m_DelayedPackageAndPageSelectionArgs.page) <= 0)
                 return;
 
-            if (ApplyPackageAndPageSelection(m_PendingPackageAndPageSelectionArgs))
-                m_PendingPackageAndPageSelectionArgs = null;
+            if (TryApplyPackageAndPageSelection(m_DelayedPackageAndPageSelectionArgs, false))
+                m_DelayedPackageAndPageSelectionArgs = null;
         }
 
         // Returns true if the selection is applied
-        private bool ApplyPackageAndPageSelection(PackageAndPageSelectionArgs args)
+        private bool TryApplyPackageAndPageSelection(PackageAndPageSelectionArgs args, bool failIfPackageIsNotFoundInDatabase)
         {
             if (args == null)
                 return false;
@@ -298,11 +298,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             // of this function to after the `My Assets` logic is done so that we don't break `My Assets` and the Entitlement Error checker.
             if (!m_PageRefreshHandler.IsInitialFetchingDone(m_PageManager.activePage))
                 return false;
-
-            m_PageManager.activePage = args.page;
-            if (!string.IsNullOrEmpty(args.packageToSelect))
+            
+            if (string.IsNullOrEmpty(args.packageToSelect))
             {
-                m_PackageDatabase.GetPackageAndVersionByIdOrName(args.packageToSelect, out var package, out var version, true);
+                m_PageManager.activePage = args.page;
+                return true;
+            }
+            
+            m_PackageDatabase.GetPackageAndVersionByIdOrName(args.packageToSelect, out var package, out var version, true);
+
+            if (package == null && failIfPackageIsNotFoundInDatabase)
+                return false;
+            
+            m_PageManager.activePage = args.page;
+            if (package != null)
+            {
                 m_PageManager.activePage.SetNewSelection(package, true);
                 packageList.OnFocus();
             }
@@ -371,11 +381,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (!m_SettingsProxy.enablePreReleasePackages && semVersion.HasValue && (semVersion.Value.Major == 0 || semVersion.Value.Prerelease.StartsWith("preview")))
                     {
                         Debug.Log("You must check \"Enable Preview Packages\" in Project Settings > Package Manager in order to see this package.");
-                        args.page = m_PageManager.activePage;
                         args.packageToSelect = null;
                     }
-                    else
-                        args.page = m_PageManager.GetPage(UnityRegistryPage.k_Id);
+                    args.page = m_PageManager.activePage;
                 }
             }
             if (args.page != null && (!string.IsNullOrEmpty(searchText) || !string.IsNullOrEmpty(packageToSelect)))
@@ -384,10 +392,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (refresh || m_PackageDatabase.isEmpty)
             {
                 DelayRefresh(args.page);
-                m_PendingPackageAndPageSelectionArgs = args;
+                m_DelayedPackageAndPageSelectionArgs = args;
             }
-            else if (!ApplyPackageAndPageSelection(args))
-                m_PendingPackageAndPageSelectionArgs = args;
+            else if (!TryApplyPackageAndPageSelection(args, true))
+                m_DelayedPackageAndPageSelectionArgs = args;
         }
 
         public AddPackageByNameDropdown OpenAddPackageByNameDropdown(string url, EditorWindow anchorWindow)

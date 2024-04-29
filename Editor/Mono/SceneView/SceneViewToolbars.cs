@@ -83,6 +83,7 @@ namespace UnityEditor
             "SceneView/Scene Visibility",
             "SceneView/Render Doc",
             "SceneView/Metal Capture",
+            "SceneView/Layers",
             "SceneView/Scene Camera",
             "SceneView/Gizmos") {}
     }

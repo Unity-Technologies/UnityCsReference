@@ -232,9 +232,6 @@ namespace UnityEditor.UIElements
 
         internal string GetDisplayedValue(int itemIndex)
         {
-            if (showMixedValue)
-                return mixedValueString;
-
             var newValueToShowUser = "";
 
             switch (itemIndex)
@@ -368,7 +365,7 @@ namespace UnityEditor.UIElements
             foreach (var item in m_Choices)
             {
                 var maskOfItem = GetMaskValueOfItem(item);
-                var isSelected = IsItemSelected(maskOfItem);
+                var isSelected = IsItemSelected(maskOfItem) && !showMixedValue;
 
                 menu.AddItem(GetListItemToDisplay(MaskToValue(maskOfItem)), isSelected, () => ChangeValueFromMenu(item));
             }
@@ -421,9 +418,9 @@ namespace UnityEditor.UIElements
             return newMask;
         }
 
-        private void ChangeValueFromMenu(string menuItem)
+        internal void ChangeValueFromMenu(string menuItem)
         {
-            var newMask = ValueToMask(value);
+            var newMask = showMixedValue ? 0 : ValueToMask(value);
             var maskFromItem = GetMaskValueOfItem(menuItem);
             switch (maskFromItem)
             {
@@ -602,7 +599,7 @@ namespace UnityEditor.UIElements
 
         internal override string GetValueToDisplay()
         {
-            string displayedValue = GetDisplayedValue(rawValue);
+            string displayedValue = showMixedValue ? mixedValueString : GetDisplayedValue(rawValue);
             if (ShouldFormatSelectedValue())
                 displayedValue = m_FormatSelectedValueCallback(displayedValue);
             return displayedValue;

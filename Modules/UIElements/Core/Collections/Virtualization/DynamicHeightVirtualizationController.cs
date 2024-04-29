@@ -134,8 +134,13 @@ namespace UnityEngine.UIElements
         IVisualElementScheduledItem m_ScrollResetScheduledItem;
         Predicate<int> m_IndexOutOfBoundsPredicate;
 
+        bool m_FillExecuted;
+        long m_TimeSinceFillScheduledMs;
+
         // Dynamic height virtualization handles the refresh binding with the scheduled Fill call.
         protected override bool alwaysRebindOnRefresh => false;
+
+        const float k_ForceRefreshIntervalInMilliseconds = 100;
 
         public DynamicHeightVirtualizationController(BaseVerticalCollectionView collectionView)
             : base(collectionView)
@@ -283,8 +288,23 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            ScheduleFill();
-            ScheduleScrollDirectionReset();
+            var currentTimeMs = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
+            if (currentTimeMs - m_TimeSinceFillScheduledMs > k_ForceRefreshIntervalInMilliseconds &&
+                m_TimeSinceFillScheduledMs != 0 && !m_FillExecuted)
+            {
+                Fill();
+                ResetScroll();
+                m_TimeSinceFillScheduledMs = 0;
+            }
+            else
+            {
+                if (m_TimeSinceFillScheduledMs == 0)
+                    m_TimeSinceFillScheduledMs = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
+
+                ScheduleFill();
+                ScheduleScrollDirectionReset();
+                m_FillExecuted = false;
+            }
 
             m_LastChange = VirtualizationChange.Resize;
         }
@@ -495,7 +515,7 @@ namespace UnityEngine.UIElements
 
             for (var i = firstVisibleIndex; i < itemsCount; i++)
             {
-                if (contentOffset >= viewportMaxOffset)
+                if (contentOffset > viewportMaxOffset || (contentOffset == viewportMaxOffset && !m_StickToBottom))
                     break;
 
                 contentOffset += GetExpectedItemHeight(i);
@@ -511,6 +531,8 @@ namespace UnityEngine.UIElements
         {
             if (!m_CollectionView.HasValidDataAndBindings())
                 return;
+
+            m_FillExecuted = true;
 
             if (m_ActiveItems.Count == 0)
             {
@@ -538,7 +560,7 @@ namespace UnityEngine.UIElements
             // Change the visibility of items under the current content to fill the viewport below.
             for (var i = firstVisibleIndex; i < itemsCount; i++)
             {
-                if (contentOffset >= viewportMaxOffset)
+                if (contentOffset > viewportMaxOffset || (contentOffset == viewportMaxOffset && !m_StickToBottom))
                     break;
 
                 contentOffset += GetExpectedItemHeight(i);

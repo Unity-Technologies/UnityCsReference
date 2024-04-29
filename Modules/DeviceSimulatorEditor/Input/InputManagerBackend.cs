@@ -35,10 +35,26 @@ namespace UnityEditor.DeviceSimulation
         private List<EndedTouch> m_EndedTouches = new List<EndedTouch>();
         private Touch m_NextTouch;
         private bool m_TouchInProgress;
+        private bool m_OwnsTouchSimulation;
 
         public InputManagerBackend()
         {
             EditorApplication.update += TouchStationary;
+        }
+
+        public void EnableTouchSimulation(bool enable)
+        {
+            // Enforce only one InputManagerBackend owning the touch simulation flag and matching the singleton state
+            if (enable && !Input.simulateTouchEnabled)
+            {
+                Input.simulateTouchEnabled = true;
+                m_OwnsTouchSimulation = true;
+            }
+            else if (!enable && m_OwnsTouchSimulation)
+            {
+                Input.simulateTouchEnabled = false;
+                m_OwnsTouchSimulation = false;
+            }
         }
 
         private void TouchStationary()
@@ -122,6 +138,12 @@ namespace UnityEditor.DeviceSimulation
         public void Dispose()
         {
             EditorApplication.update -= TouchStationary;
+
+            if (m_OwnsTouchSimulation)
+            {
+                Input.simulateTouchEnabled = false;
+                m_OwnsTouchSimulation = false;
+            }
         }
     }
 }

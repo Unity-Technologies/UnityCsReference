@@ -138,7 +138,7 @@ namespace UnityEditor
                 new SceneView.CameraMode(DrawCameraMode.AlphaChannel, "Alpha Channel", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.Overdraw, "Overdraw", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.Mipmaps, "Mipmaps", kMiscellaneous),
-                new SceneView.CameraMode(DrawCameraMode.TextureStreaming, "Texture Streaming", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.TextureStreaming, "Texture Mipmap Streaming", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.SpriteMask, "Sprite Mask", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.ValidateAlbedo, "Validate Albedo", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.ValidateMetalSpecular, "Validate Metal Specular", kMiscellaneous),
@@ -163,7 +163,7 @@ namespace UnityEditor
                 modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show) +
                         SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show);
 
-                return UpdatedHeight(headers, modes, GraphicsSettings.renderPipelineAsset != null);
+                return UpdatedHeight(headers, modes, GraphicsSettings.isScriptableRenderPipelineEnabled);
             }
         }
 
@@ -295,7 +295,7 @@ namespace UnityEditor
                 }
             }
 
-            if (GraphicsSettings.renderPipelineAsset != null)
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
                 DrawSeparator(ref drawPos);
                 DrawRenderingDebuggerShortCut(drawPos);
@@ -339,7 +339,7 @@ namespace UnityEditor
                 }
             }
 
-            return UpdatedHeight(headers, modes, GraphicsSettings.renderPipelineAsset != null);
+            return UpdatedHeight(headers, modes, GraphicsSettings.isScriptableRenderPipelineEnabled);
         }
 
         private float UpdatedHeight(int headers, int modes, bool isSRP)

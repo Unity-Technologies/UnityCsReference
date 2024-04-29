@@ -6,6 +6,8 @@ using System;
 using UnityEditor.Modules;
 using UnityEditor.Build.Profile.Elements;
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+using UnityEngine;
 
 namespace UnityEditor.Build.Profile
 {
@@ -26,10 +28,12 @@ namespace UnityEditor.Build.Profile
         const string k_SceneListFoldoutClassicButton = "scene-list-foldout-classic-button";
         const string k_CompilingWarningHelpBox = "compiling-warning-help-box";
         const string k_VirtualTextureWarningHelpBox = "virtual-texture-warning-help-box";
-
+        const string k_PlayerScriptingDefinesFoldout = "scripting-defines-foldout";
         BuildProfileSceneList m_SceneList;
         HelpBox m_CompilingWarningHelpBox;
         HelpBox m_VirtualTexturingHelpBox;
+        Button recompileDefinesButton;
+        Button revertDefinesButton;
         BuildProfile m_Profile;
 
         public BuildProfileWindow parent { get; set; }
@@ -43,6 +47,9 @@ namespace UnityEditor.Build.Profile
         internal BuildProfile buildProfile => m_Profile;
 
         IBuildProfileExtension m_PlatformExtension = null;
+        Foldout m_PlayerScriptingDefinesFoldout;
+
+        BuildProfilePlayerSettingsEditor m_ProfilePlayerSettingsEditor = null;
 
         public BuildProfileEditor()
         {
@@ -102,6 +109,7 @@ namespace UnityEditor.Build.Profile
             sharedSettingsInfoHelpBox.text = TrText.sharedSettingsInfo;
 
             AddSceneList(root, profile);
+            AddScriptingDefineListView(root);
 
             if (!BuildProfileContext.IsClassicPlatformProfile(profile))
                 sharedSettingsInfoHelpBox.Hide();
@@ -109,16 +117,18 @@ namespace UnityEditor.Build.Profile
             {
                 var button = root.Q<Button>(k_SharedSettingsInfoHelpboxButton);
                 button.text = TrText.addBuildProfile;
-                button.clicked += parent.DuplicateSelectedClassicProfile;
+                button.clicked += DuplicateSelectedClassicProfile;
             }
 
-            bool hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, profile.moduleName, profile.subtarget);
+            bool hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, profile.platformId);
+            m_ProfilePlayerSettingsEditor = BuildProfilePlayerSettingsEditor.CreatePlayerSettingsUI(DuplicateSelectedClassicProfile, root, hasErrors ? null : serializedObject);
             if (hasErrors)
                 return root;
 
             EditorApplication.update += UpdateWarningsAndButtonStatesForActiveProfile;
 
             ShowPlatformSettings(profile, platformSettingsBaseRoot);
+            root.Bind(serializedObject);
             return root;
         }
 
@@ -141,6 +151,7 @@ namespace UnityEditor.Build.Profile
             root.Q<HelpBox>(k_VirtualTextureWarningHelpBox).Hide();
             root.Q<HelpBox>(k_CompilingWarningHelpBox).Hide();
             root.Q<Button>(k_SharedSettingsInfoHelpboxButton).Hide();
+            root.Q<Foldout>(k_PlayerScriptingDefinesFoldout).Hide();
 
             var sharedSettingsHelpbox = root.Q<HelpBox>(k_SharedSettingsInfoHelpbox);
             sharedSettingsHelpbox.text = TrText.sharedSettingsSectionInfo;
@@ -150,15 +161,22 @@ namespace UnityEditor.Build.Profile
             sectionLabel.text = TrText.sceneList;
 
             AddSceneList(root);
+
+            m_ProfilePlayerSettingsEditor = BuildProfilePlayerSettingsEditor.CreatePlayerSettingsUI(DuplicateSelectedClassicProfile, root, null);
             return root;
         }
 
         void OnDisable()
         {
             CleanupEventHandlers();
+            HandleRecompileRequiredDialog();
 
             if (m_PlatformExtension != null)
                 m_PlatformExtension.OnDisable();
+
+            // To prevent errors when entering play mode with the the build profile
+            // window open, we need to remove the player settings inspector.
+            m_ProfilePlayerSettingsEditor?.RemovePlayerSettingsInspector();
         }
 
         internal void OnActivateClicked()
@@ -166,6 +184,13 @@ namespace UnityEditor.Build.Profile
             editorState.buildAndRunButtonDisplayName = platformSettingsState.buildAndRunButtonDisplayName;
             editorState.buildButtonDisplayName = platformSettingsState.buildButtonDisplayName;
             editorState.UpdateBuildActionStates(ActionState.Disabled, ActionState.Disabled);
+            recompileDefinesButton.Show();
+            revertDefinesButton.Show();
+        }
+
+        internal void DuplicateSelectedClassicProfile()
+        {
+            parent.DuplicateSelectedClassicProfile();
         }
 
         void UpdateWarningsAndButtonStatesForActiveProfile()
@@ -181,6 +206,9 @@ namespace UnityEditor.Build.Profile
             if (!isVirtualTexturingValid || isCompiling)
             {
                 editorState.UpdateBuildActionStates(ActionState.Disabled, ActionState.Disabled);
+                recompileDefinesButton?.SetEnabled(false);
+                revertDefinesButton?.SetEnabled(false);
+                m_PlayerScriptingDefinesFoldout?.SetEnabled(false);
             }
             else
             {
@@ -203,7 +231,7 @@ namespace UnityEditor.Build.Profile
         void ShowPlatformSettings(BuildProfile profile, VisualElement platformSettingsBaseRoot)
         {
             var platformProperties = serializedObject.FindProperty(k_PlatformSettingPropertyName);
-            m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.buildTarget);
+            m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.moduleName);
             if (m_PlatformExtension != null)
             {
                 var settings = m_PlatformExtension.CreateSettingsGUI(
@@ -249,6 +277,118 @@ namespace UnityEditor.Build.Profile
                 Undo.undoRedoEvent -= m_SceneList.OnUndoRedo;
 
             EditorApplication.update -= UpdateWarningsAndButtonStatesForActiveProfile;
+        }
+
+        void AddScriptingDefineListView(VisualElement root)
+        {
+            m_PlayerScriptingDefinesFoldout = root.Q<Foldout>(k_PlayerScriptingDefinesFoldout);
+            recompileDefinesButton = m_PlayerScriptingDefinesFoldout.Q<Button>("scripting-defines-apply-button");
+            revertDefinesButton = m_PlayerScriptingDefinesFoldout.Q<Button>("scripting-defines-revert-button");
+            if (BuildProfileContext.IsClassicPlatformProfile(m_Profile))
+            {
+                m_PlayerScriptingDefinesFoldout.Hide();
+                return;
+            }
+
+            var property = serializedObject.FindProperty("m_ScriptingDefines");
+            m_PlayerScriptingDefinesFoldout.text = TrText.scriptingDefines;
+            m_PlayerScriptingDefinesFoldout.tooltip = TrText.scriptingDefinesTooltip;
+            var listView = m_PlayerScriptingDefinesFoldout.Q<ListView>("scripting-defines-listview");
+            var warningHelpbox = m_PlayerScriptingDefinesFoldout.Q<HelpBox>("scripting-defines-warning-help-box");
+            warningHelpbox.text = TrText.scriptingDefinesWarningHelpbox;
+            revertDefinesButton.text = TrText.revert;
+            recompileDefinesButton.text = TrText.apply;
+
+            recompileDefinesButton.clicked += () => BuildProfileModuleUtil.RequestScriptCompilation(m_Profile);
+            revertDefinesButton.clicked += RevertScriptingDefines;
+            listView.TrackPropertyValue(property, this.OnScriptingDefinePropertyChange);
+            listView.BindProperty(property);
+
+            if (!m_Profile.IsActiveBuildProfileOrPlatform())
+            {
+                recompileDefinesButton.Hide();
+                revertDefinesButton.Hide();
+                warningHelpbox.Hide();
+            }
+            else
+            {
+                BuildProfileContext.instance.cachedEditorScriptingDefines = (string[]) m_Profile.scriptingDefines.Clone();
+                var targetName = NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(m_Profile.buildTarget));
+                if (string.IsNullOrEmpty(PlayerSettings.GetScriptingDefineSymbols(targetName)))
+                {
+                    warningHelpbox.Hide();
+                }
+            }
+
+            this.OnScriptingDefinePropertyChange(property);
+        }
+
+        void HandleRecompileRequiredDialog()
+        {
+            if (m_Profile == null)
+                return;
+
+            if (m_Profile != BuildProfileContext.instance.activeProfile)
+                return;
+
+            // Avoid dialog when waiting for compilation.
+            if (m_PlayerScriptingDefinesFoldout != null && !m_PlayerScriptingDefinesFoldout.enabledSelf)
+                return;
+
+            // Playmode manually handles script compilation.
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+
+            serializedObject.ApplyModifiedProperties();
+            var lastCompiledDefines = BuildProfileContext.instance.cachedEditorScriptingDefines;
+            if (ArrayUtility.ArrayEquals(m_Profile.scriptingDefines, lastCompiledDefines))
+            {
+                return;
+            }
+
+            if (EditorUtility.DisplayDialog(TrText.scriptingDefinesModified, TrText.scriptingDefinesModifiedBody, TrText.apply, TrText.revert))
+            {
+                BuildProfileModuleUtil.RequestScriptCompilation(m_Profile);
+            }
+            else
+            {
+                RevertScriptingDefines();
+            }
+        }
+
+        void OnScriptingDefinePropertyChange(SerializedProperty property)
+        {
+            if (!m_Profile.IsActiveBuildProfileOrPlatform())
+                return;
+
+            var lastCompiledDefines = BuildProfileContext.instance.cachedEditorScriptingDefines;
+            if (property.arraySize != lastCompiledDefines.Length)
+            {
+                recompileDefinesButton.SetEnabled(true);
+                revertDefinesButton.SetEnabled(true);
+                return;
+            }
+
+            for (int i = 0; i < property.arraySize; i++)
+            {
+                if (property.GetArrayElementAtIndex(i).stringValue != lastCompiledDefines[i])
+                {
+                    recompileDefinesButton.SetEnabled(true);
+                    revertDefinesButton.SetEnabled(true);
+                    return;
+                }
+            }
+
+            recompileDefinesButton.SetEnabled(false);
+            revertDefinesButton.SetEnabled(false);
+        }
+
+        void RevertScriptingDefines()
+        {
+            m_Profile.scriptingDefines = BuildProfileContext.instance.cachedEditorScriptingDefines;
+            serializedObject.Update();
+            recompileDefinesButton.SetEnabled(false);
+            revertDefinesButton.SetEnabled(false);
         }
     }
 }

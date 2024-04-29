@@ -1179,12 +1179,16 @@ namespace UnityEditor
                         preview.style.minHeight = m_PreviewMinHeight;
 
                         previewItem = m_cachedPreviewEditor.CreatePreview(previewWindow);
+                        var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
 
                         if (previewItem != null)
                         {
                             // Temporary naming while in transition to UITK
                             InitUITKPreview();
                             preview.Add(previewWindow);
+
+                            preview.style.display = DisplayStyle.Flex;
+                            draglineAnchor.style.display = DisplayStyle.Flex;
                         }
                         else // IMGUI fallback if no UITK preview found
                         {
@@ -1193,9 +1197,13 @@ namespace UnityEditor
                             m_PreviewResizer.SetContainer(previewAndLabelsContainer, kBottomToolbarHeight);
                             previewAndLabelElement.Add(previewAndLabelsContainer);
 
+                            preview.style.display = DisplayStyle.None;
+                            draglineAnchor.style.display = DisplayStyle.None;
+
                             if (preview == null)
                                 m_SplitView.Add(previewAndLabelElement);
                         }
+
                     }
                 }
 
@@ -1300,8 +1308,6 @@ namespace UnityEditor
 
         internal void PrepareToolbar(InspectorPreviewWindow toolbar, bool isFloatingPreviewWindow = false)
         {
-            IPreviewable previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
-
             if(!isFloatingPreviewWindow)
                 CreatePreviewEllipsisMenu(toolbar, this);
         }
@@ -1364,7 +1370,6 @@ namespace UnityEditor
             {
                 m_CachedPreviewHeight = m_SplitView.fixedPane.resolvedStyle.height;
                 UpdatePreviewHeight(m_PreviewMinHeight);
-                m_CachedPreviewHeight = m_PreviewMinHeight;
             }
             else
             {
@@ -1597,7 +1602,7 @@ namespace UnityEditor
         protected virtual void EndDrawPreviewAndLabels(Event evt, Rect rect, Rect dragRect) {}
         protected virtual void CreatePreviewEllipsisMenu(InspectorPreviewWindow window, PropertyEditor editor) {}
 
-        TwoPaneSplitView m_SplitView = null;
+        protected TwoPaneSplitView m_SplitView = null;
         VisualElement preview = null;
         internal InspectorPreviewWindow previewWindow = null;
         private void DrawPreviewAndLabels()

@@ -92,26 +92,41 @@ namespace UnityEngine.UIElements
         /// </summary>
         public UxmlTypeRestriction restriction { get; set; }
 
-        internal bool TryFindValueInAttributeOverrides(string elementName, List<TemplateAsset.AttributeOverride> attributeOverrides, out string value)
+        internal bool TryFindValueInAttributeOverrides(string elementName, CreationContext cc, List<TemplateAsset.AttributeOverride> attributeOverrides, out string value)
         {
             value = null;
-            foreach (TemplateAsset.AttributeOverride attributeOverride in attributeOverrides)
+
+            TemplateAsset.AttributeOverride overrideToApply = default;
+
+            foreach (var attributeOverride in attributeOverrides)
             {
-                if (attributeOverride.m_ElementName != elementName)
+                if (cc.namesPath == null)
+                {
+                    // If the path is null, we might be coming from a traits flow, so we need to check the element name.
+                    if (attributeOverride.m_ElementName != elementName)
+                    {
+                        continue;
+                    }
+                }
+                else if (!attributeOverride.NamesPathMatchesElementNamesPath(cc.namesPath))
+                {
                     continue;
+                }
 
                 if (attributeOverride.m_AttributeName != name)
                 {
                     if (m_ObsoleteNames != null)
                     {
-                        bool matchedObsoleteName = false;
-                        for (var j = 0; j < m_ObsoleteNames.Length; j++)
+                        var matchedObsoleteName = false;
+                        foreach (var obsoleteName in m_ObsoleteNames)
                         {
-                            if (attributeOverride.m_AttributeName == m_ObsoleteNames[j])
+                            if (attributeOverride.m_AttributeName != obsoleteName)
                             {
-                                matchedObsoleteName = true;
-                                break;
+                                continue;
                             }
+
+                            matchedObsoleteName = true;
+                            break;
                         }
 
                         if (!matchedObsoleteName)
@@ -123,9 +138,29 @@ namespace UnityEngine.UIElements
                     }
                 }
 
-                value = attributeOverride.m_Value;
+                if (overrideToApply.m_AttributeName == null)
+                {
+                    overrideToApply = attributeOverride;
+
+                    if (overrideToApply.m_NamesPath == null)
+                    {
+                        // Traits element, we can break here.
+                        break;
+                    }
+                }
+                else if (overrideToApply.m_NamesPath.Length < attributeOverride.m_NamesPath.Length)
+                {
+                    // Longer paths are more specific.
+                    overrideToApply = attributeOverride;
+                }
+            }
+
+            if (overrideToApply.m_AttributeName != null)
+            {
+                value = overrideToApply.m_Value;
                 return true;
             }
+
             return false;
         }
 
@@ -156,7 +191,7 @@ namespace UnityEngine.UIElements
             {
                 foreach (CreationContext.AttributeOverrideRange attributeOverrideRange in cc.attributeOverrides)
                 {
-                    if (TryFindValueInAttributeOverrides(elementName, attributeOverrideRange.attributeOverrides, out value))
+                    if (TryFindValueInAttributeOverrides(elementName, cc, attributeOverrideRange.attributeOverrides, out value))
                     {
                         sourceAsset = attributeOverrideRange.sourceAsset;
                         return true;

@@ -70,6 +70,16 @@ class SerializedObjectStringConversionBinding<TValue> : SerializedObjectBindingP
         base.OnRelease();
     }
 
+    protected override void AssignValueToFieldWithoutNotify(TValue lastValue)
+    {
+        if (field == null)
+        {
+            return;
+        }
+
+        field.SetValueWithoutNotify($"{lastFieldValue}");
+    }
+
     protected override void AssignValueToField(TValue lastValue)
     {
         if (field == null)

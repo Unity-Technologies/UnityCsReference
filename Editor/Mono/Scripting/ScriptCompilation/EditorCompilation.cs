@@ -928,10 +928,31 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return CreateScriptAssemblySettings(buildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget), options, extraScriptingDefines);
         }
 
+        static private void ValidateSubtarget(BuildTarget buildTarget, ref int subtarget)
+        {
+            // When building for standalone, the Default subtarget means to use the current active one.
+            if (BuildPipeline.GetBuildTargetGroup(buildTarget) != BuildTargetGroup.Standalone)
+                return;
+
+            var standaloneSubtarget = (StandaloneBuildSubtarget)subtarget;
+            switch (standaloneSubtarget)
+            {
+                case StandaloneBuildSubtarget.Default:
+                    subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget);
+                    break;
+                case StandaloneBuildSubtarget.Player:
+                case StandaloneBuildSubtarget.Server:
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid subtarget {standaloneSubtarget} for build target {buildTarget}");
+            }
+        }
+
         public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTarget buildTarget, int subtarget, EditorScriptCompilationOptions options, string[] extraScriptingDefines)
         {
             var predefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
-            var namedBuildTarget = NamedBuildTarget.FromActiveSettings(buildTarget);
+            ValidateSubtarget(buildTarget, ref subtarget);
+            var namedBuildTarget = NamedBuildTarget.FromTargetAndSubtarget(buildTarget, subtarget);
 
             if ((options & EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode) == EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode)
             {

@@ -1029,7 +1029,7 @@ namespace UnityEditor.Search.Providers
         {
             return new SearchProvider(k_ProviderId, "Asset Store")
             {
-                active = true,
+                active = false,
                 isExplicitProvider = true,
                 filterId = k_FilterId,
                 onEnable = OnEnable,

@@ -179,7 +179,7 @@ namespace UnityEngine.UIElements
         {
             this.choices = choices;
 
-            index = defaultIndex;
+            SetIndexWithoutNotify(defaultIndex);
 
             this.formatListItemCallback = formatListItemCallback;
             this.formatSelectedValueCallback = formatSelectedValueCallback;
@@ -197,15 +197,23 @@ namespace UnityEngine.UIElements
 
             foreach (T item in m_Choices)
             {
-                bool isSelected = EqualityComparer<T>.Default.Equals(item, value);
+                bool isSelected = EqualityComparer<T>.Default.Equals(item, value) && !showMixedValue;
                 menu.AddItem(GetListItemToDisplay(item), isSelected,
                     () => ChangeValueFromMenu(item));
             }
         }
 
+        internal void SetIndexWithoutNotify(int index)
+        {
+            m_Index = index;
+            if (m_Index >= 0 && m_Index < m_Choices.Count)
+                SetValueWithoutNotify(m_Choices[m_Index]);
+            else
+                SetValueWithoutNotify(default(T));
+        }
+
         private void ChangeValueFromMenu(T menuItem)
         {
-			showMixedValue = false;
             value = menuItem;
         }
     }

@@ -290,10 +290,16 @@ namespace UnityEditor.Search
     [QueryListBlock("Labels", "label", "l", ":")]
     class QueryLabelBlock : QueryListBlock
     {
-       public QueryLabelBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+        static readonly Texture2D kLabelIcon = Utils.LoadIcon("QuickSearch/AssetLabelIconSquare");
+        public static Texture2D GetLabelIcon()
+        {
+            return kLabelIcon;
+        }
+
+        public QueryLabelBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
             : base(source, id, value, attr)
         {
-            icon = Utils.LoadIcon("QuickSearch/AssetLabelIconSquare");
+            icon = GetLabelIcon();
         }
 
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
@@ -311,7 +317,7 @@ namespace UnityEditor.Search
         public QueryTagBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
             : base(source, id, value, attr)
         {
-            icon = Utils.LoadIcon("QuickSearch/AssetLabelIconSquare");
+            icon = QueryLabelBlock.GetLabelIcon();
         }
 
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
@@ -376,6 +382,47 @@ namespace UnityEditor.Search
         {
             var layerName = InternalEditorUtility.GetLayerName(0);
             return FormatValue(0, layerName);
+        }
+    }
+
+    [QueryListBlock("Rendering Layers", "renderinglayer", "renderinglayer", ":")]
+    class QueryRenderingLayerBlock : QueryListBlock
+    {
+        public QueryRenderingLayerBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+            : base(source, id, value, attr)
+        {
+            icon = Utils.LoadIcon("GUILayer Icon");
+
+            if (QueryMarker.TryParse(value, out var marker) && marker.valid && marker.args.Length >= 2)
+                this.value = marker.args[1].rawText.ToString();
+        }
+
+        public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
+        {
+            var names = RenderingLayerMask.GetDefinedRenderingLayerNames();
+            var values = RenderingLayerMask.GetDefinedRenderingLayerValues();
+
+            for (var i = 0; i < names.Length; i++)
+            {
+                var layerName = names[i];
+                if (!string.IsNullOrEmpty(layerName))
+                {
+                    yield return CreateProposition(flags, ObjectNames.NicifyVariableName(layerName), layerName, $"Objects with layer: {layerName}");
+                }
+            }
+        }
+
+        public static int GetValueForLayerName(string name)
+        {
+            var names = RenderingLayerMask.GetDefinedRenderingLayerNames();
+            var values = RenderingLayerMask.GetDefinedRenderingLayerValues();
+            for (var i = 0; i < names.Length; i++)
+            {
+                var layerName = names[i];
+                if (layerName == name)
+                    return values[i];
+            }
+            return -1;
         }
     }
 

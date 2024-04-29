@@ -373,7 +373,19 @@ namespace UnityEngine
 
         internal static GraphicsFormat GetDepthStencilFormatLegacy(int depthBits, bool requestedShadowMap)
         {
-            return requestedShadowMap ? GraphicsFormatUtility.GetDepthStencilFormat(depthBits, 0) : GraphicsFormatUtility.GetDepthStencilFormat(depthBits);
+            GraphicsFormat format = requestedShadowMap ? GraphicsFormatUtility.GetDepthStencilFormat(depthBits, 0) : GraphicsFormatUtility.GetDepthStencilFormat(depthBits);
+
+            // In some very rare/special cases (example: UUM-64340), requesting a shadow map depth format with, for example, 24 bits of depth can make RT creation fail if
+            // D24_UNorm and D32_SFLOAT are both incompatible format. (The "GetDepthStencilFormat" overload used in the shadowmap scenario can, by design, return "None"
+            // even if we requested depthBits > 0 because it never checks compatible GraphicsFormats with less depth bits)
+            // D32_SFLOAT is usually always compatible but, to stay consistent with old behavior, let's use D16_UNorm as a last resort fallback.
+            if (depthBits > 16 && format == GraphicsFormat.None && requestedShadowMap)
+            {
+                Debug.LogWarning($"No compatible shadow map depth format with {depthBits} or more depth bits has been found. Changing to a 16 bit depth buffer.");
+                return GraphicsFormat.D16_UNorm;
+            }
+
+            return format;
         }
 
         public RenderTextureDescriptor descriptor

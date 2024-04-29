@@ -37,6 +37,7 @@ namespace UnityEditor.UIElements
         bool? m_IsUxmlObject;
         bool m_DefaultValueSet;
         object m_DefaultValue;
+        string m_BindingPath;
 
         /// <summary>
         /// The <see cref="UxmlAttributeDescription"/> that this attribute is part of.
@@ -54,6 +55,31 @@ namespace UnityEditor.UIElements
         /// The FieldInfo for the UxmlSerializedData attribute flags.
         /// </summary>
         public FieldInfo serializedFieldAttributeFlags { get; set; }
+
+        /// <summary>
+        /// If this attribute is overriding then this will contain the name of the original property/field.
+        /// </summary>
+        public string overriddenFieldName { get; set; }
+
+        /// <summary>
+        /// The name of the field/property that data bindings should use.
+        /// </summary>
+        public string bindingPath
+        {
+            get
+            {
+                if (m_BindingPath == null)
+                {
+                    var bindingPathAttribute = serializedField.GetCustomAttribute<UxmlAttributeBindingPathAttribute>();
+                    if (bindingPathAttribute != null)
+                        m_BindingPath = bindingPathAttribute.path;
+                    else
+                        m_BindingPath = overriddenFieldName ?? serializedField.Name;
+                }
+
+                return m_BindingPath;
+            }
+        }
 
         /// <summary>
         /// The field/property value for the VisualElement/UxmlObject.
@@ -687,8 +713,12 @@ namespace UnityEditor.UIElements
             for (var i = 0; i < tplCount; i++)
             {
                 var rootTemplate = vta.templateAssets[i];
+                var namesPath = new List<string>();
+                var idsList = new List<int>();
+
                 rootTemplate.serializedData = Serialize(rootTemplate.fullTypeName, rootTemplate, cc);
-                CreateSerializedDataOverride(rootTemplate, vta, rootTemplate, cc);
+                rootTemplate.serializedDataOverrides.Clear();
+                CreateSerializedDataOverride(rootTemplate, vta, rootTemplate, cc, namesPath, idsList);
             }
         }
 
@@ -704,7 +734,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private static void CreateSerializedDataOverride(TemplateAsset rootTemplate, VisualTreeAsset vta, TemplateAsset templateAsset, CreationContext cc)
+        private static void CreateSerializedDataOverride(TemplateAsset rootTemplate, VisualTreeAsset vta, TemplateAsset templateAsset, CreationContext cc, List<string> namesPath, List<int> idsList)
         {
             // If there's no attribute override no need to create additional serialized data.
             if (!templateAsset.hasAttributeOverride && cc.attributeOverrides == null)
@@ -725,7 +755,6 @@ namespace UnityEditor.UIElements
                     overrideRanges.Add(new CreationContext.AttributeOverrideRange(vta, bagOverrides));
             }
 
-            var templateContext = new CreationContext(null, overrideRanges, vta, null);
             var templateVta = vta.ResolveTemplate(templateAsset.templateAlias);
 
             // If the template reference is invalid simply skip it.
@@ -736,15 +765,21 @@ namespace UnityEditor.UIElements
             // For each element with an override create a serialized data stored in the template asset
             foreach (var vea in templateVta.visualElementAssets)
             {
-                if (!vea.TryGetAttributeValue("name", out var elementName) || string.IsNullOrEmpty(elementName))
+                var namesCopy = new List<string>(namesPath);
+                var idsCopy = new List<int>(idsList);
+
+                if (!vea.TryGetAttributeValue(nameof(VisualElement.name), out var elementName) || string.IsNullOrEmpty(elementName))
                     continue;
 
-                bool hasOverride = false;
-                for (int i = 0; i < overrideRanges.Count && !hasOverride; i++)
+                namesCopy.Add(elementName);
+                idsCopy.Add(vea.id);
+
+                var hasOverride = false;
+                for (var i = 0; i < overrideRanges.Count && !hasOverride; i++)
                 {
-                    for (int j = 0; j < overrideRanges[i].attributeOverrides.Count; j++)
+                    for (var j = 0; j < overrideRanges[i].attributeOverrides.Count; j++)
                     {
-                        if (overrideRanges[i].attributeOverrides[j].m_ElementName == elementName)
+                        if (overrideRanges[i].attributeOverrides[j].NamesPathMatchesElementNamesPath(namesCopy))
                             hasOverride = true;
                     }
                 }
@@ -756,16 +791,31 @@ namespace UnityEditor.UIElements
                 if (desc == null)
                     continue;
 
+                var templateContext = new CreationContext(null, overrideRanges, null, vta, null, null, namesCopy);
                 var serializedDataOverride = Serialize(desc, vea, templateContext);
                 rootTemplate.serializedDataOverrides.Add(new TemplateAsset.UxmlSerializedDataOverride()
                 {
                     m_ElementId = vea.id,
+                    m_ElementIdsPath = idsCopy,
                     m_SerializedData = serializedDataOverride
                 });
             }
 
             foreach (var ta in templateVta.templateAssets)
-                CreateSerializedDataOverride(rootTemplate, templateVta, ta, templateContext);
+            {
+                var idsCopy = new List<int>(idsList);
+                var namesCopy = new List<string>(namesPath);
+
+                if (ta.TryGetAttributeValue(nameof(VisualElement.name), out var elementName))
+                {
+                    namesCopy.Add(elementName);
+                    idsCopy.Add(ta.id);
+                }
+
+                var templateContext = new CreationContext(null, overrideRanges, null, vta, null, null, namesCopy);
+
+                CreateSerializedDataOverride(rootTemplate, templateVta, ta, templateContext, namesCopy, idsCopy);
+            }
         }
     }
 }

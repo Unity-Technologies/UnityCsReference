@@ -676,6 +676,35 @@ namespace UnityEditor
             set;
         }
 
+        internal static string EncodeBase64(string plainText)
+        {
+            if (plainText == null)
+            {
+                plainText = string.Empty;
+            }
+
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            return Convert.ToBase64String(plainTextBytes);
+        }
+
+        internal static string DecodeBase64(string base64Text)
+        {
+            if (base64Text == null)
+            {
+                base64Text = string.Empty;
+            }
+
+            try
+            {
+                var base64EncodedBytes = System.Convert.FromBase64String(base64Text);
+                return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
+            }
+            catch (FormatException)
+            {
+                return string.Empty;
+            }
+        }
+
         public static extern string windowsDevicePortalUsername
         {
             [NativeMethod("GetWindowsDevicePortalUsername")]
@@ -685,6 +714,8 @@ namespace UnityEditor
         }
 
         // WDP password is not to be saved with other settings and only stored in memory until Editor is closed
+        private static string internal_windowsDevicePortalPassword;
+
         public static string windowsDevicePortalPassword
         {
             get
@@ -694,28 +725,34 @@ namespace UnityEditor
                 {
                     var settings = profile.platformBuildProfile;
                     return settings.GetSharedSetting(SharedPlatformSettings.k_SettingWindowsDevicePortalPassword);
+
                 }
-                return null;
+                return DecodeBase64(internal_windowsDevicePortalPassword);
             }
 
             set
             {
                 var profile = BuildProfileContext.GetActiveOrClassicBuildProfile(BuildTarget.NoTarget, StandaloneBuildSubtarget.Default, SharedPlatformSettings.k_SettingWindowsDevicePortalPassword);
                 if (profile == null)
-                    return;
-
-                if (profile.buildTarget == BuildTarget.NoTarget)
                 {
-                    var sharedPlatformSettings = profile.platformBuildProfile as SharedPlatformSettings;
-                    // This will sync the value to applicable classic profiles through the shared profile.
-                    sharedPlatformSettings.windowsDevicePortalPassword = value;
+                    internal_windowsDevicePortalPassword = EncodeBase64(value);
                 }
                 else
                 {
-                    var settings = profile.platformBuildProfile;
-                    // SetSharedSetting() is used to avoid having to cast the active custom profile to platform profiles.
-                    // This only changes the value in the active custom profile and has no effect on syncing.
-                    settings.SetSharedSetting(SharedPlatformSettings.k_SettingWindowsDevicePortalPassword, value);
+                    if (profile.buildTarget == BuildTarget.NoTarget)
+                    {
+                        var sharedPlatformSettings = profile.platformBuildProfile as SharedPlatformSettings;
+                        // This will sync the value to applicable classic profiles through the shared profile.
+                        sharedPlatformSettings.windowsDevicePortalPassword = value;
+
+                    }
+                    else
+                    {
+                        var settings = profile.platformBuildProfile;
+                        // SetSharedSetting() is used to avoid having to cast the active custom profile to platform profiles.
+                        // This only changes the value in the active custom profile and has no effect on syncing.
+                        settings.SetSharedSetting(SharedPlatformSettings.k_SettingWindowsDevicePortalPassword, value);
+                    }
                 }
             }
         }
@@ -1080,5 +1117,8 @@ namespace UnityEditor
         internal static extern bool isBuildProfileAvailable { get; set; }
         internal static extern void CopyFromBuildProfile(ScriptableObject buildProfile);
         internal static extern void CopyToBuildProfile(ScriptableObject buildProfile);
+
+        internal static extern void SetBuildProfilePath(string path);
+        internal static extern string[] GetActiveProfileYamlScriptingDefines();
     }
 }

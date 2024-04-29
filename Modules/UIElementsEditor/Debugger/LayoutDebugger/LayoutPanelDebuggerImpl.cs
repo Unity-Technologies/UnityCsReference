@@ -8,6 +8,8 @@ using System.Globalization;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements.Debugger;
+using UnityEngine.UIElements.Layout;
+using static UnityEngine.UIElements.Layout.LayoutNative;
 
 namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 {
@@ -274,6 +276,131 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             m_RecordLayoutToggle.value = false;
         }
 
+        protected override void SelectPanelToDebug(IPanelChoice pc)
+        {
+            if (pc != selectedPanel)
+            {
+                StopRecording();
+                LayoutTraceEnable = false;
+            }
+
+            base.SelectPanelToDebug(pc);
+
+            TraceToggle.SetValueWithoutNotify(LayoutTraceEnable);
+        }
+
+        // Change this to print the trace to the console as soon as it is received
+        // It could be usefull in case of crash, but there will be a stacktrace for every logs
+        private const bool bundleTracesForLogging = true;
+        private readonly List<LayoutNative.LayoutLogData> traces = new();
+
+        private ToolbarToggle TraceToggle;
+
+        bool LayoutTraceEnable
+        {
+            get { return (panel as BaseVisualElementPanel)?.layoutConfig.ShouldLog ?? false;  }
+            set
+            {
+                if (panel is BaseVisualElementPanel basePanel)
+                {
+                    if(basePanel.layoutConfig.ShouldLog == value)
+                        return;
+
+                    FlushTraces();// flush when both turning on and off, in case ther is something pending in the buffer
+                    Debug.Log( $"Setting layout to be logged to {value} on {selectedPanel}");
+                    basePanel.layoutConfig.ShouldLog = value;
+
+                    if (value)
+                        LayoutNative.onLayoutLog += onLog;
+                    else
+                        LayoutNative.onLayoutLog -= onLog;
+
+                }
+            }
+        }
+        private void FlushTraces()
+        {
+            if(traces.Count ==0)
+                return;
+
+            var sb = StringBuilderPool.Get();
+            foreach(var trace in traces)
+            {
+                sb.AppendLine(PrettyTrace(trace));
+            }
+
+            //Log without stacktrace
+            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, sb.ToString());
+
+            traces.Clear();
+            StringBuilderPool.Release(sb);
+        }
+
+        private string PrettyName(LayoutNode node)
+        {
+             //Quick path is only if the node has measure for now.
+            var owner = node.GetOwner() ?? FindHandleInDescendents(selectedPanel.panel.GetRootVisualElement(), node);
+            string name = owner?.name;
+            string type = owner?.typeName ?? string.Empty;
+            var deptj = 0;
+            var current = node;
+            while (!current.Parent.IsUndefined)
+            {
+                deptj++;
+                current = current.Parent;
+            }
+            return $"{"".PadLeft(deptj*2)}[{node.Handle.Index,4},{type},{name,8}]";
+        }
+
+        private string PrettyTrace(LayoutNative.LayoutLogData data)
+        {
+            return $"{PrettyName(data.node)} : {data.eventType} : {data.message}";
+        }
+
+        private VisualElement FindHandleInDescendents(VisualElement ve, LayoutNode node)
+        {
+            if (ve.layoutNode.Handle.Index == node.Handle.Index)
+                return ve;
+
+            foreach (var child in ve.hierarchy.Children())
+            {
+                var found = FindHandleInDescendents(child, node);
+                if (found != null)
+                    return found;
+            }
+            return null;
+        }
+
+        private void onLog(LayoutNative.LayoutLogData data)
+        {
+            if (bundleTracesForLogging)
+            {
+                traces.Add(data);
+                if (data.eventType == LayoutLogEventType.EndLayout)
+                    FlushTraces();
+            }
+            else
+            {
+                // this is a compile time debug option.
+#pragma warning disable CS0162 // Unreachable code detected
+                //Log without stacktrace
+                Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, PrettyTrace(data));
+#pragma warning restore CS0162 // Unreachable code detected
+            }
+        }
+
+        private bool AreTracesAvailable()
+        {
+            bool hasTraces = false;
+            Action<LayoutLogData> callback = (_) => { hasTraces = true; };
+
+            LayoutNative.onLayoutLog += callback;
+            LayoutProcessor.CalculateLayout(LayoutNode.Undefined, 0, 0, 0);
+            LayoutNative.onLayoutLog -= callback;
+
+            return hasTraces;
+        }
+
         public void Initialize(EditorWindow debuggerWindow, VisualElement root)
         {
             base.Initialize(debuggerWindow);
@@ -325,8 +452,25 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                     UIRLayoutUpdater.s_StopRecording = null;
                 }
             });
-
             m_Toolbar.Add(m_StopRecordingOnError);
+
+
+            TraceToggle = new ToolbarToggle() { name = "Trace Layout" };
+            TraceToggle.text = "Trace Layout";
+            if (AreTracesAvailable())
+            {
+                TraceToggle.value = LayoutTraceEnable;
+                TraceToggle.RegisterValueChangedCallback((e) =>
+                {
+                    LayoutTraceEnable = e.newValue;
+                });
+            }
+            else
+            {
+                TraceToggle.SetEnabled(false);
+                TraceToggle.tooltip = "Tracing is not available in this build.";
+            }
+            m_Toolbar.Add(TraceToggle);
 
             root.Add(m_Toolbar);
 

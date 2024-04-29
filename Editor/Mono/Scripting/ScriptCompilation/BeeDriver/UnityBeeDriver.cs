@@ -25,7 +25,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal static readonly string BeeBackendExecutable = new NPath($"{EditorApplication.applicationContentsPath}/bee_backend{BeeScriptCompilation.ExecutableExtension}").ToString();
         internal static readonly string BeeCacheToolExecutable = $"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline/BeeLocalCacheTool{BeeScriptCompilation.ExecutableExtension}";
         internal static readonly string BeeCacheDirEnvVar = "BEE_CACHE_DIRECTORY";
-        internal static string BeeCacheDir => Environment.GetEnvironmentVariable(BeeCacheDirEnvVar) ?? new NPath($"{InternalEditorUtility.userAppDataFolder}/cache/bee").ToString(SlashMode.Native);
+        internal static string BeeCacheDir => Environment.GetEnvironmentVariable(BeeCacheDirEnvVar) ?? new NPath($"{OSUtil.GetDefaultCachePath()}/bee").ToString(SlashMode.Native);
 
         [Serializable]
         internal class BeeBackendInfo
@@ -142,7 +142,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 string dagName,
                 string dagDirectory,
                 bool useScriptUpdater,
-                string projectDirectory,
+                NPath projectDirectory,
                 ILPostProcessingProgram ilpp,
                 CacheMode cacheMode,
                 StdOutMode stdoutMode,
@@ -152,7 +152,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // getting the property value enforces that as it makes sure the server is running and answering a ping request
             var ilppNamedPipeOrSocket = ilpp.EnsureRunningAndGetSocketOrNamedPipe();
 
-            NPath dagDir = dagDirectory ?? "Library/Bee";
+            NPath dagDir = dagDirectory ?? projectDirectory.Combine("Library/Bee");
             RecreateDagDirectoryIfNeeded(dagDir);
             var performingPlayerBuild = UnityBeeDriverProfilerSession.PerformingPlayerBuild;
             NPath profilerOutputFile =  performingPlayerBuild ? UnityBeeDriverProfilerSession.GetTraceEventsOutputForPlayerBuild() : $"{dagDir}/fullprofile.json";
@@ -160,7 +160,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 BuildProgram = buildProgram,
                 BackendProgram = beeBackendProgram ?? UnityBeeBackendProgram(cacheMode, stdoutMode),
-                ProjectRoot = projectDirectory,
+                ProjectRoot = projectDirectory.ToString(),
                 DagName = dagName,
                 BuildStateDirectory = dagDir.EnsureDirectoryExists().ToString(),
                 ProfilerOutputFile = profilerOutputFile.ToString(),
@@ -185,7 +185,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 UnityVersion = Application.unityVersion,
                 UnityVersionNumeric = new BeeBuildProgramCommon.Data.Version(Application.unityVersionVer, Application.unityVersionMaj, Application.unityVersionMin),
                 UnitySourceCodePath = Unsupported.IsSourceBuild(false) ? Unsupported.GetBaseUnityDeveloperFolder() : null,
-                AdvancedLicense = PlayerSettings.advancedLicense,
                 Batchmode = InternalEditorUtility.inBatchMode,
                 EmitDataForBeeWhy = (Debug.GetDiagnosticSwitch("EmitDataForBeeWhy").value as bool?)?? false,
                         NamedPipeOrUnixSocket = ilppNamedPipeOrSocket,

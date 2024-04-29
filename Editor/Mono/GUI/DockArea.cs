@@ -254,7 +254,7 @@ namespace UnityEditor
             if (w &&
                 w.m_Parent &&
                 w.m_Parent.window &&
-                !w.m_Parent.window.m_IsMppmCloneWindow &&
+                !w.m_Parent.window.IsMultiplayerClone() &&
                 w.titleContent != null)
             {
                 w.m_Parent.window.title = w.titleContent.text;
@@ -421,10 +421,6 @@ namespace UnityEditor
                     tabStyle = Styles.dragTab;
 
                 var firstTabStyle = Styles.dragTabFirst;
-                if (s_HasStaticTabsCapability)
-                {
-                    firstTabStyle = Styles.tabLabel;
-                }
 
                 var totalTabWidth = DragTab(tabAreaRect, m_ScrollOffset, tabStyle, firstTabStyle);
                 if (totalTabWidth > 0f)
@@ -861,12 +857,9 @@ namespace UnityEditor
             {
                 case EventType.TouchDown:
                 case EventType.MouseDown:
-                    if (s_HasStaticTabsCapability)
-                    {
-                        break;
-                    }
+
                     // Handle double click
-                    if (EditorWindow.focusedWindow != null)
+                    if (EditorWindow.focusedWindow != null && !s_HasStaticTabsCapability)
                         WindowMaximizeStateOnDoubleClick(tabAreaRect);
                     if (GUIUtility.hotControl == 0)
                     {
@@ -893,10 +886,7 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.ContextClick:
-                    if (s_HasStaticTabsCapability)
-                    {
-                        break;
-                    }
+
                     if (GUIUtility.hotControl == 0)
                     {
                         int sel = GetTabAtMousePos(tabStyle, evt.mousePosition, scrollOffset, tabAreaRect);
@@ -910,10 +900,11 @@ namespace UnityEditor
                 case EventType.TouchMove:
                 case EventType.MouseDrag:
 
-                    if (s_HasStaticTabsCapability)
+                if (s_HasStaticTabsCapability)
                     {
                         break;
                     }
+
                     if (evt.pointerType == PointerType.Pen && !evt.penStatus.HasFlag(PenStatus.Contact))
                         break;
 
@@ -1018,10 +1009,7 @@ namespace UnityEditor
                     break;
                 case EventType.TouchUp:
                 case EventType.MouseUp:
-                    if (ModeService.HasCapability(ModeCapability.StaticTabs, false))
-                    {
-                        break;
-                    }
+
                     if (GUIUtility.hotControl == id)
                     {
                         Vector2 screenMousePos = GUIUtility.GUIToScreenPoint(evt.mousePosition);
