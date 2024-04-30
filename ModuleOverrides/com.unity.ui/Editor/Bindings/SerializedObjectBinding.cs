@@ -65,6 +65,23 @@ class SerializedObjectBinding<TValue> : SerializedObjectBindingPropertyToBaseFie
         lastFieldValue = field.value;
     }
 
+    protected override void AssignValueToFieldWithoutNotify(TValue lastValue)
+    {
+        if (field == null)
+        {
+            return;
+        }
+
+        if (field is BaseField<TValue> baseField)
+        {
+            baseField.SetValueWithoutNotify(lastValue);
+        }
+        else
+        {
+            field.SetValueWithoutNotify(lastValue);
+        }
+    }
+
     protected override void AssignValueToField(TValue lastValue)
     {
         if (field == null)

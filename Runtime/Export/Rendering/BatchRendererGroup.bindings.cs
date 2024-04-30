@@ -522,10 +522,14 @@ namespace UnityEngine.Rendering
         public void SetBatchBuffer(BatchID batchID, GraphicsBufferHandle buffer) { SetDrawCommandBatchBuffer(batchID, buffer); }
 
         public extern BatchMaterialID RegisterMaterial(Material material);
+        public BatchMaterialID RegisterMaterial(int materialInstanceID) => RegisterMaterial_InstanceID(materialInstanceID);
+        private extern BatchMaterialID RegisterMaterial_InstanceID(int materialInstanceID);
         public extern void UnregisterMaterial(BatchMaterialID material);
         public extern Material GetRegisteredMaterial(BatchMaterialID material);
 
         public extern BatchMeshID RegisterMesh(Mesh mesh);
+        public BatchMeshID RegisterMesh(int meshInstanceID) => RegisterMesh_InstanceID(meshInstanceID);
+        private extern BatchMeshID RegisterMesh_InstanceID(int meshInstanceID);
         public extern void UnregisterMesh(BatchMeshID mesh);
         public extern Mesh GetRegisteredMesh(BatchMeshID mesh);
 

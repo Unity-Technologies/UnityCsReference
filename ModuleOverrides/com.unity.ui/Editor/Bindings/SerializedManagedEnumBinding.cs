@@ -130,7 +130,14 @@ class SerializedManagedEnumBinding : SerializedObjectBindingToBaseField<Enum, Ba
         }
 
         int enumValueAsInt = p.intValue;
-        field.value = GetEnumFromSerializedFromInt(managedType, ref enumValueAsInt);
+        var newValue = GetEnumFromSerializedFromInt(managedType, ref enumValueAsInt);
+
+        // We dont want to trigger a change event as this will cause the value to be applied to all targets.
+        if (p.hasMultipleDifferentValues)
+            c.SetValueWithoutNotify(newValue);
+        else
+            c.value = newValue;
+
         lastEnumValue = enumValueAsInt;
     }
 
@@ -165,7 +172,7 @@ class SerializedManagedEnumBinding : SerializedObjectBindingToBaseField<Enum, Ba
 
     protected override bool SyncFieldValueToProperty()
     {
-        if (lastEnumValue == boundProperty.intValue)
+        if (!boundProperty.hasMultipleDifferentValues && lastEnumValue == boundProperty.intValue)
             return false;
 
         // When the value is a negative we need to convert it or it will be clamped.

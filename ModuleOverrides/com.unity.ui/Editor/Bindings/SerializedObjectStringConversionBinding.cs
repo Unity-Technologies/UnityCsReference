@@ -61,6 +61,16 @@ class SerializedObjectStringConversionBinding<TValue> : SerializedObjectBindingP
         lastFieldValue = propGetValue(boundProperty);
     }
 
+    protected override void AssignValueToFieldWithoutNotify(TValue lastValue)
+    {
+        if (field == null)
+        {
+            return;
+        }
+
+        field.SetValueWithoutNotify($"{lastFieldValue}");
+    }
+
     protected override void AssignValueToField(TValue lastValue)
     {
         if (field == null)

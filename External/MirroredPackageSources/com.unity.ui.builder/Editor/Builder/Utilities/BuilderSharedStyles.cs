@@ -66,10 +66,10 @@ namespace Unity.UI.Builder
             return element.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
         }
 
-        internal static void SetSelectorString(VisualElement element, StyleSheet styleSheet, string newString)
+        internal static bool SetSelectorString(VisualElement element, StyleSheet styleSheet, string newString, out string error)
         {
             var complexSelector = element.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
-            styleSheet.SetSelectorString(complexSelector, newString);
+            return styleSheet.SetSelectorString(complexSelector, newString, out error);
         }
 
         internal static List<string> GetSelectorParts(VisualElement element)
@@ -167,7 +167,18 @@ namespace Unity.UI.Builder
 
         internal static StyleComplexSelector CreateNewSelector(VisualElement selectorContainerElement, StyleSheet styleSheet, string selectorStr)
         {
-            var complexSelector = styleSheet.AddSelector(selectorStr);
+            if (!SelectorUtility.TryCreateSelector(selectorStr, out var complexSelector, out var error))
+            {
+                Builder.ShowWarning(error);
+                return null;
+            }
+
+            return CreateNewSelector(selectorContainerElement, styleSheet, complexSelector);
+        }
+
+        internal static StyleComplexSelector CreateNewSelector(VisualElement selectorContainerElement, StyleSheet styleSheet, StyleComplexSelector selector)
+        {
+            var complexSelector = styleSheet.AddSelector(selector);
 
             VisualElement styleSheetElement = null;
             foreach (var child in selectorContainerElement.Children())

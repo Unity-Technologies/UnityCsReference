@@ -587,6 +587,7 @@ internal class SerializedObjectBindingContext
     class TrackedValue
     {
         public uint contentHash;
+        public bool hasMultipleDifferentValues;
         public Action<object, SerializedProperty> onChangeCallback;
         public Action<object, SerializedProperty> onUpdateCallback;
         public object cookie;
@@ -615,10 +616,13 @@ internal class SerializedObjectBindingContext
             onUpdateCallback?.Invoke(cookie, currentProp);
 
             var newContentHash = currentProp.contentHash;
+            var newHasMultipleDifferentValues = currentProp.hasMultipleDifferentValues;
 
-            if (contentHash != newContentHash)
+            // We check if the value has changed or if the multiple different values state has changed.
+            if (contentHash != newContentHash || hasMultipleDifferentValues != newHasMultipleDifferentValues)
             {
                 contentHash = newContentHash;
+                hasMultipleDifferentValues = newHasMultipleDifferentValues;
 
                 // We execute the change callbacks after updating the tracked properties as its possible the callback will make changes to the serialized object.
                 pendingCallbacks.Add((cookie, currentProp.Copy(), onChangeCallback));

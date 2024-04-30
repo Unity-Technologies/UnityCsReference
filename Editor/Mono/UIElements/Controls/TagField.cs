@@ -149,7 +149,7 @@ namespace UnityEditor.UIElements
             choices = InitializeTags();
             foreach (var menuItem in choices)
             {
-                var isSelected = (menuItem == value);
+                var isSelected = (menuItem == value) && !showMixedValue;
                 menu.AddItem(menuItem, isSelected, () => ChangeValueFromMenu(menuItem));
             }
             menu.AddSeparator(String.Empty);

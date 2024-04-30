@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements.StyleSheets
     static class CSSSpec
     {
         static readonly Regex rgx = new Regex(
-            @"(?<id>#[-]?\w[\w-]*)|(?<class>\.[\w-]+)|(?<pseudoclass>:[\w-]+(\((?<param>.+)\))?)|(?<type>[^\-]\w+)|(?<wildcard>\*)|\s+",
+            @"(?<id>#[-]?\w[\w-]*)|(?<class>\.[\w-]+)|(?<pseudoclass>:[\w-]+(\((?<param>.+)\))?)|(?<type>([^\-]\w+|\w+))|(?<wildcard>\*)|\s+",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         const int typeSelectorWeight = 1;
