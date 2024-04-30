@@ -181,7 +181,7 @@ namespace UnityEditor.UIElements
             {
                 var item = layerList[i];
                 var menuItemIndex = m_Choices[i];
-                var isSelected = (menuItemIndex == value);
+                var isSelected = (menuItemIndex == value) && !showMixedValue;
                 menu.AddItem(item, isSelected, () => ChangeValueFromMenu(menuItemIndex));
             }
             menu.AddSeparator(String.Empty);

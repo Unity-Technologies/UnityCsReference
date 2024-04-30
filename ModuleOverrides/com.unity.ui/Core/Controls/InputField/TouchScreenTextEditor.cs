@@ -43,7 +43,7 @@ namespace UnityEngine.UIElements
                     {
                         edition.RestoreValueAndText();
                     }
-                    else 
+                    else
                     {
                         //Ensure that text is updated after closing the keyboard as some platforms only send input after it is closed
                         touchKeyboardText = touchKeyboard.text;
@@ -114,9 +114,6 @@ namespace UnityEngine.UIElements
                     // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.
                     textElement.uitkTextHandle.Update();
                 }
-
-                if (!edition.isDelayed)
-                    edition.UpdateValueFromText?.Invoke();
 
                 textElement.edition.UpdateScrollOffset?.Invoke(false);
             }

@@ -57,6 +57,12 @@ class SerializedIsExpandedBinding : SerializedObjectBindingPropertyToBaseField<b
             lastFieldValue = foldout.value;
     }
 
+    protected override void AssignValueToFieldWithoutNotify(bool lastValue)
+    {
+        if (field is Foldout foldout)
+            foldout.SetValueWithoutNotify(lastValue);
+    }
+
     protected override void AssignValueToField(bool lastValue)
     {
         if (field is Foldout foldout)
