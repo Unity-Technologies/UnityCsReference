@@ -304,8 +304,7 @@ namespace UnityEditorInternal
                 var newSelection = new List<int>(selectedInstanceIDs);
                 if (newSelection.Contains(clickedEntry.instanceID))
                 {
-                    // In case the user is performing CTRL+click on an already selected item, delay the deselection so that Drag may be initiated.
-                    if (!(Event.current.control && Event.current.type == EventType.MouseDown))
+                    if (!keepMultiSelection)
                         newSelection.Remove(clickedEntry.instanceID);
                 }
                 else

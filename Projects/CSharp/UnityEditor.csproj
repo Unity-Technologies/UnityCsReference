@@ -4066,6 +4066,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Selector\SelectorUtility.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Selector\SelectorUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StringExtensions\StringExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StringExtensions\StringExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\DimensionStyleField.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\DimensionStyleField.cs</Link>
     </Compile>
@@ -4128,9 +4131,6 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\VariableInfoView.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\VariableInfoView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\CSSSpecCopy.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\CSSSpecCopy.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleComplexSelectorExtensions.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleComplexSelectorExtensions.cs</Link>

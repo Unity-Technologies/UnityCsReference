@@ -59,7 +59,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 CodegenAssemblies = codeGenAssemblies,
                 Debug = debug,
                 BuildTarget = buildTarget.ToString(),
-                Localization = localization
+                Localization = localization,
+                EnableDiagnostics = editorCompilation.EnableDiagnostics
             });
         }
 

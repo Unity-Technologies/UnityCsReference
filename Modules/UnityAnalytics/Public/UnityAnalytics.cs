@@ -18,18 +18,6 @@ namespace UnityEngine.Analytics
         Unknown
     }
 
-    public enum AnalyticsResult
-    {
-        Ok,
-        NotInitialized,
-        AnalyticsDisabled,
-        TooManyItems,
-        SizeLimitReached,
-        TooManyRequests,
-        InvalidData,
-        UnsupportedPlatform
-    }
-
     [Flags]
     public enum AnalyticsEventPriority
     {

@@ -130,7 +130,7 @@ namespace UnityEngine.UIElements
         public string text
         {
             get { return m_TextInputBase.text; }
-            protected set
+            protected internal set
             {
                 m_TextInputBase.text = value;
             }

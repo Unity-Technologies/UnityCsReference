@@ -10,7 +10,6 @@ namespace Unity.UI.Builder
 
         VisualElement m_StyleSheetSection;
         TextField m_NewSelectorNameNameField;
-        Button m_AddNewSelectorButton;
 
         public VisualElement root => m_StyleSheetSection;
 
@@ -24,9 +23,7 @@ namespace Unity.UI.Builder
 
             m_StyleSheetSection = m_Inspector.Q("shared-styles-controls");
             m_NewSelectorNameNameField = m_Inspector.Q<TextField>("add-new-selector-field");
-            m_AddNewSelectorButton = m_Inspector.Q<Button>("add-new-selector-button");
 
-            m_AddNewSelectorButton.clickable.clicked += CreateNewSelector;
             m_NewSelectorNameNameField.RegisterValueChangedCallback(OnCreateNewSelector);
             m_NewSelectorNameNameField.isDelayed = true;
         }
@@ -36,14 +33,6 @@ namespace Unity.UI.Builder
             CreateNewSelector(evt.newValue);
         }
 
-        void CreateNewSelector()
-        {
-            if (string.IsNullOrEmpty(m_NewSelectorNameNameField.value))
-                return;
-
-            CreateNewSelector(m_NewSelectorNameNameField.value);
-        }
-
         void CreateNewSelector(string newSelectorString)
         {
             m_NewSelectorNameNameField.SetValueWithoutNotify(string.Empty);
@@ -51,8 +40,13 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(
                 styleSheet, BuilderConstants.AddNewSelectorUndoMessage);
 
-            BuilderSharedStyles.CreateNewSelector(
-                currentVisualElement.parent, styleSheet, newSelectorString);
+            if (!SelectorUtility.TryCreateSelector(newSelectorString, out var complexSelector, out var error))
+            {
+                Builder.ShowWarning(error);
+                return;
+            }
+            
+            BuilderSharedStyles.CreateNewSelector(currentVisualElement.parent, styleSheet, complexSelector);
 
             m_Selection.NotifyOfHierarchyChange(m_Inspector);
             m_Selection.NotifyOfStylingChange(m_Inspector);

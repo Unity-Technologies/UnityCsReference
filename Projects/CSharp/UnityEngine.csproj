@@ -691,6 +691,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\ScalableImage.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\ScalableImage.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StringBuilderPool.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StringBuilderPool.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleComplexSelector.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\StyleComplexSelector.cs</Link>
     </Compile>

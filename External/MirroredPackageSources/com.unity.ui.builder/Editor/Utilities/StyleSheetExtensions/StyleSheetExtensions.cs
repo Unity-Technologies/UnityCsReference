@@ -169,13 +169,22 @@ namespace Unity.UI.Builder
         public static StyleComplexSelector AddSelector(
             this StyleSheet styleSheet, string complexSelectorStr, string undoMessage = null)
         {
+            if (!SelectorUtility.TryCreateSelector(complexSelectorStr, out var complexSelector, out var error))
+            {
+                Builder.ShowWarning(error);
+                return null;
+            }
+
+            return styleSheet.AddSelector(complexSelector, undoMessage);
+        }
+
+        public static StyleComplexSelector AddSelector(
+            this StyleSheet styleSheet, StyleComplexSelector complexSelector, string undoMessage = null)
+        {
             // Undo/Redo
             if (string.IsNullOrEmpty(undoMessage))
                 undoMessage = "New UI Style Selector";
             Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
-
-            if (!SelectorUtility.TryCreateSelector(complexSelectorStr, out var complexSelector))
-                return null;
 
             // Add rule to StyleSheet.
             var rulesList = styleSheet.rules.ToList();

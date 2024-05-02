@@ -139,7 +139,16 @@ namespace Unity.UI.Builder
                         return;
                     }
 
-                    BuilderSharedStyles.SetSelectorString(documentElement, stylesheet, value);
+                    if (!BuilderSharedStyles.SetSelectorString(documentElement, stylesheet, value, out var error))
+                    {
+                        Builder.ShowWarning(error);
+                        renameTextfield.schedule.Execute(() =>
+                        {
+                            FocusOnRenameTextField();
+                            renameTextfield.SetValueWithoutNotify(value);
+                        });
+                        return;
+                    }
                 }
 
                 selection.NotifyOfStylingChange();

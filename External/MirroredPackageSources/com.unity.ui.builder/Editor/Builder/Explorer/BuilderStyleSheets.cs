@@ -205,12 +205,13 @@ namespace Unity.UI.Builder
                     styleSheet = m_PaneWindow.document.firstStyleSheet;
 
                     // The EditorWindow will no longer have Focus after we show the
-                    // Save Dialog so even though the New Selector field will appear
-                    // focused, typing won't do anything. As such, it's better, in
-                    // this one case to remove focus from this field so users know
-                    // to re-focus it themselves before they can add more selectors.
-                    m_NewSelectorTextField.value = string.Empty;
-                    m_NewSelectorTextField.Blur();
+                    // Save dialog, so we need to manually refocus it.
+                    var p = (EditorPanel) panel;
+                    if (p.ownerObject is HostView view && view)
+                    {
+                        view.Focus();
+                        m_NewSelectorTextField.schedule.Execute(PostEnterRefocus);
+                    }
                 }
                 else
                 {
@@ -249,14 +250,28 @@ namespace Unity.UI.Builder
                 Builder.ShowWarning(BuilderConstants.StyleSelectorValidationSpacialCharacters);
                 m_NewSelectorTextField.schedule.Execute(() =>
                 {
+                    m_ShouldRefocusSelectorFieldOnBlur = false;
                     m_NewSelectorTextField.SetValueWithoutNotify(newValue);
+                    m_NewSelectorTextInputField.Focus();
                     m_NewSelectorTextField.SelectAll();
                 });
                 return;
             }
 
             var selectorContainerElement = m_Viewport.styleSelectorElementContainer;
-            var newComplexSelector = BuilderSharedStyles.CreateNewSelector(selectorContainerElement, styleSheet, newSelectorStr);
+            if (!SelectorUtility.TryCreateSelector(newSelectorStr, out var complexSelector, out var error))
+            {
+                Builder.ShowWarning(error);
+                m_NewSelectorTextField.schedule.Execute(() =>
+                {
+                    m_ShouldRefocusSelectorFieldOnBlur = false;
+                    m_NewSelectorTextField.SetValueWithoutNotify(newValue);
+                    m_NewSelectorTextInputField.Focus();
+                    m_NewSelectorTextField.SelectAll();
+                });
+                return;
+            }
+            var newComplexSelector = BuilderSharedStyles.CreateNewSelector(selectorContainerElement, styleSheet, complexSelector);
 
             m_Selection.NotifyOfHierarchyChange();
             m_Selection.NotifyOfStylingChange();
@@ -267,6 +282,8 @@ namespace Unity.UI.Builder
                     (e) => e.GetStyleComplexSelector() == newComplexSelector);
             if (newSelectorElement != null)
                 m_Selection.Select(null, newSelectorElement);
+            
+            m_NewSelectorTextField.SetValueWithoutNotify(BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage);
         }
 
         void SetUpAddUSSMenu()

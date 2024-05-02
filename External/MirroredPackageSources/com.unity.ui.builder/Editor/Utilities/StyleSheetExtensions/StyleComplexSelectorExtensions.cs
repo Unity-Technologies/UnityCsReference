@@ -6,73 +6,81 @@ using UnityEngine.UIElements;
 using UnityEngine;
 
 using UnityEditor.UIElements.StyleSheets;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
     internal static class StyleComplexSelectorExtensions
     {
-        static readonly string s_DecendantSymbol = ">";
+        private const string k_DescendantSymbol = ">";
 
-        internal static bool InitializeSelector(StyleComplexSelector complexSelector, string complexSelectorStr)
+        internal static bool InitializeSelector(StyleComplexSelector complexSelector, string complexSelectorStr, out string error)
         {
+            complexSelectorStr = complexSelectorStr.RemoveExtraWhitespace();
+            var selectorSplit = complexSelectorStr.Split(' ');
+            
             // Set specificity.
-            int fullSpecificity = CSSSpecCopy.GetSelectorSpecificity(complexSelectorStr);
+            int fullSpecificity = CSSSpec.GetSelectorSpecificity(complexSelectorStr);
             if (fullSpecificity == 0)
             {
-                Debug.LogError("Failed to calculate selector specificity: " + complexSelectorStr);
+                error = $"Selector '{complexSelectorStr}' is invalid: failed to calculate selector specificity.";
                 return false;
             }
-            complexSelector.specificity = fullSpecificity;
-
-            // Remove extra whitespace.
-            var selectorSplit = complexSelectorStr.Split(' ');
-            complexSelectorStr = String.Join(" ", selectorSplit);
-
+            
             var simpleSelectors = new List<StyleSelector>();
-            var previousRelationsip = StyleSelectorRelationship.None;
+            var previousRelationship = StyleSelectorRelationship.None;
             foreach (var simpleSelectorStr in selectorSplit)
             {
-                if (simpleSelectorStr == s_DecendantSymbol)
+                if (simpleSelectorStr == k_DescendantSymbol)
                 {
-                    previousRelationsip = StyleSelectorRelationship.Child;
+                    previousRelationship = StyleSelectorRelationship.Child;
                     continue;
                 }
 
                 StyleSelectorPart[] parts;
-                if (!CSSSpecCopy.ParseSelector(simpleSelectorStr, out parts))
+                if (!CSSSpec.ParseSelector(simpleSelectorStr, out parts))
                 {
-                    Debug.LogError(StyleSheetImportErrorCode.UnsupportedSelectorFormat + ": " + complexSelectorStr);
+                    error = $"Selector '{complexSelectorStr}' is invalid: the selector could not be parsed.";
                     return false;
                 }
                 if (parts.Any(p => p.type == StyleSelectorType.Unknown))
                 {
-                    Debug.LogError(StyleSheetImportErrorCode.UnsupportedSelectorFormat + ": " + complexSelectorStr);
+                    error = $"Selector '{complexSelectorStr}' is invalid: the selector contains unknown parts.";
                     return false;
                 }
                 if (parts.Any(p => p.type == StyleSelectorType.RecursivePseudoClass))
                 {
-                    Debug.LogError(StyleSheetImportErrorCode.RecursiveSelectorDetected + ": " + complexSelectorStr);
+                    error = $"Selector '{complexSelectorStr}' is invalid: the selector contains recursive parts.";
                     return false;
                 }
 
-                var simpleSelector = new StyleSelector();
-                simpleSelector.parts = parts;
-                simpleSelector.previousRelationship = previousRelationsip;
+                var simpleSelector = new StyleSelector
+                {
+                    parts = parts,
+                    previousRelationship = previousRelationship
+                };
                 simpleSelectors.Add(simpleSelector);
 
                 // This is the default (if no > came before).
-                previousRelationsip = StyleSelectorRelationship.Descendent;
+                previousRelationship = StyleSelectorRelationship.Descendent;
             }
 
             complexSelector.selectors = simpleSelectors.ToArray();
-
+            complexSelector.specificity = fullSpecificity;
+            error = null;
             return true;
         }
 
-        public static void SetSelectorString(this StyleSheet styleSheet, StyleComplexSelector complexSelector, string newComplexSelectorStr)
+        public static bool SetSelectorString(this StyleSheet styleSheet, StyleComplexSelector complexSelector, string newComplexSelectorStr, out string error)
         {
-            InitializeSelector(complexSelector, newComplexSelectorStr);
-            styleSheet?.UpdateContentHash();
+            if (InitializeSelector(complexSelector, newComplexSelectorStr, out error))
+            {
+                if (styleSheet)
+                    styleSheet.UpdateContentHash();
+                return true;
+            }
+
+            return false;
         }
 
         public static StyleProperty FindProperty(this StyleSheet styleSheet, StyleComplexSelector selector, string propertyName)
