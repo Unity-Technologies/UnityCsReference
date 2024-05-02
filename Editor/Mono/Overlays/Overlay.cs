@@ -205,6 +205,38 @@ namespace UnityEditor.Overlays
             }
         }
 
+        sealed class GlobalMouseBehaviourForOverlays : MouseManipulator
+        {
+            protected override void RegisterCallbacksOnTarget()
+            {
+                target.RegisterCallback<MouseDownEvent>(OnMouseDownBubbleUp, TrickleDown.NoTrickleDown);
+                target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+                target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
+            }
+
+            protected override void UnregisterCallbacksFromTarget()
+            {
+                target.UnregisterCallback<MouseDownEvent>(OnMouseDownBubbleUp, TrickleDown.NoTrickleDown);
+                target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+                target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
+            }
+
+            void OnMouseDownBubbleUp(MouseDownEvent e)
+            {
+                e.StopPropagation();
+            }
+
+            void OnMouseUp(MouseUpEvent e)
+            {
+                e.StopPropagation();
+            }
+
+            void OnMouseMove(MouseMoveEvent e)
+            {
+                e.StopPropagation();
+            }
+        }
+
         internal VisualElement rootVisualElement
         {
             get
@@ -218,6 +250,7 @@ namespace UnityEditor.Overlays
                 m_RootVisualElement.name = m_RootVisualElementName;
                 m_RootVisualElement.usageHints = UsageHints.DynamicTransform;
                 m_RootVisualElement.AddToClassList(ussClassName);
+                m_RootVisualElement.AddManipulator(new GlobalMouseBehaviourForOverlays());
 
                 var dragger = new OverlayDragger(this);
                 var contextClick = new ContextualMenuManipulator(BuildContextMenu);

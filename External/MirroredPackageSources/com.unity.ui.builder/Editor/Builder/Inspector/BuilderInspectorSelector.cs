@@ -29,6 +29,11 @@ namespace Unity.UI.Builder
 
         void OnStyleSelectorNameChange(ChangeEvent<string> evt)
         {
+            if (evt.leafTarget != m_StyleSelectorNameField)
+                return;
+
+            var newValue = evt.newValue;
+            
             if (m_Selection.selectionType != BuilderSelectionType.StyleSelector)
                 return;
 
@@ -38,7 +43,33 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(
                 styleSheet, BuilderConstants.RenameSelectorUndoMessage);
 
-            BuilderSharedStyles.SetSelectorString(currentVisualElement, styleSheet, evt.newValue);
+            if (!BuilderNameUtilities.styleSelectorRegex.IsMatch(newValue))
+            {
+                Builder.ShowWarning(BuilderConstants.StyleSelectorValidationSpacialCharacters);
+                m_StyleSelectorNameField.schedule.Execute(() =>
+                {
+                    m_StyleSelectorNameField.SetValueWithoutNotify(BuilderSharedStyles.GetSelectorString(currentVisualElement));
+                    m_StyleSelectorNameField.focusController?.focusedElement?.Blur();
+                    m_StyleSelectorNameField.textInputBase.Focus();
+                    m_StyleSelectorNameField.text = newValue;
+                    m_StyleSelectorNameField.SelectAll();
+                });
+                return;
+            }
+            
+            if (!BuilderSharedStyles.SetSelectorString(currentVisualElement, styleSheet, newValue, out var error))
+            {
+                Builder.ShowWarning(error);
+                m_StyleSelectorNameField.schedule.Execute(() =>
+                {
+                    m_StyleSelectorNameField.SetValueWithoutNotify(BuilderSharedStyles.GetSelectorString(currentVisualElement));
+                    m_StyleSelectorNameField.focusController?.focusedElement?.Blur();
+                    m_StyleSelectorNameField.textInputBase.Focus();
+                    m_StyleSelectorNameField.text = newValue;
+                    m_StyleSelectorNameField.SelectAll();
+                });
+                return;
+            }
 
             m_Selection.NotifyOfHierarchyChange(m_Inspector);
             m_Selection.NotifyOfStylingChange(m_Inspector);

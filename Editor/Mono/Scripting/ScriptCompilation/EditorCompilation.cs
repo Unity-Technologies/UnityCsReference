@@ -76,7 +76,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public IVersionDefinesConsoleLogs VersionDefinesConsoleLogs { get; set; } = new VersionDefinesConsoleLogs();
         public ICompilationSetupWarningTracker CompilationSetupWarningTracker { get; set; } = new CompilationSetupWarningTracker();
         public ISafeModeInfo SafeModeInfo { get; set; } = new SafeModeInfo();
-
+        public bool EnableDiagnostics { get; } = (bool)Debug.GetDiagnosticSwitch("EnableDomainReloadTimings").value;
         internal string projectDirectory = string.Empty;
         Dictionary<string, string> allScripts = new Dictionary<string, string>();
 

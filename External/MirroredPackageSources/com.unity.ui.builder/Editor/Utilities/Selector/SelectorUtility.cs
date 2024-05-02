@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 
@@ -5,7 +6,7 @@ namespace Unity.UI.Builder
 {
     static class SelectorUtility
     {
-        public static bool TryCreateSelector(string complexSelectorStr, out StyleComplexSelector selector)
+        public static bool TryCreateSelector(string complexSelectorStr, out StyleComplexSelector selector, out string error)
         {
             // Remove extra whitespace.
             var selectorSplit = complexSelectorStr.Split(' ');
@@ -15,7 +16,7 @@ namespace Unity.UI.Builder
             var rule = new StyleRule
             {
                 line = -1,
-                properties = new StyleProperty[0]
+                properties = Array.Empty<StyleProperty>()
             };
 
             // Create selector.
@@ -23,7 +24,7 @@ namespace Unity.UI.Builder
             {
                 rule = rule
             };
-            var initResult = StyleComplexSelectorExtensions.InitializeSelector(selector, complexSelectorStr);
+            var initResult = StyleComplexSelectorExtensions.InitializeSelector(selector, complexSelectorStr, out error);
             return initResult;
         }
 

@@ -21,6 +21,7 @@ namespace ScriptCompilationBuildProgram.Data
         public bool Debug;
         public string BuildTarget;
         public string Localization;
+        public bool EnableDiagnostics;
     }
 
     public class AssemblyData
