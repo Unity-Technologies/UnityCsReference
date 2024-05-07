@@ -103,7 +103,7 @@ namespace UnityEditor.PackageManager
     }
 
     [NativeHeader("Modules/PackageManager/Editor/PackageManagerImmutableAssets.h")]
-    [StaticAccessor("PackageManager::ImmutableAssets", StaticAccessorType.DoubleColon)]
+    [StaticAccessor("PackageManager::ImmutableAssets::GetInstance()", StaticAccessorType.Arrow)]
     internal class ImmutableAssets
     {
         public static extern void SetAssetsAllowedToBeModified(string[] assetsAllowedToBeModified);

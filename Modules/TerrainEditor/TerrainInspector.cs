@@ -156,8 +156,11 @@ namespace UnityEditor
             public readonly GUIContent mismatchedTerrainData = EditorGUIUtility.TextContentWithIcon(
                 "The TerrainData used by the TerrainCollider component is different from this terrain. Would you like to assign the same TerrainData to the TerrainCollider component?",
                 "console.warnicon");
-
+            public readonly GUIContent noTerrainCollider = EditorGUIUtility.TextContentWithIcon(
+                "Painting on this Terrain is not supported without the TerrainCollider component. Would you like to add or enable it?",
+                "console.warnicon");
             public readonly GUIContent assign = EditorGUIUtility.TrTextContent("Assign");
+            public readonly GUIContent addOrEnable = EditorGUIUtility.TrTextContent("Add/Enable");
             public readonly GUIContent duplicateTab = EditorGUIUtility.TrTextContent("This inspector tab is not the active Terrain inspector, paint functionality disabled.");
             public readonly GUIContent makeMeActive = EditorGUIUtility.TrTextContent("Activate this inspector");
             public readonly GUIContent gles2NotSupported = EditorGUIUtility.TrTextContentWithIcon("Terrain editting is not supported in GLES2.", MessageType.Info);
@@ -290,6 +293,18 @@ namespace UnityEditor
         // Source terrain
         Terrain m_Terrain;
         TerrainCollider m_TerrainCollider;
+
+        public Terrain Terrain
+        {
+            get { return m_Terrain; }
+            set { m_Terrain = value; }
+        }
+
+        public TerrainCollider TerrainCollider
+        {
+            get { return m_TerrainCollider; }
+            set { m_TerrainCollider = value; }
+        }
 
         float m_Strength;
 
@@ -1960,28 +1975,25 @@ namespace UnityEditor
 
             switch ((TerrainTool)tool)
             {
-                case TerrainTool.Paint:
                 case TerrainTool.CreateNeighbor:
+                    DisplayActiveTerrainTool();
+                    break;
+                case TerrainTool.Paint:
                 case TerrainTool.PlaceTree:
                 case TerrainTool.PaintDetail:
-                    var activeTool = GetActiveTool();
-                    if (selectedTool == TerrainTool.Paint && m_PaintToolNames != null && m_PaintToolNames.Length > 0)
+                    if (!m_TerrainCollider || !m_TerrainCollider.enabled)
                     {
-                        EditorGUI.BeginChangeCheck();
-                        int index = EditorGUILayout.Popup(m_ActivePaintToolIndex, m_PaintToolNames);
-                        if (EditorGUI.EndChangeCheck() && index != m_ActivePaintToolIndex)
+                        GUILayout.BeginVertical(EditorStyles.helpBox);
+                        GUILayout.Label(styles.noTerrainCollider, EditorStyles.wordWrappedLabel);
+                        GUILayout.Space(3);
+                        if (GUILayout.Button(styles.addOrEnable, GUILayout.ExpandWidth(false)))
                         {
-                            SelectPaintTool(index);
+                            AddOrEnableTerrainCollider();
                         }
+                        GUILayout.Space(3);
+                        GUILayout.EndVertical();
                     }
-
-                    GUILayout.BeginVertical(EditorStyles.helpBox);
-                    if (selectedTool != TerrainTool.Paint)
-                        GUILayout.Label(activeTool.GetName(), EditorStyles.boldLabel);
-                    GUILayout.Label(activeTool.GetDescription(), EditorStyles.wordWrappedMiniLabel);
-                    GUILayout.EndVertical();
-                    EditorGUILayout.Space();
-                    activeTool.OnInspectorGUI(m_Terrain, onInspectorGUIEditContext);
+                    DisplayActiveTerrainTool();
                     break;
                 case TerrainTool.TerrainSettings:
                     ShowSettings();
@@ -1994,6 +2006,41 @@ namespace UnityEditor
             }
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        public void AddOrEnableTerrainCollider()
+        {
+            if (!m_TerrainCollider)
+            {
+                m_TerrainCollider = m_Terrain.gameObject.AddComponent<TerrainCollider>();
+                m_TerrainCollider.terrainData = m_Terrain.terrainData;
+            }
+            else
+            {
+                m_TerrainCollider.enabled = true;
+            }
+        }
+
+        public void DisplayActiveTerrainTool()
+        {
+            var activeTool = GetActiveTool();
+            if (selectedTool == TerrainTool.Paint && m_PaintToolNames != null && m_PaintToolNames.Length > 0)
+            {
+                EditorGUI.BeginChangeCheck();
+                int index = EditorGUILayout.Popup(m_ActivePaintToolIndex, m_PaintToolNames);
+                if (EditorGUI.EndChangeCheck() && index != m_ActivePaintToolIndex)
+                {
+                    SelectPaintTool(index);
+                }
+            }
+
+            GUILayout.BeginVertical(EditorStyles.helpBox);
+            if (selectedTool != TerrainTool.Paint)
+                GUILayout.Label(activeTool.GetName(), EditorStyles.boldLabel);
+            GUILayout.Label(activeTool.GetDescription(), EditorStyles.wordWrappedMiniLabel);
+            GUILayout.EndVertical();
+            EditorGUILayout.Space();
+            activeTool.OnInspectorGUI(m_Terrain, onInspectorGUIEditContext);
         }
 
         public bool Raycast(out Vector2 uv, out Vector3 pos)
@@ -2186,7 +2233,9 @@ namespace UnityEditor
             foreach (Terrain terrain in Terrain.activeTerrains)
             {
                 RaycastHit hit;
-                if (terrain.GetComponent<TerrainCollider>().Raycast(mouseRay, out hit, Mathf.Infinity, true))
+				var terrainCollider = terrain.GetComponent<TerrainCollider>();
+
+                if (terrainCollider && terrainCollider.Raycast(mouseRay, out hit, Mathf.Infinity, true))
                 {
                     if (hit.distance < minDist)
                     {

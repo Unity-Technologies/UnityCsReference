@@ -3288,6 +3288,7 @@ namespace UnityEditor
                 newSelectedIndices.Add(previousSelectedIndices[i] + 1);
             }
 
+            newSelectedIndices.Sort();
             listView.SetSelection(newSelectedIndices);
         }
 
