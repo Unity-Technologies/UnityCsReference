@@ -1116,12 +1116,18 @@ namespace UnityEditor
         {
             var command = locked ? EventCommandNames.FrameSelectedWithLock : EventCommandNames.FrameSelected;
 
-            var win = focusedWindow;
+            var win = mouseOverWindow;
             var ret = win != null && win.SendEvent(EditorGUIUtility.CommandEvent(command));
 
-            if (!ret)
+            if (ret)
             {
-                win = mouseOverWindow;
+                // In case the window under the mouse handle the Focus event, it should be focused on.
+                win.Focus();
+            }
+            else
+            {
+                // Otherwise get the current focused window to handle that event.
+                win = focusedWindow;
                 ret = win != null && win.SendEvent(EditorGUIUtility.CommandEvent(command));
             }
 
@@ -1132,6 +1138,7 @@ namespace UnityEditor
                 lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent(command));
         }
 
+        [RequiredByNativeCode]
         public static bool FrameLastActiveSceneView()
         {
             if (lastActiveSceneView == null)
@@ -1582,6 +1589,7 @@ namespace UnityEditor
                 if (s_AudioSceneView.m_PlayAudio)
                 {
                     s_AudioSceneView.m_PlayAudio = false;
+                    s_AudioSceneView.sceneAudioChanged?.Invoke(false);
                     s_AudioSceneView.Repaint();
                 }
             }

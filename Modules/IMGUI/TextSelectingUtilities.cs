@@ -17,7 +17,8 @@ namespace UnityEngine
 
         private bool m_bJustSelected = false;
         private bool m_MouseDragSelectsWholeWords = false;
-        private int m_DblClickInitPos = 0;
+        private int m_DblClickInitPosStart = 0;
+        private int m_DblClickInitPosEnd = 0;
         TextHandle m_TextHandle;
         private const int kMoveDownHeight = 5;
         private const char kNewLineChar = '\n';
@@ -599,7 +600,8 @@ namespace UnityEngine
         public void MouseDragSelectsWholeWords(bool on)
         {
             m_MouseDragSelectsWholeWords = on;
-            m_DblClickInitPos = cursorIndex;
+            m_DblClickInitPosStart = cursorIndex < selectIndex ? cursorIndex : selectIndex;
+            m_DblClickInitPosEnd = cursorIndex < selectIndex ? selectIndex : cursorIndex;
         }
 
         /// Expand the selection to the start of the line
@@ -657,33 +659,37 @@ namespace UnityEngine
                 int p = m_TextHandle.GetCursorIndexFromPosition(cursorPosition);
 
                 p = EnsureValidCodePointIndex(p);
-                m_DblClickInitPos = EnsureValidCodePointIndex(m_DblClickInitPos);
 
                 if (dblClickSnap == DblClickSnapping.WORDS)
                 {
-                    if (p < m_DblClickInitPos)
+                    if (p <= m_DblClickInitPosStart)
                     {
                         cursorIndex = FindEndOfClassification(p, Direction.Backward);
-                        selectIndex = FindEndOfClassification(m_DblClickInitPos, Direction.Forward);
+                        selectIndex = FindEndOfClassification(m_DblClickInitPosEnd - 1, Direction.Forward);
+                    }
+                    else if (p >= m_DblClickInitPosEnd)
+                    {
+                        cursorIndex = FindEndOfClassification(p - 1, Direction.Forward);
+                        selectIndex = FindEndOfClassification(m_DblClickInitPosStart + 1, Direction.Backward);
                     }
                     else
                     {
-                        cursorIndex = FindEndOfClassification(p, Direction.Forward);
-                        selectIndex = FindEndOfClassification(m_DblClickInitPos, Direction.Backward);
+                        cursorIndex = m_DblClickInitPosStart;
+                        selectIndex = m_DblClickInitPosEnd;
                     }
                 } // paragraph
                 else
                 {
-                    if (p < m_DblClickInitPos)
+                    if (p <= m_DblClickInitPosStart)
                     {
                         if (p > 0)
-                            cursorIndex = m_TextHandle.LastIndexOf(kNewLineChar, Mathf.Max(0, p - 2)) + 1;
+                            cursorIndex = m_TextHandle.LastIndexOf(kNewLineChar, Mathf.Max(0, p - 1)) + 1;
                         else
                             cursorIndex = 0;
 
-                        selectIndex = m_TextHandle.LastIndexOf(kNewLineChar, Mathf.Min(characterCount - 1, m_DblClickInitPos));
+                        selectIndex = m_TextHandle.LastIndexOf(kNewLineChar, Mathf.Min(characterCount - 1, m_DblClickInitPosEnd + 1));
                     }
-                    else
+                    else if (p >= m_DblClickInitPosEnd)
                     {
                         if (p < characterCount)
                         {
@@ -692,7 +698,12 @@ namespace UnityEngine
                         else
                             cursorIndex = characterCount;
 
-                        selectIndex = m_TextHandle.LastIndexOf(kNewLineChar, Mathf.Max(0, m_DblClickInitPos - 2)) + 1;
+                        selectIndex = m_TextHandle.LastIndexOf(kNewLineChar, Mathf.Max(0, m_DblClickInitPosEnd - 2)) + 1;
+                    }
+                    else
+                    {
+                        cursorIndex = m_DblClickInitPosStart;
+                        selectIndex = m_DblClickInitPosEnd;
                     }
                 }
             }

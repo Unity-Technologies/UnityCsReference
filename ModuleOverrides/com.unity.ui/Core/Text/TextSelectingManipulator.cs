@@ -170,13 +170,21 @@ namespace UnityEngine.UIElements
                         m_SelectingUtilities.MoveCursorToPosition_Internal(pointerPosition, evt.shiftKey);
 
                     m_SelectingUtilities.SelectCurrentWord();
+                    m_SelectingUtilities.MouseDragSelectsWholeWords(true);
+                    m_SelectingUtilities.DblClickSnap(TextEditor.DblClickSnapping.WORDS);
                 }
                 else if (m_ConsecutiveMouseDownCount == 3 && m_TextElement.selection.tripleClickSelectsLine)
+                {
                     m_SelectingUtilities.SelectCurrentParagraph();
+                    m_SelectingUtilities.MouseDragSelectsWholeWords(true);
+                    m_SelectingUtilities.DblClickSnap(TextEditor.DblClickSnapping.PARAGRAPHS);
+                }
                 else
                 {
                     m_SelectingUtilities.MoveCursorToPosition_Internal(pointerPosition, evt.shiftKey);
                     m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
+                    m_SelectingUtilities.MouseDragSelectsWholeWords(false);
+                    m_SelectingUtilities.DblClickSnap(TextEditor.DblClickSnapping.WORDS);
                 }
 
                 m_LastMouseDownTimeStamp = evt.timestamp;

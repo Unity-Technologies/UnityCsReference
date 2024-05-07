@@ -12,6 +12,21 @@ namespace UnityEditor.UIElements.Bindings
 {
     class ListViewSerializedObjectBinding : SerializedObjectBindingBase
     {
+        class TrackedIndex
+        {
+            public int Index { get; set; }
+            public int HashCodeForPropertyPath { get; set; }
+
+            public void Reset()
+            {
+                Index = -1;
+                HashCodeForPropertyPath = 0;
+            }
+        }
+
+        private static UnityEngine.Pool.ObjectPool<TrackedIndex> s_TrackedIndexPool = new(() => new TrackedIndex(), t => t.Reset());
+        private List<TrackedIndex> m_TrackedIndex;
+
         ListView listView
         {
             get => boundElement as ListView;
@@ -20,7 +35,6 @@ namespace UnityEditor.UIElements.Bindings
 
         SerializedObjectList m_DataList;
 
-        SerializedProperty m_ArraySize;
         int m_ListViewArraySize;
 
         Func<VisualElement> m_DefaultMakeItem;
@@ -53,13 +67,14 @@ namespace UnityEditor.UIElements.Bindings
             SerializedProperty prop)
         {
             m_DataList = new SerializedObjectList(prop);
-            m_ArraySize = m_DataList.ArraySize;
-            m_ListViewArraySize = m_DataList.ArraySize.intValue;
+            m_ListViewArraySize = m_DataList.ArrayProperty.arraySize;
 
             SetListView(targetList);
-            SetContext(context, m_ArraySize);
+            SetContext(context, m_DataList.ArraySize);
 
             targetList.RefreshItems();
+
+            TrackElements();
         }
 
         private void SetListView(ListView lv)
@@ -167,7 +182,7 @@ namespace UnityEditor.UIElements.Bindings
 
         void BindListViewItem(VisualElement ve, int index)
         {
-            if (m_ListViewArraySize != -1 && m_ArraySize.intValue != m_ListViewArraySize)
+            if (m_ListViewArraySize != -1 && m_DataList.ArrayProperty.arraySize != m_ListViewArraySize)
             {
                 // We need to wait for array size to be updated, which triggers a refresh anyway.
                 return;
@@ -194,7 +209,7 @@ namespace UnityEditor.UIElements.Bindings
 
         void UnbindListViewItem(VisualElement ve, int index)
         {
-            if (m_ListViewArraySize != -1 && m_ArraySize.intValue != m_ListViewArraySize)
+            if (m_ListViewArraySize != -1 && m_DataList.ArrayProperty.arraySize != m_ListViewArraySize)
             {
                 // We need to wait for array size to be updated, which triggers a refresh anyway.
                 return;
@@ -216,6 +231,51 @@ namespace UnityEditor.UIElements.Bindings
             field.bindingPath = null;
         }
 
+        private void TrackElements()
+        {
+            if (listView.bindItem == m_DefaultBindItem)
+            {
+                return;
+            }
+
+            m_TrackedIndex ??= new List<TrackedIndex>();
+
+            for (var i = 0; i < m_DataList.Count; i++)
+            {
+                if (i < m_TrackedIndex.Count)
+                {
+                    continue;
+                }
+
+                var elementProperty = m_DataList[i] as SerializedProperty;
+                s_TrackedIndexPool.Get(out var trackedIndex);
+                trackedIndex.Index = i;
+                trackedIndex.HashCodeForPropertyPath = elementProperty.hashCodeForPropertyPath;
+                bindingContext.RegisterSerializedPropertyChangeCallback(trackedIndex, elementProperty, (cookie, _) =>
+                {
+                    listView.RefreshItem((cookie as TrackedIndex)?.Index ?? -1);
+                });
+
+                m_TrackedIndex.Add(trackedIndex);
+            }
+        }
+
+        private void UntrackElements()
+        {
+            if (m_TrackedIndex == null)
+            {
+                return;
+            }
+
+            foreach (var trackedIndex in m_TrackedIndex)
+            {
+                bindingContext.UnregisterSerializedPropertyChangeCallback(trackedIndex, trackedIndex.HashCodeForPropertyPath);
+                s_TrackedIndexPool.Release(trackedIndex);
+            }
+
+            m_TrackedIndex.Clear();
+        }
+
         void SerializedObjectBindEventCallback(SerializedObjectBindEvent evt)
         {
             // Prevents list view items to be bound to the parent's serialized object.
@@ -234,7 +294,7 @@ namespace UnityEditor.UIElements.Bindings
             ValidateObjectReferences(obj =>
             {
                 listView.viewController.AddItems(1);
-                m_DataList.ArrayProperty.GetArrayElementAtIndex(m_DataList.ArraySize.intValue - 1).objectReferenceValue = obj;
+                m_DataList.ArrayProperty.GetArrayElementAtIndex(m_DataList.ArrayProperty.arraySize - 1).objectReferenceValue = obj;
                 m_DataList.ApplyChanges();
             });
         }
@@ -257,8 +317,7 @@ namespace UnityEditor.UIElements.Bindings
         void UpdateArraySize()
         {
             m_DataList.RefreshProperties();
-            m_ArraySize = m_DataList.ArraySize;
-            m_ListViewArraySize = m_ArraySize.intValue;
+            m_ListViewArraySize = m_DataList.ArrayProperty.arraySize;
 
             var isOverMaxMultiEditLimit = m_DataList.IsOverMaxMultiEditLimit;
             listView.footer?.SetEnabled(!isOverMaxMultiEditLimit);
@@ -266,17 +325,20 @@ namespace UnityEditor.UIElements.Bindings
 
             listView.RefreshItems();
 
-            if (listView.arraySizeField != null)
-                listView.arraySizeField.showMixedValue = m_ArraySize.hasMultipleDifferentValues;
+            TrackElements();
+
+            if (listView.arraySizeField != null && m_DataList.ArraySize != null)
+                listView.arraySizeField.showMixedValue = m_DataList.ArraySize.hasMultipleDifferentValues;
         }
 
         public override void Release()
         {
             isReleased = true;
 
+            UntrackElements();
+
             ResetContext();
             m_DataList = null;
-            m_ArraySize = null;
             m_ListViewArraySize = -1;
 
             ClearListView();
@@ -327,7 +389,7 @@ namespace UnityEditor.UIElements.Bindings
                 if (!IsSynced())
                     return;
 
-                var currentArraySize = m_ArraySize.intValue;
+                var currentArraySize = m_DataList.ArrayProperty.arraySize;
                 var listViewShowsMixedValue = listView.arraySizeField is {showMixedValue: true};
                 if (listViewShowsMixedValue || listView.arraySizeField == null)
                     return;
@@ -388,9 +450,12 @@ namespace UnityEditor.UIElements.Bindings
         public void RefreshProperties()
         {
             var property = ArrayProperty.Copy();
+            var arrayIterator = ArrayProperty.Copy();
             var endProperty = property.GetEndProperty();
 
-            property.NextVisible(true); // Expand the first child.
+            // Using Next instead of NextVisible to cover [HideInInspector] cases.
+            property = ArrayProperty.Copy();
+            property.Next(true); // Expand the first child.
 
             properties = new List<SerializedProperty>();
             do
@@ -401,13 +466,17 @@ namespace UnityEditor.UIElements.Bindings
                 if (property.propertyType == SerializedPropertyType.ArraySize)
                 {
                     ArraySize = property.Copy();
-                }
-                else
-                {
-                    properties.Add(property.Copy());
+
+                    // Rely on the enumerator (it uses GetArrayElementAtIndex)
+                    foreach (SerializedProperty serializedProperty in arrayIterator)
+                    {
+                        properties.Add(serializedProperty.Copy());
+                    }
+
+                    break;
                 }
             }
-            while (property.NextVisible(false));   // Never expand children.
+            while (property.Next(true));
 
             if (ArraySize == null)
             {

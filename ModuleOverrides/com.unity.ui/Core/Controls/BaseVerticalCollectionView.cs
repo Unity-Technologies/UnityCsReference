@@ -950,24 +950,57 @@ namespace UnityEngine.UIElements
 
         private void RefreshSelection()
         {
-            m_SelectedIndices.Clear();
+            var selectedIndicesChanged = false;
+            var previousSelectionCount = m_SelectedIndices.Count;
             m_SelectedItems.Clear();
 
             if (viewController?.itemsSource == null)
+            {
+                m_SelectedIndices.Clear();
+                NotifyIfChanged();
                 return;
+            }
 
-            // O(n)
+            // O(m) where `m` is m_SelectedIds.Count now, instead of itemsSource.Count.
             if (m_SelectedIds.Count > 0)
             {
                 // Add selected objects to working lists.
-                var count = viewController.itemsSource.Count;
-                for (var index = 0; index < count; ++index)
+                using var pool = ListPool<int>.Get(out var list);
+                foreach (var id in m_SelectedIds)
                 {
-                    if (!m_SelectedIds.Contains(viewController.GetIdForIndex(index)))
+                    var index = viewController.GetIndexForId(id);
+                    if (index < 0)
+                    {
+                        selectedIndicesChanged = true; // Item is not there anymore.
                         continue;
+                    }
 
+                    if (!m_SelectedIndices.Contains(index))
+                    {
+                        selectedIndicesChanged = true;  // Index of a selection changed.
+                    }
+
+                    list.Add(index);
+                }
+
+                // Rebuild selected indices/items lists.
+                m_SelectedIndices.Clear();
+                foreach (var index in list)
+                {
                     m_SelectedIndices.Add(index);
                     m_SelectedItems.Add(viewController.GetItemForIndex(index));
+                }
+            }
+
+            NotifyIfChanged();
+            return;
+
+            void NotifyIfChanged()
+            {
+                // Compare selection to raise the event if it changed.
+                if (selectedIndicesChanged || m_SelectedIndices.Count != previousSelectionCount)
+                {
+                    NotifyOfSelectionChange();
                 }
             }
         }

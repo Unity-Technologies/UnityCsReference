@@ -2725,38 +2725,38 @@ namespace UnityEditor
             return FindGameObjectsWithInvalidComponent(rootOfSearch).Count > 0;
         }
 
-        internal static bool HasInvalidComponent(Object gameObjectOrComponent)
+        internal static bool HasInvalidComponent(Object componentOrGameObject)
         {
-            if (gameObjectOrComponent == null)
+            if (componentOrGameObject == null)
                 return true;
 
-            if (gameObjectOrComponent is Component)
+            if (componentOrGameObject is Component)
             {
-                Component comp = (Component)gameObjectOrComponent;
-                gameObjectOrComponent = (GameObject)comp.gameObject;
+                Component comp = (Component)componentOrGameObject;
+                componentOrGameObject = (GameObject)comp.gameObject;
             }
 
-            if (!(gameObjectOrComponent is GameObject))
+            if (!(componentOrGameObject is GameObject))
                 return false;
 
-            return HasInvalidComponent((GameObject)gameObjectOrComponent);
+            return HasInvalidComponent((GameObject)componentOrGameObject);
         }
 
-        public static bool IsPartOfPrefabThatCanBeAppliedTo(Object gameObjectOrComponent)
+        public static bool IsPartOfPrefabThatCanBeAppliedTo(Object componentOrGameObject)
         {
-            if (gameObjectOrComponent == null)
+            if (componentOrGameObject == null)
                 return false;
 
-            if (IsPartOfImmutablePrefab(gameObjectOrComponent))
+            if (IsPartOfImmutablePrefab(componentOrGameObject))
                 return false;
 
-            if (!EditorUtility.IsPersistent(gameObjectOrComponent))
-                gameObjectOrComponent = GetCorrespondingObjectFromSource(gameObjectOrComponent);
+            if (!EditorUtility.IsPersistent(componentOrGameObject))
+                componentOrGameObject = GetCorrespondingObjectFromSource(componentOrGameObject);
 
-            if (HasInvalidComponent(gameObjectOrComponent))
+            if (HasInvalidComponent(componentOrGameObject))
                 return false;
 
-            if (PrefabUtility.HasManagedReferencesWithMissingTypes(gameObjectOrComponent))
+            if (PrefabUtility.HasManagedReferencesWithMissingTypes(componentOrGameObject))
                 return false;
 
             return true;

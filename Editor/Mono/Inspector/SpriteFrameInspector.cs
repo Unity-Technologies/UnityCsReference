@@ -124,6 +124,7 @@ namespace UnityEditor
                 if (width < minWidth && height < minHeight)
                 {
                     var ratio = Mathf.Min( minWidth / width, minHeight / height);
+                    ratio = Mathf.CeilToInt(ratio);
                     width = Mathf.FloorToInt(width * ratio);
                     height = Mathf.FloorToInt(height * ratio);
                 }
