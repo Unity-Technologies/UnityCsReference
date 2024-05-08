@@ -288,8 +288,6 @@ namespace UnityEngine.UIElements
 
         ScrollerVisibility m_HorizontalScrollerVisibility;
 
-        Vector2? m_DeferredScrollOffset;
-
         /// <summary>
         /// Specifies whether the horizontal scroll bar is visible.
         /// </summary>
@@ -424,15 +422,9 @@ namespace UnityEngine.UIElements
                 {
                     horizontalScroller.value = value.x;
                     verticalScroller.value = value.y;
-                    m_DeferredScrollOffset = null;
 
                     if (panel != null)
                     {
-                        // If the content container is dirty, we need to defer the scroll offset
-                        // update until the next layout pass as the size may have changed. (UUM-35824)
-                        if (contentContainer.layoutNode.IsDirty)
-                            m_DeferredScrollOffset = value;
-
                         UpdateScrollers(needsHorizontal, needsVertical);
                         UpdateContentViewTransform();
                     }
@@ -1170,7 +1162,6 @@ namespace UnityEngine.UIElements
             // Only affected by dimension changes
             if (evt.oldRect.size == evt.newRect.size)
             {
-                m_DeferredScrollOffset = null;
                 return;
             }
 
@@ -1194,13 +1185,6 @@ namespace UnityEngine.UIElements
             UpdateScrollers(needsHorizontalCached, needsVerticalCached);
             UpdateContentViewTransform();
             ScheduleResetLayoutPass();
-
-            if (m_DeferredScrollOffset != null)
-            {
-                var offset = m_DeferredScrollOffset.Value;
-                m_DeferredScrollOffset = null;
-                scrollOffset = offset;
-            }
         }
 
         private IVisualElementScheduledItem m_ScheduledLayoutPassResetItem;
@@ -1689,7 +1673,7 @@ namespace UnityEngine.UIElements
             contentContainer.ReleasePointer(pointerId);
             return true;
         }
-        
+
         void ExecuteElasticSpringAnimation()
         {
             ComputeInitialSpringBackVelocity();

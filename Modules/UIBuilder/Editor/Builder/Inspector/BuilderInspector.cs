@@ -355,10 +355,6 @@ namespace Unity.UI.Builder
             }
 
             cachedBinding = null;
-
-            // Hide pre and pre-wrap buttons until icons are provided.
-            this.Q<Button>("pre").style.display = DisplayStyle.None;
-            this.Q<Button>("pre-wrap").style.display = DisplayStyle.None;
         }
 
         public void UnsetBoundFieldInlineValue(DropdownMenuAction menuAction)

@@ -17,10 +17,7 @@ enum LayoutNodeDataType
     Node = 0,
     Style = 1,
     Computed = 2,
-    Cache = 3,
-    StyleDimensions = 4,
-    StyleMargin = 5,
-    StyleBorder = 6
+    Cache = 3
 }
 
 [RequiredByNativeCode]
@@ -212,9 +209,6 @@ internal class LayoutManager : IDisposable
             ComponentType.Create<LayoutStyleData>(),
             ComponentType.Create<LayoutComputedData>(),
             ComponentType.Create<LayoutCacheData>(),
-            ComponentType.Create<LayoutStyleDimensionData>(),
-            ComponentType.Create<LayoutStyleMarginData>(),
-            ComponentType.Create<LayoutStyleBorderData>(),
         };
 
         var configComponentTypes = new[]
@@ -298,10 +292,7 @@ internal class LayoutManager : IDisposable
             new LayoutNodeData { Config = configHandle , Children= new() },
             LayoutStyleData.Default,
             LayoutComputedData.Default,
-            LayoutCacheData.Default,
-            LayoutStyleDimensionData.Default,
-            LayoutStyleMarginData.Default,
-            LayoutStyleBorderData.Default);
+            LayoutCacheData.Default);
 
         if (handle.Index > m_HighMark)
             m_HighMark = handle.Index;

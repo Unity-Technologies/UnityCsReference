@@ -106,9 +106,12 @@ class AudioRandomRangeSliderTracker : VisualElement
         range.x += parentSlider.value;
         range.y += parentSlider.value;
 
+        // Measured from a screenshot of the slider. The value is in pixels.
+        var sliderHeadWidth = 10.0f;
+
         // Map the range from the slider value range (e.g. dB) to the horizontal span of the content-rect (px).
-        var left  = Map(range.y, parentSlider.lowValue, parentSlider.highValue, contentRect.xMin, contentRect.xMax);
-        var right = Map(range.x, parentSlider.lowValue, parentSlider.highValue, contentRect.xMin, contentRect.xMax);
+        var left  = Map(range.y, parentSlider.lowValue, parentSlider.highValue, contentRect.xMin + sliderHeadWidth / 2.0f, contentRect.xMax - sliderHeadWidth / 2.0f);
+        var right = Map(range.x, parentSlider.lowValue, parentSlider.highValue, contentRect.xMin + sliderHeadWidth / 2.0f, contentRect.xMax - sliderHeadWidth / 2.0f);
 
         // Clamp the mapped range so that it lies within the boundaries of the content-rect.
         left =  Mathf.Clamp(left, contentRect.xMin, contentRect.xMax);

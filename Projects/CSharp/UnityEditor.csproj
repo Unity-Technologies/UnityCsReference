@@ -1038,9 +1038,6 @@
     <Compile Include="..\..\Editor\Mono\EditorSettings.bindings.cs">
       <Link>Editor\Mono\EditorSettings.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorTextSettings.cs">
-      <Link>Editor\Mono\EditorTextSettings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\EditorUserBuildSettings.bindings.cs">
       <Link>Editor\Mono\EditorUserBuildSettings.bindings.cs</Link>
     </Compile>
@@ -3656,6 +3653,12 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\TerrainEditor\TerrainInspectorUtil.bindings.cs">
       <Link>Editor\Mono\TerrainEditor\TerrainInspectorUtil.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Text\BlurryTextMappingTable.cs">
+      <Link>Editor\Mono\Text\BlurryTextMappingTable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Text\EditorTextSettings.cs">
+      <Link>Editor\Mono\Text\EditorTextSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Tools\BuiltinTools.cs">
       <Link>Editor\Mono\Tools\BuiltinTools.cs</Link>
@@ -8628,6 +8631,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\Selector\SelectorUtility.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\Selector\SelectorUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StringExtensions\StringExtensions.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StringExtensions\StringExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\AngleStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\AngleStyleField.cs</Link>
     </Compile>
@@ -8732,9 +8738,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\VariableInfoView.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\VariableInfoView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleSheetExtensions\CSSSpecCopy.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\StyleSheetExtensions\CSSSpecCopy.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleSheetExtensions\StyleComplexSelectorExtensions.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleSheetExtensions\StyleComplexSelectorExtensions.cs</Link>

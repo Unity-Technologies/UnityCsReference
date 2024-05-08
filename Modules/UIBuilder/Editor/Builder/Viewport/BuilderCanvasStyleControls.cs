@@ -504,11 +504,15 @@ namespace Unity.UI.Builder
 
             button.RemoveFromClassList("normal");
             button.RemoveFromClassList("nowrap");
+            button.RemoveFromClassList("pre");
+            button.RemoveFromClassList("prewrap");
 
             switch (resolveStyle)
             {
                 case WhiteSpace.Normal: button.AddToClassList("normal"); break;
                 case WhiteSpace.NoWrap: button.AddToClassList("nowrap"); break;
+                case WhiteSpace.Pre: button.AddToClassList("pre"); break;
+                case WhiteSpace.PreWrap: button.AddToClassList("prewrap"); break;
             }
         }
 
@@ -528,11 +532,17 @@ namespace Unity.UI.Builder
 
         void TextWrapOnToggle()
         {
-            var result = WhiteSpace.NoWrap;
+            var result = WhiteSpace.Normal;
             switch (m_Target.resolvedStyle.whiteSpace)
             {
-                case WhiteSpace.Normal: result = WhiteSpace.NoWrap; break;
-                case WhiteSpace.NoWrap: result = WhiteSpace.Normal; break;
+                case WhiteSpace.Normal:
+                    result = WhiteSpace.NoWrap; break;
+                case WhiteSpace.NoWrap:
+                    result = WhiteSpace.PreWrap; break;
+                case WhiteSpace.PreWrap:
+                    result = WhiteSpace.Pre; break;
+                case WhiteSpace.Pre:
+                    result = WhiteSpace.Normal; break;
             }
             TextWrapUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_TextWrapName, result);

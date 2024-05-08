@@ -7,6 +7,7 @@ namespace UnityEngine.UIElements
     internal class FixedHeightVirtualizationController<T> : VerticalVirtualizationController<T> where T : ReusableCollectionItem, new()
     {
         float resolvedItemHeight => m_CollectionView.ResolveItemHeight();
+        int? m_ScrolledToItemIndex;
 
         protected override bool VisibleItemPredicate(T i)
         {
@@ -14,7 +15,21 @@ namespace UnityEngine.UIElements
         }
 
         public FixedHeightVirtualizationController(BaseVerticalCollectionView collectionView)
-            : base(collectionView) {}
+            : base(collectionView)
+        {
+            collectionView.RegisterCallback<GeometryChangedEvent>(OnGeometryChangedEvent);
+        }
+
+        private void OnGeometryChangedEvent(GeometryChangedEvent _)
+        {
+            if (m_ScrolledToItemIndex != null)
+            {
+                if (ShouldDeferScrollToItem(m_ScrolledToItemIndex ?? ReusableCollectionItem.UndefinedIndex))
+                    ScheduleDeferredScrollToItem();
+
+                m_ScrolledToItemIndex = null;
+            }
+        }
 
         public override int GetIndexFromPosition(Vector2 position)
         {
@@ -33,8 +48,14 @@ namespace UnityEngine.UIElements
 
         public override void ScrollToItem(int index)
         {
-            if (visibleItemCount == 0 || index < -1)
+            if (index < ReusableCollectionItem.UndefinedIndex)
                 return;
+
+            if (visibleItemCount == 0)
+            {
+                m_ScrolledToItemIndex = index;
+                return;
+            }
 
             if (ShouldDeferScrollToItem(index))
                 ScheduleDeferredScrollToItem();
@@ -43,7 +64,7 @@ namespace UnityEngine.UIElements
             if (index == -1)
             {
                 // Scroll to last item
-                int actualCount = (int)(lastHeight / pixelAlignedItemHeight);
+                var actualCount = (int)(lastHeight / pixelAlignedItemHeight);
                 if (itemsCount < actualCount)
                     m_ScrollView.scrollOffset = new Vector2(0, 0);
                 else

@@ -44,8 +44,11 @@ internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSource
         if (IsBindingContextUninitialized())
             return -1;
 
-        if (boundElement is VisualElement element)
-            bindingContext.UpdateIfNecessary(element);
+        if (bindingContext.IsValid())
+        {
+            bindingContext.serializedObject.UpdateIfRequiredOrScript();
+            bindingContext.UpdateRevision();
+        }
 
         // this can be set back to null on update
         if (IsBindingContextUninitialized())
@@ -128,16 +131,20 @@ internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSource
         }
 
         var currentTimeMs = GetCurrentTime();
-        if (VisualTreeBindingsUpdater.disableBindingsThrottling || (currentTimeMs - m_LastUpdateTime) >= VisualTreeBindingsUpdater.k_MinUpdateDelayMs ||
-            m_LastVersion != bindingContext?.serializedObject?.objectVersion)
+        if (VisualTreeBindingsUpdater.disableBindingsThrottling || (currentTimeMs - m_LastUpdateTime) >= VisualTreeBindingsUpdater.k_MinUpdateDelayMs)
         {
             m_LastUpdateTime = currentTimeMs;
             bindingContext?.UpdateIfNecessary(context.targetElement);
+            if (m_LastVersion == bindingContext?.serializedObject?.objectVersion)
+            {
+                return new BindingResult(BindingStatus.Pending);
+            }
+
             var result = OnUpdate(in context);
+            m_LastVersion = bindingContext?.serializedObject?.objectVersion ?? 0;
             return result;
         }
 
-        m_LastVersion = bindingContext?.serializedObject?.objectVersion ?? 0;
         return new BindingResult(BindingStatus.Pending);
     }
 

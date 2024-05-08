@@ -3340,6 +3340,7 @@ namespace UnityEditor
                 newSelectedIndices.Add(previousSelectedIndices[i] + 1);
             }
 
+            newSelectedIndices.Sort();
             baseListView.SetSelection(newSelectedIndices);
         }
 

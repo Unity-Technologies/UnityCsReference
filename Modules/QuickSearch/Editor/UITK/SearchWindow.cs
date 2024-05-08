@@ -405,7 +405,11 @@ namespace UnityEditor.Search
 
             var queryContext = CreateQueryContext(query);
             SetContext(queryContext);
-            viewState.Assign(query.GetViewState(), queryContext);
+            var possibleTextQuery = query as SearchQuery;
+            if (possibleTextQuery == null || !possibleTextQuery.isTextOnlyQuery)
+            {
+                viewState.Assign(query.GetViewState(), queryContext);
+            }
             viewState.flags &= ~SearchViewFlags.ContextSwitchPreservedMask;
             viewState.flags |= preservedViewFlags;
             viewState.queryBuilderEnabled = queryBuilderEnabled;

@@ -302,7 +302,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                uitkTextHandle.AddTextInfoToCache();
+                uitkTextHandle.AddTextInfoToPermanentCache();
                 return uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(selection.cursorIndex) + contentRect.min;
             }
         }
@@ -314,7 +314,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                uitkTextHandle.AddTextInfoToCache();
+                uitkTextHandle.AddTextInfoToPermanentCache();
                 return uitkTextHandle.GetLineHeightFromCharacterIndex(selection.cursorIndex);
             }
         }

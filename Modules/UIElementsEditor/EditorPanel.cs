@@ -4,9 +4,11 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     sealed class EditorPanel : Panel
     {
         readonly EditorCursorManager m_CursorManager = new EditorCursorManager();

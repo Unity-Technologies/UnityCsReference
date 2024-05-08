@@ -568,18 +568,15 @@ internal class SerializedObjectBindingContext
 
     internal void UpdateIfNecessary(VisualElement element)
     {
-        if (!wasUpdated)
+        if (!wasUpdated && IsValid())
         {
-            if (IsValid())
+            if (element.elementPanel?.GetUpdater(VisualTreeUpdatePhase.DataBinding) is VisualTreeDataBindingsUpdater updater && m_LastFrame != updater.frame)
             {
-                if (element.elementPanel?.GetUpdater(VisualTreeUpdatePhase.DataBinding) is VisualTreeDataBindingsUpdater updater && m_LastFrame != updater.frame)
-                {
-                    serializedObject.UpdateIfRequiredOrScript();
+                serializedObject.UpdateIfRequiredOrScript();
 
-                    UpdateRevision();
-                    m_LastFrame = updater.frame;
-                    wasUpdated = true;
-                }
+                UpdateRevision();
+                m_LastFrame = updater.frame;
+                wasUpdated = true;
             }
         }
     }

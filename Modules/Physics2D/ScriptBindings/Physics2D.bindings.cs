@@ -703,6 +703,9 @@ namespace UnityEngine
         extern public static float bounceThreshold { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]
+        extern public static float contactThreshold { get; set; }
+
+        [StaticAccessor("GetPhysics2DSettings()")]
         extern public static float maxLinearCorrection { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]

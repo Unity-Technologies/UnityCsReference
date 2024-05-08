@@ -268,7 +268,7 @@ namespace UnityEngine.UIElements
                 sourceEvent.StopPropagation();
             }
 
-            focusController.IgnoreEvent(sourceEvent);
+            focusController?.IgnoreEvent(sourceEvent);
         }
 
         private bool Apply(KeyboardNavigationOperation op)

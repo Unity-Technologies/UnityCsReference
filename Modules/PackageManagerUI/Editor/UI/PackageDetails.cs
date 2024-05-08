@@ -134,7 +134,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Refresh(args.selection);
         }
 
-        public void Refresh(PageSelection selections = null)
+        public virtual void Refresh(PageSelection selections = null)
         {
             selections ??= m_PageManager.activePage.GetSelection();
             scrollView.scrollOffset = new Vector2(0, m_PackageManagerPrefs.packageDetailVerticalScrollOffset);
@@ -208,9 +208,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackagesChanged(PackagesChangeArgs args)
         {
-            var selection = m_PageManager.activePage.GetSelection();
-            if (args.added.Concat(args.removed).Concat(args.updated).Any(p => selection.Contains(p.uniqueId)))
-                Refresh(selection);
+            Refresh(m_PageManager.activePage.GetSelection());
         }
 
         private void RefreshDetailError(IPackage package, IPackageVersion version)

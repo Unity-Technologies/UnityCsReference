@@ -319,16 +319,21 @@ namespace UnityEditor
             }
         }
 
-        static readonly Action<TextElement> k_QueryMarkDirty = MarkDirtyRepaint;
+        static readonly Action<TextElement, VersionChangeType> k_QueryIncrementVersion = IncrementVersion;
 
-        static void MarkDirtyRepaint(TextElement v)
+        static void IncrementVersion(TextElement te, VersionChangeType changeType)
         {
-            v.MarkDirtyRepaint();
+            te.IncrementVersion(changeType);
         }
 
-        internal void RepaintUITKText()
+        internal void IncrementVersionForUITKText(VersionChangeType changeType)
         {
-            visualTree.Query<TextElement>().ForEach(k_QueryMarkDirty);
+            visualTree.Query<TextElement>().ForEach((te) => k_QueryIncrementVersion(te, changeType));
+        }
+
+        internal void UpdateEditorTextRenderingMode(EditorTextRenderingMode mode)
+        {
+            visualTree.style.unityEditorTextRenderingMode = mode;
         }
 
         [RequiredByNativeCode]

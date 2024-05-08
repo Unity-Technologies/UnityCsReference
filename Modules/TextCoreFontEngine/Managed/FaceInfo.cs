@@ -38,7 +38,7 @@ namespace UnityEngine.TextCore
         /// <summary>
         /// The point size used for sampling the typeface. This is also referenced as sampling point size.
         /// </summary>
-        public int pointSize { get { return m_PointSize; } set { m_PointSize = value; } }
+        public float pointSize { get { return m_PointSize; } set { m_PointSize = value; } }
 
         /// <summary>
         /// The relative scale of the typeface.
@@ -148,7 +148,7 @@ namespace UnityEngine.TextCore
 
         [SerializeField]
         [NativeName("pointSize")]
-        private int m_PointSize;
+        private float m_PointSize;
 
         [SerializeField]
         [NativeName("scale")]

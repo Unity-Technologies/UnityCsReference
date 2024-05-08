@@ -4,31 +4,65 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEditor.Experimental;
-using TextAsset = UnityEngine.TextCore.Text.TextAsset;
+using UnityEngine.Assertions;
+using UnityEngine.UIElements;
+using TextGenerationSettings = UnityEngine.TextCore.Text.TextGenerationSettings;
 
 namespace UnityEditor
 {
-
     /// <summary>
     /// Represents text rendering settings for the editor
     /// </summary>
     [InitializeOnLoad]
     internal class EditorTextSettings : TextSettings
     {
-        private static EditorTextSettings s_DefaultTextSettings;
-        private static float s_CurrentEditorSharpness;
-        private static bool s_CurrentEditorSharpnessLoadedOrSet = false;
+        static EditorTextSettings s_DefaultTextSettings;
+        static float s_CurrentEditorSharpness;
+        static bool s_CurrentEditorSharpnessLoadedOrSet;
 
         const string k_DefaultEmojisFallback = "UIPackageResources/FontAssets/Emojis/";
         const string k_Platform =
                             " - Linux";
 
+        [SerializeField]
+        public BlurryTextCaching blurryTextCaching;
+
+        [SerializeField]
+        public static EditorTextRenderingMode currentEditorTextRenderingMode;
+
         static EditorTextSettings()
         {
+            TextGenerationSettings.IsEditorTextRenderingModeBitmap = () => currentEditorTextRenderingMode == EditorTextRenderingMode.Bitmap;
             IMGUITextHandle.GetEditorTextSettings = () => defaultTextSettings;
+            IMGUITextHandle.GetBlurryFontAssetMapping = GetBlurryFontAssetMapping;
+            UITKTextHandle.GetBlurryMapping = GetBlurryFontAssetMapping;
+            UITKTextHandle.CanGenerateFallbackFontAssets = CanGenerateFallbackFontAssets;
+        }
+
+        public static FontAsset GetBlurryFontAssetMapping(float pointSize, FontAsset ft)
+        {
+            if (pointSize < k_MinSupportedPointSize || pointSize >= k_MaxSupportedPointSize * k_MaxSupportedScaledPointSize)
+                return ft;
+
+            s_DefaultTextSettings.blurryTextCaching.InitializeLookups();
+            FontAsset fa = s_DefaultTextSettings.blurryTextCaching.Find(ft, pointSize);
+            bool isMainThread = !JobsUtility.IsExecutingJob;
+            if (fa == null && isMainThread)
+            {
+                fa = FontAssetFactory.CloneFontAssetWithBitmapRendering(ft, pointSize);
+                s_DefaultTextSettings.blurryTextCaching.Add(ft, pointSize, fa);
+            }
+
+            return fa;
+        }
+
+        void OnEnable()
+        {
+            currentEditorTextRenderingMode = (EditorTextRenderingMode)EditorPrefs.GetInt("EditorTextRenderingMode", (int)EditorTextRenderingMode.SDF);
         }
 
         internal static void SetCurrentEditorSharpness(float sharpness)
@@ -68,6 +102,69 @@ namespace UnityEditor
 
                 return s_DefaultTextSettings;
             }
+        }
+
+        const int k_MinSupportedPointSize = 5;
+        const int k_MaxSupportedPointSize = 19;
+        const int k_MaxSupportedScaledPointSize = 3;
+        internal override List<FontAsset> GetFallbackFontAssets(int textPixelSize = -1)
+        {
+            if (currentEditorTextRenderingMode != EditorTextRenderingMode.Bitmap || textPixelSize < k_MinSupportedPointSize || textPixelSize >= k_MaxSupportedPointSize * k_MaxSupportedScaledPointSize)
+                return fallbackFontAssets;
+
+            return GetFallbackFontAssetsInternal(textPixelSize);
+        }
+
+        static List<FontAsset> GetFallbackFontAssetsInternal(float textPixelSize)
+        {
+            var editorTextSettings = defaultTextSettings;
+            var localFallback = editorTextSettings.fallbackFontAssets[0];
+            var globalFallback = editorTextSettings.fallbackFontAssets[1];
+
+            var localBitmapFallback = editorTextSettings.blurryTextCaching.Find(localFallback, textPixelSize);
+            var globalBitmapFallback = editorTextSettings.blurryTextCaching.Find(globalFallback, textPixelSize);
+
+            if (localBitmapFallback == null)
+            {
+                localBitmapFallback = FontAssetFactory.CloneFontAssetWithBitmapRendering(localFallback, textPixelSize);
+                editorTextSettings.blurryTextCaching.Add(localFallback, textPixelSize, localBitmapFallback);
+            }
+
+            if (globalBitmapFallback == null)
+            {
+                globalBitmapFallback = FontAssetFactory.CloneFontAssetWithBitmapRendering(globalFallback, textPixelSize);
+                editorTextSettings.blurryTextCaching.Add(globalFallback, textPixelSize, globalBitmapFallback);
+            }
+
+            return new List<FontAsset>()
+            {
+                localBitmapFallback,
+                globalBitmapFallback
+            };
+        }
+
+        static bool CanGenerateFallbackFontAssets(float textPixelSize)
+        {
+            if (textPixelSize < k_MinSupportedPointSize || textPixelSize >= k_MaxSupportedPointSize * k_MaxSupportedScaledPointSize)
+                return true;
+
+            bool isMainThread = !JobsUtility.IsExecutingJob;
+            var editorTextSettings = defaultTextSettings;
+            var localFallback = editorTextSettings.fallbackFontAssets[0];
+            var globalFallback = editorTextSettings.fallbackFontAssets[1];
+
+            localFallback = editorTextSettings.blurryTextCaching.Find(localFallback, textPixelSize);
+            globalFallback = editorTextSettings.blurryTextCaching.Find(globalFallback, textPixelSize);
+
+            if (localFallback == null || globalFallback == null)
+            {
+                if (!isMainThread)
+                    return false;
+
+                GetFallbackFontAssetsInternal(textPixelSize);
+            }
+
+            return true;
         }
 
         internal static void UpdateLocalizationFontAsset()
@@ -112,4 +209,5 @@ namespace UnityEditor
         internal static readonly string s_DarkEditorTextStyleSheetPath = "UIPackageResources/Dark Editor Text StyleSheet.asset";
         internal static readonly string s_LightEditorTextStyleSheetPath = "UIPackageResources/Light Editor Text StyleSheet.asset";
     }
+
 }

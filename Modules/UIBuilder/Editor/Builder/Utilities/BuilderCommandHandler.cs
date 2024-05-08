@@ -606,9 +606,9 @@ namespace Unity.UI.Builder
         public void CreateTargetedSelector(VisualElement ve)
         {
             // populates the new selector field with a selector that targets the current element
-            var newSelectorTextField = m_PaneWindow.rootVisualElement.Q<BuilderStyleSheets>().newSelectorField.textField;
-            newSelectorTextField.value = BuilderStyleUtilities.GenerateElementTargetedSelector(ve);
-            newSelectorTextField.Focus();
+            var newSelectorField = m_PaneWindow.rootVisualElement.Q<BuilderStyleSheets>().newSelectorField;
+            newSelectorField.value = BuilderStyleUtilities.GenerateElementTargetedSelector(ve);
+            newSelectorField.Focus();
         }
     }
 }

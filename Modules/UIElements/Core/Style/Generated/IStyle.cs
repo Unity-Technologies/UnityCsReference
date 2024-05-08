@@ -290,6 +290,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleColor unityBackgroundImageTintColor { get; set; }
         /// <summary>
+        /// TextElement editor rendering mode.
+        /// </summary>
+        StyleEnum<EditorTextRenderingMode> unityEditorTextRenderingMode { get; set; }
+        /// <summary>
         /// Font to draw the element's text, defined as a Font object.
         /// </summary>
         /// <remarks>

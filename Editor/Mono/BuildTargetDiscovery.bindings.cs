@@ -3,12 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Bindings;
-using UnityEditor.Build;
-using System.Runtime.InteropServices;
-using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
-using UnityEngine.Scripting;
+using System.IO;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using UnityEditor.Build;
+using UnityEditor.Utils;
+using UnityEngine.Bindings;
+using UnityEngine.Scripting;
+using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 
 namespace UnityEditor
 {
@@ -197,6 +199,38 @@ namespace UnityEditor
         static readonly GUID s_platform_101 = new("91d938b35f6f4798811e41f2acf9377f");
         static readonly GUID s_platform_102 = new("8659dec1db6b4fac86149f99f2fa4291");
 
+        static readonly Dictionary<GUID, bool> k_PlatformInstalledData = new();
+
+        // This list is ordered by the order in which platforms are displayed in the build profiles window
+        // Changes here should be synced with kBuildTargetUIOrder[] in BuildTargetDiscovery.cpp
+        static GUID[] allPlatforms { get; } = new GUID[]
+        {
+            // first standalones and servers
+            s_platform_05,
+            s_platform_02,
+            s_platform_24,
+            s_platform_100,
+            s_platform_102,
+            s_platform_101,
+            // then mobile
+            s_platform_13,
+            s_platform_09,
+            // then consoles
+            s_platform_31,
+            s_platform_44,
+            s_platform_42,
+            s_platform_43,
+            s_platform_38,
+            // then others
+            s_platform_20,
+            s_platform_21,
+            s_platform_37,
+            s_platform_47,
+            s_platform_41,
+            s_platform_45,
+            s_platform_46,
+        };
+
         static GUID[] WindowsBuildTargets { get; } = new GUID[]
         {
             s_platform_02,
@@ -269,6 +303,19 @@ namespace UnityEditor
             s_platform_31,
             s_platform_43,
             s_platform_44,
+        };
+
+        // Changes here should be synced with the usage of
+        // BuildTargetDiscovery::HideInUI flag in [Platfrom]BuildTarget.cpp
+        internal static GUID[] hiddenPlatforms { get; } = new GUID[]
+        {
+            s_platform_38,
+            s_platform_41,
+            s_platform_42,
+            s_platform_43,
+            s_platform_45,
+            s_platform_46,
+            s_platform_47,
         };
 
         static Dictionary<BuildTarget, GUID> s_PlatformGUIDData = new()
@@ -384,7 +431,7 @@ namespace UnityEditor
             {  s_platform_102, L10n.Tr("*standard install form hub") },
         };
 
-        // Name changes here must be reflected in the platform [PLATFORM]BuildTarget.cs and [Platfrom]BuildTarget.cpp respective DisplayName and niceName 
+        // Name changes here must be reflected in the platform [PLATFORM]BuildTarget.cs and [Platfrom]BuildTarget.cpp respective DisplayName and niceName
         static Dictionary<GUID, string> s_PlatformDisplayName = new()
         {
             {  s_platform_02, "macOS" },
@@ -406,8 +453,40 @@ namespace UnityEditor
             {  s_platform_47, "visionOS" },
             {  s_platform_100, "Windows Server" },
             {  s_platform_101, "Linux Server" },
-            {  s_platform_102, "Mac Server" },
+            {  s_platform_102, "macOS Server" },
         };
+
+        // Changes here should be synced with [Platfrom]BuildTarget.cpp respective iconName
+        static readonly Dictionary<GUID, string> k_PlatformIconName = new()
+        {
+            { s_platform_02, "BuildSettings.OSX" },
+            { s_platform_05, "BuildSettings.Windows" },
+            { s_platform_09, "BuildSettings.iPhone" },
+            { s_platform_13, "BuildSettings.Android" },
+            { s_platform_20, "BuildSettings.WebGL" },
+            { s_platform_21, "BuildSettings.Metro" },
+            { s_platform_24, "BuildSettings.Linux" },
+            { s_platform_31, "BuildSettings.PS4" },
+            { s_platform_37, "BuildSettings.tvOS" },
+            { s_platform_38, "BuildSettings.Switch" },
+            { s_platform_41, "BuildSettings.LinuxHeadlessSimulation" },
+            { s_platform_42, "BuildSettings.GameCoreScarlett" },
+            { s_platform_43, "BuildSettings.GameCoreXboxOne" },
+            { s_platform_44, "BuildSettings.PS5" },
+            { s_platform_45, "BuildSettings.EmbeddedLinux" },
+            { s_platform_46, "BuildSettings.QNX" },
+            { s_platform_47, "BuildSettings.visionOS" },
+            { s_platform_100, "BuildSettings.DedicatedServer" },
+            { s_platform_101, "BuildSettings.DedicatedServer" },
+            { s_platform_102, "BuildSettings.DedicatedServer" },
+        };
+
+        static BuildTargetDiscovery()
+        {
+            PreloadBuildPlatformInstalledData();
+        }
+
+        public static GUID[] GetAllPlatforms() => allPlatforms;
 
         public static GUID GetGUIDFromBuildTarget(BuildTarget buildTarget)
         {
@@ -440,17 +519,99 @@ namespace UnityEditor
             return (BuildTarget.NoTarget, StandaloneBuildSubtarget.Default);
         }
 
-        //TODO: PLAT-8696 BuildPlatformIsInstalled does not support server platforms yet
-        [System.Obsolete("BuildPlatformIsInstalled(BuildTarget) is obsolete. Use BuildPlatformIsInstalled(IBuildTarget) instead.", false)]
-
-        public static bool BuildPlatformIsInstalled(BuildTarget platform)
+        static void PreloadBuildPlatformInstalledData()
         {
-            return BuildPipeline.GetPlaybackEngineDirectory(platform, BuildOptions.None, true) != string.Empty;
+            foreach (var platform in allPlatforms)
+            {
+                var (buildTarget, _) = GetBuildTargetAndSubtargetFromGUID(platform);
+                var playbackEngineDirectory = BuildPipeline.GetPlaybackEngineDirectory(buildTarget, BuildOptions.None, false);
+
+                if (string.IsNullOrEmpty(playbackEngineDirectory))
+                {
+                    k_PlatformInstalledData.Add(platform, false);
+                    continue;
+                }
+
+                if (!PlatformHasFlag(buildTarget, TargetAttributes.IsStandalonePlatform))
+                {
+                    k_PlatformInstalledData.Add(platform, true);
+                    continue;
+                }
+
+                bool isInstalled;
+                if (platform == s_platform_100)
+                {
+                    var serverVariations = new[]
+                    {
+                        "win32_server_development",
+                        "win32_server_nondevelopment",
+                        "win64_server_development",
+                        "win64_server_nondevelopment",
+                        "win_arm64_server_development",
+                        "win_arm64_server_nondevelopment",
+                    };
+                    isInstalled = VariationPresent(serverVariations, playbackEngineDirectory);
+                }
+                else if (platform == s_platform_101)
+                {
+                    var serverVariations = new[]
+                    {
+                        "linux64_server_development",
+                        "linux64_server_nondevelopment",
+                    };
+                    isInstalled = VariationPresent(serverVariations, playbackEngineDirectory);
+                }
+                else if (platform == s_platform_102)
+                {
+                    var serverVariations = new[]
+                    {
+                        "macos_x64_server_development",
+                        "macos_x64_server_nondevelopment",
+                        "macos_arm64_server_development",
+                        "macos_arm64_server_nondevelopment",
+                        "macos_x64arm64_server_development",
+                        "macos_x64arm64_server_nondevelopment",
+                    };
+                    isInstalled = VariationPresent(serverVariations, playbackEngineDirectory);
+                }
+                else
+                    isInstalled = true;
+
+                k_PlatformInstalledData.Add(platform, isInstalled);
+            }
         }
 
-        public static bool BuildPlatformIsInstalled(IBuildTarget platform)
+        static bool VariationPresent(string[] variations, string playbackEngineDirectory)
         {
-            return BuildPipeline.GetPlaybackEngineDirectory((BuildTarget)platform.GetLegacyId, BuildOptions.None, true) != string.Empty;
+            if (string.IsNullOrEmpty(playbackEngineDirectory))
+                return false;
+
+            var scriptingBackends = new[] { "mono", "il2cpp", "coreclr" };
+            foreach (var variation in variations)
+            {
+                foreach (var backend in scriptingBackends)
+                {
+                    if (Directory.Exists(Paths.Combine(playbackEngineDirectory, "Variations", variation + "_" + backend)))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        [System.Obsolete("BuildPlatformIsInstalled(BuildTarget) is obsolete. Use BuildPlatformIsInstalled(IBuildTarget) instead.", false)]
+        public static bool BuildPlatformIsInstalled(BuildTarget platform) =>
+            BuildPlatformIsInstalled(GetGUIDFromBuildTarget(platform));
+
+        public static bool BuildPlatformIsInstalled(IBuildTarget platform) =>
+            BuildPlatformIsInstalled(platform.Guid);
+
+        public static bool BuildPlatformIsInstalled(GUID platformGuid)
+        {
+            if (k_PlatformInstalledData.TryGetValue(platformGuid, out bool isInstalled))
+                return isInstalled;
+
+            return false;
         }
 
         [System.Obsolete("BuildPlatformIsAvailableOnHostPlatform(BuildTarget) is obsolete. Use BuildPlatformIsAvailableOnHostPlatform(IBuildTarget) instead.", false)]
@@ -539,9 +700,23 @@ namespace UnityEditor
             return false;
         }
 
+        [System.Obsolete("BuildPlatfromIsHiddenInUI(BuildTarget) is obsolete. Use BuildPlatfromIsHiddenInUI(IBuildTarget) instead.", false)]
+        public static bool BuildPlatformIsHiddenInUI(BuildTarget platform) =>
+            BuildPlatformIsHiddenInUI(GetGUIDFromBuildTarget(platform));
+
+        public static bool BuildPlatformIsHiddenInUI(IBuildTarget platform) =>
+            BuildPlatformIsHiddenInUI(platform.Guid);
+
+        public static bool BuildPlatformIsHiddenInUI(GUID platformGuid)
+        {
+            foreach (var hiddenPlatform in hiddenPlatforms)
+                if (hiddenPlatform == platformGuid)
+                    return true;
+
+            return false;
+        }
+
         [System.Obsolete("BuildPlatformRecommendeddPackages(BuildTarget) is obsolete. Use BuildPlatformRecommendeddPackages(IBuildTarget) instead.", false)]
-
-
         public static string BuildPlatformRecommendeddPackages(BuildTarget platform)
         {
             if (s_PlatformRecommendedPackages.TryGetValue(GetGUIDFromBuildTarget(platform), out string recommendedPackages))
@@ -613,17 +788,15 @@ namespace UnityEditor
         }
 
         [System.Obsolete("BuildPlatformDisplayName(BuildTarget) is obsolete. Use BuildPlatformDisplayName(IBuildTarget) instead.", false)]
-        public static string BuildPlatformDisplayName(BuildTarget platform)
-        {
-            if (s_PlatformDisplayName.TryGetValue(GetGUIDFromBuildTarget(platform), out string displayName))
-                return displayName;
+        public static string BuildPlatformDisplayName(BuildTarget platform) =>
+            BuildPlatformDisplayName(GetGUIDFromBuildTarget(platform));
 
-            return "";
-        }
+        public static string BuildPlatformDisplayName(IBuildTarget platform) =>
+            BuildPlatformDisplayName(platform.Guid);
 
-        public static string BuildPlatformDisplayName(IBuildTarget platform)
+        public static string BuildPlatformDisplayName(GUID platformGuid)
         {
-            if (s_PlatformDisplayName.TryGetValue(platform.Guid, out string displayName))
+            if (s_PlatformDisplayName.TryGetValue(platformGuid, out string displayName))
                 return displayName;
 
             return "";
@@ -645,6 +818,21 @@ namespace UnityEditor
             }
             if (s_PlatformDisplayName.TryGetValue(guid, out string displayName))
                 return displayName;
+
+            return "";
+        }
+
+        [System.Obsolete("BuildPlatformIconName(BuildTarget) is obsolete. Use BuildPlatformIconName(IBuildTarget) instead.", false)]
+        public static string BuildPlatformIconName(BuildTarget platform) =>
+            BuildPlatformIconName(GetGUIDFromBuildTarget(platform));
+
+        public static string BuildPlatformIconName(IBuildTarget platform) =>
+            BuildPlatformIconName(platform.Guid);
+
+        public static string BuildPlatformIconName(GUID platformGuid)
+        {
+            if (k_PlatformIconName.TryGetValue(platformGuid, out string iconName))
+                return iconName;
 
             return "";
         }

@@ -125,7 +125,7 @@ namespace UnityEditor.Build.Profile
             if (hasErrors)
                 return root;
 
-            EditorApplication.update += UpdateWarningsAndButtonStatesForActiveProfile;
+            EditorApplication.update += EditorUpdate;
 
             ShowPlatformSettings(profile, platformSettingsBaseRoot);
             root.Bind(serializedObject);
@@ -191,6 +191,13 @@ namespace UnityEditor.Build.Profile
         internal void DuplicateSelectedClassicProfile()
         {
             parent.DuplicateSelectedClassicProfile();
+        }
+
+        void EditorUpdate()
+        {
+            UpdateWarningsAndButtonStatesForActiveProfile();
+
+            m_ProfilePlayerSettingsEditor?.EditorUpdate();
         }
 
         void UpdateWarningsAndButtonStatesForActiveProfile()
@@ -276,7 +283,7 @@ namespace UnityEditor.Build.Profile
             if (m_SceneList is not null)
                 Undo.undoRedoEvent -= m_SceneList.OnUndoRedo;
 
-            EditorApplication.update -= UpdateWarningsAndButtonStatesForActiveProfile;
+            EditorApplication.update -= EditorUpdate;
         }
 
         void AddScriptingDefineListView(VisualElement root)

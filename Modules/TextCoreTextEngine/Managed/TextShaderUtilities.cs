@@ -194,11 +194,8 @@ namespace UnityEngine.TextCore.Text
         {
             get
             {
-                // Try to use TMP shaders first
                 if (k_ShaderRef_MobileBitmap == null)
                 {
-                    k_ShaderRef_MobileBitmap = Shader.Find("TextMeshPro/Mobile/Bitmap");
-
                     if (k_ShaderRef_MobileBitmap == null)
                         k_ShaderRef_MobileBitmap = Shader.Find("Text/Bitmap");
 

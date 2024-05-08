@@ -93,6 +93,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"translate", StylePropertyId.Translate},
             {"-unity-background-image-tint-color", StylePropertyId.UnityBackgroundImageTintColor},
             {"-unity-background-scale-mode", StylePropertyId.UnityBackgroundScaleMode},
+            {"-unity-editor-text-rendering-mode", StylePropertyId.UnityEditorTextRenderingMode},
             {"-unity-font", StylePropertyId.UnityFont},
             {"-unity-font-definition", StylePropertyId.UnityFontDefinition},
             {"-unity-font-style", StylePropertyId.UnityFontStyleAndWeight},
@@ -190,6 +191,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {StylePropertyId.Translate, "translate"},
             {StylePropertyId.UnityBackgroundImageTintColor, "-unity-background-image-tint-color"},
             {StylePropertyId.UnityBackgroundScaleMode, "-unity-background-scale-mode"},
+            {StylePropertyId.UnityEditorTextRenderingMode, "-unity-editor-text-rendering-mode"},
             {StylePropertyId.UnityFont, "-unity-font"},
             {StylePropertyId.UnityFontDefinition, "-unity-font-definition"},
             {StylePropertyId.UnityFontStyleAndWeight, "-unity-font-style"},
@@ -287,6 +289,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"translate", "translate"},
             {"-unity-background-image-tint-color", "unityBackgroundImageTintColor"},
             {"-unity-background-scale-mode", "unityBackgroundScaleMode"},
+            {"-unity-editor-text-rendering-mode", "unityEditorTextRenderingMode"},
             {"-unity-font", "unityFont"},
             {"-unity-font-definition", "unityFontDefinition"},
             {"-unity-font-style", "unityFontStyleAndWeight"},
@@ -384,6 +387,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"translate", "translate"},
             {"unityBackgroundImageTintColor", "-unity-background-image-tint-color"},
             {"unityBackgroundScaleMode", "-unity-background-scale-mode"},
+            {"unityEditorTextRenderingMode", "-unity-editor-text-rendering-mode"},
             {"unityFont", "-unity-font"},
             {"unityFontDefinition", "-unity-font-definition"},
             {"unityFontStyleAndWeight", "-unity-font-style"},
@@ -678,6 +682,20 @@ namespace UnityEngine.UIElements.StyleSheets
                     if (string.Equals(value, "ease-in-out-bounce", StringComparison.OrdinalIgnoreCase))
                     {
                         intValue = (int)EasingMode.EaseInOutBounce;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.EditorTextRenderingMode:
+                    if (string.Equals(value, "sdf", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EditorTextRenderingMode.SDF;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "bitmap", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EditorTextRenderingMode.Bitmap;
                         return true;
                     }
 

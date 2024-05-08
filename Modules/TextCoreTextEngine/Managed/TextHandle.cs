@@ -12,11 +12,20 @@ using UnityEngine.Bindings;
 namespace UnityEngine.TextCore.Text
 {
     [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-    internal class TextHandle
+    internal partial class TextHandle
     {
         public TextHandle()
         {
         }
+
+        ~TextHandle()
+        {
+            RemoveTextInfoFromTemporaryCache();
+            RemoveTextInfoFromPermanentCache();
+        }
+
+        internal static TextHandleTemporaryCache s_TemporaryCache = new TextHandleTemporaryCache();
+        internal static TextHandlePermanentCache s_PermanentCache = new TextHandlePermanentCache();
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal static void InitThreadArrays()
@@ -93,11 +102,6 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal NativeTextGenerationSettings nativeSettings = NativeTextGenerationSettings.Default;
 
-        ~TextHandle()
-        {
-            RemoveTextInfoFromCache();
-        }
-
         internal Vector2 preferredSize {
             [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
             get;
@@ -107,14 +111,36 @@ namespace UnityEngine.TextCore.Text
         private Rect m_ScreenRect;
         private float m_LineHeightDefault;
         private bool m_IsPlaceholder;
-        private bool m_IsCached;
-        private LinkedListNode<TextInfo> m_TextInfoNode;
         private bool m_IsEllided;
 
-        private static LinkedList<TextInfo> s_TextInfoPool = new LinkedList<TextInfo>();
-        private static double s_MinTimeInCache = 1;
-        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal static double currentTime;
+        internal LinkedListNode<TextInfo> TextInfoNode { get; set; }
+        internal bool IsCachedPermanent { get; set; }
+        internal bool IsCachedTemporary { get; set; }
+
+        public virtual void AddTextInfoToPermanentCache()
+        {
+            s_PermanentCache.AddTextInfoToCache(this);
+        }
+
+        public void AddTextInfoToTemporaryCache(int hashCode)
+        {
+            s_TemporaryCache.AddTextInfoToCache(this, hashCode);
+        }
+
+        public void RemoveTextInfoFromTemporaryCache()
+        {
+            s_TemporaryCache.RemoveTextInfoFromCache(this);
+        }
+
+        public void RemoveTextInfoFromPermanentCache()
+        {
+            s_PermanentCache.RemoveTextInfoFromCache(this);
+        }
+
+        public static void UpdateCurrentFrame()
+        {
+            s_TemporaryCache.UpdateCurrentFrame();
+        }
 
         /// <summary>
         /// The TextInfo instance, use from this instead of the m_TextInfo member.
@@ -126,87 +152,11 @@ namespace UnityEngine.TextCore.Text
             get
             {
 
-                if (m_TextInfoNode == null)
+                if (TextInfoNode == null)
                     return textInfoCommon;
                 else
-                    return m_TextInfoNode.Value;
+                    return TextInfoNode.Value;
             }
-        }
-
-        static object syncRoot = new object();
-        public virtual void AddTextInfoToCache()
-        {
-            lock (syncRoot)
-            {
-                bool canWriteOnAsset = !TextGenerator.IsExecutingJob;
-                if (canWriteOnAsset)
-                    currentTime = Time.realtimeSinceStartup;
-
-                if (m_IsCached)
-                {
-                    RefreshCaching();
-                    return;
-                }
-
-                if (s_TextInfoPool.Count > 0 && (currentTime - s_TextInfoPool.Last.Value.lastTimeInCache > s_MinTimeInCache))
-                {
-                    RecycleTextInfoFromCache();
-                }
-                else
-                {
-                    var textInfo = new TextInfo(VertexDataLayout.VBO);
-                    m_TextInfoNode = new LinkedListNode<TextInfo>(textInfo);
-                    s_TextInfoPool.AddFirst(m_TextInfoNode);
-                    textInfo.lastTimeInCache = currentTime;
-                    textInfo.removedFromCache += RemoveTextInfoFromCache;
-                }
-
-                m_IsCached = true;
-                SetDirty();
-                Update();
-            }
-        }
-
-        public virtual void RemoveTextInfoFromCache()
-        {
-            lock (syncRoot)
-            {
-                if (!m_IsCached)
-                    return;
-
-                m_IsCached = false;
-                textInfo.lastTimeInCache = 0;
-                textInfo.removedFromCache = null;
-                if (m_TextInfoNode != null)
-                {
-                    s_TextInfoPool.Remove(m_TextInfoNode);
-                    s_TextInfoPool.AddLast(m_TextInfoNode);
-                    m_TextInfoNode = null;
-                }
-            }
-        }
-
-        private void RefreshCaching()
-        {
-            if (!TextGenerator.IsExecutingJob)
-                currentTime = Time.realtimeSinceStartup;
-
-            textInfo.lastTimeInCache = currentTime;
-            s_TextInfoPool.Remove(m_TextInfoNode);
-            s_TextInfoPool.AddFirst(m_TextInfoNode);
-        }
-
-        private void RecycleTextInfoFromCache()
-        {
-            if (!TextGenerator.IsExecutingJob)
-                currentTime = Time.realtimeSinceStartup;
-
-            m_TextInfoNode = s_TextInfoPool.Last;
-            m_TextInfoNode.Value.RemoveFromCache();
-            s_TextInfoPool.RemoveLast();
-            s_TextInfoPool.AddFirst(m_TextInfoNode);
-            textInfo.removedFromCache += RemoveTextInfoFromCache;
-            textInfo.lastTimeInCache = currentTime;
         }
 
         // For testing purposes
@@ -228,376 +178,12 @@ namespace UnityEngine.TextCore.Text
             isDirty = true;
         }
 
-        public bool IsDirty(TextGenerationSettings settings)
+        public bool IsDirty(int hashCode)
         {
-            int hash = settings.GetHashCode();
-            if (m_PreviousGenerationSettingsHash == hash && !isDirty && m_IsCached)
+            if (m_PreviousGenerationSettingsHash == hashCode && !isDirty && (IsCachedTemporary || IsCachedPermanent))
                 return false;
 
-            m_PreviousGenerationSettingsHash = hash;
-            isDirty = false;
             return true;
-        }
-
-        public Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
-        {
-            AddTextInfoToCache();
-            var result = m_ScreenRect.position;
-            if (textInfo.characterCount == 0)
-                return inverseYAxis ? new Vector2(0, m_LineHeightDefault) : result;
-
-            var validIndex = index >= textInfo.characterCount ? textInfo.characterCount - 1 : index;
-            var character = textInfo.textElementInfo[validIndex];
-            var descender = character.descender;
-            var vectorX = index >= textInfo.characterCount ? character.xAdvance : character.origin;
-
-            result += inverseYAxis ?
-                new Vector2(vectorX, m_ScreenRect.height - descender) :
-                new Vector2(vectorX, descender);
-
-            return result;
-        }
-
-        public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, bool useXAdvance = false, bool inverseYAxis = true)
-        {
-            AddTextInfoToCache();
-            var result = m_ScreenRect.position;
-            if (textInfo.characterCount == 0 || index < 0)
-                return inverseYAxis ? new Vector2(0, m_LineHeightDefault) : result;
-
-            if (index >= textInfo.characterCount)
-                index = textInfo.characterCount - 1;
-
-            var character = textInfo.textElementInfo[index];
-            var line = textInfo.lineInfo[character.lineNumber];
-
-            if (index >= textInfo.characterCount - 1 || useXAdvance)
-            {
-                result += inverseYAxis ?
-                    new Vector2(character.xAdvance, m_ScreenRect.height - line.descender) :
-                    new Vector2(character.xAdvance, line.descender);
-                return result;
-            }
-
-            result += inverseYAxis ?
-                new Vector2(character.origin, m_ScreenRect.height - line.descender) :
-                new Vector2(character.origin, line.descender);
-
-            return result;
-        }
-
-        //TODO add special handling for 1 character...
-        // Add support for world space.
-        public int GetCursorIndexFromPosition(Vector2 position, bool inverseYAxis = true)
-        {
-            if (inverseYAxis)
-                position.y = m_ScreenRect.height - position.y;
-
-            var lineNumber = 0;
-            if (textInfo.lineCount > 1)
-                lineNumber = FindNearestLine(position);
-
-            var index = FindNearestCharacterOnLine(position, lineNumber, false);
-            var cInfo = textInfo.textElementInfo[index];
-
-            // Get Bottom Left and Top Right position of the current character
-            Vector3 bl = cInfo.bottomLeft;
-            Vector3 tr = cInfo.topRight;
-
-            float insertPosition = (position.x - bl.x) / (tr.x - bl.x);
-
-            return (insertPosition < 0.5f) || cInfo.character == '\n' ? index : index + 1;
-        }
-
-        public int LineDownCharacterPosition(int originalPos)
-        {
-            if (originalPos >= textInfo.characterCount)
-                return textInfo.characterCount - 1; // text.Length;
-
-            var originChar = textInfo.textElementInfo[originalPos];
-            int originLine = originChar.lineNumber;
-
-            //// We are on the last line return last character
-            if (originLine + 1 >= textInfo.lineCount)
-                return textInfo.characterCount - 1;
-
-            // Need to determine end line for next line.
-            int endCharIdx = textInfo.lineInfo[originLine + 1].lastCharacterIndex;
-
-            int closest = -1;
-            float distance = Mathf.Infinity;
-            float range = 0;
-
-            for (int i = textInfo.lineInfo[originLine + 1].firstCharacterIndex; i < endCharIdx; ++i)
-            {
-                var currentChar = textInfo.textElementInfo[i];
-
-                float d = originChar.origin - currentChar.origin;
-                float r = d / (currentChar.xAdvance - currentChar.origin);
-
-                if (r >= 0 && r <= 1)
-                {
-                    if (r < 0.5f)
-                        return i;
-                    else
-                        return i + 1;
-                }
-
-                d = Mathf.Abs(d);
-
-                if (d < distance)
-                {
-                    closest = i;
-                    distance = d;
-                    range = r;
-                }
-            }
-
-            if (closest == -1) return endCharIdx;
-
-            if (range < 0.5f)
-                return closest;
-            else
-                return closest + 1;
-        }
-
-        public int LineUpCharacterPosition(int originalPos)
-        {
-            if (originalPos >= textInfo.characterCount)
-                originalPos -= 1;
-
-            var originChar = textInfo.textElementInfo[originalPos];
-            int originLine = originChar.lineNumber;
-
-            // We are on the first line return first character
-            if (originLine - 1 < 0)
-                return 0;
-
-            int endCharIdx = textInfo.lineInfo[originLine].firstCharacterIndex - 1;
-
-            int closest = -1;
-            float distance = Mathf.Infinity;
-            float range = 0;
-
-            for (int i = textInfo.lineInfo[originLine - 1].firstCharacterIndex; i < endCharIdx; ++i)
-            {
-                var currentChar = textInfo.textElementInfo[i];
-
-                float d = originChar.origin - currentChar.origin;
-                float r = d / (currentChar.xAdvance - currentChar.origin);
-
-                if (r >= 0 && r <= 1)
-                {
-                    if (r < 0.5f)
-                        return i;
-                    else
-                        return i + 1;
-                }
-
-                d = Mathf.Abs(d);
-
-                if (d < distance)
-                {
-                    closest = i;
-                    distance = d;
-                    range = r;
-                }
-            }
-
-            if (closest == -1) return endCharIdx;
-
-            //Debug.Log("Returning nearest character with Range = " + range);
-
-            if (range < 0.5f)
-                return closest;
-            else
-                return closest + 1;
-        }
-
-        // This could be improved if TextElementInfo had a reference to the word index.
-        public int FindWordIndex(int cursorIndex)
-        {
-            for (int i = 0; i < textInfo.wordCount; i++)
-            {
-                var word = textInfo.wordInfo[i];
-                if (word.firstCharacterIndex <= cursorIndex && word.lastCharacterIndex >= cursorIndex)
-                    return i;
-            }
-
-            return -1;
-        }
-
-        public int FindNearestLine(Vector2 position)
-        {
-            float distance = Mathf.Infinity;
-            int closest = -1;
-
-            for (int i = 0; i < textInfo.lineCount; i++)
-            {
-                var lineInfo = textInfo.lineInfo[i];
-
-                float ascender = lineInfo.ascender;
-                float descender = lineInfo.descender;
-
-                if (ascender > position.y && descender < position.y)
-                {
-                    // Debug.Log("Position is on line " + i);
-                    return i;
-                }
-
-                float d0 = Mathf.Abs(ascender - position.y);
-                float d1 = Mathf.Abs(descender - position.y);
-
-                float d = Mathf.Min(d0, d1);
-                if (d < distance)
-                {
-                    distance = d;
-                    closest = i;
-                }
-            }
-            //Debug.Log("Closest line to position is " + closest);
-            return closest;
-        }
-
-        public int FindNearestCharacterOnLine(Vector2 position, int line, bool visibleOnly)
-        {
-            if (line >= textInfo.lineInfo.Length || line < 0)
-                return 0;
-            int firstCharacter = textInfo.lineInfo[line].firstCharacterIndex;
-            int lastCharacter = textInfo.lineInfo[line].lastCharacterIndex;
-
-            float distanceSqr = Mathf.Infinity;
-            int closest = lastCharacter;
-
-
-            for (int i = firstCharacter; i <= lastCharacter; i++)
-            {
-                // Get current character info.
-                var cInfo = textInfo.textElementInfo[i];
-                if (visibleOnly && !cInfo.isVisible) continue;
-
-                // Ignore Carriage Returns <CR>
-                if (cInfo.character == '\r' || cInfo.character == '\n')
-                    continue;
-
-                // Get Bottom Left and Top Right position of the current character
-                Vector3 bl = cInfo.bottomLeft;
-                Vector3 tl = new Vector3(cInfo.bottomLeft.x, cInfo.topRight.y, 0);
-                Vector3 tr = cInfo.topRight;
-                Vector3 br = new Vector3(cInfo.topRight.x, cInfo.bottomLeft.y, 0);
-
-                if (PointIntersectRectangle(position, bl, tl, tr, br))
-                {
-                    closest = i;
-                    break;
-                }
-
-                // Find the closest corner to position.
-                float dbl = DistanceToLine(bl, tl, position);
-                float dtl = DistanceToLine(tl, tr, position);
-                float dtr = DistanceToLine(tr, br, position);
-                float dbr = DistanceToLine(br, bl, position);
-
-                float d = dbl < dtl ? dbl : dtl;
-                d = d < dtr ? d : dtr;
-                d = d < dbr ? d : dbr;
-
-                if (distanceSqr > d)
-                {
-                    distanceSqr = d;
-                    closest = i;
-                }
-            }
-            return closest;
-        }
-
-        /// <summary>
-        /// Function returning the index of the Link at the given position (if any).
-        /// </summary>
-        /// <returns></returns>
-        public int FindIntersectingLink(Vector3 position, bool inverseYAxis = true)
-        {
-            if (inverseYAxis)
-                position.y = m_ScreenRect.height - position.y;
-
-            for (int i = 0; i < textInfo.linkCount; i++)
-            {
-                var linkInfo = textInfo.linkInfo[i];
-
-                bool isBeginRegion = false;
-
-                Vector3 bl = Vector3.zero;
-                Vector3 tl = Vector3.zero;
-                Vector3 br = Vector3.zero;
-                Vector3 tr = Vector3.zero;
-
-                // Iterate through each character of the word
-                for (int j = 0; j < linkInfo.linkTextLength; j++)
-                {
-                    int characterIndex = linkInfo.linkTextfirstCharacterIndex + j;
-                    var currentCharInfo = textInfo.textElementInfo[characterIndex];
-                    int currentLine = currentCharInfo.lineNumber;
-
-                    if (!isBeginRegion)
-                    {
-                        isBeginRegion = true;
-
-                        bl = new Vector3(currentCharInfo.bottomLeft.x, currentCharInfo.descender, 0);
-                        tl = new Vector3(currentCharInfo.bottomLeft.x, currentCharInfo.ascender, 0);
-
-                        //Debug.Log("Start Word Region at [" + currentCharInfo.character + "]");
-
-                        // If Word is one character
-                        if (linkInfo.linkTextLength == 1)
-                        {
-                            isBeginRegion = false;
-
-                            br = new Vector3(currentCharInfo.topRight.x, currentCharInfo.descender, 0);
-                            tr = new Vector3(currentCharInfo.topRight.x, currentCharInfo.ascender, 0);
-
-                            // Check for Intersection
-                            if (PointIntersectRectangle(position, bl, tl, tr, br))
-                                return i;
-
-                            //Debug.Log("End Word Region at [" + currentCharInfo.character + "]");
-                        }
-                    }
-
-                    // Last Character of Word
-                    if (isBeginRegion && j == linkInfo.linkTextLength - 1)
-                    {
-                        isBeginRegion = false;
-
-                        br = new Vector3(currentCharInfo.topRight.x, currentCharInfo.descender, 0);
-                        tr = new Vector3(currentCharInfo.topRight.x, currentCharInfo.ascender, 0);
-
-                        // Check for Intersection
-                        if (PointIntersectRectangle(position, bl, tl, tr, br))
-                            return i;
-
-                        //Debug.Log("End Word Region at [" + currentCharInfo.character + "]");
-                    }
-                    // If Word is split on more than one line.
-                    else if (isBeginRegion && currentLine != textInfo.textElementInfo[characterIndex + 1].lineNumber)
-                    {
-                        isBeginRegion = false;
-
-                        br = new Vector3(currentCharInfo.topRight.x, currentCharInfo.descender, 0);
-                        tr = new Vector3(currentCharInfo.topRight.x, currentCharInfo.ascender, 0);
-
-                        // Check for Intersection
-                        if (PointIntersectRectangle(position, bl, tl, tr, br))
-                            return i;
-
-                        //Debug.Log("End Word Region at [" + currentCharInfo.character + "]");
-                    }
-                }
-
-                //Debug.Log("Word at Index: " + i + " is located at (" + bl + ", " + tl + ", " + tr + ", " + br + ").");
-
-            }
-
-            return -1;
         }
 
         public float ComputeTextWidth(TextGenerationSettings tgs)
@@ -610,121 +196,6 @@ namespace UnityEngine.TextCore.Text
         {
             UpdatePreferredValues(tgs);
             return preferredSize.y;
-        }
-
-        public int GetCorrespondingStringIndex(int index)
-        {
-            if (index <= 0)
-                return 0;
-
-            return textInfo.textElementInfo[index - 1].index + textInfo.textElementInfo[index - 1].stringLength;
-        }
-
-        public int GetCorrespondingCodePointIndex(int stringIndex)
-        {
-            if (stringIndex <= 0)
-                return 0;
-
-            for (int i = 0; i < textInfo.characterCount; i++)
-            {
-                var character = textInfo.textElementInfo[i];
-                if (character.index + character.stringLength >= stringIndex)
-                    return i + 1;
-            }
-
-            return textInfo.characterCount;
-        }
-
-        public LineInfo GetLineInfoFromCharacterIndex(int index)
-        {
-            return textInfo.lineInfo[GetLineNumber(index)];
-        }
-
-        private static bool PointIntersectRectangle(Vector3 m, Vector3 a, Vector3 b, Vector3 c, Vector3 d)
-        {
-            Vector3 ab = b - a;
-            Vector3 am = m - a;
-            Vector3 bc = c - b;
-            Vector3 bm = m - b;
-
-            float abamDot = Vector3.Dot(ab, am);
-            float bcbmDot = Vector3.Dot(bc, bm);
-
-            return 0 <= abamDot && abamDot <= Vector3.Dot(ab, ab) && 0 <= bcbmDot && bcbmDot <= Vector3.Dot(bc, bc);
-        }
-
-        /// <summary>
-        /// Function returning the Square Distance from a Point to a Line.
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <param name="point"></param>
-        /// <returns></returns>
-        private static float DistanceToLine(Vector3 a, Vector3 b, Vector3 point)
-        {
-            Vector3 n = b - a;
-            Vector3 pa = a - point;
-
-            float c = Vector3.Dot( n, pa );
-
-            // Closest point is a
-            if ( c > 0.0f )
-                return Vector3.Dot( pa, pa );
-
-            Vector3 bp = point - b;
-
-            // Closest point is b
-            if (Vector3.Dot( n, bp ) > 0.0f )
-                return Vector3.Dot( bp, bp );
-
-            // Closest point is between a and b
-            Vector3 e = pa - n * (c / Vector3.Dot( n, n ));
-
-            return Vector3.Dot( e, e );
-        }
-
-        public int GetLineNumber(int index)
-        {
-            if (index <= 0)
-                index = 0;
-
-            if (index >= textInfo.characterCount)
-                index = Mathf.Max(0, textInfo.characterCount - 1);
-
-            return textInfo.textElementInfo[index].lineNumber;
-        }
-
-        public float GetLineHeight(int lineNumber)
-        {
-            if (lineNumber <= 0)
-                lineNumber = 0;
-
-            if (lineNumber >= textInfo.lineCount)
-                lineNumber = Mathf.Max(0, textInfo.lineCount - 1);
-
-            return textInfo.lineInfo[lineNumber].lineHeight;
-        }
-
-        public float GetLineHeightFromCharacterIndex(int index)
-        {
-            if (index <= 0)
-                index = 0;
-
-            if (index >= textInfo.characterCount)
-                index = Mathf.Max(0, textInfo.characterCount - 1);
-            return GetLineHeight(textInfo.textElementInfo[index].lineNumber);
-        }
-
-        public float GetCharacterHeightFromIndex(int index)
-        {
-            if (index <= 0)
-                index = 0;
-
-            if (index >= textInfo.characterCount)
-                index = Mathf.Max(0, textInfo.characterCount - 1);
-
-            var characterInfo = textInfo.textElementInfo[index];
-            return characterInfo.ascender - characterInfo.descender;
         }
 
         public bool IsPlaceholder
@@ -743,77 +214,6 @@ namespace UnityEngine.TextCore.Text
             return m_IsEllided;
         }
 
-        /// <summary>
-        // Retrieves a substring from this instance.
-        /// </summary>
-        public string Substring(int startIndex, int length)
-        {
-            if (startIndex < 0 || startIndex + length > textInfo.characterCount)
-                throw new ArgumentOutOfRangeException();
-
-            var result = new StringBuilder(length);
-            for (int i = startIndex; i < startIndex + length; ++i)
-            {
-                var codePoint = textInfo.textElementInfo[i].character;
-                if (codePoint >= CodePoint.UNICODE_PLANE01_START && codePoint <= CodePoint.UNICODE_PLANE16_END)
-                {
-                    uint highSurrogate = CodePoint.HIGH_SURROGATE_START + ((codePoint - CodePoint.UNICODE_PLANE01_START) >> 10);
-                    uint lowSurrogate = CodePoint.LOW_SURROGATE_START + ((codePoint - CodePoint.UNICODE_PLANE01_START) & CodePoint.LOWEST_10BITS_MASK);
-
-                    result.Append((char)highSurrogate);
-                    result.Append((char)lowSurrogate);
-                }
-                else
-                {
-                    result.Append((char)codePoint);
-                }
-            }
-
-            return result.ToString();
-        }
-
-        /// <summary>
-        // Reports the zero-based index of the first occurrence of the specified Unicode character in this string.
-        // The search starts at a specified character position.
-        /// </summary>
-        /// <remarks>
-        /// The search is case sensitive.
-        /// </remarks>
-        public int IndexOf(char value, int startIndex)
-        {
-            if (startIndex < 0 || startIndex >= textInfo.characterCount)
-                throw new ArgumentOutOfRangeException();
-
-            for (int i = startIndex; i < textInfo.characterCount; i++)
-            {
-                if (textInfo.textElementInfo[i].character == value)
-                    return i;
-            }
-
-            return -1;
-        }
-
-        /// <summary>
-        // Reports the zero-based index position of the last occurrence of a specified Unicode character within this
-        // instance. The search starts at a specified character position and proceeds backward toward the beginning of the string.
-        /// </summary>
-        /// <remarks>
-        /// The search is case sensitive.
-        /// </remarks>
-        public int LastIndexOf(char value, int startIndex)
-        {
-            if (startIndex < 0 || startIndex >= textInfo.characterCount)
-                throw new ArgumentOutOfRangeException();
-
-            for (int i = startIndex; i >= 0; i--)
-            {
-                if (textInfo.textElementInfo[i].character == value)
-                    return i;
-            }
-
-            return -1;
-        }
-
         protected void UpdatePreferredValues(TextGenerationSettings tgs)
         {
             preferredSize = generator.GetPreferredValues(tgs, textInfoCommon);
@@ -822,10 +222,16 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal TextInfo Update()
         {
+            return UpdateWithHash(settings.GetHashCode());
+        }
+
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal TextInfo UpdateWithHash(int hashCode)
+        {
             m_ScreenRect = settings.screenRect;
             m_LineHeightDefault = GetLineHeightDefault(settings);
             m_IsPlaceholder = settings.isPlaceholder;
-            if (!IsDirty(settings))
+            if (!IsDirty(hashCode))
                 return textInfo;
 
             if (settings.fontAsset == null || settings.fontAsset.characterLookupTable == null)
@@ -835,6 +241,8 @@ namespace UnityEngine.TextCore.Text
             }
 
             generator.GenerateText(settings, textInfo);
+            m_PreviousGenerationSettingsHash = hashCode;
+            isDirty = false;
             m_IsEllided = generator.isTextTruncated;
             return textInfo;
         }
@@ -844,8 +252,8 @@ namespace UnityEngine.TextCore.Text
         {
             if (settings.fontAsset == null)
                 return false;
-            int hash = settings.GetHashCode();
-            if (m_PreviousGenerationSettingsHash == hash && !isDirty && m_IsCached)
+
+            if (!IsDirty(settings.GetHashCode()))
                 return true;
 
             bool success = generator.PrepareFontAsset(settings);
@@ -895,6 +303,128 @@ namespace UnityEngine.TextCore.Text
                 return settings.fontAsset.faceInfo.lineHeight / settings.fontAsset.faceInfo.pointSize * settings.fontSize;
             }
             return 0.0f;
+        }
+
+        public virtual Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
+        {
+            AddTextInfoToPermanentCache();
+            return textInfo.GetCursorPositionFromStringIndexUsingCharacterHeight(index, m_ScreenRect, m_LineHeightDefault, inverseYAxis);
+        }
+
+        public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, bool useXAdvance = false, bool inverseYAxis = true)
+        {
+            AddTextInfoToPermanentCache();
+            return textInfo.GetCursorPositionFromStringIndexUsingLineHeight(index, m_ScreenRect, m_LineHeightDefault, useXAdvance, inverseYAxis);
+        }
+
+        //TODO add special handling for 1 character...
+        // Add support for world space.
+        public int GetCursorIndexFromPosition(Vector2 position, bool inverseYAxis = true)
+        {
+            return textInfo.GetCursorIndexFromPosition(position, m_ScreenRect, inverseYAxis);
+        }
+
+        public int LineDownCharacterPosition(int originalPos)
+        {
+            return textInfo.LineDownCharacterPosition(originalPos);
+        }
+
+        public int LineUpCharacterPosition(int originalPos)
+        {
+            return textInfo.LineUpCharacterPosition(originalPos);
+        }
+
+        // This could be improved if TextElementInfo had a reference to the word index.
+        public int FindWordIndex(int cursorIndex)
+        {
+            return textInfo.FindWordIndex(cursorIndex);
+        }
+
+        public int FindNearestLine(Vector2 position)
+        {
+            return textInfo.FindNearestLine(position);
+        }
+
+        public int FindNearestCharacterOnLine(Vector2 position, int line, bool visibleOnly)
+        {
+            return textInfo.FindNearestCharacterOnLine(position, line, visibleOnly);
+        }
+
+        /// <summary>
+        /// Function returning the index of the Link at the given position (if any).
+        /// </summary>
+        /// <returns></returns>
+        public int FindIntersectingLink(Vector3 position, bool inverseYAxis = true)
+        {
+            return textInfo.FindIntersectingLink(position, m_ScreenRect, inverseYAxis);
+        }
+
+        public int GetCorrespondingStringIndex(int index)
+        {
+            return textInfo.GetCorrespondingStringIndex(index);
+        }
+
+        public int GetCorrespondingCodePointIndex(int stringIndex)
+        {
+            return textInfo.GetCorrespondingCodePointIndex(stringIndex);
+        }
+
+        public LineInfo GetLineInfoFromCharacterIndex(int index)
+        {
+            return textInfo.GetLineInfoFromCharacterIndex(index);
+        }
+
+        public int GetLineNumber(int index)
+        {
+            return textInfo.GetLineNumber(index);
+        }
+
+        public float GetLineHeight(int lineNumber)
+        {
+            return textInfo.GetLineHeight(lineNumber);
+        }
+
+        public float GetLineHeightFromCharacterIndex(int index)
+        {
+            return textInfo.GetLineHeightFromCharacterIndex(index);
+        }
+
+        public float GetCharacterHeightFromIndex(int index)
+        {
+            return textInfo.GetCharacterHeightFromIndex(index);
+        }
+
+
+        /// <summary>
+        // Retrieves a substring from this instance.
+        /// </summary>
+        public string Substring(int startIndex, int length)
+        {
+            return textInfo.Substring(startIndex, length);
+        }
+
+        /// <summary>
+        // Reports the zero-based index of the first occurrence of the specified Unicode character in this string.
+        // The search starts at a specified character position.
+        /// </summary>
+        /// <remarks>
+        /// The search is case sensitive.
+        /// </remarks>
+        public int IndexOf(char value, int startIndex)
+        {
+            return textInfo.IndexOf(value, startIndex);
+        }
+
+        /// <summary>
+        // Reports the zero-based index position of the last occurrence of a specified Unicode character within this
+        // instance. The search starts at a specified character position and proceeds backward toward the beginning of the string.
+        /// </summary>
+        /// <remarks>
+        /// The search is case sensitive.
+        /// </remarks>
+        public int LastIndexOf(char value, int startIndex)
+        {
+            return textInfo.LastIndexOf(value, startIndex);
         }
     }
 }

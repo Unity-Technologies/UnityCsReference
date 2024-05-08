@@ -147,6 +147,8 @@ namespace UnityEngine.UIElements
                     return computedStyle.translate;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return computedStyle.unityBackgroundImageTintColor;
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    return computedStyle.unityEditorTextRenderingMode;
                 case StylePropertyId.UnityFont:
                     return computedStyle.unityFont;
                 case StylePropertyId.UnityFontDefinition:
@@ -323,6 +325,8 @@ namespace UnityEngine.UIElements
                     return typeof(Translate);
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return typeof(Color);
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    return typeof(EditorTextRenderingMode);
                 case StylePropertyId.UnityFont:
                     return typeof(Font);
                 case StylePropertyId.UnityFontDefinition:
@@ -523,6 +527,8 @@ namespace UnityEngine.UIElements
                     return style.translate;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return style.unityBackgroundImageTintColor;
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    return style.unityEditorTextRenderingMode;
                 case StylePropertyId.UnityFont:
                     return style.unityFont;
                 case StylePropertyId.UnityFontDefinition:
@@ -761,6 +767,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     style.unityBackgroundImageTintColor = (StyleColor)value;
+                    break;
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    style.unityEditorTextRenderingMode = (StyleEnum<EditorTextRenderingMode>)value;
                     break;
                 case StylePropertyId.UnityFont:
                     style.unityFont = (StyleFont)value;
@@ -1018,6 +1027,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     style.unityBackgroundImageTintColor = keyword;
                     break;
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    style.unityEditorTextRenderingMode = keyword;
+                    break;
                 case StylePropertyId.UnityFont:
                     style.unityFont = keyword;
                     break;
@@ -1274,6 +1286,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return new()
                     {};
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    return new()
+                    {};
                 case StylePropertyId.UnityFont:
                     return new()
                     {};
@@ -1332,7 +1347,7 @@ namespace UnityEngine.UIElements
                     return new()
                     {};
                 default:
-                    Debug.LogAssertion($"Cannot get valid keyword value for property id {id}"); return  null ; 
+                    Debug.LogAssertion($"Cannot get valid keyword value for property id {id}"); return  null ;
             }
         }
 
@@ -1466,6 +1481,8 @@ namespace UnityEngine.UIElements
                     return (StyleTranslate)(Translate)value;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return (StyleColor)(Color)value;
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    return (StyleEnum<EditorTextRenderingMode>)(EditorTextRenderingMode)value;
                 case StylePropertyId.UnityFont:
                     return (StyleFont)(Font)value;
                 case StylePropertyId.UnityFontDefinition:
@@ -1642,6 +1659,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleTranslate);
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return typeof(StyleColor);
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    return typeof(StyleEnum<EditorTextRenderingMode>);
                 case StylePropertyId.UnityFont:
                     return typeof(StyleFont);
                 case StylePropertyId.UnityFontDefinition:
@@ -1765,6 +1784,8 @@ namespace UnityEngine.UIElements
                     return true;
                 case StylePropertyId.TextShadow:
                     return true;
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    return true;
                 case StylePropertyId.UnityFont:
                     return true;
                 case StylePropertyId.UnityFontDefinition:
@@ -1794,7 +1815,7 @@ namespace UnityEngine.UIElements
 
         public static StylePropertyId[] GetInheritedProperties()
         {
-            return new[]{StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextGenerator, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
+            return new[]{StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityEditorTextRenderingMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextGenerator, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
         }
 
         public static bool IsDiscreteTypeProperty(StylePropertyId id)

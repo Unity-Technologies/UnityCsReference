@@ -249,7 +249,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Scedule a deferred scroll to the item at the index provided to <see cref="ShouldDeferScrollToItem(int)"/> if it was deferred.
+        /// Schedule a deferred scroll to the item at the index provided to <see cref="ShouldDeferScrollToItem(int)"/> if it was deferred.
         /// </summary>
         protected void ScheduleDeferredScrollToItem()
         {

@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Text;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 
 namespace UnityEditor.UIElements;
 
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal static class StringBuilderPool
 {
     internal static readonly ObjectPool<StringBuilder> s_Pool = new (() => new StringBuilder(), null, sb => sb.Clear());

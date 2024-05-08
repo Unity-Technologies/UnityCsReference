@@ -26,6 +26,7 @@ namespace UnityEngine.UIElements
         public Length fontSize;
         public Length letterSpacing;
         public TextShadow textShadow;
+        public EditorTextRenderingMode unityEditorTextRenderingMode;
         public Font unityFont;
         public FontDefinition unityFontDefinition;
         public FontStyle unityFontStyleAndWeight;
@@ -54,6 +55,7 @@ namespace UnityEngine.UIElements
                 lhs.fontSize == rhs.fontSize &&
                 lhs.letterSpacing == rhs.letterSpacing &&
                 lhs.textShadow == rhs.textShadow &&
+                lhs.unityEditorTextRenderingMode == rhs.unityEditorTextRenderingMode &&
                 lhs.unityFont == rhs.unityFont &&
                 lhs.unityFontDefinition == rhs.unityFontDefinition &&
                 lhs.unityFontStyleAndWeight == rhs.unityFontStyleAndWeight &&
@@ -93,6 +95,7 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ fontSize.GetHashCode();
                 hashCode = (hashCode * 397) ^ letterSpacing.GetHashCode();
                 hashCode = (hashCode * 397) ^ textShadow.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)unityEditorTextRenderingMode;
                 hashCode = (hashCode * 397) ^ (unityFont == null ? 0 : unityFont.GetHashCode());
                 hashCode = (hashCode * 397) ^ unityFontDefinition.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)unityFontStyleAndWeight;

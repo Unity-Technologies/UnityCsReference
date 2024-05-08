@@ -214,6 +214,23 @@ namespace UnityEditor.Build.Profile
             AssetDatabase.SaveAssetIfDirty(this);
         }
 
+        [MenuItem("CONTEXT/BuildProfile/Reset", false)]
+        static void ContextMenuReset(MenuCommand menuCommand)
+        {
+            var targetBuildProfile = (BuildProfile) menuCommand.context;
+            if (targetBuildProfile == null)
+                return;
+
+            targetBuildProfile.platformBuildProfile = null;
+            targetBuildProfile.TryCreatePlatformSettings();
+            targetBuildProfile.scenes = Array.Empty<EditorBuildSettingsScene>();
+            targetBuildProfile.scriptingDefines = Array.Empty<string>();
+
+            BuildProfileModuleUtil.RemovePlayerSettings(targetBuildProfile);
+
+            AssetDatabase.SaveAssetIfDirty(targetBuildProfile);
+        }
+        
         void ValidateDataConsistency()
         {
             // TODO: Remove migration code (https://jira.unity3d.com/browse/PLAT-8909)

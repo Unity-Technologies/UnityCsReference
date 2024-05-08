@@ -5,20 +5,13 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
-using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine.Serialization;
-using UnityEngine.TextCore.LowLevel;
-
 
 namespace UnityEngine.TextCore.Text
 {
     [System.Serializable][ExcludeFromPresetAttribute][ExcludeFromObjectFactory]
     public class TextSettings : ScriptableObject
     {
-        internal string k_SystemFontName =
-            "Lucida Grande"
-        ;
-
         /// <summary>
         /// The version of the TextSettings class.
         /// Version 1.2.0 was introduced with the TextCore package
@@ -88,7 +81,12 @@ namespace UnityEngine.TextCore.Text
         {
             s_FallbackOSFontAssetInternal = fontAssets;
         }
-        
+
+		internal virtual List<FontAsset> GetFallbackFontAssets(int textPixelSize = -1)
+        {
+            return fallbackFontAssets;
+        }
+
         /// <summary>
         /// Determines if the text system will use an instance material derived from the primary material preset or use the default material of the fallback font asset.
         /// </summary>
@@ -258,7 +256,7 @@ namespace UnityEngine.TextCore.Text
         }
         [SerializeField]
         protected UnicodeLineBreakingRules m_UnicodeLineBreakingRules;
-       
+
 
 
         // =============================================
@@ -362,28 +360,10 @@ namespace UnityEngine.TextCore.Text
             if (TextGenerator.IsExecutingJob)
                 return null;
 
-            FontAsset fontAsset;
-            if (font.name == "System Normal" || font.name == "System Small" || font.name == "System Big" || font.name == "System Warning")
-            {
-                fontAsset = FontAsset.CreateFontAsset(k_SystemFontName, "Regular", 90);
-            }
-            else if (font.name == "System Normal Bold" || font.name == "System Small Bold")
-            {
-                fontAsset = FontAsset.CreateFontAsset(k_SystemFontName, "Bold", 90);
-            }
-            else
-            {
-                fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, shader, AtlasPopulationMode.Dynamic, true);
-            }
+            FontAsset fontAsset = FontAssetFactory.CreateDefaultEditorFontAsset(font, shader);
 
             if (fontAsset != null)
             {
-                fontAsset.hideFlags = HideFlags.DontSave;
-                fontAsset.atlasTextures[0].hideFlags = HideFlags.DontSave;
-                fontAsset.material.hideFlags = HideFlags.DontSave;
-                fontAsset.isMultiAtlasTexturesEnabled = true;
-                fontAsset.material.shader = shader;
-
                 m_FontReferences.Add(new FontReferenceMap(font, fontAsset));
                 m_FontLookup.Add(id, fontAsset);
             }
@@ -416,4 +396,5 @@ namespace UnityEngine.TextCore.Text
             return null;
         }
     }
+
 }

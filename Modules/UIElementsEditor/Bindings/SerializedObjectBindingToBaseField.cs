@@ -65,7 +65,7 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
                 if (SyncFieldValueToProperty())
                 {
                     bindingContext.UpdateRevision(); //we make sure to Poll the ChangeTracker here
-                    bindingContext.ResetUpdate();
+                    bindingContext?.ResetUpdate();
                 }
 
                 var fieldUndoGroup = (int?)(field as VisualElement)?.GetProperty(UndoGroupPropertyKey);

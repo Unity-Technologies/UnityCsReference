@@ -84,6 +84,7 @@ namespace UnityEngine.TextCore.Text
 
             m_CurrentFontAsset = generationSettings.fontAsset;
             m_CurrentMaterial = generationSettings.material;
+
             m_CurrentMaterialIndex = 0;
 
             m_MaterialReferenceStack.SetDefault(new MaterialReference(m_CurrentMaterialIndex, m_CurrentFontAsset, null, m_CurrentMaterial, m_Padding));
@@ -275,7 +276,7 @@ namespace UnityEngine.TextCore.Text
 
                     if (character == null)
                     {
-                        character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.fallbackFontAssets, textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, ligature);
+                        character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.GetFallbackFontAssets(generationSettings.isEditorRenderingModeBitmap ? (int)(generationSettings.fontSize * generationSettings.pixelsPerPoint) : -1), textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, ligature);
                     }
 
                     if (character == null)
@@ -614,7 +615,7 @@ namespace UnityEngine.TextCore.Text
             if (textSettings.GetStaticFallbackOSFontAsset() == null && !canWriteOnAsset)
                 return null;
             // Search for the character in the list of fallback assigned in the settings (General Fallbacks).
-            character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, textSettings.fallbackFontAssets, textSettings.fallbackOSFontAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
+            character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, textSettings.GetFallbackFontAssets(generationSettings.isEditorRenderingModeBitmap ? (int)(generationSettings.fontSize * generationSettings.pixelsPerPoint) : -1), textSettings.fallbackOSFontAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
 
             if (character != null)
             {
@@ -1065,10 +1066,10 @@ namespace UnityEngine.TextCore.Text
 
                     if (character == null)
                     {
-                        if (textSettings.GetStaticFallbackOSFontAsset() == null && !canWriteOnAsset)
+                        if (textSettings.GetFallbackFontAssets(generationSettings.isEditorRenderingModeBitmap ? (int)(generationSettings.fontSize * generationSettings.pixelsPerPoint) : -1) == null && !canWriteOnAsset)
                             return false;
                         // Search for the missing glyph character in the Settings Fallback list.
-                        character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.fallbackFontAssets, textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out _, ligature);
+                        character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.GetFallbackFontAssets(generationSettings.isEditorRenderingModeBitmap ? (int)(generationSettings.fontSize * generationSettings.pixelsPerPoint) : -1), textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out _, ligature);
                     }
 
                     if (character == null)
@@ -1345,7 +1346,7 @@ namespace UnityEngine.TextCore.Text
             {
                 if (textSettings.GetStaticFallbackOSFontAsset() == null && !canWriteOnAsset)
                     return false;
-                character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(k_HorizontalEllipsis, fontAsset, textSettings.fallbackFontAssets, textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
+                character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(k_HorizontalEllipsis, fontAsset, textSettings.GetFallbackFontAssets(generationSettings.isEditorRenderingModeBitmap ? (int)(generationSettings.fontSize * generationSettings.pixelsPerPoint) : -1), textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
             }
 
             // Search the setting's default font asset

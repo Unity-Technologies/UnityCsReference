@@ -143,9 +143,8 @@ namespace UnityEditor.Build
                     return cur.title.text;
             }
 
-            var suffix = namedBuildTarget == NamedBuildTarget.Server ? " Server" : "";
 #pragma warning disable CS0618 // Member is obsolete
-            string targetName = BuildTargetDiscovery.BuildPlatformDisplayName(target) + suffix;
+            string targetName = BuildTargetDiscovery.BuildPlatformDisplayName(namedBuildTarget, target);
 #pragma warning restore CS0618
             return targetName.Length == 0 ? "Unsupported Target" : targetName;
         }

@@ -75,6 +75,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId transitionTimingFunctionProperty = "resolvedStyle." + nameof(IResolvedStyle.transitionTimingFunction);
             internal static readonly BindingId translateProperty = "resolvedStyle." + nameof(IResolvedStyle.translate);
             internal static readonly BindingId unityBackgroundImageTintColorProperty = "resolvedStyle." + nameof(IResolvedStyle.unityBackgroundImageTintColor);
+            internal static readonly BindingId unityEditorTextRenderingModeProperty = "resolvedStyle." + nameof(IResolvedStyle.unityEditorTextRenderingMode);
             internal static readonly BindingId unityFontProperty = "resolvedStyle." + nameof(IResolvedStyle.unityFont);
             internal static readonly BindingId unityFontDefinitionProperty = "resolvedStyle." + nameof(IResolvedStyle.unityFontDefinition);
             internal static readonly BindingId unityFontStyleAndWeightProperty = "resolvedStyle." + nameof(IResolvedStyle.unityFontStyleAndWeight);

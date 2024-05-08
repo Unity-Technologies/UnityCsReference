@@ -76,6 +76,11 @@ namespace UnityEditor.Search
 
         public string guid => m_GUID;
 
+        public bool isTextOnlyQuery
+        {
+            get; set;
+        }
+
         public bool isSearchTemplate
         {
             get

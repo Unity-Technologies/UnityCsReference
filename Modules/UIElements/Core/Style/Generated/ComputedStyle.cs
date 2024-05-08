@@ -93,6 +93,7 @@ namespace UnityEngine.UIElements
         public List<EasingFunction> transitionTimingFunction => transitionData.Read().transitionTimingFunction;
         public Translate translate => transformData.Read().translate;
         public Color unityBackgroundImageTintColor => rareData.Read().unityBackgroundImageTintColor;
+        public EditorTextRenderingMode unityEditorTextRenderingMode => inheritedData.Read().unityEditorTextRenderingMode;
         public Font unityFont => inheritedData.Read().unityFont;
         public FontDefinition unityFontDefinition => inheritedData.Read().unityFontDefinition;
         public FontStyle unityFontStyleAndWeight => inheritedData.Read().unityFontStyleAndWeight;
@@ -404,6 +405,9 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.UnityBackgroundScaleMode:
                         ShorthandApplicator.ApplyUnityBackgroundScaleMode(reader, ref this);
                         break;
+                    case StylePropertyId.UnityEditorTextRenderingMode:
+                        inheritedData.Write().unityEditorTextRenderingMode = (EditorTextRenderingMode)reader.ReadEnum(StyleEnumType.EditorTextRenderingMode, 0);
+                        break;
                     case StylePropertyId.UnityFont:
                         inheritedData.Write().unityFont = reader.ReadFont(0);
                         break;
@@ -645,6 +649,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     rareData.Write().unityBackgroundImageTintColor = sv.color;
+                    break;
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    inheritedData.Write().unityEditorTextRenderingMode = (EditorTextRenderingMode)sv.number;
                     break;
                 case StylePropertyId.UnityFont:
                     inheritedData.Write().unityFont = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
@@ -955,6 +962,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     rareData.Write().unityBackgroundImageTintColor = other.rareData.Read().unityBackgroundImageTintColor;
+                    break;
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    inheritedData.Write().unityEditorTextRenderingMode = other.inheritedData.Read().unityEditorTextRenderingMode;
                     break;
                 case StylePropertyId.UnityFont:
                     inheritedData.Write().unityFont = other.inheritedData.Read().unityFont;
@@ -3199,6 +3209,9 @@ namespace UnityEngine.UIElements
                     visualData.Write().backgroundRepeat = InitialStyle.backgroundRepeat;
                     visualData.Write().backgroundSize = InitialStyle.backgroundSize;
                     break;
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    inheritedData.Write().unityEditorTextRenderingMode = InitialStyle.unityEditorTextRenderingMode;
+                    break;
                 case StylePropertyId.UnityFont:
                     inheritedData.Write().unityFont = InitialStyle.unityFont;
                     break;
@@ -3294,6 +3307,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.TextShadow:
                     inheritedData.Write().textShadow = parentStyle.textShadow;
+                    break;
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    inheritedData.Write().unityEditorTextRenderingMode = parentStyle.unityEditorTextRenderingMode;
                     break;
                 case StylePropertyId.UnityFont:
                     inheritedData.Write().unityFont = parentStyle.unityFont;
@@ -3402,6 +3418,7 @@ namespace UnityEngine.UIElements
                     x.unityTextOutlineWidth != y.unityTextOutlineWidth ||
                     x.letterSpacing != y.letterSpacing ||
                     x.wordSpacing != y.wordSpacing ||
+                    x.unityEditorTextRenderingMode != y.unityEditorTextRenderingMode ||
                     x.unityParagraphSpacing != y.unityParagraphSpacing))
                 {
                     changes |= VersionChangeType.Layout | VersionChangeType.Repaint;

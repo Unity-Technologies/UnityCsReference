@@ -415,7 +415,7 @@ namespace UnityEditor.UIElements
 
                 try
                 {
-                    if (!serializedProperty.isValid)
+                    if (!serializedProperty.isValid || !serializedObject.isValid)
                         return;
 
                     if (m_InspectorElement is InspectorElement inspectorElement)

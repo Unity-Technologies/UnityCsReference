@@ -14,6 +14,7 @@ namespace UnityEditor
      NativeHeader("Runtime/Graphics/RenderTexture.h"),
      NativeHeader("Editor/Src/Windowing/GUIView.bindings.h"),
      NativeHeader("Editor/Src/Windowing/ContainerWindow.bindings.h")]
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class GUIView
     {
         public static extern GUIView current {[NativeMethod("GetCurrentGUIView")] get; }
@@ -23,13 +24,15 @@ namespace UnityEditor
         public extern bool hasFocus {[NativeMethod("IsViewFocused")] get; }
 
         public extern void Repaint();
+
+        [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         public extern void Focus();
         public extern void RepaintImmediately();
         public extern void CaptureRenderDocScene();
         public extern void CaptureRenderDocFullContent();
         public extern void BeginCaptureRenderDoc();
         public extern void EndCaptureRenderDoc();
-        
+
         internal extern bool vSyncEnabled {[NativeMethod("IsVSyncEnabled")] get; }
 
         internal extern void RenderCurrentSceneForCapture();

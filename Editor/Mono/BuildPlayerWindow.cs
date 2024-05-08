@@ -965,7 +965,10 @@ namespace UnityEditor
             GUIContent installModuleWithHub,
             string editorWillNeedToBeReloaded)
         {
-            GUILayout.Label(EditorGUIUtility.TextContent(string.Format(noModuleLoaded, BuildPlatforms.instance.GetModuleDisplayName(namedBuildTarget, buildTarget))));
+#pragma warning disable CS0618 // Member is obsolete
+            var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(namedBuildTarget, buildTarget);
+#pragma warning restore CS0618
+            GUILayout.Label(EditorGUIUtility.TextContent(string.Format(noModuleLoaded, displayName)));
             string url = "";
 #pragma warning disable CS0618 // Member is obsolete
             if (!isEditorinstalledWithHub || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(buildTarget))
