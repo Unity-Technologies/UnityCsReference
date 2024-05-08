@@ -550,7 +550,7 @@ namespace UnityEngine
         NoResolvedColorSurface = 1 << 8,
         DynamicallyScalable = 1 << 10,
         BindMS = 1 << 11,
-        DynamicallyScalableExplicit = 1 << 16,
+        DynamicallyScalableExplicit = 1 << 17,
     }
 
     public enum RenderTextureReadWrite
@@ -1973,6 +1973,7 @@ namespace UnityEngine.Rendering
         UNITY_PLATFORM_SUPPORTS_WAVE_64,
 
         UNITY_NEEDS_RENDERPASS_FBFETCH_FALLBACK,
+        UNITY_PLATFORM_SUPPORTS_DEPTH_FETCH,
     }
 
     // Match VideoShadersMode on C++ side

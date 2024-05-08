@@ -413,6 +413,7 @@ namespace UnityEngine.UIElements
             m_LastPendingFocusedElement = null;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool IsPendingFocus(Focusable f)
         {
             // Search for f in pending focused hierarchy

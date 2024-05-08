@@ -91,6 +91,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"translate", "none | [<length> | <percentage>] [ [<length> | <percentage>] <length>? ]?"},
             {"-unity-background-image-tint-color", "<color>"},
             {"-unity-background-scale-mode", "stretch-to-fill | scale-and-crop | scale-to-fit"},
+            {"-unity-editor-text-rendering-mode", "sdf | bitmap"},
             {"-unity-font", "<resource> | <url>"},
             {"-unity-font-definition", "<resource> | <url>"},
             {"-unity-font-style", "normal | italic | bold | bold-and-italic"},

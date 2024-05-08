@@ -40,6 +40,7 @@ namespace UnityEditor.Search
         public const string ItemFavoriteStateChanged = "search-item-favorite-state-changed";
         public const string SearchFieldFocused = "search-field-focused";
         public const string SearchIndexesChanged = "search-indexes-changed";
+        public const string SearchIndexReady = "search-index-ready";
     }
 
     interface ISearchElement

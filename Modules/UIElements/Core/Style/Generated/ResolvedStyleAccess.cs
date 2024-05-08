@@ -75,6 +75,7 @@ namespace UnityEngine.UIElements
         public IEnumerable<EasingFunction> transitionTimingFunction => ve.computedStyle.transitionTimingFunction;
         public Vector3 translate => ve.ResolveTranslate();
         public Color unityBackgroundImageTintColor => ve.computedStyle.unityBackgroundImageTintColor;
+        public EditorTextRenderingMode unityEditorTextRenderingMode => ve.computedStyle.unityEditorTextRenderingMode;
         public Font unityFont => ve.computedStyle.unityFont;
         public FontDefinition unityFontDefinition => ve.computedStyle.unityFontDefinition;
         public FontStyle unityFontStyleAndWeight => ve.computedStyle.unityFontStyleAndWeight;
@@ -157,6 +158,7 @@ namespace UnityEngine.UIElements
         IEnumerable<EasingFunction> IResolvedStyle.transitionTimingFunction => resolvedStyle.transitionTimingFunction;
         Vector3 IResolvedStyle.translate => resolvedStyle.translate;
         Color IResolvedStyle.unityBackgroundImageTintColor => resolvedStyle.unityBackgroundImageTintColor;
+        EditorTextRenderingMode IResolvedStyle.unityEditorTextRenderingMode => resolvedStyle.unityEditorTextRenderingMode;
         Font IResolvedStyle.unityFont => resolvedStyle.unityFont;
         FontDefinition IResolvedStyle.unityFontDefinition => resolvedStyle.unityFontDefinition;
         FontStyle IResolvedStyle.unityFontStyleAndWeight => resolvedStyle.unityFontStyleAndWeight;

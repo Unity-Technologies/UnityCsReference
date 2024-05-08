@@ -129,7 +129,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Category = packageInfo.category;
             m_IsDirectDependency = packageInfo.isDirectDependency;
             m_Name = packageInfo.name;
-            m_VersionInManifest = packageInfo.projectDependenciesEntry;
+            m_VersionInManifest = m_IsInstalled ? packageInfo.projectDependenciesEntry : string.Empty;
             m_Entitlements = packageInfo.entitlements;
 
             RefreshTags(packageInfo);

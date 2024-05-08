@@ -565,18 +565,22 @@ namespace UnityEditor.SceneManagement
 
         internal static bool IsUIPrefab(string prefabAssetPath)
         {
-            // We require a RectTransform and a CanvasRenderer to be considered a UI prefab.
-            // E.g 3D TextMeshPro uses RectTransform but a MeshRenderer so should not be considered a UI prefab
-            // This function needs to be peformant since it is called every time a prefab is opened in a prefab stage.
             var root = AssetDatabase.LoadMainAssetAtPath(prefabAssetPath) as GameObject;
             if (root == null)
                 return false;
 
+            return IsUI(root);
+        }
+
+        internal static bool IsUI(GameObject gameObject)
+        {
+            // We require a RectTransform and a CanvasRenderer to be considered a UI gameobject hierarchy.
+            // E.g 3D TextMeshPro uses RectTransform but a MeshRenderer so should not be considered a UI prefab.
             // In principle, RectTransforms can be used for other things than UI,
-            // so only treat as UI Prefab if it has both a RectTransform on the root
+            // so only treat as UI if it has both a RectTransform on the root
             // AND either a Canvas on the root or a CanvasRenderer somewhere in the hierarchy.
-            bool rectTransformOnRoot = root.GetComponent<RectTransform>() != null;
-            bool uiSpecificComponentPresent = (root.GetComponent<Canvas>() != null || root.GetComponentInChildren<CanvasRenderer>(true) != null);
+            bool rectTransformOnRoot = gameObject.GetComponent<RectTransform>() != null;
+            bool uiSpecificComponentPresent = (gameObject.GetComponent<Canvas>() != null || gameObject.GetComponentInChildren<CanvasRenderer>(true) != null);
             return rectTransformOnRoot && uiSpecificComponentPresent;
         }
 

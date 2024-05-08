@@ -1231,7 +1231,7 @@ namespace UnityEditor.TextCore.Text
         /// </summary>
         void UpdateRenderFeedbackWindow()
         {
-            m_PointSize = m_FaceInfo.pointSize;
+            m_PointSize = (int)m_FaceInfo.pointSize;
 
             string missingGlyphReport = string.Empty;
 
@@ -1827,7 +1827,7 @@ namespace UnityEditor.TextCore.Text
             if (m_SourceFont != null)
                 m_SourceFontFaces = GetFontFaces();
             m_PointSizeSamplingMode  = settings.pointSizeSamplingMode;
-            m_PointSize = settings.pointSize;
+            m_PointSize = (int)settings.pointSize;
             m_Padding = settings.padding;
             m_PaddingMode = settings.paddingMode == 0 ? PaddingMode.Pixel : (PaddingMode)settings.paddingMode;
             m_PaddingFieldValue = m_PaddingMode == PaddingMode.Percentage ? (float)m_Padding / m_PointSize * 100 : m_Padding;

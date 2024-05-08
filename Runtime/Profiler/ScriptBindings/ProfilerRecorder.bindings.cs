@@ -155,11 +155,6 @@ namespace Unity.Profiling
             MaxCount = 1,
         }
 
-        internal ProfilerRecorder(ProfilerRecorderOptions options)
-        {
-            this = Create(new LowLevel.Unsafe.ProfilerRecorderHandle(), 0, options);
-        }
-
         public ProfilerRecorder(string statName, int capacity = 1, ProfilerRecorderOptions options = ProfilerRecorderOptions.Default)
             : this(ProfilerCategory.Any, statName, capacity, options)
         {
@@ -370,7 +365,7 @@ namespace Unity.Profiling
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         static extern ProfilerRecorder Create(LowLevel.Unsafe.ProfilerRecorderHandle statHandle, int maxSampleCount, ProfilerRecorderOptions options);
 
-        [NativeMethod(IsThreadSafe = true)]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         static extern void Control(ProfilerRecorder handle, ControlOptions options);
 
         [NativeMethod(IsThreadSafe = true)]

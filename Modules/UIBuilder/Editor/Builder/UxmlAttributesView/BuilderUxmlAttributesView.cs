@@ -2379,14 +2379,15 @@ namespace Unity.UI.Builder
             {
                 var parentTemplate = BuilderAssetUtilities.GetVisualElementRootTemplate(m_CurrentElement);
                 var parentTemplateAsset = parentTemplate.GetVisualElementAsset() as TemplateAsset;
-                var attributeOverrides =
-                    new List<TemplateAsset.AttributeOverride>(parentTemplateAsset.attributeOverrides);
+                var attributeOverrides = new List<TemplateAsset.AttributeOverride>(parentTemplateAsset.attributeOverrides);
+
+                var pathToTemplateAsset = TemplateAssetExtensions.GetPathToTemplateAsset(m_CurrentElement, parentTemplateAsset);
 
                 foreach (var attributeOverride in attributeOverrides)
                 {
-                    if (attributeOverride.m_ElementName == m_CurrentElement.name)
+                    if (attributeOverride.NamesPathMatchesElementNamesPath(pathToTemplateAsset))
                     {
-                        parentTemplateAsset.RemoveAttributeOverride(attributeOverride.m_ElementName,
+                        parentTemplateAsset.RemoveAttributeOverride(m_CurrentElement,
                             attributeOverride.m_AttributeName);
                     }
                 }
@@ -2636,7 +2637,7 @@ namespace Unity.UI.Builder
                 var hierarchyView = builder.hierarchy.elementHierarchyView;
                 var selectionId = hierarchyView.GetSelectedItemId();
 
-                templateAsset.RemoveAttributeOverride(m_CurrentElement.name, attributeName);
+                templateAsset.RemoveAttributeOverride(m_CurrentElement, attributeName);
 
                 // Re-sync serializedDataOverrides since attribute overrides have changed.
                 templateAsset.serializedDataOverrides.Clear();
@@ -2794,7 +2795,7 @@ namespace Unity.UI.Builder
 
                     if (!string.IsNullOrEmpty(currentVisualElementName))
                     {
-                        templateAsset.SetAttributeOverride(currentVisualElementName, attributeName, value);
+                        templateAsset.SetAttributeOverride(m_CurrentElement, attributeName, value);
 
                         var elementsToChange = templateContainerParent.Query<VisualElement>(currentVisualElementName);
                         elementsToChange.ForEach(x =>

@@ -93,6 +93,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.transitionData.Write().transitionTimingFunction = new List<EasingFunction>{EasingMode.Ease};
             s_InitialStyle.transformData.Write().translate = StyleKeyword.None.ToTranslate();
             s_InitialStyle.rareData.Write().unityBackgroundImageTintColor = Color.white;
+            s_InitialStyle.inheritedData.Write().unityEditorTextRenderingMode = EditorTextRenderingMode.SDF;
             s_InitialStyle.inheritedData.Write().unityFont = default(Font);
             s_InitialStyle.inheritedData.Write().unityFontDefinition = default(FontDefinition);
             s_InitialStyle.inheritedData.Write().unityFontStyleAndWeight = FontStyle.Normal;
@@ -177,6 +178,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static List<EasingFunction> transitionTimingFunction => s_InitialStyle.transitionData.Read().transitionTimingFunction;
         public static Translate translate => s_InitialStyle.transformData.Read().translate;
         public static Color unityBackgroundImageTintColor => s_InitialStyle.rareData.Read().unityBackgroundImageTintColor;
+        public static EditorTextRenderingMode unityEditorTextRenderingMode => s_InitialStyle.inheritedData.Read().unityEditorTextRenderingMode;
         public static Font unityFont => s_InitialStyle.inheritedData.Read().unityFont;
         public static FontDefinition unityFontDefinition => s_InitialStyle.inheritedData.Read().unityFontDefinition;
         public static FontStyle unityFontStyleAndWeight => s_InitialStyle.inheritedData.Read().unityFontStyleAndWeight;

@@ -956,6 +956,23 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleEnum<EditorTextRenderingMode> IStyle.unityEditorTextRenderingMode
+        {
+            get
+            {
+                var tmp = GetStyleInt(StylePropertyId.UnityEditorTextRenderingMode);
+                return new StyleEnum<EditorTextRenderingMode>((EditorTextRenderingMode)tmp.value, tmp.keyword);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.UnityEditorTextRenderingMode, value))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint);
+                }
+            }
+        }
+
         StyleFont IStyle.unityFont
         {
             get

@@ -588,7 +588,7 @@ namespace UnityEngine.TextCore.Text
                 {
                     if (hasGradientScale)
                     {
-                        var gradientScale = generationSettings.isIMGUI ? m_CurrentMaterial.GetFloat(TextShaderUtilities.ID_GradientScale) : m_CurrentFontAsset.atlasPadding + 1;
+                        var gradientScale = generationSettings.isIMGUI && m_CurrentMaterial.HasFloat(TextShaderUtilities.ID_GradientScale) ? m_CurrentMaterial.GetFloat(TextShaderUtilities.ID_GradientScale) : m_CurrentFontAsset.atlasPadding + 1;
                         stylePadding = m_CurrentFontAsset.boldStyleWeight / 4.0f * gradientScale;
 
                         // Clamp overall padding to Gradient Scale size.
@@ -603,7 +603,7 @@ namespace UnityEngine.TextCore.Text
                 {
                     if (hasGradientScale)
                     {
-                        var gradientScale = generationSettings.isIMGUI ? m_CurrentMaterial.GetFloat(TextShaderUtilities.ID_GradientScale) : m_CurrentFontAsset.atlasPadding + 1;
+                        var gradientScale = generationSettings.isIMGUI && m_CurrentMaterial.HasFloat(TextShaderUtilities.ID_GradientScale) ? m_CurrentMaterial.GetFloat(TextShaderUtilities.ID_GradientScale) : m_CurrentFontAsset.atlasPadding + 1;
                         stylePadding = m_CurrentFontAsset.m_RegularStyleWeight / 4.0f * gradientScale;
 
                         // Clamp overall padding to Gradient Scale size.

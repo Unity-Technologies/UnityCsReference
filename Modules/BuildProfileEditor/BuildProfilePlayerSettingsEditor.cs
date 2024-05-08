@@ -65,6 +65,15 @@ namespace UnityEditor.Build.Profile
             return buildProfilePlayerSettingsEditor;
         }
 
+        internal void EditorUpdate()
+        {
+            if (m_PlayerSettingsEditor != null && m_Profile.playerSettings == null)
+            {
+                RemovePlayerSettingsInspector();
+                ShowPlayerSettingsHelpBox(null, isClassic: false);
+            }
+        }
+
         void InitializeVisualElements(VisualElement root)
         {
             m_PlayerSettingsRoot = root.Q<VisualElement>(k_PlayerSettingsRoot);

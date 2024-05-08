@@ -898,6 +898,7 @@ namespace UnityEditor.UIElements
                 {
                     m_ElementName = elementNameAttr.Value,
                     m_AttributeName = attribute.Name.LocalName,
+                    m_NamesPath = elementNameAttr.Value.Split(),
                     m_Value = attribute.Value
                 };
 

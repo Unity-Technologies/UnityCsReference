@@ -26,6 +26,7 @@ namespace UnityEngine.UIElements
         readonly Dictionary<int, float> m_ItemHeightCache = new (32);
         readonly Dictionary<int, ContentHeightCacheInfo> m_ContentHeightCache = new (32);
         readonly HashSet<int> m_WaitingCache = new (32);
+        int? m_ScrolledToItemIndex;
 
         // Internal for tests.
         internal IReadOnlyDictionary<int, float> itemHeightCache => m_ItemHeightCache;
@@ -152,6 +153,18 @@ namespace UnityEngine.UIElements
             m_ScrollResetCallback = ResetScroll;
 
             collectionView.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanelEvent);
+            collectionView.RegisterCallback<GeometryChangedEvent>(OnGeometryChangedEvent);
+        }
+
+        private void OnGeometryChangedEvent(GeometryChangedEvent _)
+        {
+            if (m_ScrolledToItemIndex != null)
+            {
+                if (ShouldDeferScrollToItem(m_ScrolledToItemIndex ?? ReusableCollectionItem.UndefinedIndex))
+                    ScheduleDeferredScrollToItem();
+
+                m_ScrolledToItemIndex = null;
+            }
         }
 
         public override void Refresh(bool rebuild)
@@ -195,6 +208,12 @@ namespace UnityEngine.UIElements
             if (index < ReusableCollectionItem.UndefinedIndex)
                 return;
 
+            if (visibleItemCount == 0)
+            {
+                m_ScrolledToItemIndex = index;
+                return;
+            }
+
             ShouldDeferScrollToItem(index);
 
             var currentContentHeight = m_ScrollView.contentContainer.layout.height;
@@ -217,7 +236,7 @@ namespace UnityEngine.UIElements
             else // index > first
             {
                 var itemOffset = GetContentHeightForIndex(index);
-                if (itemOffset < contentPadding + viewportHeight)
+                if (float.IsNaN(viewportHeight) || itemOffset < contentPadding + viewportHeight)
                     return;
 
                 var yScrollOffset = itemOffset - viewportHeight + BaseVerticalCollectionView.s_DefaultItemHeight;
@@ -366,7 +385,6 @@ namespace UnityEngine.UIElements
         void OnScrollUpdate()
         {
             var scrollOffset = float.IsNegativeInfinity(m_DelayedScrollOffset.y) ? serializedData.scrollOffset : m_DelayedScrollOffset;
-
             if (float.IsNaN(m_ScrollView.contentViewport.layout.height) || float.IsNaN(scrollOffset.y))
                 return;
 

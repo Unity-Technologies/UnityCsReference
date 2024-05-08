@@ -528,7 +528,6 @@ namespace UnityEngine.UIElements
                 else
                     IncrementVersion(VersionChangeType.Repaint);
 
-
                 if (!string.IsNullOrEmpty(viewDataKey))
                     SaveViewData();
             }

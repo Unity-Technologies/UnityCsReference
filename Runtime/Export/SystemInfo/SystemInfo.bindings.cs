@@ -714,6 +714,11 @@ namespace UnityEngine
             get { return SupportsIndirectArgumentsBuffer(); }
         }
 
+        public static bool supportsDepthFetchInRenderPass
+        {
+            get { return SupportsDepthFetchInRenderPass(); }
+        }
+
         [Obsolete("Vertex program support is required in Unity 5.0+")]
         public static bool supportsVertexPrograms { get { return true; } }
 
@@ -1056,5 +1061,8 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsIndirectArgumentsBuffer")]
         static extern bool SupportsIndirectArgumentsBuffer();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsDepthFetchInRenderPass")]
+        static extern bool SupportsDepthFetchInRenderPass();
     }
 }

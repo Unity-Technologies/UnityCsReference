@@ -445,6 +445,9 @@ namespace UnityEngine.UIElements
                     ((INotifyValueChanged<string>)this).SetValueWithoutNotify(value);
                     parent?.SendEvent(evt);
                 }
+
+                if (!edition.isDelayed && value != null)
+                    edition.UpdateValueFromText?.Invoke();
             }
         }
         string ITextEdition.CullString(string s)

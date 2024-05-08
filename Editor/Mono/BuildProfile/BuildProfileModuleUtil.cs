@@ -22,14 +22,12 @@ namespace UnityEditor.Build.Profile
     {
         const string k_BuyProUrl = "https://store.unity.com/products/unity-pro";
         const string k_ConsoleModuleUrl = "https://unity3d.com/platform-installation";
-        const string k_BuildSettingsPlatformIconFormat = "BuildSettings.{0}";
         const string k_LastRunnableBuildPathSeparator = "_";
         static readonly string k_NoModuleLoaded = L10n.Tr("No {0} module loaded.");
         static readonly string k_EditorWillNeedToBeReloaded = L10n.Tr("Note: Editor will need to be restarted to load any newly installed modules");
         static readonly string k_BuildProfileRecompileReason = L10n.Tr("Active build profile scripting defines changes.");
         static readonly GUIContent k_OpenDownloadPage = EditorGUIUtility.TrTextContent("Open Download Page");
         static readonly GUIContent k_InstallModuleWithHub = EditorGUIUtility.TrTextContent("Install with Unity Hub");
-        static Dictionary<string, BuildTargetDiscovery.DiscoveredTargetInfo> s_DiscoveredTargetInfos = InitializeDiscoveredTargetDict();
         static HashSet<string> s_BuildProfileIconModules = new()
         {
             "Switch",
@@ -37,26 +35,10 @@ namespace UnityEditor.Build.Profile
         };
 
         /// <summary>
-        /// Classic platform display name for a given build profile. Matching
-        /// value in the old BuildSettings window.
+        /// Classic platform display name for a given build profile.
         /// </summary>
-        /// <see cref="BuildPlayerWindow"/>
-        public static string GetClassicPlatformDisplayName(string platformId)
-        {
-            var (buildTarget, subtarget) = GetBuildTargetAndSubtarget(platformId);
-            var moduleName = GetModuleName(buildTarget);
-
-            return (moduleName, subtarget) switch
-            {
-                ("OSXStandalone", StandaloneBuildSubtarget.Server) => "Mac Server",
-                ("WindowsStandalone", StandaloneBuildSubtarget.Server) => "Windows Server",
-                ("LinuxStandalone", StandaloneBuildSubtarget.Server) => "Linux Server",
-                ("OSXStandalone", _) => "Mac",
-                ("WindowsStandalone", _) => "Windows",
-                ("LinuxStandalone", _) => "Linux",
-                _ => GetModuleDisplayName(moduleName),
-            };
-        }
+        public static string GetClassicPlatformDisplayName(string platformId) =>
+            GetModuleDisplayName(platformId);
 
         /// <summary>
         /// Fetch default editor platform icon texture.
@@ -102,25 +84,10 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static bool IsModuleInstalled(string platformId)
         {
-            var (buildTarget, subtarget) = GetBuildTargetAndSubtarget(platformId);
+            var (buildTarget, _) = GetBuildTargetAndSubtarget(platformId);
             var moduleName = GetModuleName(buildTarget);
 
-            // NamedBuildTarget will be deprecated. This code is extracted from
-            // NamedBuildTarget.FromActiveSettings. Except instead of taking a dependency
-            // on Editor User Build Settings, we use the passed subtarget.
-            NamedBuildTarget namedTarget;
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
-            if (buildTargetGroup == BuildTargetGroup.Standalone
-                && subtarget == StandaloneBuildSubtarget.Server)
-            {
-                namedTarget = NamedBuildTarget.Server;
-            }
-            else
-            {
-                namedTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
-            }
-
-            bool installed = BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedTarget).installed;
+            bool installed = BuildTargetDiscovery.BuildPlatformIsInstalled(new GUID(platformId));
             return installed
                 && BuildPipeline.LicenseCheck(buildTarget)
                 && !string.IsNullOrEmpty(moduleName)
@@ -168,9 +135,7 @@ namespace UnityEditor.Build.Profile
             if (BuildPipeline.LicenseCheck(buildTarget))
                 return null;
 
-            var targetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
-            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
-            string niceName = BuildPipeline.GetBuildTargetGroupDisplayName(namedBuildTarget.ToBuildTargetGroup());
+            string displayName = GetModuleDisplayName(platformId);
             string licenseMsg = L10n.Tr("Your license does not cover {0} Publishing.");
             string buttonMsg = L10n.Tr("Go to Our Online Store");
             string url = k_BuyProUrl;
@@ -184,7 +149,7 @@ namespace UnityEditor.Build.Profile
 
             var root = new VisualElement();
             root.style.flexDirection = FlexDirection.Column;
-            var label = new Label(string.Format(licenseMsg, niceName));
+            var label = new Label(string.Format(licenseMsg, displayName));
             label.style.whiteSpace = WhiteSpace.Normal;
             root.Add(label);
             if (!BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsStandalonePlatform))
@@ -341,35 +306,22 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static List<string> FindAllViewablePlatforms()
         {
-            var result = new List<string>()
+            var result = new List<string>();
+
+            foreach (var platformGuid in BuildTargetDiscovery.GetAllPlatforms())
             {
-                GetPlatformId(BuildTarget.StandaloneWindows64, StandaloneBuildSubtarget.Player),
-                GetPlatformId(BuildTarget.StandaloneOSX, StandaloneBuildSubtarget.Player),
-                GetPlatformId(BuildTarget.StandaloneLinux64, StandaloneBuildSubtarget.Player),
-                GetPlatformId(BuildTarget.StandaloneWindows64, StandaloneBuildSubtarget.Server),
-                GetPlatformId(BuildTarget.StandaloneOSX, StandaloneBuildSubtarget.Server),
-                GetPlatformId(BuildTarget.StandaloneLinux64, StandaloneBuildSubtarget.Server)
-            };
+                var installed = BuildTargetDiscovery.BuildPlatformIsInstalled(platformGuid);
+                if (!installed && BuildTargetDiscovery.BuildPlatformIsHiddenInUI(platformGuid))
+                    continue;
+
+                result.Add(platformGuid.ToString());
+            }
 
             // Swap current editor standalone platform to the top.
             if (Application.platform == RuntimePlatform.OSXEditor)
                 result.Reverse(0, 2);
             if (Application.platform == RuntimePlatform.LinuxEditor)
                 result.Reverse(0, 3);
-
-            foreach (var buildTargetInfo in BuildTargetDiscovery.GetBuildTargetInfoList())
-            {
-                if (buildTargetInfo.HasFlag(TargetAttributes.IsStandalonePlatform))
-                    continue;
-
-                // installed platform check from BuildPlatforms
-                bool installed = BuildPipeline.GetPlaybackEngineDirectory(buildTargetInfo.buildTargetPlatformVal, BuildOptions.None, false) != string.Empty;
-                if (!installed && buildTargetInfo.HasFlag(TargetAttributes.HideInUI))
-                    continue;
-
-                var platformId = GetPlatformId(buildTargetInfo.buildTargetPlatformVal, StandaloneBuildSubtarget.Default);
-                result.Add(platformId);
-            }
 
             return result;
         }
@@ -542,17 +494,6 @@ namespace UnityEditor.Build.Profile
             EditorPrefs.SetString(key, value);
         }
 
-        static Dictionary<string, BuildTargetDiscovery.DiscoveredTargetInfo> InitializeDiscoveredTargetDict()
-        {
-            var result = new Dictionary<string, BuildTargetDiscovery.DiscoveredTargetInfo>();
-            foreach (var kvp in BuildTargetDiscovery.GetBuildTargetInfoList())
-            {
-                var targetString = GetModuleName(kvp.buildTargetPlatformVal);
-                result.TryAdd(targetString, kvp);
-            }
-            return result;
-        }
-
         static bool LoadBuildProfileIcon(string platformId, out Texture2D icon)
         {
             var moduleName = GetModuleName(platformId);
@@ -568,31 +509,17 @@ namespace UnityEditor.Build.Profile
 
         static string GetPlatformIconId(string platformId)
         {
-            var (buildTarget, subtarget) = GetBuildTargetAndSubtarget(platformId);
-            var moduleName = GetModuleName(buildTarget);
+            var iconName = BuildTargetDiscovery.BuildPlatformIconName(new GUID(platformId));
 
-            if (subtarget == StandaloneBuildSubtarget.Server)
-            {
-                return string.Format(k_BuildSettingsPlatformIconFormat, "DedicatedServer");
-            }
+            if (string.IsNullOrEmpty(iconName))
+                return "BuildSettings.Editor";
 
-            if (s_DiscoveredTargetInfos.TryGetValue(moduleName, out var targetInfo))
-            {
-                return targetInfo.iconName;
-            }
-
-            return "BuildSettings.Editor";
+            return iconName;
         }
 
-        /// <summary>
-        /// Module display name as defined on native side in "BuildTargetGroupName.h"
-        /// </summary>
-        static string GetModuleDisplayName(string moduleName)
+        static string GetModuleDisplayName(string platformId)
         {
-            if (!s_DiscoveredTargetInfos.TryGetValue(moduleName, out var gt))
-                return moduleName;
-
-            return BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(gt.buildTargetPlatformVal));
+            return BuildTargetDiscovery.BuildPlatformDisplayName(new GUID(platformId));
         }
 
         /// <summary>

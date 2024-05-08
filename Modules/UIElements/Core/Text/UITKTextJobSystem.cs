@@ -124,7 +124,7 @@ namespace UnityEngine.UIElements
         {
             TextHandle.InitThreadArrays();
             PanelTextSettings.InitializeDefaultPanelTextSettingsIfNull();
-            TextHandle.currentTime = Time.realtimeSinceStartup;
+            TextHandle.UpdateCurrentFrame();
 
             k_PrepareMainThreadMarker.Begin();
 
@@ -153,8 +153,9 @@ namespace UnityEngine.UIElements
                 ManagedJobData managedJobData = managedJobDatas[index];
                 var visualElement = managedJobData.visualElement;
 
-                visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings();
-                managedJobData.prepareSuccess = visualElement.uitkTextHandle.PrepareFontAsset();
+                managedJobData.prepareSuccess = visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings();
+                if (managedJobData.prepareSuccess)
+                    managedJobData.prepareSuccess = visualElement.uitkTextHandle.PrepareFontAsset();
                 k_PrepareJobifiedMarker.End();
             }
         }
@@ -184,6 +185,8 @@ namespace UnityEngine.UIElements
                 alloc = allocator
             };
 
+            TextHandle.UpdateCurrentFrame();
+
             TextCore.Text.TextGenerator.IsExecutingJob = true;
             JobHandle jobHandle = textJob.Schedule(textJobDatas.Count, 1);
             mgc.AddMeshGenerationJob(jobHandle);
@@ -201,13 +204,10 @@ namespace UnityEngine.UIElements
                 var managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
                 ManagedJobData managedJobData = managedJobDatas[index];
                 var visualElement = managedJobData.visualElement;
-                visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings();
-                if (visualElement.uitkTextHandle.m_PreviousGenerationSettingsHash == TextHandle.settings.GetHashCode())
-                {
-                    visualElement.uitkTextHandle.AddTextInfoToCache();
-                }
-                var textInfo = visualElement.uitkTextHandle.Update();
-                var meshInfos = (textInfo).meshInfo;
+                visualElement.uitkTextHandle.UpdateMesh();
+
+                var textInfo = visualElement.uitkTextHandle.textInfo;
+                var meshInfos = textInfo.meshInfo;
 
                 List<Material> materials = null;
                 List<NativeSlice<Vertex>> verticesArray = null;

@@ -537,16 +537,16 @@ namespace Unity.UI.Builder
                 BuilderAssetUtilities.ApplyAttributeOverridesToTreeAsset(attributeOverrides, linkedVTACopy);
 
                 // Move attribute overrides to new template containers
-                BuilderAssetUtilities.CopyAttributeOverridesToChildTemplateAssets(attributeOverrides, linkedVTACopy);
-
-                // Sync serialized data because attribute overrides have been updated
-                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(linkedVTACopy), false);
+                BuilderAssetUtilities.CopyAttributeOverridesToChildTemplateAssets(elementToUnpack as TemplateContainer, attributeOverrides, linkedVTACopy);
 
                 // Apply stylesheets to new element + inline rules
                 BuilderAssetUtilities.AddStyleSheetsFromTreeAsset(unpackedVEA, linkedInstancedVTA);
                 unpackedVEA.ruleIndex = templateContainerVEA.ruleIndex;
 
                 BuilderAssetUtilities.TransferAssetToAsset(m_PaneWindow.document, unpackedVEA, linkedVTACopy, false);
+
+                // Sync serialized data because attribute overrides have been updated
+                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(linkedVTACopy), false);
 
                 elementsToUnpack.Remove(elementToUnpack);
 
@@ -606,9 +606,9 @@ namespace Unity.UI.Builder
         public void CreateTargetedSelector(VisualElement ve)
         {
             // populates the new selector field with a selector that targets the current element
-            var newSelectorTextField = m_PaneWindow.rootVisualElement.Q<BuilderStyleSheets>().newSelectorField.textField;
-            newSelectorTextField.value = BuilderStyleUtilities.GenerateElementTargetedSelector(ve);
-            newSelectorTextField.Focus();
+            var newSelectorField = m_PaneWindow.rootVisualElement.Q<BuilderStyleSheets>().newSelectorField;
+            newSelectorField.value = BuilderStyleUtilities.GenerateElementTargetedSelector(ve);
+            newSelectorField.Focus();
         }
     }
 }

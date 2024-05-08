@@ -655,7 +655,8 @@ namespace UnityEngine.UIElements
         public string text
         {
             get => m_TextInputBase.text;
-            protected set => m_TextInputBase.text = value;
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            protected internal set => m_TextInputBase.text = value;
         }
 
         /// <summary>

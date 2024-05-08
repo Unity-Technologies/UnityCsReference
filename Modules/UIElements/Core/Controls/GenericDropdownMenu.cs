@@ -69,6 +69,7 @@ namespace UnityEngine.UIElements
         VisualElement m_TargetElement;
         Rect m_DesiredRect;
         KeyboardNavigationManipulator m_NavigationManipulator;
+        float m_PositionTop;
 
         internal VisualElement menuContainer => m_MenuContainer;
         internal VisualElement outerContainer => m_OuterContainer;
@@ -128,9 +129,6 @@ namespace UnityEngine.UIElements
         {
             if (evt.originPanel == null)
                 return;
-
-            m_MenuContainer.UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            m_MenuContainer.UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
             contentContainer.RemoveManipulator(m_NavigationManipulator);
             m_MenuContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown);
@@ -525,8 +523,10 @@ namespace UnityEngine.UIElements
             m_MenuContainer.style.unityFontDefinition = m_TargetElement.computedStyle.unityFontDefinition;
 
             var local = m_PanelRootVisualContainer.WorldToLocal(position);
+            m_PositionTop = local.y + position.height - m_PanelRootVisualContainer.layout.y;
+
             m_OuterContainer.style.left = local.x - m_PanelRootVisualContainer.layout.x;
-            m_OuterContainer.style.top = local.y + position.height - m_PanelRootVisualContainer.layout.y;
+            m_OuterContainer.style.top = m_PositionTop;
 
             m_DesiredRect = anchored ? position : Rect.zero;
 
@@ -559,14 +559,22 @@ namespace UnityEngine.UIElements
                     m_OuterContainer.style.left = posX;
                     m_OuterContainer.style.top = posY;
                 }
-
-                m_OuterContainer.style.height = Mathf.Min(
-                    m_MenuContainer.layout.height - m_MenuContainer.layout.y - m_OuterContainer.layout.y,
-                    m_ScrollView.layout.height + m_OuterContainer.resolvedStyle.borderBottomWidth + m_OuterContainer.resolvedStyle.borderTopWidth);
-
-                if (m_DesiredRect != Rect.zero)
+                else
                 {
+                    m_OuterContainer.style.maxHeight = m_PanelRootVisualContainer.layout.height - m_DesiredRect.y;
                     m_OuterContainer.style.width = m_DesiredRect.width;
+                }
+
+                // Adjust position based on dropdown size and available space
+                var dropdownHeight = m_OuterContainer.resolvedStyle.height;
+                var spaceBelow = m_PanelRootVisualContainer.layout.height - m_PositionTop;
+
+                if (spaceBelow <= dropdownHeight && m_PositionTop > dropdownHeight)
+                {
+                    var currentTop = m_PositionTop;
+                    currentTop -= (dropdownHeight + m_TargetElement.resolvedStyle.height);
+                    m_OuterContainer.style.top = currentTop;
+                    m_OuterContainer.style.maxHeight = m_PanelRootVisualContainer.layout.height - currentTop;
                 }
             }
         }

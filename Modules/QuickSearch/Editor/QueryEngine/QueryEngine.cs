@@ -173,8 +173,8 @@ namespace UnityEditor.Search
     sealed class QueryEngineImpl<TData> : QueryTokenizer<QueryEngineParserData>, IQueryEngineImplementation
     {
         Dictionary<string, IFilter> m_Filters = new Dictionary<string, IFilter>();
-        Func<TData, string, string, string, bool> m_DefaultFilterHandler;
-        Func<TData, string, string, string, string, bool> m_DefaultParamFilterHandler;
+        DefaultQueryFilterHandlerBase<TData> m_DefaultFilterHandler;
+        DefaultQueryFilterHandlerBase<TData> m_DefaultParamFilterHandler;
         Dictionary<string, QueryFilterOperator> m_FilterOperators = new Dictionary<string, QueryFilterOperator>();
         List<ITypeParser> m_TypeParsers = new List<ITypeParser>();
         Dictionary<Type, ITypeParser> m_DefaultTypeParsers = new Dictionary<Type, ITypeParser>();
@@ -572,12 +572,12 @@ namespace UnityEditor.Search
             m_FilterOperators[op].AddHandler(handler);
         }
 
-        public void SetDefaultFilter(Func<TData, string, string, string, bool> handler)
+        public void SetDefaultFilterHandler(DefaultQueryFilterHandlerBase<TData> handler)
         {
             m_DefaultFilterHandler = handler;
         }
 
-        public void SetDefaultParamFilter(Func<TData, string, string, string, string, bool> handler)
+        public void SetDefaultParamFilterHandler(DefaultQueryFilterHandlerBase<TData> handler)
         {
             m_DefaultParamFilterHandler = handler;
         }
@@ -1245,8 +1245,8 @@ namespace UnityEditor.Search
         IFilter CreateDefaultFilter(string filterToken, in StringView filterParam)
         {
             if (filterParam.IsNullOrEmpty())
-                return new DefaultFilter<TData>(filterToken, m_DefaultFilterHandler ?? ((o, s, fo, value) => false), this);
-            return new DefaultParamFilter<TData>(filterToken, m_DefaultParamFilterHandler ?? ((o, s, param, fo, value) => false), this);
+                return m_DefaultFilterHandler?.CreateFilter(filterToken, this) ?? new DefaultFilterResolver<TData, string>(filterToken, (o, s, fo, value) => false, this);
+            return m_DefaultParamFilterHandler?.CreateFilter(filterToken, this) ?? new DefaultParamFilterResolver<TData, string, string>(filterToken, (o, s, param, fo, value) => false, this);
         }
 
         private bool HasDefaultHandler(bool useParamFilter)
@@ -3068,7 +3068,17 @@ namespace UnityEditor.Search
         /// <param name="handler">Callback used to handle the filter. Takes an object of type TData, the filter identifier, the operator and the filter value, and returns a boolean indicating if the filter passed or not.</param>
         public void SetDefaultFilter(Func<TData, string, string, string, bool> handler)
         {
-            m_Impl.SetDefaultFilter(handler);
+            m_Impl.SetDefaultFilterHandler(new DefaultQueryFilterResolverHandler<TData, string>(handler));
+        }
+
+        /// <summary>
+        /// Set the default filter handler for filters that were not registered.
+        /// </summary>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the current filter id and returns an object of type TFilter.</param>
+        internal void SetDefaultFilter<TFilter>(Func<TData, string, TFilter> getDataFunc)
+        {
+            m_Impl.SetDefaultFilterHandler(new DefaultQueryFilterHandler<TData, TFilter>(getDataFunc));
         }
 
         /// <summary>
@@ -3077,7 +3087,30 @@ namespace UnityEditor.Search
         /// <param name="handler">Callback used to handle the function filter. Takes an object of type TData, the filter identifier, the parameter, the operator and the filter value, and returns a boolean indicating if the filter passed or not.</param>
         public void SetDefaultParamFilter(Func<TData, string, string, string, string, bool> handler)
         {
-            m_Impl.SetDefaultParamFilter(handler);
+            m_Impl.SetDefaultParamFilterHandler(new DefaultQueryParamFilterResolverHandler<TData, string, string>(handler));
+        }
+
+        /// <summary>
+        /// Set the default filter handler for function filters that were not registered.
+        /// </summary>
+        /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the filter id, an object of type TParam, and returns an object of type TFilter.</param>
+        internal void SetDefaultParamFilter<TParam, TFilter>(Func<TData, string, TParam, TFilter> getDataFunc)
+        {
+            m_Impl.SetDefaultParamFilterHandler(new DefaultQueryParamFilterHandler<TData, TParam, TFilter>(getDataFunc));
+        }
+
+        /// <summary>
+        /// Set the default filter handler for function filters that were not registered.
+        /// </summary>
+        /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the filter id, an object of type TParam, and returns an object of type TFilter.</param>
+        /// <param name="parameterTransformer">Callback used to convert a string to the type TParam. Used when parsing the query to convert what is passed to the function into the correct format.</param>
+        internal void SetDefaultParamFilter<TParam, TFilter>(Func<TData, string, TParam, TFilter> getDataFunc, Func<string, TParam> parameterTransformer)
+        {
+            m_Impl.SetDefaultParamFilterHandler(new DefaultQueryParamFilterHandler<TData, TParam, TFilter>(getDataFunc, parameterTransformer));
         }
 
         /// <summary>

@@ -15,7 +15,7 @@ namespace UnityEditor.Search.Providers
 
         static ObjectQueryEngine<UnityEngine.Object> m_ResourcesQueryEngine;
 
-        public static IEnumerable<int> EnumerateInstanceIDs(in string searchQuery, in Type filterType, in SearchFlags flags)
+        public static SearchFilter CreateSearchFilter(in string searchQuery, in Type filterType, in SearchFlags flags)
         {
             var searchFilter = new SearchFilter
             {
@@ -28,6 +28,12 @@ namespace UnityEditor.Search.Providers
             if (filterType != null && searchFilter.classNames.Length == 0)
                 searchFilter.classNames = new[] { filterType.Name };
             searchFilter.filterByTypeIntersection = true;
+            return searchFilter;
+        }
+
+        public static IEnumerable<int> EnumerateInstanceIDs(in string searchQuery, in Type filterType, in SearchFlags flags)
+        {
+            var searchFilter = CreateSearchFilter(searchQuery, filterType, flags);
             return EnumerateInstanceIDs(searchFilter);
         }
 
@@ -44,8 +50,7 @@ namespace UnityEditor.Search.Providers
             var rIt = AssetDatabase.EnumerateAllAssets(searchFilter);
             while (rIt.MoveNext())
             {
-                if (rIt.Current.pptrValue)
-                    yield return rIt.Current.instanceID;
+                yield return rIt.Current.instanceID;
             }
         }
 
@@ -96,23 +101,19 @@ namespace UnityEditor.Search.Providers
             foreach (var id in EnumerateInstanceIDs(context))
             {
                 var path = AssetDatabase.GetAssetPath(id);
+                if (string.IsNullOrEmpty(path))
+                    continue;
                 var gid = GlobalObjectId.GetGlobalObjectIdSlow(id).ToString();
-                string label = null;
                 var flags = SearchDocumentFlags.Asset;
                 if (AssetDatabase.IsSubAsset(id))
                 {
                     var obj = UnityEngine.Object.FindObjectFromInstanceID(id);
                     var filename = Path.GetFileNameWithoutExtension(path);
-                    label = obj?.name ?? filename;
-                    path = Utils.RemoveInvalidCharsFromPath($"{filename}/{label}", ' ');
+                    path = Utils.RemoveInvalidCharsFromPath($"{filename}/", ' ');
                     flags |= SearchDocumentFlags.Nested;
                 }
                 // If this ever changes and we no longer use the AssetProvider to create items, please update the test SearchEngineTests.ProjectSearch_AlwaysReturnsPaths
                 var item = AssetProvider.CreateItem("ADB", context, provider, context.filterType, gid, path, 998, flags);
-                if (label != null)
-                {
-                    item.label = label;
-                }
                 yield return item;
             }
 

@@ -11,6 +11,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
+using static UnityEditor.Build.Profile.Handlers.BuildProfileWindowSelection;
 
 namespace UnityEditor.Build.Profile
 {
@@ -250,7 +251,7 @@ namespace UnityEditor.Build.Profile
         internal void OnClassicSceneListSelected()
         {
             m_BuildProfileSelection.ClearSelectedProfiles();
-            m_ProfileListViews.ClearProfileSelection();
+            m_ProfileListViews.SelectSharedSceneList();
 
             DestroyImmediate(buildProfileEditor);
             buildProfileEditor = ScriptableObject.CreateInstance<BuildProfileEditor>();
@@ -273,6 +274,12 @@ namespace UnityEditor.Build.Profile
         internal void RepaintAndClearSelection()
         {
             RebuildProfileListViews();
+
+            // Clearing the selection forces the ListView.selectionChanged event to trigger.
+            // This is necessary because if the selection index remains the same after deletion,
+            // the selectionChanged event will not be called. This ensures that the build profile
+            // inspector is updated accordingly.
+            m_BuildProfileSelection.ClearListViewSelection(ListViewSelectionType.Custom);
             m_ProfileListViews.SelectActiveProfile();
         }
 

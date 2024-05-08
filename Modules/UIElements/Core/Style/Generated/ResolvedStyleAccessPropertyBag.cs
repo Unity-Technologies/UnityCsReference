@@ -556,6 +556,15 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref ResolvedStyleAccess container, Color value) => throw new System.InvalidOperationException();
         }
 
+        class UnityEditorTextRenderingModeProperty : ResolvedEnumProperty<EditorTextRenderingMode>
+        {
+            public override string Name => nameof(IResolvedStyle.unityEditorTextRenderingMode);
+            public override string ussName => "-unity-editor-text-rendering-mode";
+            public override bool IsReadOnly => true;
+            public override EditorTextRenderingMode GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityEditorTextRenderingMode;
+            public override void SetValue(ref ResolvedStyleAccess container, EditorTextRenderingMode value) => throw new System.InvalidOperationException();
+        }
+
         class UnityFontProperty : ResolvedFontProperty
         {
             public override string Name => nameof(IResolvedStyle.unityFont);
@@ -720,8 +729,8 @@ namespace UnityEngine.UIElements
 
         public ResolvedStyleAccessPropertyBag()
         {
-            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(78);
-            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(234);
+            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(79);
+            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(237);
             AddProperty(new AlignContentProperty());
             AddProperty(new AlignItemsProperty());
             AddProperty(new AlignSelfProperty());
@@ -782,6 +791,7 @@ namespace UnityEngine.UIElements
             AddProperty(new TransitionTimingFunctionProperty());
             AddProperty(new TranslateProperty());
             AddProperty(new UnityBackgroundImageTintColorProperty());
+            AddProperty(new UnityEditorTextRenderingModeProperty());
             AddProperty(new UnityFontProperty());
             AddProperty(new UnityFontDefinitionProperty());
             AddProperty(new UnityFontStyleAndWeightProperty());

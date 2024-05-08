@@ -1341,6 +1341,9 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetAtlasPopulation.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetAtlasPopulation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetFactory.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetFactory.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetFontFeatures.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetFontFeatures.cs</Link>
     </Compile>
@@ -1421,6 +1424,12 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextHandle.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextHandlePermanentCache.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextHandlePermanentCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextHandleTemporaryCache.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextHandleTemporaryCache.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextInfo.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextInfo.cs</Link>
@@ -2165,9 +2174,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\Components\LayoutNodeData.cs">
       <Link>Modules\UIElements\Core\Layout\Model\Components\LayoutNodeData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\Components\LayoutStyleData.cs">
-      <Link>Modules\UIElements\Core\Layout\Model\Components\LayoutStyleData.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\FixedBuffer.cs">
       <Link>Modules\UIElements\Core\Layout\Model\FixedBuffer.cs</Link>
@@ -4424,6 +4430,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\ShaderProperties.cs">
       <Link>Runtime\Export\Shaders\ShaderProperties.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\ShaderVariantAnalytics\ShaderRuntimeInfoAnalytics.cs">
+      <Link>Runtime\Export\Shaders\ShaderVariantAnalytics\ShaderRuntimeInfoAnalytics.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\ShaderVariantCollection.bindings.cs">
       <Link>Runtime\Export\Shaders\ShaderVariantCollection.bindings.cs</Link>

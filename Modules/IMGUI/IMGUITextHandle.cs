@@ -15,13 +15,14 @@ namespace UnityEngine
 
         const float sFallbackFontSize = 13;
         const float sTimeToFlush = 1.0f;
-        const string kDefaultFontName = "LegacyRuntime.ttf";
 
         internal static Func<Object> GetEditorTextSettings;
+        internal static Func<float, FontAsset, FontAsset> GetBlurryFontAssetMapping;
+
         private static TextSettings s_EditorTextSettings;
 
-        private static Dictionary<int, IMGUITextHandle> textHandles = new Dictionary<int, IMGUITextHandle>();
-        private static LinkedList<TextHandleTuple> textHandlesTuple = new LinkedList<TextHandleTuple>();
+        private static Dictionary<int, IMGUITextHandle> textHandles = new ();
+        private static LinkedList<TextHandleTuple> textHandlesTuple = new ();
         private static float lastCleanupTime;
 
         internal bool isCachedOnNative = false;
@@ -83,6 +84,10 @@ namespace UnityEngine
                 if (ShouldCleanup(currentTime, tuple.lastTimeUsed))
                 {
                     GUIStyle.Internal_DestroyTextGenerator(tuple.hashCode);
+                    if (textHandles.TryGetValue(tuple.hashCode, out IMGUITextHandle textHandleCached))
+                    {
+                        textHandleCached.RemoveTextInfoFromPermanentCache();
+                    }
                     textHandles.Remove(tuple.hashCode);
                     textHandlesTuple.RemoveFirst();
                 }
@@ -111,7 +116,7 @@ namespace UnityEngine
                 isCached = isCalledFromNative ? textHandleCached.isCachedOnNative : true;
                 if (!textHandleCached.isCachedOnNative && isCalledFromNative)
                 {
-                    textHandleCached.Update();
+                    textHandleCached.UpdateWithHash(hash);
                     textHandleCached.UpdatePreferredSize();
                     textHandleCached.isCachedOnNative = true;
                 }
@@ -123,7 +128,7 @@ namespace UnityEngine
             var listNode = new LinkedListNode<TextHandleTuple>(tuple);
             handle.tuple = listNode;
             textHandles[hash] = handle;
-            handle.Update();
+            handle.UpdateWithHash(hash);
             handle.UpdatePreferredSize();
             textHandlesTuple.AddLast(listNode);
             handle.isCachedOnNative = isCalledFromNative;
@@ -143,7 +148,7 @@ namespace UnityEngine
 
         internal int GetNumCharactersThatFitWithinWidth(float width)
         {
-            AddTextInfoToCache();
+            AddTextInfoToPermanentCache();
             int characterCount = textInfo.lineInfo[0].characterCount;
             int charCount;
             float currentSize = 0;
@@ -162,7 +167,7 @@ namespace UnityEngine
 
         public Rect[] GetHyperlinkRects(Rect content)
         {
-            AddTextInfoToCache();
+            AddTextInfoToPermanentCache();
 
             List<Rect> rects = new List<Rect>();
 
@@ -196,6 +201,7 @@ namespace UnityEngine
             {
                 s_EditorTextSettings = (TextSettings)GetEditorTextSettings();
             }
+
             settings.textSettings = s_EditorTextSettings;
 
             if (settings.textSettings == null)
@@ -208,14 +214,31 @@ namespace UnityEngine
                 font = GUIStyle.GetDefaultFont();
             }
 
+            if (style.fontSize > 0)
+                settings.fontSize = style.fontSize;
+            else if (font)
+                settings.fontSize = font.fontSize;
+            else
+                settings.fontSize = sFallbackFontSize;
+
+            settings.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.fontStyle);
+
             settings.fontAsset = settings.textSettings.GetCachedFontAsset(font, TextShaderUtilities.ShaderRef_MobileSDF_IMGUI);
             if (settings.fontAsset == null)
                 return;
+            var shouldRenderBitmap = settings.fontAsset.IsEditorFont && UnityEngine.TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
+            if (shouldRenderBitmap)
+            {
+                settings.fontAsset = GetBlurryFontAssetMapping(settings.fontSize * GUIUtility.pixelsPerPoint, settings.fontAsset);
+                settings.pixelsPerPoint = GUIUtility.pixelsPerPoint;
+            }
 
+            settings.isEditorRenderingModeBitmap = shouldRenderBitmap;
             settings.material = settings.fontAsset.material;
-
-            // We only want to update the sharpness of the text in the editor with those preferences
-            settings.fontAsset.material.SetFloat("_Sharpness", settings.textSettings.GetEditorTextSharpness());
+            if (!shouldRenderBitmap)
+            {
+                settings.fontAsset.material.SetFloat("_Sharpness", settings.textSettings.GetEditorTextSharpness());
+            }
 
             settings.screenRect = new Rect(0, 0, rect.width, rect.height);
             settings.text = text;
@@ -240,7 +263,6 @@ namespace UnityEngine
                 }
             }
 
-            settings.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.fontStyle);
             settings.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(tempAlignment);
             settings.overflowMode = LegacyClippingToNewOverflow(style.clipping);
             settings.wordWrappingRatio = 0.4f;
@@ -256,14 +278,6 @@ namespace UnityEngine
             settings.parseControlCharacters = false;
             settings.isPlaceholder = false;
             settings.isRightToLeft = false;
-
-            if (style.fontSize > 0)
-                settings.fontSize = style.fontSize;
-            else if (font)
-                settings.fontSize = font.fontSize;
-            else
-                settings.fontSize = sFallbackFontSize;
-
             settings.characterSpacing = 0;
             settings.wordSpacing = 0;
             settings.paragraphSpacing = 0;

@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
-using System.Linq;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -20,23 +18,10 @@ namespace Unity.UI.Builder
 
         ToolbarMenu m_AddUSSMenu;
         BuilderNewSelectorField m_NewSelectorField;
-        TextField m_NewSelectorTextField;
-        VisualElement m_NewSelectorTextInputField;
-        ToolbarMenu m_PseudoStatesMenu;
         BuilderTooltipPreview m_TooltipPreview;
         Label m_MessageLink;
         BuilderStyleSheetsDragger m_StyleSheetsDragger;
         Label m_EmptyStyleSheetsPaneLabel;
-
-        enum FieldFocusStep
-        {
-            Idle,
-            FocusedFromStandby,
-            NeedsSelectionOverride
-        }
-
-        FieldFocusStep m_FieldFocusStep;
-        bool m_ShouldRefocusSelectorFieldOnBlur;
 
         BuilderDocument document => m_PaneWindow?.document;
         public BuilderNewSelectorField newSelectorField => m_NewSelectorField;
@@ -79,108 +64,39 @@ namespace Unity.UI.Builder
 
             // Init text field.
             m_NewSelectorField = parent.Q<BuilderNewSelectorField>("new-selector-field");
-            m_NewSelectorTextField = m_NewSelectorField.textField;
-            m_NewSelectorTextField.SetValueWithoutNotify(BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage);
-            m_NewSelectorTextInputField = m_NewSelectorTextField.Q("unity-text-input");
-            m_NewSelectorTextInputField.RegisterCallback<KeyDownEvent>(OnEnter, TrickleDown.TrickleDown);
+
+            m_NewSelectorField.RegisterCallback<NewSelectorSubmitEvent>(OnNewSelectorSubmit);
             UpdateNewSelectorFieldEnabledStateFromDocument();
 
-            m_NewSelectorTextInputField.RegisterCallback<FocusEvent>((evt) =>
+            m_NewSelectorField.RegisterCallback<FocusEvent>((evt) =>
             {
-                var input = evt.elementTarget;
-                var field = GetTextFieldParent(input);
-                m_FieldFocusStep = FieldFocusStep.FocusedFromStandby;
-                if (field.text == BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage || m_ShouldRefocusSelectorFieldOnBlur)
-                {
-                    m_ShouldRefocusSelectorFieldOnBlur = false;
-                    field.value = BuilderConstants.UssSelectorClassNameSymbol;
-                    field.textSelection.selectAllOnMouseUp = false;
-                }
-
                 ShowTooltip();
             }, TrickleDown.TrickleDown);
 
-            m_NewSelectorTextField.RegisterCallback<ChangeEvent<string>>((evt) =>
+            m_NewSelectorField.RegisterCallback<BlurEvent>((evt) =>
             {
-                if (m_FieldFocusStep != FieldFocusStep.FocusedFromStandby)
+                if (focusController.focusedElement == m_MessageLink)
                     return;
 
-                m_FieldFocusStep = m_NewSelectorTextField.value == BuilderConstants.UssSelectorClassNameSymbol ? FieldFocusStep.NeedsSelectionOverride : FieldFocusStep.Idle;
-
-                // We don't want the '.' we just inserted in the FocusEvent to be highlighted,
-                // which is the default behavior. Same goes for when we add pseudo states with options menu.
-                m_NewSelectorTextField.textSelection.SelectRange(m_NewSelectorTextField.value.Length, m_NewSelectorTextField.value.Length);
-            });
-
-            // Since MouseDown captures the mouse, we need to RegisterCallback directly on the target in order to intercept the event.
-            // This could be replaced by setting selectAllOnMouseUp to false.
-            m_NewSelectorTextInputField.Q<TextElement>().RegisterCallback<MouseUpEvent>((evt) =>
-            {
-                // We want to prevent the default action on mouse up in KeyboardTextEditor, but only when
-                // the field selection behaviour was changed by us.
-                if (m_FieldFocusStep != FieldFocusStep.NeedsSelectionOverride)
+                if (focusController.IsPendingFocus(m_MessageLink))
                     return;
 
-                m_FieldFocusStep = FieldFocusStep.Idle;
-
-                // Reselect on the next execution, after the KeyboardTextEditor selects all.
-                m_NewSelectorTextInputField.schedule.Execute(() =>
-                {
-                    m_NewSelectorTextField.textSelection.SelectRange(m_NewSelectorTextField.value.Length, m_NewSelectorTextField.value.Length);
-                });
-
-            }, TrickleDown.TrickleDown);
-
-            m_NewSelectorTextInputField.RegisterCallback<BlurEvent>((evt) =>
-            {
-                var input = evt.elementTarget;
-                var field = GetTextFieldParent(input);
-                // Delay tooltip to allow users to click on link in preview if needed
-                schedule.Execute(() =>
-                {
-                    field.textSelection.selectAllOnMouseUp = true;
-                    if (m_NewSelectorTextInputField.focusController.focusedElement == m_MessageLink)
-                        return;
-
-                    HideTooltip();
-
-                    if (m_ShouldRefocusSelectorFieldOnBlur)
-                    {
-                        PostEnterRefocus();
-                    }
-                    else if (string.IsNullOrEmpty(field.text) || field.text == BuilderConstants.UssSelectorClassNameSymbol)
-                    {
-                        field.SetValueWithoutNotify(BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage);
-                        m_PseudoStatesMenu.SetEnabled(false);
-                    }
-
-                });
+                HideTooltip();
             }, TrickleDown.TrickleDown);
 
             m_MessageLink?.RegisterCallback<BlurEvent>(evt =>
             {
                 HideTooltip();
-                if (m_ShouldRefocusSelectorFieldOnBlur)
-                {
-                    m_NewSelectorTextInputField.schedule.Execute(PostEnterRefocus);
-                }
-
             });
+
             m_MessageLink?.RegisterCallback<ClickEvent>(evt =>
             {
                 HideTooltip();
-                if (m_ShouldRefocusSelectorFieldOnBlur)
-                {
-                    m_NewSelectorTextInputField.schedule.Execute(PostEnterRefocus);
-                }
             });
 
             // Setup New USS Menu.
             m_AddUSSMenu = parent.Q<ToolbarMenu>("add-uss-menu");
             SetUpAddUSSMenu();
-
-            // Setup pseudo states menu.
-            m_PseudoStatesMenu = m_NewSelectorField.pseudoStatesMenu;
 
             // Update sub title.
             UpdateSubtitleFromActiveUSS();
@@ -215,11 +131,6 @@ namespace Unity.UI.Builder
                 : DropdownMenuAction.Status.Normal);
         }
 
-        TextField GetTextFieldParent(VisualElement ve)
-        {
-            return ve.GetFirstAncestorOfType<TextField>();
-        }
-
         protected override bool IsSelectedItemValid(VisualElement element)
         {
             var isCS = element.GetStyleComplexSelector() != null;
@@ -228,27 +139,17 @@ namespace Unity.UI.Builder
             return isCS || isSS;
         }
 
-        void PostEnterRefocus()
+        void OnNewSelectorSubmit(NewSelectorSubmitEvent evt)
         {
-            m_NewSelectorTextInputField.Focus();
-        }
-
-        void OnEnter(KeyDownEvent evt)
-        {
-            if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter)
+            if (string.IsNullOrEmpty(evt.selectorStr))
                 return;
 
-            CreateNewSelector(document.activeStyleSheet);
-
-            evt.StopImmediatePropagation();
+            // TODO: Add validation
+            CreateNewSelector(document.activeStyleSheet, evt.selectorStr);
         }
 
-        void CreateNewSelector(StyleSheet styleSheet)
+        void CreateNewSelector(StyleSheet styleSheet, string selectorStr)
         {
-            var newValue = m_NewSelectorTextField.text;
-            if (string.IsNullOrEmpty(newValue) || newValue == BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage)
-                return;
-
             if (styleSheet == null)
             {
                 if (BuilderStyleSheetsUtilities.CreateNewUSSAsset(m_PaneWindow))
@@ -256,24 +157,20 @@ namespace Unity.UI.Builder
                     styleSheet = m_PaneWindow.document.firstStyleSheet;
 
                     // The EditorWindow will no longer have Focus after we show the
-                    // Save Dialog so even though the New Selector field will appear
-                    // focused, typing won't do anything. As such, it's better, in
-                    // this one case to remove focus from this field so users know
-                    // to re-focus it themselves before they can add more selectors.
-                    m_NewSelectorTextField.value = string.Empty;
-                    m_NewSelectorTextField.Blur();
+                    // Save dialog, so we need to manually refocus it.
+                    var p = (EditorPanel) panel;
+                    if (p.ownerObject is HostView view && view)
+                    {
+                        view.Focus();
+                    }
                 }
                 else
                 {
                     return;
                 }
             }
-            else
-            {
-                m_ShouldRefocusSelectorFieldOnBlur = true;
-            }
 
-            var newSelectorStr = newValue.Trim();
+            var newSelectorStr = selectorStr.Trim();
             var selectorTypeSymbol = (newSelectorStr[0]) switch
             {
                 '.' => BuilderConstants.UssSelectorClassNameSymbol,
@@ -298,32 +195,32 @@ namespace Unity.UI.Builder
             if (!BuilderNameUtilities.styleSelectorRegex.IsMatch(newSelectorStr))
             {
                 Builder.ShowWarning(BuilderConstants.StyleSelectorValidationSpacialCharacters);
-                m_NewSelectorTextField.schedule.Execute(() =>
+                m_NewSelectorField.schedule.Execute(() =>
                 {
-                    m_NewSelectorTextField.SetValueWithoutNotify(newValue);
-                    m_NewSelectorTextField.textSelection.SelectAll();
+                    m_NewSelectorField.value = selectorStr;
+                    m_NewSelectorField.SelectAll();
                 });
                 return;
             }
 
             var selectorContainerElement = m_Viewport.styleSelectorElementContainer;
-            var newComplexSelector = BuilderSharedStyles.CreateNewSelector(selectorContainerElement, styleSheet, newSelectorStr);
+            if (!SelectorUtility.TryCreateSelector(newSelectorStr, out var complexSelector, out var error))
+            {
+                Builder.ShowWarning(error);
+                return;
+            }
+
+            var newComplexSelector = BuilderSharedStyles.CreateNewSelector(selectorContainerElement, styleSheet, complexSelector);
 
             m_Selection.NotifyOfHierarchyChange();
             m_Selection.NotifyOfStylingChange();
 
-            // Try to selected newly created selector.
+            // Try to select newly created selector.
             var newSelectorElement =
                 m_Viewport.styleSelectorElementContainer.FindElement(
                     (e) => e.GetStyleComplexSelector() == newComplexSelector);
             if (newSelectorElement != null)
                 m_Selection.Select(null, newSelectorElement);
-
-            schedule.Execute(() =>
-            {
-                m_NewSelectorTextField.Blur();
-                m_NewSelectorTextField.SetValueWithoutNotify(BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage);
-            });
         }
 
         void SetUpAddUSSMenu()
@@ -378,7 +275,6 @@ namespace Unity.UI.Builder
 
         void UpdateNewSelectorFieldEnabledStateFromDocument()
         {
-            m_NewSelectorTextField.SetEnabled(true);
             SetUpAddUSSMenu();
         }
 

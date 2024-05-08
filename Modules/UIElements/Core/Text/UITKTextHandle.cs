@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine.Bindings;
 using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
@@ -30,6 +31,8 @@ namespace UnityEngine.UIElements
         public Vector2 MeasuredSizes { get; set; }
         public Vector2 RoundedSizes { get; set; }
 
+        internal static Func<float, FontAsset, FontAsset> GetBlurryMapping;
+        internal static Func<float, bool> CanGenerateFallbackFontAssets;
         TextElement m_TextElement;
         static TextLib s_TextLib;
 
@@ -87,21 +90,28 @@ namespace UnityEngine.UIElements
             return preferredSize;
         }
 
-        public MeshInfo[] ComputeSettingsAndUpdate()
+        public void ComputeSettingsAndUpdate()
         {
-            ConvertUssToTextGenerationSettings();
-
-            // this should be a dynamic asset
-            if (m_PreviousGenerationSettingsHash == settings.GetHashCode())
-                AddTextInfoToCache();
-            else
-                Update();
+            UpdateMesh();
 
             HandleATag();
             HandleLinkTag();
             HandleLinkAndATagCallbacks();
+        }
 
-            return textInfo.meshInfo;
+        public void UpdateMesh()
+        {
+            ConvertUssToTextGenerationSettings();
+            var hashCode = settings.GetHashCode();
+
+            // this should be a dynamic asset
+            if (m_PreviousGenerationSettingsHash == hashCode)
+                AddTextInfoToTemporaryCache(hashCode);
+            else
+            {
+                RemoveTextInfoFromTemporaryCache();
+                UpdateWithHash(hashCode);
+            }
         }
 
         public NativeTextInfo UpdateNative(ref bool success)
@@ -119,10 +129,10 @@ namespace UnityEngine.UIElements
             return nativeTextInfo;
         }
 
-        public override void AddTextInfoToCache()
+        public override void AddTextInfoToPermanentCache()
         {
             ConvertUssToTextGenerationSettings();
-            base.AddTextInfoToCache();
+            base.AddTextInfoToPermanentCache();
         }
 
         void ATagOnPointerUp(PointerUpEvent pue)
@@ -343,7 +353,7 @@ namespace UnityEngine.UIElements
                 if (linkInfo.hashCode != (int)MarkupTag.HREF)
                 {
                     hasLinkTag = true;
-                    AddTextInfoToCache();
+                    AddTextInfoToPermanentCache();
                     return;
                 }
             }
@@ -351,7 +361,7 @@ namespace UnityEngine.UIElements
             if (hasLinkTag)
             {
                 hasLinkTag = false;
-                RemoveTextInfoFromCache();
+                RemoveTextInfoFromPermanentCache();
             }
         }
 
@@ -365,7 +375,7 @@ namespace UnityEngine.UIElements
                 if (linkInfo.hashCode == (int)MarkupTag.HREF)
                 {
                     hasATag = true;
-                    AddTextInfoToCache();
+                    AddTextInfoToPermanentCache();
                     return;
                 }
             }
@@ -373,7 +383,7 @@ namespace UnityEngine.UIElements
             if (hasATag)
             {
                 hasATag = false;
-                RemoveTextInfoFromCache();
+                RemoveTextInfoFromPermanentCache();
             }
         }
 
@@ -457,19 +467,18 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        internal virtual void ConvertUssToTextGenerationSettings()
+        internal virtual bool ConvertUssToTextGenerationSettings()
         {
             var style = m_TextElement.computedStyle;
             var tgs = settings;
             tgs.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
             if (tgs.textSettings == null)
-                return;
+                return true;
 
             tgs.fontAsset = TextUtilities.GetFontAsset(m_TextElement);
             if (tgs.fontAsset == null)
-                return;
+                return true;
 
-            tgs.material = tgs.fontAsset.material;
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             tgs.screenRect = new Rect(0, 0, m_TextElement.contentRect.width, m_TextElement.contentRect.height);
             tgs.extraPadding = GetTextEffectPadding(tgs.fontAsset);
@@ -482,6 +491,29 @@ namespace UnityEngine.UIElements
                 : tgs.fontAsset.faceInfo.pointSize;
 
             tgs.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
+
+
+            var shouldRenderBitmap = TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap() && style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap && tgs.fontAsset.IsEditorFont;
+            if (shouldRenderBitmap)
+            {
+                // ScalePixelsPerPoint is invalid if the VisualElement is not in a panel
+                if (m_TextElement.panel != null)
+                    settings.pixelsPerPoint = m_TextElement.scaledPixelsPerPoint;
+
+                var pixelSize = tgs.fontSize * settings.pixelsPerPoint;
+                FontAsset fa = GetBlurryMapping(pixelSize, tgs.fontAsset);
+
+                // Fallbacks also need to be generated on the Main Thread
+                var canGenerateFallbacks = CanGenerateFallbackFontAssets(pixelSize);
+                if (!canGenerateFallbacks || !fa)
+                    return false;
+
+                settings.fontAsset = fa;
+            }
+            settings.isEditorRenderingModeBitmap = shouldRenderBitmap;
+
+            tgs.material = tgs.fontAsset.material;
+
             tgs.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(style.unityTextAlign);
 
             tgs.textWrappingMode = style.whiteSpace.toTextWrappingMode();
@@ -517,6 +549,7 @@ namespace UnityEngine.UIElements
             }
 
             tgs.screenRect = new Rect(Vector2.zero, size);
+            return true;
         }
 
         internal bool TextLibraryCanElide()
@@ -584,7 +617,9 @@ namespace UnityEngine.UIElements
             if (!IsFontAssigned(te))
                 return new Vector2(measuredWidth, measuredHeight);
 
-            float pixelsPerPoint = te.scaledPixelsPerPoint;
+            float pixelsPerPoint = 1.0f;
+            if (te.panel != null)
+                pixelsPerPoint = te.scaledPixelsPerPoint;
 
             if (pixelsPerPoint <= 0)
                 return Vector2.zero;

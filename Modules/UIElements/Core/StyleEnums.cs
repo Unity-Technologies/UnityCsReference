@@ -415,4 +415,19 @@ namespace UnityEngine.UIElements
     {
         X,Y,Z
     }
+
+    /// <summary>
+    /// Defines how the editor rendering the text by default
+    /// </summary>
+    public enum EditorTextRenderingMode
+    {
+        /// <summary>
+        /// Sdf is using a single FontAsset is needed to render multiple resulting fontsize
+        /// </summary>
+        SDF = 0,
+        /// <summary>
+        /// Every font size needed is creating a new FontAsset to be as sharp as possible.
+        /// </summary>
+        Bitmap = 1
+    }
 }

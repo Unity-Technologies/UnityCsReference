@@ -174,9 +174,13 @@ namespace UnityEditor
 
                 EditorGUILayout.PropertyField(m_Camera, Styles.renderCamera);
 
-                if (m_Camera.objectReferenceValue == null)
-                    EditorGUILayout.HelpBox("A Screen Space Canvas with no specified camera acts like an Overlay Canvas.",
+                if (Event.current.type != EventType.ExecuteCommand && // UUM-64603: make sure the HelpBox addition doesn't collide with other UI changes and causes UI to fail to update properly
+                    m_Camera.objectReferenceValue == null)
+                {
+                    EditorGUILayout.HelpBox(
+                        "A Screen Space Canvas with no specified camera acts like an Overlay Canvas.",
                         MessageType.Warning);
+                }
 
                 if (m_Camera.objectReferenceValue != null)
                 {
@@ -196,9 +200,13 @@ namespace UnityEditor
             {
                 EditorGUILayout.PropertyField(m_Camera, Styles.eventCamera);
 
-                if (m_Camera.objectReferenceValue == null)
-                    EditorGUILayout.HelpBox("A World Space Canvas with no specified Event Camera may not register UI events correctly.",
+                if (Event.current.type != EventType.ExecuteCommand && // UUM-64603: make sure the HelpBox addition doesn't collide with other UI changes and causes UI to fail to update properly
+                    m_Camera.objectReferenceValue == null)
+                {
+                    EditorGUILayout.HelpBox(
+                        "A World Space Canvas with no specified Event Camera may not register UI events correctly.",
                         MessageType.Warning);
+                }
 
                 EditorGUILayout.Space();
                 EditorGUILayout.SortingLayerField(Styles.m_SortingLayerStyle, m_SortingLayerID, EditorStyles.popup);
@@ -308,11 +316,12 @@ namespace UnityEditor
 
                 if (m_RenderMode.intValue == 0) // Overlay canvas
                 {
-                    if (((newShaderChannelValue & (int)AdditionalCanvasShaderChannels.Normal) | (newShaderChannelValue & (int)AdditionalCanvasShaderChannels.Tangent)) != 0)
+                    if (Event.current.type != EventType.ExecuteCommand && // UUM-64603: make sure the HelpBox addition doesn't collide with other UI changes and causes UI to fail to update properly
+                        ((newShaderChannelValue & (int)AdditionalCanvasShaderChannels.Normal) | (newShaderChannelValue & (int)AdditionalCanvasShaderChannels.Tangent)) != 0)
                     {
-                        var helpMessage = "Shader channels Normal and Tangent are most often used with lighting, which an Overlay canvas does not support. Its likely these channels are not needed.";
-                        rect = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(helpMessage, EditorGUIUtility.GetHelpIcon(MessageType.Warning)), EditorStyles.helpBox);
-                        EditorGUI.HelpBox(rect, helpMessage, MessageType.Warning);
+                        EditorGUILayout.HelpBox(
+                            "Shader channels Normal and Tangent are most often used with lighting, which an Overlay canvas does not support. Its likely these channels are not needed.",
+                            MessageType.Warning);
                     }
                 }
 
@@ -320,8 +329,13 @@ namespace UnityEditor
 
                 if (PlayerSettings.colorSpace == ColorSpace.Linear)
                 {
-                    if (!m_VertexColorAlwaysGammaSpace.boolValue)
-                        EditorGUILayout.HelpBox( "Keep vertex color in Gamma space to allow gamma to linear color space conversion to happen in UI shaders. This will enhance UI color precision in linear color space.", MessageType.Warning);
+                    if (Event.current.type != EventType.ExecuteCommand // UUM-64603: make sure the HelpBox addition doesn't collide with other UI changes and causes UI to fail to update properly
+                        && !m_VertexColorAlwaysGammaSpace.boolValue)
+                    {
+                        EditorGUILayout.HelpBox(
+                            "Keep vertex color in Gamma space to allow gamma to linear color space conversion to happen in UI shaders. This will enhance UI color precision in linear color space.",
+                            MessageType.Warning);
+                    }
                 }
             }
             else

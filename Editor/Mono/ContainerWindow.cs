@@ -285,6 +285,9 @@ namespace UnityEditor
             {
                 return AskToClose(m_UnsavedEditorWindows);
             }
+            if (Application.isHumanControllingUs && IsMultiplayerClone())
+                return MultiplayerCloneClose();
+
 
             return true;
         }
@@ -318,6 +321,16 @@ namespace UnityEditor
             }
 
             return true;
+        }
+
+        private static bool MultiplayerCloneClose()
+        {
+            var shouldClose = EditorUtility.DisplayDialog(L10n.Tr("Warning: Deactivating a Virtual Player"),
+                L10n.Tr("Closing this window will deactivate the virtual player. Are you sure you want to close the window?"),
+                L10n.Tr("Close"),
+                L10n.Tr("Keep Open"));
+
+            return shouldClose;
         }
 
         private static bool AskToClose(List<EditorWindow> allUnsaved)

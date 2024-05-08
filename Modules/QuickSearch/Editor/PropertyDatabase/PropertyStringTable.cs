@@ -81,7 +81,7 @@ namespace UnityEditor.Search
         public const int emptyStringSymbol = 0;
 
         internal const int version = 0x50535400 | 0x02;
-        internal const int hashFactor = 2;
+        internal const int hashFactor = 2; // Number of slots for symbols with same hash
         internal const int stringLengthByteSize = sizeof(int);
         internal const int symbolByteSize = sizeof(int);
         internal const int defaultStringCount = 30;
@@ -158,7 +158,7 @@ namespace UnityEditor.Search
 
         public static int GetSymbolsByteSize(int symbolCount)
         {
-            return symbolCount * sizeof(int);
+            return symbolCount * symbolByteSize;
         }
 
         internal IDisposable LockRead()

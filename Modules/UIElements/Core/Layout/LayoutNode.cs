@@ -44,21 +44,6 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     public ref LayoutStyleData Style => ref m_Access.GetStyleData(m_Handle);
 
     /// <summary>
-    /// Gets the style border input struct for this node.
-    /// </summary>
-    public ref LayoutStyleBorderData StyleBorders => ref m_Access.GetStyleBorderData(m_Handle);
-
-    /// <summary>
-    /// Gets the style margin input struct for this node.
-    /// </summary>
-    public ref LayoutStyleMarginData StyleMargins => ref m_Access.GetStyleMarginData(m_Handle);
-
-    /// <summary>
-    /// Gets the style dimension input struct for this node.
-    /// </summary>
-    public ref LayoutStyleDimensionData StyleDimensions => ref m_Access.GetStyleDimensionData(m_Handle);
-
-    /// <summary>
     /// Gets or sets the dirty flag for this node. Used when calculating layout.
     /// </summary>
     public bool IsDirty
@@ -211,33 +196,6 @@ partial struct LayoutNode : IEquatable<LayoutNode>
                     markDirty = true;
                 }
             }
-            fixed (LayoutStyleBorderData* dstStyle = &StyleBorders)
-            fixed (LayoutStyleBorderData* srcStyle = &node.StyleBorders)
-            {
-                if (UnsafeUtility.MemCmp(dstStyle, srcStyle, UnsafeUtility.SizeOf<LayoutStyleBorderData>()) != 0)
-                {
-                    StyleBorders = node.StyleBorders;
-                    markDirty = true;
-                }
-            }
-            fixed (LayoutStyleMarginData* dstStyle = &StyleMargins)
-            fixed (LayoutStyleMarginData* srcStyle = &node.StyleMargins)
-            {
-                if (UnsafeUtility.MemCmp(dstStyle, srcStyle, UnsafeUtility.SizeOf<LayoutStyleMarginData>()) != 0)
-                {
-                    StyleMargins = node.StyleMargins;
-                    markDirty = true;
-                }
-            }
-            fixed (LayoutStyleDimensionData* dstStyle = &StyleDimensions)
-            fixed (LayoutStyleDimensionData* srcStyle = &node.StyleDimensions)
-            {
-                if (UnsafeUtility.MemCmp(dstStyle, srcStyle, UnsafeUtility.SizeOf<LayoutStyleDimensionData>()) != 0)
-                {
-                    StyleDimensions = node.StyleDimensions;
-                    markDirty = true;
-                }
-            }
         }
 
         if (markDirty)
@@ -276,9 +234,6 @@ partial struct LayoutNode : IEquatable<LayoutNode>
 
         Layout = LayoutComputedData.Default;
         Style = LayoutStyleData.Default;
-        StyleBorders = LayoutStyleBorderData.Default;
-        StyleMargins = LayoutStyleMarginData.Default;
-        StyleDimensions = LayoutStyleDimensionData.Default;
     }
 
     public bool Equals(LayoutNode other)

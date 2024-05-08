@@ -76,9 +76,9 @@ namespace Unity.UI.Builder
             AdjustBottomPadding(false);
 
             // Store callbacks to reduce delegate allocations
-            m_ElementNameChangeCallback = new EventCallback<ChangeEvent<string>>(OnNameAttributeChange);
-            m_SelectorNameChangeCallback = new EventCallback<ChangeEvent<string>>(OnStyleSelectorNameChange);
-            m_SelectorEnterKeyDownCallback = new EventCallback<KeyDownEvent>(OnEnterStyleSelectorNameChange);
+            m_ElementNameChangeCallback = OnNameAttributeChange;
+            m_SelectorNameChangeCallback = OnStyleSelectorNameChange;
+            m_SelectorEnterKeyDownCallback = OnEnterStyleSelectorNameChange;
 
             m_TextField.RegisterValueChangedCallback(m_ElementNameChangeCallback);
             m_RightClickManipulator = new ContextualMenuManipulator(BuildNameFieldContextualMenu);
@@ -116,7 +116,7 @@ namespace Unity.UI.Builder
                 m_Selection.selectionType == BuilderSelectionType.ParentStyleSelector)
             {
                 m_TextField.RegisterValueChangedCallback(m_SelectorNameChangeCallback);
-                m_TextField.RegisterCallback(m_SelectorEnterKeyDownCallback);
+                m_TextField.RegisterCallback(m_SelectorEnterKeyDownCallback, TrickleDown.TrickleDown);
 
                 ToggleNameOverrideBox(false);
 
@@ -252,6 +252,9 @@ namespace Unity.UI.Builder
 
         void OnStyleSelectorNameChange(ChangeEvent<string> evt)
         {
+            if (evt.elementTarget != m_TextField)
+                return;
+
             if (m_Selection.selectionType != BuilderSelectionType.StyleSelector)
                 return;
 
@@ -264,7 +267,8 @@ namespace Unity.UI.Builder
             if (evt.newValue == evt.previousValue)
                 return;
 
-            ValidateStyleSelectorNameChange(evt.newValue);
+            if (!ValidateStyleSelectorNameChange(evt.newValue))
+                evt.StopImmediatePropagation();
         }
 
         void OnEnterStyleSelectorNameChange(KeyDownEvent evt)
@@ -284,35 +288,44 @@ namespace Unity.UI.Builder
             if (m_TextField.text == currentVisualElement.name)
                 return;
 
-            ValidateStyleSelectorNameChange(m_TextField.text);
-
-            evt.StopImmediatePropagation();
+            if (!ValidateStyleSelectorNameChange(m_TextField.text))
+                evt.StopImmediatePropagation();
         }
 
-        void ValidateStyleSelectorNameChange(string value)
+        bool ValidateStyleSelectorNameChange(string value)
         {
             if (!BuilderNameUtilities.styleSelectorRegex.IsMatch(value))
             {
                 Builder.ShowWarning(string.Format(BuilderConstants.StyleSelectorValidationSpacialCharacters, "Name"));
                 m_TextField.schedule.Execute(() =>
                 {
-                    var baseInput = m_TextField.Q(TextField.textInputUssName);
-                    if (baseInput.focusController != null)
-                        baseInput.focusController.DoFocusChange(baseInput);
-
-                    m_TextField.SetValueWithoutNotify(value);
+                    m_TextField.SetValueWithoutNotify(BuilderSharedStyles.GetSelectorString(currentVisualElement));
+                    m_TextField.Focus();
+                    m_TextField.textInputBase.text = value;
                     m_TextField.textSelection.SelectAll();
                 });
-                return;
+                return false;
             }
 
             Undo.RegisterCompleteObjectUndo(
                 styleSheet, BuilderConstants.RenameSelectorUndoMessage);
 
-            BuilderSharedStyles.SetSelectorString(currentVisualElement, styleSheet, value);
+            if (!BuilderSharedStyles.SetSelectorString(currentVisualElement, styleSheet, value, out var error))
+            {
+                Builder.ShowWarning(error);
+                m_TextField.schedule.Execute(() =>
+                {
+                    m_TextField.SetValueWithoutNotify(BuilderSharedStyles.GetSelectorString(currentVisualElement));
+                    m_TextField.Focus();
+                    m_TextField.text = value;
+                    m_TextField.textSelection.SelectAll();
+                });
+                return false;
+            }
 
             m_Selection.NotifyOfHierarchyChange(m_Inspector);
             m_Selection.NotifyOfStylingChange(m_Inspector);
+            return true;
         }
 
         public void Enable()

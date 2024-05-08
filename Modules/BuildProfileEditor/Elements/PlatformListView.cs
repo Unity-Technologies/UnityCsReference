@@ -166,6 +166,14 @@ namespace UnityEditor.Build.Profile.Elements
             m_BuildProfilesListView.SetSelection(index);
         }
 
+        internal void SelectSharedSceneList()
+        {
+            if (m_PlatformListView.selectedIndex >= 0)
+                m_BuildProfilesListView.ClearSelection();
+
+            m_PlatformListView.SetSelection(0);
+        }
+
         internal void AppendBuildProfileSelection(int index) => m_BuildProfilesListView.AddToSelection(index);
 
         internal void ShowCustomBuildProfiles() => m_BuildProfilesListView.Show();

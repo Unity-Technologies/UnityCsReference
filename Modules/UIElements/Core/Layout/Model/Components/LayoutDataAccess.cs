@@ -44,18 +44,6 @@ readonly unsafe struct LayoutDataAccess
         => ref GetTypedNodeDataRef<LayoutStyleData>(handle, LayoutNodeDataType.Style);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ref LayoutStyleBorderData GetStyleBorderData(LayoutHandle handle)
-        => ref GetTypedNodeDataRef<LayoutStyleBorderData>(handle, LayoutNodeDataType.StyleBorder);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ref LayoutStyleMarginData GetStyleMarginData(LayoutHandle handle)
-        => ref GetTypedNodeDataRef<LayoutStyleMarginData>(handle, LayoutNodeDataType.StyleMargin);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ref LayoutStyleDimensionData GetStyleDimensionData(LayoutHandle handle)
-        => ref GetTypedNodeDataRef<LayoutStyleDimensionData>(handle, LayoutNodeDataType.StyleDimensions);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ref LayoutComputedData GetComputedData(LayoutHandle handle)
         => ref GetTypedNodeDataRef<LayoutComputedData>(handle, LayoutNodeDataType.Computed);
 

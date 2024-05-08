@@ -446,7 +446,7 @@ namespace UnityEditor
 
             if (CanSearchProperty(property))
             {
-                menu.AddItem(new GUIContent("Search for same Property"), false, () => SearchProperty(property));
+                menu.AddItem(new GUIContent("Search Same Property Value"), false, () => SearchProperty(property));
                 if (property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue)
                 {
                     menu.AddItem(new GUIContent($"Find references to {property.objectReferenceValue.GetType().Name} {property.objectReferenceValue.name}"), false, () => FindReferences(property.objectReferenceValue));

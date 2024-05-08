@@ -18,6 +18,7 @@ using UnityEditor.SceneManagement;
 using UnityEditor.VersionControl;
 using UnityEngine.Bindings;
 using UnityEngine.Profiling;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -414,12 +415,20 @@ namespace UnityEditor
                 view.Repaint();
         }
 
-        internal static void RequestRepaintAllTexts()
+        internal static void RequestRepaintAllTexts(VersionChangeType incrementVersion)
         {
             foreach (GUIView view in Resources.FindObjectsOfTypeAll(typeof(GUIView)))
             {
                 view.Repaint();
-                view.RepaintUITKText();
+                view.IncrementVersionForUITKText(incrementVersion);
+            }
+        }
+
+        internal static void UpdateEditorTextRenderingMode(EditorTextRenderingMode mode)
+        {
+            foreach (GUIView view in Resources.FindObjectsOfTypeAll(typeof(GUIView)))
+            {
+                view.UpdateEditorTextRenderingMode(mode);
             }
         }
 

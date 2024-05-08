@@ -145,38 +145,38 @@ partial struct LayoutNode
 
     public LayoutValue Width
     {
-        get => StyleDimensions.dimensions[(int)LayoutDimension.Width];
-        set => SetStyleValueUnit(ref StyleDimensions.dimensions[(int)LayoutDimension.Width], value);
+        get => Style.dimensions[(int)LayoutDimension.Width];
+        set => SetStyleValueUnit(ref Style.dimensions[(int)LayoutDimension.Width], value);
     }
 
     public LayoutValue Height
     {
-        get => StyleDimensions.dimensions[(int)LayoutDimension.Height];
-        set => SetStyleValueUnit(ref StyleDimensions.dimensions[(int)LayoutDimension.Height], value);
+        get => Style.dimensions[(int)LayoutDimension.Height];
+        set => SetStyleValueUnit(ref Style.dimensions[(int)LayoutDimension.Height], value);
     }
 
     public LayoutValue MaxWidth
     {
-        get => StyleDimensions.maxDimensions[(int)LayoutDimension.Width];
-        set => SetStyleValue(ref StyleDimensions.maxDimensions[(int)LayoutDimension.Width], value);
+        get => Style.maxDimensions[(int)LayoutDimension.Width];
+        set => SetStyleValue(ref Style.maxDimensions[(int)LayoutDimension.Width], value);
     }
 
     public LayoutValue MaxHeight
     {
-        get => StyleDimensions.maxDimensions[(int)LayoutDimension.Height];
-        set => SetStyleValue(ref StyleDimensions.maxDimensions[(int)LayoutDimension.Height], value);
+        get => Style.maxDimensions[(int)LayoutDimension.Height];
+        set => SetStyleValue(ref Style.maxDimensions[(int)LayoutDimension.Height], value);
     }
 
     public LayoutValue MinWidth
     {
-        get => StyleDimensions.minDimensions[(int)LayoutDimension.Width];
-        set => SetStyleValue(ref StyleDimensions.minDimensions[(int)LayoutDimension.Width], value);
+        get => Style.minDimensions[(int)LayoutDimension.Width];
+        set => SetStyleValue(ref Style.minDimensions[(int)LayoutDimension.Width], value);
     }
 
     public LayoutValue MinHeight
     {
-        get => StyleDimensions.minDimensions[(int)LayoutDimension.Height];
-        set => SetStyleValue(ref StyleDimensions.minDimensions[(int)LayoutDimension.Height], value);
+        get => Style.minDimensions[(int)LayoutDimension.Height];
+        set => SetStyleValue(ref Style.minDimensions[(int)LayoutDimension.Height], value);
     }
 
     public float AspectRatio
@@ -200,188 +200,188 @@ partial struct LayoutNode
 
     public LayoutValue Left
     {
-        get => StyleBorders.position[(int)LayoutEdge.Left];
+        get => Style.position[(int)LayoutEdge.Left];
         set => SetStyleEdgePosition(LayoutEdge.Left, value);
     }
 
     public LayoutValue Top
     {
-        get => StyleBorders.position[(int)LayoutEdge.Top];
+        get => Style.position[(int)LayoutEdge.Top];
         set => SetStyleEdgePosition(LayoutEdge.Top, value);
     }
 
     public LayoutValue Right
     {
-        get => StyleBorders.position[(int)LayoutEdge.Right];
+        get => Style.position[(int)LayoutEdge.Right];
         set => SetStyleEdgePosition(LayoutEdge.Right, value);
     }
 
     public LayoutValue Bottom
     {
-        get => StyleBorders.position[(int)LayoutEdge.Bottom];
+        get => Style.position[(int)LayoutEdge.Bottom];
         set => SetStyleEdgePosition(LayoutEdge.Bottom, value);
     }
 
     public LayoutValue Start
     {
-        get => StyleBorders.position[(int)LayoutEdge.Start];
+        get => Style.position[(int)LayoutEdge.Start];
         set => SetStyleEdgePosition(LayoutEdge.Start, value);
     }
 
     public LayoutValue End
     {
-        get => StyleBorders.position[(int)LayoutEdge.End];
+        get => Style.position[(int)LayoutEdge.End];
         set => SetStyleEdgePosition(LayoutEdge.End, value);
     }
 
     public LayoutValue MarginLeft
     {
-        get => StyleMargins.margin[(int)LayoutEdge.Left];
+        get => Style.margin[(int)LayoutEdge.Left];
         set => SetStyleEdgeMargin(LayoutEdge.Left, value);
     }
 
     public LayoutValue MarginTop
     {
-        get => StyleMargins.margin[(int)LayoutEdge.Top];
+        get => Style.margin[(int)LayoutEdge.Top];
         set => SetStyleEdgeMargin(LayoutEdge.Top, value);
     }
 
     public LayoutValue MarginRight
     {
-        get => StyleMargins.margin[(int)LayoutEdge.Right];
+        get => Style.margin[(int)LayoutEdge.Right];
         set => SetStyleEdgeMargin(LayoutEdge.Right, value);
     }
 
     public LayoutValue MarginBottom
     {
-        get => StyleMargins.margin[(int)LayoutEdge.Bottom];
+        get => Style.margin[(int)LayoutEdge.Bottom];
         set => SetStyleEdgeMargin(LayoutEdge.Bottom, value);
     }
 
     public LayoutValue MarginStart
     {
-        get => StyleMargins.margin[(int)LayoutEdge.Start];
+        get => Style.margin[(int)LayoutEdge.Start];
         set => SetStyleEdgeMargin(LayoutEdge.Start, value);
     }
 
     public LayoutValue MarginEnd
     {
-        get => StyleMargins.margin[(int)LayoutEdge.End];
+        get => Style.margin[(int)LayoutEdge.End];
         set => SetStyleEdgeMargin(LayoutEdge.End, value);
     }
 
     public LayoutValue MarginHorizontal
     {
-        get => StyleMargins.margin[(int)LayoutEdge.Horizontal];
+        get => Style.margin[(int)LayoutEdge.Horizontal];
         set => SetStyleEdgeMargin(LayoutEdge.Horizontal, value);
     }
 
     public LayoutValue MarginVertical
     {
-        get => StyleMargins.margin[(int)LayoutEdge.Vertical];
+        get => Style.margin[(int)LayoutEdge.Vertical];
         set => SetStyleEdgeMargin(LayoutEdge.Vertical, value);
     }
 
     public LayoutValue Margin
     {
-        get => StyleMargins.margin[(int)LayoutEdge.All];
+        get => Style.margin[(int)LayoutEdge.All];
         set => SetStyleEdgeMargin(LayoutEdge.All, value);
     }
 
     public LayoutValue PaddingLeft
     {
-        get => StyleMargins.padding[(int)LayoutEdge.Left];
+        get => Style.padding[(int)LayoutEdge.Left];
         set => SetStyleEdgePadding(LayoutEdge.Left, value);
     }
 
     public LayoutValue PaddingTop
     {
-        get => StyleMargins.padding[(int)LayoutEdge.Top];
+        get => Style.padding[(int)LayoutEdge.Top];
         set => SetStyleEdgePadding(LayoutEdge.Top, value);
     }
 
     public LayoutValue PaddingRight
     {
-        get => StyleMargins.padding[(int)LayoutEdge.Right];
+        get => Style.padding[(int)LayoutEdge.Right];
         set => SetStyleEdgePadding(LayoutEdge.Right, value);
     }
 
     public LayoutValue PaddingBottom
     {
-        get => StyleMargins.padding[(int)LayoutEdge.Bottom];
+        get => Style.padding[(int)LayoutEdge.Bottom];
         set => SetStyleEdgePadding(LayoutEdge.Bottom, value);
     }
 
     public LayoutValue PaddingStart
     {
-        get => StyleMargins.padding[(int)LayoutEdge.Start];
+        get => Style.padding[(int)LayoutEdge.Start];
         set => SetStyleEdgePadding(LayoutEdge.Start, value);
     }
 
     public LayoutValue PaddingEnd
     {
-        get => StyleMargins.padding[(int)LayoutEdge.End];
+        get => Style.padding[(int)LayoutEdge.End];
         set => SetStyleEdgePadding(LayoutEdge.End, value);
     }
 
     public LayoutValue PaddingHorizontal
     {
-        get => StyleMargins.padding[(int)LayoutEdge.Horizontal];
+        get => Style.padding[(int)LayoutEdge.Horizontal];
         set => SetStyleEdgePadding(LayoutEdge.Horizontal, value);
     }
 
     public LayoutValue PaddingVertical
     {
-        get => StyleMargins.padding[(int)LayoutEdge.Vertical];
+        get => Style.padding[(int)LayoutEdge.Vertical];
         set => SetStyleEdgePadding(LayoutEdge.Vertical, value);
     }
 
     public LayoutValue Padding
     {
-        get => StyleMargins.padding[(int)LayoutEdge.All];
+        get => Style.padding[(int)LayoutEdge.All];
         set => SetStyleEdgePadding(LayoutEdge.All, value);
     }
 
     public float BorderLeftWidth
     {
-        get => StyleBorders.border[(int) LayoutEdge.Left].Value;
-        set => StyleEdgeSetPoint(ref StyleBorders.border[(int)LayoutEdge.Left], value);
+        get => Style.border[(int) LayoutEdge.Left].Value;
+        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.Left], value);
     }
 
     public float BorderTopWidth
     {
-        get => StyleBorders.border[(int) LayoutEdge.Top].Value;
-        set => StyleEdgeSetPoint(ref StyleBorders.border[(int)LayoutEdge.Top], value);
+        get => Style.border[(int) LayoutEdge.Top].Value;
+        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.Top], value);
     }
 
     public float BorderRightWidth
     {
-        get => StyleBorders.border[(int) LayoutEdge.Right].Value;
-        set => StyleEdgeSetPoint(ref StyleBorders.border[(int)LayoutEdge.Right], value);
+        get => Style.border[(int) LayoutEdge.Right].Value;
+        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.Right], value);
     }
 
     public float BorderBottomWidth
     {
-        get => StyleBorders.border[(int) LayoutEdge.Bottom].Value;
-        set => StyleEdgeSetPoint(ref StyleBorders.border[(int)LayoutEdge.Bottom], value);
+        get => Style.border[(int) LayoutEdge.Bottom].Value;
+        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.Bottom], value);
     }
 
     public float BorderStartWidth
     {
-        get => StyleBorders.border[(int) LayoutEdge.Start].Value;
-        set => StyleEdgeSetPoint(ref StyleBorders.border[(int)LayoutEdge.Start], value);
+        get => Style.border[(int) LayoutEdge.Start].Value;
+        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.Start], value);
     }
 
     public float BorderEndWidth
     {
-        get => StyleBorders.border[(int) LayoutEdge.End].Value;
-        set => StyleEdgeSetPoint(ref StyleBorders.border[(int)LayoutEdge.End], value);
+        get => Style.border[(int) LayoutEdge.End].Value;
+        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.End], value);
     }
 
     public float BorderWidth
     {
-        get => StyleBorders.border[(int) LayoutEdge.All].Value;
-        set => StyleEdgeSetPoint(ref StyleBorders.border[(int)LayoutEdge.All], value);
+        get => Style.border[(int) LayoutEdge.All].Value;
+        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.All], value);
     }
 
     void SetValue(ref float currentValue, float newValue)
@@ -465,11 +465,11 @@ partial struct LayoutNode
     {
         if (value.Unit == LayoutUnit.Percent)
         {
-            StyleEdgeSetPercent(ref StyleBorders.position[(int)edge], value.Value);
+            StyleEdgeSetPercent(ref Style.position[(int)edge], value.Value);
         }
         else
         {
-            StyleEdgeSetPoint(ref StyleBorders.position[(int)edge], value.Value);
+            StyleEdgeSetPoint(ref Style.position[(int)edge], value.Value);
         }
     }
 
@@ -477,15 +477,15 @@ partial struct LayoutNode
     {
         if (value.Unit == LayoutUnit.Percent)
         {
-            StyleEdgeSetPercent(ref StyleMargins.margin[(int)edge], value.Value);
+            StyleEdgeSetPercent(ref Style.margin[(int)edge], value.Value);
         }
         else if (value.Unit == LayoutUnit.Auto)
         {
-            StyleEdgeSetAuto(ref StyleMargins.margin[(int)edge]);
+            StyleEdgeSetAuto(ref Style.margin[(int)edge]);
         }
         else
         {
-            StyleEdgeSetPoint(ref StyleMargins.margin[(int)edge], value.Value);
+            StyleEdgeSetPoint(ref Style.margin[(int)edge], value.Value);
         }
     }
 
@@ -493,11 +493,11 @@ partial struct LayoutNode
     {
         if (value.Unit == LayoutUnit.Percent)
         {
-            StyleEdgeSetPercent(ref StyleMargins.padding[(int)edge], value.Value);
+            StyleEdgeSetPercent(ref Style.padding[(int)edge], value.Value);
         }
         else
         {
-            StyleEdgeSetPoint(ref StyleMargins.padding[(int)edge], value.Value);
+            StyleEdgeSetPoint(ref Style.padding[(int)edge], value.Value);
         }
     }
 

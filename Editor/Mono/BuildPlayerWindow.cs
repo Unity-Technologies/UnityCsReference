@@ -20,6 +20,7 @@ using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.Connect;
 using UnityEditor.Utils;
+using UnityEditor.Build.Profile;
 
 namespace UnityEditor
 {
@@ -151,7 +152,7 @@ namespace UnityEditor
 
         static bool isEditorinstalledWithHub = IsEditorInstalledWithHub();
 
-        internal static event Action<NamedBuildTarget> drawingMultiplayerBuildOptions;
+        internal static event Action<BuildProfile> drawingMultiplayerBuildOptions;
 
         [UsedImplicitly, RequiredByNativeCode]
         public static void ShowBuildPlayerWindow()
@@ -162,9 +163,9 @@ namespace UnityEditor
 
         internal static bool WillDrawMultiplayerBuildOptions() => drawingMultiplayerBuildOptions != null;
 
-        internal static void DrawMultiplayerBuildOption(NamedBuildTarget namedBuildTarget)
+        internal static void DrawMultiplayerBuildOption(BuildProfile buildProfile)
         {
-            drawingMultiplayerBuildOptions?.Invoke(namedBuildTarget);
+            drawingMultiplayerBuildOptions?.Invoke(buildProfile);
         }
 
         static bool BuildLocationIsValid(string path)
@@ -941,7 +942,13 @@ namespace UnityEditor
                 GUILayout.EndHorizontal();
             }
 
-            drawingMultiplayerBuildOptions?.Invoke(namedBuildTarget);
+            var subtarget = StandaloneBuildSubtarget.Default;
+            if (namedBuildTarget == NamedBuildTarget.Standalone)
+                subtarget = StandaloneBuildSubtarget.Player;
+            else if (namedBuildTarget == NamedBuildTarget.Server)
+                subtarget = StandaloneBuildSubtarget.Server;
+
+            drawingMultiplayerBuildOptions?.Invoke(BuildProfileContext.instance.GetForClassicPlatform(buildTarget, subtarget));
 
             GUILayout.EndScrollView();
 
@@ -958,7 +965,10 @@ namespace UnityEditor
             GUIContent installModuleWithHub,
             string editorWillNeedToBeReloaded)
         {
-            GUILayout.Label(EditorGUIUtility.TextContent(string.Format(noModuleLoaded, BuildPlatforms.instance.GetModuleDisplayName(namedBuildTarget, buildTarget))));
+#pragma warning disable CS0618 // Member is obsolete
+            var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(namedBuildTarget, buildTarget);
+#pragma warning restore CS0618
+            GUILayout.Label(EditorGUIUtility.TextContent(string.Format(noModuleLoaded, displayName)));
             string url = "";
 #pragma warning disable CS0618 // Member is obsolete
             if (!isEditorinstalledWithHub || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(buildTarget))

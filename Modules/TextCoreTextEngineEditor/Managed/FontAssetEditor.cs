@@ -69,7 +69,7 @@ namespace UnityEditor.TextCore.Text
             public Font sourceFont;
             public int faceIndex;
             public GlyphRenderMode glyphRenderMode;
-            public int pointSize;
+            public float pointSize;
             public int padding;
             public int atlasWidth;
             public int atlasHeight;
@@ -1890,13 +1890,13 @@ namespace UnityEditor.TextCore.Text
 
         string[] GetFontFaces(int faceIndex)
         {
-            if (LoadFontFace(m_SamplingPointSize_prop.intValue, faceIndex) == FontEngineError.Success)
+            if (LoadFontFace(m_SamplingPointSize_prop.floatValue, faceIndex) == FontEngineError.Success)
                 return FontEngine.GetFontFaces();
 
             return k_InvalidFontFaces;
         }
 
-        FontEngineError LoadFontFace(int pointSize, int faceIndex)
+        FontEngineError LoadFontFace(float pointSize, int faceIndex)
         {
             if (m_fontAsset.SourceFont_EditorRef != null)
             {
@@ -1939,7 +1939,7 @@ namespace UnityEditor.TextCore.Text
         {
             m_GenerationSettings.faceIndex = m_FontFaceIndex_prop.intValue;
             m_GenerationSettings.glyphRenderMode = (GlyphRenderMode)m_AtlasRenderMode_prop.intValue;
-            m_GenerationSettings.pointSize       = m_SamplingPointSize_prop.intValue;
+            m_GenerationSettings.pointSize       = m_SamplingPointSize_prop.floatValue;
             m_GenerationSettings.padding         = m_AtlasPadding_prop.intValue;
             m_GenerationSettings.atlasWidth      = m_AtlasWidth_prop.intValue;
             m_GenerationSettings.atlasHeight     = m_AtlasHeight_prop.intValue;
@@ -1949,7 +1949,7 @@ namespace UnityEditor.TextCore.Text
         {
             m_fontAsset.SourceFont_EditorRef = m_GenerationSettings.sourceFont;
             m_FontFaceIndex_prop.intValue = m_GenerationSettings.faceIndex;
-            m_SamplingPointSize_prop.intValue = m_GenerationSettings.pointSize;
+            m_SamplingPointSize_prop.floatValue = m_GenerationSettings.pointSize;
             m_FontFaces = GetFontFaces();
 
             m_AtlasRenderMode_prop.intValue = (int)m_GenerationSettings.glyphRenderMode;
@@ -1961,7 +1961,7 @@ namespace UnityEditor.TextCore.Text
         void UpdateFontAssetCreationSettings()
         {
             m_fontAsset.m_fontAssetCreationEditorSettings.faceIndex = m_FontFaceIndex_prop.intValue;
-            m_fontAsset.m_fontAssetCreationEditorSettings.pointSize = m_SamplingPointSize_prop.intValue;
+            m_fontAsset.m_fontAssetCreationEditorSettings.pointSize = m_SamplingPointSize_prop.floatValue;
             m_fontAsset.m_fontAssetCreationEditorSettings.renderMode = m_AtlasRenderMode_prop.intValue;
             m_fontAsset.m_fontAssetCreationEditorSettings.padding = m_AtlasPadding_prop.intValue;
             m_fontAsset.m_fontAssetCreationEditorSettings.atlasWidth = m_AtlasWidth_prop.intValue;
@@ -2940,9 +2940,9 @@ namespace UnityEditor.TextCore.Text
             m_DisplayDestructiveChangeWarning = false;
 
             // Update face info if  sampling point size was changed.
-            if (m_GenerationSettings.pointSize != m_SamplingPointSize_prop.intValue || m_FaceInfoDirty)
+            if (m_GenerationSettings.pointSize != m_SamplingPointSize_prop.floatValue || m_FaceInfoDirty)
             {
-                LoadFontFace(m_SamplingPointSize_prop.intValue, m_FontFaceIndex_prop.intValue);
+                LoadFontFace(m_SamplingPointSize_prop.floatValue, m_FontFaceIndex_prop.intValue);
                 m_fontAsset.faceInfo = FontEngine.GetFaceInfo();
                 m_FaceInfoDirty = false;
             }

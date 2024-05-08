@@ -147,6 +147,20 @@ namespace UnityEditor.Search.Providers
         internal const string filterId = "p:";
         internal const string type = "asset";
         private const string displayName = "Project";
+        private static QueryEngine<string> m_QueryEngine;
+        private static QueryEngine<string> queryEngine
+        {
+            get
+            {
+                if (m_QueryEngine == null)
+                {
+                    m_QueryEngine = new QueryEngine<string>(validateFilters: false);
+                }
+                return m_QueryEngine;
+            }
+        }
+
+        private const string k_NoResultsLimitToggle = "noResultsLimit";
 
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
@@ -262,7 +276,12 @@ namespace UnityEditor.Search.Providers
 
             if (info.flags.HasAny(SearchDocumentFlags.Object))
                 return TrimLabel((item.label = info.path), displayCompact);
-            return (item.label = Path.GetFileName(info.path));
+            item.label = Path.GetFileName(info.path);
+            if (string.IsNullOrEmpty(item.label) && info.obj != null)
+            {
+                item.label = info.obj.name;
+            }
+            return item.label;
         }
 
         private static string FetchDescription(SearchItem item)
@@ -375,12 +394,13 @@ namespace UnityEditor.Search.Providers
             if (options.flags.HasAny(SearchPropositionFlags.QueryBuilder))
                 return FetchQueryBuilderPropositions();
 
+            // TODO: FIXME, should we show boxcollider.enabled AND enabled when we type "e"?
             var token = options.tokens[0];
             var ft = token.LastIndexOfAny(SearchUtils.KeywordsValueDelimiters);
             if (ft >= 0)
                 token = token.Substring(0, ft);
             var dbs = SearchDatabase.EnumerateAll();
-            return dbs.SelectMany(db => db.index.GetKeywords()
+            return dbs.Where(db => !db.settings.options.disabled).SelectMany(db => db.index.GetKeywords()
                 .Where(kw => kw.StartsWith(token, StringComparison.OrdinalIgnoreCase)))
                 .Select(kw => new SearchProposition(category: null, label: kw));
         }
@@ -418,6 +438,9 @@ namespace UnityEditor.Search.Providers
             yield return new SearchProposition(category: "Options", "Fuzzy Matches", "+fuzzy",
                 "Use fuzzy search to match object names", priority: 0, moveCursor: TextCursorPlacement.MoveAutoComplete, icon: Icons.toggles,
                 color: QueryColors.toggle);
+            yield return new SearchProposition(category: "Options", "No Results Limit", $"+{k_NoResultsLimitToggle}",
+                "Do not cap asset provider results limit", priority: 0, moveCursor: TextCursorPlacement.MoveAutoComplete, icon: Icons.toggles,
+                color: QueryColors.toggle);
 
             yield return new SearchProposition(category: "Filters", label: "Directory (Name)", replacement: "dir=\"folder name\"", help:"Assets in a specific folder",icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "File Size", replacement: "size>=8096", help: "Assets with a specific size in bytes", icon: Icons.quicksearch, color: QueryColors.filter);
@@ -435,8 +458,8 @@ namespace UnityEditor.Search.Providers
             var dbs = SearchDatabase.EnumerateAll();
             foreach (var db in dbs.Where(db => !db.settings.options.disabled))
             {
-                while (!db.loaded)
-                    Dispatcher.ProcessOne();
+                if (!db.loaded)
+                    continue;
 
                 yield return new SearchProposition(
                     category: "Area (Index)",
@@ -527,6 +550,13 @@ namespace UnityEditor.Search.Providers
             });
         }
 
+        public static int GetResultLimit(string query)
+        {
+            var parsedQuery = queryEngine.ParseQuery(query);
+            var resultsLimit = parsedQuery.toggles.Any(t => t.value.Equals(k_NoResultsLimitToggle, StringComparison.InvariantCultureIgnoreCase)) ? int.MaxValue : 2999;
+            return resultsLimit;
+        }
+
         private static IEnumerator SearchIndexes(string searchQuery, SearchContext context, SearchProvider provider, SearchDatabase db)
         {
             var cancelToken = context.sessions.cancelToken;
@@ -560,14 +590,17 @@ namespace UnityEditor.Search.Providers
                 }
             }
 
+            var query = searchQuery.ToLowerInvariant();
             var index = db.index;
             index.fetchDefaultFiler = PopulateDefaultFilters;
+            var resultsLimit = GetResultLimit(query);
+
             var results = new System.Collections.Concurrent.ConcurrentBag<SearchResult>();
             var searchTask = System.Threading.Tasks.Task.Run(() =>
             {
                 // Search index
                 using var immutableScope = db.GetImmutableScope();
-                foreach (var r in index.Search(searchQuery.ToLowerInvariant(), context, provider))
+                foreach (var r in index.Search(query, context, provider, patternMatchLimit: resultsLimit))
                     results.Add(r);
             }, context.sessions.cancelToken);
 
@@ -596,22 +629,21 @@ namespace UnityEditor.Search.Providers
 
         static int ComputeSearchDocumentScore(in SearchContext context, in SearchDocument doc, int score)
         {
-            var docPath = doc.m_Name ?? doc.m_Source;
+            var docPath = doc.m_Name ?? (string.IsNullOrEmpty(doc.m_Source) ? null : Path.GetFileName(Utils.RemoveInvalidCharsFromPath(doc.m_Source, '_')));
             if (doc.m_Name != null)
                 score <<= 2;
             if (!string.IsNullOrEmpty(docPath))
             {
-                var sourceFilename = Path.GetFileName(Utils.RemoveInvalidCharsFromPath(docPath, '_'));
                 if (context.searchWords.Length == 0)
                 {
-                    score = sourceFilename[0];
+                    score = docPath[0];
                 }
                 else
                 {
                     foreach (var w in context.searchWords)
                     {
-                        if (sourceFilename.LastIndexOf(w, StringComparison.OrdinalIgnoreCase) != -1)
-                            score = (score >> 1) + sourceFilename.Length - w.Length;
+                        if (docPath.LastIndexOf(w, StringComparison.OrdinalIgnoreCase) != -1)
+                            score = (score >> 1) + docPath.Length - w.Length;
                     }
                 }
             }

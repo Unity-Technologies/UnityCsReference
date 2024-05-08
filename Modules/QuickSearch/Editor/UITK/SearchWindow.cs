@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor.Profiling;
+using UnityEditor.SearchService;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.Utils;
 using UnityEngine;
@@ -404,7 +405,11 @@ namespace UnityEditor.Search
 
             var queryContext = CreateQueryContext(query);
             SetContext(queryContext);
-            viewState.Assign(query.GetViewState(), queryContext);
+            var possibleTextQuery = query as SearchQuery;
+            if (possibleTextQuery == null || !possibleTextQuery.isTextOnlyQuery)
+            {
+                viewState.Assign(query.GetViewState(), queryContext);
+            }
             viewState.flags &= ~SearchViewFlags.ContextSwitchPreservedMask;
             viewState.flags |= preservedViewFlags;
             viewState.queryBuilderEnabled = queryBuilderEnabled;
@@ -1214,7 +1219,7 @@ namespace UnityEditor.Search
             return Create(flags).ShowWindow(width, height, flags);
         }
 
-        [MenuItem("Edit/Search/Search All... %k", priority = 141)]
+        [MenuItem($"{OpenSearchHelper.k_SearchMenuName} %k", priority = 141)]
         internal static void OpenDefaultQuickSearch()
         {
             SearchUtils.OpenDefaultQuickSearch();

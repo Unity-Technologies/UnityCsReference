@@ -583,6 +583,15 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref InlineStyleAccess container, StyleColor value) => ((IStyle)container).unityBackgroundImageTintColor = value;
         }
 
+        class UnityEditorTextRenderingModeProperty : InlineStyleEnumProperty<EditorTextRenderingMode>
+        {
+            public override string Name => nameof(IStyle.unityEditorTextRenderingMode);
+            public override string ussName => "-unity-editor-text-rendering-mode";
+            public override bool IsReadOnly => false;
+            public override StyleEnum<EditorTextRenderingMode> GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityEditorTextRenderingMode;
+            public override void SetValue(ref InlineStyleAccess container, StyleEnum<EditorTextRenderingMode> value) => ((IStyle)container).unityEditorTextRenderingMode = value;
+        }
+
         class UnityFontProperty : InlineStyleFontProperty
         {
             public override string Name => nameof(IStyle.unityFont);
@@ -756,8 +765,8 @@ namespace UnityEngine.UIElements
 
         public InlineStyleAccessPropertyBag()
         {
-            m_PropertiesList = new List<IProperty<InlineStyleAccess>>(82);
-            m_PropertiesHash = new Dictionary<string, IProperty<InlineStyleAccess>>(246);
+            m_PropertiesList = new List<IProperty<InlineStyleAccess>>(83);
+            m_PropertiesHash = new Dictionary<string, IProperty<InlineStyleAccess>>(249);
             AddProperty(new AlignContentProperty());
             AddProperty(new AlignItemsProperty());
             AddProperty(new AlignSelfProperty());
@@ -821,6 +830,7 @@ namespace UnityEngine.UIElements
             AddProperty(new TransitionTimingFunctionProperty());
             AddProperty(new TranslateProperty());
             AddProperty(new UnityBackgroundImageTintColorProperty());
+            AddProperty(new UnityEditorTextRenderingModeProperty());
             AddProperty(new UnityFontProperty());
             AddProperty(new UnityFontDefinitionProperty());
             AddProperty(new UnityFontStyleAndWeightProperty());

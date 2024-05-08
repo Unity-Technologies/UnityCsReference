@@ -68,6 +68,9 @@ namespace UnityEditor
             right.LoadToolbarElements(root.Q("ToolbarZoneRightAlign"));
 
             EditorToolbarUtility.LoadStyleSheets("MainToolbar", root);
+            if (EditorTextSettings.currentEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
+                root.style.unityEditorTextRenderingMode = new StyleEnum<EditorTextRenderingMode>(EditorTextRenderingMode.Bitmap);
+
             return root;
         }
     }

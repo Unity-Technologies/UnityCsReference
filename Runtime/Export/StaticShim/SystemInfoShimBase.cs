@@ -238,6 +238,8 @@ namespace UnityEngine
 
         public virtual bool supportsIndirectArgumentsBuffer => UnityEngine.SystemInfo.supportsIndirectArgumentsBuffer;
 
+        public virtual bool supportsDepthFetchInRenderPass => UnityEngine.SystemInfo.supportsDepthFetchInRenderPass;
+
         public virtual bool IsFormatSupported(GraphicsFormat format, GraphicsFormatUsage usage)
         {
             return UnityEngine.SystemInfo.IsFormatSupported(format, usage);

@@ -138,7 +138,7 @@ namespace UnityEditor
                 new SceneView.CameraMode(DrawCameraMode.AlphaChannel, "Alpha Channel", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.Overdraw, "Overdraw", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.Mipmaps, "Mipmaps", kMiscellaneous),
-                new SceneView.CameraMode(DrawCameraMode.TextureStreaming, "Texture Streaming", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.TextureStreaming, "Texture Mipmap Streaming", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.SpriteMask, "Sprite Mask", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.ValidateAlbedo, "Validate Albedo", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.ValidateMetalSpecular, "Validate Metal Specular", kMiscellaneous),
