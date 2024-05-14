@@ -9,7 +9,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Mono.Cecil;
-using NiceIO;
 using UnityEditor.PackageManager;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;
@@ -32,52 +31,27 @@ namespace UnityEditor.Scripting.Compilers
             return filePath.StartsWith("Assets/", StringComparison.InvariantCultureIgnoreCase);
         }
 
-        internal static void HandleFilesInPackagesVirtualFolder(string[] destRelativeFilePaths)
+        internal static void HandlePackageFilePaths(string[] filePathsToUpdate)
         {
-            var filesFromReadOnlyPackages = new List<string>();
-            foreach (var path in destRelativeFilePaths.Select(path => path.Replace("\\", "/"))) // package manager paths are always separated by /
+            var filesInPackages = new List<string>();
+            foreach (var path in filePathsToUpdate)
             {
-                var packageInfo = PackageManager.PackageInfo.FindForAssetPath(path);
-                if (packageInfo == null)
+                var absolutePath = Path.GetFullPath(path);
+                var virtualPath = FileUtil.GetLogicalPath(absolutePath);
+                if (!virtualPath.StartsWith("Packages/"))
                 {
-                    if (filesFromReadOnlyPackages.Count > 0)
-                    {
-                        Console.WriteLine(
-                            L10n.Tr("[API Updater] At least one file from a readonly package and one file from other location have been updated (that is not expected).{0}File from other location: {0}\t{1}{0}Files from packages already processed: {0}{2}"),
-                            Environment.NewLine,
-                            path,
-                            string.Join($"{Environment.NewLine}\t", filesFromReadOnlyPackages.ToArray()));
-                    }
-
+                    // Not a packaged path - skip it
                     continue;
                 }
 
-                if (packageInfo.source == PackageSource.BuiltIn)
-                {
-                    Debug.LogError($"[API Updater] Builtin package '{packageInfo.displayName}' ({packageInfo.version}) files requires updating (Unity version {Application.unityVersion}). This should not happen. Please, report to Unity");
-                    return;
-                }
+                filesInPackages.Add(virtualPath);
 
-                if (packageInfo.source != PackageSource.Local && packageInfo.source != PackageSource.Embedded)
-                {
-                    // Packman creates a (readonly) cache under Library/PackageCache in a way that even if multiple projects uses the same package each one should have its own
-                    // private cache so it is safe for the updater to simply remove the readonly attribute and update the file.
-                    filesFromReadOnlyPackages.Add(path);
-                }
-
-                // PackageSource.Embedded / PackageSource.Local are considered writtable, so nothing to do, i.e, we can simply overwrite the file contents.
+                var fileAttributes = File.GetAttributes(absolutePath);
+                if ((fileAttributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                    File.SetAttributes(absolutePath, fileAttributes & ~FileAttributes.ReadOnly);
             }
 
-            foreach (var relativeFilePath in filesFromReadOnlyPackages)
-            {
-                var fileAttributes = File.GetAttributes(relativeFilePath);
-                if ((fileAttributes & FileAttributes.ReadOnly) != FileAttributes.ReadOnly)
-                    continue;
-
-                File.SetAttributes(relativeFilePath, fileAttributes & ~FileAttributes.ReadOnly);
-            }
-
-            PackageManager.ImmutableAssets.SetAssetsAllowedToBeModified(filesFromReadOnlyPackages.ToArray());
+            PackageManager.ImmutableAssets.SetAssetsToBeModified(filesInPackages.ToArray());
         }
 
         internal static bool CheckReadOnlyFiles(string[] destRelativeFilePaths)

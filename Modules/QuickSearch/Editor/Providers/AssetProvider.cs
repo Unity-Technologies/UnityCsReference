@@ -256,7 +256,12 @@ namespace UnityEditor.Search.Providers
 
             if (info.flags.HasAny(SearchDocumentFlags.Object))
                 return TrimLabel((item.label = info.path), displayCompact);
-            return (item.label = Path.GetFileName(info.path));
+            item.label = Path.GetFileName(info.path);
+            if (string.IsNullOrEmpty(item.label) && info.obj != null)
+            {
+                item.label = info.obj.name;
+            }
+            return item.label;
         }
 
         private static string FetchDescription(SearchItem item)

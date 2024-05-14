@@ -70,7 +70,7 @@ namespace UnityEditor.Search
         public string group;
 
         internal bool isPicker => HasFlag(SearchViewFlags.ObjectPicker);
-        internal bool isSimplePicker => isPicker && !HasFlag(SearchViewFlags.ObjectPickerAdvancedUI);
+        internal bool isSimplePicker => isPicker && !HasFlag(SearchViewFlags.ObjectPickerAdvancedUI) && !SearchSettings.pickerAdvancedUI;
         public bool hasQueryPanel
         {
             get

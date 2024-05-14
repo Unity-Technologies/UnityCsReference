@@ -37,6 +37,8 @@ namespace UnityEditor.Search
             foreach (var query in queries)
             {
                 var q = new SearchQuery();
+                q.isSearchTemplate = true;
+                q.isTextOnlyQuery = true;
                 var provider = SearchService.GetProvider(providerId);
                 var searchText = query;
                 if (provider != null && !query.StartsWith(provider.filterId))
