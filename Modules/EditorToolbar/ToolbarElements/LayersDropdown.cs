@@ -12,7 +12,7 @@ namespace UnityEditor.Toolbars
         public LayersDropdown()
         {
             name = "LayersDropdown";
-            tooltip = L10n.Tr("Which layers are visible in the Scene views");
+            tooltip = L10n.Tr("Select which layers display in the Scene view.");
             icon = EditorGUIUtility.LoadIconRequired("Icons/Overlays/SceneLayersToggle.png");
 
             clicked += () => LayerVisibilityWindow.ShowAtPosition(worldBound);

@@ -197,33 +197,23 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                switch (Application.platform)
+                return TouchScreenKeyboard.inputFieldAppearance switch
                 {
-                    case RuntimePlatform.Android:
-                    case RuntimePlatform.IPhonePlayer:
-                    case RuntimePlatform.tvOS:
-                    case RuntimePlatform.WebGLPlayer:
-                        return m_HideMobileInput;
-                }
-                return m_HideMobileInput;
+                    TouchScreenKeyboard.InputFieldAppearance.AlwaysHidden => true,
+                    TouchScreenKeyboard.InputFieldAppearance.AlwaysVisible => false,
+                    _ => m_HideMobileInput,
+                };
             }
             set
             {
-                var current = m_HideMobileInput;
-                switch(Application.platform)
-                {
-                    case RuntimePlatform.Android:
-                    case RuntimePlatform.IPhonePlayer:
-                    case RuntimePlatform.tvOS:
-                    case RuntimePlatform.WebGLPlayer:
-                        m_HideMobileInput = value;
-                        break;
-                    default:
-                        m_HideMobileInput = value;
-                        break;
-                }
-                if (current != m_HideMobileInput)
-                    NotifyPropertyChanged(hideMobileInputProperty);
+                if (TouchScreenKeyboard.inputFieldAppearance != TouchScreenKeyboard.InputFieldAppearance.Customizable)
+                    return;
+
+                if (m_HideMobileInput == value)
+                    return;
+
+                m_HideMobileInput = value;
+                NotifyPropertyChanged(hideMobileInputProperty);
             }
         }
 

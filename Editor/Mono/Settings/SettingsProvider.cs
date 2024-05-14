@@ -172,24 +172,6 @@ namespace UnityEditor
             return new string[] {};
         }
 
-        internal static IEnumerable<string> GetSearchKeywordsFromVisualElementTree(VisualElement root, bool includeTooltip = false)
-        {
-            var keywordList = new HashSet<string>();
-            if (root == null)
-                return keywordList;
-
-            var splitterArray = new[] { ' ', '\n' };
-            root.Query<VisualElement>().ForEach(ve =>
-            {
-                if (ve is Label label && !string.IsNullOrWhiteSpace(label.text))
-                    keywordList.UnionWith(label.text.Split(splitterArray, StringSplitOptions.RemoveEmptyEntries));
-
-                if (includeTooltip && !string.IsNullOrWhiteSpace(ve.tooltip))
-                    keywordList.UnionWith(ve.tooltip.Split(splitterArray, StringSplitOptions.RemoveEmptyEntries));
-            });
-            return keywordList;
-        }
-
         #endregion
     }
 }

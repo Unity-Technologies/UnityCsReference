@@ -22,17 +22,8 @@ namespace Unity.Hierarchy
             public static IntPtr ConvertToNative(HierarchyCommandList cmdList) => cmdList.m_Ptr;
         }
 
-        [RequiredByNativeCode] IntPtr m_Ptr;
-        [RequiredByNativeCode] readonly bool m_IsWrapper;
-
-        [FreeFunction("HierarchyCommandListBindings::Create", IsThreadSafe = true)]
-        static extern IntPtr Internal_Create(Hierarchy hierarchy, HierarchyNodeType nodeType, int initialCapacity);
-
-        [FreeFunction("HierarchyCommandListBindings::Destroy", IsThreadSafe = true)]
-        static extern void Internal_Destroy(IntPtr ptr);
-
-        [FreeFunction("HierarchyCommandListBindings::BindScriptingObject", HasExplicitThis = true, IsThreadSafe = true)]
-        extern void Internal_BindScriptingObject([Unmarshalled] HierarchyCommandList self);
+        IntPtr m_Ptr;
+        readonly bool m_IsOwner;
 
         /// <summary>
         /// Determines if this object is valid and uses memory.
@@ -60,19 +51,34 @@ namespace Unity.Hierarchy
         public extern bool IsExecuting { [NativeMethod("IsExecuting", IsThreadSafe = true)] get; }
 
         /// <summary>
-        /// Creates a new command list.
+        /// Constructs a new <see cref="HierarchyCommandList"/>.
         /// </summary>
         /// <param name="hierarchy">The hierarchy.</param>
         /// <param name="initialCapacity">The initial required capacity in bytes.</param>
-        public HierarchyCommandList(Hierarchy hierarchy, int initialCapacity = 64 * 1024)
-            : this(hierarchy, HierarchyNodeType.Null, initialCapacity)
-        {}
+        public HierarchyCommandList(Hierarchy hierarchy, int initialCapacity = 64 * 1024) : this(hierarchy, HierarchyNodeType.Null, initialCapacity)
+        {
+        }
 
+        /// <summary>
+        /// Constructs a new <see cref="HierarchyCommandList"/>.
+        /// </summary>
+        /// <param name="hierarchy">The hierarchy.</param>
+        /// <param name="nodeType">The hierarchy node type.</param>
+        /// <param name="initialCapacity">The initial required capacity in bytes.</param>
         internal HierarchyCommandList(Hierarchy hierarchy, HierarchyNodeType nodeType, int initialCapacity = 64 * 1024)
         {
-            m_Ptr = Internal_Create(hierarchy, nodeType, initialCapacity);
-            m_IsWrapper = false;
-            Internal_BindScriptingObject(this);
+            m_Ptr = Create(GCHandle.ToIntPtr(GCHandle.Alloc(this)), hierarchy, nodeType, initialCapacity);
+            m_IsOwner = true;
+        }
+
+        /// <summary>
+        /// Constructs a new <see cref="HierarchyCommandList"/> from a native pointer.
+        /// </summary>
+        /// <param name="nativePtr">The native pointer.</param>
+        HierarchyCommandList(IntPtr nativePtr)
+        {
+            m_Ptr = nativePtr;
+            m_IsOwner = false;
         }
 
         ~HierarchyCommandList()
@@ -93,8 +99,9 @@ namespace Unity.Hierarchy
         {
             if (m_Ptr != IntPtr.Zero)
             {
-                if (!m_IsWrapper)
-                    Internal_Destroy(m_Ptr);
+                if (m_IsOwner)
+                    Destroy(m_Ptr);
+
                 m_Ptr = IntPtr.Zero;
             }
         }
@@ -257,6 +264,12 @@ namespace Unity.Hierarchy
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool ExecuteIncrementalTimed(double milliseconds);
 
+        [FreeFunction("HierarchyCommandListBindings::Create", IsThreadSafe = true)]
+        static extern IntPtr Create(IntPtr handlePtr, Hierarchy hierarchy, HierarchyNodeType nodeType, int initialCapacity);
+
+        [FreeFunction("HierarchyCommandListBindings::Destroy", IsThreadSafe = true)]
+        static extern void Destroy(IntPtr nativePtr);
+
         [FreeFunction("HierarchyCommandListBindings::AddNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern bool AddNode(in HierarchyNode parent, out HierarchyNode node);
 
@@ -271,5 +284,10 @@ namespace Unity.Hierarchy
 
         [FreeFunction("HierarchyCommandListBindings::ClearNodeProperty", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern bool ClearNodeProperty(in HierarchyPropertyId property, in HierarchyNode node);
+
+        #region Called from native
+        [RequiredByNativeCode]
+        static IntPtr CreateCommandList(IntPtr nativePtr) => GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyCommandList(nativePtr)));
+        #endregion
     }
 }

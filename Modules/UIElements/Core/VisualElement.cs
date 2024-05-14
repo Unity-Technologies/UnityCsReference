@@ -1782,7 +1782,6 @@ namespace UnityEngine.UIElements
             get { return hierarchy.parent == null || hierarchy.parent.enabledInHierarchy; }
         }
 
-        //Returns true if 'this' can be enabled relative to the enabled state of its panel
         /// <summary>
         /// Returns true if the <see cref="VisualElement"/> is enabled in its own hierarchy.
         /// </summary>
@@ -1796,12 +1795,11 @@ namespace UnityEngine.UIElements
         }
 
         private bool m_EnabledSelf;
-        //Returns the local enabled state
         /// <summary>
         /// Returns true if the <see cref="VisualElement"/> is enabled locally.
         /// </summary>
         /// <remarks>
-        /// This flag isn't changed if the VisualElement is disabled implicitly by one of its parents. To verify this, use enabledInHierarchy.
+        /// This flag isn't changed if the VisualElement is disabled implicitly by one of its parents. To verify this, use <see cref="enabledInHierarchy"/>.
         /// </remarks>
         [CreateProperty]
         public bool enabledSelf
@@ -1825,6 +1823,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The method disables the local flag of the VisualElement and implicitly disables its children.
         /// It does not affect the local enabled flag of each child.
+        /// <seealso cref="enabledSelf"/>
         /// </remarks>
         public void SetEnabled(bool value)
         {

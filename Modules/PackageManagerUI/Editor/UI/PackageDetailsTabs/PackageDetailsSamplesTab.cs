@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UIElements;
@@ -12,8 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackageDetailsSamplesTab : PackageDetailsTabElement
     {
         public const string k_Id = "samples";
-
-        private const int k_SampleListSwitchWidthBreakpoint = 420;
 
         private IEnumerable<Sample> m_Samples;
         private IPackageVersion m_Version;
@@ -44,8 +41,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             var root = m_ResourceLoader.GetTemplate("PackageDetailsSamplesTab.uxml");
             m_ContentContainer.Add(root);
             m_Cache = new VisualElementCache(root);
-
-            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
         public override bool IsValid(IPackageVersion version)
@@ -65,44 +60,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Samples = m_Version.isInstalled || m_Version.HasTag(PackageTag.Feature) ? m_PackageDatabase.GetSamples(m_Version) : Enumerable.Empty<Sample>();
 
             UIUtils.SetElementDisplay(samplesErrorInfoBox, m_Version.HasTag(PackageTag.InDevelopment) && m_Samples.Any(sample => string.IsNullOrEmpty(sample.displayName)));
-            ToggleLowWidthSampleView(layout.width, packageChanged);
+            if (packageChanged)
+                RefreshSampleList();
         }
 
-        private void OnGeometryChanged(GeometryChangedEvent evt)
+        private void RefreshSampleList()
         {
-            if (m_Version != null && m_Samples?.Count() > 0 && Math.Abs(evt.newRect.width - evt.oldRect.width) > 1.0f)
-                ToggleLowWidthSampleView(evt.newRect.width, false);
-        }
-
-        private void ToggleLowWidthSampleView(float width, bool packageChanged)
-        {
-            var showLowWidth = width <= k_SampleListSwitchWidthBreakpoint;
-
-            if (showLowWidth && (!samplesListLowWidth.visible || samplesContainer.visible || packageChanged))
-                SwitchToSampleListLowWidth();
-            else if (!showLowWidth && (!samplesContainer.visible || samplesListLowWidth.visible || packageChanged))
-                SwitchToRegularSampleList();
-        }
-
-        private void SwitchToSampleListLowWidth()
-        {
-            UIUtils.SetElementDisplay(samplesListLowWidth, true);
-            UIUtils.SetElementDisplay(samplesContainer, false);
-
-            samplesListLowWidth.Clear();
-
-            foreach (var sample in m_Samples)
-            {
-                var sampleVisualItemLowWidth = new PackageSampleItemLowWidth(m_ResourceLoader, m_Version, sample, m_Selection, m_AssetDatabase, m_Application, m_IOProxy);
-                samplesListLowWidth.Add(sampleVisualItemLowWidth);
-            }
-        }
-
-        private void SwitchToRegularSampleList()
-        {
-            UIUtils.SetElementDisplay(samplesListLowWidth, false);
-            UIUtils.SetElementDisplay(samplesContainer, true);
-
             samplesContainer.Clear();
 
             foreach (var sample in m_Samples.Where(s => !string.IsNullOrEmpty(s.displayName)))
@@ -111,29 +74,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var sampleContainer = new VisualElement();
                 sampleContainer.AddClasses("sampleContainer");
 
-                var importStatus = new VisualElement();
-                importStatus.name = "importStatusContainer";
-                importStatus.Add(sampleItem.importStatus);
+                var sampleInformationContainer = new VisualElement { name = "sampleInformationContainer"};
 
-                var nameAndSizeLabel = new VisualElement();
-                nameAndSizeLabel.name = "nameAndSizeLabelContainer";
+                var nameAndSizeLabel = new VisualElement { name = "nameSizeLabelAndImportStatus"};
                 nameAndSizeLabel.Add(sampleItem.nameLabel);
                 nameAndSizeLabel.Add(sampleItem.sizeLabel);
-                nameAndSizeLabel.Add(importStatus);
-                sampleContainer.Add(nameAndSizeLabel);
-
-                var importButton = new VisualElement();
-                importButton.name = "importButtonContainer";
-                importButton.Add(sampleItem.importButton);
-                sampleContainer.Add(importButton);
+                nameAndSizeLabel.Add(sampleItem.importStatus);
+                sampleInformationContainer.Add(nameAndSizeLabel);
 
                 if (!string.IsNullOrEmpty(sample.description))
-                {
-                    var description = new VisualElement();
-                    description.name = "descriptionContainer";
-                    description.Add(sampleItem.descriptionLabel);
-                    sampleContainer.Add(description);
-                }
+                    sampleInformationContainer.Add(sampleItem.descriptionLabel);
+
+                sampleContainer.Add(sampleInformationContainer);
+                sampleContainer.Add(sampleItem.importButton);
 
                 samplesContainer.Add(sampleContainer);
                 sampleItem.importButton.SetEnabled(m_Version.isInstalled);
@@ -141,8 +94,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private readonly VisualElementCache m_Cache;
-        internal VisualElement samplesListLowWidth => m_Cache.Get<VisualElement>("samplesListLowWidth");
         internal VisualElement samplesContainer => m_Cache.Get<VisualElement>("samplesContainer");
-        internal HelpBox samplesErrorInfoBox => m_Cache.Get<HelpBox>("samplesErrorInfoBox");
+        private HelpBox samplesErrorInfoBox => m_Cache.Get<HelpBox>("samplesErrorInfoBox");
     }
 }

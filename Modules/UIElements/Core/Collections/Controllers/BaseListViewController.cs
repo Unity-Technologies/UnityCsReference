@@ -175,20 +175,20 @@ namespace UnityEngine.UIElements
             listItem.bindableElement.style.paddingTop = 0f;
             listItem.bindableElement.style.flexGrow = 0f;
             listItem.bindableElement.style.flexShrink = 0f;
+        }
 
+        internal override void SetBindingContext(ReusableCollectionItem reusableItem, int index)
+        {
+            base.SetBindingContext(reusableItem, index);
             if (baseListView.autoAssignSource)
             {
-                listItem.rootElement.dataSource = itemsSource;
+                reusableItem.rootElement.dataSource = itemsSource;
+                reusableItem.rootElement.dataSourcePath = PropertyPath.FromIndex(index);
             }
         }
 
         internal override void InvokeBindItem(ReusableCollectionItem reusableItem, int index)
         {
-            if (baseListView.autoAssignSource)
-            {
-                reusableItem.rootElement.dataSourcePath = PropertyPath.FromIndex(index);
-            }
-
             if (reusableItem is ReusableListViewItem listItem)
             {
                 var usesAnimatedDragger = baseListView.reorderable && baseListView.reorderMode == ListViewReorderMode.Animated;

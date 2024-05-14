@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
@@ -18,6 +19,7 @@ namespace Unity.Hierarchy
     {
         static readonly HierarchyFlattenedNode s_Null;
         readonly HierarchyNode m_Node;
+        readonly HierarchyNodeType m_Type;
         readonly int m_ParentOffset;
         readonly int m_NextSiblingOffset;
         readonly int m_ChildrenCount;
@@ -32,6 +34,11 @@ namespace Unity.Hierarchy
         /// The hierarchy node referenced.
         /// </summary>
         public HierarchyNode Node => m_Node;
+
+        /// <summary>
+        /// The type of the hierarchy node.
+        /// </summary>
+        public HierarchyNodeType Type => m_Type;
 
         /// <summary>
         /// The offset of the parent of the node.
@@ -59,6 +66,7 @@ namespace Unity.Hierarchy
         public HierarchyFlattenedNode()
         {
             m_Node = HierarchyNode.Null;
+            m_Type = HierarchyNodeType.Null;
             m_ParentOffset = 0;
             m_NextSiblingOffset = 0;
             m_ChildrenCount = 0;
@@ -83,6 +91,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="hierarchyFlattenedNode">The flat node containing the node we're interested in.</param>
         /// <returns>A reference to the underlying node.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ref readonly HierarchyNode GetNodeByRef(in HierarchyFlattenedNode hierarchyFlattenedNode) => ref hierarchyFlattenedNode.m_Node;
     }
 }

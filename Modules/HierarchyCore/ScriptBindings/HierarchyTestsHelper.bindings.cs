@@ -82,7 +82,7 @@ namespace Unity.Hierarchy
 
         internal static int GetNodeType<T>() where T : HierarchyNodeTypeHandlerBase => GetNodeType(typeof(T));
 
-        [NativeMethod(IsThreadSafe = true)]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         static extern int GetNodeType(Type type);
 
         [NativeMethod(IsThreadSafe = true)]

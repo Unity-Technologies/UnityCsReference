@@ -79,6 +79,9 @@ namespace UnityEngine.UIElements
             // The picking mode needs to be Position in order to have the Pseudostate Hover applied...
             visualInput.pickingMode = PickingMode.Position;
 
+            // Prevent label from taking focus when the element is clicked so that navigation direction changes are applied correctly.
+            labelElement.focusable = false;
+
             // Set-up the label and text...
             text = null;
             this.AddManipulator(m_Clickable = new Clickable(OnClickEvent));

@@ -4,12 +4,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using Unity.Collections.LowLevel.Unsafe;
 
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// A read-only collection of an hierarchy node's children.
+    /// A read-only collection of a hierarchy node's children.
     /// </summary>
     /// <remarks>
     /// If the hierarchy is modified, the collection is invalidated.
@@ -59,18 +58,18 @@ namespace Unity.Hierarchy
         /// <returns>The enumerator.</returns>
         public Enumerator GetEnumerator() => new Enumerator(this);
 
-        internal HierarchyNodeChildren(Hierarchy hierarchy, IntPtr ptr)
+        internal HierarchyNodeChildren(Hierarchy hierarchy, IntPtr nodeChildrenPtr)
         {
             if (hierarchy == null)
                 throw new ArgumentNullException(nameof(hierarchy));
 
-            if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(ptr));
+            if (nodeChildrenPtr == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(nodeChildrenPtr));
 
             m_Hierarchy = hierarchy;
             m_Version = hierarchy.Version;
 
-            ref var alloc = ref UnsafeUtility.AsRef<HierarchyNodeChildrenAlloc>(ptr.ToPointer());
+            ref var alloc = ref *(HierarchyNodeChildrenAlloc*)nodeChildrenPtr;
             if ((alloc.Reserved[0] & k_HierarchyNodeChildrenIsAllocBit) == k_HierarchyNodeChildrenIsAllocBit)
             {
                 m_Ptr = alloc.Ptr;
@@ -78,7 +77,7 @@ namespace Unity.Hierarchy
             }
             else
             {
-                m_Ptr = (HierarchyNode*)ptr.ToPointer();
+                m_Ptr = (HierarchyNode*)nodeChildrenPtr;
                 m_Count = 0;
                 for (int i = 0; i < HierarchyNodeChildrenFixed.Capacity; i++)
                 {
@@ -98,7 +97,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// An enumerator for an hierarchy node's children.
+        /// An enumerator for a hierarchy node's children.
         /// </summary>
         public struct Enumerator
         {
@@ -129,11 +128,7 @@ namespace Unity.Hierarchy
             /// </summary>
             /// <returns><see langword="true"/> if Current item is valid, <see langword="false"/> otherwise.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool MoveNext()
-            {
-                m_Enumerable.ThrowIfVersionChanged();
-                return ++m_Index < m_Enumerable.m_Count;
-            }
+            public bool MoveNext() => ++m_Index < m_Enumerable.m_Count;
         }
     }
 }

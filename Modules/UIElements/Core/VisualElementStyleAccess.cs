@@ -24,8 +24,30 @@ namespace UnityEngine.UIElements
         internal ResolvedStyleAccess resolvedStyleAccess;
 
         /// <summary>
-        /// Sets the <see cref="VisualElement"/> style values.
+        /// Sets the style values on a <see cref="VisualElement"/>.
         /// </summary>
+        /// <remarks>
+        /// The returned style data, computed from USS files or inline styles written to this object 
+        /// in C#, doesn't represent the fully resolved styles, such as the final height and width of 
+        /// a VisualElement. 
+        /// To access these fully resolved styles, use <see cref="resolvedStyle"/>.
+        /// </remarks>
+        /// <remarks>
+        /// For information about how to use this property and all the supported USS properties, refer to the
+        /// [[wiki:UIE-apply-styles-with-csharp|Apply styles in C# scripts]] and
+        /// [[wiki:UIE-USS-Properties-Reference|USS properties reference]] manual pages.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Set the background color of the element to red.
+        /// element.style.backgroundColor = Color.red;
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// SA: [[VisualElement.resolvedStyle]], [[VisualElement.customStyle]], [[StyleSheet]]
+        /// </remarks>
         [CreateProperty]
         public IStyle style
         {
@@ -39,8 +61,36 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns the <see cref="VisualElement"/> resolved style values.
+        /// The final computed style values on a <see cref="VisualElement"/> (RO).
         /// </summary>
+        /// <remarks>
+        /// You can use @@resolvedStyle@@ to find the actually rendered styling like width, height, 
+        /// or color of an element. For a list of all the supported style properties, refer 
+        /// to the [[wiki:UIE-USS-Properties-Reference|USS properties reference]] manual page.
+        /// </remarks>
+        /// <remarks>
+        /// The final computed style combines applied classes, inherited styles from ancestors, and
+        /// inline styles defined in UXML or C# code. Therefore, it might be different from what you set through 
+        /// the <see cref="VisualElement.style"/> property, depending on the other styles applied to it.
+        /// </remarks>
+        /// <remarks>
+        /// To get the resolved style when the geometry changes, you can use the [[GeometryChangedEvent]] event.
+        /// If the element's geometry doesn't change, you can add a scheduler to periodically check the resolved 
+        /// style of the element.
+        /// For more information about how to use this property and an example of how style changes when layout 
+        /// updates, refer to the [[wiki:UIE-apply-styles-with-csharp|Apply styles in C# scripts]] manual page.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Get the resolved width of the element.
+        /// float width = element.resolvedStyle.width;
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// SA: [[VisualElement.style]], [[VisualElement.customStyle]]
+        /// </remarks>
         [CreateProperty]
         public IResolvedStyle resolvedStyle
         {
@@ -54,8 +104,23 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns the custom style properties accessor for this element.
+        /// The custom style properties accessor of a <see cref="VisualElement"/> (RO).
         /// </summary>
+        /// <remarks>
+        /// To get the custom styles properties of an element, call the <see cref="ICustomStyle.TryGetValue"/> 
+        /// method to query the returned object of this property. 
+        /// </remarks>
+        /// <remarks>
+        /// For more information about how to use this property, refer to the
+        /// [[wiki:UIE-get-custom-styles|Get custom styles]] manual page.
+        /// </remarks>
+        /// <remarks>
+        /// For a list of all the supported style properties, refer 
+        /// to the [[wiki:UIE-USS-Properties-Reference|USS properties reference]] manual page.
+        /// </remarks>
+        /// <remarks>
+        /// SA: [[VisualElement.style]], [[VisualElement.resolvedStyle]]
+        /// </remarks>
         public ICustomStyle customStyle
         {
             get

@@ -91,7 +91,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        Toggle m_Toggle;
+        readonly Toggle m_Toggle = new Toggle();
 
         internal Toggle toggle
         {
@@ -105,6 +105,16 @@ namespace UnityEngine.UIElements
         /// This element contains the elements that are shown or hidden when you toggle the <see cref="Foldout"/>.
         /// </summary>
         public override VisualElement contentContainer => m_Container;
+
+        public override bool focusable
+        {
+            get => base.focusable;
+            set
+            {
+                base.focusable = value;
+                m_Toggle.focusable = value;
+            }
+        }
 
         /// <summary>
         /// Whether to toggle the foldout state when the user clicks the label.
@@ -266,9 +276,8 @@ namespace UnityEngine.UIElements
             if (Apply(op))
             {
                 sourceEvent.StopPropagation();
+                focusController.IgnoreEvent(sourceEvent);
             }
-
-            focusController?.IgnoreEvent(sourceEvent);
         }
 
         private bool Apply(KeyboardNavigationOperation op)
@@ -304,7 +313,12 @@ namespace UnityEngine.UIElements
         public Foldout()
         {
             AddToClassList(ussClassName);
-            m_Toggle = new Toggle();
+            delegatesFocus = true;
+            focusable = true;
+
+            // We disable focus from disabled children to avoid the Foldout being focused when one of its children is focused.
+            // This is to keep the behaviour consistent with how it worked before the `focusable` property was synced with its Toggle. (UUM-69153)
+            isEligibleToReceiveFocusFromDisabledChild = false;
 
             m_Container = new VisualElement()
             {

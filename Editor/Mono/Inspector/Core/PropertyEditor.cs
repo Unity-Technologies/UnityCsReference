@@ -470,7 +470,7 @@ namespace UnityEditor
         [UsedImplicitly]
         protected virtual void Update()
         {
-            ActiveEditorTracker.Internal_GetActiveEditorsNonAlloc(tracker, s_Editors);
+            ActiveEditorTracker.Internal_GetActiveEditorsNonAlloc(tracker, ref s_Editors);
             if (s_Editors.Length == 0)
                 return;
 
@@ -1698,7 +1698,7 @@ namespace UnityEditor
                     if (GUI.Button(foldoutRect, title, Styles.preDropDown))
                     {
                         EditorUtility.DisplayCustomMenu(foldoutRect, panelOptions, selectedPreview,
-                            OnPreviewSelected, editorsWithPreviews);
+                            OnPreviewSelected, editorsWithPreviews.ToArray());
                     }
                 }
                 else
@@ -1822,7 +1822,7 @@ namespace UnityEditor
 
         private void OnPreviewSelected(object userData, string[] options, int selected)
         {
-            IPreviewable[] availablePreviews = userData as IPreviewable[];
+            var availablePreviews = (IPreviewable[])userData;
             m_SelectedPreview = availablePreviews[selected];
         }
 

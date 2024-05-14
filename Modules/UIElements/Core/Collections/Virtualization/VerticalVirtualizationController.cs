@@ -174,6 +174,8 @@ namespace UnityEngine.UIElements
                 recycledItem.SetDragGhost(true);
                 recycledItem.index = m_DraggedItem.index;
                 recycledItem.rootElement.style.display = DisplayStyle.Flex;
+
+                m_CollectionView.viewController.SetBindingContext(recycledItem, recycledItem.index);
                 return;
             }
 

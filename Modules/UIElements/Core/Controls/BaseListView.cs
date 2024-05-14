@@ -1190,11 +1190,8 @@ namespace UnityEngine.UIElements
         /// must all be set for the BaseListView to function properly.
         /// </summary>
         public BaseListView()
+            :this(null)
         {
-            AddToClassList(ussClassName);
-            pickingMode = PickingMode.Ignore;
-            allowAdd = true;
-            allowRemove = true;
         }
 
         /// <summary>

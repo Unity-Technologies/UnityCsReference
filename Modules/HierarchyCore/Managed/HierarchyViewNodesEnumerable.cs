@@ -40,25 +40,25 @@ namespace Unity.Hierarchy
         /// <summary>
         /// An enumerator of <see cref="HierarchyNode"/>.
         /// </summary>
-        public struct Enumerator
+        public unsafe struct Enumerator
         {
             readonly HierarchyFlattened m_HierarchyFlattened;
-            readonly HierarchyViewModel m_HierarchyViewModel;
-            readonly int m_Version;
-            readonly HierarchyNode m_Root;
-            readonly HierarchyNodeFlags m_Flags;
             readonly Predicate m_Predicate;
+            readonly HierarchyNodeFlags m_Flags;
+            readonly HierarchyFlattenedNode* m_NodesPtr;
+            readonly int m_NodesCount;
+            readonly int m_Version;
             int m_Index;
 
             internal Enumerator(HierarchyViewNodesEnumerable enumerable)
             {
                 m_HierarchyFlattened = enumerable.m_HierarchyViewModel.HierarchyFlattened;
-                m_HierarchyViewModel = enumerable.m_HierarchyViewModel;
-                m_Version = m_HierarchyViewModel.Version;
-                m_Root = m_HierarchyFlattened.Hierarchy.Root;
-                m_Flags = enumerable.m_Flags;
                 m_Predicate = enumerable.m_Predicate;
-                m_Index = -1;
+                m_Flags = enumerable.m_Flags;
+                m_NodesPtr = m_HierarchyFlattened.NodesPtr;
+                m_NodesCount = m_HierarchyFlattened.Count;
+                m_Version = m_HierarchyFlattened.Version;
+                m_Index = 0; // We initialize at 0 instead of -1 to skip the root node in the hierarchy flattened
             }
 
             /// <summary>
@@ -70,7 +70,7 @@ namespace Unity.Hierarchy
                 get
                 {
                     ThrowIfVersionChanged();
-                    return ref HierarchyFlattenedNode.GetNodeByRef(in m_HierarchyFlattened[m_Index]);
+                    return ref HierarchyFlattenedNode.GetNodeByRef(in m_NodesPtr[m_Index]);
                 }
             }
 
@@ -82,18 +82,12 @@ namespace Unity.Hierarchy
             public bool MoveNext()
             {
                 ThrowIfVersionChanged();
-
-                var count = m_HierarchyFlattened.Count;
                 for (;;)
                 {
-                    if (++m_Index >= count)
+                    if (++m_Index >= m_NodesCount)
                         return false;
 
-                    var node = m_HierarchyFlattened[m_Index].Node;
-                    if (node == m_Root)
-                        continue;
-
-                    if (m_Predicate(in node, m_Flags))
+                    if (m_Predicate(in HierarchyFlattenedNode.GetNodeByRef(in m_NodesPtr[m_Index]), m_Flags))
                         return true;
                 }
             }
@@ -101,8 +95,8 @@ namespace Unity.Hierarchy
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             void ThrowIfVersionChanged()
             {
-                if (m_Version != m_HierarchyViewModel.Version)
-                    throw new InvalidOperationException("HierarchyViewModel was modified.");
+                if (m_Version != m_HierarchyFlattened.Version)
+                    throw new InvalidOperationException("HierarchyFlattened was modified.");
             }
         }
     }

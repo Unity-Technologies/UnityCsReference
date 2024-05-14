@@ -1343,6 +1343,19 @@ sealed class AudioContainerWindow : EditorWindow
             }
     }
 
+    void OnAssetsMoved(IEnumerable<string> paths)
+    {
+        // If there is no target we are in day 0 state.
+        if (State.AudioContainer == null)
+            return;
+
+        foreach (var path in paths)
+            if (path == State.TargetPath)
+            {
+                State.UpdateTargetPath();
+            }
+    }
+
     class AudioContainerModificationProcessor : AssetModificationProcessor
     {
         /// <summary>
@@ -1366,10 +1379,13 @@ sealed class AudioContainerWindow : EditorWindow
         /// and relays it to AudioContainerWindow,
         /// refreshing or clearing the window content.
         /// </summary>
-        static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssets)
         {
             if (Instance == null)
                 return;
+
+            if (movedFromAssets.Length > 0)
+                Instance.OnAssetsMoved(movedFromAssets);
 
             if (importedAssets.Length > 0)
                 Instance.OnAssetsImported(importedAssets);
