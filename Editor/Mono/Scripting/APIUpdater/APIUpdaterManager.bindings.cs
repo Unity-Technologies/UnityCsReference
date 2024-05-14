@@ -322,7 +322,7 @@ namespace UnityEditorInternal.APIUpdating
             if (!CheckoutFromVCSIfNeeded(updatedAssemblyPaths))
                 return -1;
 
-            APIUpdaterHelper.HandleFilesInPackagesVirtualFolder(updatedAssemblyPaths);
+            APIUpdaterHelper.HandlePackageFilePaths(updatedAssemblyPaths);
             if (!APIUpdaterHelper.CheckReadOnlyFiles(updatedAssemblyPaths))
                 return 0;
 

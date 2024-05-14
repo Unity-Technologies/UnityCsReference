@@ -157,6 +157,7 @@ namespace UnityEditor.Search
         public string ignoredProperties { get; set; }
         public string helperWidgetCurrentArea { get; set; }
         public bool refreshSearchWindowsInPlayMode { get; set; }
+        public bool pickerAdvancedUI { get; set; }
         public int minIndexVariations { get; set; }
         public bool findProviderIndexHelper { get; set; }
         public int[] expandedQueries { get; set; } = Array.Empty<int>();
@@ -241,6 +242,7 @@ namespace UnityEditor.Search
             helperWidgetCurrentArea = ReadSetting(settings, nameof(helperWidgetCurrentArea), GroupedSearchList.allGroupId);
             m_DisabledIndexersString = ReadSetting(settings, nameof(disabledIndexers), "");
             refreshSearchWindowsInPlayMode = ReadSetting(settings, nameof(refreshSearchWindowsInPlayMode), false);
+            pickerAdvancedUI = ReadSetting(settings, nameof(pickerAdvancedUI), false);
             minIndexVariations = ReadSetting(settings, nameof(minIndexVariations), 2);
             findProviderIndexHelper = ReadSetting(settings, nameof(findProviderIndexHelper), true);
 
@@ -274,6 +276,7 @@ namespace UnityEditor.Search
             {
                 [nameof(trackSelection)] = trackSelection,
                 [nameof(refreshSearchWindowsInPlayMode)] = refreshSearchWindowsInPlayMode,
+                [nameof(pickerAdvancedUI)] = pickerAdvancedUI,
                 [nameof(fetchPreview)] = fetchPreview,
                 [nameof(defaultFlags)] = (int)defaultFlags,
                 [nameof(keepOpen)] = keepOpen,
@@ -671,6 +674,12 @@ namespace UnityEditor.Search
             set => s_SettingsStorage.refreshSearchWindowsInPlayMode = value;
         }
 
+        internal static bool pickerAdvancedUI
+        {
+            get => s_SettingsStorage.pickerAdvancedUI;
+            set => s_SettingsStorage.pickerAdvancedUI = value;
+        }
+
         internal static int minIndexVariations
         {
             get => s_SettingsStorage.minIndexVariations;
@@ -1026,6 +1035,11 @@ namespace UnityEditor.Search
                         trackSelection = Toggle(Content.trackSelectionContent, nameof(trackSelection), trackSelection);
                         fetchPreview = Toggle(Content.fetchPreviewContent, nameof(fetchPreview), fetchPreview);
                         refreshSearchWindowsInPlayMode = Toggle(Content.refreshSearchWindowsInPlayModeContent, nameof(refreshSearchWindowsInPlayMode), refreshSearchWindowsInPlayMode);
+                        if (Utils.isDeveloperBuild)
+                        {
+                            pickerAdvancedUI = Toggle(Content.pickerAdvancedUIContent, nameof(pickerAdvancedUI), pickerAdvancedUI);
+                        }
+                        
                         var newDebounceMs = EditorGUILayout.IntSlider(Content.debounceThreshold, debounceMs, 0, 1000);
                         if (newDebounceMs != debounceMs)
                             debounceMs = newDebounceMs;
@@ -1313,6 +1327,9 @@ namespace UnityEditor.Search
             public static GUIContent refreshSearchWindowsInPlayModeContent = EditorGUIUtility.TrTextContent(
                 "Refresh Search views in Play Mode",
                 "Automatically refresh search views when hierarchy changes happened in Play Mode");
+            public static GUIContent pickerAdvancedUIContent = EditorGUIUtility.TrTextContent(
+                "Object Selector has Advanced UI",
+                "Object Selector has Advanced UI");
             public static GUIContent dockableContent = EditorGUIUtility.TrTextContent("Open Search as dockable window");
             public static GUIContent debugContent = EditorGUIUtility.TrTextContent("[DEV] Display additional debugging information");
             public static GUIContent debounceThreshold = EditorGUIUtility.TrTextContent("Select the typing debounce threshold (ms)");

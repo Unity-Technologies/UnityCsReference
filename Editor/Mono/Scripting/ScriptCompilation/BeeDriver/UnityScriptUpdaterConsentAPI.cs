@@ -4,7 +4,6 @@
 
 using System;
 using System.Linq;
-using NiceIO;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditorInternal.APIUpdating;
 
@@ -12,7 +11,7 @@ namespace UnityEditor.ScriptUpdater
 {
     class UnityScriptUpdaterConsentAPI
     {
-        public UnitySourceFileUpdatersResultHandler.ScriptUpdaterConsentType AskFor(NPath[] filesToOverWrite)
+        public UnitySourceFileUpdatersResultHandler.ScriptUpdaterConsentType AskFor(string[] filesToOverWrite)
         {
             APIUpdaterManager.numberOfTimesAsked = APIUpdaterManager.numberOfTimesAsked + 1;
 
@@ -39,10 +38,10 @@ namespace UnityEditor.ScriptUpdater
             return AskThroughDialog(filesToOverWrite);
         }
 
-        private static UnitySourceFileUpdatersResultHandler.ScriptUpdaterConsentType AskThroughDialog(NPath[] filesToOverWrite)
+        private static UnitySourceFileUpdatersResultHandler.ScriptUpdaterConsentType AskThroughDialog(string[] filesToOverWrite)
         {
             var selection = filesToOverWrite.Take(30).ToArray();
-            var displayedFiles = selection.Select(f => f.ToString()).SeparateWith(Environment.NewLine);
+            var displayedFiles = selection.SeparateWith(Environment.NewLine);
             var omitted = filesToOverWrite.Length - selection.Length;
             if (omitted > 0)
                 displayedFiles = displayedFiles + $"\n<+{omitted} more files>";
