@@ -37,9 +37,12 @@ namespace UnityEditor
     {
         private static RecycledTextEditor activeEditor;
 
-        internal static DelayedTextEditor s_DelayedTextEditor = new DelayedTextEditor();
+        private static DelayedTextEditor s_DelayedTextEditorInternal;
+        internal static DelayedTextEditor s_DelayedTextEditor => s_DelayedTextEditorInternal ??= new();
 
-        internal static RecycledTextEditor s_RecycledEditor = new RecycledTextEditor();
+        internal static RecycledTextEditor s_RecycledEditorInternal;
+        internal static RecycledTextEditor s_RecycledEditor => s_RecycledEditorInternal ??= new();
+
         internal static string s_OriginalText = "";
         internal static string s_RecycledCurrentEditingString;
         private static bool bKeyEventActive = false;

@@ -354,11 +354,17 @@ namespace UnityEngine
         public static CancellationToken exitCancellationToken => s_currentCancellationTokenSource.Token;
 
         [RequiredByNativeCode]
+        static void Internal_ApplicationInit()
+        {
+            // Init cancellation token here in order to support no domain reload scenarios
+            s_currentCancellationTokenSource = new CancellationTokenSource();
+        }
+
+        [RequiredByNativeCode]
         static void Internal_ApplicationQuit()
         {
             s_currentCancellationTokenSource.Cancel();
-            // when running in editor without domain reload, we prepare the cts for next enter play mode.
-            s_currentCancellationTokenSource = new CancellationTokenSource();
+
             if (quitting != null)
                 quitting();
         }

@@ -69,6 +69,8 @@ namespace UnityEditor.Overlays
                 OnFloatingChanged(value);
             }
         }
+        
+        internal event Action<OverlayContainer> dockingCompleted;
 
         void OnFloatingChanged(bool floating)
         {
@@ -106,7 +108,9 @@ namespace UnityEditor.Overlays
 
             if(!existsInContainer)
                 RebuildContent();
-
+            
+            dockingCompleted?.Invoke(container);
+            
             return true;
         }
 

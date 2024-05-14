@@ -303,26 +303,23 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             if (settingsWindow.GetCurrentProvider() is not GraphicsSettingsProvider provider)
                 return;
 
-            if (provider.inspector == null)
+            if(provider.inspector == null)
                 return;
 
-            provider.inspector.Reload(ComputeRenderPipelineGlobalSettingsListHash(provider.inspector.serializedObject));
+            provider.Reload();
         }
 
-        internal static uint ComputeRenderPipelineGlobalSettingsListHash(SerializedObject graphicsSettingsSerializedObject)
+        internal static uint ComputeRenderPipelineGlobalSettingsListHash(List<GlobalSettingsContainer> settingsContainers)
         {
-            if (graphicsSettingsSerializedObject == null)
-                return 0u;
-
-            bool haveSettings = GraphicsSettingsInspectorUtility.GatherGlobalSettingsFromSerializedObject(graphicsSettingsSerializedObject, out var settingsContainers);
+            bool haveSettings = settingsContainers is { Count: > 0 };
             if (!haveSettings)
                 return 0u;
 
             uint currentHash = 2166136261u;
-            foreach (var globalsettings in settingsContainers)
+            foreach (var globalSettings in settingsContainers)
             {
                 TryGetSettingsListFromRenderPipelineGlobalSettings(
-                    globalsettings.serializedObject.targetObject as RenderPipelineGlobalSettings,
+                    globalSettings.serializedObject.targetObject as RenderPipelineGlobalSettings,
                     out SerializedObject _,
                     out SerializedProperty _,
                     out SerializedProperty settingsListInContainer);

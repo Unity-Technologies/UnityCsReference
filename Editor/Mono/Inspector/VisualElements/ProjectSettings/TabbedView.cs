@@ -25,6 +25,8 @@ namespace UnityEditor.UIElements.ProjectSettings
         readonly VisualElement m_Content;
 
         readonly List<TabButton> m_Tabs = new();
+        internal IEnumerable<TabButton> tabs => m_Tabs;
+
         TabButton m_ActiveTab;
         internal TabButton ActiveTab => m_ActiveTab;
         internal int ActiveTabIndex => m_ActiveTab != null ? m_Tabs.IndexOf(m_ActiveTab) : -1;

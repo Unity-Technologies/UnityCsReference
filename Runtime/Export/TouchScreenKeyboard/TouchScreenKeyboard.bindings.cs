@@ -39,6 +39,15 @@ namespace UnityEngine
             LostFocus = 3,
         }
 
+        public enum InputFieldAppearance
+        {
+            // Note: Customizable needs to go first, since that's the default Editor uses, since ENABLE_ONSCREEN_KEYBOARD is set 0 on Editor
+            //       On Editor, Customizable is required by UTK UI Builder's Hide Mobile Input property to be functional
+            Customizable = 0,
+            AlwaysVisible = 1,
+            AlwaysHidden = 2
+        }
+
         // We are matching the KeyboardOnScreen class here so we can directly
         // access it.
         [System.NonSerialized]
@@ -224,6 +233,12 @@ namespace UnityEngine
             get;
             [NativeName("SetInputHidden")]
             set;
+        }
+
+        public static extern InputFieldAppearance inputFieldAppearance
+        {
+            [NativeName("GetInputFieldAppearance")]
+            get;
         }
 
         // Specifies if the keyboard is visible or is sliding into the position on screen.

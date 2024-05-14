@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using UnityEditor.Experimental;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.UIElements;
@@ -45,7 +46,7 @@ namespace UnityEditor
             public const float searchFieldWidth = 300;
         }
 
-        private static class Styles
+        internal static class Styles
         {
             public static StyleBlock window => EditorResources.GetStyle("sb-settings-window");
             public static StyleBlock settingsPanel => EditorResources.GetStyle("sb-settings-panel-client-area");
@@ -56,13 +57,14 @@ namespace UnityEditor
             private static float s_HighlightColorAlpha = 0.67f;
 
             private static string s_SelectionColorTag = null;
-            public static string SelectionColorTag => s_SelectionColorTag ??
-                (s_SelectionColorTag = $"<mark=#{ColorUtility.ToHtmlStringRGBA(new Color(HighlightColor.r, HighlightColor.g, HighlightColor.b, s_HighlightColorAlpha))}>");
+            public static string SelectionColorTag => s_SelectionColorTag
+                ??= $"<mark=#{ColorUtility.ToHtmlStringRGBA(new Color(HighlightColor.r, HighlightColor.g, HighlightColor.b, s_HighlightColorAlpha))}>";
             public static readonly string SelectionColorEndTag = "</mark>";
             private static string s_TextColorTag = null;
-            public static string TextColorTag => s_TextColorTag ?? (s_TextColorTag = $"<color=#{ColorUtility.ToHtmlStringRGBA(Styles.settingsPanel.GetColor("-unity-search-highlight-color"))}>");
+            public static string TextColorTag => s_TextColorTag
+                ??= $"<color=#{ColorUtility.ToHtmlStringRGBA(settingsPanel.GetColor("-unity-search-highlight-color"))}>";
             public static readonly string TextColorEndTag = "</color>";
-            public static readonly System.Text.RegularExpressions.Regex TagRegex = new System.Text.RegularExpressions.Regex(@"<[^>]*>");
+            public static readonly Regex TagRegex = new(@"<[^>]*>", RegexOptions.Compiled);
 
             private static Color HighlightColor => Styles.settingsPanel.GetColor("-unity-search-highlight-selection-color");
         }

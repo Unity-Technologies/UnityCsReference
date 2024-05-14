@@ -176,9 +176,14 @@ namespace UnityEngine.UIElements
             reusableItem.Init(MakeItem());
         }
 
+        internal virtual void SetBindingContext(ReusableCollectionItem reusableItem, int index)
+        {
+        }
+
         internal virtual void InvokeBindItem(ReusableCollectionItem reusableItem, int index)
         {
             BindItem(reusableItem.bindableElement, index);
+            SetBindingContext(reusableItem, index);
             reusableItem.SetSelected(m_View.selectedIndices.Contains(index));
             reusableItem.rootElement.pseudoStates &= ~PseudoStates.Hover;
             reusableItem.index = index;

@@ -68,6 +68,8 @@ namespace UnityEditor
             m_UnsavedEditorWindows = new List<EditorWindow>();
         }
 
+        private static Func<bool> MppmCloseCallback;
+
         internal void __internalAwake()
         {
             hideFlags = HideFlags.DontSave;
@@ -325,12 +327,14 @@ namespace UnityEditor
 
         private static bool MultiplayerCloneClose()
         {
-            var shouldClose = EditorUtility.DisplayDialog(L10n.Tr("Warning: Deactivating a Virtual Player"),
-                L10n.Tr("Closing this window will deactivate the virtual player. Are you sure you want to close the window?"),
-                L10n.Tr("Close"),
-                L10n.Tr("Keep Open"));
+            if (MppmCloseCallback != null)
+                return MppmCloseCallback.Invoke();
+            return true;
+        }
 
-            return shouldClose;
+        internal static void SetMppmCanCloseCallback(Func<bool> mppmCanCloseCallback )
+        {
+            MppmCloseCallback = mppmCanCloseCallback;
         }
 
         private static bool AskToClose(List<EditorWindow> allUnsaved)

@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
         /// True if the element can be focused.
         /// </summary>
         [CreateProperty]
-        public bool focusable
+        public virtual bool focusable
         {
             get => m_Focusable;
             set
@@ -106,6 +106,17 @@ namespace UnityEngine.UIElements
                 m_ExcludeFromFocusRing = value;
             }
         }
+
+        /// <summary>
+        /// When clicking on a disabled element, the focus should be given to the first focusable parent.
+        /// This property is used to prevent certain elements from receiving the focus in this case (e.g Foldout)
+        /// <see cref="FocusController.GetFocusableParentForPointerEvent(Focusable, out Focusable)"/>
+        /// </summary>
+        internal bool isEligibleToReceiveFocusFromDisabledChild
+        {
+            get;
+            set;
+        } = true;
 
         /// <summary>
         /// Return true if the element can be focused.
@@ -647,7 +658,7 @@ namespace UnityEngine.UIElements
             }
             // If target is disabled, first enabled focusable parent will receive focus.
             effectiveTarget = target;
-            while (effectiveTarget is VisualElement ve && (!ve.enabledInHierarchy || !ve.focusable) &&
+            while (effectiveTarget is VisualElement ve && (!ve.enabledInHierarchy || !ve.focusable || !ve.isEligibleToReceiveFocusFromDisabledChild) &&
                    ve.hierarchy.parent != null)
             {
                 effectiveTarget = ve.hierarchy.parent;

@@ -199,7 +199,7 @@ namespace UnityEngine
         {
             if (s_EditorTextSettings == null)
             {
-                s_EditorTextSettings = (TextSettings)GetEditorTextSettings();
+                s_EditorTextSettings = (TextSettings)GetEditorTextSettings?.Invoke();
             }
 
             settings.textSettings = s_EditorTextSettings;

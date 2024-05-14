@@ -1038,6 +1038,7 @@ namespace UnityEngine.UIElements
         void OnItemsSourceChanged()
         {
             itemsSourceChanged?.Invoke();
+            NotifyPropertyChanged(nameof(itemsSource));
         }
 
         /// <summary>

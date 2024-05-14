@@ -404,7 +404,7 @@ namespace UnityEngine.UIElements
             // We must take the padding, margin and border into account
             var layoutOffset = contentRect.min;
 
-            if (m_TouchScreenKeyboard != null && m_HideMobileInput)
+            if (m_TouchScreenKeyboard != null && hideMobileInput)
             {
                 var textInfo = uitkTextHandle.textInfo;
                 var stringPosition = selection.selectIndex < selection.cursorIndex ? textInfo.textElementInfo[selection.selectIndex].index : textInfo.textElementInfo[selection.cursorIndex].index;

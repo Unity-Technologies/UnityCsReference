@@ -3032,7 +3032,7 @@ namespace UnityEditor
 
             var prefabRoot = roots[0];
 
-            if (PrefabStageUtility.IsUI(prefabRoot))
+            if (prefabRoot.GetComponent<RectTransform>() != null && prefabRoot.GetComponent<Canvas>() != null)
             {
                 var prefabAsset = AssetDatabase.LoadMainAssetAtPath(assetPath) as GameObject;
                 if (prefabAsset == null)

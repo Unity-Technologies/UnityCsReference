@@ -220,7 +220,11 @@ namespace UnityEditor.Overlays
             overlay.layoutChanged += OnOverlayLayoutChanged;
             overlay.floatingPositionChanged += OnOverlayPositionChanged;
             overlay.collapsedChanged += OnOverlayCollaspedChanged;
-            m_Overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnOverlayGeometryChanged);
+            overlay.dockingCompleted += OnOverlayDockingCompleted;
+            overlay.rootVisualElement.RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
+            overlay.rootVisualElement.RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
+            overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnOverlayGeometryChanged);
+            
             UpdateResizerVisibility();
         }
 
@@ -247,6 +251,42 @@ namespace UnityEditor.Overlays
         void OnOverlayCollaspedChanged(bool collapsed)
         {
             UpdateResizerVisibility();
+        }
+
+        void OnOverlayDockingCompleted(OverlayContainer container)
+        {
+            TryConstrainResizableOverlaySize();
+        }
+        
+        void OnAttachedToPanel(AttachToPanelEvent evt)
+        {
+            m_Overlay.canvas.rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnOverlayCanvasGeometryChanged);
+        }
+
+        void OnDetachedFromPanel(DetachFromPanelEvent evt)
+        {
+            m_Overlay.canvas.rootVisualElement.UnregisterCallback<GeometryChangedEvent>(OnOverlayCanvasGeometryChanged);
+        }
+        
+        void OnOverlayCanvasGeometryChanged(GeometryChangedEvent evt)
+        {
+            TryConstrainResizableOverlaySize();
+        }
+        
+        void TryConstrainResizableOverlaySize()
+        {
+            if (!m_Overlay.IsResizable() || !m_Overlay.sizeOverridden)
+                return;
+            
+            var container = m_Overlay.rootVisualElement.GetFirstAncestorOfType<OverlayContainer>() ?? m_Overlay.container;
+            if (container == null || m_Overlay.rootVisualElement.parent == null)
+                return;
+
+            var cornerDocked = container is not FloatingOverlayContainer && container is not ToolbarOverlayContainer;
+            var largerThanContainer = (m_Overlay.size.x > container.rect.width || m_Overlay.size.y > container.rect.height);
+            
+            if (cornerDocked && largerThanContainer)
+                m_Overlay.size = new Vector2(Mathf.Min(m_Overlay.size.x, container.rect.width), Mathf.Min(m_Overlay.size.y, container.rect.height));
         }
 
         bool ContainerCanShowResizer(OverlayResizer resizer)

@@ -77,7 +77,6 @@ namespace Unity.Hierarchy
             unsafe
             {
                 var ptr = m_Hierarchy.GetPropertyRaw(in m_Property, in node, out var size);
-
                 if (ptr == null || size != sizeof(T))
                     return default;
 

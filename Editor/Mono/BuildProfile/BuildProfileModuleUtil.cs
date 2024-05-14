@@ -31,7 +31,6 @@ namespace UnityEditor.Build.Profile
         static HashSet<string> s_BuildProfileIconModules = new()
         {
             "Switch",
-            "QNX",
         };
 
         /// <summary>

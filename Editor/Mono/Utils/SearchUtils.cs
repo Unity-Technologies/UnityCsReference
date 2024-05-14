@@ -31,10 +31,18 @@ namespace UnityEditor
             if (searchContext == null || content == null)
                 return false;
 
-            if (searchContext == content)
+            if (searchContext.Equals(content, StringComparison.CurrentCultureIgnoreCase))
             {
+                startIndex = 0;
                 endIndex = content.Length - 1;
                 return true;
+            }
+
+            if (!searchContext.Contains(' '))
+            {
+                startIndex = content.IndexOf(searchContext, 0, StringComparison.CurrentCultureIgnoreCase);
+                endIndex = startIndex + searchContext.Length - 1;
+                return startIndex != -1;
             }
 
             // Each search group is space separated
