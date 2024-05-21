@@ -244,6 +244,11 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
     protected virtual string GetCannotBuildPlayerInCurrentSetupError()
     {
         var namedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
+        return GetBuildPlayerError(namedBuildTarget);
+    }
+
+    internal string GetBuildPlayerError(NamedBuildTarget namedBuildTarget)
+    {
         var scriptingBackend = PlayerSettings.GetScriptingBackend(namedBuildTarget);
 
         if (namedBuildTarget == NamedBuildTarget.Server)

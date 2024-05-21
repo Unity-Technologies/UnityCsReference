@@ -86,8 +86,9 @@ namespace UnityEditor.Search.Providers
             m_QueryEngine.AddFilter<PrefabFilter>("prefab", OnPrefabFilter, new[] { ":" });
             m_QueryEngine.AddFilter<string>("i", OnAttributeFilter, new[] { "=", ":" });
             m_QueryEngine.AddFilter("p", OnPropertyFilter, s => s, StringComparison.OrdinalIgnoreCase);
-            m_QueryEngine.AddFilter(SerializedPropertyRx, OnPropertyFilter);
+            m_QueryEngine.AddFilter(SerializedPropertyRx, OnPropertyFilter, StringComparison.OrdinalIgnoreCase);
             m_QueryEngine.AddFilter("overlap", GetOverlapCount);
+            m_QueryEngine.SetDefaultFilter(DefaultFilterHandler);
 
             m_QueryEngine.AddFiltersFromAttribute<SceneQueryEngineFilterAttribute, SceneQueryEngineParameterTransformerAttribute>();
         }
@@ -143,7 +144,8 @@ namespace UnityEditor.Search.Providers
                     icon: proposition.icon,
                     type: proposition.type,
                     color: proposition.color,
-                    moveCursor: proposition.moveCursor);
+                    moveCursor: proposition.moveCursor,
+                    generationOptions: proposition.generationOptions);
             });
         }
 
@@ -286,6 +288,22 @@ namespace UnityEditor.Search.Providers
                 if (view.TryLoadProperty(recordKey, out object data) && data is SearchValue sv)
                     return sv;
 
+                var componentIndex = propertyName.IndexOf('.');
+                if (componentIndex != -1)
+                {
+                    var componentName = propertyName.Substring(0, componentIndex);
+                    var component = go.GetComponentByNameWithCase(componentName, caseSensitive: false);
+                    if (component)
+                    {
+                        var property = FindPropertyValue(component, propertyName.Substring(componentIndex + 1));
+                        if (property.valid)
+                        {
+                            view.StoreProperty(recordKey, property);
+                            return property;
+                        }
+                    }
+                }
+
                 foreach (var c in EnumerateSubObjects(go))
                 {
                     var property = FindPropertyValue(c, propertyName);
@@ -417,6 +435,7 @@ namespace UnityEditor.Search.Providers
             return base.FindPropositions(context, options);
         }
 
+        // TODO: FIXME, input isn't used and the whole method should be aligned with SearchUtils.EnumeratePropertyPropositions (allow to check for non visible property, take into account the component name)
         private IEnumerable<SearchProposition> FetchPropertyPropositions(string input)
         {
             if (m_PropertyPrositions != null)
@@ -453,6 +472,11 @@ namespace UnityEditor.Search.Providers
                 return propositions;
             }));
             return m_PropertyPrositions;
+        }
+
+        SearchValue DefaultFilterHandler(GameObject obj, string filterId)
+        {
+            return OnPropertyFilter(obj, filterId);
         }
     }
 }

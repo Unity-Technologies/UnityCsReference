@@ -593,25 +593,38 @@ namespace UnityEditor.Search
                 return SearchProposition.invalid;
 
             var tokens = keyword.Split('|');
-            if (tokens.Length != 5)
+            if (tokens.Length < 5)
                 return SearchProposition.invalid;
 
-            // <0:fieldname>:|<1:display name>|<2:help text>|<3:property type>|<4: owner type string>
+            // <0:fieldname>:|<1:display name>|<2:help text>|<3:property type>|<4: owner type string>|<5:propositionOptions>
             var valueType = tokens[3];
             var replacement = ParseBlockContent(valueType, tokens[0], out Type blockType);
             var ownerType = FindType<UnityEngine.Object>(tokens[4]);
             if (ownerType == null)
                 return SearchProposition.invalid;
+            var generationOptions = SearchPropositionGenerationOptions.None;
+            if (tokens.Length >= 6 && !string.IsNullOrWhiteSpace(tokens[5]))
+            {
+                if (Utils.TryParse<int>(tokens[5], out var temp))
+                {
+                    generationOptions = (SearchPropositionGenerationOptions)temp;
+                }
+            }
             return new SearchProposition(
-                priority: (ownerType.Name[0] << 4) + tokens[1][0],
                 category: $"Properties/{ObjectNames.NicifyVariableName(ownerType.Name)}",
                 label: $"{tokens[1]} ({blockType?.Name ?? valueType})",
                 replacement: replacement,
                 help: tokens[2],
-                color: replacement.StartsWith("#", StringComparison.Ordinal) ? QueryColors.property : QueryColors.filter,
+                priority: (ownerType.Name[0] << 4) + tokens[1][0],
+                moveCursor: TextCursorPlacement.MoveAutoComplete,
                 icon:
                     AssetPreview.GetMiniTypeThumbnailFromType(blockType) ??
-                    GetTypeIcon(ownerType));
+                    GetTypeIcon(ownerType),
+                type: null,
+                data: null,
+                color: replacement.StartsWith("#", StringComparison.Ordinal) ? QueryColors.property : QueryColors.filter,
+                generationOptions: generationOptions
+                );
         }
 
         internal static IEnumerable<SearchProposition> FetchEnumPropositions<T>(string category = null, string replacementId = null, string replacementOp = null, Type blockType = null, int priority = 0, Texture2D icon = null, Color color = default) where T : Enum
@@ -679,9 +692,9 @@ namespace UnityEditor.Search
             return s_TypeIcons[type] = AssetPreview.GetMiniTypeThumbnail(type) ?? AssetPreview.GetMiniTypeThumbnail(typeof(MonoScript));
         }
 
-        internal static IEnumerable<SearchProposition> EnumeratePropertyPropositions(IEnumerable<UnityEngine.Object> objs)
+        internal static IEnumerable<SearchProposition> EnumeratePropertyPropositions(IEnumerable<UnityEngine.Object> objs, Func<SerializedObject, IEnumerable<SerializedProperty>> nonVisiblePropertyIterator = null)
         {
-            return EnumeratePropertyKeywords(objs).Select(k => CreateKeywordProposition(k));
+            return EnumeratePropertyKeywords(objs, nonVisiblePropertyIterator).Select(k => CreateKeywordProposition(k));
         }
 
         internal static void IterateSupportedProperties(SerializedObject so, Action<SerializedProperty> handler)
@@ -726,24 +739,44 @@ namespace UnityEditor.Search
             return (p.propertyType == SerializedPropertyType.String || !p.isArray) && !p.isFixedBuffer && p.propertyPath.LastIndexOf('[') == -1;
         }
 
-        internal static IEnumerable<string> EnumeratePropertyKeywords(IEnumerable<UnityEngine.Object> objs)
+        internal static string GetPropertyNamePrefix(UnityEngine.Object obj)
+        {
+            var objType = obj.GetType();
+            var isComponent = typeof(Component).IsAssignableFrom(objType);
+            return isComponent ? objType.Name + "." : null;
+        }
+
+        internal static IEnumerable<string> EnumeratePropertyKeywords(IEnumerable<UnityEngine.Object> objs, Func<SerializedObject, IEnumerable<SerializedProperty>> nonVisiblePropertyIterator = null)
         {
             var templates = GetTemplates(objs);
             foreach (var obj in templates)
             {
-                var objType = obj.GetType();
-                var isAsset = !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(obj));
+                var propertyPrefix = GetPropertyNamePrefix(obj);
                 using (var so = new SerializedObject(obj))
                 {
+                    if (nonVisiblePropertyIterator != null)
+                    {
+                        foreach (var serializedProperty in nonVisiblePropertyIterator(so))
+                        {
+                            if (!IsPropertyTypeSupported(serializedProperty)) continue;
+                            var propertyType = GetPropertyManagedTypeString(serializedProperty);
+                            if (propertyType != null)
+                            {
+                                var keyword = CreateKeyword(serializedProperty, propertyType, propertyPrefix);
+                                yield return keyword;
+                            }
+                        }
+                    }
+
                     var p = so.GetIterator();
                     var next = p.NextVisible(true);
                     while (next)
                     {
                         var supported = SearchUtils.IsPropertyTypeSupported(p);
-                        var propertyType = GetPropertyManagedTypeString(p);
+                        var propertyType = supported ? GetPropertyManagedTypeString(p) : null;
                         if (propertyType != null)
                         {
-                            var keyword = CreateKeyword(p, propertyType);
+                            var keyword = CreateKeyword(p, propertyType, propertyPrefix);
                             yield return keyword;
                         }
                         next = p.NextVisible(IterateSupportedProperties_EnterChildren(p));
@@ -752,12 +785,12 @@ namespace UnityEditor.Search
             }
         }
 
-        private static string CreateKeyword(in SerializedProperty p, in string propertyType)
+        private static string CreateKeyword(in SerializedProperty p, in string propertyType, in string namePrefix = null)
         {
             var path = p.propertyPath;
             if (path.IndexOf(' ') != -1)
                 path = p.name;
-            return $"#{path.Replace(" ", "")}|{p.displayName}|{p.tooltip}|{propertyType}|{p.serializedObject?.targetObject?.GetType().AssemblyQualifiedName}";
+            return $"#{(string.IsNullOrEmpty(namePrefix) ? "" : namePrefix)}{path.Replace(" ", "")}|{p.displayName}|{p.tooltip}|{propertyType}|{p.serializedObject?.targetObject?.GetType().AssemblyQualifiedName}";
         }
 
         internal static string GetPropertyManagedTypeString(in SerializedProperty p)
@@ -1381,9 +1414,9 @@ namespace UnityEditor.Search
 
         internal static string GetPropertyName(SerializedProperty prop, bool isAsset)
         {
-            if (isAsset)
-                return ObjectIndexer.GetFieldName(prop.displayName);
-            return prop.propertyPath.Replace(" ", "").ToLowerInvariant();
+            var propertyName = isAsset ? ObjectIndexer.GetFieldName(prop.displayName) : prop.propertyPath.Replace(" ", "").ToLowerInvariant();
+            var propertyPrefix = GetPropertyNamePrefix(prop.serializedObject.targetObject) ?? "";
+            return $"{propertyPrefix}{propertyName}";
         }
 
         internal static string FormatPropertyQuery(SerializedProperty prop, out bool isAssetQuery)
@@ -1399,18 +1432,17 @@ namespace UnityEditor.Search
             var propertyName = GetPropertyName(prop, isAssetQuery);
             var propertyValue = GetPropertyValueForQuery(prop);
             var operatorStr = GetPropertyOperator(prop);
-            var typeStr = $"t:{target.GetType().Name} ";
             var propertyQuery = $"{propertyName}{operatorStr}{propertyValue}";
             if (isAssetQuery)
             {
                 // Format asset Query;
-                return $"{AssetProvider.filterId}{typeStr}{propertyQuery}";
+                return $"{AssetProvider.filterId}{propertyQuery}";
             }
 
             if (target is UnityEngine.GameObject || target is MonoBehaviour || target is Component)
             {
                 // Format Hierarchy Query:
-                return $"{BuiltInSceneObjectsProvider.filterId}{typeStr}#{propertyQuery}";
+                return $"{BuiltInSceneObjectsProvider.filterId}#{propertyQuery}";
             }
             return null;
         }

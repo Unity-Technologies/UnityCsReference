@@ -85,6 +85,19 @@ namespace UnityEditor
                 return null;
         }
 
+        // Find serialized property by name ignoring case.
+        internal SerializedProperty FindPropertyIgnoreCase(string propertyPath)
+        {
+            SerializedProperty i = GetIterator_Internal();
+            // This is so the garbage collector won't clean up SerializedObject behind the scenes,
+            // when we are still iterating properties
+            i.m_SerializedObject = this;
+            if (i.FindPropertyIgnoreCaseInternal(propertyPath))
+                return i;
+            else
+                return null;
+        }
+
         /// <summary>
         /// Given a path of the form "managedReferences[refid].field" this finds the first field
         /// that references that reference id and returns a serialized property based on that path.

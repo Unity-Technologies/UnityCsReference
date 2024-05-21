@@ -476,6 +476,9 @@ namespace UnityEditor
         [NativeName("FindProperty")]
         extern internal bool FindPropertyInternal(string propertyPath);
 
+        [NativeName("FindPropertyIgnoreCase")]
+        extern internal bool FindPropertyIgnoreCaseInternal(string propertyPath);
+
         [NativeName("FindFirstPropertyFromManagedReferencePath")]
         extern internal bool FindFirstPropertyFromManagedReferencePathInternal(string managedReferencePath);
 

@@ -87,12 +87,6 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
     {
         UpdateLastFieldValue();
         UpdateFieldIsAttached();
-
-        if (field is ObjectField objectField)
-        {
-            objectField.SetProperty(ObjectField.serializedPropertyKey, boundProperty);
-            objectField.UpdateDisplay();
-        }
     }
 
     public override void OnPropertyValueChanged(SerializedProperty currentPropertyIterator)
@@ -123,6 +117,8 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
         // We unbind here
         Release();
     }
+    
+    protected virtual bool EqualsValue(TValue a, TValue b) => s_EqualityComparer.Equals(a, b);
 
     protected override void OnFieldAttached()
     {
@@ -130,8 +126,8 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
 
         base.OnFieldAttached();
 
-        if (!boundProperty.hasMultipleDifferentValues && EqualityComparer<TValue>.Default.Equals(previousValue, field.value)
-            && field is VisualElement handler)
+        if (field is VisualElement handler && !boundProperty.hasMultipleDifferentValues &&
+            EqualsValue(previousValue, field.value))
         {
             using var evt = ChangeEvent<TValue>.GetPooled(field.value, field.value);
             evt.target = handler;

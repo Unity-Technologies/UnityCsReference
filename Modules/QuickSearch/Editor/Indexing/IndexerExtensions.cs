@@ -231,7 +231,7 @@ namespace UnityEditor.Search
                         if (buildTarget != null && buildTarget.stringValue == TextureImporter.defaultPlatformName)
                         {
                             var parentPath = platformSettings.propertyPath;
-                            indexer.IndexProperties(context.documentIndex, platformSettings, recursive: false, 2, p => p.propertyPath.StartsWith(parentPath));
+                            indexer.IndexVisibleProperties(context.documentIndex, platformSettings, recursive: false, 2, p => p.propertyPath.StartsWith(parentPath));
                             break;
                         }
                     }
@@ -326,17 +326,17 @@ namespace UnityEditor.Search
 
                     case MaterialProperty.PropType.Int:
                         indexer.AddNumber(propertyName, property.intValue, indexer.settings.baseScore, context.documentIndex);
-                        indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName, false);
+                        indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName);
                         break;
 
                     case MaterialProperty.PropType.Float:
                         indexer.AddNumber(propertyName, property.floatValue, indexer.settings.baseScore, context.documentIndex);
-                        indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName, false);
+                        indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName);
                         break;
 
                     case MaterialProperty.PropType.Range:
                         indexer.AddNumber(propertyName, property.floatValue, indexer.settings.baseScore, context.documentIndex);
-                        indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName, false);
+                        indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName);
                         break;
 
                     case MaterialProperty.PropType.Texture:

@@ -32,8 +32,11 @@ namespace UnityEditor.Search
         private string status = null;
         private volatile bool disposed = false;
         private readonly ITaskReporter reporter;
+        int m_ProgressThrottleCounter;
 
         public int total { get; set; }
+        public bool throttleProgressReport { get; set; } = false;
+        public int throttleProgressRate { get; set; } = 1;
         public bool canceled { get; private set; }
         public Exception error { get; private set; }
 
@@ -164,20 +167,32 @@ namespace UnityEditor.Search
             }
 
             LogProgress("Report");
-            Progress.Report(progressId, progress, status);
+            ReportAsyncProgress(status, progress);
         }
 
         public void Report(int current)
         {
+            Report(status, current);
+        }
+
+        public void Report(string status, int current)
+        {
             if (total == 0)
                 return;
-            Report(current, total);
+            Report(status, current, total);
         }
 
         public void Report(int current, int total)
         {
+            Report(status, current, total);
+        }
+
+        public void Report(string status, int current, int total)
+        {
             if (!IsValid())
                 return;
+
+            this.status = status;
 
             if (progressId == k_BlockingProgress)
             {
@@ -193,8 +208,37 @@ namespace UnityEditor.Search
             {
                 lastProgress = current / (float)total;
                 LogProgress("Report");
-                Progress.Report(progressId, current, total, status);
+                ReportAsyncProgress(status, current, total);
             }
+        }
+
+        void ReportAsyncProgress(string status, int current, int total)
+        {
+            if (!throttleProgressReport)
+                Progress.Report(progressId, current, total, status);
+            else
+            {
+                if (m_ProgressThrottleCounter % throttleProgressRate == 0)
+                    Progress.Report(progressId, current, total, status);
+                ++m_ProgressThrottleCounter;
+            }
+        }
+
+        void ReportAsyncProgress(string status, float progress)
+        {
+            if (!throttleProgressReport)
+                Progress.Report(progressId, progress, status);
+            else
+            {
+                if (m_ProgressThrottleCounter % throttleProgressRate == 0)
+                    Progress.Report(progressId, progress, status);
+                ++m_ProgressThrottleCounter;
+            }
+        }
+
+        public void ResetProgressThrottle()
+        {
+            m_ProgressThrottleCounter = 0;
         }
 
         public void Cancel()

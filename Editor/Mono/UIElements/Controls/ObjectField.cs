@@ -44,6 +44,14 @@ namespace UnityEditor.UIElements
                 ((ObjectField)ve).objectType = m_ObjectType.GetValueFromBag(bag, cc);
             }
         }
+        
+        internal override bool EqualsCurrentValue(Object value)
+        {
+            // If the current value is a missing object reference then we allow anything to be set, even null which is technically the same value here.
+            if (m_ObjectFieldDisplay.isObjectMissing)
+                return false;
+            return base.EqualsCurrentValue(value);
+        }
 
         public override void SetValueWithoutNotify(Object newValue)
         {
@@ -95,12 +103,16 @@ namespace UnityEditor.UIElements
         {
             m_ObjectFieldDisplay.Update();
         }
+        
+        internal static bool IsMissingObjectReference(SerializedProperty p) => p.propertyType == SerializedPropertyType.ObjectReference && p.objectReferenceInstanceIDValue != 0 && p.objectReferenceValue == null;
 
         internal class ObjectFieldDisplay : VisualElement
         {
             private readonly ObjectField m_ObjectField;
             private readonly Image m_ObjectIcon;
             private readonly Label m_ObjectLabel;
+            
+            public bool isObjectMissing { get; private set; }
 
             static readonly string ussClassName = "unity-object-field-display";
             static readonly string iconUssClassName = ussClassName + "__icon";
@@ -139,12 +151,17 @@ namespace UnityEditor.UIElements
 
             public void Update()
             {
+                isObjectMissing = false;
                 var property = m_ObjectField.GetProperty(serializedPropertyKey) as SerializedProperty;
                 // UUM-53334, need to check if property is still valid before updating
-                if (property != null && !property.isValid)
+                if (property != null)
                 {
-                    m_ObjectField.SetProperty(serializedPropertyKey, null);
-                    return;
+                    if (!property.isValid)
+                    {
+                        m_ObjectField.SetProperty(serializedPropertyKey, null);
+                        return;
+                    }
+                    isObjectMissing = IsMissingObjectReference(property);
                 }
                 var content = EditorGUIUtility.ObjectContent(m_ObjectField.value, m_ObjectField.objectType, property);
                 m_ObjectIcon.image = content.image;

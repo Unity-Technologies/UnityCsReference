@@ -4,6 +4,7 @@
 
 using UnityEngine.UIElements;
 using UnityEditor.Toolbars;
+using UnityEditor.SearchService;
 
 namespace UnityEditor.Search
 {
@@ -51,7 +52,7 @@ namespace UnityEditor.Search
         {
             try
             {
-                var searchShortcut = ShortcutManagement.ShortcutManager.instance.GetShortcutBinding("Main Menu/Edit/Search All...");
+                var searchShortcut = ShortcutManagement.ShortcutManager.instance.GetShortcutBinding(OpenSearchHelper.k_SearchAllShortcutName);
                 return L10n.Tr($"Global Search ({searchShortcut})");
             }
             catch

@@ -34,7 +34,7 @@ namespace UnityEditor.Search
 
     abstract class SearchIndexEntryImporter : ScriptedImporter
     {
-        public const int version = SearchIndexEntry.version | (0x0004 << 13);
+        public const int version = SearchIndexEntry.version | (SearchDocumentListTable.defaultVersion << 8) | (0x0004 << 13);
 
         public static string GetGUID(Type type)
         {
