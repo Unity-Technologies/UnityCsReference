@@ -221,6 +221,12 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
+        internal static void DestroyGUI(int instanceID)
+        {
+            GUILayoutUtility.RemoveSelectedIdList(instanceID, false);
+        }
+
+        [RequiredByNativeCode]
         internal static void SetSkin(int skinMode)
         {
             s_SkinMode = skinMode;

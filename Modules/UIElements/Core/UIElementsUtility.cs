@@ -532,23 +532,6 @@ namespace UnityEngine.UIElements
             return s_UIElementsCache.GetEnumerator();
         }
 
-        // Used by tests
-        internal static Panel FindOrCreateEditorPanel(ScriptableObject ownerObject)
-        {
-            Panel panel;
-            if (!s_UIElementsCache.TryGetValue(ownerObject.GetInstanceID(), out panel))
-            {
-                panel = Panel.CreateEditorPanel(ownerObject);
-                RegisterCachedPanel(ownerObject.GetInstanceID(), panel);
-            }
-            else
-            {
-                Debug.Assert(ContextType.Editor == panel.contextType, "Panel is not an editor panel.");
-            }
-
-            return panel;
-        }
-
         internal static float PixelsPerUnitScaleForElement(VisualElement ve, Sprite sprite)
         {
             if (ve == null || ve.elementPanel == null || sprite == null)

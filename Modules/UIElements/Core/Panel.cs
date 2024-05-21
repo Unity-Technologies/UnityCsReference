@@ -186,7 +186,7 @@ namespace UnityEngine.UIElements
         /// Apply this option to a VisualElement with multiple nested masks among its descendants. For example, a child element
         /// has the `overflow: hidden;` style with rounded corners or SVG background.\\
         /// \\
-        /// The following illustration shows the number of batches in a single-level masking, a nested masking, and a nested masking with MaskContainer. 
+        /// The following illustration shows the number of batches in a single-level masking, a nested masking, and a nested masking with MaskContainer.
         /// The yellow color indicates the masking elements. The orange color indicates the masking element with MaskContainer applied.
         /// The numbers indicate the number of batches.\\
         /// \\
@@ -243,15 +243,6 @@ namespace UnityEngine.UIElements
         DirtyMaskContainer = MaskContainer << DirtyOffset,
         DirtyDynamicColor = DynamicColor << DirtyOffset,
         DirtyAll = DirtyGroupTransform | DirtyBoneTransform | DirtyClipWithScissors | DirtyMaskContainer | DirtyDynamicColor,
-    }
-
-    // For backwards compatibility with debugger in 2020.1
-    enum PanelClearFlags
-    {
-        None = 0,
-        Color = 1 << 0,
-        Depth = 1 << 1,
-        All = Color | Depth
     }
 
     struct PanelClearSettings
@@ -541,55 +532,9 @@ namespace UnityEngine.UIElements
 
         public float referenceSpritePixelsPerUnit { get; set; } = 100.0f;
 
-        // For backwards compatibility with debugger in 2020.1
-        public PanelClearFlags clearFlags
-        {
-            get
-            {
-                PanelClearFlags flags = PanelClearFlags.None;
-
-                if (clearSettings.clearColor)
-                {
-                    flags |= PanelClearFlags.Color;
-                }
-
-                if (clearSettings.clearDepthStencil)
-                {
-                    flags |= PanelClearFlags.Depth;
-                }
-
-                return flags;
-            }
-            set
-            {
-                var settings = clearSettings;
-                settings.clearColor = (value & PanelClearFlags.Color) == PanelClearFlags.Color;
-                settings.clearDepthStencil = (value & PanelClearFlags.Depth) == PanelClearFlags.Depth;
-                clearSettings = settings;
-            }
-        }
-
         internal PanelClearSettings clearSettings { get; set; } = new PanelClearSettings { clearDepthStencil = true, clearColor = true, color = Color.clear };
 
-        uint m_VertexBudget = 0;
-
-
-        internal uint vertexBudget
-        {
-            get
-            {
-                return m_VertexBudget;
-            }
-            set
-            {
-                //early return to prevent trashing the render chain.
-                if (m_VertexBudget == value)
-                    return;
-
-                m_VertexBudget = value;
-                (GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater).DestroyRenderChain();
-            }
-        }
+        internal IPanelRenderer panelRenderer;
 
         internal bool duringLayoutPhase { get; set; }
 
@@ -638,7 +583,7 @@ namespace UnityEngine.UIElements
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             set;
         }
-        public abstract ContextType contextType { get; protected set; }
+        public abstract ContextType contextType { get; }
         public abstract VisualElement Pick(Vector2 point);
         public abstract VisualElement PickAll(Vector2 point, List<VisualElement> picked);
 
@@ -687,26 +632,6 @@ namespace UnityEngine.UIElements
             m_TopElementUnderPointers.CommitElementUnderPointers(dispatcher, contextType);
         }
 
-        internal abstract Shader standardShader { get; set; }
-
-        internal virtual Shader standardWorldSpaceShader
-        {
-            get { return null; }
-            set {}
-        }
-
-        internal event Action standardShaderChanged, standardWorldSpaceShaderChanged;
-
-        protected void InvokeStandardShaderChanged()
-        {
-            if (standardShaderChanged != null) standardShaderChanged();
-        }
-
-        protected void InvokeStandardWorldSpaceShaderChanged()
-        {
-            if (standardWorldSpaceShaderChanged != null) standardWorldSpaceShaderChanged();
-        }
-
         internal event Action isFlatChanged;
         bool m_IsFlat = true;
 
@@ -729,9 +654,6 @@ namespace UnityEngine.UIElements
         internal event Action atlasChanged;
         protected void InvokeAtlasChanged() { atlasChanged?.Invoke(); }
         public abstract AtlasBase atlas { get; set; }
-
-        internal event Action<Material> updateMaterial;
-        internal void InvokeUpdateMaterial(Material mat) { updateMaterial?.Invoke(mat); } // TODO: Actually call this!
 
         internal event HierarchyEvent hierarchyChanged;
 
@@ -773,9 +695,7 @@ namespace UnityEngine.UIElements
         public IPanelDebug panelDebug { get; set; }
         public ILiveReloadSystem liveReloadSystem { get; set; }
 
-        Action m_RenderAction;
-        internal void SetRenderAction(Action action) => m_RenderAction = action;
-        public virtual void Render() => m_RenderAction?.Invoke();
+        public virtual void Render() => panelRenderer.Render();
     }
 
     // Strategy to initialize the editor updater
@@ -857,7 +777,7 @@ namespace UnityEngine.UIElements
 
         public override ScriptableObject ownerObject { get; protected set; }
 
-        public override ContextType contextType { get; protected set; }
+        public override ContextType contextType { get; }
 
         public override SavePersistentViewData saveViewData { get; set; }
 
@@ -886,7 +806,7 @@ namespace UnityEngine.UIElements
 
         public void ResetRendering()
         {
-            (GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater)?.DestroyRenderChain();
+            panelRenderer?.Reset();
             atlas?.Reset();
         }
 
@@ -997,21 +917,6 @@ namespace UnityEngine.UIElements
         internal override uint repaintVersion => m_RepaintVersion;
         internal override uint hierarchyVersion => m_HierarchyVersion;
 
-        private Shader m_StandardShader;
-
-        internal override Shader standardShader
-        {
-            get { return m_StandardShader; }
-            set
-            {
-                if (m_StandardShader != value)
-                {
-                    m_StandardShader = value;
-                    InvokeStandardShaderChanged();
-                }
-            }
-        }
-
         private AtlasBase m_Atlas;
 
         public override AtlasBase atlas
@@ -1037,6 +942,7 @@ namespace UnityEngine.UIElements
 
         public Panel(ScriptableObject ownerObject, ContextType contextType, EventDispatcher dispatcher, InitEditorUpdaterFunction initEditorUpdater = null)
         {
+
             this.ownerObject = ownerObject;
             this.contextType = contextType;
             this.dispatcher = dispatcher;
@@ -1305,6 +1211,7 @@ namespace UnityEngine.UIElements
             }
 
             panelDebug?.Refresh();
+            (panelDebug?.debuggerOverlayPanel as Panel)?.Repaint(e);
         }
 
         public override void Render()
@@ -1312,6 +1219,8 @@ namespace UnityEngine.UIElements
             m_MarkerRender.Begin();
             base.Render();
             m_MarkerRender.End();
+
+            (panelDebug?.debuggerOverlayPanel as Panel)?.Render();
         }
 
         // Updaters can request an panel invalidation when some callbacks aren't coming from UIElements internally
@@ -1411,21 +1320,6 @@ namespace UnityEngine.UIElements
             }
 
             base.Dispose(disposing);
-        }
-
-        private Shader m_StandardWorldSpaceShader;
-
-        internal override Shader standardWorldSpaceShader
-        {
-            get { return m_StandardWorldSpaceShader; }
-            set
-            {
-                if (m_StandardWorldSpaceShader != value)
-                {
-                    m_StandardWorldSpaceShader = value;
-                    InvokeStandardWorldSpaceShaderChanged();
-                }
-            }
         }
 
         internal event Action drawsInCamerasChanged;

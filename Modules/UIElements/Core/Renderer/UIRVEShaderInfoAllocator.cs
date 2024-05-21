@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.Collections;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -151,11 +150,12 @@ namespace UnityEngine.UIElements.UIR
         }
     }
 
-    internal struct UIRVEShaderInfoAllocator
+    class UIRVEShaderInfoAllocator
     {
         BaseShaderInfoStorage m_Storage;
         BitmapAllocator32 m_TransformAllocator, m_ClipRectAllocator, m_OpacityAllocator, m_ColorAllocator, m_TextSettingsAllocator; // All allocators take pages from the same storage
         bool m_StorageReallyCreated;
+        ColorSpace m_ColorSpace;
 
         static int pageWidth { get { return BitmapAllocator32.kPageWidth; } }
         static int pageHeight { get { return 8; } } // 32*8 = 256, can be stored in a byte
@@ -218,8 +218,10 @@ namespace UnityEngine.UIElements.UIR
         }
         public bool internalAtlasCreated { get { return m_StorageReallyCreated; } } // For diagnostics really
 
-        public void Construct()
+        public UIRVEShaderInfoAllocator(ColorSpace colorSpace)
         {
+            m_ColorSpace = colorSpace;
+
             // The default allocs refer to four startup pages to be allocated as below from the atlas
             // once the atlas is used for the first time. The page coordinates correspond to the atlas's
             // internal algorithm's results. If that algorithm changes, the new results must be put here to match
@@ -267,8 +269,8 @@ namespace UnityEngine.UIElements.UIR
             SetTransformValue(identityTransform, identityTransformValue);
             SetClipRectValue(infiniteClipRect, infiniteClipRectValue);
             SetOpacityValue(fullOpacity, fullOpacityValue.w);
-            SetColorValue(clearColor, clearColorValue, false); // color is saturated, no need to check the colorspace
-            SetTextCoreSettingValue(defaultTextCoreSettings, defaultTextCoreSettingsValue, false); // colors are saturated, no need to check the colorspace
+            SetColorValue(clearColor, clearColorValue); // color is saturated, no need to check the colorspace
+            SetTextCoreSettingValue(defaultTextCoreSettings, defaultTextCoreSettingsValue); // colors are saturated, no need to check the colorspace
 
             m_StorageReallyCreated = true;
         }
@@ -349,25 +351,25 @@ namespace UnityEngine.UIElements.UIR
             m_Storage.SetTexel(allocXY.x, allocXY.y, new Color(1, 1, 1, opacity));
         }
 
-        public void SetColorValue(BMPAlloc alloc, Color color, bool isEditorContext)
+        public void SetColorValue(BMPAlloc alloc, Color color)
         {
             Debug.Assert(alloc.IsValid());
             var allocXY = AllocToTexelCoord(ref m_ColorAllocator, alloc);
 
-            if(QualitySettings.activeColorSpace == ColorSpace.Linear && !isEditorContext)
+            if (m_ColorSpace == ColorSpace.Linear)
                 m_Storage.SetTexel(allocXY.x, allocXY.y, color.linear);
             else
                 m_Storage.SetTexel(allocXY.x, allocXY.y, color);
         }
 
-        public void SetTextCoreSettingValue(BMPAlloc alloc, TextCoreSettings settings, bool isEditorContext)
+        public void SetTextCoreSettingValue(BMPAlloc alloc, TextCoreSettings settings)
         {
             Debug.Assert(alloc.IsValid());
 
             var allocXY = AllocToTexelCoord(ref m_TextSettingsAllocator, alloc);
             var settingValues = new Color(-settings.underlayOffset.x, settings.underlayOffset.y, settings.underlaySoftness, settings.outlineWidth);
 
-            if (QualitySettings.activeColorSpace == ColorSpace.Linear && !isEditorContext)
+            if (m_ColorSpace == ColorSpace.Linear)
             {
                 m_Storage.SetTexel(allocXY.x, allocXY.y + 0, settings.faceColor.linear);
                 m_Storage.SetTexel(allocXY.x, allocXY.y + 1, settings.outlineColor.linear);
@@ -381,7 +383,6 @@ namespace UnityEngine.UIElements.UIR
             }
 
             m_Storage.SetTexel(allocXY.x, allocXY.y + 3, settingValues);
-
         }
 
         public void FreeTransform(BMPAlloc alloc)

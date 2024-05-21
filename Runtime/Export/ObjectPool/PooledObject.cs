@@ -23,7 +23,12 @@ namespace UnityEngine.Pool
         readonly T m_ToReturn;
         readonly IObjectPool<T> m_Pool;
 
-        internal PooledObject(T value, IObjectPool<T> pool)
+        /// <summary>
+        /// Initializes the pooled object with a managed object and specifies the pool to which the instance is returned.
+        /// </summary>
+        /// <param name="value">Object to manage</param>
+        /// <param name="pool">Pool owning the object</param>
+        public PooledObject(T value, IObjectPool<T> pool)
         {
             m_ToReturn = value;
             m_Pool = pool;

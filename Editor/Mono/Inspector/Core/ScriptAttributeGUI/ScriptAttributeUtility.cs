@@ -195,10 +195,11 @@ namespace UnityEditor
                         return levelComparison != 0 ? levelComparison : string.CompareOrdinal(x.Name, y.Name);
                     });
                 }
-                else if (allInterfaces.Length != 0)
+
+                if ((!requestedPropertyType || inspectedType.IsInterface) && allInterfaces != null && allInterfaces.Length != 0)
                 {
                     // Get all interfaces for the current inspected type
-                    var baseTypeInterfaces = inspectedType.GetInterfaces();
+                    var baseTypeInterfaces = inspectedType.IsInterface ? null : inspectedType.GetInterfaces();
                     for (int i = 0; i < allInterfaces.Length; i++)
                     {
                         // Skipped already checked interfaces
@@ -207,7 +208,7 @@ namespace UnityEditor
 
                         // Exclude interfaces that are implemented by the base type
                         var interfaceType = allInterfaces[i];
-                        if (baseTypeInterfaces.ContainsByEquals(interfaceType))
+                        if (baseTypeInterfaces != null && baseTypeInterfaces.ContainsByEquals(interfaceType))
                             continue;
 
                         // Check if there's an appropriate drawer for the interface

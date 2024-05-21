@@ -31,6 +31,7 @@ namespace UnityEditor.Build.Profile.Handlers
 
         readonly List<BuildProfile> m_SelectedBuildProfiles;
 
+        internal bool IsSingleSelection() => m_SelectedBuildProfiles.Count == 1;
         internal bool IsMultipleSelection() => m_SelectedBuildProfiles.Count > 1;
         internal bool HasSelection() => m_SelectedBuildProfiles.Count > 0;
 

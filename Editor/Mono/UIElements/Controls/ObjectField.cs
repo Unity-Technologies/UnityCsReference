@@ -84,6 +84,14 @@ namespace UnityEditor.UIElements
             }
         }
 
+        internal override bool EqualsCurrentValue(Object value)
+        {
+            // If the current value is a missing object reference then we allow anything to be set, even null which is technically the same value here.
+            if (m_ObjectFieldDisplay.isObjectMissing)
+                return false;
+            return base.EqualsCurrentValue(value);
+        }
+
         public override void SetValueWithoutNotify(Object newValue)
         {
             newValue = TryReadComponentFromGameObject(newValue, objectType);
@@ -151,12 +159,16 @@ namespace UnityEditor.UIElements
             UpdateMixedValueContent();
         }
 
+        internal static bool IsMissingObjectReference(SerializedProperty p) => p.propertyType == SerializedPropertyType.ObjectReference && p.objectReferenceInstanceIDValue != 0 && p.objectReferenceValue == null;
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal class ObjectFieldDisplay : VisualElement
         {
             private readonly ObjectField m_ObjectField;
             private readonly Image m_ObjectIcon;
             private readonly Label m_ObjectLabel;
+
+            public bool isObjectMissing { get; private set; }
 
             static readonly string ussClassName = "unity-object-field-display";
             static readonly string iconUssClassName = ussClassName + "__icon";
@@ -195,18 +207,20 @@ namespace UnityEditor.UIElements
 
             public void Update()
             {
-                // While building editor resources ObjectField are instantiated to serialize default values in
-                // the Uxml asset. If EditorGUIUtility.ObjectContent is called during that time the editor will crash.
-                if (Application.isBuildingEditorResources)
-                    return;
+                isObjectMissing = false;
 
                 var property = m_ObjectField.GetProperty(serializedPropertyKey) as SerializedProperty;
                 // UUM-53334, need to check if property is still valid before updating
-                if (property != null && !property.isValid)
+                if (property != null)
                 {
-                    m_ObjectField.SetProperty(serializedPropertyKey, null);
-                    return;
+                    if (!property.isValid)
+                    {
+                        m_ObjectField.SetProperty(serializedPropertyKey, null);
+                        return;
+                    }
+                    isObjectMissing = IsMissingObjectReference(property);
                 }
+
                 var content = EditorGUIUtility.ObjectContent(m_ObjectField.value, m_ObjectField.objectType, property);
                 m_ObjectIcon.image = content.image;
                 m_ObjectLabel.text = content.text;

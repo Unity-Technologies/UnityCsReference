@@ -222,20 +222,11 @@ namespace UnityEditor.UIElements.ProjectSettings
 
         void SelectTab(TabButton tabButton)
         {
-            VisualElement target = tabButton.Target;
-
             tabButton.Select();
-            if (target != null)
-                target.style.display = DisplayStyle.Flex;
         }
 
         void DeselectTab(TabButton tabButton)
         {
-            VisualElement target = tabButton.Target;
-
-            if (target != null)
-                target.style.display = DisplayStyle.None;
-
             tabButton.Deselect();
         }
     }

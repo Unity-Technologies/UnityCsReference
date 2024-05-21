@@ -371,7 +371,9 @@ namespace UnityEditor
                         continue;
 
                     // Some build targets are only compatible with specific OS
-                    if (BuildTargetDiscovery.TryGetBuildTarget(gt.defaultTarget, out IBuildTarget iBuildTarget) && !(iBuildTarget.BuildPlatformProperties?.CanBuildOnCurrentHostPlatform ?? true))
+#pragma warning disable CS0618 // Member is obsolete
+                    if (!BuildTargetDiscovery.BuildPlatformIsAvailableOnHostPlatform(gt.defaultTarget, SystemInfo.operatingSystemFamily))
+#pragma warning restore CS0618
                         continue;
 
                     GUI.contentColor = gt.installed ? Color.white : new Color(1, 1, 1, 0.5f);

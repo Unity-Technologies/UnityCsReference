@@ -267,18 +267,23 @@ namespace UnityEditor.Build.Profile
                 if (BuildProfileModuleUtil.IsModuleInstalled(key))
                     continue;
 
-                // Some build targets are only compatible with specific OS,
-                // from BuildPlayerWindow.ActiveBuildTargetsGUI()
-                var buildTarget = BuildProfileModuleUtil.GetBuildTargetAndSubtarget(key).Item1;
-                var iBuildTarget = ModuleManager.GetIBuildTarget(buildTarget);
-                if (iBuildTarget != null
-                    && !(iBuildTarget.BuildPlatformProperties?.CanBuildOnCurrentHostPlatform ?? true))
+                // Some build targets are only compatible with specific OS
+                if (!BuildTargetDiscovery.BuildPlatformIsAvailableOnHostPlatform(new GUID(key), SystemInfo.operatingSystemFamily))
                     continue;
 
                 missingPlatforms.Add(key);
             }
 
             return missingPlatforms;
+        }
+
+        /// <summary>
+        /// Check if there's an active build profile with player settings
+        /// </summary>
+        static internal bool ProjectHasActiveProfileWithPlayerSettings()
+        {
+            var activeBuildProfile = BuildProfile.GetActiveBuildProfile();
+            return activeBuildProfile?.playerSettings != null;
         }
 
         /// <summary>

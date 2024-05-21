@@ -230,9 +230,10 @@ namespace UnityEditor.Build.Profile
             if (activeProfile == null)
                 throw new ArgumentException("Active build profile is null.");
 
-            BuildTarget buildTarget = activeProfile.buildTarget;
-            BuildTargetGroup buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
-            int subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget);
+            var buildTarget = activeProfile.buildTarget;
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
+            int subtarget = IsStandalonePlatform(buildTarget) ?
+                (int)activeProfile.subtarget : EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget);
 
             options.options = GetBuildOptions(buildTarget, buildTargetGroup, buildLocation, customBuildOptions);
             options.target = buildTarget;

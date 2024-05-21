@@ -66,12 +66,12 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
                 m_DirtyAABB.boolValue = false;
 
+            OnMeshUI();
+
             OnBlendShapeUI();
 
             EditorGUILayout.PropertyField(m_Quality, Styles.quality);
             EditorGUILayout.PropertyField(m_UpdateWhenOffscreen, Styles.updateWhenOffscreen);
-
-            OnMeshUI();
 
             EditorGUILayout.PropertyField(m_RootBone, Styles.rootBone);
 

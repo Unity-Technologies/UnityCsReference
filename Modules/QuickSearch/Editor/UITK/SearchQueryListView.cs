@@ -262,7 +262,6 @@ namespace UnityEditor.Search
             if (m_Selected && !m_IsRenaming)
             {
                 Rename();
-                evt.StopImmediatePropagation();
                 focusController.IgnoreEvent(evt);
             }
         }
@@ -420,18 +419,14 @@ namespace UnityEditor.Search
 
         void HandleItemsSelected(IEnumerable<int> selectedIndexes)
         {
-            if (selectedIndexes == null || !selectedIndexes.Any())
-                return;
-
+            var selected = selectedIndexes.ToArray();
             foreach (var item in m_VisibleItems)
             {
-                if (selectedIndexes.Contains(item.Key))
-                    continue;
-
-                item.Value.selected = false;
+                item.Value.selected = selected.Contains(item.Key);
             }
 
-            itemSelected?.Invoke(this, m_Source[selectedIndexes.First()]);
+            if (selected.Length > 0)
+                itemSelected?.Invoke(this, m_Source[selected[0]]);
         }
 
         public void ClearSelection()

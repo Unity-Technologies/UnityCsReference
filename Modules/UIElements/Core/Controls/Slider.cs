@@ -7,8 +7,13 @@ using System;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A slider containing floating point values. For more information, refer to [[wiki:UIE-uxml-element-slider|UXML element Slider]].
+    /// A slider containing floating point values. 
     /// </summary>
+    /// <remarks>
+    /// The Slider control is a horizontal or vertical bar with a handle that can be moved to select a value from a range.
+    /// The range is defined by the <see cref="lowValue"/> and <see cref="highValue"/> properties. For more information, 
+    /// refer to the [[wiki:UIE-uxml-element-Slider|UXML element Slider]] manual page.
+    /// </remarks>
     public class Slider : BaseSlider<float>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

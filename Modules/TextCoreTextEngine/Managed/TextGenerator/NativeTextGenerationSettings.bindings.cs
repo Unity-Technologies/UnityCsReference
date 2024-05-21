@@ -86,7 +86,7 @@ namespace UnityEngine.TextCore
                    languageDirection == other.languageDirection &&
                    horizontalAlignment == other.horizontalAlignment &&
                    verticalAlignment == other.verticalAlignment &&
-                   color.InternalEquals(other.color) &&
+                   color.Equals(other.color) &&
                    fontStyle == other.fontStyle &&
                    fontWeight == other.fontWeight;
         }

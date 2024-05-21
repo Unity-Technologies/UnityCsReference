@@ -154,13 +154,16 @@ namespace UnityEditor.Build.Profile
         {
             DestroyImmediate(buildProfileEditor);
             BuildProfileContext.instance.activeProfileChanged -= OnActiveProfileChanged;
-            m_BuildProfileDataSource?.Dispose();
+            if (m_BuildProfileDataSource != null)
+            {
+                SendWorkflowReport();
+                m_BuildProfileDataSource.Dispose();
+            }
 
             if (m_AssetImportWindow != null)
                 m_AssetImportWindow.Close();
 
             m_ProfileListViews?.Unbind();
-            SendWorkflowReport();
         }
 
         /// <summary>
@@ -182,6 +185,7 @@ namespace UnityEditor.Build.Profile
                 return;
             }
 
+            m_ActivateButton.text = TrText.activate;
             m_ProfileListViews.ClearPlatformSelection();
             m_InspectorHeader.Show();
             m_BuildProfileSelection.SelectItems(selectedItems);
@@ -212,6 +216,7 @@ namespace UnityEditor.Build.Profile
                 return;
             }
 
+            m_ActivateButton.text = TrText.activatePlatform;
             m_ProfileListViews.ClearProfileSelection();
             m_InspectorHeader.Show();
             m_BuildProfileSelection.SelectItem(profile);
@@ -228,6 +233,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         internal void OnMissingClassicPlatformSelected(string platformId)
         {
+            m_InspectorHeader.Show();
             m_ProfileListViews.ClearProfileSelection();
             UpdateFormButtonState(null);
 
@@ -317,8 +323,7 @@ namespace UnityEditor.Build.Profile
             // gets deleted. Since we want to avoid using asset post processors for performance
             // reason, we check it in update
             if (buildProfileEditor?.buildProfile == null &&
-                m_BuildProfileSelection?.IsMultipleSelection() == false &&
-                m_InspectorHeader?.style.display != DisplayStyle.None)
+                m_BuildProfileSelection?.IsSingleSelection() == true)
             {
                 DestroyImmediate(buildProfileEditor);
                 m_BuildProfileDataSource?.DeleteNullProfiles();
@@ -463,8 +468,9 @@ namespace UnityEditor.Build.Profile
             }
             else
             {
-                m_WindowState.activateAction = profile.CanBuildLocally() ? ActionState.Enabled : ActionState.Hidden;
-                m_WindowState.buildAction = ActionState.Hidden;
+                bool canBuild = profile.CanBuildLocally();
+                m_WindowState.activateAction = canBuild ? ActionState.Enabled : ActionState.Hidden;
+                m_WindowState.buildAction = canBuild ? ActionState.Disabled : ActionState.Hidden;
                 m_WindowState.buildAndRunAction = ActionState.Hidden;
                 m_WindowState.Refresh();
             }
@@ -502,6 +508,9 @@ namespace UnityEditor.Build.Profile
 
         void SendWorkflowReport()
         {
+            if (m_BuildProfileDataSource == null)
+                return;
+
             if (m_BuildProfileDataSource.customBuildProfiles.Count == 0)
             {
                 EditorAnalytics.SendAnalytic(new BuildProfileWorkflowReport());

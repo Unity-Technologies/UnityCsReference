@@ -172,9 +172,9 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override bool Equals(object other)
         {
-            if (!(other is Matrix4x4)) return false;
-
-            return Equals((Matrix4x4)other);
+            if (other is Matrix4x4 m)
+                return Equals(m);
+            return false;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

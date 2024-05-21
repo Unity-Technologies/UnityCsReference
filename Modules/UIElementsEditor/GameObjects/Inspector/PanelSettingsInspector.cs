@@ -5,9 +5,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.TextCore.Text;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.UIElements;
-using static Unity.Collections.LowLevel.Unsafe.DisposeSentinel.Dummy;
 
 namespace UnityEditor.UIElements.Inspector
 {
@@ -51,6 +50,9 @@ namespace UnityEditor.UIElements.Inspector
         private PropertyField m_ClearColorField;
         private PropertyField m_ColorClearValueField;
 
+        private PropertyField m_ForceGammaOutputField;
+        private HelpBox m_ForceGammaOutputHelpBox;
+
         private PropertyField m_VertexBudgetField;
 
         private HelpBox m_MissingThemeHelpBox;
@@ -74,6 +76,9 @@ namespace UnityEditor.UIElements.Inspector
             m_TargetTextureField = m_RootVisualElement.MandatoryQ<ObjectField>("target-texture");
             m_TargetTextureField.objectType = typeof(RenderTexture);
 
+            m_ForceGammaOutputField = m_RootVisualElement.MandatoryQ<PropertyField>("force-gamma-rendering");
+            m_ForceGammaOutputHelpBox = m_RootVisualElement.MandatoryQ<HelpBox>("force-gamma-rendering-help");
+
             m_SortingOrderField = m_RootVisualElement.MandatoryQ<FloatField>("sorting-order");
 
             m_ScaleModeField = m_RootVisualElement.MandatoryQ<EnumField>("scale-mode");
@@ -93,6 +98,7 @@ namespace UnityEditor.UIElements.Inspector
             m_ClearSettingsFoldout = m_RootVisualElement.MandatoryQ<Foldout>("clear-settings-foldout");
             m_ClearColorField = m_RootVisualElement.MandatoryQ<PropertyField>("clear-color");
             m_ColorClearValueField = m_RootVisualElement.MandatoryQ<PropertyField>("color-clear-value");
+
             m_VertexBudgetField = m_RootVisualElement.MandatoryQ<PropertyField>("vertex-budget");
 
             var choices = new List<int> {0, 1, 2, 3, 4, 5, 6, 7};
@@ -118,6 +124,9 @@ namespace UnityEditor.UIElements.Inspector
                 ((PanelSettings)target).bindingLogLevel = (BindingLogLevel)evt.newValue);
 
             m_ThemeStyleSheetField.RegisterValueChangedCallback(evt => UpdateHelpBoxDisplay());
+
+            m_ForceGammaOutputField.RegisterCallback<ChangeEvent<bool>>(_ => UpdateForceGammaOutput());
+            m_TargetTextureField.RegisterValueChangedCallback(_ => UpdateForceGammaOutput());
         }
 
         private void UpdateScaleModeValues(PanelScaleMode scaleMode)
@@ -166,6 +175,45 @@ namespace UnityEditor.UIElements.Inspector
             bool displayHelpBox = panelSettings.themeStyleSheet == null;
 
             m_MissingThemeHelpBox.EnableInClassList(k_StyleClassThemeMissing, !displayHelpBox);
+        }
+
+        void UpdateForceGammaOutput()
+        {
+            var panelSettings = (PanelSettings)target;
+
+            if (panelSettings.renderMode == PanelRenderMode.WorldSpace || QualitySettings.activeColorSpace == ColorSpace.Gamma)
+            {
+                m_ForceGammaOutputField.style.display = DisplayStyle.None;
+                m_ForceGammaOutputHelpBox.style.display = DisplayStyle.None;
+                return;
+            }
+
+            bool hasMessage = false;
+
+            if (panelSettings.forceGammaRendering)
+            {
+                var rt = panelSettings.targetTexture;
+                if (rt != null)
+                {
+                    if (GraphicsFormatUtility.IsSRGBFormat(rt.graphicsFormat))
+                    {
+                        m_ForceGammaOutputHelpBox.messageType = HelpBoxMessageType.Warning;
+                        m_ForceGammaOutputHelpBox.text = "You should not use a target texture with an SRGB format to store values that are already sRGB-encoded.";
+                        hasMessage = true;
+                    }
+                }
+                else
+                {
+                    // At some point, if it becomes possible to have a UNORM swapchain image when the project is linear,
+                    // we could remove this warning.
+                    m_ForceGammaOutputHelpBox.messageType = HelpBoxMessageType.Warning;
+                    m_ForceGammaOutputHelpBox.text = "Gamma rendering requires the use of a target texture.";
+                    hasMessage = true;
+                }
+            }
+
+            m_ForceGammaOutputField.style.display = DisplayStyle.Flex;
+            m_ForceGammaOutputHelpBox.style.display = hasMessage ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         void UpdateRenderMode(PanelRenderMode newRenderMode)
@@ -219,6 +267,8 @@ namespace UnityEditor.UIElements.Inspector
 
                 m_ScaleModeWorldSpace.style.display = DisplayStyle.None;
             }
+
+            UpdateForceGammaOutput();
         }
 
         public override VisualElement CreateInspectorGUI()

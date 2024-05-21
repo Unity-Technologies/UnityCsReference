@@ -505,12 +505,17 @@ namespace UnityEditor.Search
             if (cacheProvider && s_GroupProviders.TryGetValue(groupId, out var groupProvider))
                 return groupProvider;
 
-            groupProvider = new SearchProvider($"_group_provider_{groupId}", groupId, templateProvider, groupPriority);
+            groupProvider = new SearchProvider(GetGroupProviderId(groupId), groupId, templateProvider, groupPriority);
 
             if (cacheProvider)
                 s_GroupProviders[groupId] = groupProvider;
 
             return groupProvider;
+        }
+
+        internal static string GetGroupProviderId(string groupId)
+        {
+            return $"_group_provider_{groupId}";
         }
 
         public static string GetAssetPath(in SearchItem item)
@@ -1557,6 +1562,55 @@ namespace UnityEditor.Search
             searchWindow.SendEvent(SearchAnalytics.GenericEventType.QuickSearchJumpToSearch, searchWindow.currentGroup, sourceContext);
             ((ISearchView)searchWindow).syncSearch = syncSearch;
             return searchWindow;
+        }
+
+        internal static string GetGroupFromId(int instanceID)
+        {
+            var path = AssetDatabase.GetAssetPath(instanceID);
+            if (string.IsNullOrEmpty(path))
+            {
+                // Check if this is a scene object or something else
+                var obj = EditorUtility.InstanceIDToObject(instanceID);
+                if (!obj || !(obj is GameObject))
+                    return GroupedSearchList.allGroupId;
+            }
+            return GetGroupFromPath(path);
+        }
+
+        internal static string GetGroupFromPath(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return Search.Providers.BuiltInSceneObjectsProvider.type;
+
+            if (AdbProvider.IsResourcePath(path))
+                return GetGroupProviderId(AdbProvider.resourcesItemTag);
+
+            if (path.StartsWith("Packages/"))
+                return GetGroupProviderId("Packages");
+
+            return Search.Providers.AssetProvider.type;
+        }
+
+        internal static void GetQueryParts(IQueryNode n, List<IFilterNode> filters, List<ISearchNode> searches)
+        {
+            if (n == null)
+                return;
+            if (n is IFilterNode filterNode)
+            {
+                filters.Add(filterNode);
+            }
+            else if (n is ISearchNode searchNode)
+            {
+                searches.Add(searchNode);
+            }
+
+            if (n.children != null)
+            {
+                foreach (var child in n.children)
+                {
+                    GetQueryParts(child, filters, searches);
+                }
+            }
         }
     }
 }

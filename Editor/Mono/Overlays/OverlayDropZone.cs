@@ -2,6 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine;
+using UnityEngine.UIElements;
+
 namespace UnityEditor.Overlays
 {
     class OverlayDropZone : OverlayDropZoneBase
@@ -51,6 +54,9 @@ namespace UnityEditor.Overlays
         public override void BeginHover()
         {
             base.BeginHover();
+           
+            if (m_TargetContainer is not ToolbarOverlayContainer)
+                m_DraggedOverlay.rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnDraggedOverlayGeometryChanged);
 
             var parent = m_TargetOverlay.rootVisualElement.parent;
             var index = parent.IndexOf(m_TargetOverlay.rootVisualElement);
@@ -64,16 +70,28 @@ namespace UnityEditor.Overlays
                 (dockAfter && m_TargetOverlay.container.GetLastVisible(m_TargetSection) == m_TargetOverlay)
                 || (!dockAfter && m_TargetOverlay.container.GetFirstVisible(m_TargetSection) == m_TargetOverlay));
 
-            // When adding an overlay in one of the 2 columns we use the current width of the overlay as preview
-            if (m_TargetContainer is not ToolbarOverlayContainer)
-                insertIndicator.style.width = m_DraggedOverlay.rootVisualElement.layout.width;
+            MatchIndicatorToDraggedOverlay();
         }
 
         public override void EndHover()
         {
             base.EndHover();
-
             insertIndicator.RemoveFromHierarchy();
+            
+            if (m_TargetContainer is not ToolbarOverlayContainer)
+                m_DraggedOverlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent>(OnDraggedOverlayGeometryChanged);
+        }
+        
+        void OnDraggedOverlayGeometryChanged(GeometryChangedEvent evt)
+        {
+            MatchIndicatorToDraggedOverlay();
+        }
+
+        void MatchIndicatorToDraggedOverlay()
+        {
+            // When adding an overlay in one of the 2 columns we use the current width of the overlay as preview
+            if (m_TargetContainer is not ToolbarOverlayContainer)
+                insertIndicator.style.width = m_DraggedOverlay.rootVisualElement.layout.width;
         }
 
         public override void DropOverlay(Overlay overlay)

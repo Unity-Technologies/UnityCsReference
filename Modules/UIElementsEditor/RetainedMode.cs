@@ -45,19 +45,9 @@ namespace UnityEditor
             HandleUtility.EndHandles();
         }
 
-        [Obsolete("Datawatch usage will be removed", false)]
-        static void UpdateDataWatch()
-        {
-            DataWatchService.sharedInstance.PollNativeData();
-        }
-
         [RequiredByNativeCode]
         static void UpdateSchedulers()
         {
-#pragma warning disable 612,618, 619
-            UpdateDataWatch();
-#pragma warning restore 612,618, 619
-
             UIEventRegistration.UpdateSchedulers();
         }
 

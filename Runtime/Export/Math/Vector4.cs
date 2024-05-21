@@ -156,9 +156,9 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override bool Equals(object other)
         {
-            if (!(other is Vector4)) return false;
-
-            return Equals((Vector4)other);
+            if (other is Vector4 v)
+                return Equals(v);
+            return false;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

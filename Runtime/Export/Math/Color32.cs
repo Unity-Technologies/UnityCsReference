@@ -14,7 +14,7 @@ namespace UnityEngine
     // Representation of RGBA colors in 32 bit format
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Explicit)]
-    public partial struct Color32 : IFormattable
+    public partial struct Color32 : IEquatable<Color32>, IFormattable
     {
         // An rgba int has been unioned with the four r g b a bytes.
         // This ensures the struct is 4 byte aligned for webgl.
@@ -108,8 +108,19 @@ namespace UnityEngine
             }
         }
 
-        [VisibleToOtherModules]
-        internal bool InternalEquals(Color32 other)
+        public override int GetHashCode()
+        {
+            return rgba.GetHashCode();
+        }
+
+        public override bool Equals(object other)
+        {
+            if (other is Color32 color)
+                return Equals(color);
+            return false;
+        }
+
+        public bool Equals(Color32 other)
         {
             return rgba == other.rgba;
         }

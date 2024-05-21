@@ -581,7 +581,7 @@ namespace UnityEditor
         /// </summary>
         bool IsInBuildProfileEditor()
         {
-            return m_Owner.IsBuildProfile();
+            return m_Owner.IsBuildProfileEditor();
         }
     }
 }

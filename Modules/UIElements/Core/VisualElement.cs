@@ -2518,7 +2518,6 @@ namespace UnityEngine.UIElements
                 if (m_SubRenderTargetMode == value)
                     return;
 
-                Debug.Assert(Application.isEditor, "subRenderTargetMode is not supported on runtime yet"); //See UIRREnderEvents. blitMaterial_LinearToGamma initialisation line 900
                 m_SubRenderTargetMode = value;
                 IncrementVersion(VersionChangeType.Repaint);
             }

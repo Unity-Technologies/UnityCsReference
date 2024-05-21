@@ -13,20 +13,7 @@ namespace UnityEditor.UIElements
     {
         readonly EditorCursorManager m_CursorManager = new EditorCursorManager();
         static EditorContextualMenuManager s_ContextualMenuManager = new EditorContextualMenuManager();
-        static Shader s_EditorShader;
-        static readonly int s_EditorColorSpaceID = Shader.PropertyToID("_EditorColorSpace");
 
-        static Shader EditorShader
-        {
-            get
-            {
-                if (s_EditorShader == null)
-                {
-                    s_EditorShader = Shader.Find("Hidden/UIElements/EditorUIE");
-                }
-                return s_EditorShader;
-            }
-        }
         public static Panel FindOrCreate(ScriptableObject ownerObject)
         {
             var id = ownerObject.GetInstanceID();
@@ -45,15 +32,8 @@ namespace UnityEditor.UIElements
             cursorManager = m_CursorManager;
             contextualMenuManager = s_ContextualMenuManager;
             panelDebug = new PanelDebug(this);
-            standardShader = EditorShader;
-            updateMaterial += OnUpdateMaterial;
             uiElementsBridge = new EditorUIElementsBridge();
             UpdateScalingFromEditorWindow = true;
-        }
-
-        static void OnUpdateMaterial(Material mat)
-        {
-            mat?.SetFloat(s_EditorColorSpaceID, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1 : 0);
         }
 
         public static void InitEditorUpdater(BaseVisualElementPanel panel, VisualTreeUpdater visualTreeUpdater)

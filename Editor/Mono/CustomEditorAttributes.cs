@@ -320,7 +320,7 @@ namespace UnityEditor
                     var yAssemblyIsUnity = InternalEditorUtility.IsUnityAssembly(typeB.inspectorType);
 
                     if (xAssemblyIsUnity == yAssemblyIsUnity)
-                        return 0;
+                        return string.CompareOrdinal(typeA.inspectorType.FullName, typeB.inspectorType.FullName);
                     if (xAssemblyIsUnity)
                         return 1;
                     return -1;

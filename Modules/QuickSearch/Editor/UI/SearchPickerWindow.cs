@@ -17,7 +17,6 @@ namespace UnityEditor.Search
         internal const string k_PickerVisibilityFlags = "picker_visibility_flags";
         internal const string k_PickerItemSize = "picker_item_size";
         internal const string k_PickerInspector = "picker_inspector";
-        internal const string k_PickerCurrentGroup = "picker_current_group";
         internal const int k_UniquePickerHash = 123456789;
 
         public override bool IsPicker()
@@ -36,8 +35,14 @@ namespace UnityEditor.Search
             }
             RestoreSearchText();
 
-            m_ViewState.group = SearchSettings.GetScopeValue(k_PickerCurrentGroup, m_ContextHash, GroupedSearchList.allGroupId);
+            var group = GroupedSearchList.allGroupId;
+            if (m_ViewState.selectedIds.Length > 0)
+            {
+                var id = m_ViewState.selectedIds[0];
+                group = SearchUtils.GetGroupFromId(id);
+            }
 
+            m_ViewState.group = group;
             UpdateViewState(m_ViewState);
         }
 
@@ -52,7 +57,6 @@ namespace UnityEditor.Search
             SearchSettings.SetScopeValue(k_PickerVisibilityFlags, m_ContextHash, (int)(context.options & (SearchFlags.WantsMore | SearchFlags.Packages)));
             SearchSettings.SetScopeValue(k_PickerItemSize, m_ContextHash, itemIconSize);
             SearchSettings.SetScopeValue(k_PickerInspector, m_ContextHash, viewState.flags.HasAny(SearchViewFlags.OpenInspectorPreview) ? 1 : 0);
-            SearchSettings.SetScopeValue(k_PickerCurrentGroup, m_ContextHash, viewState.group);
 
             SearchSettings.Save();
         }

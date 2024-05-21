@@ -302,19 +302,21 @@ namespace UnityEditor
             m_Drag = false;
         }
 
-        public void DoViewTool()
+        // onGUIView is the SceneView currently receiving GUI event. It is not necesarily the currently
+        // last focused view as that's retrieved from SceneView.lastActiveSceneView.
+        public void DoViewTool(SceneView onGUIView)
         {
-            var view = SceneView.lastActiveSceneView;
-            if (view == null)
+            var lastFocusedView = SceneView.lastActiveSceneView;
+            if (lastFocusedView == null)
                 return;
 
             // In FPS mode we update the pivot for Orbit mode (see below and inside HandleMouseDrag)
             if (Tools.s_LockedViewTool == ViewTool.FPS)
-                view.FixNegativeSize();
+                lastFocusedView.FixNegativeSize();
 
             SceneNavigationInput.Update();
             if (SceneNavigationInput.moving)
-                view.viewIsLockedToObject = false;
+                lastFocusedView.viewIsLockedToObject = false;
             m_Motion = SceneNavigationInput.currentInputVector;
 
             // If a different mouse button is clicked while the current mouse button is held down,
@@ -327,7 +329,9 @@ namespace UnityEditor
             {
                 case EventType.ScrollWheel:
                     // Default to zooming to mouse position in 2D mode without alt.
-                    HandleScrollWheel(view, view.in2DMode == evt.alt);
+                    // We pass onGUIView instead of lastFocusedView, because scrolling while hovering over an unfocused
+                    // must still trigger zoom on that view (and not the last focused one).
+                    HandleScrollWheel(onGUIView, lastFocusedView.in2DMode == evt.alt);
                     break;
                 case EventType.MouseDown:
                     if (GUIUtility.hotControl == 0)
@@ -341,19 +345,19 @@ namespace UnityEditor
                     HandleKeyDown();
                     break;
                 case EventType.MouseDrag:
-                    HandleMouseDrag(view);
+                    HandleMouseDrag(lastFocusedView);
                     break;
                 case EventType.Layout:
                     if (GUIUtility.hotControl == k_ViewToolID || m_FlySpeed.isAnimating || m_Moving)
                     {
-                        view.pivot = view.pivot + view.rotation * GetMovementDirection(view);
-                        view.Repaint();
+                        lastFocusedView.pivot = lastFocusedView.pivot + lastFocusedView.rotation * GetMovementDirection(lastFocusedView);
+                        lastFocusedView.Repaint();
                     }
                     break;
                 case EventType.ExecuteCommand:
                     if (evt.commandName == k_PanFocusEventCommandName)
                     {
-                        PanFocus(m_StartMousePosition, view, evt);
+                        PanFocus(m_StartMousePosition, lastFocusedView, evt);
                     }
                     else if (evt.commandName == k_SetSceneViewMotionHotControlEventCommandName)
                     {

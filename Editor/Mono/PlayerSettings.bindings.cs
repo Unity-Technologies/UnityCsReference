@@ -1602,6 +1602,7 @@ namespace UnityEditor
         public static extern bool advancedLicense { get; }
 
         // Additional AOT compilation options. Shared by AOT platforms.
+        [Obsolete("This setting is no longer used.")]
         public static extern string aotOptions { get; set; }
 
         public static extern Texture2D defaultCursor { get; set; }
