@@ -45,6 +45,9 @@ namespace UnityEngine
         [FreeFunction(Name = "Scripting::GetScriptingWrapperOfComponentOfGameObject", HasExplicitThis = true)]
         internal extern Component GetComponentByName(string type);
 
+        [FreeFunction(Name = "Scripting::GetScriptingWrapperOfComponentOfGameObjectWithCase", HasExplicitThis = true)]
+        internal extern Component GetComponentByNameWithCase(string type, bool caseSensitive);
+
         public Component GetComponent(string type)
         {
             return GetComponentByName(type);

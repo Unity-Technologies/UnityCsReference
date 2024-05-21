@@ -38,13 +38,6 @@ abstract class SerializedObjectBindingPropertyToBaseField<TProperty, TValue> : S
         {
             propSetValue(boundProperty, lastFieldValue);
             boundProperty.m_SerializedObject.ApplyModifiedProperties();
-
-            // Force the field to update its display as its label is dependent on having an up to date SerializedProperty. (UUM-27629)
-            if (field is ObjectField objectField)
-            {
-                objectField.UpdateDisplay();
-            }
-
             return true;
         }
         return false;

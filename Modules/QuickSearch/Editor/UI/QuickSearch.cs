@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.SearchService;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.Utils;
 using UnityEngine;
@@ -73,7 +74,7 @@ namespace UnityEditor.Search
         private Rect m_QueryHelperRect;
         private QueryHelperWidget m_QueryHelper;
 
-        
+
         internal QueryBuilder queryBuilder => m_QueryBuilder;
         private QueryHelperWidget queryHelper
         {
@@ -2497,7 +2498,7 @@ namespace UnityEditor.Search
             SearchAnalytics.SendEvent(windowId, category, name, message, description);
         }
 
-        [MenuItem("Edit/Search All... %k", priority = 161)]
+        [MenuItem($"{OpenSearchHelper.k_SearchMenuName} %k", priority = 161)]
         internal static void OpenDefaultQuickSearch()
         {
             SearchUtils.OpenDefaultQuickSearch();

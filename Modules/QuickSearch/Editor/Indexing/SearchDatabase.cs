@@ -761,7 +761,7 @@ namespace UnityEditor.Search
             return 1;
         }
 
-        private void CombineIndexes(in Settings settings, in IndexArtifact[] artifacts, Task task, bool autoResolve)
+        private static void CombineIndexes(in Settings settings, in IndexArtifact[] artifacts, Task task, bool autoResolve)
         {
             if (task.Canceled())
                 return;
@@ -769,57 +769,43 @@ namespace UnityEditor.Search
             // Combine all search index artifacts into one large binary stream.
             var combineIndexer = new SearchIndexer();
             var indexName = settings.name.ToLowerInvariant();
-            var artifactDbs = EnumerateSearchArtifacts(artifacts, task);
+            task.Report("Loading artifacts...", 0);
+            var artifactDbs = EnumerateSearchArtifactsDirect(artifacts, task);
 
             task.Report("Combining indexes...", -1f);
             task.total = artifacts.Length;
 
             combineIndexer.Start();
-            combineIndexer.CombineIndexes(artifactDbs, settings.baseScore, indexName, progress => task.Report(progress));
+            combineIndexer.CombineIndexes(artifactDbs, settings.baseScore, indexName, task);
 
             if (task.Canceled())
                 return;
 
-            task.Report($"Sorting indexes...", -1f);
+            task.Report($"Saving index...", -1f);
             byte[] bytes = autoResolve ? combineIndexer.SaveBytes() : null;
             Dispatcher.Enqueue(() => task.Resolve(new TaskData(bytes, combineIndexer), completed: autoResolve));
         }
 
-        IEnumerable<SearchIndexer> EnumerateSearchArtifacts(IndexArtifact[] artifacts, Task task)
+        static List<SearchIndexer> EnumerateSearchArtifactsDirect(IndexArtifact[] artifacts, Task task)
         {
-            long totalMs = 2, totalItr = 1;
-            var results = new ConcurrentBag<SearchIndexer>();
-            var readTask = System.Threading.Tasks.Task.Run(() =>
+            var results = new List<SearchIndexer>();
+            var total = artifacts.Length;
+            for (var i = 0; i < total; ++i)
             {
-                var sw = System.Diagnostics.Stopwatch.StartNew();
-                foreach (var a in artifacts)
-                {
-                    if (a == null || a.path == null)
-                        continue;
+                var a = artifacts[i];
+                if (a == null || a.path == null)
+                    continue;
 
-                    sw.Restart();
-                    var si = new SearchIndexer(Path.GetFileName(a.source));
-                    if (!si.ReadIndexFromDisk(a.path))
-                        continue;
-                    totalMs += sw.ElapsedMilliseconds;
-                    totalItr++;
+                var si = new SearchIndexer(Path.GetFileName(a.source));
+                if (!si.ReadIndexFromDisk(a.path))
+                    continue;
 
-                    results.Add(si);
-                }
-            });
-
-            while (results.Count > 0 || !readTask.Wait((int)(totalMs / totalItr)) || results.Count > 0)
-            {
-                while (results.TryTake(out var e))
-                {
-                    task.Report($"Combining {e.name}...");
-                    yield return e;
-                }
-
-                if (task.Canceled())
-                    yield break;
+                results.Add(si);
+                task.Report(i+1, total);
             }
 
+
+            return results;
         }
 
         private static void AddIndexNameArea(int documentIndex, SearchIndexer indexer, string indexName)
@@ -1055,18 +1041,16 @@ namespace UnityEditor.Search
             {
                 using var writeScope = new WriteLockScope(m_ImmutableLock);
                 index.Merge(changeset.removed, data.combinedIndex, baseScore,
-                    (di, indexer, count) => OnDocumentMerged(task, indexer, indexName, di, count));
+                    (di, indexer, count) => OnDocumentMerged(indexer, indexName, di), task);
                 if (saveIndexCache)
                     SaveIndex(savePath, index.SaveBytes(), task);
             }, () => ResolveIncrementalUpdate(task));
         }
 
-        private static void OnDocumentMerged(Task task, SearchIndexer indexer, string indexName, int documentIndex, int documentCount)
+        private static void OnDocumentMerged(SearchIndexer indexer, string indexName, int documentIndex)
         {
             if (indexer != null)
                 AddIndexNameArea(documentIndex, indexer, indexName);
-            else
-                task.Report(documentIndex + 1, documentCount);
         }
 
         private void ResolveIncrementalUpdate(Task task)

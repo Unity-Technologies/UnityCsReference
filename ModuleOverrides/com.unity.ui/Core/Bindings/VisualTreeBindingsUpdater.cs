@@ -292,7 +292,7 @@ namespace UnityEngine.UIElements
             if (m_ElementsWithBindings.Count > 0)
             {
                 long currentTimeMs = CurrentTime();
-                if (m_LastUpdateTime + k_MinUpdateDelayMs < currentTimeMs)
+                if (VisualTreeBindingsUpdater.disableBindingsThrottling || m_LastUpdateTime + k_MinUpdateDelayMs < currentTimeMs)
                 {
                     UpdateBindings();
                     m_LastUpdateTime = currentTimeMs;

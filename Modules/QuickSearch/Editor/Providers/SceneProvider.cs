@@ -428,8 +428,18 @@ namespace UnityEditor.Search.Providers
 
             var sceneObjects = context.searchView?.results.Count > 0 && !context.searchInProgress ?
                 context.searchView.results.Select(r => r.ToObject()).Where(o => o) : SearchUtils.FetchGameObjects();
-            foreach (var p in SearchUtils.EnumeratePropertyPropositions(sceneObjects))
+            foreach (var p in SearchUtils.EnumeratePropertyPropositions(sceneObjects, IterateNonVisibleProperties))
                 yield return p;
+        }
+
+        static IEnumerable<SerializedProperty> IterateNonVisibleProperties(SerializedObject so)
+        {
+            if (so.targetObject is Transform)
+                yield break;
+
+            var sp = so.FindProperty("m_Enabled");
+            if (sp is { isValid: true })
+                yield return sp;
         }
     }
 
