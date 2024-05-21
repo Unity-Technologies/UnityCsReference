@@ -500,10 +500,7 @@ namespace UnityEditor
 
         protected virtual void EnsureAppropriateTrackerIsInUse()
         {
-            if (m_InspectorMode == InspectorMode.Normal)
-                m_Tracker = ActiveEditorTracker.sharedTracker;
-            else if (m_Tracker is null || m_Tracker.Equals(ActiveEditorTracker.sharedTracker))
-                m_Tracker = new ActiveEditorTracker();
+            // By default PropertyEditor are locked on their inspected object and won't change tracker because the Inspector Mode has changed.
         }
 
         protected void SetMode(InspectorMode mode)

@@ -23,6 +23,7 @@ namespace UnityEditor
     {
         internal static class GraphicsSettingsData
         {
+            internal const string builtIn = "Built-In";
             internal const string bodyTemplateBuiltInOnly = "UXML/ProjectSettings/GraphicsSettingsEditor-Builtin.uxml";
             internal const string bodyTemplateSRP = "UXML/ProjectSettings/GraphicsSettingsEditor-SRP.uxml";
             internal const string helpBoxesTemplateForSRP = "UXML/ProjectSettings/GraphicsSettingsEditor-HelpBoxes.uxml";
@@ -152,9 +153,7 @@ namespace UnityEditor
 
             SetupTransparencySortMode(builtInTemplate);
 
-            const string builtIn = "Built-In";
-
-            var builtInSettingsContainer = builtInTemplate.MandatoryQ<VisualElement>($"{builtIn}SettingsContainer");
+            var builtInSettingsContainer = builtInTemplate.MandatoryQ<VisualElement>($"{GraphicsSettingsData.builtIn}SettingsContainer");
             var builtInHelpBoxes = GraphicsSettingsInspectorUtility.CreateRPHelpBox(m_VisibilityController, null);
             builtInSettingsContainer.Insert(0, builtInHelpBoxes);
             builtInHelpBoxes.MandatoryQ<HelpBox>("CurrentPipelineWarningHelpBox").text = GraphicsSettingsData.builtInWarningText.text;
@@ -163,9 +162,9 @@ namespace UnityEditor
             var settingsPipelineFullTypeName = UserSettings.FromConfig().pipelineFullTypeName;
             var selectedTab = string.IsNullOrEmpty(settingsPipelineFullTypeName) ? GraphicsSettings.currentRenderPipelineAssetType?.ToString() : settingsPipelineFullTypeName;
 
-            var builtinActive = string.IsNullOrEmpty(selectedTab) || selectedTab.Equals(builtIn);
-            var tabButton = GraphicsSettingsInspectorUtility.CreateNewTab(m_TabbedView, builtIn, builtInSettingsContainer, builtinActive);
-            tabButton.userData = builtIn;
+            var builtinActive = string.IsNullOrEmpty(selectedTab) || selectedTab.Equals(GraphicsSettingsData.builtIn);
+            var tabButton = GraphicsSettingsInspectorUtility.CreateNewTab(m_TabbedView, GraphicsSettingsData.builtIn, builtInSettingsContainer, builtinActive);
+            tabButton.userData = GraphicsSettingsData.builtIn;
 
             //Add SRP tabs
             foreach (var globalSettingsContainer in m_GlobalSettings)
@@ -320,7 +319,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    userSettings.pipelineFullTypeName = "Built-In";
+                    userSettings.pipelineFullTypeName = GraphicsSettingsData.builtIn;
                 }
 
                 EditorUserSettings.SetConfigValue(s_Key, JsonUtility.ToJson(userSettings));

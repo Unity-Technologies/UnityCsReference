@@ -73,7 +73,6 @@ namespace UnityEditor
             EditorGUI_TextEditor_graphicalCursorPos = EditorGUI.s_RecycledEditor.graphicalCursorPos;
             EditorGUI_TextEditor_content = EditorGUI.s_RecycledEditor.text;
             EditorGUI_Current_Editing_String = EditorGUI.s_RecycledCurrentEditingString;
-
             EditorGUI_DelayedTextEditor_cursorIndex = EditorGUI.s_DelayedTextEditor.cursorIndex;
             EditorGUI_DelayedTextEditor_selectIndex = EditorGUI.s_DelayedTextEditor.selectIndex;
             EditorGUI_DelayedTextEditor_controlID = EditorGUI.s_DelayedTextEditor.controlID;
@@ -97,8 +96,6 @@ namespace UnityEditor
             EditorGUI.s_RecycledEditor.scrollOffset = EditorGUI_TextEditor_scrollOffset;
             EditorGUI.s_RecycledEditor.m_HasFocus = EditorGUI_TextEditor_hasFocus;
             EditorGUI.s_RecycledEditor.graphicalCursorPos = EditorGUI_TextEditor_graphicalCursorPos;
-
-
             EditorGUI.s_DelayedTextEditor.text = EditorGUI_DelayedTextEditor_content;
             EditorGUI.s_DelayedTextEditor.cursorIndex = EditorGUI_DelayedTextEditor_cursorIndex;
             EditorGUI.s_DelayedTextEditor.selectIndex = EditorGUI_DelayedTextEditor_selectIndex;

@@ -16,7 +16,7 @@ namespace UnityEditor.Search
     ""name"": ""Assets"",
     ""roots"": [""Assets""],
     ""includes"": [],
-    ""excludes"": [],
+    ""excludes"": [""Assets/Temp/"", ""Assets/External/""],
     ""options"": {
         ""types"": true,
         ""properties"": true,
@@ -44,7 +44,7 @@ namespace UnityEditor.Search
 @"{
     ""roots"": [""Packages""],
     ""includes"": [],
-    ""excludes"": [],
+    ""excludes"": [""Assets/Temp/"", ""Assets/External/""],
     ""options"": {
         ""types"": true,
         ""properties"": false,
@@ -58,7 +58,7 @@ namespace UnityEditor.Search
     ""type"": ""prefab"",
     ""roots"": [],
     ""includes"": ["".prefab""],
-    ""excludes"": [],
+    ""excludes"": [""Assets/Temp/"", ""Assets/External/""],
     ""options"": {
         ""types"": true,
         ""properties"": true,
@@ -71,7 +71,7 @@ namespace UnityEditor.Search
     ""type"": ""scene"",
     ""roots"": [],
     ""includes"": ["".unity""],
-    ""excludes"": [],
+    ""excludes"": [""Assets/Temp/"", ""Assets/External/""],
     ""options"": {
         ""types"": true,
         ""properties"": false,

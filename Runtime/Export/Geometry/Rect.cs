@@ -255,9 +255,9 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override bool Equals(object other)
         {
-            if (!(other is Rect)) return false;
-
-            return Equals((Rect)other);
+            if (other is Rect r)
+                return Equals(r);
+            return false;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

@@ -5,7 +5,6 @@
 using System;
 using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.Audio;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -211,7 +210,7 @@ sealed class AudioContainerWindowState
         UpdateResourceTrackerElement();
     }
 
-    private void UpdateResourceTrackerElement()
+    void UpdateResourceTrackerElement()
     {
         if (m_ResourceTrackerElement != null)
         {

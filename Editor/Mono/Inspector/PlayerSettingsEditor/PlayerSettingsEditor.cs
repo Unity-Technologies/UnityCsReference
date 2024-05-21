@@ -188,7 +188,6 @@ namespace UnityEditor
             };
             public static readonly GUIContent iOSURLSchemes = EditorGUIUtility.TrTextContent("Supported URL schemes*");
             public static readonly GUIContent iOSExternalAudioInputNotSupported = EditorGUIUtility.TrTextContent("Audio input from Bluetooth microphones is not supported when Mute Other Audio Sources and Prepare iOS for Recording are both off.");
-            public static readonly GUIContent aotOptions = EditorGUIUtility.TrTextContent("AOT Compilation Options*");
             public static readonly GUIContent require31 = EditorGUIUtility.TrTextContent("Require ES3.1");
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
             public static readonly GUIContent require32 = EditorGUIUtility.TrTextContent("Require ES3.2");
@@ -339,7 +338,6 @@ namespace UnityEditor
         SerializedProperty m_BluetoothUsageDescription;
 
         SerializedProperty m_IPhoneScriptCallOptimization;
-        SerializedProperty m_AotOptions;
 
         SerializedProperty m_DefaultScreenOrientation;
         SerializedProperty m_AllowedAutoRotateToPortrait;
@@ -532,8 +530,8 @@ namespace UnityEditor
             NonActiveBuildProfile
         }
         internal PlayerSettingsType playerSettingsType = PlayerSettingsType.Global;
-        internal bool IsBuildProfile() => playerSettingsType == PlayerSettingsType.ActiveBuildProfile || playerSettingsType == PlayerSettingsType.NonActiveBuildProfile;
-        bool IsGlobalOrActiveProfile => playerSettingsType == PlayerSettingsType.Global || playerSettingsType == PlayerSettingsType.ActiveBuildProfile;
+        internal bool IsBuildProfileEditor() => playerSettingsType == PlayerSettingsType.ActiveBuildProfile || playerSettingsType == PlayerSettingsType.NonActiveBuildProfile;
+        internal bool IsActivePlayerSettingsEditor() => (playerSettingsType == PlayerSettingsType.Global && !BuildProfileContext.ProjectHasActiveProfileWithPlayerSettings()) || playerSettingsType == PlayerSettingsType.ActiveBuildProfile;
 
         const string kSelectedPlatform = "PlayerSettings.SelectedPlatform";
 
@@ -598,8 +596,6 @@ namespace UnityEditor
             m_SubmitAnalytics               = FindPropertyAssert("submitAnalytics");
 
             m_IOSURLSchemes                 = FindPropertyAssert("iOSURLSchemes");
-
-            m_AotOptions                    = FindPropertyAssert("aotOptions");
 
             m_CameraUsageDescription        = FindPropertyAssert("cameraUsageDescription");
             m_LocationUsageDescription      = FindPropertyAssert("locationUsageDescription");
@@ -873,7 +869,7 @@ namespace UnityEditor
 
         private void SetReason(string reason)
         {
-            if (!IsGlobalOrActiveProfile)
+            if (!IsActivePlayerSettingsEditor())
             {
                 return;
             }
@@ -894,7 +890,7 @@ namespace UnityEditor
 
         private void RecompileScripts()
         {
-            if (!IsGlobalOrActiveProfile || isPresetWindowOpen)
+            if (!IsActivePlayerSettingsEditor() || isPresetWindowOpen)
             {
                 return;
             }
@@ -972,7 +968,7 @@ namespace UnityEditor
             if (playerSettingsType == PlayerSettingsType.Global)
                 CheckUpdatePresetSelectorStatus();
 
-            if (!IsBuildProfile())
+            if (!IsBuildProfileEditor())
                 GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatformValue].title.text));
 
             // Increase the offset to accomodate large labels, though keep a minimum of 150.
@@ -3472,15 +3468,6 @@ namespace UnityEditor
             if (IsPreset())
                 EditorGUI.indentLevel--;
 
-            bool platformUsesAOT =
-                platform.namedBuildTarget == NamedBuildTarget.iOS ||
-                platform.namedBuildTarget == NamedBuildTarget.tvOS ||
-                platform.namedBuildTarget == NamedBuildTarget.XboxOne ||
-                platform.namedBuildTarget == NamedBuildTarget.PS4;
-
-            if (platformUsesAOT)
-                EditorGUILayout.PropertyField(m_AotOptions, SettingsContent.aotOptions);
-
             bool platformSupportsStripping = !BuildTargetDiscovery.PlatformGroupHasFlag(platform.namedBuildTarget.ToBuildTargetGroup(), TargetAttributes.StrippingNotSupported);
 
             if (platformSupportsStripping)
@@ -3633,7 +3620,7 @@ namespace UnityEditor
                                 {
                                     logProperty.intValue = (int)stackTraceLogType;
 
-                                    if (IsGlobalOrActiveProfile)
+                                    if (IsActivePlayerSettingsEditor())
                                         PlayerSettings.SetGlobalStackTraceLogType(logType, stackTraceLogType);
                                 }
                             }
@@ -4053,7 +4040,7 @@ namespace UnityEditor
 
         bool CanShowPlatformSettingsForHostPlatform(BuildTarget settingsBuildTarget, BuildPlatform currentPlatform)
         {
-            if (IsBuildProfile() && currentPlatform.defaultTarget != settingsBuildTarget)
+            if (IsBuildProfileEditor() && currentPlatform.defaultTarget != settingsBuildTarget)
                 return false;
 
             return BuildTargetDiscovery.BuildPlatformIsAvailableOnHostPlatform(settingsBuildTarget, SystemInfo.operatingSystemFamily);

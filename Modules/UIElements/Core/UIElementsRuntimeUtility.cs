@@ -97,13 +97,21 @@ namespace UnityEngine.UIElements
 
         public static void RenderOffscreenPanels()
         {
+            var oldCam = Camera.current;
+            var oldRT = RenderTexture.active;
+
             foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
             {
                 if (!panel.drawsInCameras && panel.targetTexture != null)
                 {
-                    RenderPanel(panel);
+                    // We don't want the state to be restored immediately because the next panel might be rendering
+                    // to the same render texture
+                    RenderPanel(panel, false);
                 }
             }
+
+            Camera.SetupCurrent(oldCam);
+            RenderTexture.active = oldRT;
         }
 
         public static void RepaintPanel(BaseRuntimePanel panel)
@@ -113,13 +121,12 @@ namespace UnityEngine.UIElements
 
             using (s_RepaintProfilerMarker.Auto())
                 panel.Repaint(Event.current);
-            (panel.panelDebug?.debuggerOverlayPanel as Panel)?.Repaint(Event.current);
 
             Camera.SetupCurrent(oldCam);
             RenderTexture.active = oldRT;
         }
 
-        public static void RenderPanel(BaseRuntimePanel panel)
+        public static void RenderPanel(BaseRuntimePanel panel, bool restoreState = true)
         {
             // Panel must NOT have drawsInCameras set. Such panels are drawn by the render nodes.
             Debug.Assert(!panel.drawsInCameras);
@@ -128,9 +135,8 @@ namespace UnityEngine.UIElements
             var oldRT = RenderTexture.active;
 
             panel.Render();
-            (panel.panelDebug?.debuggerOverlayPanel as Panel)?.Render();
 
-            if (!panel.drawsInCameras)
+            if (!panel.drawsInCameras && restoreState)
             {
                 Camera.SetupCurrent(oldCam);
                 RenderTexture.active = oldRT;

@@ -254,9 +254,9 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override bool Equals(object other)
         {
-            if (!(other is Quaternion)) return false;
-
-            return Equals((Quaternion)other);
+            if (other is Quaternion q)
+                return Equals(q);
+            return false;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

@@ -2680,7 +2680,7 @@ namespace UnityEditor
             // Do not pass the camera transform to the SceneViewMotion calculations.
             // The camera transform is calculation *output* not *input*.
             // Avoiding using it as input too avoids errors accumulating.
-            m_SceneViewMotion.DoViewTool();
+            m_SceneViewMotion.DoViewTool(this);
 
             // Update active viewpoint if there's one.
             // Must happen after SceneViewMotion.DoViewTool() so it knows

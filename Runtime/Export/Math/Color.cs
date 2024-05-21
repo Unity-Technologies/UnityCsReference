@@ -77,9 +77,9 @@ namespace UnityEngine
         // also required for being able to use Colors as keys in hash tables
         public override bool Equals(object other)
         {
-            if (!(other is Color)) return false;
-
-            return Equals((Color)other);
+            if (other is Color color)
+                return Equals(color);
+            return false;
         }
 
         public bool Equals(Color other)

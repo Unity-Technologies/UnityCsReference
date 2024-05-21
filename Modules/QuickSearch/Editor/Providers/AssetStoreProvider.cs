@@ -785,33 +785,11 @@ namespace UnityEditor.Search.Providers
             s_CurrentSearchView = null;
         }
 
-        static void GetQueryParts(IQueryNode n, List<IFilterNode> filters, List<ISearchNode> searches)
-        {
-            if (n == null)
-                return;
-            if (n is IFilterNode filterNode)
-            {
-                filters.Add(filterNode);
-            }
-            else if (n is ISearchNode searchNode)
-            {
-                searches.Add(searchNode);
-            }
-
-            if (n.children != null)
-            {
-                foreach (var child in n.children)
-                {
-                    GetQueryParts(child, filters, searches);
-                }
-            }
-        }
-
         static string FormatQuery(ParsedQuery<QueryDescriptor> query, SearchContext context, int startIndex)
         {
             List<IFilterNode> filters = new();
             List<ISearchNode> searches = new();
-            GetQueryParts(query.queryGraph.root, filters, searches);
+            SearchUtils.GetQueryParts(query.queryGraph.root, filters, searches);
 
             var searchStr = string.Join(" ", searches.Select(s => s.searchValue)).Trim();
             s_QueryParams = new Dictionary<string, object>()

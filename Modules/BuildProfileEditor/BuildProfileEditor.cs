@@ -29,6 +29,7 @@ namespace UnityEditor.Build.Profile
         const string k_CompilingWarningHelpBox = "compiling-warning-help-box";
         const string k_VirtualTextureWarningHelpBox = "virtual-texture-warning-help-box";
         const string k_PlayerScriptingDefinesFoldout = "scripting-defines-foldout";
+        const string k_BuildSettingsFoldout = "build-settings-foldout";
         BuildProfileSceneList m_SceneList;
         HelpBox m_CompilingWarningHelpBox;
         HelpBox m_VirtualTexturingHelpBox;
@@ -98,6 +99,7 @@ namespace UnityEditor.Build.Profile
             var platformSettingsBaseRoot = root.Q<VisualElement>(k_PlatformSettingsBaseRoot);
             var buildDataLabel = root.Q<Label>(k_BuildDataLabel);
             var sharedSettingsInfoHelpBox = root.Q<HelpBox>(k_SharedSettingsInfoHelpbox);
+            var buildSettingsFoldout = root.Q<Foldout>(k_BuildSettingsFoldout);
             m_VirtualTexturingHelpBox = root.Q<HelpBox>(k_VirtualTextureWarningHelpBox);
             m_CompilingWarningHelpBox = root.Q<HelpBox>(k_CompilingWarningHelpBox);
 
@@ -107,12 +109,20 @@ namespace UnityEditor.Build.Profile
             platformSettingsLabel.text = TrText.platformSettings;
             buildDataLabel.text = TrText.buildData;
             sharedSettingsInfoHelpBox.text = TrText.sharedSettingsInfo;
+            buildSettingsFoldout.text = TrText.GetSettingsSectionName(BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformId));
 
             AddSceneList(root, profile);
             AddScriptingDefineListView(root);
 
-            if (!BuildProfileContext.IsClassicPlatformProfile(profile))
+            bool hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, profile.platformId);
+            bool isClassic = BuildProfileContext.IsClassicPlatformProfile(profile);
+
+            if (!isClassic)
+            {
                 sharedSettingsInfoHelpBox.Hide();
+                m_ProfilePlayerSettingsEditor = BuildProfilePlayerSettingsEditor
+                    .CreatePlayerSettingsUI(root, hasErrors ? null : serializedObject);
+            }
             else
             {
                 var button = root.Q<Button>(k_SharedSettingsInfoHelpboxButton);
@@ -120,10 +130,11 @@ namespace UnityEditor.Build.Profile
                 button.clicked += DuplicateSelectedClassicProfile;
             }
 
-            bool hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, profile.platformId);
-            m_ProfilePlayerSettingsEditor = BuildProfilePlayerSettingsEditor.CreatePlayerSettingsUI(DuplicateSelectedClassicProfile, root, hasErrors ? null : serializedObject);
             if (hasErrors)
+            {
+                buildSettingsFoldout.Hide();
                 return root;
+            }
 
             EditorApplication.update += EditorUpdate;
 
@@ -152,6 +163,7 @@ namespace UnityEditor.Build.Profile
             root.Q<HelpBox>(k_CompilingWarningHelpBox).Hide();
             root.Q<Button>(k_SharedSettingsInfoHelpboxButton).Hide();
             root.Q<Foldout>(k_PlayerScriptingDefinesFoldout).Hide();
+            root.Q<Foldout>(k_BuildSettingsFoldout).Hide();
 
             var sharedSettingsHelpbox = root.Q<HelpBox>(k_SharedSettingsInfoHelpbox);
             sharedSettingsHelpbox.text = TrText.sharedSettingsSectionInfo;
@@ -161,8 +173,6 @@ namespace UnityEditor.Build.Profile
             sectionLabel.text = TrText.sceneList;
 
             AddSceneList(root);
-
-            m_ProfilePlayerSettingsEditor = BuildProfilePlayerSettingsEditor.CreatePlayerSettingsUI(DuplicateSelectedClassicProfile, root, null);
             return root;
         }
 

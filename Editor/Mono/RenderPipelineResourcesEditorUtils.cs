@@ -22,7 +22,31 @@ namespace UnityEditor.Rendering
             ResourceReloaded, //Some resources got reloaded
             SkipedDueToNotMainThread, //Worker Thread cannot fully load resources
         }
-        
+
+        internal static bool TryReloadContainedNullFields(IRenderPipelineResources resource, out ResultStatus result, out string message)
+        {
+            message = string.Empty;
+
+            result = ResultStatus.NothingToUpdate;
+
+            try
+            {
+                if (AssetDatabase.IsAssetImportWorkerProcess())
+                    result = ResultStatus.SkipedDueToNotMainThread;
+                else if (new Reloader(resource).hasChanged)
+                    result = ResultStatus.ResourceReloaded;
+            }
+            catch (InvalidImportException e)
+            {
+                message = e.Message;
+                result = ResultStatus.InvalidPathOrNameFound;
+                return false;
+            }
+
+
+            return true;
+        }
+
         /// <summary>
         /// Looks for resources in the given <paramref name="resource"/> object and reload
         /// the ones that are missing or broken.
@@ -34,25 +58,18 @@ namespace UnityEditor.Rendering
         /// <returns> The status </returns>
         public static ResultStatus TryReloadContainedNullFields(IRenderPipelineResources resource)
         {
-            if (AssetDatabase.IsAssetImportWorkerProcess())
-                return ResultStatus.SkipedDueToNotMainThread;
-
+            ResultStatus result;
             try
             {
-                if (new Reloader(resource).hasChanged)
-                    return ResultStatus.ResourceReloaded;
-                else
-                    return ResultStatus.NothingToUpdate;
-            }
-            catch (InvalidImportException e)
-            {
-                Debug.LogError(e.Message);
-                return ResultStatus.InvalidPathOrNameFound;
+                if (!TryReloadContainedNullFields(resource, out result, out var message))
+                    Debug.LogError(message);
             }
             catch (Exception e)
             {
                 throw e;
             }
+
+            return result;
         }
 
         

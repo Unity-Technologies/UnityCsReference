@@ -213,7 +213,7 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                if (!EqualityComparer<TValueType>.Default.Equals(m_Value, value) || showMixedValue)
+                if (!EqualsCurrentValue(value) || showMixedValue)
                 {
                     showMixedValue = false;
                     if (panel != null)
@@ -355,6 +355,8 @@ namespace UnityEngine.UIElements
         {
             this.visualInput = visualInput;
         }
+
+        internal virtual bool EqualsCurrentValue(TValueType value) => EqualityComparer<TValueType>.Default.Equals(m_Value, value);
 
         private void OnAttachToPanel(AttachToPanelEvent e)
         {

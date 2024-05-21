@@ -336,31 +336,20 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         const string highlightableColorClass = "graphics-settings__highlightable--background-color";
 
         static int s_EventCounter;
+        static VisualElement s_SearchedElement;
+        static readonly List<Foldout> k_Foldouts = new();
 
         public static void OpenAndScrollTo(string propertyPath)
         {
             if (string.IsNullOrEmpty(propertyPath))
                 throw new ArgumentException(nameof(propertyPath), $"The {nameof(propertyPath)} argument can't be null or empty.");
 
-            var settingsWindow = GetOrOpenGraphicsSettingsWindow(out var previousWindowState);
-            var root = settingsWindow.rootVisualElement;
-
-            RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(previousWindowState is PreviousWindowState.Opened or PreviousWindowState.IncorrectProvider, root, () =>
-            {
-                if (!TryFindPropertyAndTabByBindingPath(propertyPath, root, out var propertyField, out var tabbedView, out var tabButton))
-                {
-                    Debug.LogWarning($"Couldn't find a property with bindingPath {propertyPath} in the settings container.");
-                    return;
-                }
-
-                var scrollView = root.Q<ScrollView>("MainScrollView");
-                var isCorrectTabOpenOrNotExist = tabbedView?.ActiveTab == tabButton;
-                if (!isCorrectTabOpenOrNotExist)
-                    tabbedView?.Activate(tabButton);
-
-                RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(isCorrectTabOpenOrNotExist && previousWindowState is PreviousWindowState.Opened, tabbedView,
-                    () => { root.schedule.Execute(() => OpenFoldoutsThenScroll(propertyField, scrollView)).StartingIn(500); });
-            });
+            OpenAndScrollTo<PropertyField, PropertyField>(
+                root => TryFindPropertyAndTabByBindingPath(propertyPath, root, out var tabbedView, out var tabButton, out var propertyField)
+                    ? (true, tabbedView, tabButton, propertyField)
+                    : (false, null, null, null),
+                () => $"Couldn't find a property with bindingPath {propertyPath} in the settings container.",
+                (scrollView, _, propertyField, _) => OpenFoldoutsThenScroll(propertyField, scrollView));
         }
 
         public static void OpenAndScrollTo(Type renderPipelineGraphicsSettingsType)
@@ -381,6 +370,14 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             OpenAndScrollTo(typeof(TGraphicsSettings), subElementFunc);
         }
 
+        /// <summary>
+        /// Open the Graphics Settings window and scroll to the specified Render Pipeline Graphics Settings type.
+        /// </summary>
+        /// <param name="renderPipelineGraphicsSettingsType">Type of the IRenderPipelineGraphicsSettings to search for.</param>
+        /// <param name="subElementFunc">Provide a Func to search for sub element in the IRenderPipelineGraphicsSettings drawer.</param>
+        /// <typeparam name="TVisualElement">Type of the VisualElement to searcg for.</typeparam>
+        /// <exception cref="ArgumentNullException">Throw if a renderPipelineGraphicsSettingsType is null.</exception>
+        /// <exception cref="ArgumentException">Throw if a renderPipelineGraphicsSettingsType type is not derived from IRenderPipelineGraphicsSettings.</exception>
         internal static void OpenAndScrollTo<TVisualElement>(Type renderPipelineGraphicsSettingsType, Func<TVisualElement, bool> subElementFunc = null)
             where TVisualElement : VisualElement
         {
@@ -389,47 +386,62 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             if (!typeof(IRenderPipelineGraphicsSettings).IsAssignableFrom(renderPipelineGraphicsSettingsType))
                 throw new ArgumentException($"{nameof(IRenderPipelineGraphicsSettings)} is not assignable from {nameof(renderPipelineGraphicsSettingsType)}");
 
+            OpenAndScrollTo(
+                root => TryFindTabByType(renderPipelineGraphicsSettingsType, root, out var tabbedView, out var tabButton, out var bindingPath)
+                    ? (true, tabbedView, tabButton, bindingPath)
+                    : (false, tabbedView, null, null),
+                () => $"Couldn't find a tab for {renderPipelineGraphicsSettingsType.Name} type in the settings container.",
+                SearchForVisualElementInTabsAndScroll,
+                subElementFunc);
+        }
+
+        /// <summary>
+        /// Open the Graphics Settings window and scroll to the field specified by the set of methods.
+        /// </summary>
+        /// <param name="searchForVisualElement">Search for a visual element that corresponds to the propertyPath or IRenderPipelineGraphicsSettings type.</param>
+        /// <param name="message">Message to log if the visual element wasn't found. It will also return tabbed view if exists and tab button if it contains a visual element.</param>
+        /// <param name="execute">Execute the method to scroll to the visual element.</param>
+        /// <param name="subElementFunc">Provide a Func to search for sub element in the IRenderPipelineGraphicsSettings drawer.</param>
+        /// <typeparam name="TVisualElement">Type of the VisualElement to search for.</typeparam>
+        /// <typeparam name="TResult">Type of the result data. Either binding path of the property field or property field itself.</typeparam>
+        static void OpenAndScrollTo<TVisualElement, TResult>(
+            Func<VisualElement, (bool, TabbedView, TabButton, TResult)> searchForVisualElement,
+            Func<string> message, Action<ScrollView, TabButton, TResult, Func<TVisualElement, bool>> execute,
+            Func<TVisualElement, bool> subElementFunc = null)
+            where TVisualElement : VisualElement
+        {
             var settingsWindow = GetOrOpenGraphicsSettingsWindow(out var previousWindowState);
             var root = settingsWindow.rootVisualElement;
 
+            //Wait for the window to layout if a window changed provider or open first time and then find the tabs.
             RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(previousWindowState is PreviousWindowState.Opened or PreviousWindowState.IncorrectProvider, settingsWindow.rootVisualElement, () =>
             {
-                if (!TryFindTabByType(renderPipelineGraphicsSettingsType, root, out var tabButton, out var bindingPath))
+                var (result, tabbedView, tabButton, resultedData) = searchForVisualElement.Invoke(root);
+                if (!result)
                 {
-                    Debug.LogWarning($"Couldn't find a tab for {renderPipelineGraphicsSettingsType.Name} type in the settings container.");
+                    Debug.LogWarning(message.Invoke());
                     return;
                 }
 
-                var tabbedView = root.Q<TabbedView>();
-                var isCorrectTabOpen = tabbedView.ActiveTab == tabButton;
-                if (!isCorrectTabOpen)
+                var isTabbedViewNull = tabbedView == null;
+                var isCorrectTabOpen = isTabbedViewNull || tabButton == null || tabbedView.ActiveTab == tabButton;
+                var scrollView = root.Q<ScrollView>("MainScrollView");
+
+                //Wait for the tab to layout if active tab was switched and then search for the VisualElement. Added a special check for the built-in settings because it will produce only one event when tab switch to it.
+                RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(isTabbedViewNull || previousWindowState is PreviousWindowState.Opened, tabbedView,
+                    () => RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(isTabbedViewNull || isCorrectTabOpen || tabbedView.ActiveTab.userData as string == GraphicsSettingsInspector.GraphicsSettingsData.builtIn, tabbedView,
+                        () => root.schedule.Execute(() => execute.Invoke(scrollView, tabButton, resultedData, subElementFunc)).StartingIn(500)));
+
+                if (!isTabbedViewNull && !isCorrectTabOpen)
                     tabbedView.Activate(tabButton);
-                RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(previousWindowState is PreviousWindowState.Opened, tabbedView, () =>
-                {
-                    RegisterCallbackOnceOrCallImmediately<GeometryChangedEvent>(isCorrectTabOpen, tabbedView, () =>
-                    {
-                        tabbedView.schedule.Execute(() =>
-                        {
-                            var target = tabButton.Target;
-                            VisualElement field = target
-                                .Query<PropertyField>()
-                                .Where(p => string.CompareOrdinal(p.bindingPath, bindingPath) == 0)
-                                .First();
-
-                            if (field == null)
-                                return;
-
-                            if (subElementFunc != null)
-                                field = field.Query<TVisualElement>().Where(subElementFunc.Invoke).First();
-
-                            var scrollView = root.Q<ScrollView>("MainScrollView");
-                            OpenFoldoutsThenScroll(field, scrollView);
-                        }).StartingIn(500);
-                    });
-                });
             });
         }
 
+        /// <summary>
+        /// Get or open the Graphics Settings window and focus on it.
+        /// </summary>
+        /// <param name="previousWindowState"> The state of the window before the method was called.</param>
+        /// <returns>ProjectSettings window with selected Graphics Settings page.</returns>
         internal static ProjectSettingsWindow GetOrOpenGraphicsSettingsWindow(out PreviousWindowState previousWindowState)
         {
             previousWindowState = PreviousWindowState.Opened;
@@ -449,12 +461,44 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             return settingsWindow;
         }
 
-        static bool TryFindTabByType(Type renderPipelineGraphicsSettingsType, VisualElement root, out TabButton tabButton, out string bindingPath)
+        /// <summary>
+        /// Find the PropertyField and TabbedView by binding path.
+        /// </summary>
+        /// <param name="propertyPath">Property Path of the element.</param>
+        /// <param name="root">Root VisualElement to search for Tabs.</param>
+        /// <param name="tabbedView">Visual Element that contains all tabs and bodies. Null if there's none.</param>
+        /// <param name="tabButton">Tab that contains property field. Null if there's none.</param>
+        /// <param name="propertyField">Property Field the contains provided property path.</param>
+        /// <returns>True if the search was successful.</returns>
+        static bool TryFindPropertyAndTabByBindingPath(string propertyPath, VisualElement root, out TabbedView tabbedView, out TabButton tabButton, out PropertyField propertyField)
+        {
+            tabbedView = root.Q<TabbedView>();
+            tabButton = null;
+
+            propertyField = root.Query<PropertyField>().Where(p => propertyPath.Contains(p.bindingPath)).First();
+            if (propertyField == null)
+                return false;
+
+            if (tabbedView != null)
+                tabButton = propertyField.GetFirstAncestorOfType<TabButton>();
+            return true;
+        }
+
+        /// <summary>
+        /// Find the tab and binding path for the Render Pipeline Graphics Settings type.
+        /// </summary>
+        /// <param name="renderPipelineGraphicsSettingsType">Type of the IRenderPipelineGraphicsSettings</param>
+        /// <param name="root">Root VisualElement to search for the TabbedView.</param>
+        /// <param name="tabbedView">TabbedView that contains all tabs.</param>
+        /// <param name="tabButton">Tab which contains IRenderPipelineGraphicsSettings.</param>
+        /// <param name="bindingPath">Real bindingPath of the IRenderPipelineGraphicsSettings.</param>
+        /// <returns>True if the search was successful.</returns>
+        static bool TryFindTabByType(Type renderPipelineGraphicsSettingsType, VisualElement root, out TabbedView tabbedView, out TabButton tabButton, out string bindingPath)
         {
             tabButton = null;
             bindingPath = "";
 
-            var tabbedView = root.Q<TabbedView>();
+            tabbedView = root.Q<TabbedView>();
             if (tabbedView == null)
                 return false;
 
@@ -490,34 +534,100 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             return tabButton != null;
         }
 
-        static bool TryFindPropertyAndTabByBindingPath(string propertyPath, VisualElement root, out PropertyField propertyField, out TabbedView tabbedView, out TabButton tabButton)
+        /// <summary>
+        /// Search for the VisualElement in the tabs and scroll to it.
+        /// </summary>
+        /// <param name="subElementFunc">Method to search for sub element of the IRenderPipelineGraphicsSettings.</param>
+        /// <param name="tabButton">Tab to search for the VisualElement.</param>
+        /// <param name="bindingPath">Binding path of the IRenderPipelineGraphicsSettings.</param>
+        /// <param name="root">Root VisualElement to search for the Main ScrollView.</param>
+        /// <typeparam name="TVisualElement">Type of the VisualElement to search for.</typeparam>
+        static void SearchForVisualElementInTabsAndScroll<TVisualElement>(ScrollView scrollView, TabButton tabButton, string bindingPath, Func<TVisualElement, bool> subElementFunc)
+            where TVisualElement : VisualElement
         {
-            tabButton = null;
-            propertyField = null;
+            var target = tabButton.Target;
+            VisualElement field = target
+                .Query<PropertyField>()
+                .Where(p => string.CompareOrdinal(p.bindingPath, bindingPath) == 0)
+                .First();
 
-            tabbedView = root.Q<TabbedView>();
-            if (tabbedView == null)
-                propertyField = root.Query<PropertyField>().Where(p => propertyPath.Contains(p.bindingPath)).First();
-            else
+            if (field == null)
+                return;
+
+            // If the subElementFunc is null, we just want to scroll to the field.
+            if (subElementFunc == null)
             {
-                TabButton lambdaTabButton = null;
-                PropertyField lambdaPropertyField = null;
-                root.Query<TabButton>().ForEach(tb =>
-                {
-                    var target = tb.Target;
-                    if (target == null)
-                        return;
-                    var foundPropertyField = target.Query<PropertyField>().Where(p => propertyPath.Contains(p.bindingPath)).First();
-                    if (foundPropertyField != null)
-                        (lambdaTabButton, lambdaPropertyField) = (tb, foundPropertyField);
-                });
-
-                (tabButton, propertyField) = (lambdaTabButton, lambdaPropertyField);
+                OpenFoldoutsThenScroll(field, scrollView);
+                return;
             }
 
-            return propertyField != null;
+            var subElement = field.Query<TVisualElement>().Where(subElementFunc.Invoke).First();
+            // If the subElement is found, we just want to scroll to it.
+            if (subElement != null)
+            {
+                OpenFoldoutsThenScroll(subElement, scrollView);
+                return;
+            }
+
+            // This could mean that the field hidden in the Foldout.
+            // Let's try to find the Foldout and open it.
+            s_SearchedElement = null;
+            k_Foldouts.Clear();
+            field.Query<Foldout>().Where(f => !f.value).ForEach(
+                f => ExpandFoldoutAndChildren(f, subElementFunc, foundElement =>
+                {
+                    s_SearchedElement = null;
+                    k_Foldouts.Clear();
+                    OpenFoldoutsThenScroll(foundElement, scrollView);
+                }));
         }
 
+        /// <summary>
+        /// Expand a foldout and all child's foldout until the searched element is found.
+        /// </summary>
+        /// <param name="foldout">Foldout to expand.</param>
+        /// <param name="subElementFunc">Condition to determine correct Visual Element.</param>
+        /// <param name="onFinished">When correct VisualElement found then call this method with it.</param>
+        /// <typeparam name="TVisualElement">VisualElement type to search for.</typeparam>
+        static void ExpandFoldoutAndChildren<TVisualElement>(Foldout foldout, Func<TVisualElement, bool> subElementFunc, Action<VisualElement> onFinished)
+            where TVisualElement : VisualElement
+        {
+            if(s_SearchedElement != null)
+                return;
+
+            k_Foldouts.Add(foldout);
+            foldout.value = true;
+
+            //We use Execute and Delay with starting 1 to be sure that foldouts loaded and layouted.
+            foldout.schedule.Execute(() =>
+            {
+                s_SearchedElement = foldout.Query<TVisualElement>().Where(subElementFunc.Invoke).First();
+                if (s_SearchedElement != null)
+                {
+                    foreach (var openedFoldout in k_Foldouts)
+                    {
+                        if (!openedFoldout.Contains(s_SearchedElement))
+                            openedFoldout.value = false;
+                    }
+
+                    onFinished.Invoke(s_SearchedElement);
+                    return;
+                }
+
+                var childFoldouts = foldout.Query<Foldout>().ToList();
+                foreach (var childFoldout in childFoldouts)
+                {
+                    ExpandFoldoutAndChildren(childFoldout, subElementFunc, onFinished);
+                }
+            }).StartingIn(1);
+        }
+
+        /// <summary>
+        /// Open all Foldouts and scroll to the provided field.
+        /// </summary>
+        /// <param name="field">Field to check for open foldouts in parents.</param>
+        /// <param name="scrollView">Main Scroll View of the Graphics Settings page.</param>
+        /// <typeparam name="T">Type of the VisualElement.</typeparam>
         static void OpenFoldoutsThenScroll<T>(T field, ScrollView scrollView)
             where T : VisualElement
         {
@@ -548,6 +658,12 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                 ScrollTo(field, scrollView);
         }
 
+        /// <summary>
+        /// Scroll to the provided field and highlight it.
+        /// </summary>
+        /// <param name="field">Provided VisualElement.</param>
+        /// <param name="scrollView">Main Scroll View of the Graphics Settings page.</param>
+        /// <typeparam name="T">Type of the VisualElement.</typeparam>
         static void ScrollTo<T>(T field, ScrollView scrollView)
             where T : VisualElement
         {
@@ -562,6 +678,13 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             });
         }
 
+        /// <summary>
+        /// Utility method to register a callback once or call it immediately if the condition is true.
+        /// </summary>
+        /// <param name="immediateCondition">Condition to check.</param>
+        /// <param name="element">Subscribe to the event on this VisualElement.</param>
+        /// <param name="callback">Call this callback when finished.</param>
+        /// <typeparam name="T">Type of the event to subscribe.</typeparam>
         static void RegisterCallbackOnceOrCallImmediately<T>(bool immediateCondition, VisualElement element, Action callback)
             where T : EventBase<T>, new()
         {
@@ -571,10 +694,22 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                 element.RegisterCallbackOnce<T>(_ => callback?.Invoke());
         }
 
+        /// <summary>
+        /// State of the window before GetOrOpenGraphicsSettingsWindow method was called. Used to determine how many layout events we expect.
+        /// </summary>
         internal enum PreviousWindowState
         {
+            /// <summary>
+            /// Window was not opened before.
+            /// </summary>
             NotOpened,
+            /// <summary>
+            /// Window had different page open. We need to wait for the Graphics Settings page to open and layout.
+            /// </summary>
             IncorrectProvider,
+            /// <summary>
+            /// Window was already opened with the Graphics Settings page.
+            /// </summary>
             Opened
         }
         #endregion

@@ -20,11 +20,6 @@ namespace UnityEditor;
 
 sealed class AudioContainerWindow : EditorWindow
 {
-    /// <summary>
-    /// The cached instance of the window, if it is open.
-    /// </summary>
-    internal static AudioContainerWindow Instance { get; private set; }
-
     internal readonly AudioContainerWindowState State = new();
 
     /// <summary>
@@ -121,7 +116,6 @@ sealed class AudioContainerWindow : EditorWindow
 
     void OnEnable()
     {
-        Instance = this;
         m_DiceIconOff = EditorGUIUtility.IconContent("AudioRandomContainer On Icon").image as Texture2D;
         m_DiceIconOn = EditorGUIUtility.IconContent("AudioRandomContainer Icon").image as Texture2D;
         SetTitle();
@@ -129,7 +123,6 @@ sealed class AudioContainerWindow : EditorWindow
 
     void OnDisable()
     {
-        Instance = null;
         State.OnDestroy();
         UnsubscribeFromGUICallbacksAndEvents();
         m_IsInitializing = false;
@@ -139,7 +132,7 @@ sealed class AudioContainerWindow : EditorWindow
         m_AddedElements.Clear();
     }
 
-    private void OnFocus()
+    void OnFocus()
     {
         if (State.AudioContainer != null)
         {
@@ -1365,8 +1358,18 @@ sealed class AudioContainerWindow : EditorWindow
         /// </summary>
         static string[] OnWillSaveAssets(string[] paths)
         {
-            if (Instance != null)
-                Instance.OnWillSaveAssets(paths);
+            if (HasOpenInstances<AudioContainerWindow>())
+            {
+                var window = focusedWindow as AudioContainerWindow;
+
+                if (window == null)
+                {
+                    // The window is not focused, so make sure we don't focus when getting the reference here.
+                    window = GetWindow<AudioContainerWindow>(false, null, false);
+                }
+
+                window.OnWillSaveAssets(paths);
+            }
 
             return paths;
         }
@@ -1381,17 +1384,25 @@ sealed class AudioContainerWindow : EditorWindow
         /// </summary>
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssets)
         {
-            if (Instance == null)
-                return;
+            if (HasOpenInstances<AudioContainerWindow>())
+            {
+                var window = focusedWindow as AudioContainerWindow;
 
-            if (movedFromAssets.Length > 0)
-                Instance.OnAssetsMoved(movedFromAssets);
+                if (window == null)
+                {
+                    // The window is not focused, so make sure we don't focus when getting the reference here.
+                    window = GetWindow<AudioContainerWindow>(false, null, false);
+                }
 
-            if (importedAssets.Length > 0)
-                Instance.OnAssetsImported(importedAssets);
+                if (movedFromAssets.Length > 0)
+                    window.OnAssetsMoved(movedFromAssets);
 
-            if (deletedAssets.Length > 0)
-                Instance.OnAssetsDeleted(deletedAssets);
+                if (importedAssets.Length > 0)
+                    window.OnAssetsImported(importedAssets);
+
+                if (deletedAssets.Length > 0)
+                    window.OnAssetsDeleted(deletedAssets);
+            }
         }
     }
 

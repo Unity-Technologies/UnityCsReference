@@ -32,6 +32,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string sharedSettingsSectionInfo =
             L10n.Tr("Platforms use this shared scene list. To change the scene list or other settings independently, create a Build Profile.");
         public static readonly string activate = L10n.Tr("Switch Profile");
+        public static readonly string activatePlatform = L10n.Tr("Switch Platform");
         public static readonly string sceneList = L10n.Tr("Scene List");
         public static readonly string openSceneList = L10n.Tr("Open Scene List");
         public static readonly string compilingMessage = L10n.Tr("Cannot build player while editor is importing assets or compiling scripts.");
@@ -73,5 +74,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string textureCompressionLabel = L10n.Tr("Texture Compression");
         public static readonly string assetImportOverrideDescription =
             L10n.Tr("These settings allow you to override the compression\nand max resolution for textures in your project. This is\nuseful for local development, to speed up texture\nimporting or build target switching.");
+
+        public static string GetSettingsSectionName(string platform) => L10n.Tr($"{platform} Settings");
     }
 }

@@ -123,7 +123,7 @@ namespace UnityEditor
                             var idProp = serializedObject.FindProperty("m_CurrentBackendId");
                             idProp.uintValue = newIntegrationId;
 
-                            //force apply the property here as we want to ensure that the change is done immediately 
+                            //force apply the property here as we want to ensure that the change is done immediately
                             serializedObject.ApplyModifiedProperties();
 
                             //enable warning box if we are swapping
@@ -496,9 +496,10 @@ namespace UnityEditor
 
             try
             {
+                tab.Add(tabContent);
+
                 EcsExtension.SetupSettingsTab(tab, serializedObject);
 
-                tab.Add(tabContent);
                 tabs.Add(tab);
             }
             catch (Exception ex)

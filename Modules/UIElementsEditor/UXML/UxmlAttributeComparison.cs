@@ -35,7 +35,6 @@ namespace UnityEditor.UIElements
                 return false;
             if (a is not string &&
                 a is not Object &&
-                a.GetType().IsClass &&
                 UxmlAttributeConverter.TryConvertToString(a, null, out var aString) &&
                 UxmlAttributeConverter.TryConvertToString(b, null, out var bString))
             {
@@ -47,17 +46,28 @@ namespace UnityEditor.UIElements
 
         static bool ListEquals(IList a, IList b)
         {
-            // null and empty are treated as the same
             bool aEmpty = a == null || a.Count == 0;
             bool bEmpty = b == null || b.Count == 0;
 
-            if (aEmpty && bEmpty)
-                return true;
-            else if (aEmpty || bEmpty)
-                return false;
+            // null and empty are treated as the same
+            // If we have 2 empty lists that are not null we still need to compare them as they may have attributes.
+            if (a == null || b == null)
+            {
+                return aEmpty && bEmpty;
+            }
 
             if (a.Count != b.Count)
                 return false;
+
+            // Check if we have a converter as this will also include any attributes that the instance may have as well as its items.
+            if (UxmlAttributeConverter.TryConvertToString(a, null, out var aString) &&
+                UxmlAttributeConverter.TryConvertToString(b, null, out var bString))
+            {
+                return aString == bString;
+            }
+
+            if (aEmpty && bEmpty)
+                return true;
 
             // Compare contents, expecting the order of the elements to match.
             for (int i = 0; i < a.Count; ++i)

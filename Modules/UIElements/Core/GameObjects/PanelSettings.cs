@@ -199,6 +199,9 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
+        private bool m_DisableNoThemeWarning = false;
+
+        [SerializeField]
         private RenderTexture m_TargetTexture;
 
         /// <summary>
@@ -579,6 +582,26 @@ namespace UnityEngine.UIElements
         internal TextAsset m_ICUDataAsset;
 
         /// <summary>
+        /// Forces the UI shader to output colors in the gamma color space.
+        /// </summary>
+        /// <remarks>
+        /// This is only applicable when the project is in linear color space and when the panel is being rendered into
+        /// a Render Texture with a compatible format (e.g. R8G8B8A8_UNORM). It has no effect when the project color
+        /// space is set to gamma.
+        ///
+        /// You can use this feature to combine the SRGB Render Texture from your camera with the UNORM Render Texture of the UI.
+        /// In an on-screen UI panel, use an ImmediateModeElement to draw a full-screen quad with a custom shader that blends both.
+        ///
+        /// * Note 1: Render Texture read/write operations require additional bandwidth. This could negatively impact performance.
+        /// * Note 2: When a texture is sampled in the fragment shader, the shader will perform a linear-to-gamma color space conversion
+        ///           on the RGB channels. This could negatively impact performance.
+        /// * Note 3: When sampling from a texture, the interpolation between texels or mip levels is still performed in linear color space.
+        ///           This might lead to some visual differences between this mode and the same UI in a gamma project.
+        /// </remarks>
+        [SerializeField]
+        public bool forceGammaRendering;
+
+        /// <summary>
         /// Specifies a <see cref="PanelTextSettings"/> that will be used by every UI Document attached to the panel.
         /// </summary>
         [SerializeField]
@@ -613,7 +636,7 @@ namespace UnityEngine.UIElements
 
         private void OnEnable()
         {
-            if (themeUss == null)
+            if (!m_DisableNoThemeWarning && themeUss == null)
             {
                 // In the Editor, we only want this to run when in play mode, because otherwise users may get a false
                 // alarm when the project is loading and the theme asset is not yet loaded. By keeping it here, we can
@@ -757,6 +780,8 @@ namespace UnityEngine.UIElements
                     visualTree.style.width = m_TargetRect.width * m_ResolvedScale;
                     visualTree.style.height = m_TargetRect.height * m_ResolvedScale;
                 }
+
+                p.panelRenderer.forceGammaRendering = targetTexture != null && forceGammaRendering;
             }
 
             p.targetTexture = targetTexture;
@@ -767,7 +792,7 @@ namespace UnityEngine.UIElements
             p.worldSpaceLayer = worldSpaceLayer;
             p.clearSettings = new PanelClearSettings {clearColor = m_ClearColor, clearDepthStencil = m_ClearDepthStencil, color = m_ColorClearValue};
             p.referenceSpritePixelsPerUnit = referenceSpritePixelsPerUnit;
-            p.vertexBudget = m_VertexBudget;
+            p.panelRenderer.vertexBudget = m_VertexBudget;
             p.dataBindingManager.logLevel = m_BindingLogLevel;
 
             var atlas = p.atlas as DynamicAtlas;

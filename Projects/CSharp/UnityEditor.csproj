@@ -915,9 +915,6 @@
     <Compile Include="..\..\Editor\Mono\DataMode.cs">
       <Link>Editor\Mono\DataMode.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\DataWatchService.cs">
-      <Link>Editor\Mono\DataWatchService.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\DefaultAsset.bindings.cs">
       <Link>Editor\Mono\DefaultAsset.bindings.cs</Link>
     </Compile>
@@ -8873,6 +8870,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedObjectBindingToBaseField.cs">
       <Link>Modules\UIElementsEditor\Bindings\SerializedObjectBindingToBaseField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedObjectReferenceBinding.cs">
+      <Link>Modules\UIElementsEditor\Bindings\SerializedObjectReferenceBinding.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Bindings\SerializedObjectStringConversionBinding.cs">
       <Link>Modules\UIElementsEditor\Bindings\SerializedObjectStringConversionBinding.cs</Link>

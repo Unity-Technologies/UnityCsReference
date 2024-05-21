@@ -175,7 +175,7 @@ namespace UnityEditor.Search
                 }
             }
 
-            if (!typeof(Texture).IsAssignableFrom(assetType))
+            if (typeof(Texture).IsAssignableFrom(assetType))
             {
                 var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                 if (tex)
@@ -722,19 +722,20 @@ namespace UnityEditor.Search
 
 
 
+            var clientId = GetClientId(ctx);
             if (!options.HasAny(FetchPreviewOptions.Large))
             {
-                var preview = AssetPreview.GetAssetPreview(obj.GetInstanceID(), GetClientId(ctx));
+                var preview = AssetPreview.GetAssetPreview(obj.GetInstanceID(), clientId);
                 if (preview)
                     return preview;
 
-                if (AssetPreview.IsLoadingAssetPreview(obj.GetInstanceID()))
+                if (AssetPreview.IsLoadingAssetPreview(obj.GetInstanceID(), clientId))
                     return null;
             }
 
             var assetPath = SearchUtils.GetHierarchyAssetPath(obj, true);
             if (string.IsNullOrEmpty(assetPath))
-                return AssetPreview.GetAssetPreview(obj.GetInstanceID(), GetClientId(ctx)) ?? defaultThumbnail;
+                return AssetPreview.GetAssetPreview(obj.GetInstanceID(), clientId) ?? defaultThumbnail;
             return GetAssetPreviewFromPath(ctx, assetPath, previewSize, options);
         }
 

@@ -2097,9 +2097,6 @@
     <Compile Include="..\..\Modules\UIElements\Core\HierarchyTraversal.cs">
       <Link>Modules\UIElements\Core\HierarchyTraversal.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\IDataWatchService.cs">
-      <Link>Modules\UIElements\Core\IDataWatchService.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\IEnumerableUtils.cs">
       <Link>Modules\UIElements\Core\IEnumerableUtils.cs</Link>
     </Compile>
@@ -4578,6 +4575,9 @@
     <Compile Include="..\..\Runtime\Export\XR\Pose.cs">
       <Link>Runtime\Export\XR\Pose.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\iOS\AppleDevice.bindings.cs">
+      <Link>Runtime\Export\iOS\AppleDevice.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\OnDemandResources.bindings.cs">
       <Link>Runtime\Export\iOS\OnDemandResources.bindings.cs</Link>
     </Compile>
@@ -4586,6 +4586,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\iOSDevice.bindings.cs">
       <Link>Runtime\Export\iOS\iOSDevice.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\iOS\iOSDevice.cs">
+      <Link>Runtime\Export\iOS\iOSDevice.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\iOSReplayKit.bindings.cs">
       <Link>Runtime\Export\iOS\iOSReplayKit.bindings.cs</Link>
@@ -4599,8 +4602,8 @@
     <Compile Include="..\..\Runtime\Export\iOS\tvOS.bindings.deprecated.cs">
       <Link>Runtime\Export\iOS\tvOS.bindings.deprecated.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\iOS\tvOSDevice.bindings.cs">
-      <Link>Runtime\Export\iOS\tvOSDevice.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\iOS\tvOSDevice.cs">
+      <Link>Runtime\Export\iOS\tvOSDevice.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Jobs\Managed\BatchQueries.cs">
       <Link>Runtime\Jobs\Managed\BatchQueries.cs</Link>

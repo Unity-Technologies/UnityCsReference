@@ -129,8 +129,7 @@ namespace UnityEngine.UIElements.UIR
         Dictionary<VisualElement, ExtraRenderChainVEData> m_ExtraData = new();
 
         MeshGenerationDeferrer m_MeshGenerationDeferrer = new();
-        Shader m_DefaultShader, m_DefaultWorldSpaceShader;
-        Material m_DefaultMat, m_DefaultWorldSpaceMat;
+        Material m_DefaultMat;
         bool m_BlockDirtyRegistration;
         ChainBuilderStats m_Stats;
         uint m_StatsElementsAdded, m_StatsElementsRemoved;
@@ -152,7 +151,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly ProfilerMarker k_MarkerSerialize = new("RenderChain.Serialize");
 
 
-        public RenderChain(BaseVisualElementPanel panel) : this(panel, new UIRenderDevice(panel.vertexBudget), panel.atlas, new VectorImageManager(panel.atlas))
+        public RenderChain(BaseVisualElementPanel panel) : this(panel, new UIRenderDevice(panel.panelRenderer.vertexBudget), panel.atlas, new VectorImageManager(panel.atlas))
         {
         }
 
@@ -173,13 +172,34 @@ namespace UnityEngine.UIElements.UIR
             // TODO: Share across all panels
             tempMeshAllocator = new TempMeshAllocatorImpl();
             jobManager = new JobManager();
-            shaderInfoAllocator.Construct();
             opacityIdAccelerator = new OpacityIdAccelerator();
             meshGenerationNodeManager = new MeshGenerationNodeManager(entryRecorder);
             m_VisualChangesProcessor = new VisualChangesProcessor(this);
 
-            if (panel is BaseRuntimePanel { drawsInCameras: true })
-                device.drawsInCameras = drawInCameras = true;
+            ColorSpace activeColorSpace = QualitySettings.activeColorSpace;
+            if (panel.contextType == ContextType.Player)
+            {
+                var runtimePanel = (BaseRuntimePanel)panel;
+                device.drawsInCameras = drawInCameras = runtimePanel.drawsInCameras;
+                if (drawInCameras)
+                    m_DefaultMat = Shaders.runtimeWorldMaterial;
+                else
+                {
+                    m_DefaultMat = Shaders.runtimeMaterial;
+                    if (activeColorSpace == ColorSpace.Linear)
+                        forceGammaRendering = panel.panelRenderer.forceGammaRendering;
+                }
+            }
+            else // Editor
+            {
+                if (activeColorSpace == ColorSpace.Linear)
+                    forceGammaRendering = true;
+                m_DefaultMat = Shaders.editorMaterial;
+            }
+
+            Shaders.Acquire();
+
+            shaderInfoAllocator = new UIRVEShaderInfoAllocator(forceGammaRendering ? ColorSpace.Gamma : activeColorSpace);
 
             device.isFlat = isFlat = panel.isFlat;
         }
@@ -202,16 +222,14 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
+                Shaders.Release();
+
                 var ve = GetFirstElementInPanel(m_FirstCommand?.owner);
                 while (ve != null)
                 {
                     ResetTextures(ve);
                     ve = ve.renderChainData.next;
                 }
-
-                UIRUtility.Destroy(m_DefaultMat);
-                UIRUtility.Destroy(m_DefaultWorldSpaceMat);
-                m_DefaultMat = m_DefaultWorldSpaceMat = null;
 
                 tempMeshAllocator.Dispose();
                 tempMeshAllocator = null;
@@ -223,7 +241,7 @@ namespace UnityEngine.UIElements.UIR
                 vectorImageManager = null;
 
                 shaderInfoAllocator.Dispose();
-                shaderInfoAllocator = new UIRVEShaderInfoAllocator();
+                shaderInfoAllocator = null;
 
                 device?.Dispose();
                 device = null;
@@ -416,9 +434,6 @@ namespace UnityEngine.UIElements.UIR
             vectorImageManager?.Commit();
             shaderInfoAllocator.IssuePendingStorageChanges();
 
-            Material standardMaterial = GetStandardMaterial();
-            panel.InvokeUpdateMaterial(standardMaterial);
-
             device?.OnFrameRenderingBegin();
 
             if (drawInCameras)
@@ -450,7 +465,6 @@ namespace UnityEngine.UIElements.UIR
             List<CommandList> frameCommandLists = device?.currentFrameCommandLists;
             if (drawInCameras && frameCommandLists != null)
             {
-                var worldMat = GetStandardWorldSpaceMaterial();
                 for (int cmdListIndex = 0; cmdListIndex < device.currentFrameCommandListCount; ++cmdListIndex)
                 {
                     var cmdList = frameCommandLists[cmdListIndex];
@@ -461,10 +475,12 @@ namespace UnityEngine.UIElements.UIR
                         renderer.commandLists = commandLists;
 
                         int safeFrameIndex = (int)device.frameIndex % commandLists.Length;
-                        renderer.SetNativeData(safeFrameIndex, cmdListIndex, worldMat);
+                        renderer.SetNativeData(safeFrameIndex, cmdListIndex, m_DefaultMat);
                     }
                 }
             }
+
+            k_MarkerSerialize.End();
 
             Debug.Assert(immediateException == null); // Not supported for cameras
         }
@@ -488,6 +504,12 @@ namespace UnityEngine.UIElements.UIR
             if (m_FirstCommand != null)
             {
                 var viewport = panel.visualTree.layout;
+
+                if (forceGammaRendering)
+                    m_DefaultMat.EnableKeyword(Shaders.k_ForceGammaKeyword);
+                else
+                    m_DefaultMat.DisableKeyword(Shaders.k_ForceGammaKeyword);
+
                 m_DefaultMat.SetPass(0);
 
                 var projection = ProjectionUtils.Ortho(viewport.xMin, viewport.xMax, viewport.yMax, viewport.yMin, -0.001f, 1.001f);
@@ -682,51 +704,7 @@ namespace UnityEngine.UIElements.UIR
         internal bool drawStats { get; set; }
         internal bool drawInCameras { get; }
         internal bool isFlat { get; }
-
-        internal Shader defaultShader
-        {
-            get { return m_DefaultShader; }
-            set
-            {
-                if (m_DefaultShader == value)
-                    return;
-                m_DefaultShader = value;
-                UIRUtility.Destroy(m_DefaultMat);
-                m_DefaultMat = null;
-            }
-        }
-        internal Shader defaultWorldSpaceShader
-        {
-            get { return m_DefaultWorldSpaceShader; }
-            set
-            {
-                if (m_DefaultWorldSpaceShader == value)
-                    return;
-                m_DefaultWorldSpaceShader = value;
-                UIRUtility.Destroy(m_DefaultWorldSpaceMat);
-                m_DefaultWorldSpaceMat = null;
-            }
-        }
-
-        internal Material GetStandardMaterial()
-        {
-            if (m_DefaultMat == null && m_DefaultShader != null)
-            {
-                m_DefaultMat = new Material(m_DefaultShader);
-                m_DefaultMat.hideFlags |= HideFlags.DontSaveInEditor;
-            }
-            return m_DefaultMat;
-        }
-
-        internal Material GetStandardWorldSpaceMaterial()
-        {
-            if (m_DefaultWorldSpaceMat == null && m_DefaultWorldSpaceShader != null)
-            {
-                m_DefaultWorldSpaceMat = new Material(m_DefaultWorldSpaceShader);
-                m_DefaultWorldSpaceMat.hideFlags |= HideFlags.DontSaveInEditor;
-            }
-            return m_DefaultWorldSpaceMat;
-        }
+        public bool forceGammaRendering { get; } // This indicates the effective state, unlike Panel.forceGammaRendering.
 
         internal void EnsureFitsDepth(int depth)
         {

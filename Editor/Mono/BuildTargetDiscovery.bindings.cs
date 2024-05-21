@@ -120,7 +120,7 @@ namespace UnityEditor
             return buildTarget != null;
         }
 
-        public static bool TryGetProperties<T>(BuildTarget platform, out T properties) where T: IPlatformProperties
+        public static bool TryGetProperties<T>(BuildTarget platform, out T properties) where T : IPlatformProperties
         {
             if (TryGetBuildTarget(platform, out var buildTarget))
             {
@@ -248,6 +248,24 @@ namespace UnityEditor
             s_platform_43,
             s_platform_44,
             s_platform_45,
+            s_platform_46,
+            s_platform_47,
+            s_platform_100,
+            s_platform_101,
+            s_platform_102,
+        };
+
+        static GUID[] WindowsARM64BuildTargets { get; } = new GUID[]
+        {
+            s_platform_02,
+            s_platform_05,
+            s_platform_09,
+            s_platform_13,
+            s_platform_20,
+            s_platform_21,
+            s_platform_24,
+            s_platform_37,
+            s_platform_41,
             s_platform_46,
             s_platform_47,
             s_platform_100,
@@ -490,7 +508,7 @@ namespace UnityEditor
 
         public static GUID GetGUIDFromBuildTarget(BuildTarget buildTarget)
         {
-            if(s_PlatformGUIDData.TryGetValue(buildTarget, out GUID value))
+            if (s_PlatformGUIDData.TryGetValue(buildTarget, out GUID value))
                 return value;
 
             return new GUID("");
@@ -615,53 +633,40 @@ namespace UnityEditor
         }
 
         [System.Obsolete("BuildPlatformIsAvailableOnHostPlatform(BuildTarget) is obsolete. Use BuildPlatformIsAvailableOnHostPlatform(IBuildTarget) instead.", false)]
+        public static bool BuildPlatformIsAvailableOnHostPlatform(BuildTarget platform, UnityEngine.OperatingSystemFamily hostPlatform) => BuildPlatformIsAvailableOnHostPlatform(GetGUIDFromBuildTarget(platform), hostPlatform);
+        public static bool BuildPlatformIsAvailableOnHostPlatform(IBuildTarget platform, UnityEngine.OperatingSystemFamily hostPlatform) => BuildPlatformIsAvailableOnHostPlatform(platform.Guid, hostPlatform);
 
-        public static bool BuildPlatformIsAvailableOnHostPlatform(BuildTarget platform, UnityEngine.OperatingSystemFamily hostPlatform)
+        public static bool BuildPlatformIsAvailableOnHostPlatform(GUID platformGuid, UnityEngine.OperatingSystemFamily hostPlatform)
         {
-            var platformGuid = GetGUIDFromBuildTarget(platform);
+            var platformTargetArray = WindowsBuildTargets;
 
-            if (hostPlatform == UnityEngine.OperatingSystemFamily.Windows)
-            {
-                foreach (var winTarget in WindowsBuildTargets)
-                    if (winTarget == platformGuid)
-                        return true;
-            }
+            if (hostPlatform == UnityEngine.OperatingSystemFamily.Windows && IsWindowsArm64Architecture())
+                platformTargetArray = WindowsARM64BuildTargets;
             else if (hostPlatform == UnityEngine.OperatingSystemFamily.MacOSX)
-            {
-                foreach (var macTarget in MacBuildTargets)
-                    if (macTarget == platformGuid)
-                        return true;
-            }
+                platformTargetArray = MacBuildTargets;
             else if (hostPlatform == UnityEngine.OperatingSystemFamily.Linux)
-            {
-                foreach (var linuxTarget in LinuxBuildTargets)
-                    if (linuxTarget == platformGuid)
-                        return true;
-            }
+                platformTargetArray = LinuxBuildTargets;
+
+            foreach (var platformTarget in platformTargetArray)
+                if (platformTarget == platformGuid)
+                    return true;
+
             return false;
         }
-        public static bool BuildPlatformIsAvailableOnHostPlatform(IBuildTarget platform, UnityEngine.OperatingSystemFamily hostPlatform)
+
+        static bool IsWindowsArm64Architecture()
         {
-            // TODO: PLAT-8695 - Consoles are available only on x64 Windows. They can't build on Arm64. Windows.x64 and arm64 have different compability in platforms
-            if (hostPlatform == UnityEngine.OperatingSystemFamily.Windows)
-                foreach (var winTarget in WindowsBuildTargets)
-                    if (winTarget == platform.Guid)
-                        return true;
+            // Based on WindowsUtility.GetHostOSArchitecture() in platform dependent code
+            // We can't use RuntimeInformation.OSArchitecture because it doesn't work on emulations
+            var architecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE", EnvironmentVariableTarget.Machine);
+            if (string.IsNullOrEmpty(architecture))
+                return false;
 
-            else if(hostPlatform == UnityEngine.OperatingSystemFamily.MacOSX)
-                foreach (var macTarget in MacBuildTargets)
-                    if (macTarget == platform.Guid)
-                        return true;
-
-            else if (hostPlatform == UnityEngine.OperatingSystemFamily.Linux)
-                foreach (var linuxTarget in LinuxBuildTargets)
-                    if (linuxTarget == platform.Guid)
-                        return true;
-
-            return false;
+            architecture = architecture.ToLowerInvariant();
+            return architecture.Contains("arm64") || architecture.Contains("aarch64");
         }
-        [System.Obsolete("BuildPlatformCanBeInstalledWithHub(BuildTarget) is obsolete. Use BuildPlatformCanBeInstalledWithHub(IBuildTarget) instead.", false)]
 
+        [System.Obsolete("BuildPlatformCanBeInstalledWithHub(BuildTarget) is obsolete. Use BuildPlatformCanBeInstalledWithHub(IBuildTarget) instead.", false)]
         public static bool BuildPlatformCanBeInstalledWithHub(BuildTarget platform)
         {
             foreach (var target in ExternalDownloadForBuildTarget)

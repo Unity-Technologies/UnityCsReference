@@ -221,9 +221,9 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override bool Equals(object other)
         {
-            if (!(other is Vector2Int)) return false;
-
-            return Equals((Vector2Int)other);
+            if (other is Vector2Int v)
+                return Equals(v);
+            return false;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

@@ -276,6 +276,10 @@ namespace UnityEditor
 
                 if (bp.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
                 {
+                    // Dedicated Server settings are shared with Standalone
+                    if (bp.namedBuildTarget == NamedBuildTarget.Server)
+                        continue;
+
                     if (compatibleWithStandalone < Compatibility.Compatible)
                         continue;
                 }
