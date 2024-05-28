@@ -87,7 +87,9 @@ namespace UnityEditor
             public GUIContent m_FilterByType = EditorGUIUtility.TrIconContent("FilterByType", "Search by Type");
             public GUIContent m_CreateDropdownContent = EditorGUIUtility.IconContent("CreateAddNew");
             public GUIContent m_SaveFilterContent = EditorGUIUtility.TrIconContent("Favorite", "Save search");
-            public GUIContent m_PackagesVisibilityContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden packages, click to toggle hidden packages visibility");
+            public GUIContent m_PackageContentDefault = new GUIContent("", "");
+            public GUIContent m_PackagesContentNotVisible = EditorGUIUtility.TrIconContent("PBrowserPackagesNotVisible", "Number of hidden packages, click to display packages.");
+            public GUIContent m_PackagesContentVisible = EditorGUIUtility.TrIconContent("PBrowserPackagesVisible", "Number of displayed packages, click to hide packages.");
             public GUIContent m_EmptyFolderText = EditorGUIUtility.TrTextContent("This folder is empty");
             public GUIContent m_SearchIn = EditorGUIUtility.TrTextContent("Search:");
 
@@ -101,6 +103,7 @@ namespace UnityEditor
                 return styleName; // Implicit construction of GUIStyle
             }
         }
+
         static Styles s_Styles;
         static int s_HashForSearchField = "ProjectBrowserSearchField".GetHashCode();
 
@@ -146,8 +149,8 @@ namespace UnityEditor
         bool m_UseTreeViewSelectionInsteadOfMainSelection;
         bool useTreeViewSelectionInsteadOfMainSelection
         {
-            get {return m_UseTreeViewSelectionInsteadOfMainSelection; }
-            set {m_UseTreeViewSelectionInsteadOfMainSelection = value; }
+            get { return m_UseTreeViewSelectionInsteadOfMainSelection; }
+            set { m_UseTreeViewSelectionInsteadOfMainSelection = value; }
         }
 
 
@@ -165,7 +168,7 @@ namespace UnityEditor
         // Icon/List area
         [SerializeField]
         ObjectListAreaState m_ListAreaState; // state that survives assembly reloads
-        ObjectListArea  m_ListArea;
+        ObjectListArea m_ListArea;
         internal ObjectListArea ListArea // Exposed for usage in tests
         {
             get { return m_ListArea; }
@@ -186,15 +189,15 @@ namespace UnityEditor
         bool m_SkipHiddenPackages;
 
         // Layout
-        const float     k_MinHeight = 250;
-        const float     k_MinWidthOneColumn = 230f;// could be 205 with special handling
-        const float     k_MinWidthTwoColumns = 230f;
-        static float    k_ToolbarHeight => EditorGUI.kWindowToolbarHeight;
-        static float    k_BottomBarHeight => EditorGUI.kWindowToolbarHeight;
+        const float k_MinHeight = 250;
+        const float k_MinWidthOneColumn = 230f;// could be 205 with special handling
+        const float k_MinWidthTwoColumns = 230f;
+        static float k_ToolbarHeight => EditorGUI.kWindowToolbarHeight;
+        static float k_BottomBarHeight => EditorGUI.kWindowToolbarHeight;
         [SerializeField]
-        float           m_DirectoriesAreaWidth = k_MinWidthTwoColumns / 2;
-        const float     k_ResizerWidth = 5f;
-        const float     k_SliderWidth = 55f;
+        float m_DirectoriesAreaWidth = k_MinWidthTwoColumns / 2;
+        const float k_ResizerWidth = 5f;
+        const float k_SliderWidth = 55f;
         [NonSerialized]
         float m_SearchAreaMenuOffset = -1f;
         [NonSerialized]
@@ -585,10 +588,10 @@ namespace UnityEditor
         {
             switch (m_SearchFilter.GetState())
             {
-                case SearchFilter.State.SearchingInAllAssets:    return SearchViewState.AllAssets;
-                case SearchFilter.State.SearchingInAssetsOnly:   return SearchViewState.InAssetsOnly;
+                case SearchFilter.State.SearchingInAllAssets: return SearchViewState.AllAssets;
+                case SearchFilter.State.SearchingInAssetsOnly: return SearchViewState.InAssetsOnly;
                 case SearchFilter.State.SearchingInPackagesOnly: return SearchViewState.InPackagesOnly;
-                case SearchFilter.State.SearchingInFolders:      return SearchViewState.SubFolders;
+                case SearchFilter.State.SearchingInFolders: return SearchViewState.SubFolders;
             }
             return SearchViewState.NotSearching;
         }
@@ -973,9 +976,9 @@ namespace UnityEditor
             if (!m_SkipHiddenPackages || PackageManagerUtilityInternal.IsPathInVisiblePackage(folderPath))
             {
                 m_SearchFilter.ClearSearch();
-                m_SearchFilter.folders = new[] {folderPath};
+                m_SearchFilter.folders = new[] { folderPath };
                 m_SearchFilter.skipHidden = m_SkipHiddenPackages;
-                m_FolderTree.SetSelection(new[] {folderInstanceID}, revealAndFrameInFolderTree);
+                m_FolderTree.SetSelection(new[] { folderInstanceID }, revealAndFrameInFolderTree);
                 FolderTreeSelectionChanged(true);
             }
         }
@@ -1051,7 +1054,7 @@ namespace UnityEditor
                     TreeViewItem item = m_FolderTree.FindItem(selectedFolderInstanceIDs[0]);
                     if (item != null && item.parent != null && item.id != AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets"))
                     {
-                        SetFolderSelection(new[] {item.parent.id}, true);
+                        SetFolderSelection(new[] { item.parent.id }, true);
                         m_ListArea.Frame(item.id, true, false);
                         Selection.activeInstanceID = item.id;
                     }
@@ -1508,11 +1511,11 @@ namespace UnityEditor
                     case SearchViewState.InPackagesOnly:
                     case SearchViewState.SubFolders:
                     case SearchViewState.NotSearching:
-                    {
-                        if (!isSavedFilterSelected)
-                            m_FolderTree.SetSelection(GetFolderInstanceIDs(m_SearchFilter.folders), true);
-                    }
-                    break;
+                        {
+                            if (!isSavedFilterSelected)
+                                m_FolderTree.SetSelection(GetFolderInstanceIDs(m_SearchFilter.folders), true);
+                        }
+                        break;
                 }
             }
         }
@@ -1726,7 +1729,7 @@ namespace UnityEditor
                     evt.Use();
                     if (execute && itemType == ItemType.Asset && AssetClipboardUtility.CanPaste())
                     {
-                        int[] copiedFolders =  AssetClipboardUtility.PasteFolders();
+                        int[] copiedFolders = AssetClipboardUtility.PasteFolders();
                         SetFolderSelection(copiedFolders, true);
                         GUIUtility.ExitGUI();
                     }
@@ -2007,7 +2010,7 @@ namespace UnityEditor
                 // Vertical splitter line between folders and content (drawn before listarea so listarea ping is drawn on top of line)
                 EditorGUIUtility.DrawHorizontalSplitter(new Rect(m_ListAreaRect.x + 1f, EditorGUI.kWindowToolbarHeight, 1, m_TreeViewRect.height));
 
-                if (m_SearchFilter.GetState() == SearchFilter.State.FolderBrowsing  && m_ListArea.numItemsDisplayed == 0)
+                if (m_SearchFilter.GetState() == SearchFilter.State.FolderBrowsing && m_ListArea.numItemsDisplayed == 0)
                 {
                     Vector2 size = EditorStyles.label.CalcSize(s_Styles.m_EmptyFolderText);
                     Rect textRect = new Rect(m_ListAreaRect.x + 2f + Mathf.Max(0, (m_ListAreaRect.width - size.x) * 0.5f), m_ListAreaRect.y + 10f, size.x, 20f);
@@ -2050,7 +2053,7 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     // This section handles selecting the folders showing their content, if right clicked outside items.
                     // We do this to ensure our assets context menu is operating on the active folder(s)
-                    if (m_ViewMode == ViewMode.TwoColumns && m_SearchFilter.GetState() == SearchFilter.State.FolderBrowsing  && evt.button == 1 && !m_ItemSelectedByRightClickThisEvent)
+                    if (m_ViewMode == ViewMode.TwoColumns && m_SearchFilter.GetState() == SearchFilter.State.FolderBrowsing && evt.button == 1 && !m_ItemSelectedByRightClickThisEvent)
                     {
                         if (m_SearchFilter.folders.Length > 0 && listRect.Contains(evt.mousePosition))
                         {
@@ -2197,7 +2200,6 @@ namespace UnityEditor
                 {
                     ButtonSaveFilter();
                 }
-
                 ToggleHiddenPackagesVisibility();
             }
             GUILayout.EndHorizontal();
@@ -2236,8 +2238,8 @@ namespace UnityEditor
         {
             if (m_EnableOldAssetTree)
             {
-                GUIContent assetTreeText =      EditorGUIUtility.TrTextContent("One Column Layout");
-                GUIContent assetBrowserText =   EditorGUIUtility.TrTextContent("Two Column Layout");
+                GUIContent assetTreeText = EditorGUIUtility.TrTextContent("One Column Layout");
+                GUIContent assetBrowserText = EditorGUIUtility.TrTextContent("Two Column Layout");
 
                 menu.AddItem(assetTreeText, m_ViewMode == ViewMode.OneColumn, SetOneColumn);
                 if (position.width >= k_MinWidthTwoColumns)
@@ -2289,7 +2291,7 @@ namespace UnityEditor
                         if (treeViewSelection.Length == 1)
                         {
                             int instanceID = treeViewSelection[0];
-                            bool isRootFilter = SavedSearchFilters.GetRootInstanceID() ==  instanceID;
+                            bool isRootFilter = SavedSearchFilters.GetRootInstanceID() == instanceID;
 
                             // Ask if filter should be overwritten
                             if (SavedSearchFilters.IsSavedFilter(instanceID) && !isRootFilter)
@@ -2353,8 +2355,10 @@ namespace UnityEditor
 
         private void ToggleHiddenPackagesVisibility()
         {
-            s_Styles.m_PackagesVisibilityContent.text = PackageManagerUtilityInternal.HiddenPackagesCount.ToString();
-            var skipHiddenPackage = GUILayout.Toggle(m_SkipHiddenPackages, s_Styles.m_PackagesVisibilityContent, EditorStyles.toolbarButtonRight);
+            s_Styles.m_PackageContentDefault = m_SkipHiddenPackages ? s_Styles.m_PackagesContentNotVisible : s_Styles.m_PackagesContentVisible;
+            s_Styles.m_PackageContentDefault.text = PackageManagerUtilityInternal.HiddenPackagesCount.ToString();
+            var skipHiddenPackage = GUILayout.Toggle(m_SkipHiddenPackages, s_Styles.m_PackageContentDefault, EditorStyles.toolbarButtonRight);
+
             if (skipHiddenPackage != m_SkipHiddenPackages)
             {
                 m_SkipHiddenPackages = skipHiddenPackage;
@@ -2666,7 +2670,7 @@ namespace UnityEditor
                     bool lastElement = i == m_BreadCrumbs.Count - 1;
                     GUIStyle style = lastElement ? EditorStyles.boldLabel : EditorStyles.label; //EditorStyles.miniBoldLabel : EditorStyles.miniLabel;//
                     GUIContent folderContent = m_BreadCrumbs[i].Key;
-                    string folderPath =  m_BreadCrumbs[i].Value;
+                    string folderPath = m_BreadCrumbs[i].Value;
                     Vector2 size = style.CalcSize(folderContent);
                     rect.width = size.x;
                     if (GUI.Button(rect, folderContent, style))
@@ -3102,7 +3106,7 @@ namespace UnityEditor
                         subFolderDisplayNames.Add(Path.GetFileName(subFolderPath));
                 }
 
-                var menu = new GenericMenu {allowDuplicateNames = true};
+                var menu = new GenericMenu { allowDuplicateNames = true };
                 if (subFolders.Count > 0)
                 {
                     var i = 0;

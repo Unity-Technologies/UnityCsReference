@@ -17,7 +17,7 @@ namespace UnityEditor.Search.Providers
     {
         enum IdentifierType { kNullIdentifier = 0, kImportedAsset = 1, kSceneObject = 2, kSourceAsset = 3, kBuiltInAsset = 4 };
 
-        struct AssetMetaInfo
+        internal struct AssetMetaInfo
         {
             public readonly string path;
             private readonly string gidString;

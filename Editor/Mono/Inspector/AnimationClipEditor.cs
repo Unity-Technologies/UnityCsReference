@@ -1294,6 +1294,14 @@ namespace UnityEditor
                     CurveGUI();
             }
 
+            if(m_ClipInfo != null && m_ClipInfo.hasAdditiveReferencePose && m_ClipInfo.GetCurveCount() > 0 &&
+               (m_ClipInfo.additiveReferencePoseFrame < m_ClipInfo.firstFrame || m_ClipInfo.additiveReferencePoseFrame > m_ClipInfo.lastFrame))
+            {
+                EditorGUILayout.HelpBox("Additional curves will be compared to zero values instead of the source clip's curves. "+
+                    "This is because the source clip doesn't include these specific curves. " +
+                    "To ensure accurate comparisons, consider using a reference pose frame within the clip's start and end frames.", MessageType.Warning);
+            }
+
             if (m_ClipInfo != null)
             {
                 wasChanged = GUI.changed;

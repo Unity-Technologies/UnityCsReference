@@ -15,15 +15,24 @@ namespace UnityEditor.Search
 {
     class SearchApiSession : IDisposable
     {
+        public delegate IEnumerable<string> SearchItemConverter(IEnumerable<SearchItem> items);
+
         bool m_Disposed;
 
         public SearchContext context { get; private set; }
 
         public Action<IEnumerable<string>> onAsyncItemsReceived { get; set; }
 
-        public SearchApiSession(params SearchProvider[] providers)
+        SearchItemConverter m_SearchItemConverter;
+
+        public SearchApiSession(ISearchContext searchContext, params SearchProvider[] providers)
+            : this(searchContext, DefaultSearchItemConverter, providers)
+        {}
+
+        public SearchApiSession(ISearchContext searchContext, SearchItemConverter searchItemConverter, params SearchProvider[] providers)
         {
             context = new SearchContext(providers);
+            m_SearchItemConverter = searchItemConverter;
         }
 
         ~SearchApiSession()
@@ -47,7 +56,7 @@ namespace UnityEditor.Search
 
         private void OnAsyncItemsReceived(SearchContext context, IEnumerable<SearchItem> items)
         {
-            onAsyncItemsReceived?.Invoke(items.Select(item => item.id));
+            onAsyncItemsReceived?.Invoke(m_SearchItemConverter(items));
         }
 
         protected virtual void Dispose(bool disposing)
@@ -65,6 +74,11 @@ namespace UnityEditor.Search
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        public static IEnumerable<string> DefaultSearchItemConverter(IEnumerable<SearchItem> items)
+        {
+            return items.Select(item => item.id);
         }
     }
 
@@ -85,7 +99,7 @@ namespace UnityEditor.Search
                 return;
 
             var provider = SearchService.Providers.First(p => p.id == providerId);
-            searchSessions.Add(context.guid, new SearchApiSession(provider));
+            searchSessions.Add(context.guid, new SearchApiSession(context, provider));
         }
 
         public virtual void EndSession(ISearchContext context)
@@ -146,7 +160,7 @@ namespace UnityEditor.Search
             var engineProvider = SearchService.GetProvider(providerId);
 
             var adbProvider = SearchService.GetProvider(AdbProvider.type);
-            var searchSession = new SearchApiSession(adbProvider, engineProvider);
+            var searchSession = new SearchApiSession(context, SearchItemConverter, adbProvider, engineProvider);
             searchSessions.Add(context.guid, searchSession);
         }
 
@@ -194,11 +208,22 @@ namespace UnityEditor.Search
             }
 
             var items = SearchService.GetItems(searchSession.context/*, SearchFlags.Synchronous*/);
-            return items.Select(item => ToPath(item));
+            return SearchItemConverter(items);
         }
 
-        private string ToPath(SearchItem item)
+        static IEnumerable<string> SearchItemConverter(IEnumerable<SearchItem> items)
         {
+            return items.Select(ToPath);
+        }
+
+        static string ToPath(SearchItem item)
+        {
+            if (item.data is AssetProvider.AssetMetaInfo ami)
+            {
+                if (!string.IsNullOrEmpty(ami.path))
+                    return ami.path;
+            }
+
             if (GlobalObjectId.TryParse(item.id, out var gid))
                 return AssetDatabase.GUIDToAssetPath(gid.assetGUID);
             return item.id;

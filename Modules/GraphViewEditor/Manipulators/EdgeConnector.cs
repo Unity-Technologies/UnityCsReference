@@ -137,7 +137,7 @@ namespace UnityEditor.Experimental.GraphView
             e.StopPropagation();
         }
 
-        void Abort()
+        protected virtual void Abort()
         {
             var graphView = target?.GetFirstAncestorOfType<GraphView>();
             graphView?.RemoveElement(m_EdgeCandidate);

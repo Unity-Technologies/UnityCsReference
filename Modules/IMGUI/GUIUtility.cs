@@ -188,6 +188,12 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
+        internal static void DestroyGUI(int instanceID)
+        {
+            GUILayoutUtility.RemoveSelectedIdList(instanceID, false);
+        }
+
+        [RequiredByNativeCode]
         internal static void SetSkin(int skinMode)
         {
             s_SkinMode = skinMode;
@@ -273,6 +279,13 @@ namespace UnityEngine
             // Using same rounding constant as GUITexture::AlignPointToDevice
             const float kNearestRoundingOffset = 0.48f;
             return Mathf.Floor((v * GUIUtility.pixelsPerPoint) + kNearestRoundingOffset) / GUIUtility.pixelsPerPoint;
+        }
+
+        internal static float RoundToPixelGrid(float v, float scale)
+        {
+            // Using same rounding constant as GUITexture::AlignPointToDevice
+            const float kNearestRoundingOffset = 0.48f;
+            return Mathf.Floor((v * scale) + kNearestRoundingOffset) / scale;
         }
 
         // Convert a point from GUI position to screen space.

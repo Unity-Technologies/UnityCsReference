@@ -66,7 +66,5 @@ namespace UnityEngine.Audio
         [NativeMethod]
         public extern bool GetFloat(string name, out float value);
 
-        [NativeMethod]
-        internal extern bool HasValidSnapshots();
     }
 }

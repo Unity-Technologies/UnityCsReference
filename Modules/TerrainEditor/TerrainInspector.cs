@@ -135,8 +135,11 @@ namespace UnityEditor
             public readonly GUIContent mismatchedTerrainData = EditorGUIUtility.TextContentWithIcon(
                 "The TerrainData used by the TerrainCollider component is different from this terrain. Would you like to assign the same TerrainData to the TerrainCollider component?",
                 "console.warnicon");
-
+            public readonly GUIContent noTerrainCollider = EditorGUIUtility.TextContentWithIcon(
+                "Painting on this Terrain is not supported without the TerrainCollider component. Would you like to add or enable it?",
+                "console.warnicon");
             public readonly GUIContent assign = EditorGUIUtility.TrTextContent("Assign");
+            public readonly GUIContent addOrEnable = EditorGUIUtility.TrTextContent("Add/Enable");
             public readonly GUIContent duplicateTab = EditorGUIUtility.TrTextContent("This inspector tab is not the active Terrain inspector, paint functionality disabled.");
             public readonly GUIContent makeMeActive = EditorGUIUtility.TrTextContent("Activate this inspector");
             public readonly GUIContent gles2NotSupported = EditorGUIUtility.TrTextContentWithIcon("Terrain editting is not supported in GLES2.", MessageType.Info);
@@ -303,6 +306,18 @@ namespace UnityEditor
         // Source terrain
         Terrain m_Terrain;
         TerrainCollider m_TerrainCollider;
+
+        public Terrain Terrain
+        {
+            get { return m_Terrain; }
+            set { m_Terrain = value; }
+        }
+
+        public TerrainCollider TerrainCollider
+        {
+            get { return m_TerrainCollider; }
+            set { m_TerrainCollider = value; }
+        }
 
         GUIContent[]    m_TreeContents = null;
 
@@ -2050,15 +2065,18 @@ namespace UnityEditor
             switch ((TerrainTool)tool)
             {
                 case TerrainTool.Paint:
+                    TerrainColliderCheck();
                     ShowPaint();
                     break;
                 case TerrainTool.CreateNeighbor:
                     ShowCreateNeighborTerrain();
                     break;
                 case TerrainTool.PlaceTree:
+                    TerrainColliderCheck();
                     ShowTrees();
                     break;
                 case TerrainTool.PaintDetail:
+                    TerrainColliderCheck();
                     ShowDetails();
                     break;
                 case TerrainTool.TerrainSettings:
@@ -2067,6 +2085,35 @@ namespace UnityEditor
             }
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        public void AddOrEnableTerrainCollider()
+        {
+            if (!m_TerrainCollider)
+            {
+                m_TerrainCollider = m_Terrain.gameObject.AddComponent<TerrainCollider>();
+                m_TerrainCollider.terrainData = m_Terrain.terrainData;
+            }
+            else
+            {
+                m_TerrainCollider.enabled = true;
+            }
+        }
+
+        public void TerrainColliderCheck()
+        {
+            if (!m_TerrainCollider || !m_TerrainCollider.enabled)
+            {
+                GUILayout.BeginVertical(EditorStyles.helpBox);
+                GUILayout.Label(styles.noTerrainCollider, EditorStyles.wordWrappedLabel);
+                GUILayout.Space(3);
+                if (GUILayout.Button(styles.addOrEnable, GUILayout.ExpandWidth(false)))
+                {
+                    AddOrEnableTerrainCollider();
+                }
+                GUILayout.Space(3);
+                GUILayout.EndVertical();
+            }
         }
 
         public bool Raycast(out Vector2 uv, out Vector3 pos)
@@ -2259,7 +2306,9 @@ namespace UnityEditor
             foreach (Terrain terrain in Terrain.activeTerrains)
             {
                 RaycastHit hit;
-                if (terrain.GetComponent<TerrainCollider>().Raycast(mouseRay, out hit, Mathf.Infinity, true))
+				var terrainCollider = terrain.GetComponent<TerrainCollider>();
+
+                if (terrainCollider && terrainCollider.Raycast(mouseRay, out hit, Mathf.Infinity, true))
                 {
                     if (hit.distance < minDist)
                     {

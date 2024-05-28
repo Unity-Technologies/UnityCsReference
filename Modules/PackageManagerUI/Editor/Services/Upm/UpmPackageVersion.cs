@@ -126,6 +126,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IsDirectDependency = packageInfo.isDirectDependency;
             m_Name = packageInfo.name;
             m_VersionInManifest = packageInfo.projectDependenciesEntry;
+            m_Entitlements = packageInfo.entitlements;
 
             RefreshTags(packageInfo);
 
@@ -147,7 +148,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 m_Dependencies = packageInfo.dependencies;
                 m_ResolvedDependencies = packageInfo.resolvedDependencies;
-                m_Entitlements = packageInfo.entitlements;
                 m_ResolvedPath = packageInfo.resolvedPath;
 
                 if (HasTag(PackageTag.BuiltIn))
@@ -163,7 +163,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_Errors.Clear();
                 m_Dependencies = new DependencyInfo[0];
                 m_ResolvedDependencies = new DependencyInfo[0];
-                m_Entitlements = new EntitlementsInfo();
                 m_ResolvedPath = string.Empty;
                 m_Description = string.Empty;
             }
