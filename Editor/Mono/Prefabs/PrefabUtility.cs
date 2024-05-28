@@ -2231,43 +2231,43 @@ namespace UnityEditor
 
         static internal event Action<GameObject> prefabInstanceUnpacked;
 
-        internal static bool HasInvalidComponent(Object gameObjectOrComponent)
+        internal static bool HasInvalidComponent(Object componentOrGameObject)
         {
-            if (gameObjectOrComponent == null)
+            if (componentOrGameObject == null)
                 return true;
 
-            if (gameObjectOrComponent is Component)
+            if (componentOrGameObject is Component)
             {
-                Component comp = (Component)gameObjectOrComponent;
-                gameObjectOrComponent = (GameObject)comp.gameObject;
+                Component comp = (Component)componentOrGameObject;
+                componentOrGameObject = (GameObject)comp.gameObject;
             }
 
-            if (!(gameObjectOrComponent is GameObject))
+            if (!(componentOrGameObject is GameObject))
                 return false;
 
             GameObject go;
-            go = (GameObject)gameObjectOrComponent;
+            go = (GameObject)componentOrGameObject;
             TransformVisitor transformVisitor = new TransformVisitor();
             var GOsWithInvalidComponent = new List<GameObject>();
             transformVisitor.VisitAll(go.transform, PrefabOverridesUtility.CheckForInvalidComponent, GOsWithInvalidComponent);
             return GOsWithInvalidComponent.Count > 0;
         }
 
-        public static bool IsPartOfPrefabThatCanBeAppliedTo(Object gameObjectOrComponent)
+        public static bool IsPartOfPrefabThatCanBeAppliedTo(Object componentOrGameObject)
         {
-            if (gameObjectOrComponent == null)
+            if (componentOrGameObject == null)
                 return false;
 
-            if (IsPartOfImmutablePrefab(gameObjectOrComponent))
+            if (IsPartOfImmutablePrefab(componentOrGameObject))
                 return false;
 
-            if (!EditorUtility.IsPersistent(gameObjectOrComponent))
-                gameObjectOrComponent = GetCorrespondingObjectFromSource(gameObjectOrComponent);
+            if (!EditorUtility.IsPersistent(componentOrGameObject))
+                componentOrGameObject = GetCorrespondingObjectFromSource(componentOrGameObject);
 
-            if (HasInvalidComponent(gameObjectOrComponent))
+            if (HasInvalidComponent(componentOrGameObject))
                 return false;
 
-            if (PrefabUtility.HasManagedReferencesWithMissingTypes(gameObjectOrComponent))
+            if (PrefabUtility.HasManagedReferencesWithMissingTypes(componentOrGameObject))
                 return false;
 
             return true;
@@ -2323,7 +2323,37 @@ namespace UnityEditor
                 throw new ArgumentException(string.Format("Could not load Prefab contents at path {0}. Prefabs should have exactly 1 root GameObject, {1} was found.", assetPath, roots.Length));
             }
 
-            return roots[0];
+            var prefabRoot = roots[0];
+
+            if (prefabRoot.GetComponent<RectTransform>() != null && prefabRoot.GetComponent<Canvas>() != null)
+            {
+                var prefabAsset = AssetDatabase.LoadMainAssetAtPath(assetPath) as GameObject;
+                if (prefabAsset == null)
+                    throw new ArgumentException(string.Format("Asset at path: {0}, cannot be loaded as GameObject", assetPath));
+
+                var prefabAssetRectTransform = prefabAsset.GetComponent<RectTransform>();
+                var prefabAssetCanvas = prefabAsset.GetComponent<Canvas>();
+
+                if (!prefabAssetRectTransform || !prefabAssetCanvas)
+                    return prefabRoot;
+
+                // Since the condition IsUI checks for the presence of RectTransform, we can safely assume that RectTransform is present.
+                var prefabRootRectTransform = prefabRoot.GetComponent<RectTransform>();
+                var rootCanvas = prefabRoot.GetComponent<Canvas>();
+
+                // Since the prefab we're modifying is non-driven, we need to re-parent it in a similar way to how it's done in prefab staging.
+                // This is important because the root is always considered driven. If we don't do this, it would continue to be treated as a root and set as driven.
+                PrefabStageUtility.HandleUIReparentingIfNeeded(prefabRoot, 0);
+
+                // Ensure that if there is a parent Canvas, the child Canvas's driven values are set to null
+                if (rootCanvas)
+                    rootCanvas.UpdateCanvasRectTransform(true);
+
+                // Now, we can safely reset our prefabRoot's sizeDelta and anchoredPosition to its orginal value.
+                prefabRootRectTransform.sizeDelta = prefabAssetRectTransform.sizeDelta;
+                prefabRootRectTransform.anchoredPosition = prefabAssetRectTransform.anchoredPosition;
+            }
+            return prefabRoot;
         }
 
         public static void UnloadPrefabContents(GameObject contentsRoot)

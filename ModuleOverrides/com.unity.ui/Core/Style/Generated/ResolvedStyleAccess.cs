@@ -16,8 +16,36 @@ namespace UnityEngine.UIElements
     public partial class VisualElement : IResolvedStyle
     {
         /// <summary>
-        /// Returns the <see cref="VisualElement"/> resolved style values.
+        /// The final computed style values on a <see cref="VisualElement"/> (RO).
         /// </summary>
+        /// <remarks>
+        /// You can use @@resolvedStyle@@ to find the actually rendered styling like width, height, 
+        /// or color of an element. For a list of all the supported style properties, refer 
+        /// to the [[wiki:UIE-USS-Properties-Reference|USS properties reference]] manual page.
+        /// </remarks>
+        /// <remarks>
+        /// The final computed style combines applied classes, inherited styles from ancestors, and
+        /// inline styles defined in UXML or C# code. Therefore, it might be different from what you set through 
+        /// the <see cref="VisualElement.style"/> property, depending on the other styles applied to it.
+        /// </remarks>
+        /// <remarks>
+        /// To get the resolved style when the geometry changes, you can use the [[GeometryChangedEvent]] event.
+        /// If the element's geometry doesn't change, you can add a scheduler to periodically check the resolved 
+        /// style of the element.
+        /// For more information about how to use this property and an example of how style changes when layout 
+        /// updates, refer to the [[wiki:UIE-apply-styles-with-csharp|Apply styles in C# scripts]] manual page.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Get the resolved width of the element.
+        /// float width = element.resolvedStyle.width;
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// SA: [[VisualElement.style]], [[VisualElement.customStyle]]
+        /// </remarks>
         public IResolvedStyle resolvedStyle => this;
 
         Align IResolvedStyle.alignContent => computedStyle.alignContent;

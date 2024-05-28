@@ -887,9 +887,9 @@ namespace UnityEditor.Search
                     GUILayout.Space(10);
                     EditorGUI.BeginChangeCheck();
                     {
-                        trackSelection = Toggle(Styles.trackSelectionContent, nameof(trackSelection), trackSelection);
-                        fetchPreview = Toggle(Styles.fetchPreviewContent, nameof(fetchPreview), fetchPreview);
-                        var newDebounceMs = EditorGUILayout.IntSlider(Styles.debounceThreshold, debounceMs, 0, 1000);
+                        trackSelection = Toggle(Content.trackSelectionContent, nameof(trackSelection), trackSelection);
+                        fetchPreview = Toggle(Content.fetchPreviewContent, nameof(fetchPreview), fetchPreview);
+                        var newDebounceMs = EditorGUILayout.IntSlider(Content.debounceThreshold, debounceMs, 0, 1000);
                         if (newDebounceMs != debounceMs)
                             debounceMs = newDebounceMs;
 
@@ -968,7 +968,7 @@ namespace UnityEditor.Search
                 var settings = GetProviderSettings(p.id);
 
                 var wasActive = p.active;
-                p.active = GUILayout.Toggle(wasActive, Styles.toggleProviderActiveContent);
+                p.active = GUILayout.Toggle(wasActive, Content.toggleProviderActiveContent);
                 if (p.active != wasActive)
                 {
                     SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.PreferenceChanged, "activateProvider", p.id, p.active.ToString());
@@ -985,16 +985,16 @@ namespace UnityEditor.Search
 
                 if (!p.isExplicitProvider)
                 {
-                    if (GUILayout.Button(Styles.increaseProviderPriorityContent, Styles.priorityButton))
+                    if (GUILayout.Button(Content.increaseProviderPriorityContent, Styles.priorityButton))
                         LowerProviderPriority(p);
 
-                    if (GUILayout.Button(Styles.decreaseProviderPriorityContent, Styles.priorityButton))
+                    if (GUILayout.Button(Content.decreaseProviderPriorityContent, Styles.priorityButton))
                         UpperProviderPriority(p);
                 }
                 else
                 {
-                    GUILayoutUtility.GetRect(Styles.increaseProviderPriorityContent, Styles.priorityButton);
-                    GUILayoutUtility.GetRect(Styles.increaseProviderPriorityContent, Styles.priorityButton);
+                    GUILayoutUtility.GetRect(Content.increaseProviderPriorityContent, Styles.priorityButton);
+                    GUILayoutUtility.GetRect(Content.increaseProviderPriorityContent, Styles.priorityButton);
                 }
 
                 GUILayout.Space(20);
@@ -1025,7 +1025,7 @@ namespace UnityEditor.Search
 
             GUILayout.BeginHorizontal();
             GUILayout.Space(20);
-            if (GUILayout.Button(Styles.resetProvidersContent, GUILayout.MaxWidth(170)))
+            if (GUILayout.Button(Content.resetProvidersContent, GUILayout.MaxWidth(170)))
                 ResetProviderSettings();
             GUILayout.EndHorizontal();
         }
@@ -1157,9 +1157,10 @@ namespace UnityEditor.Search
                 alignment = TextAnchor.MiddleCenter,
                 richText = true
             };
+        }
 
-            public static GUIStyle browseBtn = new GUIStyle("Button") { fixedWidth = 70 };
-
+        internal class Content
+        {
             public static GUIContent toggleProviderActiveContent = EditorGUIUtility.TrTextContent("", "Enable or disable this provider. Disabled search provider will be completely ignored by the search service.");
             public static GUIContent resetProvidersContent = EditorGUIUtility.TrTextContent("Reset Providers Settings", "All search providers will restore their initial preferences (priority, active, default action)");
             public static GUIContent increaseProviderPriorityContent = EditorGUIUtility.TrTextContent("\u2191", "Increase the provider's priority");

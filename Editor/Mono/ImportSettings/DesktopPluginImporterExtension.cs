@@ -195,7 +195,7 @@ namespace UnityEditor
                 return true;
 
             string ext = Path.GetExtension(imp.assetPath).ToLower();
-            return ext == ".so" || ext == ".bundle" || ext == ".dylib" || IsCppPluginFile(imp.assetPath);
+            return ext == ".so" || ext == ".bundle" || ext == ".dylib" || ext == ".xcprivacy" || IsCppPluginFile(imp.assetPath);
         }
 
         private bool IsUsableOnLinux(PluginImporter imp)
