@@ -434,7 +434,7 @@ namespace UnityEditor
         [UsedImplicitly]
         protected virtual void Update()
         {
-            ActiveEditorTracker.Internal_GetActiveEditorsNonAlloc(tracker, s_Editors);
+            ActiveEditorTracker.Internal_GetActiveEditorsNonAlloc(tracker, ref s_Editors);
             if (s_Editors.Length == 0)
                 return;
 

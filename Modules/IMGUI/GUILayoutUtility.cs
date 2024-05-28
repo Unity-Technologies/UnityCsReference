@@ -83,11 +83,20 @@ namespace UnityEngine
             current = new LayoutCache();
         }
 
-        internal static LayoutCache SelectIDList(int instanceID, bool isWindow)
+        internal static LayoutCache GetLayoutCache(int instanceID, bool isWindow)
         {
             Dictionary<int, LayoutCache> store = isWindow ? s_StoredWindows : s_StoredLayouts;
             LayoutCache cache;
-            if (store.TryGetValue(instanceID, out cache) == false)
+            store.TryGetValue(instanceID, out cache);
+
+            return cache;               
+        }
+
+        internal static LayoutCache SelectIDList(int instanceID, bool isWindow)
+        {
+            Dictionary<int, LayoutCache> store = isWindow ? s_StoredWindows : s_StoredLayouts;
+            LayoutCache cache = GetLayoutCache(instanceID, isWindow);
+            if (cache == null)
             {
                 cache = new LayoutCache(instanceID);
                 store[instanceID] = cache;
@@ -96,6 +105,16 @@ namespace UnityEngine
             current.layoutGroups = cache.layoutGroups;
             current.windows = cache.windows;
             return cache;
+        }
+
+        //Remove the object instanceID from s_StoredLayouts or s_StoredWindows dictionaries to prevent any dangling references.
+        internal static void RemoveSelectedIdList(int instanceID, bool isWindow)
+        {
+            Dictionary<int, LayoutCache> store = isWindow ? s_StoredWindows : s_StoredLayouts;
+            if (store.ContainsKey(instanceID))
+            {
+                store.Remove(instanceID);
+            }
         }
 
         // Set up the internal GUILayouting

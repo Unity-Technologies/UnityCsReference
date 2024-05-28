@@ -45,7 +45,7 @@ namespace UnityEngine.UIElements
                     }
                     else
                     {
-                        //Ensure that text is updated after closing the keyboard as some platforms only send input after it is closed
+                        // Ensure that text is updated after closing the keyboard as some platforms only send input after it is closed
                         touchKeyboardText = touchKeyboard.text;
                         if (editingUtilities.text != touchKeyboardText)
                         {
@@ -56,7 +56,7 @@ namespace UnityEngine.UIElements
 
                     CloseTouchScreenKeyboard();
 
-                    if (edition.isDelayed)
+                    if (!edition.isDelayed)
                         edition.UpdateValueFromText?.Invoke();
 
                     edition.UpdateTextFromValue?.Invoke();
@@ -108,13 +108,18 @@ namespace UnityEngine.UIElements
                 }
                 // When using the native OS's input field to update the input field value, we just want to sync the
                 // soft keyboard's value with our text value.
-                else {
+                else
+                {
                     edition.UpdateText(touchKeyboardText);
 
                     // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.
                     textElement.uitkTextHandle.Update();
                 }
 
+                if (!edition.isDelayed)
+                    edition.UpdateValueFromText?.Invoke();
+
+                edition.UpdateTextFromValue?.Invoke();
                 textElement.edition.UpdateScrollOffset?.Invoke(false);
             }
             else
@@ -270,12 +275,6 @@ namespace UnityEngine.UIElements
                 textElement.m_TouchScreenKeyboard = null;
                 m_TouchKeyboardPoller?.Pause();
             }
-
-            if (textElement.edition.isDelayed)
-                textElement.edition.UpdateValueFromText?.Invoke();
-
-            textElement.edition.UpdateTextFromValue?.Invoke();
         }
-
     }
 }

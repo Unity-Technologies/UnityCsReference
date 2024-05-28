@@ -158,11 +158,13 @@ namespace UnityEditor
             if (GUILayout.Button(Styles.allText, GUILayout.Width(50)))
             {
                 m_Tree.SetAllEnabled(PackageExportTreeView.EnabledState.All);
+                SendAnalyticsEvent("selectAll");
             }
 
             if (GUILayout.Button(Styles.noneText, GUILayout.Width(50)))
             {
                 m_Tree.SetAllEnabled(PackageExportTreeView.EnabledState.None);
+                SendAnalyticsEvent("selectNone");
             }
 
             GUILayout.Space(10);
@@ -180,7 +182,13 @@ namespace UnityEditor
             GUILayout.Space(10);
 
             EditorGUI.BeginChangeCheck();
-            m_IncludeDependencies = GUILayout.Toggle(m_IncludeDependencies, Styles.includeDependenciesText);
+            var includeDependenciesNewValue = GUILayout.Toggle(m_IncludeDependencies, Styles.includeDependenciesText);
+            if (m_IncludeDependencies != includeDependenciesNewValue)
+            {
+                m_IncludeDependencies = includeDependenciesNewValue;
+                SendAnalyticsEvent("toggleIncludeDependencies");
+            }
+
             if (EditorGUI.EndChangeCheck())
             {
                 RefreshAssetList();
@@ -195,6 +203,7 @@ namespace UnityEditor
                 if (selectedItemWithInvalidChar != null && !EditorUtility.DisplayDialog(L10n.Tr("Cross platform incompatibility"), L10n.Tr($"The asset “{Path.GetFileNameWithoutExtension(selectedItemWithInvalidChar.assetPath)}” contains one or more characters that are not compatible across platforms: {invalidChars}"), L10n.Tr("I understand"), L10n.Tr("Cancel")))
                 {
                     GUIUtility.ExitGUI();
+                    SendAnalyticsEvent("exportErrorInvalidCharInAssetName");
                     return;
                 }
 
@@ -245,9 +254,14 @@ namespace UnityEditor
                 }
 
                 PackageUtility.ExportPackage(guids.ToArray(), fileName);
+                SendAnalyticsEvent("exportSuccess");
 
                 Close();
                 GUIUtility.ExitGUI();
+            }
+            else
+            {
+                SendAnalyticsEvent("exportCancelledAtFileSelection");
             }
         }
 
@@ -280,6 +294,42 @@ namespace UnityEditor
             m_TreeViewState = null;
 
             Repaint();
+        }
+
+        private void SendAnalyticsEvent(string action)
+        {
+            var numSelectedAssets = 0;
+            var numTotalAssets = 0;
+            foreach (var i in m_ExportPackageItems)
+            {
+                if (i.isFolder)
+                    continue;
+                numTotalAssets++;
+                if (i.enabledStatus > 0)
+                    numSelectedAssets++;
+            }
+            AssetExportWindowAnalytics.SendEvent(action, numSelectedAssets, numTotalAssets, m_IncludeDependencies);
+        }
+
+        [Serializable]
+        internal struct AssetExportWindowAnalytics
+        {
+            public string action;
+            public int num_selected_assets;
+            public int num_total_assets;
+            public bool include_dependencies;
+
+            public static void SendEvent(string action, int numSelectedAsset, int numTotalAssets, bool includeDependencies)
+            {
+                var parameters = new AssetExportWindowAnalytics
+                {
+                    action = action,
+                    num_selected_assets = numSelectedAsset,
+                    num_total_assets = numTotalAssets,
+                    include_dependencies = includeDependencies
+                };
+                EditorAnalytics.SendEventWithLimit("assetExportWindow", parameters);
+            }
         }
     }
 }
