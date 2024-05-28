@@ -97,6 +97,7 @@ namespace UnityEditor.UIElements
 
         internal void BindFields(UnityEventDrawer.PropertyData propertyData, Func<GenericMenu> createMenuCallback, Func<string, string> formatSelectedValueCallback, Func<SerializedProperty> getArgumentCallback)
         {
+            functionDropdown.formatSelectedValueCallback = formatSelectedValueCallback;
             callStateDropdown.BindProperty(propertyData.callState);
             listenerTarget.BindProperty(propertyData.listenerTarget);
             functionDropdown.BindProperty(propertyData.methodName);
@@ -127,8 +128,6 @@ namespace UnityEditor.UIElements
                 var osMenu = new GenericOSMenu(genericMenu);
                 return osMenu;
             };
-
-            functionDropdown.formatSelectedValueCallback = formatSelectedValueCallback;
 
             UpdateParameterField(propertyData, getArgumentCallback);
         }

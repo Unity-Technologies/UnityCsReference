@@ -59,7 +59,11 @@ namespace UnityEditor
         public Editor[] activeEditors { get { return (Editor[])Internal_GetActiveEditors(this); } }
 
         [FreeFunction]
-        internal static extern void Internal_GetActiveEditorsNonAlloc(ActiveEditorTracker self, [Unmarshalled] Editor[] editors);
+        static extern Editor[] Internal_GetActiveEditorsNonAllocInternal(ActiveEditorTracker self, [Unmarshalled] Editor[] editors);
+        internal static void Internal_GetActiveEditorsNonAlloc(ActiveEditorTracker self, ref Editor[] editors)
+        {
+            editors = Internal_GetActiveEditorsNonAllocInternal(self, editors);
+        }
 
         // List<T> version
         internal void GetObjectsLockedByThisTracker(List<UnityObject> lockedObjects)

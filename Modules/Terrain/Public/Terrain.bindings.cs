@@ -71,6 +71,7 @@ namespace UnityEngine
 
         extern public float heightmapPixelError { get; set; }
         extern public int heightmapMaximumLOD { get; set; }
+        extern public int heightmapMinimumLODSimplification { get; set; }
 
         extern public float basemapDistance { get; set; }
 
