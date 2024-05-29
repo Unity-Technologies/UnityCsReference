@@ -24,7 +24,7 @@ namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 18, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 19, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -232,10 +232,10 @@ namespace UnityEditor.UIElements
                     switch (error.level)
                     {
                         case Error.Level.Warning:
-                            Debug.LogWarning(error.ToString());
+                            Debug.LogWarning(error.ToString(), obj);
                             break;
                         case Error.Level.Fatal:
-                            Debug.LogError(error.ToString());
+                            Debug.LogError(error.ToString(), obj);
                             break;
                         default:
                             throw new ArgumentOutOfRangeException(nameof(error));

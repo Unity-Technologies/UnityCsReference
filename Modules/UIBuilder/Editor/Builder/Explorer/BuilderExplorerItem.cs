@@ -74,12 +74,18 @@ namespace Unity.UI.Builder
             nameLabel?.AddToClassList(BuilderConstants.HiddenStyleClassName);
             labelContainer?.AddToClassList(BuilderConstants.HiddenStyleClassName);
 
-            var baseInput = m_RenameTextField.Q(TextField.textInputUssName).Q<TextElement>();
-            if (baseInput.focusController != null)
+            m_RenameTextField.RegisterCallback<GeometryChangedEvent>(OnRenameTextFieldGeometryChanged);
+        }
+
+        private void OnRenameTextFieldGeometryChanged(GeometryChangedEvent evt)
+        {
+            m_RenameTextField.UnregisterCallback<GeometryChangedEvent>(OnRenameTextFieldGeometryChanged);
+            m_RenameTextField.Focus();
+
+            var typeLabel = this.Q<Label>(classes: BuilderConstants.ElementTypeClassName);
+            if (m_RenameTextField.text == string.Empty && typeLabel != null)
             {
-                // Since renameTextfield isn't attached to a panel yet, we are using DoFocusChange() to bypass canGrabFocus.
-                baseInput.focusController.DoFocusChange(baseInput);
-                baseInput.selectingManipulator.m_SelectingUtilities.OnFocus();
+                m_RenameTextField.text = typeLabel.text;
             }
         }
 
@@ -98,10 +104,7 @@ namespace Unity.UI.Builder
             }
             else
             {
-                m_RenameTextField.SetValueWithoutNotify(
-                    string.IsNullOrEmpty(documentElement.name)
-                    ? documentElement.typeName
-                    : documentElement.name);
+                m_RenameTextField.SetValueWithoutNotify(documentElement.name);
             }
             m_RenameTextField.AddToClassList(BuilderConstants.HiddenStyleClassName);
 
@@ -117,6 +120,9 @@ namespace Unity.UI.Builder
 
             m_RenameTextField.RegisterCallback<FocusOutEvent>(e =>
             {
+                if (!IsRenamingActive())
+                    return;
+
                 OnEditTextFinished(documentElement, nameLabel, selection);
             });
 
@@ -212,8 +218,8 @@ namespace Unity.UI.Builder
                 }
             }
 
-            selection.NotifyOfHierarchyChange();
             m_RenameTextField.AddToClassList(BuilderConstants.HiddenStyleClassName);
+            selection.NotifyOfHierarchyChange();
         }
 
         public VisualElement row()

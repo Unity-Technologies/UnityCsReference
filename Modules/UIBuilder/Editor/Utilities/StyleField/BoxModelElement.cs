@@ -56,7 +56,7 @@ namespace Unity.UI.Builder
                 
                 m_Title = new Label(GetUnitFromFields());
                 m_Title.AddToClassList(k_TitleClassName);
-                m_Title.AddToClassList(boxType.ToString().ToLower());
+                m_Title.AddToClassList(boxType.ToString().ToLowerInvariant());
                 Add(m_Title);
             }
         }

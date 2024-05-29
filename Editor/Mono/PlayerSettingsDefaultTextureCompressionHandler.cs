@@ -17,14 +17,15 @@ namespace UnityEditor
         private SerializedObject m_SerializedObject;
         private SerializedProperty m_TextureArraySerializedProperty;
         private GUIContent m_TextureCompressionFormatsGUI;
-
+        private GUIContent[] m_DefaultTextureCompressionFormatNames = Array.Empty<GUIContent>();
         private TextureCompressionFormat[] m_LastSavedFormat;
         private List<TextureCompressionFormat> m_StoredTextureCompressionList;
         private bool m_IsDirty = false;
         private bool m_ToBeUpdated = true;
+        private bool m_AllowMultipleTextureCompression = true;
         private ReorderableList m_TextureCompressionsList;
         private Func<TextureCompressionFormat[]> m_AvailableTextureCompressionsProvider;
-        private Func<bool> m_IsPreset;
+        private Func<bool> m_IsActivePlayerSettingsEditor;
         private Action m_EditorSerialization;
 
         private const string k_BuildTargetKey = "m_BuildTarget";
@@ -36,6 +37,11 @@ namespace UnityEditor
         protected abstract TextureCompressionFormat[] CurrentPlatformGlobalEditorTextureFormat { get; set; }
 
         protected abstract string ToString(TextureCompressionFormat textureCompression);
+
+        protected void SetDefaultTextureCompressionFormatNames(GUIContent[] textureCompressionFormatNames)
+        {
+            m_DefaultTextureCompressionFormatNames = textureCompressionFormatNames;
+        }
 
         private ReorderableList TextureCompressionsList
         {
@@ -76,6 +82,22 @@ namespace UnityEditor
                             m_TextureArraySerializedProperty = element.FindPropertyRelative(k_FormatsKey);
                         }
                     }
+
+                    if (m_TextureArraySerializedProperty == null)
+                    {
+                        int index = m_BuildTargetDefaultTextureCompressionFormat.arraySize;
+                        m_BuildTargetDefaultTextureCompressionFormat.InsertArrayElementAtIndex(index);
+                        var newElement = m_BuildTargetDefaultTextureCompressionFormat.GetArrayElementAtIndex(index);
+                        newElement.FindPropertyRelative(k_BuildTargetKey).stringValue = PlatformName;
+                        m_TextureArraySerializedProperty = newElement.FindPropertyRelative(k_FormatsKey);
+                        var availableTextures = m_AvailableTextureCompressionsProvider();
+                        if (availableTextures.Length > 0)
+                        {
+                            int[] formats = new int[] {(int) availableTextures[0]};
+                            m_TextureArraySerializedProperty.SetValue(SerializedPropertyExtensions.Setter, formats);
+                            m_SerializedObject.ApplyModifiedProperties();
+                        }
+                    }
                 }
 
                 return m_TextureArraySerializedProperty;
@@ -97,18 +119,13 @@ namespace UnityEditor
             private set { m_StoredTextureCompressionList = value; }
         }
 
-        protected bool IsGlobalProjectSetting
-        {
-            get { return !IsAPreset; }
-        }
-
-        protected bool IsAPreset
+        protected bool IsActivePlayerSettingsEditor
         {
             get
             {
-                if (m_IsPreset != null)
+                if (m_IsActivePlayerSettingsEditor != null)
                 {
-                    return m_IsPreset.Invoke();
+                    return m_IsActivePlayerSettingsEditor.Invoke();
                 }
 
                 return false;
@@ -125,9 +142,10 @@ namespace UnityEditor
             m_ToBeUpdated = true;
         }
 
-        public PlayerSettingsDefaultTextureCompressionHandler(Func<TextureCompressionFormat[]> availableTextureCompressionsProvider)
+        public PlayerSettingsDefaultTextureCompressionHandler(Func<TextureCompressionFormat[]> availableTextureCompressionsProvider, bool allowMultipleTextureCompression = true)
         {
             m_AvailableTextureCompressionsProvider = availableTextureCompressionsProvider;
+            m_AllowMultipleTextureCompression = allowMultipleTextureCompression;
         }
 
         public PlayerSettingsDefaultTextureCompressionHandler SetupSerializedObject(SerializedObject serializedObject, string variableName = k_BuildTargetDefaultTextureCompressionFormatName)
@@ -143,9 +161,9 @@ namespace UnityEditor
             return this;
         }
 
-        public PlayerSettingsDefaultTextureCompressionHandler SetIsPreset(Func<bool> isPreset)
+        public PlayerSettingsDefaultTextureCompressionHandler SetIsActivePlayerSettingsEditor(Func<bool> isActivePlayerSettingsEditor)
         {
-            m_IsPreset = isPreset;
+            m_IsActivePlayerSettingsEditor = isActivePlayerSettingsEditor;
             return this;
         }
 
@@ -168,6 +186,18 @@ namespace UnityEditor
 
         public void RenderingSectionGUI()
         {
+            if (m_AllowMultipleTextureCompression)
+            {
+                RenderAsReorderableList();
+            }
+            else
+            {
+                RenderAsDropdown();
+            }
+        }
+
+        void RenderAsReorderableList()
+        {
             EditorGUILayout.Space();
             var updated = false;
             if (m_IsDirty)
@@ -184,6 +214,23 @@ namespace UnityEditor
             }
 
             EditorGUILayout.Space();
+        }
+
+        void RenderAsDropdown()
+        {
+            if (StoredTextureCompressionList.Count == 0)
+                return;
+
+            var availableTextureCompressions = m_AvailableTextureCompressionsProvider();
+            var oldFormat = StoredTextureCompressionList[0];
+            var newFormat = PlayerSettingsEditor.BuildEnumPopup(m_TextureCompressionFormatsGUI, oldFormat, availableTextureCompressions, m_DefaultTextureCompressionFormatNames);
+
+            if (newFormat != oldFormat)
+            {
+                StoredTextureCompressionList[0] = newFormat;
+                UpdateSerialization();
+                GUIUtility.ExitGUI();
+            }
         }
 
         private List<TextureCompressionFormat> GetTextureCompressionFormatFromSerialization(SerializedProperty serializedProperty)
@@ -236,7 +283,7 @@ namespace UnityEditor
             if (updated)
             {
                 m_BuildTargetDefaultTextureCompressionFormat.serializedObject.ApplyModifiedProperties();
-                if (IsGlobalProjectSetting)
+                if (IsActivePlayerSettingsEditor)
                 {
                     CurrentPlatformGlobalEditorTextureFormat = StoredTextureCompressionList.ToArray();
                     m_EditorSerialization?.Invoke();

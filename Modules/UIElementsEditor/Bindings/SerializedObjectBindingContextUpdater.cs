@@ -12,7 +12,7 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
 {
     protected override string bindingId { get; } = BindingExtensions.s_SerializedBindingContextUpdaterId;
 
-    private VisualElement owner;
+    private VisualElement contextUpdaterOwner;
 
     private UInt64 lastTrackedObjectRevision = 0xFFFFFFFFFFFFFFFF;
 
@@ -24,11 +24,13 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
 
         b.isReleased = false;
         b.SetContext(context, null);
-        b.owner = owner;
+        b.contextUpdaterOwner = owner;
         b.lastTrackedObjectRevision = context.lastRevision;
         owner.SetBinding(BindingExtensions.s_SerializedBindingContextUpdaterId, b);
         return b;
     }
+
+    protected override VisualElement owner => contextUpdaterOwner;
 
     public SerializedObjectBindingContextUpdater()
     {
@@ -40,6 +42,18 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
     public void AddTracking(SerializedProperty prop)
     {
         trackedPropertiesHash.Add(prop.hashCodeForPropertyPath);
+    }
+
+    // Override the update for the context updater to propagate changes when we detect them.
+    protected internal override BindingResult Update(in BindingContext context)
+    {
+        if (IsBindingContextUninitialized())
+        {
+            Unbind();
+            return default;
+        }
+        bindingContext?.UpdateIfNecessary(context.targetElement);
+        return OnUpdate(in context);
     }
 
     public override BindingResult OnUpdate(in BindingContext context)
@@ -57,7 +71,8 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
             {
                 lastTrackedObjectRevision = bindingContext.lastRevision;
 
-                registeredCallbacks?.Invoke(owner, bindingContext.serializedObject);
+                if (bindingContext.RequestSerializedObject(out var so))
+                    registeredCallbacks?.Invoke(owner, so);
             }
             return default;
         }
@@ -79,7 +94,7 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
         }
 
         trackedPropertiesHash.Clear();
-        owner = null;
+        contextUpdaterOwner = null;
 
         ResetContext();
 
@@ -91,5 +106,22 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
     protected override void ResetCachedValues()
     {
         lastTrackedObjectRevision = 0xFFFFFFFFFFFFFFFF;
+    }
+
+    private void Reset(in UndoRedoInfo undo)
+    {
+        ResetUpdate();
+    }
+
+    protected internal override void OnActivated(in BindingActivationContext context)
+    {
+        base.OnActivated(in context);
+        Undo.undoRedoEvent += Reset;
+    }
+
+    protected internal override void OnDeactivated(in BindingActivationContext context)
+    {
+        base.OnDeactivated(in context);
+        Undo.undoRedoEvent -= Reset;
     }
 }

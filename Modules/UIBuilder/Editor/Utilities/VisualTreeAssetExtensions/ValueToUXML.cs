@@ -37,7 +37,7 @@ namespace Unity.UI.Builder
 
         public string Convert(bool value)
         {
-            return value.ToString().ToLower();
+            return value.ToString().ToLowerInvariant();
         }
 
         public string Convert(float value)

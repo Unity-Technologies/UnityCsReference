@@ -195,7 +195,7 @@ namespace UnityEngine.UIElements
             if (string.IsNullOrEmpty(str))
                 return defaultValue;
 
-            str = str.ToLower().Trim();
+            str = str.ToLowerInvariant().Trim();
 
             var result = defaultValue;
             if (char.IsLetter(str[0]))

@@ -25,18 +25,12 @@ internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSource
     public object dataSource => this;
     public PropertyPath dataSourcePath => default;
 
-    private bool IsBindingContextUninitialized()
+    protected bool IsBindingContextUninitialized()
     {
         if (null == bindingContext)
             return true;
 
-        if (null == bindingContext.serializedObject)
-            return true;
-
-        if (IntPtr.Zero == bindingContext.serializedObject.m_NativeObjectPtr)
-            return true;
-
-        return false;
+        return !bindingContext.IsInitialized();
     }
 
     public long GetViewHashCode()
@@ -44,17 +38,16 @@ internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSource
         if (IsBindingContextUninitialized())
             return -1;
 
-        if (bindingContext.IsValid())
+        if (bindingContext.IsValid() && null != owner)
         {
-            bindingContext.serializedObject.UpdateIfRequiredOrScript();
-            bindingContext.UpdateRevision();
+            bindingContext.UpdateIfNecessary(owner);
         }
 
         // this can be set back to null on update
         if (IsBindingContextUninitialized())
             return -1;
 
-        return bindingContext.serializedObject.objectVersion;
+        return bindingContext.objectVersion;
     }
 
     protected abstract string bindingId { get; }
@@ -135,15 +128,16 @@ internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSource
         {
             m_LastUpdateTime = currentTimeMs;
             bindingContext?.UpdateIfNecessary(context.targetElement);
-            if (m_LastVersion == bindingContext?.serializedObject?.objectVersion)
+            if (m_LastVersion == (bindingContext?.objectVersion ?? 0))
             {
                 return new BindingResult(BindingStatus.Pending);
             }
 
             var result = OnUpdate(in context);
-            m_LastVersion = bindingContext?.serializedObject?.objectVersion ?? 0;
+            m_LastVersion = bindingContext?.objectVersion ?? 0;
             return result;
         }
+        ResetUpdate();
 
         return new BindingResult(BindingStatus.Pending);
     }
@@ -180,6 +174,8 @@ internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSource
 
     EventCallback<AttachToPanelEvent> m_OnFieldAttachedToPanel;
     EventCallback<DetachFromPanelEvent> m_OnFieldDetachedFromPanel;
+
+    protected virtual VisualElement owner => m_Field as VisualElement;
 
     protected SerializedObjectBindingBase()
     {
@@ -334,7 +330,7 @@ internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSource
     public bool ResolveProperty()
     {
 
-        boundProperty = (bindingContext != null && bindingContext.IsValid()) ? bindingContext.serializedObject.FindProperty(boundPropertyPath) : null;
+        boundProperty = (bindingContext != null && bindingContext.IsValid()) ? bindingContext.FindProperty(boundPropertyPath) : null;
         return boundProperty != null;
     }
 

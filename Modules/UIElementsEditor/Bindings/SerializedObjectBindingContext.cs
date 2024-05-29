@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements.Bindings;
 
@@ -14,9 +15,13 @@ namespace UnityEditor.UIElements.Bindings;
 internal class SerializedObjectBindingContext
 {
     public ulong lastRevision { get; private set; }
-    public SerializedObject serializedObject { get; private set; }
+    private SerializedObject serializedObject { get; set; }
 
     private bool wasUpdated { get; set; }
+
+    // Used in tests to ensure that we do not call `SerializedObject.UpdateIfRequiredOrScript` more than
+    // once per update in normal use-cases.
+    internal int updateCount { get; private set; }
 
     private bool m_DelayBind = false;
     private long m_BindingOperationStartTimeMs;
@@ -29,10 +34,43 @@ internal class SerializedObjectBindingContext
         this.lastRevision = so.objectVersion;
     }
 
+    public bool TargetsSerializedObject(SerializedObject obj)
+    {
+        return serializedObject == obj;
+    }
+
+    public bool IsInitialized()
+    {
+        if (null == serializedObject)
+            return false;
+
+        return IntPtr.Zero != serializedObject.m_NativeObjectPtr;
+    }
+
+    public uint objectVersion => IsInitialized() ? serializedObject.objectVersion : 0;
+
+    public Object GetTargetObject()
+    {
+        if (IsInitialized())
+            return serializedObject.targetObject;
+        return null;
+    }
+
+    public SerializedProperty FindProperty(string propertyPath)
+    {
+        return serializedObject?.FindProperty(propertyPath);
+    }
+
     public void Bind(VisualElement element)
     {
         element.SetProperty(FindContextPropertyKey, this);
         ContinueBinding(element, null);
+    }
+
+    public bool RequestSerializedObject(out SerializedObject so)
+    {
+        so = serializedObject;
+        return IsInitialized();
     }
 
     internal void ContinueBinding(VisualElement element, SerializedProperty parentProperty)
@@ -576,7 +614,7 @@ internal class SerializedObjectBindingContext
             if (element.elementPanel?.GetUpdater(VisualTreeUpdatePhase.DataBinding) is VisualTreeDataBindingsUpdater updater && m_LastFrame != updater.frame)
             {
                 serializedObject.UpdateIfRequiredOrScript();
-
+                ++updateCount;
                 UpdateRevision();
                 m_LastFrame = updater.frame;
                 wasUpdated = true;

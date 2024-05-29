@@ -340,7 +340,7 @@ namespace UnityEngine.UIElements
         void ResolveRuntimePanel()
         {
             if (m_RuntimePanel == null)
-                m_RuntimePanel = rootVisualElement.panel as RuntimePanel;
+                m_RuntimePanel = rootVisualElement?.panel as RuntimePanel;
         }
 
         /// <summary>

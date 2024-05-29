@@ -785,10 +785,10 @@ namespace UnityEditor.UIElements.StyleSheets
                 s_NameCache = new Dictionary<string, StyleValueKeyword>();
                 foreach (StyleValueKeyword kw in System.Enum.GetValues(typeof(StyleValueKeyword)))
                 {
-                    s_NameCache[kw.ToString().ToLower()] = kw;
+                    s_NameCache[kw.ToString().ToLowerInvariant()] = kw;
                 }
             }
-            return s_NameCache.TryGetValue(rawStr.ToLower(), out value);
+            return s_NameCache.TryGetValue(rawStr.ToLowerInvariant(), out value);
         }
     }
 

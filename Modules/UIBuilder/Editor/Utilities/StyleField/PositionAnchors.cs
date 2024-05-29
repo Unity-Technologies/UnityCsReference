@@ -120,8 +120,8 @@ namespace Unity.UI.Builder
 
         void UpdateAnchors(PositionProperty positionProperty, bool selected)
         {
-            m_Container.EnableInClassList(k_UssAnchoredClassName + "-" + positionProperty.ToString().ToLower(), selected);
-            m_SquareHoverRect.EnableInClassList(positionProperty.ToString().ToLower(), selected);
+            m_Container.EnableInClassList(k_UssAnchoredClassName + "-" + positionProperty.ToString().ToLowerInvariant(), selected);
+            m_SquareHoverRect.EnableInClassList(positionProperty.ToString().ToLowerInvariant(), selected);
 
             // update square tooltip
             var allSelected = m_TopPoint.value && m_LeftPoint.value && m_RightPoint.value && m_BottomPoint.value;
@@ -143,7 +143,7 @@ namespace Unity.UI.Builder
             point.pointHovered += (clicked, enable) =>
             {
                 var className = clicked ? k_UssActiveClassName : k_UssHoverClassName;
-                m_Container.EnableInClassList(className + "-" + positionProperty.ToString().ToLower(), enable);
+                m_Container.EnableInClassList(className + "-" + positionProperty.ToString().ToLowerInvariant(), enable);
             };
 
             m_OuterContainer.Add(point);

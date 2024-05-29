@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 using System.Text;
 using Bee.BeeDriver;
 using BeeBuildProgramCommon.Data;
@@ -193,19 +194,83 @@ namespace UnityEditor.Scripting.ScriptCompilation
             };
         }
 
-        public static void RunCleanBeeCache()
+        public static void RunCleanBeeCache(NPath cacheDir = null, long cacheSize = -1, bool runAsync = true)
         {
-            // Note that this size is spefied as the total number of used bytes for all the files in the cache
-            // and not as the actual size of occupied blocks on the disk, which will add some overhead.
-            long cacheSize = 256 * 1024 * 1024;
-            var psi = new ProcessStartInfo()
+            // Note that cacheSize is specified as the total number of used bytes
+            // for all the files in the cache and not as the actual size of occupied
+            // blocks on the disk, which will add some overhead.
+            if (cacheSize < 0)
+                cacheSize = 256 * 1024 * 1024;
+
+            if (cacheDir == null)
+                cacheDir = BeeCacheDir;
+
+            if (runAsync)
+                Task.Run(() => RunCleanBeeCacheInternal(cacheDir, cacheSize));
+            else
+                RunCleanBeeCacheInternal(cacheDir, cacheSize);
+        }
+
+        private static void RunCleanBeeCacheInternal(NPath beeCacheDir, long targetCacheSize)
+        {
+            if (targetCacheSize < 0)
+                throw new ArgumentOutOfRangeException($"targetCacheSize should be >= 0, got {targetCacheSize}");
+
+            var sw = new Stopwatch();
+            sw.Start();
+
+            NPath trashDir = beeCacheDir.Combine("trash");
+            trashDir.EnsureDirectoryExists();
+
+            long cacheSize = 0;
+
+            List<CacheEntry> cacheEntries = new List<CacheEntry>();
+            foreach (var subdir in beeCacheDir.Directories())
             {
-                FileName = BeeCacheToolExecutable,
-                Arguments = $"clean {cacheSize}",
-                UseShellExecute = false
-            };
-            psi.EnvironmentVariables[BeeCacheDirEnvVar] = BeeCacheDir;
-            Process.Start(psi);
+                if (subdir.Equals(trashDir))
+                    continue;
+
+                // Each subdirectory corresponds to a deepcache entry, with the
+                // cache lookup key as the directory name. Files inside those
+                // subdirectories are the blobs referred to by the cache lookup.
+                CacheEntry entry = new(subdir);
+                foreach (var f in subdir.Files())
+                {
+                    var fileSize = f.GetFileSize();
+                    entry.Size += fileSize;
+                    entry.Timestamp = Math.Max(entry.Timestamp,
+                        new DateTimeOffset(f.GetLastWriteTimeUtc()).ToUnixTimeSeconds());
+                }
+                cacheSize += entry.Size;
+                cacheEntries.Add(entry);
+            }
+            Console.WriteLine($"Total cache size {cacheSize}");
+
+            foreach (var entry in cacheEntries.OrderBy(x => x.Timestamp))
+            {
+                if (cacheSize <= targetCacheSize)
+                    break;
+
+                cacheSize -= entry.Size;
+                entry.Path.Move(trashDir.Combine(entry.Path.FileName));
+            }
+
+            trashDir.Delete();
+
+            Console.WriteLine($"Total cache size after purge {cacheSize}, took {sw.Elapsed}");
+        }
+
+        private record struct CacheEntry {
+            public NPath Path;     // directory
+            public long Size;      // sum of file sizes in the directory
+            public long Timestamp; // most recent file mtime in the directory
+
+            public CacheEntry(NPath p)
+            {
+                Path = p;
+                Size = 0;
+                Timestamp = 0;
+            }
         }
 
         public enum CacheMode

@@ -90,7 +90,7 @@ namespace UnityEditor.Build.Profile
             return installed
                 && BuildPipeline.LicenseCheck(buildTarget)
                 && !string.IsNullOrEmpty(moduleName)
-                && ModuleManager.GetBuildProfileExtension(moduleName) != null;
+                && ModuleManager.IsPlatformSupportLoaded(moduleName);
         }
 
         /// <summary>
@@ -183,18 +183,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static void SwitchLegacyActiveFromBuildProfile(BuildProfile profile)
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(profile.buildTarget);
-
-            if (buildTargetGroup == BuildTargetGroup.Standalone)
-            {
-                EditorUserBuildSettings.SwitchActiveBuildTargetAndSubtarget(
-                    profile.buildTarget,
-                    (int)profile.subtarget);
-                return;
-            }
-
-            // Subtarget fetched by EditorUserBuildSettings maps to the active build profile.
-            EditorUserBuildSettings.SwitchActiveBuildTarget(buildTargetGroup, profile.buildTarget);
+            EditorUserBuildSettings.SwitchActiveBuildTargetGuid(new GUID(profile.platformId));
         }
 
         public static void SwitchLegacySelectedBuildTargets(BuildProfile profile)
