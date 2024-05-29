@@ -243,7 +243,7 @@ namespace Unity.UI.Builder
             var foldout = m_Inspector.Q<Foldout>("anchors-foldout");
 
             foldout.text = (newPosition == Position.Absolute) ? "Anchors" : "Offsets";
-            foldout.EnableInClassList(Position.Relative.ToString().ToLower(), newPosition == Position.Relative);
+            foldout.EnableInClassList(Position.Relative.ToString().ToLowerInvariant(), newPosition == Position.Relative);
         }
 
         /// <summary>

@@ -23,7 +23,7 @@ namespace UnityEditor.Build.Content
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/BuildPipeline/Editor/Public/ObjectIdentifier.h")]
     [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
-    public struct ObjectIdentifier : IEquatable<ObjectIdentifier>
+    public struct ObjectIdentifier : IEquatable<ObjectIdentifier>, IComparable<ObjectIdentifier>
     {
         [NativeName("guid")]
         internal GUID m_GUID;
@@ -62,46 +62,45 @@ namespace UnityEditor.Build.Content
             return UnityString.Format("{{ guid: {0}, fileID: {1}, type: {2}, path: {3}}}", m_GUID, m_LocalIdentifierInFile, m_FileType, m_FilePath);
         }
 
-        public static bool operator==(ObjectIdentifier a, ObjectIdentifier b)
+        public int CompareTo(ObjectIdentifier other)
         {
-            if (a.m_GUID != b.m_GUID)
-                return false;
-            if (a.m_LocalIdentifierInFile != b.m_LocalIdentifierInFile)
-                return false;
-            if (a.m_FileType != b.m_FileType)
-                return false;
-            if (a.m_FilePath != b.m_FilePath)
-                return false;
-            return true;
+            if (m_GUID != other.m_GUID)
+                return m_GUID.CompareTo(other.m_GUID);
+            if (m_LocalIdentifierInFile != other.m_LocalIdentifierInFile)
+                return m_LocalIdentifierInFile.CompareTo(other.m_LocalIdentifierInFile);
+            if (m_FileType != other.m_FileType)
+                return m_FileType.CompareTo(other.m_FileType);
+            return m_FilePath.CompareTo(other.m_FilePath);
+        }
+
+        public static bool operator ==(ObjectIdentifier a, ObjectIdentifier b)
+        {
+            return a.CompareTo(b) == 0;
         }
 
         public static bool operator!=(ObjectIdentifier a, ObjectIdentifier b)
         {
-            return !(a == b);
+            return a.CompareTo(b) != 0;
         }
 
         public static bool operator<(ObjectIdentifier a, ObjectIdentifier b)
         {
-            if (a.m_GUID == b.m_GUID)
-                return a.m_LocalIdentifierInFile < b.m_LocalIdentifierInFile;
-            return a.m_GUID < b.m_GUID;
+            return a.CompareTo(b) < 0;
         }
 
         public static bool operator>(ObjectIdentifier a, ObjectIdentifier b)
         {
-            if (a.m_GUID == b.m_GUID)
-                return a.m_LocalIdentifierInFile > b.m_LocalIdentifierInFile;
-            return a.m_GUID > b.m_GUID;
+            return a.CompareTo(b) > 0;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is ObjectIdentifier && Equals((ObjectIdentifier)obj);
+            return obj is ObjectIdentifier objId && Equals(objId);
         }
 
         public bool Equals(ObjectIdentifier other)
         {
-            return this == other;
+            return CompareTo(other) == 0;
         }
 
         public override int GetHashCode()

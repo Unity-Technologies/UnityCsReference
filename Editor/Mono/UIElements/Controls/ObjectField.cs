@@ -173,6 +173,7 @@ namespace UnityEditor.UIElements
             static readonly string ussClassName = "unity-object-field-display";
             static readonly string iconUssClassName = ussClassName + "__icon";
             internal static readonly string labelUssClassName = ussClassName + "__label";
+            internal static readonly string nullLabelUssClassName = labelUssClassName + "--value-null";
             static readonly string acceptDropVariantUssClassName = ussClassName + "--accept-drop";
 
             internal void ShowMixedValue(bool show)
@@ -224,6 +225,7 @@ namespace UnityEditor.UIElements
                 var content = EditorGUIUtility.ObjectContent(m_ObjectField.value, m_ObjectField.objectType, property);
                 m_ObjectIcon.image = content.image;
                 m_ObjectLabel.text = content.text;
+                m_ObjectLabel.EnableInClassList(nullLabelUssClassName, m_ObjectField.value == null);
             }
 
             [EventInterest(typeof(MouseDownEvent), typeof(KeyDownEvent),

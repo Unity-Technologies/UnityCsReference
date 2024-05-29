@@ -267,12 +267,20 @@ namespace UnityEditor
                 set;
             }
 
-            // Should window resizing be allowed.
-            public static extern bool resizableWindow
+            [Obsolete("resizableWindow has been deprecated and renamed to match Android documentation. Please use resizeableActivity instead. (UnityUpgradable) -> resizeableActivity", false)]
+            // Should application resizing be allowed (deprecated old naming).
+            public static bool resizeableWindow
             {
-                [NativeMethod("GetAndroidResizableWindow")]
+                set => resizeableActivity = value;
+                get => resizeableActivity;
+            }
+
+            // Should application resizing be allowed (new naming).
+            public static extern bool resizeableActivity
+            {
+                [NativeMethod("GetAndroidResizeableActivity")]
                 get;
-                [NativeMethod("SetAndroidResizableWindow")]
+                [NativeMethod("SetAndroidResizeableActivity")]
                 set;
             }
 

@@ -76,7 +76,7 @@ namespace Unity.UI.Builder
 
             m_ClickableArea = this.Q(k_ClickableAreaName);
 
-            AddToClassList(positionProperty.ToString().ToLower());
+            AddToClassList(positionProperty.ToString().ToLowerInvariant());
 
             m_ClickableArea.AddManipulator(new Clickable(() =>
             {

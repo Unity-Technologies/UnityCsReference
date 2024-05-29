@@ -17,6 +17,8 @@ namespace UnityEditor
         static private GUIContent s_TypeMismatch = EditorGUIUtility.TrTextContent("Type mismatch");
         static private GUIContent s_Select = EditorGUIUtility.TrTextContent("Select");
 
+        const float k_NullObjectReferenceOpacity = 0.7f;
+
         [Flags]
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal enum ObjectFieldValidatorOptions
@@ -417,24 +419,40 @@ namespace UnityEditor
                         temp = EditorGUIUtility.ObjectContent(obj, objType, property, validator);
                     }
 
-                    switch (visualType)
+                    var contentColor = GUI.contentColor;
+                    var oldAlpha = contentColor.a;
+                    try
                     {
-                        case ObjectFieldVisualType.IconAndText:
-                            BeginHandleMixedValueContentColor();
-                            style.Draw(position, temp, id, DragAndDrop.activeControlID == id, position.Contains(Event.current.mousePosition));
+                        // Show label with 70% opacity when null. (UUM-16396)
+                        if (obj == null)
+                        {
+                            contentColor.a = k_NullObjectReferenceOpacity;
+                            GUI.contentColor = contentColor;
+                        }
+                        switch (visualType)
+                        {
+                            case ObjectFieldVisualType.IconAndText:
+                                BeginHandleMixedValueContentColor();
+                                style.Draw(position, temp, id, DragAndDrop.activeControlID == id, position.Contains(Event.current.mousePosition));
 
-                            Rect buttonRect = buttonStyle.margin.Remove(GetButtonRect(visualType, position));
-                            buttonStyle.Draw(buttonRect, GUIContent.none, id, DragAndDrop.activeControlID == id, buttonRect.Contains(Event.current.mousePosition));
-                            EndHandleMixedValueContentColor();
-                            break;
-                        case ObjectFieldVisualType.LargePreview:
-                            DrawObjectFieldLargeThumb(position, id, obj, temp);
-                            break;
-                        case ObjectFieldVisualType.MiniPreview:
-                            DrawObjectFieldMiniThumb(position, id, obj, temp);
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
+                                Rect buttonRect = buttonStyle.margin.Remove(GetButtonRect(visualType, position));
+                                buttonStyle.Draw(buttonRect, GUIContent.none, id, DragAndDrop.activeControlID == id, buttonRect.Contains(Event.current.mousePosition));
+                                EndHandleMixedValueContentColor();
+                                break;
+                            case ObjectFieldVisualType.LargePreview:
+                                DrawObjectFieldLargeThumb(position, id, obj, temp);
+                                break;
+                            case ObjectFieldVisualType.MiniPreview:
+                                DrawObjectFieldMiniThumb(position, id, obj, temp);
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+                    }
+                    finally
+                    {
+                        contentColor.a = oldAlpha;
+                        GUI.contentColor = contentColor;
                     }
                     break;
             }

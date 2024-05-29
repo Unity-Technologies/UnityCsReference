@@ -135,7 +135,7 @@ namespace Unity.UI.Builder
             if (valueHandle.valueType == StyleValueType.Enum)
             {
                 var colorName = styleSheet.ReadAsString(valueHandle);
-                StyleSheetColor.TryGetColor(colorName.ToLower(), out var value);
+                StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out var value);
                 return value;
             }
             return styleSheet.ReadColor(valueHandle);

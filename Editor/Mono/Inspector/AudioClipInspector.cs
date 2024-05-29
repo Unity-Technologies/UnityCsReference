@@ -309,7 +309,7 @@ namespace UnityEditor
             }
 
             // force update GUI
-            if (playing)
+            if (playing && GUIView.current != null)
                 GUIView.current.Repaint();
         }
 

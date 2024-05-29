@@ -69,7 +69,7 @@ internal class DefaultSerializedObjectBindingImplementation : ISerializedObjectB
     {
         var context = SerializedObjectBindingContext.FindBindingContext(element, obj);
 
-        if (context == null || context.serializedObject != obj)
+        if (context == null || !context.TargetsSerializedObject(obj))
         {
             //we couldn't find the context, let's try to find it elsewhere
             var cookie = GetTemporaryCache(element);

@@ -147,9 +147,7 @@ namespace UnityEditor.Build.Profile
                 || !BuildProfileContext.IsClassicPlatformProfile(this))
                 return false;
 
-            var activePlatformId = BuildProfileModuleUtil.GetPlatformId(
-                EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.standaloneBuildSubtarget);
-            return platformId == activePlatformId;
+            return platformId == EditorUserBuildSettings.activePlatformGuid.ToString();
         }
 
         [VisibleToOtherModules]

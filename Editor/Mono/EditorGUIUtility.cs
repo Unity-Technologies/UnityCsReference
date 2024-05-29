@@ -929,7 +929,7 @@ namespace UnityEditor
             else if (type != null)
             {
                 s_ObjectContent.text = GetTypeNameWithInfo(type.Name, instanceID);
-                s_ObjectContent.image = AssetPreview.GetMiniTypeThumbnail(type);
+                s_ObjectContent.image = null; // Do not show icon when the reference is null as the type is already included in the label (UUM-16396)
             }
             else
             {

@@ -184,7 +184,7 @@ namespace UnityEditor.StyleSheets
             switch (handle.valueType)
             {
                 case StyleValueType.Keyword:
-                    str = sheet.ReadKeyword(handle).ToString().ToLower();
+                    str = sheet.ReadKeyword(handle).ToString().ToLowerInvariant();
                     break;
                 case StyleValueType.Float:
                     str = sheet.ReadFloat(handle).ToString(CultureInfo.InvariantCulture.NumberFormat);

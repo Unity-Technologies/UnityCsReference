@@ -779,6 +779,44 @@ namespace UnityEditor
         // The currently active build target.
         public static extern BuildTarget activeBuildTarget { get; }
 
+        private static extern GUID GetInternalActivePlatformGuid();
+
+        // Internal setter only to be used for testing.
+        internal static extern void SetActivePlatformGuid(GUID platformId);
+
+        internal static GUID activePlatformGuid
+        {
+            get
+            {
+                GUID activePlatformGuid = GetInternalActivePlatformGuid();
+                GUID buildTargetGuid = BuildTargetDiscovery.GetGUIDFromBuildTarget(EditorUserBuildSettingsUtils.CalculateActiveNamedBuildTarget(), activeBuildTarget);
+
+                // TODO: Account for derived platforms.
+                // Jira https://jira.unity3d.com/browse/PLAT-9234
+                if (activePlatformGuid.Empty())
+                    return buildTargetGuid;
+
+                if(activePlatformGuid != buildTargetGuid)
+                    return buildTargetGuid;
+
+                return activePlatformGuid;
+            }
+        }
+
+        [NativeMethod("SwitchActiveBuildTargetGuid")]
+        private static extern bool SwitchActiveBuildTargetAndSubTargetGuid(GUID platformGuid, BuildTarget target, int subtarget);
+        internal static bool SwitchActiveBuildTargetGuid(GUID platformGuid)
+        {
+            // TODO: Account for derived platforms.
+            // Jira https://jira.unity3d.com/browse/PLAT-9234
+            var (buildTargetFromGuid, subTargetFromGuid) = BuildTargetDiscovery.GetBuildTargetAndSubtargetFromGUID(platformGuid);
+
+            int activeSubtarget = (int)subTargetFromGuid;
+            if(subTargetFromGuid == StandaloneBuildSubtarget.Default)
+                activeSubtarget = EditorUserBuildSettings.GetActiveSubtargetFor(buildTargetFromGuid);
+
+            return SwitchActiveBuildTargetAndSubTargetGuid(platformGuid, buildTargetFromGuid, activeSubtarget);
+        }
 
         // The currently active build target.
         internal static extern BuildTargetGroup activeBuildTargetGroup { get; }
@@ -793,8 +831,8 @@ namespace UnityEditor
         public static bool SwitchActiveBuildTargetAsync(BuildTargetGroup targetGroup, BuildTarget target)
             => SwitchActiveBuildTargetAndSubtargetAsync(target, EditorUserBuildSettings.GetActiveSubtargetFor(target));
 
-        public static bool SwitchActiveBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget target) =>
-            BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget).SetActive(target);
+        public static bool SwitchActiveBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget target)
+            => BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget).SetActive(target);
 
         // This is used by tests -- note that it does tell the editor that current platform is X, without
         // validating if support for it is installed. However it does not do things like script recompile

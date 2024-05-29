@@ -770,7 +770,7 @@ namespace UnityEditor.UIElements
                     // clean up default value
                     var defaultVal = description.defaultValueAsString?.Trim('\0');
                     if (defaultVal is "True" or "False")
-                        defaultVal = defaultVal.ToLower();
+                        defaultVal = defaultVal.ToLowerInvariant();
                     if (description.type != "string" && defaultVal == "")
                         defaultVal = null;
 

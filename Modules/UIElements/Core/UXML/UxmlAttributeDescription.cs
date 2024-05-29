@@ -705,7 +705,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The default value for the attribute, as a string.
         /// </summary>
-        public override string defaultValueAsString { get { return defaultValue.ToString().ToLower(); } }
+        public override string defaultValueAsString { get { return defaultValue.ToString().ToLowerInvariant(); } }
 
         /// <summary>
         /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.

@@ -661,13 +661,13 @@ namespace UnityEngine.UIElements.StyleSheets
             if (value.handle.valueType == StyleValueType.Keyword)
             {
                 var svk = (StyleValueKeyword)value.handle.valueIndex;
-                return svk.ToUssString() == keyword.ToLower();
+                return svk.ToUssString() == keyword.ToLowerInvariant();
             }
 
             if (value.handle.valueType == StyleValueType.Enum)
             {
                 var s = value.sheet.ReadEnum(value.handle);
-                return s == keyword.ToLower();
+                return s == keyword.ToLowerInvariant();
             }
 
             return false;
@@ -729,7 +729,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 Color c = Color.clear;
                 var colorName = value.sheet.ReadAsString(value.handle);
-                if (StyleSheetColor.TryGetColor(colorName.ToLower(), out c))
+                if (StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out c))
                     return true;
             }
 

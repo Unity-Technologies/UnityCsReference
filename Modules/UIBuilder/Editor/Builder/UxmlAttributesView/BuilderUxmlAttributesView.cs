@@ -1210,7 +1210,7 @@ namespace Unity.UI.Builder
                 valueProperty.structValue = groupField.value;
                 p.serializedObject.ApplyModifiedProperties();
 
-                attributesUxmlOwner.SetAttribute("is-multiple-selection", p.boolValue.ToString().ToLower());
+                attributesUxmlOwner.SetAttribute("is-multiple-selection", p.boolValue.ToString().ToLowerInvariant());
                 attributesUxmlOwner.SetAttribute("value", groupField.value.ToString());
                 PostAttributeValueChange(fieldElement, groupField.value.ToString(), attributesUxmlOwner);
             });
@@ -1226,7 +1226,7 @@ namespace Unity.UI.Builder
                 valueProperty.structValue = groupField.value;
                 p.serializedObject.ApplyModifiedProperties();
 
-                attributesUxmlOwner.SetAttribute("allow-empty-selection", p.boolValue.ToString().ToLower());
+                attributesUxmlOwner.SetAttribute("allow-empty-selection", p.boolValue.ToString().ToLowerInvariant());
                 attributesUxmlOwner.SetAttribute("value", groupField.value.ToString());
                 PostAttributeValueChange(fieldElement, groupField.value.ToString(), attributesUxmlOwner);
             });

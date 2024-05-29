@@ -174,7 +174,7 @@ namespace UnityEngine.UIElements
 
         static string kCustomPropertyMarker = "--";
 
-        static bool TryCheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle handle, out T value)
+        bool TryCheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle handle, out T value)
         {
             bool result = false;
             value = default(T);
@@ -186,21 +186,21 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                Debug.LogErrorFormat("Trying to read value of type {0} while reading a value of type {1}", type, handle.valueType);
+                Debug.LogErrorFormat(this, "Trying to read value of type {0} while reading a value of type {1}", type, handle.valueType);
             }
             return result;
         }
 
-        static T CheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle handle)
+        T CheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle handle)
         {
             T value = default(T);
             if (handle.valueType != type)
             {
-                Debug.LogErrorFormat("Trying to read value of type {0} while reading a value of type {1}", type, handle.valueType);
+                Debug.LogErrorFormat(this, "Trying to read value of type {0} while reading a value of type {1}", type, handle.valueType);
             }
             else if (list == null || handle.valueIndex < 0 || handle.valueIndex >= list.Length)
             {
-                Debug.LogError("Accessing invalid property");
+                Debug.LogError("Accessing invalid property", this);
             }
             else
             {
@@ -314,7 +314,7 @@ namespace UnityEngine.UIElements
                         tableToUse = orderedTypeSelectors;
                         break;
                     default:
-                        Debug.LogError($"Invalid first part type {part.type}");
+                        Debug.LogError($"Invalid first part type {part.type}", this);
                         break;
                 }
 
@@ -467,7 +467,7 @@ namespace UnityEngine.UIElements
         {
             if (handle.valueType != StyleValueType.Function)
             {
-                Debug.LogErrorFormat($"Trying to read value of type {StyleValueType.Function} while reading a value of type {handle.valueType}");
+                Debug.LogErrorFormat(this, $"Trying to read value of type {StyleValueType.Function} while reading a value of type {handle.valueType}");
                 return string.Empty;
             }
 

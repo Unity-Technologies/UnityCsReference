@@ -403,14 +403,7 @@ namespace UnityEngine.UIElements
             dragElement.style.left = newPositionLeft;
 
             // Calculate the rect for the mouse selection, in the parent coordinate (MinMaxSlider world) ...
-            var minThumbX = dragElement.resolvedStyle.left;
-            var maxThumbX = dragElement.resolvedStyle.left + (dragElement.resolvedStyle.width - dragElement.resolvedStyle.unitySliceRight);
-            var minThumbY = dragElement.layout.yMin + dragMinThumb.resolvedStyle.marginTop;
-            var maxThumbY = dragElement.layout.yMin + dragMaxThumb.resolvedStyle.marginTop;
-            var minThumbHeight = Mathf.Max(dragElement.resolvedStyle.height, dragMinThumb.resolvedStyle.height);
-            var maxThumbHeight = Mathf.Max(dragElement.resolvedStyle.height, dragMaxThumb.resolvedStyle.height);
-            m_DragMinThumbRect = new Rect(minThumbX, minThumbY,dragElement.resolvedStyle.unitySliceLeft, minThumbHeight);
-            m_DragMaxThumbRect = new Rect(maxThumbX, maxThumbY, dragElement.resolvedStyle.unitySliceRight, maxThumbHeight);
+            UpdateDragThumbsRect();
 
             // The child elements are positioned based on the parent (drag element) coordinate...
             // Set up the Max Thumb for the horizontal slider...
@@ -425,6 +418,19 @@ namespace UnityEngine.UIElements
 
             dragMaxThumb.style.width = m_DragMaxThumbRect.width;
             dragMaxThumb.style.height = m_DragMaxThumbRect.height;
+        }
+
+        void UpdateDragThumbsRect()
+        {
+            // Calculate the rect for the mouse selection, in the parent coordinate (MinMaxSlider world) ...
+            var minThumbX = dragElement.resolvedStyle.left;
+            var maxThumbX = dragElement.resolvedStyle.left + (dragElement.resolvedStyle.width - dragElement.resolvedStyle.unitySliceRight);
+            var minThumbY = dragElement.layout.yMin + dragMinThumb.resolvedStyle.marginTop;
+            var maxThumbY = dragElement.layout.yMin + dragMaxThumb.resolvedStyle.marginTop;
+            var minThumbHeight = Mathf.Max(dragElement.resolvedStyle.height, dragMinThumb.resolvedStyle.height);
+            var maxThumbHeight = Mathf.Max(dragElement.resolvedStyle.height, dragMaxThumb.resolvedStyle.height);
+            m_DragMinThumbRect = new Rect(minThumbX, minThumbY,dragElement.resolvedStyle.unitySliceLeft, minThumbHeight);
+            m_DragMaxThumbRect = new Rect(maxThumbX, maxThumbY, dragElement.resolvedStyle.unitySliceRight, maxThumbHeight);
         }
 
         internal float SliderLerpUnclamped(float a, float b, float interpolant)
@@ -476,6 +482,9 @@ namespace UnityEngine.UIElements
         {
             if (clampedDragger.dragDirection == ClampedDragger<float>.DragDirection.Free)
                 return;
+
+            // Refresh the thumbs rect values to get the latest updates.
+            UpdateDragThumbsRect();
 
             // Detection of the thumb click (min or max)
             if (m_DragMinThumbRect.Contains(clampedDragger.startMousePosition))
@@ -613,6 +622,18 @@ namespace UnityEngine.UIElements
 
         protected override void UpdateMixedValueContent()
         {
+        }
+
+        internal override void RegisterEditingCallbacks()
+        {
+            visualInput.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+            visualInput.RegisterCallback<PointerUpEvent>(EndEditing);
+        }
+
+        internal override void UnregisterEditingCallbacks()
+        {
+            visualInput.UnregisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+            visualInput.UnregisterCallback<PointerUpEvent>(EndEditing);
         }
     }
 }

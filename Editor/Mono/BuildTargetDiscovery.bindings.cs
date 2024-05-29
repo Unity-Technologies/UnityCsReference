@@ -138,6 +138,17 @@ namespace UnityEditor
             BuildTarget.StandaloneLinux64,
         };
 
+        static bool IsStandalonePlatform(BuildTarget buildTarget)
+        {
+            foreach (var target in StandaloneBuildTargets)
+            {
+                if (target == buildTarget)
+                    return true;
+            }
+
+            return false;
+        }
+
         [RequiredByNativeCode]
         internal static bool DoesBuildTargetSupportStereoInstancingRendering(BuildTarget buildTarget)
         {
@@ -324,7 +335,7 @@ namespace UnityEditor
         };
 
         // Changes here should be synced with the usage of
-        // BuildTargetDiscovery::HideInUI flag in [Platfrom]BuildTarget.cpp
+        // BuildTargetDiscovery::HideInUI flag in [Platform]BuildTarget.cpp
         internal static GUID[] hiddenPlatforms { get; } = new GUID[]
         {
             s_platform_38,
@@ -449,7 +460,7 @@ namespace UnityEditor
             {  s_platform_102, L10n.Tr("*standard install form hub") },
         };
 
-        // Name changes here must be reflected in the platform [PLATFORM]BuildTarget.cs and [Platfrom]BuildTarget.cpp respective DisplayName and niceName
+        // Name changes here must be reflected in the platform [PLATFORM]BuildTarget.cs and [Platform]BuildTarget.cpp respective DisplayName and niceName
         static Dictionary<GUID, string> s_PlatformDisplayName = new()
         {
             {  s_platform_02, "macOS" },
@@ -474,7 +485,7 @@ namespace UnityEditor
             {  s_platform_102, "macOS Server" },
         };
 
-        // Changes here should be synced with [Platfrom]BuildTarget.cpp respective iconName
+        // Changes here should be synced with [Platform]BuildTarget.cpp respective iconName
         static readonly Dictionary<GUID, string> k_PlatformIconName = new()
         {
             { s_platform_02, "BuildSettings.OSX" },
@@ -550,7 +561,7 @@ namespace UnityEditor
                     continue;
                 }
 
-                if (!PlatformHasFlag(buildTarget, TargetAttributes.IsStandalonePlatform))
+                if (!IsStandalonePlatform(buildTarget))
                 {
                     k_PlatformInstalledData.Add(platform, true);
                     continue;
@@ -705,7 +716,7 @@ namespace UnityEditor
             return false;
         }
 
-        [System.Obsolete("BuildPlatfromIsHiddenInUI(BuildTarget) is obsolete. Use BuildPlatfromIsHiddenInUI(IBuildTarget) instead.", false)]
+        [System.Obsolete("BuildPlatformIsHiddenInUI(BuildTarget) is obsolete. Use BuildPlatformIsHiddenInUI(IBuildTarget) instead.", false)]
         public static bool BuildPlatformIsHiddenInUI(BuildTarget platform) =>
             BuildPlatformIsHiddenInUI(GetGUIDFromBuildTarget(platform));
 

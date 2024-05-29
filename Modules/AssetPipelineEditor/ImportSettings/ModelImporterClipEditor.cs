@@ -11,6 +11,7 @@ using UnityEngine.Profiling;
 using Object = UnityEngine.Object;
 using System.Globalization;
 using System.Linq;
+using UnityEditor.Presets;
 
 namespace UnityEditor
 {
@@ -127,6 +128,8 @@ namespace UnityEditor
 
         ReorderableList m_ClipList;
 
+        bool isEditorPreset;
+
         private string[] referenceTransformPaths
         {
             get { return singleImporter.transformPaths; }
@@ -201,6 +204,8 @@ namespace UnityEditor
             public GUIContent TheRigsOfTheSelectedModelsHave = EditorGUIUtility.TrTextContentWithIcon("The rigs of the selected models have different Animation Types.", MessageType.Info);
             public GUIContent TheRigsOfTheSelectedModelsAre = EditorGUIUtility.TrTextContentWithIcon("The rigs of the selected models are not setup to handle animation. Change the Animation Type in the Rig tab and click Apply.", MessageType.Info);
             public GUIContent Clips = EditorGUIUtility.TrTextContent("Clips");
+            public GUIContent ClipName = EditorGUIUtility.TrTextContent("Clip Name");
+            public GUIContent TakeName = EditorGUIUtility.TrTextContent("Take Reference Name", "Defines the name of the referenced clip that these values will be applied to. If referenced clip is not present, these clip values will be ignored.");
             public GUIContent Start = EditorGUIUtility.TrTextContent("Start");
             public GUIContent End = EditorGUIUtility.TrTextContent("End");
             public GUIContent MaskHasAPath = EditorGUIUtility.TrTextContent("Mask has a path that does not match the transform hierarchy. Animation may not import correctly.");
@@ -266,6 +271,8 @@ namespace UnityEditor
 
             motionNodeIndex = ArrayUtility.FindIndex(m_MotionNodeList, delegate(GUIContent content) { return content.text == m_MotionNodeName.stringValue; });
             motionNodeIndex = motionNodeIndex < 1 ? 0 : motionNodeIndex;
+
+            isEditorPreset = Preset.IsEditorTargetAPreset(target);
         }
 
         void SyncClipEditor(AnimationClipInfoProperties info)
@@ -458,7 +465,7 @@ namespace UnityEditor
                 ImportLog.ImportLogEntry[] importRigErrors = importLog != null ? importLog.logEntries.Where(x => x.flags == ImportLogFlags.Error && x.message.StartsWith(k_RigErrorPrefix)).ToArray() : new ImportLog.ImportLogEntry[0];
                 ImportLog.ImportLogEntry[] importRigWarnings = importLog != null ? importLog.logEntries.Where(x => x.flags == ImportLogFlags.Warning && x.message.StartsWith(k_RigErrorPrefix)).ToArray() : new ImportLog.ImportLogEntry[0];
 
-                bool hasNoValidAnimationData = targets.Length == 1 && !m_ContainsAnimation.boolValue && singleImporter.animationType != ModelImporterAnimationType.None;
+                bool hasNoValidAnimationData = targets.Length == 1 && !m_ContainsAnimation.boolValue && singleImporter.animationType != ModelImporterAnimationType.None && !isEditorPreset;
                 if (IsDeprecatedMultiAnimationRootImport())
                     EditorGUILayout.HelpBox(styles.AnimationDataWas);
                 else if (hasNoValidAnimationData)
@@ -483,7 +490,7 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(styles.TheRigsOfTheSelectedModelsHave);
                 else if (animationType == ModelImporterAnimationType.None)
                     EditorGUILayout.HelpBox(styles.TheRigsOfTheSelectedModelsAre);
-                else if (singleImporter.importedTakeInfos.Length != 0)
+                else if (singleImporter.importedTakeInfos.Length != 0 || isEditorPreset)
                 {
                     AnimationClipGUI(importRigWarnings);
                 }
@@ -647,8 +654,29 @@ namespace UnityEditor
                     }
                 }
             }
+            if (singleImporter.importedTakeInfos.Length <= 0)
+            {
+                TakeInfo newTake = new TakeInfo();
+                if(m_ClipList.index < 0)
+                {
+                    newTake.name = "New Take Name";
+                    newTake.defaultClipName = "New Clip";
+                    AddClip(newTake);
+                }
+                else
+                {
+                    var property = m_ClipAnimations.GetArrayElementAtIndex(m_ClipList.index);
+                    AnimationClipInfoProperties info = new AnimationClipInfoProperties(property);
 
-            AddClip(singleImporter.importedTakeInfos[takeIndex]);
+                    newTake.name = info.takeName;
+                    newTake.defaultClipName = info.name;
+                    newTake.startTime = info.firstFrame;
+                    newTake.stopTime = info.lastFrame;
+                    AddClip(newTake);
+                }
+            }
+            else
+                AddClip(singleImporter.importedTakeInfos[takeIndex]);
             SelectClip(list.list.Count - 1);
         }
 
@@ -690,6 +718,31 @@ namespace UnityEditor
             GUI.Label(rect, styles.End, styles.numberStyle);
         }
 
+        void DrawPresetClipEditor()
+        {
+            AnimationClipInfoProperties clip = GetSelectedClipInfo();
+
+            clip.name = EditorGUILayout.TextField(styles.ClipName, clip.name);
+            clip.takeName = EditorGUILayout.TextField(styles.TakeName, clip.takeName);
+            clip.firstFrame = EditorGUILayout.FloatField(styles.Start, clip.firstFrame);
+            clip.lastFrame = EditorGUILayout.FloatField(styles.End, clip.lastFrame);
+            clip.loopTime = EditorGUILayout.Toggle(AnimationClipEditor.Styles.LoopTime, clip.loopTime);
+            using (new EditorGUI.DisabledScope(!clip.loopTime))
+            {
+                EditorGUI.indentLevel++;
+                clip.loopBlend = EditorGUI.Toggle(EditorGUILayout.GetControlRect(), AnimationClipEditor.Styles.LoopPose, clip.loopBlend);
+                clip.cycleOffset = EditorGUILayout.FloatField(AnimationClipEditor.Styles.LoopCycleOffset, clip.cycleOffset);
+                EditorGUI.indentLevel--;
+            }
+            clip.hasAdditiveReferencePose = EditorGUILayout.Toggle(AnimationClipEditor.Styles.HasAdditiveReferencePose, clip.hasAdditiveReferencePose);
+            using (new EditorGUI.DisabledScope(!clip.hasAdditiveReferencePose))
+            {
+                EditorGUI.indentLevel++;
+                clip.additiveReferencePoseFrame = EditorGUILayout.FloatField(AnimationClipEditor.Styles.AdditiveReferencePoseFrame, clip.additiveReferencePoseFrame);
+                EditorGUI.indentLevel--;
+            }
+        }
+
         void AnimationSplitTable()
         {
             if (m_ClipList.count != m_ClipAnimations.arraySize)
@@ -698,13 +751,18 @@ namespace UnityEditor
                 SelectClipInList(m_ClipList);
             }
 
-            if (singleImporter.importedTakeInfos.Length > 0)
+            if (singleImporter.importedTakeInfos.Length > 0 || isEditorPreset)
             {
                 m_ClipList.DoLayoutList();
 
                 EditorGUI.BeginChangeCheck();
-
+                // Show unique Preset editor
+                if (isEditorPreset && m_ClipAnimations.arraySize > 0)
+                {
+                    DrawPresetClipEditor();
+                }
                 // Show selected clip info
+                else
                 {
                     AnimationClipInfoProperties clip = GetSelectedClipInfo();
                     if (clip == null)
@@ -888,7 +946,8 @@ namespace UnityEditor
             if (m_ClipAnimations.arraySize == 0)
             {
                 SetupDefaultClips();
-                m_ImportAnimation.boolValue = false;
+                if(!isEditorPreset)
+                    m_ImportAnimation.boolValue = false;
             }
             UpdateList();
         }
