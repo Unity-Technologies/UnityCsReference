@@ -258,7 +258,7 @@ namespace Unity.UI.Builder
                     //     - transform-origin: top
                     else
                     {
-                        var offset = GetOffsetFromEnumString(styleSheet.ReadEnum(styleProperty.values[0]).ToLower());
+                        var offset = GetOffsetFromEnumString(styleSheet.ReadEnum(styleProperty.values[0]).ToLowerInvariant());
 
                         // if the current specified enum value is x
                         if (IsOffsetHorizontal(offset))
@@ -336,7 +336,7 @@ namespace Unity.UI.Builder
                     int yIndex = 1;
 
                     // If the first value is enum but a horizontal enum then flip the indexes
-                    if (styleProperty.values[0].valueType == StyleValueType.Enum && !IsOffsetHorizontal(GetOffsetFromEnumString(styleSheet.ReadEnum(styleProperty.values[0]).ToLower())))
+                    if (styleProperty.values[0].valueType == StyleValueType.Enum && !IsOffsetHorizontal(GetOffsetFromEnumString(styleSheet.ReadEnum(styleProperty.values[0]).ToLowerInvariant())))
                     {
                         xIndex = 1;
                         yIndex = 0;

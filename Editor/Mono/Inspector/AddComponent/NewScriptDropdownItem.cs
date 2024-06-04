@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEditorInternal;
+using Microsoft.CSharp;
 
 namespace UnityEditor.AddComponent
 {
@@ -15,6 +16,7 @@ namespace UnityEditor.AddComponent
         private readonly char[] kInvalidPathChars = new char[] {'<', '>', ':', '"', '|', '?', '*', (char)0};
         private readonly char[] kPathSepChars = new char[] {'/', '\\'};
         private readonly string kResourcesTemplatePath = "Resources/ScriptTemplates";
+        private static System.CodeDom.Compiler.CodeDomProvider s_CSharpDOMProvider;
 
         private string m_Directory = string.Empty;
 
@@ -34,6 +36,7 @@ namespace UnityEditor.AddComponent
         internal bool CanCreate()
         {
             return m_ClassName.Length > 0 &&
+                !ClassNameIsInvalidIdentifier() &&
                 !ClassNameIsInvalid() &&
                 !File.Exists(TargetPath()) &&
                 !ClassAlreadyExists() &&
@@ -46,8 +49,11 @@ namespace UnityEditor.AddComponent
             var blockReason = string.Empty;
             if (m_ClassName != string.Empty)
             {
+
                 if (ClassNameIsInvalid())
                     blockReason = "The script name may only consist of a-z, A-Z, 0-9, _.";
+                else if (ClassNameIsInvalidIdentifier())
+                    blockReason = $"The script name is invalid in C#: {m_ClassName}.";
                 else if (File.Exists(TargetPath()))
                     blockReason = "A script called \"" + m_ClassName + "\" already exists at that path.";
                 else if (ClassAlreadyExists())
@@ -94,7 +100,21 @@ namespace UnityEditor.AddComponent
 
         private bool ClassNameIsInvalid()
         {
-            return !System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(m_ClassName);
+            return !System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(className);
+        }
+
+        private bool ClassNameIsInvalidIdentifier()
+        {
+            return !IsValidIdentifier(m_ClassName);
+        }
+
+        internal static bool IsValidIdentifier(string className)
+        {
+            if (s_CSharpDOMProvider == null)
+            {
+                s_CSharpDOMProvider = new CSharpCodeProvider();
+            }
+            return s_CSharpDOMProvider.IsValidIdentifier(className);
         }
 
         private bool ClassExists(string className)

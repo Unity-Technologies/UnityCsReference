@@ -307,7 +307,7 @@ namespace UnityEngine.UIElements
                         case StyleValueType.Enum:
                         {
                             var colorName = customProp.sheet.ReadAsString(handle);
-                            return StyleSheetColor.TryGetColor(colorName.ToLower(), out value);
+                            return StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out value);
                         }
                         case StyleValueType.Color:
                         {

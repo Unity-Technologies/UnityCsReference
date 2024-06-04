@@ -67,7 +67,7 @@ namespace Unity.UI.Builder
             switch (handle.valueType)
             {
                 case StyleValueType.Keyword:
-                    str = sheet.ReadKeyword(handle).ToString().ToLower();
+                    str = sheet.ReadKeyword(handle).ToString().ToLowerInvariant();
                     break;
                 case StyleValueType.Float:
                 {

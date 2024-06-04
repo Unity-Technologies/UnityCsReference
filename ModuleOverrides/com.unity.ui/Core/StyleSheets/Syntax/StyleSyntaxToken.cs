@@ -105,7 +105,7 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
             m_Tokens.Clear();
             m_CurrentTokenIndex = 0;
 
-            syntax = syntax.Trim(' ').ToLower();
+            syntax = syntax.Trim(' ').ToLowerInvariant();
 
             for (int i = 0; i < syntax.Length; i++)
             {

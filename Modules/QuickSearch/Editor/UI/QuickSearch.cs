@@ -372,6 +372,33 @@ namespace UnityEditor.Search
             return this;
         }
 
+        private void UpdateSelectionFromIds()
+        {
+            if (selection.SyncSelectionIfInvalid())
+            {
+                SetSelection(trackSelection: false, selection.indexes.ToArray());
+                return;
+            }
+
+            if (viewState.selectedIds.Length == 0 || selection.Count != 0)
+                return;
+
+            var indexesToSelect = new List<int>(viewState.selectedIds.Length);
+            for (int index = 0; index < results.Count; index++)
+            {
+                var item = results[index];
+                if (Array.IndexOf(viewState.selectedIds, item.GetInstanceId()) != -1)
+                {
+                    indexesToSelect.Add(index);
+                    if (indexesToSelect.Count == viewState.selectedIds.Length)
+                        break;
+                }
+            }
+
+            if (indexesToSelect.Count > 0)
+                SetSelection(trackSelection: false, indexesToSelect.ToArray());
+        }
+
         public void SetSelection(params int[] selection)
         {
             SetSelection(true, selection, false);
@@ -970,6 +997,7 @@ namespace UnityEditor.Search
             m_WaitAsyncResults = null;
             RefreshViews(RefreshFlags.ItemsChanged);
             SaveItemCountToPropertyDatabase(false);
+            UpdateSelectionFromIds();
         }
 
         internal bool ToggleFilter(string providerId)

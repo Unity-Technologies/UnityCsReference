@@ -190,7 +190,7 @@ namespace UnityEngine.UIElements.StyleSheets
             if (value.handle.valueType == StyleValueType.Enum)
             {
                 var colorName = value.sheet.ReadAsString(value.handle);
-                StyleSheetColor.TryGetColor(colorName.ToLower(), out c);
+                StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out c);
             }
             else
             {

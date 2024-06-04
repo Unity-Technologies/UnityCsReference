@@ -19,6 +19,7 @@ namespace UnityEditor
 
         public bool vertical = false;
         public int controlID = 0;
+        public int draggingID = 0;
 
         [Flags] internal enum ViewEdge
         {
@@ -709,6 +710,7 @@ namespace UnityEditor
                                 splitState.splitterInitialOffset = GUIUtility.RoundToPixelGrid(pos);
                                 splitState.currentActiveSplitter = i;
                                 GUIUtility.hotControl = id;
+                                draggingID = id;
                                 evt.Use();
                                 break;
                             }
@@ -718,6 +720,14 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.MouseDrag:
+                    // NOTE: if we were Drag initiator and our id was changed, update hotcontrol to keep allowing drag.
+                    // Entities (or other package) could be modifying ControlID list when drag starts (see https://jira.unity3d.com/browse/UUM-67862)
+                    if (draggingID != 0 && id != draggingID && draggingID == GUIUtility.hotControl)
+                    {
+                        draggingID = id;
+                        GUIUtility.hotControl = id;
+                    }
+
                     if (children.Length > 1 && (GUIUtility.hotControl == id) && (splitState.currentActiveSplitter >= 0))
                     {
                         float diff = GUIUtility.RoundToPixelGrid(pos) - splitState.splitterInitialOffset;
@@ -728,13 +738,12 @@ namespace UnityEditor
                         }
 
                         SetupRectsFromSplitter();
-
-
                         evt.Use();
                     }
                     break;
 
                 case EventType.MouseUp:
+                    draggingID = 0;
                     if (GUIUtility.hotControl == id)
                         GUIUtility.hotControl = 0;
                     break;

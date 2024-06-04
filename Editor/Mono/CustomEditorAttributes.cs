@@ -201,7 +201,7 @@ namespace UnityEditor
             if ((xAssemblyIsUnity && yAssemblyIsUnity) || (!xAssemblyIsUnity && !yAssemblyIsUnity)) return 0;
             else if (xAssemblyIsUnity && !yAssemblyIsUnity) return 1;
             else if (!xAssemblyIsUnity && yAssemblyIsUnity) return -1;
-            return xAssemblyName.CompareTo(yAssemblyName);
+            return string.CompareOrdinal(typeA.m_InspectorType.FullName, typeB.m_InspectorType.FullName);
         }
     }
 }

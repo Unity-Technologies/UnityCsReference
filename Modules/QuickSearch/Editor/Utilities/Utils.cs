@@ -192,7 +192,7 @@ namespace UnityEditor.Search
                 }
             }
 
-            if (!typeof(Texture).IsAssignableFrom(assetType))
+            if (typeof(Texture).IsAssignableFrom(assetType))
             {
                 var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                 if (tex)
