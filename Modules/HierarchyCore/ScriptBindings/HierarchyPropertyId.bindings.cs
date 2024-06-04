@@ -11,7 +11,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Represents a hierarchy property ID.
     /// </summary>
-    [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyPropertyId.h")]
+    [NativeHeader("Modules/HierarchyCore/Public/HierarchyPropertyId.h")]
     [StructLayout(LayoutKind.Sequential)]
     readonly struct HierarchyPropertyId : IEquatable<HierarchyPropertyId>
     {

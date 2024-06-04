@@ -1271,7 +1271,7 @@ namespace UnityEditor
 
             if (graphicsDeviceType == GraphicsDeviceType.WebGPU)
             {
-                return "WebGPU";
+                return "WebGPU (Experimental)";
             }
             else if (target == BuildTarget.WebGL)
             {
@@ -1528,7 +1528,7 @@ namespace UnityEditor
             else
             {
                 doRestart = EditorUtility.DisplayDialog("Changing editor graphics jobs mode",
-                    "You've changed the active graphics josb mode. This requires a restart of the Editor.",
+                    "You've changed the active graphics jobs mode. This requires a restart of the Editor.",
                     "Restart Editor", "Not now");
             }
             return doRestart;

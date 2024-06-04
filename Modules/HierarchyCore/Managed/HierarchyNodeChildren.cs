@@ -22,6 +22,37 @@ namespace Unity.Hierarchy
         readonly int m_Version;
         readonly int m_Count;
 
+        internal HierarchyNodeChildren(Hierarchy hierarchy, IntPtr nodeChildrenPtr)
+        {
+            if (hierarchy == null)
+                throw new ArgumentNullException(nameof(hierarchy));
+
+            if (nodeChildrenPtr == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(nodeChildrenPtr));
+
+            m_Hierarchy = hierarchy;
+            m_Version = hierarchy.Version;
+
+            ref var alloc = ref *(HierarchyNodeChildrenAlloc*)nodeChildrenPtr;
+            if ((alloc.Reserved[0] & k_HierarchyNodeChildrenIsAllocBit) == k_HierarchyNodeChildrenIsAllocBit)
+            {
+                m_Ptr = alloc.Ptr;
+                m_Count = alloc.Size;
+            }
+            else
+            {
+                m_Ptr = (HierarchyNode*)nodeChildrenPtr;
+                m_Count = 0;
+                for (int i = 0; i < HierarchyNodeChildrenFixed.Capacity; i++)
+                {
+                    if (m_Ptr[i] != HierarchyNode.Null)
+                        m_Count++;
+                    else
+                        break;
+                }
+            }
+        }
+
         /// <summary>
         /// The number of children.
         /// </summary>
@@ -58,44 +89,6 @@ namespace Unity.Hierarchy
         /// <returns>The enumerator.</returns>
         public Enumerator GetEnumerator() => new Enumerator(this);
 
-        internal HierarchyNodeChildren(Hierarchy hierarchy, IntPtr nodeChildrenPtr)
-        {
-            if (hierarchy == null)
-                throw new ArgumentNullException(nameof(hierarchy));
-
-            if (nodeChildrenPtr == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(nodeChildrenPtr));
-
-            m_Hierarchy = hierarchy;
-            m_Version = hierarchy.Version;
-
-            ref var alloc = ref *(HierarchyNodeChildrenAlloc*)nodeChildrenPtr;
-            if ((alloc.Reserved[0] & k_HierarchyNodeChildrenIsAllocBit) == k_HierarchyNodeChildrenIsAllocBit)
-            {
-                m_Ptr = alloc.Ptr;
-                m_Count = alloc.Size;
-            }
-            else
-            {
-                m_Ptr = (HierarchyNode*)nodeChildrenPtr;
-                m_Count = 0;
-                for (int i = 0; i < HierarchyNodeChildrenFixed.Capacity; i++)
-                {
-                    if (m_Ptr[i] != HierarchyNode.Null)
-                        m_Count++;
-                    else
-                        break;
-                }
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void ThrowIfVersionChanged()
-        {
-            if (m_Version != m_Hierarchy.Version)
-                throw new InvalidOperationException("Hierarchy was modified.");
-        }
-
         /// <summary>
         /// An enumerator for a hierarchy node's children.
         /// </summary>
@@ -129,6 +122,13 @@ namespace Unity.Hierarchy
             /// <returns><see langword="true"/> if Current item is valid, <see langword="false"/> otherwise.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool MoveNext() => ++m_Index < m_Enumerable.m_Count;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void ThrowIfVersionChanged()
+        {
+            if (m_Version != m_Hierarchy.Version)
+                throw new InvalidOperationException("Hierarchy was modified.");
         }
     }
 }

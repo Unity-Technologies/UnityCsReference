@@ -13,7 +13,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Represents options for search filter operators. A colon (:) is the "contains" operator. A "-" is a "not" operator.
     /// </summary>
-    [NativeType("Modules/HierarchyCore/Public/HierarchySearch.h")]
+    [NativeHeader("Modules/HierarchyCore/Public/HierarchySearch.h")]
     public enum HierarchySearchFilterOperator
     {
         /// <summary>
@@ -53,7 +53,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Encapsulates all data needed to filter a hierarchy.
     /// </summary>
-    [NativeType("Modules/HierarchyCore/Public/HierarchySearch.h")]
+    [NativeHeader("Modules/HierarchyCore/Public/HierarchySearch.h")]
     [RequiredByNativeCode, StructLayout(LayoutKind.Sequential), Serializable]
     public struct HierarchySearchFilter
     {
@@ -200,7 +200,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Encapsulates all the query filters and text values that are used to filter a hierarchy.
     /// </summary>
-    [NativeType("Modules/HierarchyCore/Public/HierarchySearch.h"), NativeAsStruct]
+    [NativeHeader("Modules/HierarchyCore/Public/HierarchySearch.h"), NativeAsStruct]
     [RequiredByNativeCode, StructLayout(LayoutKind.Sequential), Serializable]
     public sealed class HierarchySearchQueryDescriptor
     {

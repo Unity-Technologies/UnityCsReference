@@ -70,13 +70,6 @@ namespace Unity.Hierarchy
         /// <returns>An enumerator.</returns>
         public Enumerator GetEnumerator() => new Enumerator(this, m_Node);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void ThrowIfVersionChanged()
-        {
-            if (m_Version != m_HierarchyFlattened.Version)
-                throw new InvalidOperationException("HierarchyFlattened was modified.");
-        }
-
         /// <summary>
         /// An enumerator of <see cref="HierarchyNode"/>.
         /// </summary>
@@ -153,6 +146,13 @@ namespace Unity.Hierarchy
                     return true;
                 }
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void ThrowIfVersionChanged()
+        {
+            if (m_Version != m_HierarchyFlattened.Version)
+                throw new InvalidOperationException("HierarchyFlattened was modified.");
         }
     }
 }

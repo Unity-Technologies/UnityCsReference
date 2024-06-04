@@ -117,9 +117,10 @@ namespace UnityEngine.UIElements
                     InitLabel();
                     m_Label.text = value;
                 }
-                else
+                else if (m_Label != null)
                 {
-                    m_Label?.RemoveFromHierarchy();
+                    m_Label.RemoveFromHierarchy();
+                    m_Label.text = value;
                 }
 
                 NotifyPropertyChanged(textProperty);

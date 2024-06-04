@@ -10,10 +10,10 @@ using UnityEngine.Bindings;
 
 namespace Unity.Hierarchy
 {
-    [NativeType(Header = "Modules/HierarchyCore/HierarchyTestsHelper.h")]
+    [NativeHeader("Modules/HierarchyCore/HierarchyTestsHelper.h")]
     internal static class HierarchyTestsHelper
     {
-        [NativeType(Header = "Modules/HierarchyCore/HierarchyTestsHelper.h")]
+        [NativeHeader("Modules/HierarchyCore/HierarchyTestsHelper.h")]
         internal enum SortOrder
         {
             Ascending,

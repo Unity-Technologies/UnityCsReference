@@ -312,10 +312,10 @@ namespace UnityEngine.UIElements
         /// The DPI that the UI is designed for.
         /// </summary>
         /// <remarks>
-        /// When <see cref="scaleMode"/> is set to <c>ConstantPhysicalSize</c>, Unity compares
+        /// When <see cref="PanelSettings.scaleMode"/> is set to <c>ConstantPhysicalSize</c>, Unity compares
         /// this value to the actual screen DPI, and scales the UI accordingly in the Game view.
         ///
-        /// If Unity cannot determine the screen DPI, it uses the <see cref="fallbackDpi"/> instead.
+        /// If Unity cannot determine the screen DPI, it uses the <see cref="PanelSettings.fallbackDpi"/> instead.
         /// </remarks>
         public float referenceDpi
         {
@@ -677,13 +677,13 @@ namespace UnityEngine.UIElements
         ///
         /// As this is called at every change marked on any visual element of the panel, the overhead is not negligible.
         /// The callback will not be called in release builds as the method is stripped.
-        /// </remarks>
-        /// <example>
+        /// 
         /// The following example uses the panelChangeReceiver in a game.
         /// To test it, add the component to a GameObject and the Panel Setting asset linked in the component fields.
-        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ChangeLogger.cs"/>
-        /// </example
-        ///
+        /// </remarks>
+        /// <example nocheck="true">
+        /// <code lang="cs"><![CDATA[{code Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ChangeLogger.cs}]]></code>
+        /// </example>
         [Conditional("ENABLE_PROFILER")]
         public void SetPanelChangeReceiver(IDebugPanelChangeReceiver value)
         {
@@ -810,17 +810,13 @@ namespace UnityEngine.UIElements
         /// Sets the function that handles the transformation from screen space to panel space. For overlay panels,
         /// this function returns the input value.
         /// </summary>
-        ///
-        /// <param name="screentoPanelSpaceFunction">The translation function. Set to null to revert to the default behavior.</param>
         /// <remarks>
         /// If the panel's targetTexture is applied to 3D objects, one approach is to use a function that raycasts against
         /// MeshColliders in the Scene. The function can first check whether the GameObject that the ray hits has a
         /// MeshRenderer with a shader that uses this panel's target texture. It can then return the transformed
-        /// <c>RaycastHit.textureCoord</c> in the texture's pixel space.
-        ///
-        /// For an example of UI displayed on 3D objects via renderTextures, see the UI Toolkit samples
-        /// (menu: <b>Window > UI Toolkit > Examples > Rendering > RenderTexture (Runtime)</b>).
+        /// @@RaycastHit.textureCoord@@ in the texture's pixel space.
         /// </remarks>
+        /// <param name="screentoPanelSpaceFunction">The translation function. Set to @@null@@ to revert to the default behavior.</param>
         public void SetScreenToPanelSpaceFunction(Func<Vector2, Vector2> screentoPanelSpaceFunction)
         {
             m_AssignedScreenToPanel = screentoPanelSpaceFunction;

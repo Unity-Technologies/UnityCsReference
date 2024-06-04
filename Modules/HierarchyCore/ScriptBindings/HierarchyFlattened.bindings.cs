@@ -17,7 +17,7 @@ namespace Unity.Hierarchy
     /// Querying information about nodes completes much faster than the same methods
     /// on <see cref="Hierarchy"/> because they are stored during the updates.
     /// </remarks>
-    [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyFlattened.h")]
+    [NativeHeader("Modules/HierarchyCore/Public/HierarchyFlattened.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyFlattenedBindings.h")]
     [RequiredByNativeCode(GenerateProxy = true), StructLayout(LayoutKind.Sequential)]
     public sealed class HierarchyFlattened : IDisposable
@@ -292,6 +292,9 @@ namespace Unity.Hierarchy
             public bool MoveNext() => ++m_Index < m_NodesCount;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static HierarchyFlattened FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyFlattened)GCHandle.FromIntPtr(handlePtr).Target : null;
+
         [FreeFunction("HierarchyFlattenedBindings::Create", IsThreadSafe = true)]
         static extern IntPtr Create(IntPtr handlePtr, Hierarchy hierarchy, out IntPtr nodesPtr, out int nodesCount, out int version);
 
@@ -300,13 +303,13 @@ namespace Unity.Hierarchy
 
         #region Called from native
         [RequiredByNativeCode]
-        static IntPtr CreateHierarchyFlattened(IntPtr nativePtr, Hierarchy hierarchy, IntPtr nodesPtr, int nodesCount, int version) =>
-            GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyFlattened(nativePtr, hierarchy, nodesPtr, nodesCount, version)));
+        static IntPtr CreateHierarchyFlattened(IntPtr nativePtr, IntPtr hierarchyPtr, IntPtr nodesPtr, int nodesCount, int version) =>
+            GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyFlattened(nativePtr, Hierarchy.FromIntPtr(hierarchyPtr), nodesPtr, nodesCount, version)));
 
         [RequiredByNativeCode]
         static void UpdateHierarchyFlattened(IntPtr handlePtr, IntPtr nodesPtr, int nodesCount, int version)
         {
-            var hierarchyFlattened = (HierarchyFlattened)GCHandle.FromIntPtr(handlePtr).Target;
+            var hierarchyFlattened = FromIntPtr(handlePtr);
             hierarchyFlattened.m_NodesPtr = nodesPtr;
             hierarchyFlattened.m_NodesCount = nodesCount;
             hierarchyFlattened.m_Version = version;

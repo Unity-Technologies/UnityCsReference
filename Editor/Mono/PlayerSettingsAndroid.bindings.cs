@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEngine.Bindings;
 using System;
+using System.Text.RegularExpressions;
 
 namespace UnityEditor
 {
@@ -210,6 +211,17 @@ namespace UnityEditor
         GameActivity = 1 << 1
     }
 
+    public struct AndroidDeviceFilterData
+    {
+        public string vendorName;
+        public string deviceName;
+        public string brandName;
+        public string productName;
+        public string androidOsVersionString;
+        public string vulkanApiVersionString;
+        public string driverVersionString;
+    }
+
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
     public partial class PlayerSettings : UnityEngine.Object
     {
@@ -295,14 +307,14 @@ namespace UnityEditor
 
             public static extern AndroidAutoRotationBehavior autoRotationBehavior
             {
-               [NativeMethod("GetAndroidAutoRotationBehavior")]
-               get;
-               [NativeMethod("SetAndroidAutoRotationBehavior")]
-               set;
+                [NativeMethod("GetAndroidAutoRotationBehavior")]
+                get;
+                [NativeMethod("SetAndroidAutoRotationBehavior")]
+                set;
             }
 
             // Android bundle version code
-            public static extern int  bundleVersionCode
+            public static extern int bundleVersionCode
             {
                 [NativeMethod("GetAndroidBundleVersionCode")]
                 get;
@@ -688,6 +700,99 @@ namespace UnityEditor
             // Add enableOnBackInvokedCallback flag to AndroidManifest
             [NativeProperty("AndroidPredictiveBackSupport", TargetType.Function)]
             public static extern bool predictiveBackSupport { get; set; }
+
+            internal static extern AndroidDeviceFilterData[] GetAndroidVulkanDenyFilterListImpl();
+            internal static extern void SetAndroidVulkanDenyFilterListImpl(AndroidDeviceFilterData[] filterData);
+            internal static extern AndroidDeviceFilterData[] GetAndroidVulkanAllowFilterListImpl();
+            internal static extern void SetAndroidVulkanAllowFilterListImpl(AndroidDeviceFilterData[] filterData);
+
+            private static readonly string vendorNameString = "vendorName";
+            private static readonly string deviceNameString = "deviceName";
+            private static readonly string brandNameString = "brandName";
+            private static readonly string productNameString = "productName";
+            private static readonly string vulkanApiVersionStringValue = "vulkanApiVersionString";
+            private static readonly string driverVersionStringValue = "driverVersionString";
+
+            // Keep in sync with same error message in AndroidDeviceFile.cs
+            private static readonly string versionErrorMessage = "Version information should be formatted as:" +
+                "\n1. 'MajorVersion.MinorVersion.PatchVersion' where MinorVersion and PatchVersion are optional and must only " +
+                "contain numbers, or \n2. Hex number beginning with '0x' (max 4-bytes)";
+
+            // Keep in sync with m_ValidVersionString in AndroidDeviceFile.cs
+            private static readonly Regex validVersionString = new Regex(@"(^[0-9]+(\.[0-9]+){0,2}$)|(^0(x|X)([A-Fa-f0-9]{1,8})$)", RegexOptions.Compiled);
+
+            internal static void CheckVersion(string value, string filterName, string fieldName)
+            {
+                if (!validVersionString.IsMatch(value))
+                    throw new ArgumentException($"Invalid version string in {filterName} for {fieldName}=\"{value}\": {versionErrorMessage}");
+            }
+
+            internal static void CheckRegex(string value, string filterName, string fieldName)
+            {
+                try
+                {
+                    // Try to create a regex from the input string to determine if it is a valid regex
+                    Regex regex = new Regex(value);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new ArgumentException($"Invalid Regular Expression in {filterName} for {fieldName}=\"{value}\": {e.Message}");
+                }
+            }
+
+            private static void CheckAllFilterData(AndroidDeviceFilterData[] filterDataList, string filterName)
+            {
+                // The check will throw an exception if there's an issue with the data.
+                // We need to check the data here, as an invalid regex on the native side, can crash the game.
+                foreach (var filterData in filterDataList)
+                {
+                    if (!String.IsNullOrEmpty(filterData.vendorName))
+                        CheckRegex(filterData.vendorName, filterName, vendorNameString);
+                    if (!String.IsNullOrEmpty(filterData.deviceName))
+                        CheckRegex(filterData.deviceName, filterName, deviceNameString);
+                    if (!String.IsNullOrEmpty(filterData.brandName))
+                        CheckRegex(filterData.brandName, filterName, brandNameString);
+                    if (!String.IsNullOrEmpty(filterData.productName))
+                        CheckRegex(filterData.productName, filterName, productNameString);
+
+                    if (!String.IsNullOrEmpty(filterData.vulkanApiVersionString))
+                        CheckVersion(filterData.vulkanApiVersionString, filterName, vulkanApiVersionStringValue);
+                    if (!String.IsNullOrEmpty(filterData.driverVersionString))
+                        CheckVersion(filterData.driverVersionString, filterName, driverVersionStringValue);
+                }
+            }
+
+            public static AndroidDeviceFilterData[] androidVulkanDenyFilterList
+            {
+                get
+                {
+                    return GetAndroidVulkanDenyFilterListImpl();
+                }
+                set
+                {
+                    if (value == null || value.Length == 0)
+                        return;
+
+                    CheckAllFilterData(value, "Vulkan Deny filter list");
+                    SetAndroidVulkanDenyFilterListImpl(value);
+                }
+            }
+
+            public static AndroidDeviceFilterData[] androidVulkanAllowFilterList
+            {
+                get
+                {
+                    return GetAndroidVulkanAllowFilterListImpl();
+                }
+                set
+                {
+                    if (value == null || value.Length == 0)
+                        return;
+
+                    CheckAllFilterData(value, "Vulkan Allow filter list");
+                    SetAndroidVulkanAllowFilterListImpl(value);
+                }
+            }
         }
     }
 }

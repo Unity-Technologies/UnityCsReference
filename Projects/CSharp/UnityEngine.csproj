@@ -552,6 +552,9 @@
     <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyNodeTypeHandlerBase.cs">
       <Link>Modules\HierarchyCore\Managed\HierarchyNodeTypeHandlerBase.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyNodeTypeHandlerBaseEnumerable.cs">
+      <Link>Modules\HierarchyCore\Managed\HierarchyNodeTypeHandlerBaseEnumerable.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyPropertyString.cs">
       <Link>Modules\HierarchyCore\Managed\HierarchyPropertyString.cs</Link>
     </Compile>

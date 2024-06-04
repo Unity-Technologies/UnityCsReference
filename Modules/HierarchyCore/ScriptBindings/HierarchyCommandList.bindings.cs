@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -12,7 +13,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Represents a list of commands that modify a hierarchy.
     /// </summary>
-    [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyCommandList.h")]
+    [NativeHeader("Modules/HierarchyCore/Public/HierarchyCommandList.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyCommandListBindings.h")]
     [RequiredByNativeCode(GenerateProxy = true), StructLayout(LayoutKind.Sequential)]
     public sealed class HierarchyCommandList : IDisposable
@@ -263,6 +264,9 @@ namespace Unity.Hierarchy
         /// <returns><see langword="true"/> if additional invocations are needed to complete the execution, <see langword="false"/> otherwise.</returns>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool ExecuteIncrementalTimed(double milliseconds);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static HierarchyCommandList FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyCommandList)GCHandle.FromIntPtr(handlePtr).Target : null;
 
         [FreeFunction("HierarchyCommandListBindings::Create", IsThreadSafe = true)]
         static extern IntPtr Create(IntPtr handlePtr, Hierarchy hierarchy, HierarchyNodeType nodeType, int initialCapacity);

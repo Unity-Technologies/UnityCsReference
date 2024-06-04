@@ -35,7 +35,7 @@ namespace UnityEditor.SceneManagement
             public static GUIContent contextLabel = EditorGUIUtility.TrTextContent("Context:");
             public static GUIContent[] contextRenderModeTexts = new[] { EditorGUIUtility.TrTextContent("Normal"), EditorGUIUtility.TrTextContent("Gray"), EditorGUIUtility.TrTextContent("Hidden") };
             public static StageUtility.ContextRenderMode[] contextRenderModeOptions = new[] { StageUtility.ContextRenderMode.Normal, StageUtility.ContextRenderMode.GreyedOut, StageUtility.ContextRenderMode.Hidden };
-            public static GUIContent showOverridesLabel = EditorGUIUtility.TrTextContent("Show Overrides", "Visualize overrides from the Prefab instance on the Prefab Asset. Overrides on the root Transform are always visualized.");
+            public static GUIContent showOverridesLabel = EditorGUIUtility.TrTextContent("Show Overrides", "Visualize property overrides from the Prefab instance on the Prefab Asset. Overrides on the root Transform are always visualized.");
             public static GUIContent showOverridesLabelWithTooManyOverridesTooltip = EditorGUIUtility.TrTextContent("Show Overrides", "Show Overrides are disabled because there are too many overrides to visualize. Overrides on the root Transform are always visualized though.");
 
             static Styles()
@@ -708,8 +708,9 @@ namespace UnityEditor.SceneManagement
             if (PrefabUtility.GetPrefabInstanceStatus(openedFromInstanceRoot) != PrefabInstanceStatus.Connected)
                 return;
 
-            Dictionary<ulong, UnityEngine.Object> contentObjectsFromFileID = new Dictionary<ulong, UnityEngine.Object>();
-            Dictionary<ulong, Transform> instanceTransformsFromFileID = new Dictionary<ulong, Transform>();
+            var contentObjectsFromFileID = new Dictionary<ulong, UnityEngine.Object>();
+            var instanceTransformsFromFileID = new Dictionary<ulong, Transform>();
+            var targetsToSerializedTargets = new Dictionary<UnityEngine.Object, SerializedObject>();
 
             TransformVisitor visitor = new TransformVisitor();
 
@@ -821,6 +822,35 @@ namespace UnityEditor.SceneManagement
                             PropertyModification modFromValue = instanceTransformSO.ExtractPropertyModification(mod.propertyPath);
                             if (modFromValue != null)
                                 mod.value = modFromValue.value;
+                        }
+
+                        if (!targetsToSerializedTargets.ContainsKey(targetInContent))
+                        {
+                            targetsToSerializedTargets[targetInContent] = new SerializedObject(targetInContent);
+                        }
+                        var serializedTargetInContent = targetsToSerializedTargets[targetInContent];
+                        var serializedPropertyInContent = serializedTargetInContent.FindProperty(mod.propertyPath);
+                        if (serializedPropertyInContent != null)
+                        {
+                            // Ignore [SerializedReference] modifications
+                            if (serializedPropertyInContent.propertyType == SerializedPropertyType.ManagedReference)
+                            {
+                                continue;
+                            }
+
+                            // Ignore non persistent ObjectReference modifications
+                            if (serializedPropertyInContent.propertyType == SerializedPropertyType.ObjectReference && mod.objectReference != null && !IsPersistent(mod.objectReference))
+                            {
+                                continue;
+                            }
+                        }
+
+                        // Info for ManagedReference fields can't be retrieved using the property path
+                        // All overrides for ManagedReference fields start with "managedReferences["
+                        if (mod.propertyPath.StartsWith("managedReferences["))
+                        {
+                            // [SerializedReference] - it can't be applied in all scenarios, ignore it
+                            continue;
                         }
 
                         DrivenPropertyManager.TryRegisterProperty(this, targetInContent, mod.propertyPath);

@@ -1341,13 +1341,6 @@ namespace UnityEditor
             var inPlayMode = (EditorApplication.isPlaying || EditorApplication.isPaused);
             if (inPlayMode && m_Parent.vSyncEnabled)
                 m_Parent.EnableVSync(false);
-
-            //OnAddedAsTab is called after the lastActiveSceneView has been updated, so m_PreviousScene is there to keep this reference
-            if (m_PreviousScene != null && s_SceneViews.Count > 0)
-            {
-                m_PreviousScene.overlayCanvas.CopySaveData(out var overlaySaveData);
-                overlayCanvas.ApplySaveData(overlaySaveData);
-            }
         }
 
         public override void OnEnable()

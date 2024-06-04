@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
@@ -40,6 +41,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
+        public static readonly string itemContentUssClassName = ussClassName + "__item-content";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public static readonly string labelUssClassName = ussClassName + "__label";
         /// <summary>
         /// USS class name of inner containers in elements of this type.
@@ -57,6 +62,13 @@ namespace UnityEngine.UIElements
         /// USS class name of separators in elements of this type.
         /// </summary>
         public static readonly string separatorUssClassName = ussClassName + "__separator";
+        /// <summary>
+        /// USS class name that's added when the GenericDropdownMenu fits the width of its content.
+        /// </summary>
+        public static readonly string contentWidthUssClassName = ussClassName + "--content-width-menu";
+
+        const float k_MenuItemPadding = 20f;
+        const float k_MenuPadding = 2f;
 
         List<MenuItem> m_Items = new List<MenuItem>();
         // Used in tests
@@ -70,6 +82,10 @@ namespace UnityEngine.UIElements
         Rect m_DesiredRect;
         KeyboardNavigationManipulator m_NavigationManipulator;
         float m_PositionTop;
+        float m_PositionLeft;
+        float m_ContentWidth;
+        bool m_FitContentWidth;
+        bool m_ShownAboveTarget;
 
         internal VisualElement menuContainer => m_MenuContainer;
         internal VisualElement outerContainer => m_OuterContainer;
@@ -101,6 +117,7 @@ namespace UnityEngine.UIElements
             m_ScrollView.pickingMode = PickingMode.Position;
             m_ScrollView.contentContainer.focusable = true;
             m_ScrollView.touchScrollBehavior = ScrollView.TouchScrollBehavior.Clamped;
+            m_ScrollView.mode = ScrollViewMode.VerticalAndHorizontal;
             m_OuterContainer.hierarchy.Add(m_ScrollView);
 
             m_MenuContainer.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -121,6 +138,7 @@ namespace UnityEngine.UIElements
             m_MenuContainer.RegisterCallback<PointerUpEvent>(OnPointerUp);
 
             evt.destinationPanel.visualTree.RegisterCallback<GeometryChangedEvent>(OnParentResized);
+            m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnInitialDisplay, InvokePolicy.Once);
             m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnContainerGeometryChanged);
             m_ScrollView.RegisterCallback<FocusOutEvent>(OnFocusOut);
         }
@@ -435,10 +453,13 @@ namespace UnityEngine.UIElements
             rowElement.SetEnabled(isEnabled);
             rowElement.userData = data;
 
+            var itemContent = new VisualElement();
+            itemContent.AddToClassList(itemContentUssClassName);
+
             var checkElement = new VisualElement();
             checkElement.AddToClassList(checkmarkUssClassName);
             checkElement.pickingMode = PickingMode.Ignore;
-            rowElement.Add(checkElement);
+            itemContent.Add(checkElement);
 
             if (isChecked)
             {
@@ -448,8 +469,9 @@ namespace UnityEngine.UIElements
             var label = new Label(itemName);
             label.AddToClassList(labelUssClassName);
             label.pickingMode = PickingMode.Ignore;
-            rowElement.Add(label);
+            itemContent.Add(label);
 
+            rowElement.Add(itemContent);
             m_ScrollView.Add(rowElement);
 
             MenuItem menuItem = new MenuItem
@@ -485,13 +507,13 @@ namespace UnityEngine.UIElements
         /// Displays the menu at the specified position.
         /// </summary>
         /// <remarks>
-        /// This method automatically finds the parent VisualElement that displays the menu.
-        /// For editor UI, <see cref="EditorWindow.rootVisualElement"/> is used as the parent.
-        /// For runtime UI,<see cref="UIDocument.rootVisualElement"/> is used as the parent.
+        /// The parent element that displays the menu:
+        /// - For Editor UI, the parent element is <see cref="EditorWindow.rootVisualElement"/>.
+        /// - For runtime UI, the parent element is <see cref="UIDocument.rootVisualElement"/>.
         /// </remarks>
         /// <param name="position">The position in the coordinate space of the panel.</param>
-        /// <param name="targetElement">The element used to determine in which root to parent the menu.</param>
-        /// <param name="anchored">Whether the menu should use the width of the position argument instead of its normal width.</param>
+        /// <param name="targetElement">The element determines which root to use as the menu's parent.</param>
+        /// <param name="anchored">Whether or not to use the width of the position argument instead of its default width.</param>
         public void DropDown(Rect position, VisualElement targetElement = null, bool anchored = false)
         {
             // TODO the argument should not optional. This is because IGenericMenu requires it, but this is not great.
@@ -524,17 +546,41 @@ namespace UnityEngine.UIElements
 
             var local = m_PanelRootVisualContainer.WorldToLocal(position);
             m_PositionTop = local.y + position.height - m_PanelRootVisualContainer.layout.y;
+            m_PositionLeft = local.x - m_PanelRootVisualContainer.layout.x;
 
-            m_OuterContainer.style.left = local.x - m_PanelRootVisualContainer.layout.x;
+            m_OuterContainer.style.left = m_PositionLeft;
             m_OuterContainer.style.top = m_PositionTop;
+            m_OuterContainer.style.maxHeight = Length.None();
+            m_OuterContainer.style.maxWidth = Length.None();
 
             m_DesiredRect = anchored ? position : Rect.zero;
 
             m_MenuContainer.schedule.Execute(contentContainer.Focus);
+            m_ShownAboveTarget = false;
+
             EnsureVisibilityInParent();
 
             if (targetElement != null)
                 targetElement.pseudoStates |= PseudoStates.Active;
+        }
+
+        /// <summary>
+        /// Displays the menu at the specified position.
+        /// </summary>
+        /// <remarks>
+        /// The parent element that displays the menu:
+        /// - For Editor UI, the parent element is <see cref="EditorWindow.rootVisualElement"/>.
+        /// - For runtime UI, the parent element is <see cref="UIDocument.rootVisualElement"/>.
+        /// </remarks>
+        /// <param name="position">The position in the coordinate space of the panel.</param>
+        /// <param name="targetElement">The element determines which root to use as the menu's parent.</param>
+        /// <param name="anchored">Whether or not to use the width of the position argument instead of its default width.</param>
+        /// <param name="fitContentWidthIfAnchored">Whether or not to match the width of the menu with the width of its content. <c>anchored</c> needs to be set to true.</param>
+        public void DropDown(Rect position, VisualElement targetElement = null, bool anchored = false, bool fitContentWidthIfAnchored = false)
+        {
+            m_FitContentWidth = anchored && fitContentWidthIfAnchored;
+            m_OuterContainer.EnableInClassList(contentWidthUssClassName, m_FitContentWidth);
+            DropDown(position, targetElement, anchored);
         }
 
         private void OnTargetElementDetachFromPanel(DetachFromPanelEvent evt)
@@ -547,36 +593,111 @@ namespace UnityEngine.UIElements
             EnsureVisibilityInParent();
         }
 
+        void OnInitialDisplay(GeometryChangedEvent evt)
+        {
+            m_ContentWidth = GetLargestItemWidth() + k_MenuItemPadding;
+        }
+
         void EnsureVisibilityInParent()
         {
             if (m_PanelRootVisualContainer != null && !float.IsNaN(m_OuterContainer.layout.width) && !float.IsNaN(m_OuterContainer.layout.height))
             {
                 if (m_DesiredRect == Rect.zero)
                 {
-                    var posX = Mathf.Min(m_OuterContainer.layout.x, m_PanelRootVisualContainer.layout.width - m_OuterContainer.layout.width);
-                    var posY = Mathf.Min(m_OuterContainer.layout.y, Mathf.Max(0, m_PanelRootVisualContainer.layout.height - m_OuterContainer.layout.height));
+                    var posX = Math.Max(0, Mathf.Min(m_PositionLeft, m_PanelRootVisualContainer.layout.width - m_OuterContainer.layout.width));
+                    var posY = Mathf.Min(m_PositionTop, Mathf.Max(0, m_PanelRootVisualContainer.layout.height - m_OuterContainer.layout.height));
 
                     m_OuterContainer.style.left = posX;
                     m_OuterContainer.style.top = posY;
                 }
                 else
                 {
-                    m_OuterContainer.style.maxHeight = m_PanelRootVisualContainer.layout.height - m_DesiredRect.y;
-                    m_OuterContainer.style.width = m_DesiredRect.width;
+                    var dropdownWidth = m_ContentWidth;
+                    if (m_ScrollView.isVerticalScrollDisplayed)
+                    {
+                        dropdownWidth += Mathf.Ceil(m_ScrollView.verticalScroller.computedStyle.width.value);
+                    }
+
+                    dropdownWidth = m_FitContentWidth ? dropdownWidth : m_DesiredRect.width;
+
+                    m_OuterContainer.style.width = dropdownWidth;
+
+                    // Ensure width is visible
+                    var spaceToTheRight = m_PanelRootVisualContainer.layout.width - m_PositionLeft;
+
+                    if (spaceToTheRight <= dropdownWidth)
+                    {
+                        m_PositionLeft -= dropdownWidth - spaceToTheRight + k_MenuPadding;
+                    }
+
+                    m_PositionLeft = Math.Max(m_PositionLeft, 0);
+                    if (m_PositionLeft == 0)
+                    {
+                        m_OuterContainer.style.maxWidth = Math.Min(m_PanelRootVisualContainer.layout.width, dropdownWidth);
+                    }
+                    m_OuterContainer.style.left = m_PositionLeft;
                 }
 
-                // Adjust position based on dropdown size and available space
-                var dropdownHeight = m_OuterContainer.resolvedStyle.height;
-                var spaceBelow = m_PanelRootVisualContainer.layout.height - m_PositionTop;
+                // Ensure height is visible
+                var targetElement = m_MenuContainer.WorldToLocal(m_TargetElement.worldBound);
+                var itemHeight = m_Items[0].element.layout.height + k_MenuItemPadding;
 
-                if (spaceBelow <= dropdownHeight && m_PositionTop > dropdownHeight)
+                var dropdownHeight = m_OuterContainer.layout.height;
+                var targetElementTop = targetElement.y;
+                var actualTop = m_OuterContainer.worldBound.y;
+                var spaceBelow = m_ShownAboveTarget ? targetElementTop - actualTop : m_PanelRootVisualContainer.worldBound.height - actualTop;
+                var spaceAbove = m_ShownAboveTarget ? m_PanelRootVisualContainer.worldBound.height - actualTop : targetElementTop;
+
+                var adjustTop = spaceBelow < dropdownHeight;
+
+                if (adjustTop && spaceAbove > spaceBelow)
                 {
-                    var currentTop = m_PositionTop;
-                    currentTop -= (dropdownHeight + m_TargetElement.resolvedStyle.height);
-                    m_OuterContainer.style.top = currentTop;
-                    m_OuterContainer.style.maxHeight = m_PanelRootVisualContainer.layout.height - currentTop;
+                    m_PositionTop = targetElementTop - dropdownHeight;
+                    m_PositionTop = Math.Max(m_PositionTop, 0);
+                    m_OuterContainer.style.maxHeight = m_PositionTop == 0 ? Math.Max(targetElementTop, itemHeight) : Length.None();
+                    m_OuterContainer.style.top = m_PositionTop;
+                    m_ShownAboveTarget = true;
+                }
+                else if (adjustTop)
+                {
+                    // space below is greater, we'll just set a height and let the dropdown expand to the top
+                    if (spaceBelow < itemHeight)
+                    {
+                        m_OuterContainer.style.maxHeight = itemHeight;
+                        m_PositionTop = m_PanelRootVisualContainer.worldBound.height - itemHeight;
+                    }
+                    else
+                    {
+                        m_OuterContainer.style.maxHeight = spaceBelow;
+                    }
+                    m_OuterContainer.style.top = m_PositionTop;
                 }
             }
+        }
+
+        float GetLargestItemWidth()
+        {
+            var largestWidth = 0.0f;
+            if (m_Items.Count == 0 && m_ScrollView.contentContainer.childCount > 0)
+            {
+                // If the items are not added directly to the menu, we need to find the largest width in the children of the content container.
+                var menuItems = ListPool<MenuItem>.Get();
+                foreach (var element in m_ScrollView.contentContainer.Children())
+                {
+                    menuItems.Add(new MenuItem()
+                    {
+                       element = element
+                    });
+                }
+                m_Items.AddRange(menuItems);
+                ListPool<MenuItem>.Release(menuItems);
+            }
+            foreach (var item in m_Items)
+            {
+                largestWidth = Math.Max(largestWidth, item.element.layout.width);
+            }
+
+            return largestWidth;
         }
     }
 }
