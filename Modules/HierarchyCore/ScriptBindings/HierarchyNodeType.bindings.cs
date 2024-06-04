@@ -12,7 +12,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Type descriptor for a node in Hierarchy. Corresponds to the NodeType of the HierarchyNodeHandler.
     /// </summary>
-    [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyNodeType.h")]
+    [NativeHeader("Modules/HierarchyCore/Public/HierarchyNodeType.h")]
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct HierarchyNodeType : IEquatable<HierarchyNodeType>
     {

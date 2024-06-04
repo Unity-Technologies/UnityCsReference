@@ -264,7 +264,7 @@ namespace UnityEditor.Overlays
                     return (DockZone)i;
             return DockZone.Floating;
         }
-
+        
         // used by tests
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal OverlayContainer GetDockZoneContainer(DockZone zone)
@@ -442,6 +442,8 @@ namespace UnityEditor.Overlays
             floatingContainer.RegisterCallback<GeometryChangedEvent>(GeometryChanged);
             rootVisualElement.RegisterCallback<MouseEnterEvent>(OnMouseEnter);
             rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
+            EditorWindow.windowFocusChanged += OnFocusedWindowChanged;
+
         }
 
         void OnDetachedFromPanel(DetachFromPanelEvent evt)
@@ -449,12 +451,32 @@ namespace UnityEditor.Overlays
             floatingContainer.UnregisterCallback<GeometryChangedEvent>(GeometryChanged);
             rootVisualElement.UnregisterCallback<MouseEnterEvent>(OnMouseEnter);
             rootVisualElement.UnregisterCallback<MouseLeaveEvent>(OnMouseLeave);
+            EditorWindow.windowFocusChanged -= OnFocusedWindowChanged;
         }
 
         internal void OnContainerWindowDisabled()
         {
+            if (containerWindow != null)
+            {
+                var overlayCanvasesData = OverlayCanvasesData.instance;
+                var containerTypeWindows = Resources.FindObjectsOfTypeAll(containerWindow.GetType());
+                // This closing container is last instance of its type
+                if (containerTypeWindows.Length <= 1)
+                {
+                    // Ensures m_SaveData is refreshed.
+                    OnBeforeSerialize();
+                    overlayCanvasesData.AddAndSaveCanvasData(containerWindow, m_SaveData);
+                }
+            }
+            
             foreach (var overlay in m_Overlays)
                 overlay.OnWillBeDestroyed();
+        }
+
+        void OnFocusedWindowChanged()
+        {
+            if (EditorWindow.focusedWindow == containerWindow)
+                OverlayCanvasesData.instance.SetLastActiveCanvasForWindowType(this);
         }
 
         void OnMouseEnter(MouseEnterEvent evt)
@@ -551,13 +573,32 @@ namespace UnityEditor.Overlays
             // init all overlays
             foreach (var overlayType in overlayTypes)
                 AddOverlay(OverlayUtilities.CreateOverlay(overlayType));
-
+            
+            // No save data deserialized from layout or this is a new instance
             if (m_SaveData == null || m_SaveData.Count < 1)
             {
-                var preset = OverlayPresetManager.GetDefaultPreset(window.GetType());
-                if(preset != null && preset.saveData != null)
-                    m_SaveData = new List<SaveData>(preset.saveData);
+                var containerTypeWindows = Resources.FindObjectsOfTypeAll(containerWindow.GetType());
+                var overlayCanvasesData = OverlayCanvasesData.instance;
+                
+                // If our container is not the first instance of its type (i.e. container window is duplicate),
+                // we want to "inherit" overlay save data from the last focused overlay canvas.
+                if (containerTypeWindows.Length > 1 && overlayCanvasesData.TryGetLastActiveCanvasForWindowType(containerWindow, out var lastActiveCanvas))
+                {
+                    lastActiveCanvas.CopySaveData(out var lastActiveCanvasData);
+                    m_SaveData = new List<SaveData>(lastActiveCanvasData);
+                }
+                // Otherwise check if SaveData's been serialized in OverlayCanvasesData asset during last window close of container type.
+                else if (!overlayCanvasesData.GetCanvasSaveData(containerWindow, out m_SaveData))
+                {
+                    var preset = OverlayPresetManager.GetDefaultPreset(window.GetType());
+                    if (preset != null && preset.saveData != null)
+                        m_SaveData = new List<SaveData>(preset.saveData);
+                }
             }
+
+            // If save data is still null at this point, initialize it to empty list as code down the line is not expecting it to be null
+            if (m_SaveData == null)
+                m_SaveData = new List<SaveData>();
 
             RestoreOverlays();
             Profiler.EndSample();
@@ -757,7 +798,7 @@ namespace UnityEditor.Overlays
             m_PopupOverlay.Focus();
         }
 
-        bool ClosePopupOverlay()
+        internal bool ClosePopupOverlay()
         {
             if (m_PopupOverlay == null)
                 return false;
@@ -906,7 +947,7 @@ namespace UnityEditor.Overlays
         {
             if(data == null)
                 data = FindSaveData(overlay);
-
+            
             EditorJsonUtility.FromJsonOverwrite(data.contents, overlay);
 
             #pragma warning disable 618
@@ -925,7 +966,7 @@ namespace UnityEditor.Overlays
 
             // Overlays are sorted by their index in containers so we can directly add them to top or bottom without
             // thinking of order
-            if (data.dockPosition == DockPosition.Top)
+            if (data.dockPosition == DockPosition.Top || container is FloatingOverlayContainer)
                 overlay.DockAt(container, OverlayContainerSection.BeforeSpacer, container.GetSectionCount(OverlayContainerSection.BeforeSpacer));
             else if (data.dockPosition == DockPosition.Bottom)
                 overlay.DockAt(container, OverlayContainerSection.AfterSpacer, container.GetSectionCount(OverlayContainerSection.AfterSpacer));

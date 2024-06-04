@@ -15,7 +15,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Provides a base class for hierarchy node type handlers.
     /// </summary>
-    [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyNodeTypeHandlerBase.h")]
+    [NativeHeader("Modules/HierarchyCore/Public/HierarchyNodeTypeHandlerBase.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyNodeTypeHandlerBaseBindings.h")]
     [RequiredByNativeCode(GenerateProxy = true), StructLayout(LayoutKind.Sequential)]
     public abstract class HierarchyNodeTypeHandlerBase : IDisposable
@@ -31,9 +31,13 @@ namespace Unity.Hierarchy
         /// </summary>
         struct ConstructorScope : IDisposable
         {
-            public static IntPtr Ptr { get; private set; }
-            public static Hierarchy Hierarchy { get; private set; }
-            public static HierarchyCommandList CommandList { get; private set; }
+            [ThreadStatic] static IntPtr m_Ptr;
+            [ThreadStatic] static Hierarchy m_Hierarchy;
+            [ThreadStatic] static HierarchyCommandList m_CommandList;
+
+            public static IntPtr Ptr { get => m_Ptr; private set => m_Ptr = value; }
+            public static Hierarchy Hierarchy { get => m_Hierarchy; private set => m_Hierarchy = value; }
+            public static HierarchyCommandList CommandList { get => m_CommandList; private set => m_CommandList = value; }
 
             public ConstructorScope(IntPtr nativePtr, Hierarchy hierarchy, HierarchyCommandList cmdList)
             {
@@ -155,6 +159,10 @@ namespace Unity.Hierarchy
         [FreeFunction("HierarchyNodeTypeHandlerBaseBindings::SearchEnd", HasExplicitThis = true, IsThreadSafe = true)]
         protected extern virtual void SearchEnd();
 
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static HierarchyNodeTypeHandlerBase FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyNodeTypeHandlerBase)GCHandle.FromIntPtr(handlePtr).Target : null;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Internal_SearchBegin(HierarchySearchQueryDescriptor query) => SearchBegin(query);
 
@@ -164,25 +172,27 @@ namespace Unity.Hierarchy
         [FreeFunction("HierarchyNodeTypeHandlerManager::Get().GetNodeType", IsThreadSafe = true, ThrowsException = true)]
         static extern int GetNodeTypeFromType(Type type);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static HierarchyNodeTypeHandlerBase GetHandlerFromPtr(IntPtr handlePtr) => (HierarchyNodeTypeHandlerBase)GCHandle.FromIntPtr(handlePtr).Target;
-
         #region Called From Native
         [RequiredByNativeCode]
-        static IntPtr CreateNodeTypeHandlerFromType(IntPtr nativePtr, Type handlerType, Hierarchy hierarchy, HierarchyCommandList cmdList)
+        static IntPtr CreateNodeTypeHandlerFromType(IntPtr nativePtr, Type handlerType, IntPtr hierarchyPtr, IntPtr cmdListPtr)
         {
             if (nativePtr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(nativePtr));
-            if (hierarchy == null)
-                throw new ArgumentNullException(nameof(hierarchy));
-            if (cmdList == null)
-                throw new ArgumentNullException(nameof(cmdList));
+            if (hierarchyPtr == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(hierarchyPtr));
+            if (cmdListPtr == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(cmdListPtr));
 
+            var hierarchy = Hierarchy.FromIntPtr(hierarchyPtr);
+            var cmdList = HierarchyCommandList.FromIntPtr(cmdListPtr);
             using (var scope = new ConstructorScope(nativePtr, hierarchy, cmdList))
             {
                 var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
                 var handler = (HierarchyNodeTypeHandlerBase)Activator.CreateInstance(handlerType, flags, null, null, null);
-                handler?.Initialize();
+                if (handler == null)
+                    return IntPtr.Zero;
+
+                handler.Initialize();
                 return GCHandle.ToIntPtr(GCHandle.Alloc(handler));
             }
         }
@@ -206,35 +216,35 @@ namespace Unity.Hierarchy
         }
 
         [RequiredByNativeCode]
-        static void InvokeInitialize(IntPtr handlePtr) => GetHandlerFromPtr(handlePtr).Initialize();
+        static void InvokeInitialize(IntPtr handlePtr) => FromIntPtr(handlePtr).Initialize();
 
         [RequiredByNativeCode]
         static void InvokeDispose(IntPtr handlePtr)
         {
-            var handler = GetHandlerFromPtr(handlePtr);
+            var handler = FromIntPtr(handlePtr);
             handler.Dispose(true);
             GC.SuppressFinalize(handler);
         }
 
         [RequiredByNativeCode]
-        static string InvokeGetNodeTypeName(IntPtr handlePtr) => GetHandlerFromPtr(handlePtr).GetNodeTypeName();
+        static string InvokeGetNodeTypeName(IntPtr handlePtr) => FromIntPtr(handlePtr).GetNodeTypeName();
 
         [RequiredByNativeCode]
-        static HierarchyNodeFlags InvokeGetDefaultNodeFlags(IntPtr handlePtr, in HierarchyNode node, HierarchyNodeFlags defaultFlags) => GetHandlerFromPtr(handlePtr).GetDefaultNodeFlags(in node, defaultFlags);
+        static HierarchyNodeFlags InvokeGetDefaultNodeFlags(IntPtr handlePtr, in HierarchyNode node, HierarchyNodeFlags defaultFlags) => FromIntPtr(handlePtr).GetDefaultNodeFlags(in node, defaultFlags);
 
 #pragma warning disable 618 // Remove this pragma once the corresponding public APIs below are removed
         [RequiredByNativeCode]
-        static bool InvokeChangesPending(IntPtr handlePtr) => GetHandlerFromPtr(handlePtr).ChangesPending();
+        static bool InvokeChangesPending(IntPtr handlePtr) => FromIntPtr(handlePtr).ChangesPending();
 
         [RequiredByNativeCode]
-        static bool InvokeIntegrateChanges(IntPtr handlePtr, HierarchyCommandList cmdList) => GetHandlerFromPtr(handlePtr).IntegrateChanges(cmdList);
+        static bool InvokeIntegrateChanges(IntPtr handlePtr, IntPtr cmdListPtr) => FromIntPtr(handlePtr).IntegrateChanges(HierarchyCommandList.FromIntPtr(cmdListPtr));
 #pragma warning restore 618
 
         [RequiredByNativeCode]
-        static bool InvokeSearchMatch(IntPtr handlePtr, in HierarchyNode node) => GetHandlerFromPtr(handlePtr).SearchMatch(in node);
+        static bool InvokeSearchMatch(IntPtr handlePtr, in HierarchyNode node) => FromIntPtr(handlePtr).SearchMatch(in node);
 
         [RequiredByNativeCode]
-        static void InvokeSearchEnd(IntPtr handlePtr) => GetHandlerFromPtr(handlePtr).SearchEnd();
+        static void InvokeSearchEnd(IntPtr handlePtr) => FromIntPtr(handlePtr).SearchEnd();
         #endregion
 
         #region Obsolete public APIs to remove in 2024

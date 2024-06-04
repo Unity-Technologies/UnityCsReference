@@ -13,7 +13,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Represents a flattened hierarchy node.
     /// </summary>
-    [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyFlattenedNode.h")]
+    [NativeHeader("Modules/HierarchyCore/Public/HierarchyFlattenedNode.h")]
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct HierarchyFlattenedNode : IEquatable<HierarchyFlattenedNode>
     {

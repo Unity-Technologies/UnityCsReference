@@ -10,7 +10,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Describes the type and size of a Hierarchy Property.
     /// </summary>
-    [NativeType("Modules/HierarchyCore/Public/HierarchyPropertyDescriptor.h")]
+    [NativeHeader("Modules/HierarchyCore/Public/HierarchyPropertyDescriptor.h")]
     [StructLayout(LayoutKind.Sequential)]
     public struct HierarchyPropertyDescriptor
     {

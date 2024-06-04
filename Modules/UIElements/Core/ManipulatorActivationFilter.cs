@@ -7,10 +7,11 @@ using System;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Used by manipulators to match events against their requirements.
+    /// Defines conditions for manipulators to respond to specific events.
     /// </summary>
     /// <example>
-    /// <code>
+    /// <code lang="cs">
+    /// <![CDATA[
     /// public class ClickableTest
     /// {
     ///     public void CreateClickable()
@@ -20,16 +21,17 @@ namespace UnityEngine.UIElements
     ///         clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.RightMouse, clickCount = 2, modifiers = EventModifiers.Control });
     ///     }
     /// }
+    /// ]]>
     /// </code>
     /// </example>
     public struct ManipulatorActivationFilter : IEquatable<ManipulatorActivationFilter>
     {
         /// <summary>
-        /// The button that activates the manipulation.
+        /// The button that triggers the manipulation.
         /// </summary>
         public MouseButton button { get; set; }
         /// <summary>
-        /// Any modifier keys (ie. ctrl, alt, ...) that are needed to activate the manipulation.
+        /// Any modifier keys (ie. ctrl, alt, ...) required to trigger the manipulator.
         /// </summary>
         public EventModifiers modifiers { get; set; }
         /// <summary>

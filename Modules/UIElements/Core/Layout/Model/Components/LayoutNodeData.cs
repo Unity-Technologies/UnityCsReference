@@ -22,6 +22,9 @@ struct LayoutNodeData
         // (generate GCO, dirty visuals)
         HasNewLayout = 1 << 2,
 
+        // Cleared when the node is dirty, set when the node is first processed in the layout algorithm.
+        DependsOnParentSize = 1 << 6,
+
         // Internal State
         // The Next 3 bits represent the status of the node for the flex algorithm.
         Fixed = 1 << 3,

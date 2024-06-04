@@ -86,8 +86,8 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="delay">Determines when the event begins. Value is defined in milliseconds. Applies if delay > 0.</param>
-        /// <param name="interval">Determines the time delta between event repetition. Value is defined in milliseconds. Applies if interval > 0.</param>
+        /// <param name="delay">Determines when the event begins. Value is defined in milliseconds. Applies if delay is greater than @@0@@.</param>
+        /// <param name="interval">Determines the time delta between event repetition. Value is defined in milliseconds. Applies if interval is greater than @@0@@.</param>
         public Clickable(System.Action handler, long delay, long interval) : this(handler)
         {
             m_Delay = delay;

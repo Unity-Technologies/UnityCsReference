@@ -59,14 +59,12 @@ namespace UnityEngine.UIElements
     /// Object to draw 2D vector graphics.
     /// </summary>
     /// <remarks>
-    /// <para>
     /// The example below demonstrates how to use the Painter2D class to draw content in a <see cref="VisualElement"/> with
     /// the <see cref="VisualElement.generateVisualContent"/> callback.
-    /// </para>
-    /// <para>
+    /// 
+    /// 
     /// You can also create a standalone <see cref="Painter2D.Painter2D"/> object to draw content offscreen,
     ///  and use the <see cref="Painter2D.SaveToVectorImage"/> method to save the painter content in a <see cref="VectorImage"/> asset.
-    /// </para>
     /// </remarks>
     /// <example>
     /// <code>

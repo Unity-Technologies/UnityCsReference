@@ -1591,7 +1591,7 @@ namespace UnityEditor
 
             // Ping Scene Asset
             menu.AddSeparator("");
-            var selectAssetContent = EditorGUIUtility.TrTextContent("Select Scene Asset");
+            var selectAssetContent = EditorGUIUtility.TrTextContent("Find in project");
             if (!string.IsNullOrEmpty(scene.path))
                 menu.AddItem(selectAssetContent, false, SelectSceneAsset, scene);
             else

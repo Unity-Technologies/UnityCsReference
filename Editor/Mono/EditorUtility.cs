@@ -15,6 +15,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Internal;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor
 {
@@ -409,6 +410,8 @@ namespace UnityEditor
         {
             Tools.s_ButtonDown = -1;
             GUIUtility.hotControl = 0;
+            //Delay call because the freezing of the editor is affecting the active clutch shortcuts resetting properly
+            EditorApplication.delayCall += () => ShortcutIntegration.instance.trigger.ResetActiveClutches();
         }
 
         internal static void DisplayCustomMenu(Rect position, string[] options, int[] selected, SelectMenuItemFunction callback, object userData)

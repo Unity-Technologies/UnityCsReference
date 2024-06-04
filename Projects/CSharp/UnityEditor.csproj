@@ -2685,6 +2685,9 @@
     <Compile Include="..\..\Editor\Mono\Overlays\OverlayCanvas.cs">
       <Link>Editor\Mono\Overlays\OverlayCanvas.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayCanvasesData.cs">
+      <Link>Editor\Mono\Overlays\OverlayCanvasesData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Overlays\OverlayContainer.cs">
       <Link>Editor\Mono\Overlays\OverlayContainer.cs</Link>
     </Compile>
@@ -5987,6 +5990,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\DownloadProgress.cs">
       <Link>Modules\PackageManager\Editor\Managed\DownloadProgress.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\EditorCompatibilityInfo.cs">
+      <Link>Modules\PackageManager\Editor\Managed\EditorCompatibilityInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\EditorCompatibilityLevel.cs">
+      <Link>Modules\PackageManager\Editor\Managed\EditorCompatibilityLevel.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\EntitlementLicensingModel.cs">
       <Link>Modules\PackageManager\Editor\Managed\EntitlementLicensingModel.cs</Link>

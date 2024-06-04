@@ -28,6 +28,7 @@ namespace Unity.UI.Builder
         static readonly string s_AttributeFieldRowUssClassName = "unity-builder-attribute-field-row";
         static readonly string s_AttributeFieldUssClassName = "unity-builder-attribute-field";
         static readonly string s_UxmlButtonUssClassName = "unity-builder-uxml-object-button";
+        static readonly string s_UxmlMenuUssClassName = "unity-builder-uxml-object-menu";
         public static readonly string builderSerializedPropertyFieldName = "unity-builder-serialized-property-field";
         static readonly string s_TempSerializedRootPath = nameof(TempSerializedData.serializedData);
         static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
@@ -1106,6 +1107,7 @@ namespace Unity.UI.Builder
             else if (attribute.uxmlObjectAcceptedTypes.Count > 1)
             {
                 var menu = new GenericDropdownMenu();
+                menu.contentContainer.AddToClassList(s_UxmlMenuUssClassName);
                 foreach (var type in attribute.uxmlObjectAcceptedTypes)
                 {
                     var name = ObjectNames.NicifyVariableName(type.DeclaringType.Name);
@@ -1115,7 +1117,7 @@ namespace Unity.UI.Builder
                         action(type);
                     });
                 }
-                menu.DropDown(element.parent.worldBound, element, true);
+                menu.DropDown(element.parent.worldBound, element, true, true);
             }
         }
 

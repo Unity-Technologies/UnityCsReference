@@ -9,7 +9,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Describes how property values of a specific property are stored in memory.
     /// </summary>
-    [NativeType("Modules/HierarchyCore/Public/HierarchyPropertyStorageType.h")]
+    [NativeHeader("Modules/HierarchyCore/Public/HierarchyPropertyStorageType.h")]
     public enum HierarchyPropertyStorageType : int
     {
         /// <summary>

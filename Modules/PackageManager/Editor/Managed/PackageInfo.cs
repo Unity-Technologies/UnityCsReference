@@ -162,6 +162,10 @@ namespace UnityEditor.PackageManager
         [NativeName("assetStore")]
         private AssetStoreInfo m_AssetStore = new AssetStoreInfo();
 
+        [SerializeField]
+        [NativeName("editorCompatibility")]
+        private EditorCompatibilityInfo m_EditorCompatibility = new EditorCompatibilityInfo();
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -197,6 +201,7 @@ namespace UnityEditor.PackageManager
         public bool isDeprecated { get { return m_IsDeprecated; } }
         public string deprecationMessage { get { return m_DeprecationMessage; } }
         internal AssetStoreInfo assetStore { get { return m_Entitlements.licensingModel == EntitlementLicensingModel.AssetStore ? m_AssetStore : null; } }
+        internal EditorCompatibilityInfo editorCompatibility { get { return m_EditorCompatibility; } }
 
         public DateTime? datePublished
         {

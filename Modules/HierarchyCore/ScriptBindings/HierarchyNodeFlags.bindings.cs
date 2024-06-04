@@ -10,7 +10,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Bit flags used to describe the state of a hierarchy node.
     /// </summary>
-    [Flags, NativeType("Modules/HierarchyCore/Public/HierarchyNodeFlags.h")]
+    [Flags, NativeHeader("Modules/HierarchyCore/Public/HierarchyNodeFlags.h")]
     public enum HierarchyNodeFlags : uint
     {
         /// <summary>

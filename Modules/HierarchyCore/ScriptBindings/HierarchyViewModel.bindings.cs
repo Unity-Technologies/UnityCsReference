@@ -6,7 +6,6 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
-using UnityEngine.Pool;
 using UnityEngine.Scripting;
 
 namespace Unity.Hierarchy
@@ -14,7 +13,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// A hierarchy view model is a read-only filtering view of a <see cref="HierarchyFlattened"/>.
     /// </summary>
-    [NativeType(Header = "Modules/HierarchyCore/Public/HierarchyViewModel.h")]
+    [NativeHeader("Modules/HierarchyCore/Public/HierarchyViewModel.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyViewModelBindings.h")]
     [RequiredByNativeCode(GenerateProxy = true), StructLayout(LayoutKind.Sequential)]
     public sealed class HierarchyViewModel : IDisposable
@@ -761,6 +760,9 @@ namespace Unity.Hierarchy
             public bool MoveNext() => ++m_Index < m_NodesCount;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static HierarchyViewModel FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyViewModel)GCHandle.FromIntPtr(handlePtr).Target : null;
+
         [FreeFunction("HierarchyViewModelBindings::Create", IsThreadSafe = true)]
         static extern IntPtr Create(IntPtr handlePtr, HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags, out IntPtr nodesPtr, out int nodesCount, out int version);
 
@@ -853,25 +855,24 @@ namespace Unity.Hierarchy
 
         #region Called from native
         [RequiredByNativeCode]
-        static IntPtr CreateHierarchyViewModel(IntPtr nativePtr, HierarchyFlattened hierarchyFlattened, IntPtr nodesPtr, int nodesCount, int version) =>
-            GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyViewModel(nativePtr, hierarchyFlattened, nodesPtr, nodesCount, version)));
+        static IntPtr CreateHierarchyViewModel(IntPtr nativePtr, IntPtr flattenedPtr, IntPtr nodesPtr, int nodesCount, int version) =>
+            GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyViewModel(nativePtr, HierarchyFlattened.FromIntPtr(flattenedPtr), nodesPtr, nodesCount, version)));
 
         [RequiredByNativeCode]
         static void UpdateHierarchyViewModel(IntPtr handlePtr, IntPtr nodesPtr, int nodesCount, int version)
         {
-            var viewModel = (HierarchyViewModel)GCHandle.FromIntPtr(handlePtr).Target;
+            var viewModel = FromIntPtr(handlePtr);
             viewModel.m_NodesPtr = nodesPtr;
             viewModel.m_NodesCount = nodesCount;
             viewModel.m_Version = version;
         }
 
         [RequiredByNativeCode]
-        void SearchBegin()
+        static void SearchBegin(IntPtr handlePtr)
         {
-            using var _ = ListPool<HierarchyNodeTypeHandlerBase>.Get(out var handlers);
-            m_Hierarchy.GetAllNodeTypeHandlersBase(handlers);
-            foreach (var handler in handlers)
-                handler.Internal_SearchBegin(Query);
+            var viewModel = FromIntPtr(handlePtr);
+            foreach (var handler in viewModel.m_Hierarchy.EnumerateNodeTypeHandlersBase())
+                handler.Internal_SearchBegin(viewModel.Query);
         }
         #endregion
 

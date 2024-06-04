@@ -22,6 +22,12 @@ namespace UnityEngine.UIElements
                 return vta.visualElementAssets[parentIndex];
             }
 
+            parentIndex = vta.templateAssets.FindIndex(ta => ta.id == parentId);
+            if (parentIndex >= 0)
+            {
+                return vta.templateAssets[parentIndex];
+            }
+
             for (var entryIndex = 0; entryIndex < vta.uxmlObjectEntries.Count; ++entryIndex)
             {
                 var uxmlAssets = vta.uxmlObjectEntries[entryIndex].uxmlObjectAssets;

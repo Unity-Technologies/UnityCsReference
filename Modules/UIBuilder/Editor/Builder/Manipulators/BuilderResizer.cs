@@ -27,7 +27,7 @@ namespace Unity.UI.Builder
         const string k_BottomLeftHandleName = "bottom-left-handle";
         const string k_BottomRightHandleName = "bottom-right-handle";
 
-        const int k_LayoutCountLimit = UIRLayoutUpdater.kMaxValidateLayoutCount - 2;
+        const int k_LayoutCountLimit = UIRLayoutUpdater.kMaxValidateLayoutCount / 2;
 
         static readonly string s_UssClassName = "unity-builder-resizer";
         public static readonly string s_CursorSetterUssClassName = s_UssClassName + "__cursor-setter";
@@ -96,8 +96,12 @@ namespace Unity.UI.Builder
         {
             OnStartDrag(element);
 
+            // We can not use geometry changed events when the element is using flex-grow. (UUM-72096)
+            if (m_Target.resolvedStyle.flexGrow != 0 && m_Target.resolvedStyle.position == Position.Relative)
+                return;
+
             // We need to monitor for geometry changed events so we can compare the requested against the actual to see if a min/max size is being enforced.
-            switch(element.name)
+            switch (element.name)
             {
                 case k_TopHandleName: m_TargetGeometryChangedCallback = OnTargetGeometryChangedDragTop; break;
                 case k_LeftHandleName: m_TargetGeometryChangedCallback = OnTargetGeometryChangedDragLeft; break;
