@@ -229,10 +229,10 @@ namespace UnityEditor.UIElements
                     switch (error.level)
                     {
                         case Error.Level.Warning:
-                            Debug.LogWarning(error.ToString());
+                            Debug.LogWarning(error.ToString(), obj);
                             break;
                         case Error.Level.Fatal:
-                            Debug.LogError(error.ToString());
+                            Debug.LogError(error.ToString(), obj);
                             break;
                         default:
                             throw new ArgumentOutOfRangeException(nameof(error));

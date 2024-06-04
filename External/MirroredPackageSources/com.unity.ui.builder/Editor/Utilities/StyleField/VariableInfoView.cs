@@ -137,7 +137,7 @@ namespace Unity.UI.Builder
             else if (info.styleVariable.handles[0].valueType == StyleValueType.Enum)
             {
                 var colorName = info.sheet.ReadAsString(info.styleVariable.handles[0]);
-                if (StyleSheetColor.TryGetColor(colorName.ToLower(), out var color))
+                if (StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out var color))
                 {
                     m_Preview.style.backgroundColor = color;
                     m_Preview.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);

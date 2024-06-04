@@ -155,6 +155,9 @@ namespace UnityEditor.Search
     class ProjectSearchEngine : QuickSearchEngine, IProjectSearchEngine
     {
         public override string providerId => "asset";
+        private static QueryEngine s_QueryEngine = new QueryEngine(validateFilters: false);
+        private static List<IFilterNode> s_Filters = new();
+        private static List<ISearchNode> s_Searches = new();
 
         public override void BeginSession(ISearchContext context)
         {
@@ -180,38 +183,65 @@ namespace UnityEditor.Search
             {
                 searchSession.onAsyncItemsReceived = asyncItemsReceived;
             }
+            SetSearchContext(query, projectSearchContext, searchSession.context);
+            var items = SearchService.GetItems(searchSession.context);
+            return SearchItemConverter(items);
+        }
 
-            if (context.requiredTypeNames != null && context.requiredTypeNames.Any())
+        public static string ConvertContainsToEqual(string query)
+        {
+            if (!query.Contains(":"))
+                return query;
+
+            var parsedQuery = s_QueryEngine.ParseQuery(query);
+            s_Filters.Clear();
+            s_Searches.Clear();
+            SearchUtils.GetQueryParts(parsedQuery.queryGraph.root, s_Filters, s_Searches);
+            var processedQuery = query.ToCharArray();
+            foreach (var filter in s_Filters)
             {
-                searchSession.context.filterType = Utils.GetTypeFromName(context.requiredTypeNames.First());
+                if (filter.operatorId != ":")
+                    continue;
+                processedQuery[filter.token.position + filter.filterId.Length] = '=';
+            }
+            return new string(processedQuery);
+        }
+
+        public static void SetSearchContext(string query, ProjectSearchContext project, SearchContext context)
+        {
+            if (project.requiredTypeNames != null && project.requiredTypeNames.FirstOrDefault() != null)
+            {
+                context.filterType = Utils.GetTypeFromName(project.requiredTypeNames.First());
             }
             else
             {
-                searchSession.context.filterType = null;
+                context.filterType = null;
             }
 
-            searchSession.context.searchText = query;
-            searchSession.context.options &= ~SearchFlags.Packages;
-            if (projectSearchContext.searchFilter != null)
+            context.options &= ~SearchFlags.Packages;
+            var processedQuery = ConvertContainsToEqual(query);
+            if (project.searchFilter != null)
             {
-                searchSession.context.userData = projectSearchContext.searchFilter;
-                if (projectSearchContext.searchFilter.searchArea == SearchFilter.SearchArea.InAssetsOnly)
+                context.userData = project.searchFilter;
+                
+                // Note: SearchFilter aggregates filter strangely. It uses the typed query and adds filter without those be represented
+                // in text form. For now use the result of FilterToSearchFieldString to get all filters. It would be best if we could combine those filter ourself.
+                processedQuery = project.searchFilter.FilterToSearchFieldString();
+                if (project.searchFilter.searchArea == SearchFilter.SearchArea.InAssetsOnly)
                 {
-                    searchSession.context.searchText = $"{query} a:assets";
+                    processedQuery = $"{processedQuery} a:assets";
                 }
-                else if (projectSearchContext.searchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly)
+                else if (project.searchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly)
                 {
-                    searchSession.context.options |= SearchFlags.Packages;
-                    searchSession.context.searchText = $"{query} a:packages";
+                    context.options |= SearchFlags.Packages;
+                    processedQuery = $"{processedQuery} a:packages";
                 }
-                else if (projectSearchContext.searchFilter.searchArea == SearchFilter.SearchArea.AllAssets)
+                else if (project.searchFilter.searchArea == SearchFilter.SearchArea.AllAssets)
                 {
-                    searchSession.context.options |= SearchFlags.Packages;
+                    context.options |= SearchFlags.Packages;
                 }
             }
-
-            var items = SearchService.GetItems(searchSession.context);
-            return SearchItemConverter(items);
+            context.searchText = processedQuery;
         }
 
         static IEnumerable<string> SearchItemConverter(IEnumerable<SearchItem> items)
@@ -251,7 +281,7 @@ namespace UnityEditor.Search
                 return;
 
             searchSession.context.searchText = query;
-            if (context.requiredTypeNames != null && context.requiredTypeNames.Any())
+            if (context.requiredTypeNames != null && context.requiredTypeNames.FirstOrDefault() != null)
             {
                 searchSession.context.filterType = Utils.GetTypeFromName(context.requiredTypeNames.First());
             }

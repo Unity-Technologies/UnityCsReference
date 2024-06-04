@@ -124,7 +124,7 @@ namespace UnityEngine.UIElements
                 var floatStr = str.Substring(0, digitEndIndex);
                 var unitStr = string.Empty;
                 if (unitIndex > 0)
-                    unitStr = str.Substring(unitIndex, str.Length - unitIndex).ToLower();
+                    unitStr = str.Substring(unitIndex, str.Length - unitIndex).ToLowerInvariant();
 
                 float v;
                 if (float.TryParse(floatStr, out v))

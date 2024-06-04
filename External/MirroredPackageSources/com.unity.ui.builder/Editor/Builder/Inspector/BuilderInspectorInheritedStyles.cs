@@ -404,7 +404,7 @@ namespace Unity.UI.Builder
                     StyleSheetToUss.ToUssString(rule.matchRecord.sheet, options, props[j], sb);
                     string s = sb.ToString();
 
-                    s = s?.ToLower();
+                    s = s?.ToLowerInvariant();
                     var textField = new TextField(props[j].name) { value = s };
                     textField.isReadOnly = true;
                     ruleFoldout.Add(textField);

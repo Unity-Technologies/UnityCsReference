@@ -135,13 +135,13 @@ namespace UnityEditor
                 CurrentTimeField();
             }
 
-            if (targets.Length == 1)
-                DoDirectorBindingInspector();
-
             if (serializedObject.ApplyModifiedProperties())
             {
                 m_DirtySceneBindings = true;
             }
+
+            if (targets.Length == 1)
+                DoDirectorBindingInspector();
         }
 
         private bool PlayableAssetOutputsChanged()
@@ -175,6 +175,8 @@ namespace UnityEditor
                 SynchronizeSceneBindings();
             }
 
+            serializedObject.Update();
+
             EditorGUILayout.BeginHorizontal();
 
             var rect = GUILayoutUtility.GetRect(EditorGUIUtility.fieldWidth, EditorGUIUtility.fieldWidth, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight,  EditorStyles.foldout);
@@ -201,6 +203,8 @@ namespace UnityEditor
                 m_BindingList.DoLayoutList();
                 EditorGUI.indentLevel--;
             }
+
+            serializedObject.ApplyModifiedProperties();
         }
 
         PlayableBinding FindBinding(PlayableAsset source, UnityEngine.Object key)
@@ -308,8 +312,6 @@ namespace UnityEditor
                 else if (!director.HasGenericBinding(binding.sourceObject))
                     director.SetGenericBinding(binding.sourceObject, null);
             }
-
-            serializedObject.Update();
         }
 
         // To show the current time field in play mode

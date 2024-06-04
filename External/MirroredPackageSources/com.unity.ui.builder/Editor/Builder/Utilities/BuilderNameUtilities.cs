@@ -54,7 +54,7 @@ namespace Unity.UI.Builder
         public static string ConvertCamelToDash(string camel)
         {
             var split = Regex.Replace(Regex.Replace(camel, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1-$2"), @"(\p{Ll})(\P{Ll})", "$1-$2");
-            var lowerCase = split.ToLower();
+            var lowerCase = split.ToLowerInvariant();
             foreach (var pair in BuilderConstants.SpecialEnumNamesCases.Where(pair => pair.Value.Equals(lowerCase)))
                 return pair.Key;
 

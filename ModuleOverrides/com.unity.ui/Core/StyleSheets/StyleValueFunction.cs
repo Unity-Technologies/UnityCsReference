@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
 
         public static StyleValueFunction FromUssString(string ussValue)
         {
-            ussValue = ussValue.ToLower();
+            ussValue = ussValue.ToLowerInvariant();
             switch (ussValue)
             {
                 case k_Var:

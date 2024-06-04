@@ -76,7 +76,7 @@ namespace Unity.UI.Builder
                     if (valueType == StyleValueType.Enum)
                     {
                         var colorName = variable.sheet.ReadAsString(valueHandle);
-                        if (StyleSheetColor.TryGetColor(colorName.ToLower(), out var color))
+                        if (StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out var color))
                             valueType = StyleValueType.Color;
                     }
 

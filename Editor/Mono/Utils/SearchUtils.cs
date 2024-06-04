@@ -28,7 +28,7 @@ namespace UnityEditor
         internal static bool MatchSearchGroups(string searchContext, string content, out int startIndex, out int endIndex)
         {
             startIndex = endIndex = -1;
-            if (searchContext == null || content == null)
+            if (searchContext == null || content == null || content.Length == 0)
                 return false;
 
             if (searchContext == content)

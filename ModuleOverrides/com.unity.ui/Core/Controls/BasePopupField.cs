@@ -166,7 +166,7 @@ namespace UnityEngine.UIElements
             {
                 if (ContainsPointer(evt.pointerId))
                 {
-                    ShowMenu();
+                    schedule.Execute(ShowMenu);
                     evt.StopPropagation();
                 }
             }
