@@ -11,26 +11,14 @@ namespace UnityEditor.Connect
     {
         const string k_CorePackageName = "com.unity.services.core";
 
-        public static bool IsCorePackageInstalled()
+        public static bool IsCorePackageRegistered()
         {
-            return IsPackageInstalled(k_CorePackageName);
-        }
-
-        public static bool IsPackageInstalled(string packageName)
-        {
-            return GetPackageInfo(packageName) != null;
-        }
-
-        static PackageManager.PackageInfo GetPackageInfo(string packageName)
-        {
-            var packageInfos = PackageManager.PackageInfo.GetAllRegisteredPackages();
-            return packageInfos.FirstOrDefault(packageInfo => packageInfo.name.Equals(packageName));
+            return PackageManager.PackageInfo.IsPackageRegistered(k_CorePackageName);
         }
 
         public static bool HasCoreDependency(string packageName)
         {
-            var packageInfo = GetPackageInfo(packageName);
-
+            var packageInfo = PackageManager.PackageInfo.FindForPackageName(packageName);
             return packageInfo != null && HasDependencyToPackage(packageInfo, k_CorePackageName);
         }
 
@@ -43,7 +31,7 @@ namespace UnityEditor.Connect
         {
             bool installedPackageIsAtMinimumVersionOrHigher = false;
 
-            var packageInfo = GetPackageInfo(packageName);
+            var packageInfo = PackageManager.PackageInfo.FindForPackageName(packageName);
             if (packageInfo != null)
             {
                 var packageVersion = new SemVersion().Parse(packageInfo.version);

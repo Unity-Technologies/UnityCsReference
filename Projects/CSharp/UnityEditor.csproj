@@ -3598,6 +3598,9 @@
     <Compile Include="..\..\Editor\Mono\UIElements\StyleSheets\URIHelpers.cs">
       <Link>Editor\Mono\UIElements\StyleSheets\URIHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\UIBuildAnalyticsEvent.cs">
+      <Link>Editor\Mono\UIElements\UIBuildAnalyticsEvent.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\UIElementsEditorUtility.cs">
       <Link>Editor\Mono\UIElements\UIElementsEditorUtility.cs</Link>
     </Compile>

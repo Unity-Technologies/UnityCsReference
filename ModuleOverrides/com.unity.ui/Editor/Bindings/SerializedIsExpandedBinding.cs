@@ -72,8 +72,21 @@ class SerializedIsExpandedBinding : SerializedObjectBindingPropertyToBaseField<b
     static bool GetValue(SerializedProperty property) => property.isExpanded;
     static void SetValue(SerializedProperty property, bool value) => property.isExpanded = value;
 
-    void AddClickedManipulator() => ((Foldout)field).toggle.AddManipulator(m_ClickedWithAlt);
-    void RemoveClickedManipulator() => ((Foldout)field).RemoveManipulator(m_ClickedWithAlt);
+    void AddClickedManipulator()
+    {
+        if (m_ClickedWithAlt != null)
+        {
+            m_ClickedWithAlt.target = ((Foldout)field)?.toggle;
+        }
+    }
+
+    void RemoveClickedManipulator()
+    {
+        if (m_ClickedWithAlt != null)
+        {
+            m_ClickedWithAlt.target = null;
+        }
+    }
 
     void OnClickWithAlt()
     {

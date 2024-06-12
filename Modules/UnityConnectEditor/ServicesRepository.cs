@@ -84,12 +84,12 @@ namespace UnityEditor.Connect
         {
             var isServiceAlreadyAdded = k_Services.ContainsKey(singleService.name);
 
-            var isCorePackageInstalled = PackageHelper.IsCorePackageInstalled();
-            var servicePackageInstalled = PackageHelper.IsPackageInstalled(singleService.editorGamePackageName);
+            var isCorePackageRegistered = PackageHelper.IsCorePackageRegistered();
+            var servicePackageRegistered = PackageManager.PackageInfo.IsPackageRegistered(singleService.editorGamePackageName);
             var servicePackageHasCoreDependency = PackageHelper.HasCoreDependency(singleService.editorGamePackageName);
 
             return !isServiceAlreadyAdded &&
-                (!isCorePackageInstalled || (servicePackageInstalled && !servicePackageHasCoreDependency));
+                (!isCorePackageRegistered || (servicePackageRegistered && !servicePackageHasCoreDependency));
         }
 
         public static List<SingleService> GetServices()
