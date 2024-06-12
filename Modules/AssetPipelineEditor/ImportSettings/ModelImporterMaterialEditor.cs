@@ -274,14 +274,9 @@ namespace UnityEditor
                             assetPath = FileUtil.NiceWinPath(assetPath);
                             // Destination could be a package. Need to get assetPath instead of relativePath
                             // The GUID isn't known yet so can't find it from that
-                            foreach (var package in PackageManager.PackageInfo.GetAllRegisteredPackages())
-                            {
-                                if (assetPath.StartsWith(package.resolvedPath))
-                                {
-                                    destinationPath = package.assetPath + assetPath.Substring(package.resolvedPath.Length);
-                                    break;
-                                }
-                            }
+                            var packageInfo = PackageManager.PackageInfo.FindForAssetPath(assetPath);
+                            if (packageInfo != null)
+                                destinationPath = packageInfo.assetPath + assetPath.Substring(packageInfo.resolvedPath.Length);
                         }
 
                         try
@@ -379,14 +374,9 @@ namespace UnityEditor
                             destinationPath = FileUtil.NiceWinPath(destinationPath);
                             // Destination could be a package. Need to get assetPath instead of relativePath
                             // The GUID isn't known yet so can't find it from that
-                            foreach (var package in PackageManager.PackageInfo.GetAllRegisteredPackages())
-                            {
-                                if (destinationPath.StartsWith(package.resolvedPath))
-                                {
-                                    assetPath = package.assetPath + destinationPath.Substring(package.resolvedPath.Length);
-                                    break;
-                                }
-                            }
+                            var packageInfo = PackageManager.PackageInfo.FindForAssetPath(destinationPath);
+                            if (packageInfo != null)
+                                destinationPath = packageInfo.assetPath + destinationPath.Substring(packageInfo.resolvedPath.Length);
                         }
 
                         if (string.IsNullOrEmpty(assetPath))

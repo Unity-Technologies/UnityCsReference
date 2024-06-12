@@ -7,8 +7,10 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
-
+using TreeView = UnityEditor.IMGUI.Controls.TreeView;
 
 namespace UnityEditor
 {
@@ -613,23 +615,22 @@ namespace UnityEditor
             readonly PrefabOverride m_Modification;
             readonly Object m_Source;
             readonly Object m_Instance;
-            readonly Editor m_SourceEditor;
-            readonly Editor m_InstanceEditor;
             readonly bool m_Unappliable;
 
-            const float k_HeaderHeight = 25f;
-            const float k_ScrollbarWidth = 13;
-            Vector2 m_PreviewSize = new Vector2(600f, 0);
-            Vector2 m_Scroll;
-            bool m_RenderOverlayAfterResizeChange;
             bool m_OwnerNeedsRefresh;
 
             static class Styles
             {
-                public static GUIStyle borderStyle = new GUIStyle("grey_border");
-                public static GUIStyle centeredLabelStyle = new GUIStyle(EditorStyles.label);
+                public const string ussPath = "StyleSheets/Prefab/ComparisonViewPopup.uss";
+                public const string rootClass = "unity-prefab-compare__root";
+                public const string dualViewClass = "unity-prefab-compare-dual";
+                public const string headerClass = "unity-prefab-compare__header";
+                public const string cellClass = "unity-prefab-compare__cell";
+                public const string contentClass = "unity-prefab-compare__content";
+                public const string rightClass = "unity-prefab-compare__right";
+                public const string headerButtonClass = "unity-prefab-compare__header-buttons";
+
                 public static GUIStyle headerGroupStyle = new GUIStyle();
-                public static GUIStyle headerStyle = new GUIStyle(EditorStyles.boldLabel);
                 public static GUIContent sourceContent = EditorGUIUtility.TrTextContent("Prefab Source");
                 public static GUIContent instanceContent = EditorGUIUtility.TrTextContent("Override");
                 public static GUIContent removedContent = EditorGUIUtility.TrTextContent("Removed");
@@ -640,14 +641,7 @@ namespace UnityEditor
 
                 static Styles()
                 {
-                    centeredLabelStyle.alignment = TextAnchor.UpperCenter;
-                    centeredLabelStyle.padding = new RectOffset(3, 3, 3, 3);
-
                     headerGroupStyle.padding = new RectOffset(0, 0, 3, 3);
-
-                    headerStyle.alignment = TextAnchor.MiddleLeft;
-                    headerStyle.padding.left = 5;
-                    headerStyle.padding.top = 1;
                 }
             }
 
@@ -658,25 +652,9 @@ namespace UnityEditor
                 m_Instance = instance;
                 m_Modification = modification;
                 if (modification != null)
-                {
                     m_Unappliable = !PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(modification.GetAssetObject());
-                }
                 else
-                {
                     m_Unappliable = false;
-                }
-
-                if (m_Source != null)
-                {
-                    m_SourceEditor = Editor.CreateEditor(m_Source);
-                }
-                if (m_Instance != null)
-                {
-                    m_InstanceEditor = Editor.CreateEditor(m_Instance);
-                }
-
-                if (m_Source == null || m_Instance == null || m_Modification == null)
-                    m_PreviewSize.x /= 2;
 
                 if (modification is ObjectOverride)
                     Undo.postprocessModifications += RecheckOverrideStatus;
@@ -686,12 +664,7 @@ namespace UnityEditor
             {
                 Undo.postprocessModifications -= RecheckOverrideStatus;
                 m_Owner.ComparisonPopupClosed(m_Instance, m_OwnerNeedsRefresh);
-
                 base.OnClose();
-                if (m_SourceEditor != null)
-                    Object.DestroyImmediate(m_SourceEditor);
-                if (m_InstanceEditor != null)
-                    Object.DestroyImmediate(m_InstanceEditor);
             }
 
             UndoPropertyModification[] RecheckOverrideStatus(UndoPropertyModification[] modifications)
@@ -714,125 +687,118 @@ namespace UnityEditor
                 UpdateAndClose();
             }
 
-            bool UpdatePreviewHeight(float height)
+            internal override VisualElement CreateGUI()
             {
-                if (height > 0 && m_PreviewSize.y != height)
-                {
-                    m_PreviewSize.y = height;
-                    return true;
-                }
-                return false;
+                var root = new VisualElement();
+                root.AddStyleSheetPath(Styles.ussPath);
+                root.AddToClassList(Styles.rootClass);
+                if (m_Modification != null && m_Source != null && m_Instance != null)
+                    root.AddToClassList(Styles.dualViewClass);
+
+                root.Add(CreateHeader());
+
+                if (m_Modification != null)
+                    root.Add(CreateComparisonView());
+
+                return root;
             }
 
-            public override void OnGUI(Rect rect)
+            VisualElement CreateHeader()
             {
-                bool scroll = (m_PreviewSize.y > rect.height - k_HeaderHeight);
-                if (scroll)
-                    rect.width -= k_ScrollbarWidth + 1;
-                else
-                    // We overdraw border by one pixel to the right, so subtract here to account for that.
-                    rect.width -= 1;
-
-                EditorGUIUtility.wideMode = true;
-                EditorGUIUtility.labelWidth = 120;
-                int middleCol = Mathf.RoundToInt((rect.width - 1) * 0.5f);
-
-                if (Event.current.type == EventType.Repaint)
-                    EditorStyles.viewBackground.Draw(rect, GUIContent.none, 0);
+                var container = new VisualElement();
+                container.AddToClassList(Styles.headerClass);
 
                 if (m_Modification == null)
                 {
-                    DrawHeader(
-                        new Rect(rect.x, rect.y, rect.width, k_HeaderHeight),
-                        Styles.noModificationsContent);
-                    m_PreviewSize.y = 0;
-                    return;
+                    container.Add(CreateHeaderCell(Styles.noModificationsContent.text));
+                    return container;
                 }
-
-                Rect scrollRectPosition =
-                    new Rect(
-                        rect.x,
-                        rect.y + k_HeaderHeight,
-                        rect.width + (scroll ? k_ScrollbarWidth : 0),
-                        rect.height - k_HeaderHeight);
-                Rect viewPosition = new Rect(0, 0, rect.width, m_PreviewSize.y);
 
                 if (m_Source != null && m_Instance != null)
                 {
-                    Rect sourceHeaderRect = new Rect(rect.x, rect.y, middleCol, k_HeaderHeight);
-                    Rect instanceHeaderRect = new Rect(rect.x + middleCol, rect.y, rect.xMax - middleCol + (scroll ? k_ScrollbarWidth : 0), k_HeaderHeight);
-                    DrawHeader(sourceHeaderRect, Styles.sourceContent);
-                    DrawHeader(instanceHeaderRect, Styles.instanceContent);
+                    var sourceHeader = CreateHeaderCell(Styles.sourceContent.text);
+                    var instanceHeader = CreateHeaderCell(Styles.instanceContent.text);
+                    instanceHeader.AddToClassList(Styles.rightClass);
+                    instanceHeader.Add(CreateHeaderButtons());
 
-                    DrawRevertApplyButtons(instanceHeaderRect);
-
-                    m_Scroll = GUI.BeginScrollView(scrollRectPosition, m_Scroll, viewPosition);
-                    {
-                        var leftColumnHeight = DrawEditor(new Rect(0, 0, middleCol, m_PreviewSize.y), m_SourceEditor, true, EditorGUIUtility.ComparisonViewMode.Original);
-
-                        var rightColumnHeight = DrawEditor(new Rect(middleCol, 0, rect.xMax - middleCol, m_PreviewSize.y), m_InstanceEditor, false, EditorGUIUtility.ComparisonViewMode.Modified);
-
-                        if (UpdatePreviewHeight(Math.Max(leftColumnHeight, rightColumnHeight)))
-                            m_RenderOverlayAfterResizeChange = true;
-                    }
-                    GUI.EndScrollView();
+                    container.Add(sourceHeader);
+                    container.Add(instanceHeader);
                 }
                 else
                 {
-                    GUIContent headerContent;
-                    Editor editor;
-                    bool disable;
-                    if (m_Source != null)
-                    {
-                        headerContent = Styles.removedContent;
-                        editor = m_SourceEditor;
-                        disable = true;
-                    }
-                    else
-                    {
-                        headerContent = Styles.addedContent;
-                        editor = m_InstanceEditor;
-                        disable = false;
-                    }
-
-                    Rect headerRect = new Rect(rect.x, rect.y, rect.width, k_HeaderHeight);
-                    DrawHeader(headerRect, headerContent);
-
-                    DrawRevertApplyButtons(headerRect);
-
-                    m_Scroll = GUI.BeginScrollView(scrollRectPosition, m_Scroll, viewPosition);
-
-                    float columnHeight = DrawEditor(new Rect(0, 0, rect.width, m_PreviewSize.y), editor, disable, EditorGUIUtility.ComparisonViewMode.Modified);
-                    if (UpdatePreviewHeight(columnHeight))
-                        m_RenderOverlayAfterResizeChange = true;
-
-                    GUI.EndScrollView();
+                    string headerContentText = m_Source != null ? Styles.removedContent.text : Styles.addedContent.text;
+                    var header = CreateHeaderCell(headerContentText);
+                    header.Add(CreateHeaderButtons());
+                    container.Add(header);
                 }
 
-                if (m_RenderOverlayAfterResizeChange && Event.current.type == EventType.Repaint)
+                return container;
+            }
+
+            VisualElement CreateHeaderButtons()
+            {
+                var container = new IMGUIContainer(DrawRevertApplyButtons);
+                container.AddToClassList(Styles.headerButtonClass);
+                return container;
+            }
+
+            VisualElement CreateComparisonView()
+            {
+                var comparisonView = new ScrollView
                 {
-                    m_RenderOverlayAfterResizeChange = false;
-                    // The comparison view resizes a frame delayed due to having to wait for the first render to
-                    // layout the contents. This creates a distorted rendering because the last frame rendered is rendered
-                    // to the new window size. We therefore 'clear' the comparison view after a resize change by rendering
-                    // a quad on top with the background color so the distorted rendering is not shown to the user.
-                    // Fixes case 1069062.
-                    GUI.Label(rect, GUIContent.none, EditorStyles.viewBackground);
-                    editorWindow.Repaint();
+                    mode = ScrollViewMode.Vertical,
+                    verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible
+                };
+                comparisonView.RegisterCallback<SerializedObjectChangeEvent>(OnObjectChanged);
+
+                if (m_Source != null && m_Instance != null)
+                    comparisonView.Add(CreateDualObjectView());
+                else
+                    comparisonView.Add(CreateSingleObjectView());
+
+                return comparisonView;
+            }
+
+            void OnObjectChanged(SerializedObjectChangeEvent obj)
+            {
+                m_OwnerNeedsRefresh = true;
+            }
+
+            VisualElement CreateSingleObjectView()
+            {
+                if (m_Source != null)
+                {
+                    var inspector = CreateObjectInspector(m_Source, EditorGUIUtility.ComparisonViewMode.Original);
+                    inspector.SetEnabled(false);
+                    return inspector;
+                }
+                else
+                {
+                    var inspector = CreateObjectInspector(m_Instance, EditorGUIUtility.ComparisonViewMode.Original);
+                    inspector.SetEnabled(true);
+                    return inspector;
                 }
             }
 
-            void DrawHeader(Rect rect, GUIContent label)
+            VisualElement CreateDualObjectView()
             {
-                EditorGUI.LabelField(rect, label, Styles.headerStyle);
-                // Overdraw border by one pixel to the right, so adjacent borders overlap.
-                // Don't overdraw down, since overlapping scroll view can make controls overlap divider line.
-                GUI.Label(new Rect(rect.x, rect.y, rect.width + 1, rect.height), GUIContent.none, Styles.borderStyle);
+                var sourceInspector = CreateObjectInspector(m_Source, EditorGUIUtility.ComparisonViewMode.Original);
+                var instanceInspector = CreateObjectInspector(m_Instance, EditorGUIUtility.ComparisonViewMode.Modified);
+
+                sourceInspector.SetEnabled(false);
+                sourceInspector.AddToClassList(Styles.cellClass);
+                instanceInspector.AddToClassList(Styles.cellClass);
+                instanceInspector.AddToClassList(Styles.rightClass);
+
+                var container = new VisualElement();
+                container.AddToClassList(Styles.contentClass);
+                container.Add(sourceInspector);
+                container.Add(instanceInspector);
+                return container;
             }
 
-            void DrawRevertApplyButtons(Rect rect)
+            void DrawRevertApplyButtons()
             {
-                GUILayout.BeginArea(rect);
                 GUILayout.BeginHorizontal(Styles.headerGroupStyle);
                 GUILayout.FlexibleSpace();
 
@@ -855,7 +821,6 @@ namespace UnityEditor
                 }
 
                 GUILayout.EndHorizontal();
-                GUILayout.EndArea();
             }
 
             void Apply(object prefabAssetPathObject)
@@ -875,61 +840,37 @@ namespace UnityEditor
                 editorWindow?.Close();
             }
 
-            float DrawEditor(Rect rect, Editor editor, bool disabled, EditorGUIUtility.ComparisonViewMode comparisonViewMode)
+            static VisualElement CreateObjectInspector(Object obj, EditorGUIUtility.ComparisonViewMode viewMode)
             {
-                rect.xMin += 1;
-                EditorGUIUtility.ResetGUIState();
+                var container = new VisualElement();
+                var inspector = new InspectorElement(obj) { comparisonViewMode = viewMode };
+                if (inspector.boundObject != null)
+                    inspector.TrackSerializedObjectValue(inspector.boundObject);
 
-                EditorGUIUtility.wideMode = true;
-                EditorGUIUtility.labelWidth = 120;
-                EditorGUIUtility.comparisonViewMode = comparisonViewMode;
-                EditorGUIUtility.leftMarginCoord = rect.x;
-
-                GUILayout.BeginArea(rect);
-                Rect editorRect = EditorGUILayout.BeginVertical();
-                {
-                    using (new EditorGUI.DisabledScope(disabled))
-                    {
-                        if (editor == null)
-                        {
-                            GUI.enabled = true;
-                            GUILayout.Label("None - this should not happen.", Styles.centeredLabelStyle);
-                        }
-                        else
-                        {
-                            EditorGUI.BeginChangeCheck();
-                            if (editor.target is GameObject)
-                            {
-                                editor.DrawHeader();
-                            }
-                            else
-                            {
-                                EditorGUIUtility.hierarchyMode = true;
-                                EditorGUILayout.InspectorTitlebar(true, editor);
-                                EditorGUILayout.BeginVertical(EditorStyles.inspectorDefaultMargins);
-                                editor.OnInspectorGUI();
-                                EditorGUILayout.Space();
-                                EditorGUILayout.EndVertical();
-                            }
-
-                            if (EditorGUI.EndChangeCheck())
-                                m_OwnerNeedsRefresh = true;
-                        }
-                    }
-                }
-
-                EditorGUILayout.EndVertical();
-                GUILayout.EndArea();
-
-                // Overdraw border by one pixel in all directions.
-                GUI.Label(new Rect(rect.x - 1, -1, rect.width + 2, m_PreviewSize.y + 2), GUIContent.none, Styles.borderStyle);
-
-                return editorRect.height;
+                container.Add(new IMGUIContainer(() => DrawObjectHeader(inspector.editor, viewMode)));
+                container.Add(inspector);
+                return container;
             }
 
-            public override Vector2 GetWindowSize()
+            static VisualElement CreateHeaderCell(string label)
             {
-                return new Vector2(m_PreviewSize.x, m_PreviewSize.y + k_HeaderHeight + 1f);
+                var headerCell = new VisualElement();
+                headerCell.AddToClassList(Styles.cellClass);
+                headerCell.Add(new Label(label));
+                return headerCell;
+            }
+
+            static void DrawObjectHeader(Editor editor, EditorGUIUtility.ComparisonViewMode viewMode)
+            {
+                if (editor == null) return;
+                if (editor.target is GameObject)
+                    editor.DrawHeader();
+                else
+                {
+                    EditorGUIUtility.comparisonViewMode = viewMode;
+                    EditorGUIUtility.hierarchyMode = true;
+                    EditorGUILayout.InspectorTitlebar(true, editor);
+                }
             }
         }
     }
