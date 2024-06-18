@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public static readonly string k_ResetPackagesMenuName = "Reset Packages to defaults";
         public static readonly string k_ResetPackagesMenuPath = "Help/" + k_ResetPackagesMenuName;
 
-        internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> {}
+        internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> { }
 
         private long m_SearchTextChangeTimestamp;
 
@@ -224,7 +224,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (filters.labels?.Any() ?? false)
                     filtersSet.Add(L10n.Tr("Label"));
             }
-            filtersMenu.text = filtersSet.Any() ? $"{L10n.Tr("Filters")} ({string.Join(",", filtersSet.ToArray())})" :  L10n.Tr("Filters");
+            filtersMenu.text = filtersSet.Any() ? $"{L10n.Tr("Filters")} ({string.Join(",", filtersSet.ToArray())})" : L10n.Tr("Filters");
         }
 
         private void SetFilterFromMenu(PackageFilterTab filter)
@@ -330,18 +330,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                         return;
                     }
 
+                    if (!m_PackageDatabase.InstallFromPath(m_IOProxy.GetParentDirectory(path), out var tempPackageId))
+                        return;
 
-                    if (!m_PackageDatabase.isInstallOrUninstallInProgress)
+                    PackageManagerWindowAnalytics.SendEvent("addFromDisk");
+                    var package = m_PackageDatabase.GetPackage(tempPackageId);
+                    if (package != null)
                     {
-                        m_PackageDatabase.InstallFromPath(m_IOProxy.GetParentDirectory(path), out var tempPackageId);
-                        PackageManagerWindowAnalytics.SendEvent("addFromDisk");
-
-                        var package = m_PackageDatabase.GetPackage(tempPackageId);
-                        if (package != null)
-                        {
-                            m_PackageFiltering.currentFilterTab = PackageFilterTab.InProject;
-                            m_PageManager.SetSelected(package);
-                        }
+                        m_PackageFiltering.currentFilterTab = PackageFilterTab.InProject;
+                        m_PageManager.SetSelected(package);
                     }
                 }
                 catch (System.IO.IOException e)
@@ -356,9 +353,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownItem.action = () =>
             {
                 var path = m_Application.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "Package tarball", "tgz, tar.gz" });
-                if (!string.IsNullOrEmpty(path) && !m_PackageDatabase.isInstallOrUninstallInProgress)
+                if (!string.IsNullOrEmpty(path))
                 {
-                    m_PackageDatabase.InstallFromPath(path, out var tempPackageId);
+                    if (!m_PackageDatabase.InstallFromPath(path, out var tempPackageId))
+                        return;
                     PackageManagerWindowAnalytics.SendEvent("addFromTarball");
 
                     var package = m_PackageDatabase.GetPackage(tempPackageId);
@@ -383,17 +381,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                     submitButtonText = L10n.Tr("Add"),
                     onInputSubmitted = url =>
                     {
-                        if (!m_PackageDatabase.isInstallOrUninstallInProgress)
-                        {
-                            m_PackageDatabase.InstallFromUrl(url);
-                            PackageManagerWindowAnalytics.SendEvent("addFromGitUrl", url);
+                        if (!m_PackageDatabase.InstallFromUrl(url))
+                            return;
 
-                            var package = m_PackageDatabase.GetPackage(url);
-                            if (package != null)
-                            {
-                                m_PackageFiltering.currentFilterTab = PackageFilterTab.InProject;
-                                m_PageManager.SetSelected(package);
-                            }
+                        PackageManagerWindowAnalytics.SendEvent("addFromGitUrl", url);
+                        var package = m_PackageDatabase.GetPackage(url);
+                        if (package != null)
+                        {
+                            m_PackageFiltering.currentFilterTab = PackageFilterTab.InProject;
+                            m_PageManager.SetSelected(package);
                         }
                     },
                     windowSize = new Vector2(resolvedStyle.width, 50)
@@ -478,7 +474,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     filters.orderBy = firstOrdering.orderBy;
                     filters.isReverseOrder = firstOrdering.order == PageCapability.Order.Descending;
 
-                    if(page.UpdateFilters(filters))
+                    if (page.UpdateFilters(filters))
                         PackageManagerFiltersAnalytics.SendEvent(filters);
                 }
             }
@@ -550,7 +546,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElementCache cache { get; set; }
 
-        internal ExtendableToolbarMenu addMenu { get { return cache.Get<ExtendableToolbarMenu>("toolbarAddMenu"); }}
+        internal ExtendableToolbarMenu addMenu { get { return cache.Get<ExtendableToolbarMenu>("toolbarAddMenu"); } }
         private ToolbarMenu filterTabsMenu { get { return cache.Get<ToolbarMenu>("toolbarFilterTabsMenu"); } }
         private ToolbarMenu orderingMenu { get { return cache.Get<ToolbarMenu>("toolbarOrderingMenu"); } }
         private ToolbarWindowMenu filtersMenu { get { return cache.Get<ToolbarWindowMenu>("toolbarFiltersMenu"); } }

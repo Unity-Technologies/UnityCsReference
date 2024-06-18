@@ -574,6 +574,8 @@ namespace UnityEngine.UIElements
         Action<int, int> m_ItemIndexChangedCallback;
         Action m_ItemsSourceChangedCallback;
 
+        internal IVisualElementScheduledItem m_RebuildScheduled;
+
         private protected virtual void CreateVirtualizationController()
         {
             CreateVirtualizationController<ReusableCollectionItem>();
@@ -914,6 +916,13 @@ namespace UnityEngine.UIElements
                 if (m_ViewController == null)
                     return;
 
+                // If a Rebuild is scheduled then let it handle the refresh.
+                if (m_RebuildScheduled?.isActive == true)
+                {
+                    Rebuild();
+                    return;
+                }
+
                 RefreshSelection();
                 virtualizationController.Refresh(false);
                 PostRefresh();
@@ -945,7 +954,21 @@ namespace UnityEngine.UIElements
                 RefreshSelection();
                 virtualizationController.Refresh(true);
                 PostRefresh();
+
+                m_RebuildScheduled?.Pause();
             }
+        }
+
+        /// <summary>
+        /// Schedules a call to <see cref="Rebuild"/>.
+        /// Calling this method multiple times will only schedule one rebuild.
+        /// </summary>
+        internal void ScheduleRebuild()
+        {
+            if (m_RebuildScheduled == null)
+                m_RebuildScheduled = schedule.Execute(Rebuild);
+            else if (!m_RebuildScheduled.isActive)
+                m_RebuildScheduled.Resume();
         }
 
         private void RefreshSelection()
