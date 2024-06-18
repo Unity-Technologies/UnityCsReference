@@ -928,6 +928,9 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::SetFoveatedRenderingMode", HasExplicitThis = true)]
         extern public void SetFoveatedRenderingMode(FoveatedRenderingMode foveatedRenderingMode);
 
+        [FreeFunction("RenderingCommandBuffer_Bindings::SetWireframe", HasExplicitThis = true)]
+        extern public void SetWireframe(bool enable);
+
         [FreeFunction("RenderingCommandBuffer_Bindings::ConfigureFoveatedRendering", HasExplicitThis = true)]
         extern public void ConfigureFoveatedRendering(IntPtr platformData);
 

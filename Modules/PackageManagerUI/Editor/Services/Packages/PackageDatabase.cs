@@ -28,13 +28,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         // we only had a temporary unique id at first. For example, for `com.unity.a` is a unique id for a package, but when
         // we are installing from git, the only identifier we know is something like `git@example.com/com.unity.a.git`.
         // We only know the id `com.unity.a` after the package has been successfully installed, and we'll trigger an event for that.
-        public virtual event Action<string, string> onPackageUniqueIdFinalize = delegate {};
+        public virtual event Action<string, string> onPackageUniqueIdFinalize = delegate { };
 
-        public virtual event Action<IPackage> onVerifiedGitPackageUpToDate = delegate {};
+        public virtual event Action<IPackage> onVerifiedGitPackageUpToDate = delegate { };
 
-        public virtual event Action<PackagesChangeArgs> onPackagesChanged = delegate {};
+        public virtual event Action<PackagesChangeArgs> onPackagesChanged = delegate { };
 
-        public virtual event Action<TermOfServiceAgreementStatus> onTermOfServiceAgreementStatusChange = delegate {};
+        public virtual event Action<TermOfServiceAgreementStatus> onTermOfServiceAgreementStatusChange = delegate { };
 
         private readonly Dictionary<string, IPackage> m_Packages = new Dictionary<string, IPackage>();
         // we added m_Feature to speed up reverse dependencies lookup
@@ -106,6 +106,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual bool isEmpty => !m_Packages.Any();
 
         private static readonly IPackage[] k_EmptyList = new IPackage[0] { };
+
+        private string InstallOrRemoveInProgressWarningMessage(string installSource) => string.Format(L10n.Tr("[Package Manager Window] The request to install {0} will be canceled due to an ongoing Install/Remove operation. Please retry your request once the current operation has completed."), installSource);
 
         public virtual bool isInstallOrUninstallInProgress
         {
@@ -292,7 +294,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             preUpdate ??= k_EmptyList;
             progressUpdated ??= k_EmptyList;
 
-            if (!added.Any() && !updated.Any() && !removed.Any() && !preUpdate .Any() && !progressUpdated.Any())
+            if (!added.Any() && !updated.Any() && !removed.Any() && !preUpdate.Any() && !progressUpdated.Any())
                 return;
 
             onPackagesChanged?.Invoke(new PackagesChangeArgs { added = added, updated = updated, removed = removed, preUpdate = preUpdate, progressUpdated = progressUpdated });
@@ -683,18 +685,37 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.AddByIds(versions.Select(v => v.uniqueId));
         }
 
-        public virtual void Install(string packageId)
+        public virtual bool Install(string packageId)
         {
+            if (isInstallOrUninstallInProgress)
+            {
+                Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(packageId));
+                return false;
+            }
+
             m_UpmClient.AddById(packageId);
+            return true;
         }
 
-        public virtual void InstallFromUrl(string url)
+        public virtual bool InstallFromUrl(string url)
         {
+            if (isInstallOrUninstallInProgress)
+            {
+                Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(url));
+                return false;
+            }
             m_UpmClient.AddByUrl(url);
+            return true;
         }
 
         public virtual bool InstallFromPath(string path, out string tempPackageId)
         {
+            if (isInstallOrUninstallInProgress)
+            {
+                tempPackageId = null;
+                Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(path));
+                return false;
+            }
             return m_UpmClient.AddByPath(path, out tempPackageId);
         }
 

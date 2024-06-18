@@ -18,7 +18,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var installedVersion = version.package.versions.installed;
             var packageInfo = m_UpmCache.GetBestMatchPackageInfo(installedVersion.name, true);
-            m_PackageDatabase.Install(packageInfo.packageId);
+            if(!m_PackageDatabase.Install(packageInfo.packageId))
+                return false;
+
             PackageManagerWindowAnalytics.SendEvent("updateGit", installedVersion.uniqueId);
             return true;
         }
