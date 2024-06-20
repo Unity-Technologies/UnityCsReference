@@ -55,7 +55,7 @@ namespace Unity.Baselib.LowLevel
             ErrorType = 0x0,
             /// <summary>
             /// Include error type with platform specific value (if specified),
-            /// source location (subject to BASELIB_ENABLE_SOURCELOCATION define) and an error explanation if available.
+            /// source location and an error explanation if available.
             /// </summary>
             ErrorType_SourceLocation_Explanation = 0x1,
         }

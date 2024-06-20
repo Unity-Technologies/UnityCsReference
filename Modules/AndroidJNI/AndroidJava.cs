@@ -1069,6 +1069,19 @@ namespace UnityEngine
         internal GlobalJavaObjectRef m_jclass;          // use this for static lookups; reset in subclases
     }
 
+    internal class AndroidJavaObjectUnityOwned : AndroidJavaObject
+    {
+        public AndroidJavaObjectUnityOwned(IntPtr jobject) : base(jobject)
+        {
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                throw new Exception("The object is owned by Unity runtime, you shouldn't call Dispose on it.");
+            base.Dispose(disposing);
+        }
+    }
     public class AndroidJavaClass : AndroidJavaObject
     {
         // Construct an AndroidJavaClass from the class name
@@ -1880,21 +1893,21 @@ namespace UnityEngine
             {
                 return "Ljava/lang/Runnable;";
             }
-            else if (type.Equals(typeof(AndroidJavaClass)))
+            else if (obj is AndroidJavaClass || obj == (object)type && AndroidReflection.IsAssignableFrom(typeof(AndroidJavaClass), type))
             {
                 return "Ljava/lang/Class;";
             }
-            else if (type.Equals(typeof(AndroidJavaObject)))
+            else if (obj is AndroidJavaObject)
             {
-                if (obj == (object)type)
-                {
-                    return "Ljava/lang/Object;";
-                }
                 AndroidJavaObject javaObject = (AndroidJavaObject)obj;
                 using (AndroidJavaObject javaClass = javaObject.Call<AndroidJavaObject>("getClass"))
                 {
                     return "L" + javaClass.Call<System.String>("getName") + ";";
                 }
+            }
+            else if (obj == (object)type && AndroidReflection.IsAssignableFrom(typeof(AndroidJavaObject), type))
+            {
+                return "Ljava/lang/Object;";
             }
             else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), type))
             {

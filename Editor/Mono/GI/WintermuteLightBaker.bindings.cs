@@ -10,7 +10,7 @@ namespace UnityEditor.LightBaking
     internal static partial class LightBaker
     {
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern Result PopulateWorldWintermute(BakeInput bakeInput, UnityEngine.LightTransport.BakeProgressState progress,
+        internal static extern Result PopulateWorldWintermute(BakeInput bakeInput, LightmapRequests lightmapRequests, LightProbeRequests lightProbeRequests, UnityEngine.LightTransport.BakeProgressState progress,
             UnityEngine.LightTransport.WintermuteContext context, UnityEngine.LightTransport.IntegrationContext world);
 
         [NativeMethod(IsThreadSafe = true)]

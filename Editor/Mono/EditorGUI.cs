@@ -5639,7 +5639,7 @@ namespace UnityEditor
                         ColorPicker.Show(GUIView.current, value, showAlpha, hdr);
                         GUIUtility.ExitGUI();
                     }
-                    else if (evt.modifiers == EventModifiers.Control)
+                    else if (evt.modifiers == EventModifiers.Control && GUIUtility.keyboardControl == id)
                     {
                         if (evt.keyCode == KeyCode.C)
                         {

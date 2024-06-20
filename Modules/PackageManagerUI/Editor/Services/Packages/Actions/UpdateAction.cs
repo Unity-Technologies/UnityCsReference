@@ -35,7 +35,8 @@ internal class UpdateAction : PackageAction
 
     protected override bool TriggerActionImplementation(IList<IPackage> packages)
     {
-        m_OperationDispatcher.Install(packages.Select(p => p?.versions.GetUpdateTarget(p.versions.primary)));
+        if (!m_OperationDispatcher.Install(packages.Select(p => p?.versions.GetUpdateTarget(p.versions.primary))))
+            return false;
         // The current multi-select UI does not allow users to install non-recommended versions
         // Should this change in the future, we'll need to update the analytics event accordingly.
         PackageManagerWindowAnalytics.SendEvent("installUpdateRecommended", packages.Select(p => p.versions.primary));
@@ -100,7 +101,8 @@ internal class UpdateAction : PackageAction
         }
         else
         {
-            m_OperationDispatcher.Install(targetVersion);
+            if (!m_OperationDispatcher.Install(targetVersion))
+                return false;
 
             var installRecommended = version.package.versions.recommended == targetVersion ? "Recommended" : "NonRecommended";
             var eventName = $"installUpdate{installRecommended}";

@@ -1444,7 +1444,8 @@ namespace UnityEngine.Rendering
         GameCoreXboxSeries = 25, // GameCoreXboxSeries intentionally _NOT_ set to the same as GameCoreScarlett
         PlayStation5 = 26,
         PlayStation5NGGC = 27,
-        WebGPU = 28
+        WebGPU = 28,
+        ReservedCFE = 29,
     }
 
     public enum GraphicsTier

@@ -24,17 +24,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IUpmClient m_UpmClient;
         private IPackageDatabase m_PackageDatabase;
         private IPageManager m_PageManager;
-        private void ResolveDependencies(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager)
+        private IPackageOperationDispatcher m_OperationDispatcher;
+        private void ResolveDependencies(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher)
         {
             m_ResourceLoader = resourceLoader;
             m_UpmClient = upmClient;
             m_PackageDatabase = packageDatabase;
             m_PageManager = packageManager;
+            m_OperationDispatcher = packageOperationDispatcher;
         }
 
-        public AddPackageByNameDropdown(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, EditorWindow anchorWindow)
+        public AddPackageByNameDropdown(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher, EditorWindow anchorWindow)
         {
-            ResolveDependencies(resourceLoader, upmClient, packageDatabase, packageManager);
+            ResolveDependencies(resourceLoader, upmClient, packageDatabase, packageManager, packageOperationDispatcher);
 
             styleSheets.Add(m_ResourceLoader.inputDropdownStyleSheet);
 
@@ -167,7 +169,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void InstallByNameAndVersion(string packageName, string packageVersion = null, string productId = null)
         {
             var packageId = string.IsNullOrEmpty(packageVersion) ? packageName : $"{packageName}@{packageVersion}";
-            m_UpmClient.AddById(packageId);
+
+            if(!m_OperationDispatcher.Install(packageId))
+            {
+                Close();
+                return;
+            }
 
             PackageManagerWindowAnalytics.SendEvent("addByNameAndVersion", packageId);
 

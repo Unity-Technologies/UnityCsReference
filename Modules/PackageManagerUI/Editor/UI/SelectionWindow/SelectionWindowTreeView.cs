@@ -49,7 +49,7 @@ internal class SelectionWindowTreeView : TreeView
 
     private static List<TreeViewItemData<SelectionWindowData.Node>> CreateTreeViewData(SelectionWindowData data, SelectionWindowData.Node parentNode)
     {
-        if (data.nodes?.Any() != true)
+        if (data?.nodes == null || data.nodes.Count == 0)
             return new List<TreeViewItemData<SelectionWindowData.Node>>();
 
         var results = new List<TreeViewItemData<SelectionWindowData.Node>>();

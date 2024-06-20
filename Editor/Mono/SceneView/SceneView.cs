@@ -3533,6 +3533,11 @@ namespace UnityEditor
             m_OrientationGizmo?.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
+        internal void UpdateOrientationGizmos()
+        {
+            m_OrientationGizmo?.UpdateGizmoLabel(this, rotation * Vector3.forward, m_Ortho.target);
+        }
+
         void DefaultHandles()
         {
             // Note event state.

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -60,27 +59,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_LeftContainer = new VisualElement {name = "leftContainer", classList = {"left"}};
             m_MainItem.Add(m_LeftContainer);
 
-            m_DependencyIcon = new Label { name = "dependencyIcon" };
-            m_DependencyIcon.tooltip = "Installed as dependency";
-            m_LeftContainer.Add(m_DependencyIcon);
-
-            m_LockedIcon = new Label { name = "lockedIcon" };
-            m_LeftContainer.Add(m_LockedIcon);
-
-            m_DeprecationIcon = new Label { name = "deprecatedIcon" };
-            m_DeprecationIcon.tooltip = L10n.Tr("Deprecated");
-            m_LeftContainer.Add(m_DeprecationIcon);
-
-            m_ExpanderHidden = new Label {name = "expanderHidden", classList = {"expanderHidden"}};
-            m_LeftContainer.Add(m_ExpanderHidden);
+            m_PackageTypeIcon = new Label { name = "packageTypeIcon" };
+            m_LeftContainer.Add(m_PackageTypeIcon);
 
             m_NameLabel = new Label {name = "packageName", classList = {"name"}};
             if (isFeature)
             {
                 m_MainItem.AddToClassList("feature");
-                m_NumPackagesInFeature = new Label() { name = "numPackages" };
+                m_NumPackagesInFeature = new Label { name = "numPackages" };
 
-                var leftMiddleContainer = new VisualElement() { name = "leftMiddleContainer" };
+                var leftMiddleContainer = new VisualElement { name = "leftMiddleContainer" };
                 leftMiddleContainer.Add(m_NameLabel);
                 leftMiddleContainer.Add(m_NumPackagesInFeature);
                 m_LeftContainer.Add(leftMiddleContainer);
@@ -118,6 +106,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_InfoStateIcon = new VisualElement { name = "versionState" };
                 m_StateContainer.Add(m_InfoStateIcon);
             }
+
+            UIUtils.SetElementDisplay(m_PackageTypeIcon, true);
         }
 
         public void UpdateVisualState(VisualState newVisualState)
@@ -144,7 +134,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_TagLabel.Refresh(package.versions.primary);
 
-            RefreshLeftStateIcons();
             RefreshRightStateIcons();
             RefreshSelection();
             RefreshEntitlement();
@@ -156,32 +145,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             name = package?.displayName ?? package?.uniqueId ?? string.Empty;
         }
 
-        private void RefreshLeftStateIcons()
-        {
-            var showLockIcon = visualState.isLocked;
-            var showDeprecationIcon = package.isDeprecated;
-
-            var targetVersion = this.targetVersion;
-            var showDependencyIcon = targetVersion != null &&
-                                     !showLockIcon &&
-                                     targetVersion.isInstalled &&
-                                     !targetVersion.isDirectDependency &&
-                                     !targetVersion.HasTag(PackageTag.Feature);
-
-            var showExpanderHidden = !showLockIcon && !showDeprecationIcon && !showDependencyIcon;
-
-            UIUtils.SetElementDisplay(m_LockedIcon, showLockIcon);
-            UIUtils.SetElementDisplay(m_DeprecationIcon, showDeprecationIcon);
-            UIUtils.SetElementDisplay(m_DependencyIcon, showDependencyIcon);
-            UIUtils.SetElementDisplay(m_ExpanderHidden, showExpanderHidden);
-        }
-
         public void RefreshRightStateIcons()
         {
             if (RefreshSpinner())
                 return;
 
-            var state = package?.state ?? PackageState.None;
+            var state = GetCurrentPackageState();
             var stateClass = state != PackageState.None ? state.ToString().ToLower() : null;
             if (!string.IsNullOrEmpty(m_CurrentStateClass))
                 m_StateIcon.RemoveFromClassList(m_CurrentStateClass);
@@ -193,6 +162,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (state == PackageState.Installed && package.versions.primary.HasTag(PackageTag.Feature))
                 RefreshFeatureState();
+        }
+
+        private PackageState GetCurrentPackageState()
+        {
+            return package?.state == PackageState.Locked && visualState.userUnlocked
+                ? PackageState.UnlockedByUser
+                : package?.state ?? PackageState.None;
         }
 
         // Returns true if package is in progress and spinner is visible
@@ -293,10 +269,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Label m_EntitlementLabel;
         private Label m_VersionLabel;
         private LoadingSpinner m_Spinner;
-        private Label m_LockedIcon;
-        private Label m_DeprecationIcon;
-        private Label m_DependencyIcon;
-        private Label m_ExpanderHidden;
+        private Label m_PackageTypeIcon;
         private VisualElement m_LeftContainer;
         private VisualElement m_RightContainer;
         private Label m_NumPackagesInFeature;
@@ -305,8 +278,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             "",
             L10n.Tr("This {0} is installed."),
-            // Keep the error message for `installed` and `installedAsDependency` the same for now as requested by the designer
-            L10n.Tr("This {0} is installed."),
+            L10n.Tr("This {0} is installed as a dependency."),
             L10n.Tr("This {0} is available for download."),
             L10n.Tr("This {0} is available for import."),
             L10n.Tr("There are assets in your project that are imported from this {0}."),
@@ -314,7 +286,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("A newer version of this {0} is available."),
             "",
             L10n.Tr("There are errors with this {0}. Read the {0} details for further guidance."),
-            L10n.Tr("There are warnings with this {0}. Read the {0} details for further guidance.")
+            L10n.Tr("There are warnings with this {0}. Read the {0} details for further guidance."),
+            L10n.Tr("This {0} is installed by a feature."),
+            L10n.Tr("This {0} is unlocked. You can now change its version.")
         };
 
         public string GetTooltipByState(PackageState state)

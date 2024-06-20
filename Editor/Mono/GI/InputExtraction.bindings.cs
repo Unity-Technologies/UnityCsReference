@@ -68,7 +68,7 @@ namespace UnityEditor.LightBaking
             }
         }
 
-        public static extern bool ExtractFromScene(string outputFolderPath, LightBaker.BakeInput input, SourceMap map);
+        public static extern bool ExtractFromScene(string outputFolderPath, LightBaker.BakeInput input, LightBaker.LightmapRequests lightmapRequests, LightBaker.LightProbeRequests lightProbeRequests, SourceMap map);
 
         public static extern int[] ComputeOcclusionLightIndicesFromBakeInput(LightBaker.BakeInput bakeInput, UnityEngine.Vector3[] probePositions, uint maxLightsPerProbe);
 
@@ -227,7 +227,7 @@ namespace UnityEditor.LightBaking
             return message;
         }
 
-        public static string LogScene(LightBaker.BakeInput bakeInput, SourceMap map)
+        public static string LogScene(LightBaker.BakeInput bakeInput, LightBaker.LightmapRequests lightmapRequests, LightBaker.LightProbeRequests lightProbeRequests, SourceMap map)
         {
             if (bakeInput is null)
                 return string.Empty;
@@ -259,12 +259,12 @@ namespace UnityEditor.LightBaking
             }
             message += LogSceneCookies(bakeInput);
             message += LogSceneLights(bakeInput);
-            message += $"      lightmap count\t: {bakeInput.lightmapCount}\n";
-            for (int i = 0; i < bakeInput.lightmapCount; ++i)
+            message += $"      lightmap count\t: {lightmapRequests.lightmapCount}\n";
+            for (int i = 0; i < lightmapRequests.lightmapCount; ++i)
             {
                 message += $"         Lightmap [{i}]:\n";
-                message += $"            resolution\t\t: {bakeInput.lightmapResolution((uint)i).width} x {bakeInput.lightmapResolution((uint)i).height}\n";
-                message += $"            instance count\t: {bakeInput.lightmapInstanceCount((uint)i)}\n";
+                message += $"            resolution\t\t: {lightmapRequests.lightmapResolution((uint)i).width} x {lightmapRequests.lightmapResolution((uint)i).height}\n";
+                message += $"            instance count\t: {lightmapRequests.lightmapInstanceCount((uint)i)}\n";
             }
             return message;
         }

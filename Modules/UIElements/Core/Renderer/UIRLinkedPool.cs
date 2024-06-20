@@ -68,7 +68,7 @@ namespace UnityEngine.UIElements.UIR
         public BasicNode<T> next;
         public T data;
 
-        public void AppendTo(ref BasicNode<T> first)
+        public void InsertFirst(ref BasicNode<T> first)
         {
             if (first == null)
             {
@@ -76,11 +76,8 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
-            var current = first;
-            while (current.next != null)
-                current = current.next;
-
-            current.next = this;
+            this.next = first.next;
+            first.next = this;
         }
     }
 

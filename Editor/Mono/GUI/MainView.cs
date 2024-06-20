@@ -8,7 +8,7 @@ namespace UnityEditor
 {
     internal class MainView : View, ICleanuppable
     {
-        internal const float kToolbarHeight = 30;
+        internal const float kToolbarHeight = Toolbar.k_ToolbarHeight;
         internal const float kStatusbarHeight = 20;
 
         private static readonly Vector2 kMinSize = new Vector2(875, 300);

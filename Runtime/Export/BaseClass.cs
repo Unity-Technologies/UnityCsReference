@@ -153,6 +153,7 @@ namespace UnityEngine
         QNXX64 = 48,
         QNXX86 = 49,
         VisionOS = 50,
+        ReservedCFE = 51,
     }
 
     // The language the user's operating system is running in. Returned by Application.systemLanguage.

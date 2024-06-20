@@ -2,11 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEngine;
-using UnityEditor;
-using System.Linq;
 using UnityEditor.Build;
+using UnityEditor.Build.Profile;
+using UnityEngine;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 namespace UnityEditor.Modules
@@ -25,6 +23,24 @@ namespace UnityEditor.Modules
             m_playerSettingsEditor = settingsEditor;
 
             m_MTRendering = playerSettingsEditor.FindPropertyAssert("m_MTRendering");
+        }
+
+        public virtual void ConfigurePlatformProfile(SerializedObject serializedProfile)
+        {
+        }
+
+        public virtual bool CopyProjectSettingsPlayerSettingsToBuildProfile()
+        {
+            return false;
+        }
+
+        public virtual bool IsPlayerSettingsDataEqualToProjectSettings()
+        {
+            return true;
+        }
+
+        public virtual void OnActiveProfileChanged(BuildProfile previous, BuildProfile newProfile)
+        {
         }
 
         public virtual bool HasPublishSection()

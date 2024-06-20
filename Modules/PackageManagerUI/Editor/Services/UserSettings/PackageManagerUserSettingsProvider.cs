@@ -225,7 +225,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (m_ApplicationProxy.isBatchMode || !m_ApplicationProxy.DisplayDialog("abortDownloadBeforeChangeAssetsCacheLocation",
                 L10n.Tr("Changing Assets Cache location"),
-                L10n.Tr("Changing the Assets Cache location will abort all downloads in progress."),
+                L10n.Tr("Changing the Assets Cache location will cancel all downloads in progress."),
                 L10n.Tr("Continue"), L10n.Tr("Cancel")))
                 return false;
 

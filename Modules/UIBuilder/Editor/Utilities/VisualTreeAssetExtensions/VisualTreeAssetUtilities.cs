@@ -178,9 +178,7 @@ namespace Unity.UI.Builder
             else
                 parentHash = vea.parentId;
 
-            var guid = System.Guid.NewGuid().GetHashCode();
-
-            return (vta.GetNextChildSerialNumber() + 585386304) * -1521134295 + parentHash + guid;
+            return vta.GetNextUxmlAssetId(parentHash);
         }
 
         public static VisualElementAsset AddElementToDocument(

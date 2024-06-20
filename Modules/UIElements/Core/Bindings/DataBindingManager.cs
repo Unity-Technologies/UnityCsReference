@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Properties;
 using UnityEngine.Assertions;
 using UnityEngine.Pool;
@@ -452,13 +453,27 @@ namespace UnityEngine.UIElements
             readonly EventHandler<BindablePropertyChangedEventArgs> m_Handler;
             readonly EventCallback<PropertyChangedEvent, VisualElement> m_VisualElementHandler;
 
+            private class ObjectComparer : IEqualityComparer<object>
+            {
+                bool IEqualityComparer<object>.Equals(object x, object y)
+                {
+                    return ReferenceEquals(x, y) || EqualityComparer<object>.Default.Equals(x, y);
+                }
+
+                int IEqualityComparer<object>.GetHashCode(object obj)
+                {
+                    return RuntimeHelpers.GetHashCode(obj);
+                }
+            }
+
             public HierarchyDataSourceTracker(DataBindingManager manager)
             {
                 m_DataBindingManager = manager;
                 m_ResolvedHierarchicalDataSourceContext = new Dictionary<VisualElement, DataSourceContext>();
                 m_BindingRefCount = new Dictionary<Binding, int>();
-                m_SourceInfos = new Dictionary<object, SourceInfo>();
-                m_SourcesToRemove = new HashSet<object>();
+                var dataSourceComparer = new ObjectComparer();
+                m_SourceInfos = new Dictionary<object, SourceInfo>(dataSourceComparer);
+                m_SourcesToRemove = new HashSet<object>(dataSourceComparer);
 
                 m_InvalidateResolvedDataSources = new InvalidateDataSourcesTraversal(this);
                 m_Handler = TrackPropertyChanges;

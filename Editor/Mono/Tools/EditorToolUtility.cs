@@ -145,6 +145,14 @@ namespace UnityEditor.EditorTools
                             EditorToolManager.activeToolContext = EditorToolManager.GetSingleton<GameObjectToolContext>();
                             return (EditorTool)EditorToolManager.GetSingleton(EditorToolManager.activeToolContext.ResolveTool(type));
                         }
+                        else if (!instance.IsAvailable())
+                        {
+                            Debug.LogError($"{context} resolved Tool.{type} to a Component tool of type `{resolved}`, but " +
+                                           $"the matching component tool is not Available with the active selection. The active tool " +
+                                           $"context will be set to the default.");
+                            EditorToolManager.activeToolContext = EditorToolManager.GetSingleton<GameObjectToolContext>();
+                            return (EditorTool)EditorToolManager.GetSingleton(EditorToolManager.activeToolContext.ResolveTool(type));
+                        }
 
                         return instance;
                     }

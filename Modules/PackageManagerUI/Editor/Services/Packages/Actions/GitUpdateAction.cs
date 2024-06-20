@@ -22,7 +22,10 @@ internal class GitUpdateAction : PackageAction
     {
         var installedVersion = version.package.versions.installed;
         var packageInfo = m_UpmCache.GetBestMatchPackageInfo(installedVersion.name, true);
-        m_OperationDispatcher.Install(packageInfo.packageId);
+
+        if (!m_OperationDispatcher.Install(packageInfo.packageId))
+            return false;
+
         PackageManagerWindowAnalytics.SendEvent("updateGit", installedVersion.uniqueId);
         return true;
     }

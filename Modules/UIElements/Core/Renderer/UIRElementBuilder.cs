@@ -185,25 +185,30 @@ namespace UnityEngine.UIElements.UIR
                 float sliceScale = ve.resolvedStyle.unitySliceScale;
                 var playModeTintColor = ve.playModeTintColor;
 
+                ScaleMode scaleMode = BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(style.backgroundPositionX,
+                    style.backgroundPositionY,
+                    style.backgroundRepeat,
+                    style.backgroundSize,
+                    out bool validScaleMode);
+
                 if (background.texture != null)
                 {
+                    bool areSlicesPresent = (Mathf.RoundToInt(slices.x) != 0) ||
+                        (Mathf.RoundToInt(slices.y) != 0) ||
+                        (Mathf.RoundToInt(slices.z) != 0) ||
+                        (Mathf.RoundToInt(slices.w) != 0);
+
                     rectParams = MeshGenerator.RectangleParams.MakeTextured(
                         ve.rect,
                         new Rect(0, 0, 1, 1),
                         background.texture,
-                        ScaleMode.ScaleToFit,
+                        areSlicesPresent ? (validScaleMode ? scaleMode : ScaleMode.StretchToFill) : ScaleMode.ScaleToFit,
                         playModeTintColor);
 
                     rectParams.rect = new Rect(0, 0, rectParams.texture.width, rectParams.texture.height);
                 }
                 else if (background.sprite != null)
                 {
-                    ScaleMode scaleMode = BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(style.backgroundPositionX,
-                        style.backgroundPositionY,
-                        style.backgroundRepeat,
-                        style.backgroundSize,
-                        out bool validScaleMode);
-
                     bool useRepeat = !validScaleMode || (scaleMode == ScaleMode.ScaleAndCrop);
 
                     rectParams = MeshGenerator.RectangleParams.MakeSprite(
@@ -237,11 +242,6 @@ namespace UnityEngine.UIElements.UIR
                 }
                 else if (background.vectorImage != null)
                 {
-                    ScaleMode scaleMode = BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(style.backgroundPositionX,
-                        style.backgroundPositionY,
-                        style.backgroundRepeat,
-                        style.backgroundSize,
-                        out bool validScaleMode);
 
                     bool useRepeat = !validScaleMode || (scaleMode == ScaleMode.ScaleAndCrop);
 
@@ -266,24 +266,39 @@ namespace UnityEngine.UIElements.UIR
                     rectParams.topSlice = Mathf.RoundToInt(slices.y);
                     rectParams.rightSlice = Mathf.RoundToInt(slices.z);
                     rectParams.bottomSlice = Mathf.RoundToInt(slices.w);
-
                     rectParams.sliceScale = sliceScale;
+
+                    // Make sure we are using a valid scale mode otherwise default to StretchtoFill
+                    if (!validScaleMode)
+                    {
+                        rectParams.backgroundPositionX = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.StretchToFill);
+                        rectParams.backgroundPositionY = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.StretchToFill);
+                        rectParams.backgroundRepeat = BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(ScaleMode.StretchToFill);
+                        rectParams.backgroundSize = BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(ScaleMode.StretchToFill);
+                    }
+                    else
+                    {
+                        rectParams.backgroundPositionX = style.backgroundPositionX;
+                        rectParams.backgroundPositionY = style.backgroundPositionY;
+                        rectParams.backgroundRepeat = style.backgroundRepeat;
+                        rectParams.backgroundSize = style.backgroundSize;
+                    }
                 }
+                else
+                {
+                    rectParams.backgroundPositionX = style.backgroundPositionX;
+                    rectParams.backgroundPositionY = style.backgroundPositionY;
+                    rectParams.backgroundRepeat = style.backgroundRepeat;
+                    rectParams.backgroundSize = style.backgroundSize;
+                }
+
 
                 rectParams.color = style.unityBackgroundImageTintColor;
                 rectParams.colorPage = ColorPage.Init(m_RenderChain, ve.renderChainData.tintColorID);
-                rectParams.backgroundPositionX = style.backgroundPositionX;
-                rectParams.backgroundPositionY = style.backgroundPositionY;
-                rectParams.backgroundRepeat = style.backgroundRepeat;
-                rectParams.backgroundSize = style.backgroundSize;
 
                 MeshGenerator.AdjustBackgroundSizeForBorders(ve, ref rectParams);
 
-                if (rectParams.texture != null)
-                {
-                    mgc.meshGenerator.DrawRectangleRepeat(rectParams, ve.rect, ve.scaledPixelsPerPoint);
-                }
-                else if (rectParams.vectorImage != null)
+                if (rectParams.texture != null || rectParams.vectorImage != null)
                 {
                     mgc.meshGenerator.DrawRectangleRepeat(rectParams, ve.rect, ve.scaledPixelsPerPoint);
                 }

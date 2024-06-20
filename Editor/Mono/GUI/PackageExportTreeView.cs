@@ -31,13 +31,16 @@ namespace UnityEditor
 
         public ExportPackageItem[] items { get { return m_PackageExport.items; } }
 
+        public bool isAllItemsEnabled { get; private set; }
+        public bool isAnyItemEnabled { get; private set; }
+
         public PackageExportTreeView(PackageExport packageExport, TreeViewState treeViewState, Rect startRect)
         {
             m_PackageExport = packageExport;
 
-            m_TreeView     = new TreeViewController(m_PackageExport, treeViewState);
+            m_TreeView = new TreeViewController(m_PackageExport, treeViewState);
             var dataSource = new PackageExportTreeViewDataSource(m_TreeView, this);
-            var gui        = new PackageExportTreeViewGUI(m_TreeView, this);
+            var gui = new PackageExportTreeViewGUI(m_TreeView, this);
 
             m_TreeView.Init(startRect, dataSource, gui, null);
             m_TreeView.ReloadData();
@@ -45,6 +48,8 @@ namespace UnityEditor
             gui.itemWasToggled += ItemWasToggled;
 
             ComputeEnabledStateForFolders();
+
+            RefreshEnabledProperties();
         }
 
         void ComputeEnabledStateForFolders()
@@ -162,6 +167,7 @@ namespace UnityEditor
         {
             EnableChildrenRecursive(m_TreeView.data.root, enabled);
             ComputeEnabledStateForFolders();
+            RefreshEnabledProperties();
         }
 
         void ItemWasToggled(PackageExportTreeViewItem pitem)
@@ -177,6 +183,7 @@ namespace UnityEditor
             }
 
             ComputeEnabledStateForFolders();
+            RefreshEnabledProperties();
         }
 
         void EnableChildrenRecursive(TreeViewItem parentItem, EnabledState enabled)
@@ -190,6 +197,13 @@ namespace UnityEditor
                 pitem.enabledState = enabled;
                 EnableChildrenRecursive(pitem, enabled);
             }
+        }
+
+        private void RefreshEnabledProperties()
+        {
+            isAllItemsEnabled = !m_TreeView.data.root.Exists(item => ((PackageExportTreeViewItem)item).enabledState != EnabledState.All);
+            isAnyItemEnabled = m_TreeView.data.root.Exists(item => ((PackageExportTreeViewItem)item).enabledState == EnabledState.All ||
+                                                                       ((PackageExportTreeViewItem)item).enabledState == EnabledState.Mixed);
         }
 
         // Item
@@ -223,7 +237,7 @@ namespace UnityEditor
         {
             internal static class Constants
             {
-                public static Texture2D folderIcon   = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
+                public static Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
             }
 
             public Action<PackageExportTreeViewItem> itemWasToggled;
@@ -283,7 +297,7 @@ namespace UnityEditor
                 if (setMixed)
                     style = EditorStyles.toggleMixed;
 
-                bool newEnabled =  GUI.Toggle(toggleRect, enabled, GUIContent.none, style);
+                bool newEnabled = GUI.Toggle(toggleRect, enabled, GUIContent.none, style);
                 if (newEnabled != enabled)
                     pitem.enabledState = newEnabled ? EnabledState.All : EnabledState.None;
             }
@@ -321,7 +335,7 @@ namespace UnityEditor
             protected override Texture GetIconForItem(TreeViewItem tItem)
             {
                 var pItem = tItem as PackageExportTreeViewItem;
-                var item  = pItem.item;
+                var item = pItem.item;
 
                 // Undefined items are always folders.
                 if (item == null || item.isFolder)
@@ -391,7 +405,7 @@ namespace UnityEditor
                     if (PackageImport.HasInvalidCharInFilePath(item.assetPath))
                         continue; // Do not add invalid paths (we already warn the user with a dialog in PackageImport.cs)
 
-                    string filename   = Path.GetFileName(item.assetPath).ConvertSeparatorsToUnity();
+                    string filename = Path.GetFileName(item.assetPath).ConvertSeparatorsToUnity();
                     string folderPath = Path.GetDirectoryName(item.assetPath).ConvertSeparatorsToUnity();
 
                     // Ensure folders. This is for when installed packages have been moved to other folders.

@@ -69,7 +69,7 @@ namespace UnityEditor
                     cleanPath);
                 var obj = AssetDatabase.LoadMainAssetAtPath(cleanPath);
                 var name = obj.name;
-                ObjectFactory.SmartResetObjectToDefault(obj);
+                ObjectFactory.FinalizeObjectAndAwake(obj);
                 obj.name = name;
                 AssetDatabase.SaveAssetIfDirty(obj);
                 ProjectWindowUtil.FrameObjectInProjectWindow(instanceId);
@@ -442,6 +442,11 @@ namespace UnityEditor
                 CreatePrefabVariants(gameObjects);
             }
         }
+
+        [MenuItem("Assets/Create/Prefab Variant", true)]
+        static bool CreatePrefabVariantShortcutValidation() => CreatePrefabVariantValidation();
+        [MenuItem("Assets/Create/Prefab Variant", false, -215)]
+        static void CreatePrefabVariantShortcut() => CreatePrefabVariant();
 
         static GameObject[] CreatePrefabVariants(GameObject[] gameObjects)
         {

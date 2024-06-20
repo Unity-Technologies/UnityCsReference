@@ -4,7 +4,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using UnityEngine.Internal;
+using UnityEngine.Pool;
 
 namespace UnityEngine
 {
@@ -20,13 +22,14 @@ namespace UnityEngine
             }
             private class StateMachineBox<TStateMachine> : IStateMachineBox where TStateMachine : IAsyncStateMachine
             {
-                static ThreadSafeObjectPool<StateMachineBox<TStateMachine>> _pool = new(() => new());
-                public static StateMachineBox<TStateMachine> GetOne() { return _pool.Get(); }
+                static readonly ThreadLocal<ObjectPool<StateMachineBox<TStateMachine>>> _pool =
+                    new(() => new ObjectPool<StateMachineBox<TStateMachine>>(() => new(), collectionCheck: false));
+                public static StateMachineBox<TStateMachine> GetOne() { return _pool.Value.Get(); }
                 public void Dispose()
                 {
                     StateMachine = default;
                     ResultingCoroutine = null;
-                    _pool.Release(this);
+                    _pool.Value.Release(this);
                 }
                 public TStateMachine StateMachine { get; set; }
 

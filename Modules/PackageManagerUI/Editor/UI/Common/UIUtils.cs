@@ -27,6 +27,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             return element?.resolvedStyle.visibility == Visibility.Visible && element.resolvedStyle.display != DisplayStyle.None;
         }
 
+        public static void AppendAction(this GenericDropdownMenu menu, string itemName, bool enabled, Action<object> action, string tooltip = null, bool isChecked = false)
+        {
+            if (enabled)
+                menu.AddItem(itemName, isChecked, action, null);
+            else
+                menu.AddDisabledItem(itemName, isChecked);
+            if (string.IsNullOrEmpty(tooltip))
+                return;
+            var lastItem = menu.items.LastOrDefault(x => x.name == itemName);
+            if (lastItem != null)
+                lastItem.element.tooltip = tooltip;
+        }
+
         public static VisualElement FindNextSibling(VisualElement element, bool reverseOrder, Func<VisualElement, bool> matchFunc = null)
         {
             if (element == null)

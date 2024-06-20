@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,7 +17,7 @@ namespace UnityEditor.IMGUI.Controls
         string m_DisplayName;
         Texture2D m_Icon;
 
-        public TreeViewItem() {}
+        public TreeViewItem() { }
 
         public TreeViewItem(int id)
         {
@@ -44,7 +45,7 @@ namespace UnityEditor.IMGUI.Controls
             m_DisplayName = displayName;
         }
 
-        public virtual int id { get { return m_ID; } set { m_ID = value; }}
+        public virtual int id { get { return m_ID; } set { m_ID = value; } }
         public virtual string displayName { get { return m_DisplayName; } set { m_DisplayName = value; } }
         public virtual int depth { get { return m_Depth; } set { m_Depth = value; } }
         public virtual bool hasChildren { get { return m_Children != null && m_Children.Count > 0; } }
@@ -71,6 +72,22 @@ namespace UnityEditor.IMGUI.Controls
         public override string ToString()
         {
             return UnityString.Format("Item: '{0}' ({1}), has {2} children, depth {3}, parent id {4}", displayName, id, hasChildren ? children.Count : 0, depth, (parent != null) ? parent.id : -1);
+        }
+    }
+
+    internal static class TreeViewItemExtension
+    {
+        internal static bool Exists(this TreeViewItem parentItem, Func<TreeViewItem, bool> condition)
+        {
+            foreach (TreeViewItem tvitem in parentItem.hasChildren ? parentItem.children : new List<TreeViewItem>())
+            {
+                if (condition(tvitem))
+                    return true;
+
+                if (tvitem.Exists(condition))
+                    return true;
+            }
+            return false;
         }
     }
 
