@@ -45,6 +45,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal void ResetValueAndText();
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void SaveValueAndText();
 
         internal void RestoreValueAndText();

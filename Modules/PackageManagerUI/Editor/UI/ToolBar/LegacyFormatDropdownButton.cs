@@ -10,14 +10,15 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
-internal class LegacyFormatDropdownButton : PackageToolBarButton
+internal class LegacyFormatDropdownButton : BaseDropdownButton<GenericDropdownMenu>, IPackageToolBarButton
 {
     private static readonly string k_InProjectText = L10n.Tr("In Project");
 
-    private readonly DropdownButton m_DropdownButton;
+    protected override int numDropdownItems => menu?.items.Count ?? 0;
+    protected override void ShowDropdown() => menu?.DropDown(worldBound, this, true, true);
 
     private readonly IList<PackageAction> m_Actions;
-    public override event Action onActionTriggered
+    public event Action onActionTriggered
     {
         add
         {
@@ -30,6 +31,8 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
                 action.onActionTriggered -= value;
         }
     }
+
+    public VisualElement element => this;
 
     public LegacyFormatDropdownButton(IPackageOperationDispatcher operationDispatcher,
         IAssetStoreDownloadManager assetStoreDownloadManager,
@@ -51,11 +54,9 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
         };
 
         name = "legacyFormatDropdownButton";
-        m_DropdownButton = new DropdownButton();
-        Add(m_DropdownButton);
     }
 
-    public override void Refresh(IPackageVersion version)
+    public void Refresh(IPackageVersion version)
     {
         // We do this early return for performance reasons. This avoids doing expensive calls to GetActionState for multiple actions.
         if (version?.HasTag(PackageTag.LegacyFormat) != true)
@@ -71,17 +72,17 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
             return;
         }
         UIUtils.SetElementDisplay(this, true);
-        m_DropdownButton.ClearClickedEvents();
+        ClearClickedEvents();
 
         var mainActionIndex = FindMainActionIndex(visibleItems, true);
         if (mainActionIndex == -1)
         {
             if (version.importedAssets?.Any() == true)
             {
-                m_DropdownButton.SetIcon(Icon.Installed);
-                m_DropdownButton.text = k_InProjectText;
-                m_DropdownButton.mainButton.tooltip = string.Empty;
-                m_DropdownButton.mainButton.SetEnabled(true);
+                SetIcon(Icon.Installed);
+                text = k_InProjectText;
+                mainButton.tooltip = string.Empty;
+                mainButton.SetEnabled(true);
             }
             else
                 // It is not possible that FindMainActionIndex returns -1 for both when isRecommended is true and false, so we can know for sure that
@@ -92,28 +93,26 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
         if (mainActionIndex != -1)
         {
             var mainItem = visibleItems[mainActionIndex];
-            m_DropdownButton.clicked += () => mainItem.action.TriggerAction(version);
-            m_DropdownButton.text = mainItem.text;
-            m_DropdownButton.SetIcon(mainItem.action.icon);
-            m_DropdownButton.mainButton.tooltip = mainItem.tooltip;
-            m_DropdownButton.mainButton.SetEnabled((mainItem.state & PackageActionState.Disabled) == PackageActionState.None);
+            clicked += () => mainItem.action.TriggerAction(version);
+            text = mainItem.text;
+            SetIcon(mainItem.action.icon);
+            mainButton.tooltip = mainItem.tooltip;
+            mainButton.SetEnabled((mainItem.state & PackageActionState.Disabled) == PackageActionState.None);
         }
 
         // We need to create a new DropdownMenu every time instead of using the "Hidden" status of DropdownMenuAction,
         // because there's no API to change the DropdownMenuAction class after creating it.
-        var dropdownMenu = new DropdownMenu();
+        var dropdownMenu = new GenericDropdownMenu();
         for (var i = 0; i < visibleItems.Count; ++i)
         {
             if (i == mainActionIndex)
                 continue;
 
             var item = visibleItems[i];
-            dropdownMenu.AppendAction(item.text, _ => item.action.TriggerAction(version), a =>
-            {
-                return (item.state & PackageActionState.Disabled) == PackageActionState.None ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
-            });
+            var itemEnabled = (item.state & PackageActionState.Disabled) == PackageActionState.None;
+            dropdownMenu.AppendAction(item.text, itemEnabled, _ => item.action.TriggerAction(version), tooltip: item.tooltip);
         }
-        m_DropdownButton.menu = dropdownMenu;
+        menu = dropdownMenu;
     }
 
     private List<(PackageAction action, string text, string tooltip, PackageActionState state)> FindVisibleActions(IPackageVersion version)
@@ -140,7 +139,7 @@ internal class LegacyFormatDropdownButton : PackageToolBarButton
     }
 
     [ExcludeFromCodeCoverage]
-    public override void Refresh(IEnumerable<IPackage> packages)
+    public void Refresh(IEnumerable<IPackage> packages)
     {
         // Do nothing since this button is not available for multi-select
     }

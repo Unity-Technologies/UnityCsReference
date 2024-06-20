@@ -18,7 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public PackageAction action { get; }
 
         private Toggle m_Toggle;
-        private PackageToolBarButton m_Button;
+        private IPackageToolBarButton m_Button;
         private VisualElement m_Container;
 
         public MultiSelectFoldout(PackageAction action = null)
@@ -36,7 +36,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             m_Button = new PackageToolBarSimpleButton(action);
-            m_Toggle.Add(m_Button);
+            m_Toggle.Add(m_Button.element);
         }
 
         public virtual void Refresh()

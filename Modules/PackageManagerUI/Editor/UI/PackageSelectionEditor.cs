@@ -153,8 +153,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var dependenciesTitleText = EditorGUIUtility.TrTextContent(
                 m_Version.HasTag(PackageTag.Feature) ? "Packages included" : "Dependencies");
             GUILayout.Label(dependenciesTitleText, EditorStyles.boldLabel);
-            m_List.DoLayoutList();
 
+            GUI.enabled = IsPackageEditable();
+            m_List.DoLayoutList();
             GUI.enabled = previousEnabled;
         }
 
@@ -255,6 +256,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             rect.width = w / 3 - 4;
             EditorGUI.SelectableLabel(rect, versionString);
         }
+        
+        private bool IsPackageEditable()
+        {
+            if (m_Version == null || !m_Version.HasTag(PackageTag.Custom))
+                return false;
+
+            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString);
+            var manifest = m_AssetDatabase.LoadAssetAtPath<PackageManifest>($"{packageInfo.assetPath}/package.json");
+
+            return m_Selection.activeObject == manifest;
+        }
 
         private void DoPackageInformationLayout()
         {
@@ -276,7 +288,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                     contents.Add(m_Version.version.ToString());
                 contents.Add(m_Version.category);
 
+                var previousEnabled = GUI.enabled;
+                GUI.enabled = IsPackageEditable();
+
                 SelectableLabelFields(labels, contents);
+
+                GUI.enabled = previousEnabled;
             }
         }
 

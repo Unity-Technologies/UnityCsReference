@@ -575,6 +575,13 @@ namespace Unity.UI.Builder
 
         protected void GenerateSerializedAttributeFields(UxmlSerializedDataDescription dataDescription, UxmlAssetSerializedDataRoot parent)
         {
+            // We need to show a BindableElement if there are no attributes, just add a label. (UUM-71735)
+            if (dataDescription.serializedAttributes.Count == 0)
+            {
+                parent.Add(new Label(dataDescription.uxmlName) { tooltip = dataDescription.uxmlFullName });
+                return;
+            }
+
             foreach (var desc in dataDescription.serializedAttributes)
             {
                 var propertyPath = $"{parent.rootPath}.{desc.serializedField.Name}";

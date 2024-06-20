@@ -511,8 +511,7 @@ namespace UnityEditor
                         if (!view.in2DMode && !view.isRotationLocked)
                         {
                             OrbitCameraBehavior(view);
-                            // todo gizmo update label
-                            // view.m_OrientationGizmo.UpdateGizmoLabel(view, view.rotation * Vector3.forward, view.m_Ortho.target);
+                            view.UpdateOrientationGizmos();
                         }
                     }
                     break;
@@ -546,8 +545,7 @@ namespace UnityEditor
                                 OrbitCameraBehavior(view);
                             }
 
-                            // todo gizmo update label
-                            // view.m_OrientationGizmo.UpdateGizmoLabel(view, view.rotation * Vector3.forward, view.m_Ortho.target);
+                            view.UpdateOrientationGizmos();
                         }
                     }
                     break;
@@ -652,7 +650,7 @@ namespace UnityEditor
                 if ((evt.modifiers & EventModifiers.Shift) != 0 &&
                     (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.WindowsEditor))
                     scrollDelta = Event.current.delta.x;
-                
+
                 float scrollWheelDelta = scrollDelta * m_FPSScrollWheelMultiplier;
                 view.cameraSettings.speedNormalized -= scrollWheelDelta;
                 float cameraSettingsSpeed = view.cameraSettings.speed;

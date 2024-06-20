@@ -782,12 +782,12 @@ namespace UnityEngine.UIElements.UIR
             ve.renderChainData.flags &= ~RenderDataFlags.HasExtraData;
         }
 
-        public void AppendExtraMesh(VisualElement ve, MeshHandle mesh)
+        public void InsertExtraMesh(VisualElement ve, MeshHandle mesh)
         {
             ExtraRenderChainVEData extraData = GetOrAddExtraData(ve);
             var newNode = m_MeshHandleNodePool.Get();
             newNode.data = mesh;
-            newNode.AppendTo(ref extraData.extraMesh);
+            newNode.InsertFirst(ref extraData.extraMesh);
             ve.renderChainData.flags |= RenderDataFlags.HasExtraMeshes;
         }
 
@@ -814,13 +814,13 @@ namespace UnityEngine.UIElements.UIR
             ve.renderChainData.flags &= ~RenderDataFlags.HasExtraMeshes;
         }
 
-        public void AppendTexture(VisualElement ve, Texture src, TextureId id, bool isAtlas)
+        public void InsertTexture(VisualElement ve, Texture src, TextureId id, bool isAtlas)
         {
             BasicNode<TextureEntry> node = m_TexturePool.Get();
             node.data.source = src;
             node.data.actual = id;
             node.data.replaced = isAtlas;
-            node.AppendTo(ref ve.renderChainData.textures);
+            node.InsertFirst(ref ve.renderChainData.textures);
         }
 
         public void ResetTextures(VisualElement ve)

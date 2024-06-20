@@ -346,15 +346,17 @@ namespace UnityEditor
 
         // This event is fired when BakeInput has been populated, but before passing it to Bake().
         // Do not store and access BakeInput beyond the call-back.
-        internal static event Action<LightBaker.BakeInput, InputExtraction.SourceMap> createdBakeInput;
+        internal static event Action<LightBaker.BakeInput, LightBaker.LightmapRequests, LightBaker.LightProbeRequests, InputExtraction.SourceMap> createdBakeInput;
 
-        internal static void Internal_CallOnCreatedBakeInput(IntPtr p_BakeInput, IntPtr p_SourceMap)
+        internal static void Internal_CallOnCreatedBakeInput(IntPtr p_BakeInput, IntPtr p_LightmapRequests, IntPtr LightProbeRequests, IntPtr p_SourceMap)
         {
             if (createdBakeInput != null)
             {
                 using var bakeInput = new LightBaker.BakeInput(p_BakeInput);
+                using var lightmapRequests = new LightBaker.LightmapRequests(p_LightmapRequests);
+                using var lightProbeRequests = new LightBaker.LightProbeRequests(LightProbeRequests);
                 using var sourceMap = new InputExtraction.SourceMap(p_SourceMap);
-                createdBakeInput(bakeInput, sourceMap);
+                createdBakeInput(bakeInput, lightmapRequests, lightProbeRequests, sourceMap);
             }
         }
 

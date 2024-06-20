@@ -17,7 +17,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public PackageAction action { get; }
 
         private IPackageVersion m_Version;
-        private readonly PackageToolBarButton m_Button;
+        private readonly IPackageToolBarButton m_Button;
         private readonly IPackageDatabase m_PackageDatabase;
         private readonly IPackageOperationDispatcher m_OperationDispatcher;
         private readonly IUpmCache m_UpmCache;
@@ -67,7 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (action != null)
             {
                 m_Button = new PackageToolBarSimpleButton(action);
-                versionHistoryItemToggleRightContainer.Add(m_Button);
+                versionHistoryItemToggleRightContainer.Add(m_Button.element);
             }
             Refresh(multipleVersionsVisible, isLatestVersion);
         }

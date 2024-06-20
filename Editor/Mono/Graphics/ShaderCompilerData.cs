@@ -86,6 +86,7 @@ namespace UnityEditor.Rendering
         [System.Obsolete(@"GameCore  is deprecated, please use GameCoreXboxOne (UnityUpgradable) -> GameCoreXboxOne ", true)]
         GameCore = 25, // Game Core deprecated as single platform
         WebGPU          = 26, // WebGPU
+        ReservedCFE     = 27,
     }
 
     public enum ShaderCompilerMessageSeverity

@@ -352,6 +352,50 @@ namespace UnityEditor
         }
 
         /// <summary>
+        /// Use this container and helper class when implementing lock behaviour on a window when also using an <see cref="ActiveEditorTracker"/>.
+        /// </summary>
+        [Serializable]
+        internal class EditorLockTrackerWithActiveEditorTracker : EditorLockTracker
+        {
+            internal override bool isLocked
+            {
+                get
+                {
+                    if (m_Tracker != null)
+                    {
+                        base.isLocked = m_Tracker.isLocked;
+                        return m_Tracker.isLocked;
+                    }
+                    return base.isLocked;
+                }
+                set
+                {
+                    if (m_Tracker != null)
+                    {
+                        m_Tracker.isLocked = value;
+                    }
+                    base.isLocked = value;
+                }
+            }
+
+            [SerializeField, HideInInspector]
+            ActiveEditorTracker m_Tracker;
+
+            internal ActiveEditorTracker tracker
+            {
+                get { return m_Tracker; }
+                set
+                {
+                    m_Tracker = value;
+                    if (m_Tracker != null)
+                    {
+                        isLocked = m_Tracker.isLocked;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Use this container and helper class when implementing lock behaviour on a window.
         /// </summary>
         [Serializable]

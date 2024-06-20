@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Reflection;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static UnityEngine.EnumDataUtility;
 
 namespace UnityEditor
 {
@@ -518,6 +520,137 @@ namespace UnityEditor
             }
 
             return new Label(s_InvalidTypeMessage);
+        }
+    }
+
+    [CustomPropertyDrawer(typeof(EnumButtonsAttribute))]
+    internal sealed class EnumButtonsDrawer : PropertyDrawer
+    {
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            var toggleButtonGroup = new ToggleButtonGroup
+            {
+                label = property.localizedDisplayName,
+                tooltip = property.tooltip
+            };
+
+            var fieldInfo = ScriptAttributeUtility.GetFieldInfoFromProperty(property, out var enumType);
+            if (enumType == null)
+                return null;
+
+            var toggleButtonsAttribute = fieldInfo.GetCustomAttribute<EnumButtonsAttribute>(false);
+            var cachedType = toggleButtonsAttribute?.includeObsolete == true ? CachedType.IncludeAllObsolete : CachedType.ExcludeObsolete;
+            var enumData = EnumDataUtility.GetCachedEnumData(enumType, cachedType);
+
+            toggleButtonGroup.isMultipleSelection = enumData.flags;
+            toggleButtonGroup.allowEmptySelection = enumData.flags;
+            toggleButtonGroup.label = property.localizedDisplayName;
+            toggleButtonGroup.tooltip = property.tooltip;
+            toggleButtonGroup.AddToClassList(ToggleButtonGroup.alignedFieldUssClassName);
+
+            // Create buttons
+            for (int i = 0; i < enumData.values.Length; ++i)
+            {
+                var button = new Button { text = enumData.displayNames[i], name = enumData.names[i], tooltip = enumData.tooltip[i] };
+                toggleButtonGroup.Add(button);
+            }
+
+            toggleButtonGroup.RegisterValueChangedCallback(evt =>
+            {
+                SyncFieldChangeToProperty(evt, enumData, toggleButtonGroup, property);
+            });
+
+            toggleButtonGroup.TrackPropertyValue(property, p =>
+            {
+                SyncPropertyToField(p, enumData, toggleButtonGroup);
+            });
+
+            SyncPropertyToField(property, enumData, toggleButtonGroup);
+            return toggleButtonGroup;
+        }
+
+        static void SyncFieldChangeToProperty(ChangeEvent<ToggleButtonGroupState> evt, in EnumData enumData, ToggleButtonGroup toggleButtonGroup, SerializedProperty property)
+        {
+            // Calculate the new value by checking what buttons have changed.
+            // When the value has multiple different values, we calculate from 0.
+            var value = property.hasMultipleDifferentValues ? 0 : property.intValue;
+            if (enumData.flags)
+            {
+                for (int i = 0; i < enumData.values.Length; i++)
+                {
+                    // The button state didn't change, so skip it
+                    if (evt.previousValue[i] == evt.newValue[i])
+                        continue;
+
+                    // It was toggled on, enable the bits
+                    if (evt.newValue[i])
+                    {
+                        // Special handling for 0 which is usually a None flag.
+                        if (enumData.flagValues[i] == 0)
+                        {
+                            value = 0;
+                            break;
+                        }
+                        else
+                        {
+                            value |= enumData.flagValues[i];
+                        }
+                    }
+                    else // It was toggled off, disable the bits
+                    {
+                        value &= ~enumData.flagValues[i];
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < enumData.values.Length; i++)
+                {
+                    if (evt.newValue[i])
+                    {
+                        value = enumData.flagValues[i];
+                        break;
+                    }
+                }
+            }
+
+            property.intValue = value;
+            property.serializedObject.ApplyModifiedProperties();
+            SyncPropertyToField(property, enumData, toggleButtonGroup);
+        }
+
+        static void SyncPropertyToField(SerializedProperty property, in EnumData enumData, ToggleButtonGroup toggleButtonGroup)
+        {
+            // EnumData limits us to ints.
+            var state = new ToggleButtonGroupState(0, 32);
+
+            // We leave the state at 0 when we have mixed values
+            if (!property.hasMultipleDifferentValues)
+            {
+                var value = property.intValue;
+
+                if (enumData.flags)
+                {
+                    for (int i = 0; i < enumData.values.Length; i++)
+                    {
+                        // Special handling for 0 which is usually a None flag.
+                        if (enumData.flagValues[i] == 0)
+                            state[i] = value == 0;
+                        else
+                            state[i] = (enumData.flagValues[i] & value) == enumData.flagValues[i];
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < enumData.values.Length; i++)
+                    {
+                        state[i] = value == enumData.flagValues[i];
+                    }
+                }
+            }
+
+            toggleButtonGroup.SetValueWithoutNotify(state);
+            toggleButtonGroup.showMixedValue = property.hasMultipleDifferentValues;
         }
     }
 }

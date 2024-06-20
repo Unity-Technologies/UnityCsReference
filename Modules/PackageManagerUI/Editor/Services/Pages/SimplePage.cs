@@ -115,8 +115,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool GetDefaultLockState(IPackage package)
         {
-            return package.versions.installed?.isDirectDependency != true &&
-                m_PackageDatabase.GetFeaturesThatUseThisPackage(package.versions.installed)?.Any() == true;
+            return package.isLocked;
         }
 
         // All the following load functions do nothing, because for a SimplePage we already know the complete list and there's no more to load

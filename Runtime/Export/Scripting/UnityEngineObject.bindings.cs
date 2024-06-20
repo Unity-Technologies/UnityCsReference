@@ -201,7 +201,7 @@ namespace UnityEngine
         {
             unsafe
             {
-                return InstantiateAsync(original, 1, null, new ReadOnlySpan<Vector3>(&position, 1), new ReadOnlySpan<Quaternion>(&rotation, 1));
+                return InstantiateAsync(original, 1, parent, new ReadOnlySpan<Vector3>(&position, 1), new ReadOnlySpan<Quaternion>(&rotation, 1));
             }
         }
 

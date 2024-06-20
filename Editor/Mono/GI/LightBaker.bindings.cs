@@ -148,6 +148,7 @@ namespace UnityEditor.LightBaking
             public uint lightmapCount;
             public TilingMode tilingMode;
             public string outputFolderPath;
+            public float pushoff;
         };
         public struct Resolution
         {
@@ -438,10 +439,6 @@ namespace UnityEditor.LightBaking
                 Internal_SetLightingSettings(lightingSettings);
             }
 
-            extern uint Internal_LightmapWidth(uint index);
-            extern uint Internal_LightmapHeight(uint index);
-            extern uint Internal_InstanceCount(uint lightmapIndex);
-
             public extern uint instanceCount { get; }
             extern Instance Internal_Instance(uint index);
             public Instance instance(uint index)
@@ -467,13 +464,6 @@ namespace UnityEditor.LightBaking
                     throw new ArgumentException($"index must be between 0 and {terrainCount - 1}, but was {index}");
                 Terrain terrain = Internal_GetTerrain(index);
                 return terrain;
-            }
-
-            public uint lightmapInstanceCount(uint index)
-            {
-                if (index >= lightmapCount)
-                    throw new ArgumentException($"index must be between 0 and {lightmapCount - 1}, but was {index}");
-                return Internal_InstanceCount(index);
             }
 
             public extern Vector2[] GetUV1VertexData(uint meshIndex);
@@ -613,6 +603,13 @@ namespace UnityEditor.LightBaking
                     throw new ArgumentException($"index must be between 0 and {transmissiveTexturePropertiesCount - 1}, but was {index}");
                 return Internal_GetTransmissiveTextureProperties(index);
             }
+            extern void Internal_SetTransmissiveTextureProperties(uint index, TextureProperties textureProperties);
+            public void SetTransmissiveTextureProperties(uint index, TextureProperties textureProperties)
+            {
+                if (index >= transmissiveTexturePropertiesCount)
+                    throw new ArgumentException($"index must be between 0 and {transmissiveTexturePropertiesCount - 1}, but was {index}");
+                Internal_SetTransmissiveTextureProperties(index, textureProperties);
+            }
 
             public extern uint GetCookieCount();
             extern CookieData Internal_GetCookieData(uint index);
@@ -629,8 +626,134 @@ namespace UnityEditor.LightBaking
                     throw new ArgumentException($"index must be between 0 and {GetCookieCount() - 1}, but was {index}");
                 Internal_SetCookieData(index, cookieData);
             }
+            public extern void SetEnvironment(Vector4 color);
+            public extern void SetEnvironmentFromTextures(TextureData posX, TextureData negX, TextureData posY, TextureData negY, TextureData posZ, TextureData negZ);
+            public extern TextureData GetEnvironmentCubeTexture();
+
+            internal static class BindingsMarshaller
+            {
+                public static IntPtr ConvertToNative(BakeInput bakeInput) => bakeInput._ptr;
+            }
+            public extern bool CheckIntegrity();
+        }
+
+        [RequiredByNativeCode]
+        [StructLayout(LayoutKind.Sequential)]
+        public class LightProbeRequests : IDisposable
+        {
+            private IntPtr _ptr;
+            private readonly bool _ownsPtr;
+
+            public LightProbeRequests()
+            {
+                _ptr = Internal_Create();
+                _ownsPtr = true;
+            }
+            public LightProbeRequests(IntPtr ptr)
+            {
+                _ptr = ptr;
+                _ownsPtr = false;
+            }
+            ~LightProbeRequests()
+            {
+                Destroy();
+            }
+
+            public void Dispose()
+            {
+                Destroy();
+                GC.SuppressFinalize(this);
+            }
+
+            void Destroy()
+            {
+                if (_ownsPtr && _ptr != IntPtr.Zero)
+                {
+                    Internal_Destroy(_ptr);
+                    _ptr = IntPtr.Zero;
+                }
+            }
+
+            public extern ulong GetByteSize();
+            static extern IntPtr Internal_Create();
+            [NativeMethod(IsThreadSafe = true)]
+            static extern void Internal_Destroy(IntPtr ptr);
+
+            public void SetIntegrationRadii(float[] positions)
+            {
+                SetIntegrationRadii(positions.AsSpan());
+            }
+            public extern void SetIntegrationRadii(ReadOnlySpan<float> positions);
+            public extern Vector3[] GetProbePositions();
+            public extern float[] GetIntegrationRadii();
+            public extern uint lightProbeCount { get; }
+            public extern ProbeRequest[] GetProbeRequests();
+            public extern void SetLightProbeRequests(ProbeRequest[] requests);
+
+            internal static class BindingsMarshaller
+            {
+                public static IntPtr ConvertToNative(LightProbeRequests lightProbeRequests) => lightProbeRequests._ptr;
+            }
+            public extern bool CheckIntegrity();
+        }
+
+        [RequiredByNativeCode]
+        [StructLayout(LayoutKind.Sequential)]
+        public class LightmapRequests : IDisposable
+        {
+            private IntPtr _ptr;
+            private readonly bool _ownsPtr;
+
+            public LightmapRequests()
+            {
+                _ptr = Internal_Create();
+                _ownsPtr = true;
+            }
+            public LightmapRequests(IntPtr ptr)
+            {
+                _ptr = ptr;
+                _ownsPtr = false;
+            }
+            ~LightmapRequests()
+            {
+                Destroy();
+            }
+
+            public void Dispose()
+            {
+                Destroy();
+                GC.SuppressFinalize(this);
+            }
+
+            void Destroy()
+            {
+                if (_ownsPtr && _ptr != IntPtr.Zero)
+                {
+                    Internal_Destroy(_ptr);
+                    _ptr = IntPtr.Zero;
+                }
+            }
+
+            public extern ulong GetByteSize();
+            static extern IntPtr Internal_Create();
+            [NativeMethod(IsThreadSafe = true)]
+            static extern void Internal_Destroy(IntPtr ptr);
+
+            public extern LightmapRequest[] GetLightmapRequests();
+            public extern void SetLightmapRequests(LightmapRequest[] requests);
+
+            public uint lightmapInstanceCount(uint index)
+            {
+                if (index >= lightmapCount)
+                    throw new ArgumentException($"index must be between 0 and {lightmapCount - 1}, but was {index}");
+                return Internal_InstanceCount(index);
+            }
 
             public extern uint lightmapCount { get; }
+            extern uint Internal_LightmapWidth(uint index);
+            extern uint Internal_LightmapHeight(uint index);
+            extern uint Internal_InstanceCount(uint lightmapIndex);
+            public extern void SetLightmapResolution(Resolution resolution);
             public Resolution lightmapResolution(uint index)
             {
                 if (index >= lightmapCount)
@@ -640,36 +763,10 @@ namespace UnityEditor.LightBaking
                 resolution.height = Internal_LightmapHeight(index);
                 return resolution;
             }
-            public extern uint lightProbeCount { get; }
-
-            public extern void SetLightmapResolution(Resolution resolution);
-            public extern void SetEnvironment(Vector4 color);
-            public extern void SetEnvironmentFromTextures(TextureData posX, TextureData negX, TextureData posY, TextureData negY, TextureData posZ, TextureData negZ);
-            public extern TextureData GetEnvironmentCubeTexture();
-
-            public extern ProbeRequest[] GetProbeRequests();
-            public extern void SetLightProbeRequests(ProbeRequest[] requests);
-            public extern LightmapRequest[] GetLightmapRequests();
-            public extern void SetLightmapRequests(LightmapRequest[] requests);
-
-            public void SetProbePositions(Vector3[] positions)
-            {
-                SetProbePositions(positions.AsSpan());
-            }
-            public extern void SetProbePositions(ReadOnlySpan<Vector3> positions);
-
-            public void SetIntegrationRadii(float[] positions)
-            {
-                SetIntegrationRadii(positions.AsSpan());
-            }
-            public extern void SetIntegrationRadii(ReadOnlySpan<float> positions);
-
-            public extern Vector3[] GetProbePositions();
-            public extern float[] GetIntegrationRadii();
 
             internal static class BindingsMarshaller
             {
-                public static IntPtr ConvertToNative(BakeInput bakeInput) => bakeInput._ptr;
+                public static IntPtr ConvertToNative(LightmapRequests lightmapRequests) => lightmapRequests._ptr;
             }
             public extern bool CheckIntegrity();
         }
@@ -734,14 +831,14 @@ namespace UnityEditor.LightBaking
             }
         }
 
-        public static Result PopulateWorld(BakeInput bakeInput, BakeProgressState progress,
+        public static Result PopulateWorld(BakeInput bakeInput, LightmapRequests lightmapRequests, LightProbeRequests lightProbeRequests, BakeProgressState progress,
             UnityEngine.LightTransport.IDeviceContext context, UnityEngine.LightTransport.IWorld world)
         {
             Result result = new ();
             if (context is RadeonRaysContext radeonRaysContext)
             {
                 IntegrationContext integrationContext = new ();
-                result = PopulateWorldRadeonRays(bakeInput, progress, radeonRaysContext, integrationContext);
+                result = PopulateWorldRadeonRays(bakeInput, lightmapRequests, lightProbeRequests, progress, radeonRaysContext, integrationContext);
                 Debug.Assert(world is RadeonRaysWorld);
                 var rrWorld = world as RadeonRaysWorld;
                 rrWorld.SetIntegrationContext(integrationContext);
@@ -749,7 +846,7 @@ namespace UnityEditor.LightBaking
             else if (context is WintermuteContext wintermuteContext)
             {
                 IntegrationContext integrationContext = new ();
-                result = PopulateWorldWintermute(bakeInput, progress, wintermuteContext, integrationContext);
+                result = PopulateWorldWintermute(bakeInput, lightmapRequests, lightProbeRequests, progress, wintermuteContext, integrationContext);
                 Debug.Assert(world is WintermuteWorld);
                 var wmWorld = world as WintermuteWorld;
                 wmWorld.SetIntegrationContext(integrationContext);
@@ -758,14 +855,18 @@ namespace UnityEditor.LightBaking
         }
 
         public static extern bool Serialize(string path, BakeInput input);
+        public static extern bool SerializeLightmapRequests(string path, LightmapRequests lightmapRequests);
+        public static extern bool SerializeLightProbeRequests(string path, LightProbeRequests lightProbeRequests);
         public static extern bool Deserialize(string path, BakeInput input);
+        public static extern bool DeserializeLightmapRequests(string path, LightmapRequests lightmapRequests);
+        public static extern bool DeserializeLightProbeRequests(string path, LightProbeRequests lightProbeRequests);
 
-        public static extern Result Bake(BakeInput input, DeviceSettings deviceSettings);
-        public static extern Result BakeOutOfProcess(BakeInput input, DeviceSettings deviceSettings);
-        public static extern Result BakeInEditorWorkerProcess(BakeInput input, DeviceSettings deviceSettings);
+        public static extern Result Bake(BakeInput input, LightmapRequests lightmapRequest, LightProbeRequests lightProbeRequests, DeviceSettings deviceSettings);
+        public static extern Result BakeOutOfProcess(BakeInput input, LightmapRequests lightmapRequest, LightProbeRequests lightProbeRequests, DeviceSettings deviceSettings);
+        public static extern Result BakeInEditorWorkerProcess(BakeInput input, LightmapRequests lightmapRequest, LightProbeRequests lightProbeRequests, DeviceSettings deviceSettings);
         public static extern bool ReportResultToParentProcess(Result result, ExternalProcessConnection connection);
         [NativeMethod(IsThreadSafe = true)]
         public static extern bool ReportProgressToParentProcess(float progress, ExternalProcessConnection connection);
-        public static extern ulong ConvertExpectedWorkToWorkSteps(BakeInput bakeInput, ulong sampleCountPerLightmapTexel, ulong sampleCountPerProbe);
+        public static extern ulong ConvertExpectedWorkToWorkSteps(BakeInput bakeInput, LightmapRequests lightmapRequests, LightProbeRequests lightProbeRequests, ulong sampleCountPerLightmapTexel, ulong sampleCountPerProbe);
     }
 }

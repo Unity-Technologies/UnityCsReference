@@ -15,10 +15,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool IsUninstallInProgress(IPackage package);
         bool IsInstallInProgress(IPackageVersion version);
 
-        void Install(IPackageVersion version);
-        void Install(IEnumerable<IPackageVersion> versions);
-        void Install(string packageId);
-        void InstallFromUrl(string url);
+        bool Install(IPackageVersion version);
+        bool Install(IEnumerable<IPackageVersion> versions);
+        bool Install(string packageId);
+        bool InstallFromUrl(string url);
         bool InstallFromPath(string path, out string tempPackageId);
         void Uninstall(IPackage package);
         void Uninstall(IEnumerable<IPackage> packages);
@@ -59,6 +59,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool isInstallOrUninstallInProgress => m_UpmClient.isAddOrRemoveInProgress;
 
+        private string InstallOrRemoveInProgressWarningMessage(string installSource) => string.Format(L10n.Tr("[Package Manager Window] The request to install {0} will be canceled due to an ongoing Install/Remove operation. Please retry your request once the current operation has completed."), installSource);
         public bool IsUninstallInProgress(IPackage package)
         {
             return m_UpmClient.IsRemoveInProgress(package?.name);
@@ -69,33 +70,54 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_UpmClient.IsAddInProgress(version?.packageId);
         }
 
-        public void Install(IPackageVersion version)
+        public bool Install(IPackageVersion version)
         {
             if (version == null || version.isInstalled)
-                return;
+                return false;
+           
             m_UpmClient.AddById(version.packageId);
+            return true;
         }
 
-        public void Install(IEnumerable<IPackageVersion> versions)
+        public bool Install(IEnumerable<IPackageVersion> versions)
         {
             if (versions == null || !versions.Any())
-                return;
+                return false;
 
             m_UpmClient.AddByIds(versions.Select(v => v.packageId));
+            return true;
         }
 
-        public void Install(string packageId)
+        public bool Install(string packageId)
         {
+            if (isInstallOrUninstallInProgress)
+            {
+                Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(packageId));
+                return false;
+            }
             m_UpmClient.AddById(packageId);
+            return true;
         }
 
-        public void InstallFromUrl(string url)
+        public bool InstallFromUrl(string url)
         {
+            if (isInstallOrUninstallInProgress)
+            {
+                Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(url));
+                return false;
+            }
             m_UpmClient.AddByUrl(url);
+            return true;
         }
 
         public bool InstallFromPath(string path, out string tempPackageId)
         {
+            if (isInstallOrUninstallInProgress)
+            {
+                tempPackageId = null;
+                Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(path));
+                return false;
+            }
             return m_UpmClient.AddByPath(path, out tempPackageId);
         }
 

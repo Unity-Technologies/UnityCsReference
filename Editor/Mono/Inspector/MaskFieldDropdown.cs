@@ -5,10 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditorInternal;
+using System.Reflection;
 using UnityEngine;
 using static UnityEditor.MaskDropDownUtils;
-using System.Reflection;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -17,6 +17,10 @@ namespace UnityEditor
         internal const int m_LayerCount = 32;
 
         SerializedProperty m_SerializedProperty;
+
+        // Keep a reference to the targets so we can recreate the serialized property if it becomes invalid. (UUM-72761)
+        Object[] m_Targets;
+        string m_PropertyName;
 
         SelectionModes[] m_SelectionMatch;
         string[] m_OptionNames;
@@ -33,6 +37,8 @@ namespace UnityEditor
         public MaskFieldDropDown(SerializedProperty property)
         {
             m_SerializedProperty = property;
+            m_Targets = property.serializedObject.targetObjects;
+            m_PropertyName = property.propertyPath;
             m_SingleSelection = false;
         }
 
@@ -181,6 +187,12 @@ namespace UnityEditor
             {
                 DrawGUIForArrays();
                 return;
+            }
+
+            if (!m_SerializedProperty.isValid)
+            {
+                var serializedObject = new SerializedObject(m_Targets);
+                m_SerializedProperty = serializedObject.FindProperty(m_PropertyName);
             }
 
             if (m_SerializedProperty.propertyType != SerializedPropertyType.LayerMask)

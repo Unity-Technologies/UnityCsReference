@@ -743,7 +743,7 @@ namespace UnityEditor
         /// tab is displayed in the platform grouping.
         /// </summary>
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
-        internal void ConfigurePlayerSettingsForBuildProfile(string buildProfileModuleName, bool isServerBuildProfile, bool isActiveBuildProfile)
+        internal void ConfigurePlayerSettingsForBuildProfile(SerializedObject serializedProfile, string buildProfileModuleName, bool isServerBuildProfile, bool isActiveBuildProfile)
         {
             playerSettingsType = isActiveBuildProfile ? PlayerSettingsType.ActiveBuildProfile : PlayerSettingsType.NonActiveBuildProfile;
 
@@ -771,6 +771,29 @@ namespace UnityEditor
             m_SettingsExtensions = new ISettingEditorExtension[1];
             m_SettingsExtensions[0] = ModuleManager.GetEditorSettingsExtension(platformModuleName);
             m_SettingsExtensions[0]?.OnEnable(this);
+            m_SettingsExtensions[0]?.ConfigurePlatformProfile(serializedProfile);
+        }
+
+        /// <summary>
+        /// Check if the platform-specific player settings in ISettingsExtensionData on the managed side
+        /// are equal to the corresponding data in the project settings
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal bool IsPlayerSettingsExtensionDataEqualToProjectSettings()
+        {
+            if (m_SettingsExtensions == null || m_SettingsExtensions.Length == 0 || m_SettingsExtensions[0] == null)
+                return false;
+
+            return m_SettingsExtensions[0].IsPlayerSettingsDataEqualToProjectSettings();
+        }
+
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal bool CopyProjectSettingsToPlayerSettingsExtension()
+        {
+            if (m_SettingsExtensions == null || m_SettingsExtensions.Length == 0 || m_SettingsExtensions[0] == null)
+                return false;
+
+            return m_SettingsExtensions[0].CopyProjectSettingsPlayerSettingsToBuildProfile();
         }
 
         [RequiredByNativeCode]
@@ -1482,54 +1505,57 @@ namespace UnityEditor
                 Application.platform == RuntimePlatform.OSXEditor && targetPlatform == BuildTarget.StandaloneOSX;
         }
 
-        private bool CheckApplyGraphicsJobsModeChange()
+        private bool CheckApplyGraphicsJobsModeChange(BuildTarget target)
         {
             bool doRestart = false;
 
-            // If we have dirty scenes we need to save or discard changes before we restart editor.
-            // Otherwise user will get a dialog later on where they can click cancel and put editor in a bad device state.
-            var dirtyScenes = new List<Scene>();
-            for (int i = 0; i < EditorSceneManager.sceneCount; ++i)
+            if (WillEditorUseFirstGraphicsAPI(target))
             {
-                var scene = EditorSceneManager.GetSceneAt(i);
-                if (scene.isDirty)
-                    dirtyScenes.Add(scene);
-            }
-            if (dirtyScenes.Count != 0)
-            {
-                var result = EditorUtility.DisplayDialogComplex("Changing editor graphics jobs mode",
-                    "You've changed the active graphics jobs mode. This requires a restart of the Editor. Do you want to save the Scene when restarting?",
-                    "Save and Restart", "Cancel Changing API", "Discard Changes and Restart");
-                if (result == 1)
+                // If we have dirty scenes we need to save or discard changes before we restart editor.
+                // Otherwise user will get a dialog later on where they can click cancel and put editor in a bad device state.
+                var dirtyScenes = new List<Scene>();
+                for (int i = 0; i < EditorSceneManager.sceneCount; ++i)
                 {
-                    doRestart = false; // Cancel was selected
+                    var scene = EditorSceneManager.GetSceneAt(i);
+                    if (scene.isDirty)
+                        dirtyScenes.Add(scene);
+                }
+                if (dirtyScenes.Count != 0)
+                {
+                    var result = EditorUtility.DisplayDialogComplex("Changing editor graphics jobs mode",
+                        "You've changed the active graphics jobs mode. This requires a restart of the Editor. Do you want to save the Scene when restarting?",
+                        "Save and Restart", "Cancel Changing API", "Discard Changes and Restart");
+                    if (result == 1)
+                    {
+                        doRestart = false; // Cancel was selected
+                    }
+                    else
+                    {
+                        doRestart = true;
+                        if (result == 0) // Save and Restart was selected
+                        {
+                            for (int i = 0; i < dirtyScenes.Count; ++i)
+                            {
+                                var saved = EditorSceneManager.SaveScene(dirtyScenes[i]);
+                                if (saved == false)
+                                {
+                                    doRestart = false;
+                                }
+                            }
+                        }
+                        else // Discard Changes and Restart was selected
+                        {
+                            for (int i = 0; i < dirtyScenes.Count; ++i)
+                                EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
+                        }
+                    }
                 }
                 else
                 {
-                    doRestart = true;
-                    if (result == 0) // Save and Restart was selected
-                    {
-                        for (int i = 0; i < dirtyScenes.Count; ++i)
-                        {
-                            var saved = EditorSceneManager.SaveScene(dirtyScenes[i]);
-                            if (saved == false)
-                            {
-                                doRestart = false;
-                            }
-                        }
-                    }
-                    else // Discard Changes and Restart was selected
-                    {
-                        for (int i = 0; i < dirtyScenes.Count; ++i)
-                            EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
-                    }
+                    doRestart = EditorUtility.DisplayDialog("Changing editor graphics jobs mode",
+                        "You've changed the active graphics josb mode. This requires a restart of the Editor.",
+                        "Restart Editor", "Not now");
                 }
-            }
-            else
-            {
-                doRestart = EditorUtility.DisplayDialog("Changing editor graphics jobs mode",
-                    "You've changed the active graphics jobs mode. This requires a restart of the Editor.",
-                    "Restart Editor", "Not now");
             }
             return doRestart;
         }
@@ -2293,7 +2319,7 @@ namespace UnityEditor
                     Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
                     PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, newGraphicsJobs);
 
-                    bool restartEditor = CheckApplyGraphicsJobsModeChange();
+                    bool restartEditor = CheckApplyGraphicsJobsModeChange(platform.defaultTarget);
                     if (restartEditor)
                     {
                         EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
@@ -2334,7 +2360,7 @@ namespace UnityEditor
                     else if (newGfxJobMode == GraphicsJobMode.Split)
                         PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.SplitJobs);
 
-                    bool restartEditor = CheckApplyGraphicsJobsModeChange();
+                    bool restartEditor = CheckApplyGraphicsJobsModeChange(platform.defaultTarget);
                     if (restartEditor)
                     {
                         EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
@@ -3840,6 +3866,8 @@ namespace UnityEditor
                     onSelect();
 
                 prop.serializedObject.ApplyModifiedProperties();
+
+                GUIUtility.ExitGUI();
             }
 
             return changed;
@@ -3882,6 +3910,8 @@ namespace UnityEditor
                         onSelect();
 
                     prop.serializedObject.ApplyModifiedProperties();
+
+                    GUIUtility.ExitGUI();
                 }
             }
 

@@ -306,7 +306,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!m_Application.isBatchMode)
                     m_Application.DisplayDialog("assetCacheLocationChanged",
                         L10n.Tr("Assets Cache location changed"),
-                        L10n.Tr("The Assets Cache location has been changed, all current downloads will be aborted."),
+                        L10n.Tr("The Assets Cache location has been changed, all current downloads will be canceled."),
                         L10n.Tr("Ok"));
 
                 AbortAllDownloads();

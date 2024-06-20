@@ -33,7 +33,8 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
     public string headerTitle;
     public string headerDescription;
     public string actionLabel;
-    public List<Node> nodes = new();
+    private List<Node> m_Nodes = new();
+    public IReadOnlyList<Node> nodes => m_Nodes;
 
     // This node is not created through the SelectionWindowData.CreateNode function, because we don't want it to be
     // part of the final visible tree. We set the index to `-1` such that if it accidentally end up in the final tree,
@@ -48,6 +49,8 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
         .Where(index => !nodes[index].isFolder)
         .Select(index => nodes[index].asset).ToArray();
     public IReadOnlyList<Asset> assets => nodes.Where(n => !n.isFolder).Select(n => n.asset).ToArray();
+
+    public int selectedNodesCount => m_SelectedIndexes.Count;
 
     // This constructor only constructs an instance of SelectionWindowData for the remove case.
     public SelectionWindowData(IEnumerable<Asset> assetsList, string packageName, string description)
@@ -148,7 +151,7 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
             name = name,
         };
 
-        nodes.Add(newNode);
+        m_Nodes.Add(newNode);
         m_SelectedIndexes.Add(newNode.index);
         parentNode.childIndexes.Add(newNode.index);
         newNode.parentIndex = parentNode.index;

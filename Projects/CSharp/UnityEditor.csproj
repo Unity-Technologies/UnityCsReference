@@ -4701,6 +4701,9 @@
     <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\UndoButton.cs">
       <Link>Modules\EditorToolbar\ToolbarElements\UndoButton.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\EmbreeEditor\Embree.bindings.cs">
+      <Link>Modules\EmbreeEditor\Embree.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GenericRemoteEditor\Public\GenericRemote.bindings.cs">
       <Link>Modules\GenericRemoteEditor\Public\GenericRemote.bindings.cs</Link>
     </Compile>
@@ -5640,6 +5643,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\Alert.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\Alert.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\BaseDropdownButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\BaseDropdownButton.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\DropdownButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\DropdownButton.cs</Link>
     </Compile>
@@ -5955,14 +5961,17 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\SignInBar.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\SignInBar.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\Interfaces\IPackageToolBarButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\Interfaces\IPackageToolBarButton.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\LegacyFormatDropdownButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\LegacyFormatDropdownButton.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageToolBar.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageToolBar.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageToolBarButton.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageToolBarButton.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageToolBarButtonSingleAction.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageToolBarButtonSingleAction.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageToolBarError.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageToolBarError.cs</Link>
@@ -6132,6 +6141,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\UpdateScopedRegistryRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\UpdateScopedRegistryRequest.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\ResolutionStrategy.cs">
+      <Link>Modules\PackageManager\Editor\Managed\ResolutionStrategy.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchCapabilities.cs">
       <Link>Modules\PackageManager\Editor\Managed\Search\SearchCapabilities.cs</Link>
     </Compile>
@@ -6152,6 +6164,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchResults.cs">
       <Link>Modules\PackageManager\Editor\Managed\Search\SearchResults.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\SemVersionHelper.cs">
+      <Link>Modules\PackageManager\Editor\Managed\SemVersionHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\SignatureInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\SignatureInfo.cs</Link>

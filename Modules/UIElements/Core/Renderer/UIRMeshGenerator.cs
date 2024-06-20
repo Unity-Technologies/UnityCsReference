@@ -123,6 +123,11 @@ namespace UnityEngine.UIElements.UIR
             // Normalized visible sub-region
             public Rect subRect;
 
+            // Rectangle which clip the resulting tessellated geometry for background repeat to correctly support rounded corners.
+            // When backgroundRepeatRect is not empty, it represent the clipped portion of the original visual element (represented by rect) 
+            // that should be repeated.
+            public Rect backgroundRepeatRect;
+
             // Allow support of background-properties
             public BackgroundPosition backgroundPositionX;
             public BackgroundPosition backgroundPositionY;
@@ -522,6 +527,7 @@ namespace UnityEngine.UIElements.UIR
                 return new MeshBuilderNative.NativeRectParams() {
                     rect = rect,
                     subRect = subRect,
+                    backgroundRepeatRect = backgroundRepeatRect,
                     uv = uv,
                     color = color,
                     scaleMode = scaleMode,
@@ -1343,12 +1349,12 @@ namespace UnityEngine.UIElements.UIR
                         targetRect.width = left;
                     }
 
-                    StampRectangleWithSubRect(rectParams, targetRect, uv);
+                    StampRectangleWithSubRect(rectParams, targetRect, totalRect, uv);
                 }
             }
         }
 
-        void StampRectangleWithSubRect(RectangleParams rectParams, Rect targetRect, Rect targetUV)
+        void StampRectangleWithSubRect(RectangleParams rectParams, Rect targetRect, Rect totalRect, Rect targetUV)
         {
             if (targetRect.width < UIRUtility.k_Epsilon || targetRect.height < UIRUtility.k_Epsilon)
                 return;
@@ -1366,6 +1372,7 @@ namespace UnityEngine.UIElements.UIR
             if (rectParams.HasSlices(UIRUtility.k_Epsilon))
             {
                 // Use the full target rect when working with slices. The content will stretch to the full target.
+                rectParams.backgroundRepeatRect = Rect.zero;
                 rectParams.rect = targetRect;
             }
             else
@@ -1395,7 +1402,24 @@ namespace UnityEngine.UIElements.UIR
                     rectParams.uv.size = newUVSize;
                 }
 
-                rectParams.rect = rect;
+                if (rectParams.vectorImage != null)
+                {
+                    rectParams.backgroundRepeatRect = Rect.zero;
+                    rectParams.rect = rect;
+                }
+                else
+                {
+                    if (totalRect == rect)
+                    {
+                        rectParams.backgroundRepeatRect = Rect.zero;
+                    }
+                    else
+                    {
+                        rectParams.backgroundRepeatRect = rect;
+                    }
+
+                    rectParams.rect = totalRect;
+                }
             }
 
             DrawRectangle(rectParams);

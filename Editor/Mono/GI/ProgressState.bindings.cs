@@ -57,5 +57,14 @@ namespace UnityEngine.LightTransport
 
         [NativeMethod(IsThreadSafe = true)]
         public extern float Progress();
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern void SetTotalWorkSteps(UInt64 total);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern void IncrementCompletedWorkSteps(UInt64 steps);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern bool WasCancelled();
     }
 }

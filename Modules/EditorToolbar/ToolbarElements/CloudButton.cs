@@ -15,9 +15,9 @@ namespace UnityEditor.Toolbars
         public CloudButton() : base(OpenCloudWindow)
         {
             name = "Cloud";
-
-            icon = EditorGUIUtility.FindTexture("CloudConnect");
             tooltip = L10n.Tr("Manage services");
+
+            this.Q<Image>(className: EditorToolbar.elementIconClassName).style.display = DisplayStyle.Flex;
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);

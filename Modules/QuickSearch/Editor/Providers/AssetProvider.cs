@@ -67,7 +67,7 @@ namespace UnityEditor.Search.Providers
                 {
                     if (!m_HasType)
                     {
-                        if (source.EndsWith("prefab", StringComparison.OrdinalIgnoreCase))
+                        if (source.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
                             m_Type = AssetDatabase.GetTypeFromPathAndFileID(source, (long)gid.targetObjectId);
                         else if (flags.HasAll(SearchDocumentFlags.Nested | SearchDocumentFlags.Asset))
                         {

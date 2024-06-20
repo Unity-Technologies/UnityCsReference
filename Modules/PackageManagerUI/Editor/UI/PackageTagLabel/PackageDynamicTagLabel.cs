@@ -6,6 +6,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDynamicTagLabel : PackageBaseTagLabel
     {
+        public const string k_DisableEllipsisClass = "disable-ellipsis";
+
         private PackageTag m_Tag;
         private bool m_IsVersionItem;
         public PackageDynamicTagLabel(bool isVersionItem = false)
@@ -70,6 +72,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                     tooltip = string.Empty;
                     break;
             }
+
+            // Sometimes the UI Element layout engine would calculate the size to be 1px less than it should be, causing
+            // the tag to show up as just ellipsis in some cases. We are adding the special handling here so that short
+            // tags never show ellipsis
+            EnableInClassList(k_DisableEllipsisClass, text.Length <= 3);
         }
 
         public override void Refresh(IPackageVersion version)

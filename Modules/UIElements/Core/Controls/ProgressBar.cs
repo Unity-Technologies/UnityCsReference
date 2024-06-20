@@ -272,7 +272,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// A control that displays the progress between a lower and upper bound value.
+    /// A control that displays the progress between a lower and upper bound value. For more information, refer to [[wiki:UIE-uxml-element-ProgressBar|UXML element ProgressBar]].
     /// </summary>
     /// <example>
     /// <code>

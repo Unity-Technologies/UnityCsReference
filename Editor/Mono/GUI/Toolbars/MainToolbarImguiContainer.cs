@@ -12,6 +12,7 @@ namespace UnityEditor.Toolbars
     sealed class MainToolbarImguiContainer : IMGUIContainer
     {
         const float k_PaddingBetweenSubToolbar = 4;
+        const string k_USSClassName = "unity-editor-toolbar-imgui-container";
         static readonly List<SubToolbar> s_SubToolbars = new List<SubToolbar>(1);
         float m_CurrentWidth;
 
@@ -22,6 +23,7 @@ namespace UnityEditor.Toolbars
 
         public MainToolbarImguiContainer()
         {
+            AddToClassList(k_USSClassName);
             onGUIHandler = OnGUI;
         }
 
@@ -52,6 +54,10 @@ namespace UnityEditor.Toolbars
             {
                 m_CurrentWidth = targetWidth;
                 style.width = m_CurrentWidth;
+                // Set the min and max to ensure the specified width is respected as it does not seem to be always the case
+                // for some reason.
+                style.minWidth = m_CurrentWidth;
+                style.maxWidth = m_CurrentWidth;
             }
         }
     }

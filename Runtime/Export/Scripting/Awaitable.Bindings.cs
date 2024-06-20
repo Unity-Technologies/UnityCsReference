@@ -16,14 +16,18 @@ namespace UnityEngine
         [RequiredByNativeCode(GenerateProxy = true)]
         private void SetExceptionFromNative(Exception ex)
         {
+            bool lockTaken = false;
             try
             {
-                _spinLock.Acquire();
+                _spinLock.Enter(ref lockTaken);
                 _exceptionToRethrow = ExceptionDispatchInfo.Capture(ex);
             }
             finally
             {
-                _spinLock.Release();
+                if (lockTaken)
+                {
+                    _spinLock.Exit();
+                }
             }
         }
 
@@ -32,15 +36,19 @@ namespace UnityEngine
         private void RunContinuation()
         {
             Action continuation = null;
+            bool lockTaken = false;
             try
             {
-                _spinLock.Acquire();
+                _spinLock.Enter(ref lockTaken);
                 continuation = _continuation;
                 _continuation = null;
             }
             finally
             {
-                _spinLock.Release();
+                if (lockTaken)
+                {
+                    _spinLock.Exit();
+                }
             }
             continuation?.Invoke();
         }

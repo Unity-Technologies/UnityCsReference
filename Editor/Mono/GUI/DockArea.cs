@@ -37,8 +37,6 @@ namespace UnityEditor
             public static readonly GUIStyle background = "dockarea";
             public static readonly float tabMinWidth = tab.GetFloat(StyleCatalogKeyword.minWidth, 50.0f);
             public static readonly float tabMaxWidth = tab.GetFloat(StyleCatalogKeyword.maxWidth, 150.0f);
-            public static readonly float tabWidthPadding = tab.GetFloat(StyleCatalogKeyword.paddingRight);
-
             public static readonly float tabDragWidth = EditorResources.GetStyle("tab-drag").GetFloat(StyleCatalogKeyword.width, 100.0f);
 
             public static readonly GUIStyle tabScrollerPrevButton = new GUIStyle("dragtab scroller prev");
@@ -54,7 +52,7 @@ namespace UnityEditor
         }
 
         internal const int kFloatingWindowTopBorderWidth = 2;
-        internal const float kTabHeight = 19; // This constant is duplicated in native code. See ContainerWindow.cpp.
+        internal const float kTabHeight = 25 - 1; // This constant is duplicated in native code. See ContainerWindow.cpp. (Tab height -1)
         internal const float kDockHeight = 39;
         internal const float kSideBorders = 1.0f;
         internal const float kBottomBorders = 2.0f;
@@ -725,9 +723,10 @@ namespace UnityEditor
 
         private float GetTabWidth(GUIStyle tabStyle, EditorWindow tabWindow)
         {
-            float minWidth, expectedWidth;
-            tabStyle.CalcMinMaxWidth(tabWindow.titleContent, out minWidth, out expectedWidth);
-            return Mathf.Max(Mathf.Min(expectedWidth, Styles.tabMaxWidth), Styles.tabMinWidth) + Styles.tabWidthPadding;
+            var expectedWidth = tabStyle.CalcSize(tabWindow.titleContent).x;
+
+            return Mathf.Max(Mathf.Min(expectedWidth, Styles.tabMaxWidth),
+                Styles.tabMinWidth);
         }
 
         private float GetTabWidth(GUIStyle tabStyle, int tabIndex)

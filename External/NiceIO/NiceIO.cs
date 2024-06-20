@@ -2421,14 +2421,8 @@ namespace NiceIO
         {
             public override bool IsSymbolicLink(NPath path)
             {
-                PosixNative.Stat stat;
-                if (PosixNative.lstat(path.ToString(SlashMode.Native), out stat) != 0)
-                {
-                    var errorCode = Marshal.GetLastWin32Error();
-                    throw new IOException($"Failed to create stat path {this} (error code {errorCode})", errorCode);
-                }
-
-                return PosixNative.S_ISLNK(stat.st_mode);
+                var pathInfo = new FileInfo(path.ToString());
+                return pathInfo.Attributes.HasFlag(FileAttributes.ReparsePoint);
             }
 
             public override void CreateSymbolicLink(NPath fromPath, NPath targetPath, bool targetIsFile)
@@ -2453,44 +2447,6 @@ namespace NiceIO
                 [DllImport("libc", SetLastError = true)]
                 public static extern int symlink([MarshalAs(UnmanagedType.LPStr)] string targetPath,
                     [MarshalAs(UnmanagedType.LPStr)] string linkPath);
-
-                // Notice that this is not a mapping for the normal 'stat' structure, but specifically for MonoPosixHelper's
-                // own Mono_Posix_Stat structure (in support/map.h). This means we don't need to worry about e.g. Darwin's
-                // 64bit inode stuff.
-                [StructLayout(LayoutKind.Sequential)]
-                public struct Stat
-                {
-                    public ulong st_dev; // device
-                    public ulong st_ino; // inode
-                    public uint st_mode; // protection
-                    [NonSerialized]
-#pragma warning disable 169
-                    private uint _padding_; // padding for structure alignment
-#pragma warning restore 169
-                    public ulong st_nlink; // number of hard links
-                    public uint st_uid; // user ID of owner
-                    public uint st_gid; // group ID of owner
-                    public ulong st_rdev; // device type (if inode device)
-                    public long st_size; // total size, in bytes
-                    public long st_blksize; // blocksize for filesystem I/O
-                    public long st_blocks; // number of blocks allocated
-                    public long st_atime; // time of last access
-                    public long st_mtime; // time of last modification
-                    public long st_ctime; // time of last status change
-                    public long st_atime_nsec; // Timespec.tv_nsec partner to st_atime
-                    public long st_mtime_nsec; // Timespec.tv_nsec partner to st_mtime
-                    public long st_ctime_nsec; // Timespec.tv_nsec partner to st_ctime
-                }
-
-                [DllImport("MonoPosixHelper", SetLastError = true, EntryPoint = "Mono_Posix_Syscall_lstat")]
-                public static extern int lstat(string file_name, out Stat buf);
-
-                private const uint Mono_Posix_FilePermissions_S_IFLNK = 0x0000a000;
-
-                public static bool S_ISLNK(uint m)
-                {
-                    return (m & Mono_Posix_FilePermissions_S_IFLNK) == Mono_Posix_FilePermissions_S_IFLNK;
-                }
             }
         }
 

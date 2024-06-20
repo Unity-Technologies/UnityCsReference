@@ -498,11 +498,6 @@ namespace UnityEditor
             return m_AllPropertyEditors.AsEnumerable();
         }
 
-        protected virtual void EnsureAppropriateTrackerIsInUse()
-        {
-            // By default PropertyEditor are locked on their inspected object and won't change tracker because the Inspector Mode has changed.
-        }
-
         protected void SetMode(InspectorMode mode)
         {
             if (m_InspectorMode != mode)
@@ -512,12 +507,7 @@ namespace UnityEditor
                 // Clear the editors Element so that a real rebuild is done
                 editorsElement.Clear();
                 m_EditorElementUpdater.Clear();
-
-                EnsureAppropriateTrackerIsInUse();
-
-                m_Tracker.inspectorMode = m_InspectorMode;
-                m_Tracker.ForceRebuild();
-
+                tracker.inspectorMode = mode;
                 m_ResetKeyboardControl = true;
                 SceneView.SetActiveEditorsDirty(true);
             }

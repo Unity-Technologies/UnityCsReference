@@ -229,4 +229,15 @@ namespace UnityEngine
     public sealed class NonReorderableAttribute : PropertyAttribute
     {
     }
+
+    // Attribute to display enum fields as toggle buttons
+    public class EnumButtonsAttribute : PropertyAttribute
+    {
+        public bool includeObsolete;
+
+        public EnumButtonsAttribute(bool includeObsolete = false)
+        {
+            this.includeObsolete = includeObsolete;
+        }
+    }
 }

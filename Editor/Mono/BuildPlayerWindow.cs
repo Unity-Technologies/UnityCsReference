@@ -157,8 +157,7 @@ namespace UnityEditor
         [UsedImplicitly, RequiredByNativeCode]
         public static void ShowBuildPlayerWindow()
         {
-            EditorUserBuildSettings.selectedBuildTargetGroup = EditorUserBuildSettings.activeBuildTargetGroup;
-            GetWindow<BuildPlayerWindow>(false, "Build Settings");
+            BuildPipeline.ShowBuildProfileWindow();
         }
 
         internal static bool WillDrawMultiplayerBuildOptions() => drawingMultiplayerBuildOptions != null;

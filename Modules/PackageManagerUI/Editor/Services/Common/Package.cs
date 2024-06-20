@@ -60,14 +60,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (numErrors > 0 && numWarnings == numErrors || isDeprecated)
                     return PackageState.Warning;
 
-                var latestKeyVersion = versions.key.LastOrDefault();
                 if (primary.HasTag(PackageTag.Custom))
                     return PackageState.InDevelopment;
+
+                if (isLocked)
+                    return PackageState.Locked;
 
                 if (primary.isInstalled && !primary.isDirectDependency)
                     return PackageState.InstalledAsDependency;
 
                 var recommended = versions.recommended;
+                var latestKeyVersion = versions.key.LastOrDefault();
                 if (recommended != null && primary != recommended && ((primary.isInstalled && primary != latestKeyVersion) || primary.HasTag(PackageTag.LegacyFormat)) && !primary.HasTag(PackageTag.Local))
                     return PackageState.UpdateAvailable;
 
@@ -98,6 +101,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private bool m_IsDeprecated;
         public virtual bool isDeprecated => m_IsDeprecated;
+
+        [SerializeField]
+        private bool m_IsLocked;
+        public virtual bool isLocked => m_IsLocked;
 
         // errors on the package level (not just about a particular version)
         [SerializeField]
@@ -139,7 +146,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             LinkPackageAndVersions();
         }
 
-        private Package(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null)
+        private Package(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null, bool isLocked = false)
         {
             m_Name = name;
             m_VersionList = versionList;
@@ -154,6 +161,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IsDeprecated = versionList.primary?.HasTag(PackageTag.InstalledFromPath) == false && isDeprecated;
             m_DeprecationMessage = deprecationMessage;
 
+            m_IsLocked = isLocked;
+
             LinkPackageAndVersions();
         }
 
@@ -162,9 +171,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         // package modifications that's not caught by the package change events.
         internal class Factory : BaseService
         {
-            public Package CreatePackage(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null)
+            public Package CreatePackage(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null, bool isLocked = false)
             {
-                return new Package(name, versionList, product, isDiscoverable, isDeprecated, deprecationMessage);
+                return new Package(name, versionList, product, isDiscoverable, isDeprecated, deprecationMessage, isLocked);
             }
 
             public void AddError(Package package, UIError error)

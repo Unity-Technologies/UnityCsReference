@@ -32,8 +32,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void OnEnable()
         {
-            m_SettingsProxy.onEnablePreReleasePackagesChanged += OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
-            m_SettingsProxy.onSeeAllVersionsChanged += OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
+            m_SettingsProxy.onEnablePreReleasePackagesChanged += OnShowPreReleasePackagesOrSeeAllVersionsChanged;
+            m_SettingsProxy.onSeeAllVersionsChanged += OnShowPreReleasePackagesOrSeeAllVersionsChanged;
 
             m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched += OnExtraPackageInfoFetched;
@@ -45,8 +45,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void OnDisable()
         {
-            m_SettingsProxy.onEnablePreReleasePackagesChanged -= OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
-            m_SettingsProxy.onSeeAllVersionsChanged -= OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
+            m_SettingsProxy.onEnablePreReleasePackagesChanged -= OnShowPreReleasePackagesOrSeeAllVersionsChanged;
+            m_SettingsProxy.onSeeAllVersionsChanged -= OnShowPreReleasePackagesOrSeeAllVersionsChanged;
 
             m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched -= OnExtraPackageInfoFetched;
@@ -129,7 +129,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 GeneratePackagesAndTriggerChangeEvent(new[] { packageUniqueId });
         }
 
-        private void OnShowPreReleasePackagesesOrSeeAllVersionsChanged(bool _)
+        private void OnShowPreReleasePackagesOrSeeAllVersionsChanged(bool _)
         {
             var allPackageNames = m_UpmCache.installedPackageInfos.Concat(m_UpmCache.searchPackageInfos).Select(p => p.name).ToHashSet();
             GeneratePackagesAndTriggerChangeEvent(allPackageNames);
@@ -170,7 +170,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                         continue;
                     }
 
-                    var package = CreatePackage(packageName, versionList, isDiscoverable: searchInfo != null, isDeprecated: isDeprecated, deprecationMessage: deprecationMessage);
+                    var isLocked = versionList.installed?.isDirectDependency != true &&
+                                   m_PackageDatabase.GetFeaturesThatUseThisPackage(versionList.installed)?.Any() == true;
+                    var package = CreatePackage(packageName, versionList, isDiscoverable: searchInfo != null, isDeprecated: isDeprecated, deprecationMessage: deprecationMessage, isLocked: isLocked);
                     updatedPackages.Add(package);
 
                     // if the primary version is not fully fetched, trigger an extra fetch automatically right away to get results early

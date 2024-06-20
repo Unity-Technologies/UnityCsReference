@@ -31,6 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IUpmClient m_UpmClient;
         private IAssetStoreCachePathProxy m_AssetStoreCachePathProxy;
         private IPageRefreshHandler m_PageRefreshHandler;
+        private IPackageOperationDispatcher m_OperationDispatcher;
 
         private void ResolveDependencies(IResourceLoader resourceLoader,
             IExtensionManager extensionManager,
@@ -43,7 +44,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IApplicationProxy applicationProxy,
             IUpmClient upmClient,
             IAssetStoreCachePathProxy assetStoreCachePathProxy,
-            IPageRefreshHandler pageRefreshHandler)
+            IPageRefreshHandler pageRefreshHandler,
+            IPackageOperationDispatcher packageOperationDispatcher)
         {
             m_ResourceLoader = resourceLoader;
             m_ExtensionManager = extensionManager;
@@ -57,6 +59,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient = upmClient;
             m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
             m_PageRefreshHandler = pageRefreshHandler;
+            m_OperationDispatcher = packageOperationDispatcher;
         }
 
         public PackageManagerWindowRoot(IResourceLoader resourceLoader,
@@ -70,9 +73,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                                         IApplicationProxy applicationProxy,
                                         IUpmClient upmClient,
                                         IAssetStoreCachePathProxy assetStoreCachePathProxy,
-                                        IPageRefreshHandler pageRefreshHandler)
+                                        IPageRefreshHandler pageRefreshHandler,
+                                        IPackageOperationDispatcher packageOperationDispatcher)
         {
-            ResolveDependencies(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler);
+            ResolveDependencies(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler, packageOperationDispatcher);
         }
 
         public void OnEnable()
@@ -400,7 +404,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public AddPackageByNameDropdown OpenAddPackageByNameDropdown(string url, EditorWindow anchorWindow)
         {
-            var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, anchorWindow);
+            var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, anchorWindow);
 
             var packageNameAndVersion = url.Replace(PackageManagerWindow.k_UpmUrl, string.Empty);
             var packageName = string.Empty;

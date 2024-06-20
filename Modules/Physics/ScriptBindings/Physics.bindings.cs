@@ -55,7 +55,8 @@ namespace UnityEngine
             CharacterControllerSupport = 1 << 6
         };
 
-        const uint k_InvalidID = 0;
+        public const uint k_InvalidID = 0;
+        public const uint k_FallbackIntegrationId = 0xDECAFBAD;
 
         [FieldOffset(0)]
         public readonly uint Id;

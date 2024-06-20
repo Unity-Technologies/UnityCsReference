@@ -765,43 +765,6 @@ namespace UnityEngine.TextCore.Text
                 {
                     textInfo.textElementInfo[m_CharacterCount].isVisible = true;
 
-                    #region Experimental Margin Shaper
-
-                    //Vector2 shapedMargins;
-                    //if (marginShaper)
-                    //{HorizontalAlignmentOption
-                    //    shapedMargins = m_marginShaper.GetShapedMargins(textInfo.textElementInfo[m_CharacterCount].baseLine);
-                    //    if (shapedMargins.x < margins.x)
-                    //    {
-                    //        shapedMargins.x = m_MarginLeft;
-                    //    }
-                    //    else
-                    //    {
-                    //        shapedMargins.x += m_MarginLeft - margins.x;
-                    //    }
-                    //    if (shapedMargins.y < margins.z)
-                    //    {
-                    //        shapedMargins.y = m_MarginRight;
-                    //    }
-                    //    else
-                    //    {
-                    //        shapedMargins.y += m_MarginRight - margins.z;
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    shapedMargins.x = m_MarginLeft;
-                    //    shapedMargins.y = m_MarginRight;
-                    //}
-                    //width = marginWidth + 0.0001f - shapedMargins.x - shapedMargins.y;
-                    //if (m_Width != -1 && m_Width < width)
-                    //{
-                    //    width = m_Width;
-                    //}
-                    //textInfo.lineInfo[m_LineNumber].marginLeft = shapedMargins.x;
-
-                    #endregion
-
                     float marginLeft = m_MarginLeft;
                     float marginRight = m_MarginRight;
 
@@ -1327,7 +1290,6 @@ namespace UnityEngine.TextCore.Text
                     if (isWhiteSpace)
                     {
                         textInfo.textElementInfo[m_CharacterCount].isVisible = false;
-                        m_LastVisibleCharacterOfLine = m_CharacterCount;
                         m_LineVisibleSpaceCount = textInfo.lineInfo[m_LineNumber].spaceCount += 1;
                         textInfo.lineInfo[m_LineNumber].marginLeft = marginLeft;
                         textInfo.lineInfo[m_LineNumber].marginRight = marginRight;
@@ -1432,7 +1394,6 @@ namespace UnityEngine.TextCore.Text
                         marginRight = textInfo.lineInfo[m_LineNumber].marginRight;
                     }
 
-                    float textHeight = m_MaxAscender - (m_MaxLineDescender - m_LineOffset) + (m_LineOffset > 0 && m_IsDrivenLineSpacing == false ? m_MaxLineAscender - m_StartOfLineAscender : 0);
                     float textWidth = Mathf.Abs(m_XAdvance) + (!generationSettings.isRightToLeft ? m_Ellipsis.character.m_Glyph.metrics.horizontalAdvance : 0) * (1 - m_CharWidthAdjDelta) * scale;
                     float widthOfTextAreaForEllipsis = m_Width != -1 ? Mathf.Min(marginWidth + 0.0001f - marginLeft - marginRight, m_Width) : marginWidth + 0.0001f - marginLeft - marginRight;
 
@@ -1679,9 +1640,6 @@ namespace UnityEngine.TextCore.Text
 
                     m_MeshExtents.max.x = Mathf.Max(m_MeshExtents.max.x, textInfo.textElementInfo[m_CharacterCount].topRight.x);
                     m_MeshExtents.max.y = Mathf.Max(m_MeshExtents.max.y, textInfo.textElementInfo[m_CharacterCount].topRight.y);
-
-                    //m_MeshExtents.min = new Vector2(Mathf.Min(m_MeshExtents.min.x, textInfo.textElementInfo[m_CharacterCount].bottomLeft.x), Mathf.Min(m_MeshExtents.min.y, textInfo.textElementInfo[m_CharacterCount].bottomLeft.y));
-                    //m_MeshExtents.max = new Vector2(Mathf.Max(m_MeshExtents.max.x, textInfo.textElementInfo[m_CharacterCount].topRight.x), Mathf.Max(m_MeshExtents.max.y, textInfo.textElementInfo[m_CharacterCount].topRight.y));
                 }
 
                 #endregion Track Text Extents
@@ -1696,11 +1654,15 @@ namespace UnityEngine.TextCore.Text
 
                     if ((isWhiteSpace || charCode == k_ZeroWidthSpace || (charCode == k_HyphenMinus && (m_CharacterCount <= 0 || char.IsWhiteSpace((char)textInfo.textElementInfo[m_CharacterCount - 1].character) == false)) || charCode == k_SoftHyphen) && (!m_IsNonBreakingSpace || ignoreNonBreakingSpace) && charCode != k_NoBreakSpace && charCode != k_FigureSpace && charCode != k_NonBreakingHyphen && charCode != k_NarrowNoBreakSpace && charCode != k_WordJoiner)
                     {
-                        isFirstWordOfLine = false;
-                        shouldSaveHardLineBreak = true;
+                        // Ignore Hyphen (0x2D) when preceded by a whitespace
+                        if ((charCode == k_HyphenMinus && m_CharacterCount > 0 && char.IsWhiteSpace((char)textInfo.textElementInfo[m_CharacterCount - 1].character)) == false)
+                        {
+                            isFirstWordOfLine = false;
+                            shouldSaveHardLineBreak = true;
 
-                        //Reset soft line breaking point since we now have a valid hard break point.
-                        m_SavedSoftLineBreakState.previousWordBreak = -1;
+                            //Reset soft line breaking point since we now have a valid hard break point.
+                            m_SavedSoftLineBreakState.previousWordBreak = -1;
+                        }
                     }
                     // Handling for East Asian scripts
                     else if (m_IsNonBreakingSpace == false && (TextGeneratorUtilities.IsHangul(charCode) && textSettings.lineBreakingRules.useModernHangulLineBreakingRules == false || TextGeneratorUtilities.IsCJK(charCode)))

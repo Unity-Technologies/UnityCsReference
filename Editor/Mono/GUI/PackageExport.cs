@@ -15,24 +15,24 @@ namespace UnityEditor
 {
     internal class PackageExport : EditorWindow
     {
-        [SerializeField] private ExportPackageItem[]    m_ExportPackageItems;
-        [SerializeField] private bool                   m_IncludeDependencies = true;
-        [SerializeField] private TreeViewState          m_TreeViewState;
-        [NonSerialized]  private PackageExportTreeView  m_Tree;
-        [NonSerialized]  private bool                   m_DidScheduleUpdate = false;
+        [SerializeField] private ExportPackageItem[] m_ExportPackageItems;
+        [SerializeField] private bool m_IncludeDependencies = true;
+        [SerializeField] private TreeViewState m_TreeViewState;
+        [NonSerialized] private PackageExportTreeView m_Tree;
+        [NonSerialized] private bool m_DidScheduleUpdate = false;
 
         public ExportPackageItem[] items { get { return m_ExportPackageItems; } }
 
         internal static class Styles
         {
-            public static GUIStyle title                     = "LargeBoldLabel";
-            public static GUIStyle bottomBarBg               = "ProjectBrowserBottomBarBg";
-            public static GUIStyle topBarBg                  = "OT TopBar";
-            public static GUIStyle loadingTextStyle          = "CenteredLabel";
-            public static GUIContent allText                 = EditorGUIUtility.TrTextContent("All");
-            public static GUIContent noneText                = EditorGUIUtility.TrTextContent("None");
+            public static GUIStyle title = "LargeBoldLabel";
+            public static GUIStyle bottomBarBg = "ProjectBrowserBottomBarBg";
+            public static GUIStyle topBarBg = "OT TopBar";
+            public static GUIStyle loadingTextStyle = "CenteredLabel";
+            public static GUIContent allText = EditorGUIUtility.TrTextContent("All");
+            public static GUIContent noneText = EditorGUIUtility.TrTextContent("None");
             public static GUIContent includeDependenciesText = EditorGUIUtility.TrTextContent("Include dependencies");
-            public static GUIContent header                  = EditorGUIUtility.TrTextContent("Items to Export");
+            public static GUIContent header = EditorGUIUtility.TrTextContent("Items to Export");
         }
 
         public PackageExport()
@@ -158,17 +158,21 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
 
+            GUI.enabled = m_Tree != null ? !m_Tree.isAllItemsEnabled : true;
             if (GUILayout.Button(Styles.allText, GUILayout.Width(50)))
             {
                 m_Tree.SetAllEnabled(PackageExportTreeView.EnabledState.All);
                 SendAnalyticsEvent("selectAll");
             }
+            GUI.enabled = true;
 
+            GUI.enabled = m_Tree != null ? m_Tree.isAnyItemEnabled : true;
             if (GUILayout.Button(Styles.noneText, GUILayout.Width(50)))
             {
                 m_Tree.SetAllEnabled(PackageExportTreeView.EnabledState.None);
                 SendAnalyticsEvent("selectNone");
             }
+            GUI.enabled = true;
 
             GUILayout.Space(10);
             GUILayout.EndHorizontal();
@@ -199,6 +203,7 @@ namespace UnityEditor
 
             GUILayout.FlexibleSpace();
 
+            GUI.enabled = m_Tree?.isAnyItemEnabled == true;
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Export...")))
             {
                 string invalidChars = EditorUtility.GetInvalidFilenameChars();
@@ -213,6 +218,7 @@ namespace UnityEditor
                 Export();
                 GUIUtility.ExitGUI();
             }
+            GUI.enabled = true;
 
             GUILayout.Space(10);
             GUILayout.EndHorizontal();

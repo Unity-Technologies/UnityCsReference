@@ -14,6 +14,8 @@ internal class SelectionWindowFooter : VisualElement
     public event Action onActionButtonClicked = delegate {};
     public event Action onCancelButtonClicked = delegate {};
 
+    private Button m_AllButton;
+    private Button m_NoneButton;
     private Button m_ActionButton;
 
     public SelectionWindowFooter()
@@ -27,13 +29,13 @@ internal class SelectionWindowFooter : VisualElement
         var leftSection = new VisualElement { name = "leftSection", classList = { "left-section" } };
         footer.Add(leftSection);
 
-        var allButton = new Button { name = "allButton", text = "All", tabIndex = -1, displayTooltipWhenElided = true };
-        allButton.clicked += () => onAllButtonClicked?.Invoke();
-        leftSection.Add(allButton);
+        m_AllButton = new Button { name = "allButton", text = "All", tabIndex = -1, displayTooltipWhenElided = true };
+        m_AllButton.clicked += () => onAllButtonClicked?.Invoke();
+        leftSection.Add(m_AllButton);
 
-        var noneButton = new Button { name = "noneButton", text = "None", tabIndex = -1, displayTooltipWhenElided = true };
-        noneButton.clicked += () => onNoneButtonClicked?.Invoke();
-        leftSection.Add(noneButton);
+        m_NoneButton = new Button { name = "noneButton", text = "None", tabIndex = -1, displayTooltipWhenElided = true };
+        m_NoneButton.clicked += () => onNoneButtonClicked?.Invoke();
+        leftSection.Add(m_NoneButton);
 
         var rightSection = new VisualElement { name = "rightSection", classList = { "right-section" } };
         footer.Add(rightSection);
@@ -52,8 +54,10 @@ internal class SelectionWindowFooter : VisualElement
         m_ActionButton.text = actionName;
     }
 
-    public void SetActionEnabled(bool isEnabled)
+    public void RefreshButtons(int selectedItemsCount, int totalItemsCount)
     {
-        m_ActionButton.SetEnabled(isEnabled);
+        m_ActionButton.SetEnabled(selectedItemsCount > 0);
+        m_NoneButton.SetEnabled(selectedItemsCount > 0);
+        m_AllButton.SetEnabled(selectedItemsCount < totalItemsCount);
     }
 }

@@ -671,7 +671,7 @@ namespace UnityEditor.EditorTools
                 if (!searchLockedInspectors && customEditorTool.lockedInspector)
                     continue;
 
-                if (predicate(customEditorTool) && customEditorTool.editor is EditorTool tool && tool.IsAvailable())
+                if (predicate(customEditorTool) && customEditorTool.editor is EditorTool tool)
                     return tool;
             }
 

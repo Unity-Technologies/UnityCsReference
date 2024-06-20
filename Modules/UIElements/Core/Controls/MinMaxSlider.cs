@@ -445,8 +445,7 @@ namespace UnityEngine.UIElements
 
         float ComputeValueFromPosition(float positionToConvert)
         {
-            var interpolant = 0.0f;
-            interpolant = SliderNormalizeValue(positionToConvert, dragElement.resolvedStyle.unitySliceLeft, (visualInput.layout.width - dragElement.resolvedStyle.unitySliceRight));
+            var interpolant = SliderNormalizeValue(positionToConvert, dragElement.resolvedStyle.unitySliceLeft, (visualInput.layout.width - dragElement.resolvedStyle.unitySliceRight));
             return SliderLerpUnclamped(lowLimit, highLimit, interpolant);
         }
 
@@ -495,7 +494,8 @@ namespace UnityEngine.UIElements
             {
                 m_DragState = DragState.MaxThumb;
             }
-            else if (dragElement.layout.Contains(clampedDragger.startMousePosition))
+            // If the click is within the slider x range, we drag it.
+            else if (clampedDragger.startMousePosition.x > dragElement.layout.xMin && clampedDragger.startMousePosition.x < dragElement.layout.xMax)
             {
                 m_DragState = DragState.MiddleThumb;
             }
@@ -504,58 +504,27 @@ namespace UnityEngine.UIElements
                 m_DragState = DragState.NoThumb;
             }
 
-            // No thumb we want to move the dragger with a click
+            // No thumb so we want to move the closest min/max slider.
             if (m_DragState == DragState.NoThumb)
             {
-                // Jump drag element to current mouse position : the new MAX value is simply where the mouse click is done
-                m_DragElementStartPos = new Vector2(clampedDragger.startMousePosition.x, dragElement.resolvedStyle.top);
+                var newValue = ComputeValueFromPosition(clampedDragger.startMousePosition.x);
 
-                // Manipulation becomes a free form drag
-                clampedDragger.dragDirection = ClampedDragger<float>.DragDirection.Free;
-                ComputeValueDragStateNoThumb(dragElement.resolvedStyle.unitySliceLeft, (visualInput.layout.width - dragElement.resolvedStyle.unitySliceRight), m_DragElementStartPos.x);
-                // For any future dragging after the initial click, this is a Middle Thumb like drag...
-                m_DragState = DragState.MiddleThumb;
-                m_ValueStartPos = value;
-            }
-            else
-            {
-                // This is probably a drag move
-                m_ValueStartPos = value;
-                clampedDragger.dragDirection = ClampedDragger<float>.DragDirection.Free;
-                m_DragElementStartPos = clampedDragger.startMousePosition;
-            }
-        }
-
-        void ComputeValueDragStateNoThumb(float lowLimitPosition, float highLimitPosition, float dragElementPos)
-        {
-            float newPosition;
-
-            // Clamp the dragElementPos
-            if (dragElementPos < lowLimitPosition)
-            {
-                newPosition = lowLimit;
-            }
-            else if (dragElementPos > highLimitPosition)
-            {
-                newPosition = highLimit;
-            }
-            else
-            {
-                newPosition = ComputeValueFromPosition(dragElementPos);
+                if (clampedDragger.startMousePosition.x < dragElement.layout.x)
+                {
+                    m_DragState = DragState.MinThumb;
+                    value = new Vector2(newValue, value.y);
+                }
+                else
+                {
+                    m_DragState = DragState.MaxThumb;
+                    value = new Vector2(value.x, newValue);
+                }
             }
 
-            // The new position is the MAX value... here, we must keep the distance between min and max the same as it was, since this is just a drag...
-            var actualDifference = (maxValue - minValue);
-            var newMinValue = (newPosition - actualDifference);
-            var newMaxValue = newPosition;
-
-            if (newMinValue < lowLimit)
-            {
-                newMinValue = lowLimit;
-                newMaxValue = newMinValue + actualDifference;
-            }
-
-            value = new Vector2(newMinValue, newMaxValue);
+            // Start dragging
+            m_ValueStartPos = value;
+            clampedDragger.dragDirection = ClampedDragger<float>.DragDirection.Free;
+            m_DragElementStartPos = clampedDragger.startMousePosition;
         }
 
         void ComputeValueFromDraggingThumb(float dragElementStartPos, float dragElementEndPos)

@@ -225,6 +225,14 @@ namespace UnityEditor.Modules
     {
         void OnEnable(PlayerSettingsEditor settingsEditor);
 
+        void ConfigurePlatformProfile(SerializedObject serializedProfile);
+
+        bool CopyProjectSettingsPlayerSettingsToBuildProfile();
+
+        bool IsPlayerSettingsDataEqualToProjectSettings();
+
+        void OnActiveProfileChanged(BuildProfile previous, BuildProfile newProfile);
+
         bool HasPublishSection();
 
         // Leave blank if no contribution

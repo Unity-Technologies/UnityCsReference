@@ -15,7 +15,8 @@ namespace UnityEditor.Toolbars
         public UndoButton() : base(OpenUndoHistoryWindow)
         {
             name = "History";
-            icon = EditorGUIUtility.FindTexture("UndoHistory");
+            
+            this.Q<Image>(className: EditorToolbar.elementIconClassName).style.display = DisplayStyle.Flex;
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);

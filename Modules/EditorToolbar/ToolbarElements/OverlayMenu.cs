@@ -130,12 +130,16 @@ namespace UnityEditor.Overlays
             if (targetWindow is ISupportsOverlays)
             {
                 var binding = ShortcutManager.instance.GetShortcutBinding(k_ShowOverlayMenuShortcut);
+                var itemContent = EditorGUIUtility.TrTextContent($"Overlay Menu _{binding}");
 
-                menu.AddItem(EditorGUIUtility.TrTextContent($"Overlay Menu _{binding}"), false,
-                    () =>
-                    {
-                        targetWindow.overlayCanvas.ShowPopup<OverlayMenu>();
-                    });
+
+                if (targetWindow.overlayCanvas.overlaysSupportEnabled)
+                {
+                    menu.AddItem(itemContent, false,
+                        () => { targetWindow.overlayCanvas.ShowPopup<OverlayMenu>(); });
+                }
+                else
+                    menu.AddDisabledItem(itemContent);
             }
         }
 

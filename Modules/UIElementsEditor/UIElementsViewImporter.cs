@@ -24,7 +24,7 @@ namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 19, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 20, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -1046,7 +1046,9 @@ namespace UnityEditor.UIElements
                 var asset = response.resolvedQueryAsset;
                 if (asset && m_Context != null)
                 {
-                    m_Context.DependsOnArtifact(projectRelativePath);
+                    // We dont want to declare dependencies on built-in resources
+                    if (!IsBuiltinResource(projectRelativePath))
+                        m_Context.DependsOnArtifact(projectRelativePath);
                 }
                 else if (!(asset is Object)) // This check accounts for a missing reference. We don't want to overwrite it.
                 {
@@ -1057,6 +1059,12 @@ namespace UnityEditor.UIElements
             }
 
             return (default, null);
+        }
+
+        static bool IsBuiltinResource(string path)
+        {
+            return string.Equals(path, "resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(path, "library/unity default resources", StringComparison.OrdinalIgnoreCase);
         }
 
         static Object ExtractSubAssetFromParent(Object parent, Type assetType, URIHelpers.URIValidationResponse response)

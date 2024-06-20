@@ -159,8 +159,8 @@
     <Compile Include="..\..\Modules\Accessibility\VisionUtility.cs">
       <Link>Modules\Accessibility\VisionUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\AndroidJNI\AndroidApp.bindings.cs">
-      <Link>Modules\AndroidJNI\AndroidApp.bindings.cs</Link>
+    <Compile Include="..\..\Modules\AndroidJNI\AndroidApplication.bindings.cs">
+      <Link>Modules\AndroidJNI\AndroidApplication.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AndroidJNI\AndroidApplicationExitInfo.cs">
       <Link>Modules\AndroidJNI\AndroidApplicationExitInfo.cs</Link>
@@ -194,6 +194,54 @@
     </Compile>
     <Compile Include="..\..\Modules\AndroidJNI\AssemblyInfo.cs">
       <Link>Modules\AndroidJNI\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidColorModeHdr.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidColorModeHdr.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidColorModeWideColorGamut.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidColorModeWideColorGamut.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidConfiguration.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidHardwareKeyboardHidden.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidHardwareKeyboardHidden.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidKeyboard.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidKeyboard.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidKeyboardHidden.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidKeyboardHidden.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidNavigation.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidNavigation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidNavigationHidden.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidNavigationHidden.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidOrientation.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidOrientation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidScreenLayoutDirection.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidScreenLayoutDirection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidScreenLayoutLong.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidScreenLayoutLong.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidScreenLayoutRound.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidScreenLayoutRound.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidScreenLayoutSize.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidScreenLayoutSize.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidTouchScreen.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidTouchScreen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidUiModeNight.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidUiModeNight.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidUiModeType.cs">
+      <Link>Modules\AndroidJNI\Configuration\AndroidUiModeType.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Animation\Managed\Animation.deprecated.cs">
       <Link>Modules\Animation\Managed\Animation.deprecated.cs</Link>
@@ -2793,8 +2841,14 @@
     <Compile Include="..\..\Modules\UIElements\Core\Text\TextEditingManipulator.cs">
       <Link>Modules\UIElements\Core\Text\TextEditingManipulator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\TextEventHandler.cs">
+      <Link>Modules\UIElements\Core\Text\TextEventHandler.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\TextSelectingManipulator.cs">
       <Link>Modules\UIElements\Core\Text\TextSelectingManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\TextUtilities.cs">
+      <Link>Modules\UIElements\Core\Text\TextUtilities.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\UITKTextHandle.cs">
       <Link>Modules\UIElements\Core\Text\UITKTextHandle.cs</Link>
@@ -4163,12 +4217,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.DelayedCall.cs">
       <Link>Runtime\Export\Scripting\Awaitable.DelayedCall.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.Synchronization.cs">
-      <Link>Runtime\Export\Scripting\Awaitable.Synchronization.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.ThreadSafeObjectPool.cs">
-      <Link>Runtime\Export\Scripting\Awaitable.ThreadSafeObjectPool.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.Threading.cs">
       <Link>Runtime\Export\Scripting\Awaitable.Threading.cs</Link>

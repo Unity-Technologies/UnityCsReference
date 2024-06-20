@@ -482,7 +482,7 @@ namespace UnityEngine.UIElements
             if (m_MultiColumnHeader.isApplyingViewState)
                 return;
 
-            if (type == ColumnDataType.Visibility) m_View.Rebuild();
+            if (type == ColumnDataType.Visibility) m_View.ScheduleRebuild();
         }
 
         void OnColumnChanged(ColumnsDataType type)
@@ -490,7 +490,7 @@ namespace UnityEngine.UIElements
             if (m_MultiColumnHeader.isApplyingViewState)
                 return;
 
-            if (type == ColumnsDataType.PrimaryColumn) m_View.Rebuild();
+            if (type == ColumnsDataType.PrimaryColumn) m_View.ScheduleRebuild();
         }
 
         void OnViewDataRestored()

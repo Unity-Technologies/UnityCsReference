@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using UnityEngine.Pool;
 
 namespace UnityEngine
 {
@@ -48,9 +49,10 @@ namespace UnityEngine
             public static implicit operator AwaitableHandle(IntPtr handle) => new AwaitableHandle(handle);
         }
 
-        private readonly ManagedLockWithSingleThreadBias _spinLock = default;
+        private SpinLock _spinLock = default;
 
-        static readonly ThreadSafeObjectPool<Awaitable> _pool = new(() => new());
+        static readonly ThreadLocal<ObjectPool<Awaitable>> _pool =
+            new(() => new ObjectPool<Awaitable>(() => new(), collectionCheck: false));
         AwaitableHandle _handle;
         ExceptionDispatchInfo _exceptionToRethrow;
         bool _managedAwaitableDone;
@@ -60,7 +62,7 @@ namespace UnityEngine
 
         internal static Awaitable NewManagedAwaitable()
         {
-            var awaitable = _pool.Get();
+            var awaitable = _pool.Value.Get();
             awaitable._handle = AwaitableHandle.ManagedHandle;
             return awaitable;
         }
@@ -68,7 +70,7 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Awaitable FromNativeAwaitableHandle(IntPtr nativeHandle, CancellationToken cancellationToken)
         {
-            var awaitable = _pool.Get();
+            var awaitable = _pool.Value.Get();
             awaitable._handle = nativeHandle;
             unsafe
             {
@@ -88,14 +90,18 @@ namespace UnityEngine
             {
                 throw new ArgumentNullException(nameof(awaitable));
             }
+            bool lockTaken = false;
             try
             {
-                awaitable._spinLock.Acquire();
+                awaitable._spinLock.Enter(ref lockTaken);
                 awaitable._cancelTokenRegistration = cancellationToken.Register(coroutine => ((Awaitable)coroutine).Cancel(), awaitable);
             }
             finally
             {
-                awaitable._spinLock.Release();
+                if (lockTaken)
+                {
+                    awaitable._spinLock.Exit();
+                }
             }
         }
 
@@ -103,9 +109,10 @@ namespace UnityEngine
         internal void RaiseManagedCompletion(Exception exception)
         {
             Action continuation = null;
+            bool lockTaken = false;
             try
             {
-                _spinLock.Acquire();
+                _spinLock.Enter(ref lockTaken);
                 if (exception != null)
                 {
                     _exceptionToRethrow = ExceptionDispatchInfo.Capture(exception);
@@ -116,7 +123,10 @@ namespace UnityEngine
             }
             finally
             {
-                _spinLock.Release();
+                if (lockTaken)
+                {
+                    _spinLock.Exit();
+                }
             }
             continuation?.Invoke();
         }
@@ -125,25 +135,30 @@ namespace UnityEngine
         internal void RaiseManagedCompletion()
         {
             Action continuation = null;
+            bool lockTaken = false;
             try
             {
-                _spinLock.Acquire();
+                _spinLock.Enter(ref lockTaken);
                 _managedAwaitableDone = true;
                 continuation = _continuation;
                 _continuation = null;
             }
             finally
             {
-                _spinLock.Release();
+                if (lockTaken)
+                {
+                    _spinLock.Exit();
+                }
             }
             continuation?.Invoke();
         }
 
         internal void PropagateExceptionAndRelease()
         {
+            bool lockTaken = false;
             try
             {
-                _spinLock.Acquire();
+                _spinLock.Enter(ref lockTaken);
                 CheckPointerValidity();
                 if (_cancelTokenRegistration.HasValue)
                 {
@@ -160,12 +175,15 @@ namespace UnityEngine
                 {
                     ReleaseNativeAwaitable(ptr);
                 }
-                _pool.Release(this);
+                _pool.Value.Release(this);
                 toRethrow?.Throw();
             }
             finally
             {
-                _spinLock.Release();
+                if (lockTaken)
+                {
+                    _spinLock.Exit();
+                }
             }
         }
 
@@ -198,14 +216,18 @@ namespace UnityEngine
         {
             get
             {
+                bool lockTaken = false;
                 try
                 {
-                    _spinLock.Acquire();
+                    _spinLock.Enter(ref lockTaken);
                     return IsCompletedNoLock;
                 }
                 finally
                 {
-                    _spinLock.Release();
+                    if (lockTaken)
+                    {
+                        _spinLock.Exit();
+                    }
                 }
             }
         }
@@ -214,9 +236,10 @@ namespace UnityEngine
         {
             get
             {
+                bool lockTaken = false;
                 try
                 {
-                    _spinLock.Acquire();
+                    _spinLock.Enter(ref lockTaken);
                     if (_handle.IsNull)
                     {
                         return true;
@@ -230,7 +253,10 @@ namespace UnityEngine
                 }
                 finally
                 {
-                    _spinLock.Release();
+                    if (lockTaken)
+                    {
+                        _spinLock.Exit();
+                    }
                 }
             }
         }
@@ -251,9 +277,10 @@ namespace UnityEngine
         internal void SetContinuation(Action continuation)
         {
             bool done = false;
+            bool lockTaken = false;
             try
             {
-                _spinLock.Acquire();
+                _spinLock.Enter(ref lockTaken);
                 if (IsCompletedNoLock)
                 {
                     done = true;
@@ -265,7 +292,10 @@ namespace UnityEngine
             }
             finally
             {
-                _spinLock.Release();
+                if (lockTaken)
+                {
+                    _spinLock.Exit();
+                }
             }
             if (done)
             {

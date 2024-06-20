@@ -31,6 +31,8 @@ namespace UnityEditor
 
         public ImportPackageItem[] packageItems { get { return m_PackageImport.packageItems; } }
 
+        public bool isAllItemsEnabled { get; private set; }
+        public bool isAnyItemEnabled { get; private set; }
 
         public PackageImportTreeView(PackageImport packageImport, TreeViewState treeViewState, Rect startRect)
         {
@@ -38,7 +40,7 @@ namespace UnityEditor
 
             m_TreeView = new TreeViewController(m_PackageImport, treeViewState);
             var dataSource = new PackageImportTreeViewDataSource(m_TreeView, this);
-            var gui        = new PackageImportTreeViewGUI(m_TreeView, this);
+            var gui = new PackageImportTreeViewGUI(m_TreeView, this);
 
             m_TreeView.Init(startRect, dataSource, gui, null);
             m_TreeView.ReloadData();
@@ -46,6 +48,8 @@ namespace UnityEditor
             gui.itemWasToggled += ItemWasToggled;
 
             ComputeEnabledStateForFolders();
+
+            RefreshEnabledProperties();
         }
 
         void ComputeEnabledStateForFolders()
@@ -230,6 +234,7 @@ namespace UnityEditor
         {
             EnableChildrenRecursive(m_TreeView.data.root, state);
             ComputeEnabledStateForFolders();
+            RefreshEnabledProperties();
         }
 
         void ItemWasToggled(PackageImportTreeViewItem pitem)
@@ -247,8 +252,8 @@ namespace UnityEditor
             }
 
             ComputeEnabledStateForFolders();
+            RefreshEnabledProperties();
         }
-
         void EnableChildrenRecursive(TreeViewItem parentItem, EnabledState state)
         {
             if (!parentItem.hasChildren)
@@ -261,6 +266,13 @@ namespace UnityEditor
 
                 EnableChildrenRecursive(pitem, state);
             }
+        }
+
+        private void RefreshEnabledProperties()
+        {
+            isAllItemsEnabled = !m_TreeView.data.root.Exists(item => ((PackageImportTreeViewItem)item).enableState != EnabledState.All);
+            isAnyItemEnabled = m_TreeView.data.root.Exists(item => ((PackageImportTreeViewItem)item).enableState == EnabledState.All ||
+                                                                       ((PackageImportTreeViewItem)item).enableState == EnabledState.Mixed);
         }
 
         // Item
@@ -351,13 +363,13 @@ namespace UnityEditor
                 if (selected && repainting)
                     selectionStyle.Draw(rowRect, false, false, true, focused);
 
-                bool validItem    = (item != null);
-                bool isDisabled   = (item != null) ? item.enabledStatus == (int)EnabledState.Disabled : false;
-                bool isFolder     = (item != null) ? item.isFolder     : true;
+                bool validItem = (item != null);
+                bool isDisabled = (item != null) ? item.enabledStatus == (int)EnabledState.Disabled : false;
+                bool isFolder = (item != null) ? item.isFolder : true;
                 bool assetChanged = (item != null) ? item.assetChanged : false;
                 bool pathConflict = (item != null) ? item.pathConflict : false;
                 bool GUIDOverride = (item != null) ? item.existingAssetPath != string.Empty && item.existingAssetPath != item.destinationAssetPath : false;
-                bool exists       = (item != null) ? item.exists       : true;
+                bool exists = (item != null) ? item.exists : true;
                 bool projectAsset = (item != null) ? item.projectAsset : false;
 
                 // 1. Foldout
@@ -440,7 +452,7 @@ namespace UnityEditor
                 if (isFolder && (pitem.enableState == EnabledState.Disabled))
                     GUI.enabled = false;
 
-                bool newEnabled =  GUI.Toggle(toggleRect, enabled, GUIContent.none, style);
+                bool newEnabled = GUI.Toggle(toggleRect, enabled, GUIContent.none, style);
                 if (newEnabled != enabled)
                     pitem.enableState = newEnabled ? EnabledState.All : EnabledState.None;
 
@@ -504,8 +516,8 @@ namespace UnityEditor
 
             protected override Texture GetIconForItem(TreeViewItem tvItem)
             {
-                var ourItem         = tvItem as PackageImportTreeViewItem;
-                var item            = ourItem.item;
+                var ourItem = tvItem as PackageImportTreeViewItem;
+                var item = ourItem.item;
 
                 // Indefined items are always folders.
                 if (item == null || item.isFolder)
@@ -567,7 +579,6 @@ namespace UnityEditor
                     m_TreeView.state.expandedIDs.Add(m_RootItem.id);
 
                 ImportPackageItem[] items = m_PackageImportView.packageItems;
-
                 Dictionary<string, TreeViewItem> treeViewFolders = new Dictionary<string, TreeViewItem>();
                 for (int i = 0; i < items.Length; i++)
                 {
@@ -576,7 +587,7 @@ namespace UnityEditor
                     if (PackageImport.HasInvalidCharInFilePath(item.destinationAssetPath))
                         continue; // Do not add invalid paths (we already warn the user with a dialog in PackageImport.cs)
 
-                    string filename   = Path.GetFileName(item.destinationAssetPath).ConvertSeparatorsToUnity();
+                    string filename = Path.GetFileName(item.destinationAssetPath).ConvertSeparatorsToUnity();
                     string folderPath = Path.GetDirectoryName(item.destinationAssetPath).ConvertSeparatorsToUnity();
 
                     // Ensure folders. This is for when installed packages have been moved to other folders.

@@ -5,15 +5,17 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using System.Security;
+using System.Threading;
 using UnityEngine.Internal;
+using UnityEngine.Pool;
 
 namespace UnityEngine
 {
     [AsyncMethodBuilder(typeof(Awaitable.AwaitableAsyncMethodBuilder<>))]
     public class Awaitable<T>
     {
-        static Awaitable.ThreadSafeObjectPool<Awaitable<T>> _pool = new (()=>new ());
+        static readonly ThreadLocal<ObjectPool<Awaitable<T>>> _pool =
+            new(() => new ObjectPool<Awaitable<T>>(() => new(), collectionCheck: false));
         private Awaitable _awaitable;
         T _result;
 
@@ -34,7 +36,7 @@ namespace UnityEngine
             {
                 _awaitable = null;
                 _result = default;
-                _pool.Release(this);
+                _pool.Value.Release(this);
             }
         }
 
@@ -59,7 +61,7 @@ namespace UnityEngine
         internal static Awaitable<T> GetManaged()
         {
             var innerCoroutine = Awaitable.NewManagedAwaitable();
-            var result = _pool.Get();
+            var result = _pool.Value.Get();
             result._awaitable = innerCoroutine;
             return result;
         }

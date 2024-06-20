@@ -201,7 +201,15 @@ namespace Unity.UI.Builder
                         break;
                     case KeyCode.Escape:
                         if (explorerItem.IsRenamingActive())
+                        {
+                            if (!explorerItem.IsRenameTextValid())
+                            {
+                                explorerItem.ResetRenamingField();
+                            }
+
                             Focus();
+                        }
+
                         break;
                 }
             }, TrickleDown.TrickleDown);
