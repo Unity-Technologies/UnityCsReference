@@ -15,7 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackageDetails : VisualElement
     {
         private const string k_TermsOfServicesURL = "https://assetstore.unity.com/account/term";
-        internal new class UxmlFactory : UxmlFactory<PackageDetails> {}
+        internal new class UxmlFactory : UxmlFactory<PackageDetails> { }
 
         private const string k_CustomizedIcon = "customizedIcon";
         private const string k_WarningIcon = "warningIcon";
@@ -468,7 +468,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var error = displayVersion?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable)) ?? package?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable));
             detailError.RefreshError(error, package, displayVersion);
 
-            var operationError = displayVersion?.errors?.FirstOrDefault(e  => e.HasAttribute(UIError.Attribute.IsClearable)) ?? package?.errors?.FirstOrDefault(e => e.HasAttribute(UIError.Attribute.IsClearable));
+            var operationError = displayVersion?.errors?.FirstOrDefault(e => e.HasAttribute(UIError.Attribute.IsClearable)) ?? package?.errors?.FirstOrDefault(e => e.HasAttribute(UIError.Attribute.IsClearable));
             if (operationError == null)
             {
                 ClearError();
@@ -825,8 +825,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (installedVersion?.HasTag(PackageTag.Git) == true)
             {
                 var packageInfo = m_UpmCache.GetBestMatchPackageInfo(installedVersion.name, true);
-                m_PackageDatabase.Install(packageInfo.packageId);
-                RefreshPackageActionButtons();
+                if (m_PackageDatabase.Install(packageInfo.packageId))
+                    RefreshPackageActionButtons();
                 return;
             }
 

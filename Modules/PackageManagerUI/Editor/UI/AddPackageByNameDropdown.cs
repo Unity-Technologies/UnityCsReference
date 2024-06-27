@@ -165,7 +165,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void InstallByNameAndVersion(string packageName, string packageVersion = null)
         {
             var packageId = string.IsNullOrEmpty(packageVersion) ? packageName : $"{packageName}@{packageVersion}";
-            m_UpmClient.AddById(packageId);
+            if(!m_PackageDatabase.Install(packageId))
+            {
+                Close();
+                return;
+            }
 
             PackageManagerWindowAnalytics.SendEvent("addByNameAndVersion", packageId);
 

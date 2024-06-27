@@ -61,6 +61,9 @@ namespace UnityEditor
         [NativeProperty("VCAllowAsyncUpdate")]
         public static extern bool allowAsyncStatusUpdate { get; set; }
 
+        [NativeProperty("VCScanLocalPackagesOnConnect")]
+        public static extern bool scanLocalPackagesOnConnect { get; set; }
+
         [NativeProperty("VCDebugCmd")]
         internal static extern bool DebugCmd { get; set; }
 

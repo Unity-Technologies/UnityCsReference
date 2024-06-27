@@ -75,7 +75,8 @@ namespace UnityEngine.XR
         {
             [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
             get;
-
+            
+            [Obsolete("XRSettings.enabled{set;} is deprecated and should no longer be used. Instead, call Start() and Stop() on an XRDisplaySubystem instance.")]
             set;
         }
 
@@ -136,11 +137,13 @@ namespace UnityEngine.XR
         [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static string loadedDeviceName { get; }
 
+        [Obsolete("XRSettings.LoadDeviceByName is deprecated and should no longer be used. Instead, use the SubsystemManager to load XR devices by querying subsystem descriptors to create and start the subsystems of your choice.")]
         public static void LoadDeviceByName(string deviceName)
         {
             LoadDeviceByName(new string[] { deviceName });
         }
 
+        [Obsolete("XRSettings.LoadDeviceByName is deprecated and should no longer be used. Instead, use the SubsystemManager to load XR devices by querying subsystem descriptors to create and start the subsystems of your choice.")]
         extern public static void LoadDeviceByName(string[] prioritizedDeviceNameList);
 
         extern public static string[] supportedDevices { get; }
