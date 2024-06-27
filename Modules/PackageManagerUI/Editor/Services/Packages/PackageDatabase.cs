@@ -7,23 +7,25 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
+using System.IO;
+using System.Security.Policy;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
     internal class PackageDatabase : ISerializationCallbackReceiver
     {
-        public virtual event Action<IPackage> onInstallOrUninstallSuccess = delegate {};
+        public virtual event Action<IPackage> onInstallOrUninstallSuccess = delegate { };
 
-        public virtual event Action<IPackage> onPackageProgressUpdate = delegate {};
-        public virtual event Action<IPackage> onVerifiedGitPackageUpToDate = delegate {};
+        public virtual event Action<IPackage> onPackageProgressUpdate = delegate { };
+        public virtual event Action<IPackage> onVerifiedGitPackageUpToDate = delegate { };
 
         public virtual event Action<IEnumerable<IPackage> /*added*/,
                                     IEnumerable<IPackage> /*removed*/,
                                     IEnumerable<IPackage> /*preUpdated*/,
-                                    IEnumerable<IPackage> /*postUpdated*/> onPackagesChanged = delegate {};
+                                    IEnumerable<IPackage> /*postUpdated*/> onPackagesChanged = delegate { };
 
-        public virtual event Action<TermOfServiceAgreementStatus> onTermOfServiceAgreementStatusChange = delegate {};
+        public virtual event Action<TermOfServiceAgreementStatus> onTermOfServiceAgreementStatusChange = delegate { };
 
         private readonly Dictionary<string, IPackage> m_Packages = new Dictionary<string, IPackage>();
 
@@ -92,7 +94,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool isEmpty { get { return !m_Packages.Any(); } }
 
-        private static readonly IPackage[] k_EmptyList = new IPackage[0] {};
+        private static readonly IPackage[] k_EmptyList = new IPackage[0] { };
+
+        private string InstallOrRemoveInProgressWarningMessage(string installSource) => string.Format(L10n.Tr("[Package Manager Window] The request to install {0}" +
+            " will be canceled due to an ongoing Install/Remove operation. Please retry your request once the current operation has completed."), installSource);
 
         public virtual bool isInstallOrUninstallInProgress
         {
@@ -631,19 +636,37 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.AddById(version.uniqueId);
         }
 
-        public virtual void Install(string packageId)
+        public virtual bool Install(string packageId)
         {
+            if (isInstallOrUninstallInProgress)
+            {
+                Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(packageId));
+                return false;
+            }
             m_UpmClient.AddById(packageId);
+            return true;
         }
 
-        public virtual void InstallFromUrl(string url)
+        public virtual bool InstallFromUrl(string url)
         {
+            if (isInstallOrUninstallInProgress)
+            {
+                Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(url));
+                return false;
+            }
             m_UpmClient.AddByUrl(url);
+            return true;
         }
 
-        public virtual void InstallFromPath(string path)
+        public virtual bool InstallFromPath(string path)
         {
+            if (isInstallOrUninstallInProgress)
+            {
+                Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(path));
+                return false;
+            }
             m_UpmClient.AddByPath(path);
+            return true;
         }
 
         public virtual void Uninstall(IPackage package)

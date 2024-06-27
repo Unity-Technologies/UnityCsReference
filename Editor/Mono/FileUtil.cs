@@ -3,10 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using NiceIO;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -77,6 +77,11 @@ namespace UnityEditor
             CopyDirectoryRecursive(source, target, overwrite: false, ignoreMeta: false);
         }
 
+        internal static void CopyDirectoryRecursivePreserveSymlinks(string source, string target)
+        {
+            CopyDirectoryFiltered(source, target, false, regExExcludeFilter: null, true, true);
+        }
+
         internal static void CopyDirectoryRecursive(string source, string target, bool overwrite)
         {
             CopyDirectoryRecursive(source, target, overwrite, ignoreMeta: false);
@@ -84,7 +89,7 @@ namespace UnityEditor
 
         internal static void CopyDirectory(string source, string target, bool overwrite)
         {
-            CopyDirectoryFiltered(source, target, overwrite, f => true, false);
+            CopyDirectoryFiltered(source, target, overwrite, f => true, false, false);
         }
 
         internal static void CopyDirectoryRecursive(string source, string target, bool overwrite, bool ignoreMeta)
@@ -99,10 +104,10 @@ namespace UnityEditor
 
         internal static void CopyDirectoryRecursiveFiltered(string source, string target, bool overwrite, string regExExcludeFilter)
         {
-            CopyDirectoryFiltered(source, target, overwrite, regExExcludeFilter, true);
+            CopyDirectoryFiltered(source, target, overwrite, regExExcludeFilter, true, false);
         }
 
-        internal static void CopyDirectoryFiltered(string source, string target, bool overwrite, string regExExcludeFilter, bool recursive)
+        internal static void CopyDirectoryFiltered(string source, string target, bool overwrite, string regExExcludeFilter, bool recursive, bool preserveSymlinks)
         {
             Regex exclude = null;
             try
@@ -118,16 +123,18 @@ namespace UnityEditor
 
             Func<string, bool> includeCallback = file => (exclude == null || !exclude.IsMatch(file));
 
-            CopyDirectoryFiltered(source, target, overwrite, includeCallback, recursive);
+            CopyDirectoryFiltered(source, target, overwrite, includeCallback, recursive, preserveSymlinks);
         }
 
-        internal static void CopyDirectoryFiltered(string source, string target, bool overwrite, Func<string, bool> includeCallback, bool recursive)
+        internal static void CopyDirectoryFiltered(string source, string target, bool overwrite, Func<string, bool> includeCallback, bool recursive, bool preserveSymlinks)
         {
             // Check if the target directory exists, but dont create it yet until we know there are files to copy.
-            bool createDirectory = !Directory.Exists(target);
+            var createDirectory = !Directory.Exists(target);
+
+            var targetPath = new NPath(target);
 
             // Copy each file into the new directory.
-            foreach (string fi in Directory.GetFiles(source))
+            foreach (var fi in Directory.GetFiles(source))
             {
                 if (!includeCallback(fi))
                     continue;
@@ -139,24 +146,38 @@ namespace UnityEditor
                     createDirectory = false;
                 }
 
-                string fname = Path.GetFileName(fi);
-                string targetfname = Path.Combine(target, fname);
+                // FileInfo needed to resolve actual Package location
+                var fileInfo = new FileInfo(fi);
+                var filePath = new NPath(fileInfo.FullName);
+                if (preserveSymlinks && filePath.IsSymbolicLink)
+                {
+                    targetPath.Combine(filePath.FileName).CreateSymbolicLink(filePath.LinkTarget, true, true);
+                    continue;
+                }
 
-                UnityFileCopy(fi, targetfname, overwrite);
+                UnityFileCopy(fi, targetPath.Combine(filePath.FileName).ToString(), overwrite);
             }
 
             if (!recursive)
                 return;
 
             // Copy each subdirectory recursively.
-            foreach (string di in Directory.GetDirectories(source))
+            // Recreate symlinked directories as symlinks
+            foreach (var di in Directory.GetDirectories(source))
             {
                 if (!includeCallback(di))
                     continue;
 
-                string fname = Path.GetFileName(di);
-
-                CopyDirectoryFiltered(Path.Combine(source, fname), Path.Combine(target, fname), overwrite, includeCallback, recursive);
+                // DirectoryInfo needed to resolve actual Package location
+                var dirInfo = new DirectoryInfo(di);
+                var dirPath = new NPath(dirInfo.FullName);
+                // Preserve symlinks/reparse points
+                if (preserveSymlinks && dirPath.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                {
+                    targetPath.Combine(dirPath.FileName).CreateSymbolicLink(dirPath.LinkTarget);
+                    continue;
+                }
+                CopyDirectoryFiltered(Path.Combine(source, dirPath.FileName), Path.Combine(target, dirPath.FileName), overwrite, includeCallback, recursive, preserveSymlinks);
             }
         }
 

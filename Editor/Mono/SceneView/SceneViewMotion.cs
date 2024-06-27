@@ -384,8 +384,7 @@ namespace UnityEditor
                         if (!view.in2DMode && !view.isRotationLocked)
                         {
                             OrbitCameraBehavior(view);
-                            // todo gizmo update label
-                            // view.m_OrientationGizmo.UpdateGizmoLabel(view, view.rotation * Vector3.forward, view.m_Ortho.target);
+                            view.UpdateOrientationGizmos();
                         }
                     }
                     break;
@@ -419,8 +418,7 @@ namespace UnityEditor
                                 OrbitCameraBehavior(view);
                             }
 
-                            // todo gizmo update label
-                            // view.m_OrientationGizmo.UpdateGizmoLabel(view, view.rotation * Vector3.forward, view.m_Ortho.target);
+                            view.UpdateOrientationGizmos();
                         }
                     }
                     break;
@@ -484,12 +482,12 @@ namespace UnityEditor
             view.camera.farClipPlane = clip.y;
             view.camera.transform.position = Vector3.zero;
             view.camera.transform.rotation = Quaternion.identity;
-            
+
             // do the distance calculation
             Vector3 pivotWorld = camera.transform.rotation * new Vector3(0f, 0f, view.cameraDistance);
             Vector3 pivotScreen = camera.WorldToScreenPoint(pivotWorld);
             pivotScreen += new Vector3(delta.x, delta.y, 0);
-            
+
             Vector3 worldDelta = camera.ScreenToWorldPoint(pivotScreen) - pivotWorld;
             // We're clearing z here as ScreenToWorldPoint(WorldToScreenPoint(worldPoint)) does not result in the exact same worldPoint that was inputed.
             // https://jira.unity3d.com/browse/UUM-56425

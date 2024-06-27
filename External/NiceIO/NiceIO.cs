@@ -922,8 +922,9 @@ namespace NiceIO
         /// </summary>
         /// <param name="targetPath">The path that this path should be a symbolic link to. Can be relative or absolute.</param>
         /// <param name="targetIsFile">Specifies whether this link is to a file or to a directory (required on Windows). Defaults to file.</param>
+        /// <param name="windowsKeepRelativeTargets">Specifies whether this link target should be kept as relative instead of converting it to an absolute long path (only relevant on Windows). Defaults to false.</param>
         /// <returns>The path to the created symbolic link, for chaining further operations.</returns>
-        public NPath CreateSymbolicLink(NPath targetPath, bool targetIsFile = true)
+        public NPath CreateSymbolicLink(NPath targetPath, bool targetIsFile = true, bool windowsKeepRelativeTargets = false)
         {
             ThrowIfRoot();
 
@@ -931,7 +932,10 @@ namespace NiceIO
                 throw new InvalidOperationException(
                     "Cannot create symbolic link at {this} because it already exists as a file or directory.");
 
-            FileSystem.Active.CreateSymbolicLink(this, targetPath, targetIsFile);
+            if (windowsKeepRelativeTargets)
+                FileSystem.Active.CreateSymbolicLinkPreserveTarget(this, targetPath, targetIsFile);
+            else
+                FileSystem.Active.CreateSymbolicLink(this, targetPath, targetIsFile);
             return this;
         }
 
@@ -1150,6 +1154,11 @@ namespace NiceIO
         /// </summary>
         /// <remarks>Note that every read from this property will result in an operating system query, unless <see cref="WithFrozenCurrentDirectory">WithFrozenCurrentDirectory</see> is used.</remarks>
         public static NPath CurrentDirectory => FileSystem.Active.Directory_GetCurrentDirectory();
+
+        /// <summary>
+        /// Symbolic link target.
+        /// </summary>
+        public NPath LinkTarget => FileSystem.Active.GetSymbolicLinkTarget(this);
 
         class SetCurrentDirectoryOnDispose : IDisposable
         {
@@ -1573,6 +1582,17 @@ namespace NiceIO
             public abstract bool IsSymbolicLink(NPath path);
 
             public abstract void CreateSymbolicLink(NPath fromPath, NPath targetPath, bool targetIsFile);
+
+            public virtual void CreateSymbolicLinkPreserveTarget(NPath fromPath, NPath targetPath, bool targetIsFile)
+            {
+                // Platform-specific implementation only on Windows
+                CreateSymbolicLink(fromPath, targetPath, targetIsFile);
+            }
+
+            public virtual NPath GetSymbolicLinkTarget(NPath path)
+            {
+                throw new NotImplementedException("Method not implemented");
+            }
         }
 #pragma warning restore 1591
 
@@ -1767,21 +1787,21 @@ namespace NiceIO
                     {
                         foreach (var file in files)
                         {
-	                        try
-	                        {
-		                        // remove read-only attribute or delete will fail
-		                        var attributes = File_GetAttributes(file);
-		                        if ((attributes & FileAttributes.ReadOnly) != 0)
-			                        File_SetAttributes(file, attributes & ~FileAttributes.ReadOnly);
+                            try
+                            {
+                                // remove read-only attribute or delete will fail
+                                var attributes = File_GetAttributes(file);
+                                if ((attributes & FileAttributes.ReadOnly) != 0)
+                                    File_SetAttributes(file, attributes & ~FileAttributes.ReadOnly);
 
-		                        File_Delete(file);
-	                        }
-		                    // Another process/thread may have deleted (or be in the process of deleting) the file since the time we listed out the directory, causing any of these exceptions.
-	                        catch (Exception e) when (e is InvalidOperationException or FileNotFoundException or UnauthorizedAccessException)
-	                        {
-		                        if (file.FileExists())
-			                        throw;
-	                        }
+                                File_Delete(file);
+                            }
+                            // Another process/thread may have deleted (or be in the process of deleting) the file since the time we listed out the directory, causing any of these exceptions.
+                            catch (Exception e) when (e is InvalidOperationException or FileNotFoundException or UnauthorizedAccessException)
+                            {
+                                if (file.FileExists())
+                                    throw;
+                            }
                         }
 
                         foreach (var dir in dirs)
@@ -1854,6 +1874,12 @@ namespace NiceIO
 
             public override void CreateSymbolicLink(NPath fromPath, NPath targetPath, bool targetIsFile)
             {
+                var destPath = MakeLongPath(targetPath).TrimEnd('\\');
+                CreateSymbolicLinkPreserveTarget(fromPath, destPath, targetIsFile);
+            }
+
+            public override void CreateSymbolicLinkPreserveTarget(NPath fromPath, NPath targetPath, bool targetIsFile)
+            {
                 var flags = Win32Native.SymbolicLinkFlags.File;
                 if (CalculateIsWindows10())
                     flags |= Win32Native.SymbolicLinkFlags.AllowUnprivilegedCreate;
@@ -1861,9 +1887,75 @@ namespace NiceIO
                     flags |= Win32Native.SymbolicLinkFlags.Directory;
 
                 var path = MakeLongPath(fromPath).TrimEnd('\\');
-                var destPath = MakeLongPath(targetPath).TrimEnd('\\');
-                if (!Win32Native.CreateSymbolicLink(path, destPath, flags))
+                if (!Win32Native.CreateSymbolicLink(path, targetPath.ToString(), flags))
                     throw new IOException($"Cannot create symbolic link {path} from {targetPath}.", new Win32Exception(Marshal.GetLastWin32Error()));
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct ReparseDataBuffer
+            {
+                public uint ReparseTag;
+                public ushort ReparseDataLength;
+                public ushort Reserved;
+                public ushort SubstituteNameOffset;
+                public ushort SubstituteNameLength;
+                public ushort PrintNameOffset;
+                public ushort PrintNameLength;
+                public uint Flags;
+                [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1024)]
+                public byte[] PathBuffer;
+            }
+
+            public override NPath GetSymbolicLinkTarget(NPath path)
+            {
+                var longPath = MakeLongPath(path).TrimEnd('\\');
+                var resolvedPath = "";
+                using (var handle = CreateFileSymlinkHandle(
+                           path,
+                           longPath,
+                           Win32Native.CreationDisposition.OpenExisting,
+                           Win32Native.FileAccess.GenericRead,
+                           FileShare.ReadWrite))
+                {
+                    if (handle.IsInvalid)
+                    {
+                        var lastError = Marshal.GetLastWin32Error();
+                        if (lastError == Win32Native.ERROR_INVALID_NAME && path.FileName.Length > 255)
+                            throw new PathTooLongException($"File name {path.FileName} exceeds limit of 255 characters.");
+                        throw new IOException($"Cannot access {longPath}.", new Win32Exception(lastError));
+                    }
+
+                    uint bytesReturned;
+                    var reparseBuffer = new ReparseDataBuffer();
+                    var reparseBufferPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(ReparseDataBuffer)));
+                    Marshal.StructureToPtr(reparseBuffer, reparseBufferPtr, false);
+
+                    try
+                    {
+                        if (!Win32Native.DeviceIoControl(
+                                handle,
+                                Win32Native.FSCTL_GET_REPARSE_POINT,
+                                IntPtr.Zero,
+                                0,
+                                reparseBufferPtr,
+                                (uint)Marshal.SizeOf(typeof(ReparseDataBuffer)),
+                                out bytesReturned,
+                                IntPtr.Zero))
+                        {
+                            var error = Marshal.GetLastWin32Error();
+                            throw new Win32Exception(error);
+                        }
+
+                        reparseBuffer = Marshal.PtrToStructure<ReparseDataBuffer>(reparseBufferPtr);
+                        resolvedPath = Encoding.Unicode.GetString(reparseBuffer.PathBuffer, reparseBuffer.SubstituteNameOffset, reparseBuffer.SubstituteNameLength);
+                    }
+                    finally
+                    {
+                        Marshal.FreeHGlobal(reparseBufferPtr);
+                    }
+                }
+
+                return resolvedPath;
             }
 
             public override FileAttributes File_GetAttributes(NPath path)
@@ -2192,6 +2284,29 @@ namespace NiceIO
                 return longPath.Substring(0, (int)length - 1);
             }
 
+            private static SafeFileHandle CreateFileSymlinkHandle(
+                NPath path,
+                string filePath,
+                Win32Native.CreationDisposition creationDisposition,
+                Win32Native.FileAccess fileAccess,
+                FileShare fileShare)
+            {
+                var fileHandle = Win32Native.CreateFile(filePath, fileAccess, fileShare,
+                    IntPtr.Zero,
+                    creationDisposition,
+                    Win32Native.FileAttributes.OpenReparsePoint | Win32Native.FileAttributes.BackupSemantics,
+                    IntPtr.Zero);
+                if (fileHandle.IsInvalid)
+                {
+                    var lastError = Marshal.GetLastWin32Error();
+                    if (lastError == Win32Native.ERROR_INVALID_NAME && path.FileName.Length > 255)
+                        throw new PathTooLongException($"File name {path.FileName} exceeds limit of 255 characters.");
+                    throw new IOException($"Cannot access {filePath}.", new Win32Exception(lastError));
+                }
+
+                return fileHandle;
+            }
+
             private static SafeFileHandle CreateFileHandle(
                 NPath path,
                 string filePath,
@@ -2344,6 +2459,10 @@ namespace NiceIO
                 public static extern bool FindClose(IntPtr handle);
 
                 public const uint IO_REPARSE_TAG_SYMLINK = 0xA000000C;
+                public const uint FSCTL_GET_REPARSE_POINT = 0x900A8;
+
+                [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+                public static extern uint GetFinalPathNameByHandle(IntPtr handle, string filePath, uint cchFilePath, uint dwFlags);
 
                 [DllImport(@"kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
                 public static extern uint GetFileAttributes(string fileName);
@@ -2383,6 +2502,18 @@ namespace NiceIO
 
                 [DllImport(@"kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
                 internal static extern uint GetCurrentDirectory(uint nBufferLength, char[] lpBuffer);
+
+                [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+                internal static extern bool DeviceIoControl(
+                    SafeFileHandle hDevice,
+                    uint dwIoControlCode,
+                    IntPtr lpInBuffer,
+                    uint nInBufferSize,
+                    IntPtr lpOutBuffer,
+                    uint nOutBufferSize,
+                    out uint lpBytesReturned,
+                    IntPtr lpOverlapped
+                );
 
                 [DllImport(@"kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
                 public static extern SafeFileHandle CreateFile(
@@ -2430,6 +2561,20 @@ namespace NiceIO
                 return PosixNative.S_ISLNK(stat.st_mode);
             }
 
+            public override NPath GetSymbolicLinkTarget(NPath path)
+            {
+                path = path.MakeAbsolute();
+
+                var buffer = new byte[4096];
+                var result = PosixNative.readlink(path.ToString(), buffer, 4096);
+                if (result == IntPtr.Zero)
+                {
+                    throw new Exception($"failed to call readlink on {path} - does the path exist?");
+                }
+
+                return Encoding.UTF8.GetString(buffer, 0, Array.IndexOf(buffer, (byte)0));
+            }
+
             public override void CreateSymbolicLink(NPath fromPath, NPath targetPath, bool targetIsFile)
             {
                 int retVal = PosixNative.symlink(targetPath.ToString(SlashMode.Native), fromPath.ToString(SlashMode.Native));
@@ -2452,6 +2597,9 @@ namespace NiceIO
                 [DllImport("libc", SetLastError = true)]
                 public static extern int symlink([MarshalAs(UnmanagedType.LPStr)] string targetPath,
                     [MarshalAs(UnmanagedType.LPStr)] string linkPath);
+
+                [DllImport("libc", SetLastError = true)]
+                public static extern IntPtr readlink([In, MarshalAs(UnmanagedType.LPStr)] string path, byte[] buf, int size);
 
                 // Notice that this is not a mapping for the normal 'stat' structure, but specifically for MonoPosixHelper's
                 // own Mono_Posix_Stat structure (in support/map.h). This means we don't need to worry about e.g. Darwin's
@@ -2562,6 +2710,8 @@ namespace NiceIO
             public override bool IsSymbolicLink(NPath path) => BaseFileSystem.IsSymbolicLink(path);
             /// <inheritdoc />
             public override void CreateSymbolicLink(NPath fromPath, NPath targetPath, bool targetIsFile) => BaseFileSystem.CreateSymbolicLink(fromPath, targetPath, targetIsFile);
+            /// <inheritdoc />
+            public override NPath GetSymbolicLinkTarget(NPath path) => BaseFileSystem.GetSymbolicLinkTarget(path);
         }
 
         class WithFileSystemHelper : IDisposable

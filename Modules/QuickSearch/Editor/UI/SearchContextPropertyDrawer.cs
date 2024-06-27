@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -14,11 +15,17 @@ namespace UnityEditor.Search
     {
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            position.height = EditorGUI.GetSinglePropertyHeight(property, label);
             var searchContextAttribute = (SearchContextAttribute)attribute;
-            var objType = fieldInfo.FieldType;
             var searchContextFlags = searchContextAttribute.flags;
-            var context = CreateContextFromAttribute(searchContextAttribute);
-            ObjectField.DoObjectField(position, property, objType, label, context, searchContextFlags);
+            GetSearchContextDataFromProperty(property, searchContextAttribute, out var searchContext, out var objType);
+            ObjectField.DoObjectField(position, property, objType, label, searchContext, searchContextFlags);
+        }
+
+        internal static void GetSearchContextDataFromProperty(SerializedProperty property, SearchContextAttribute searchContextAttribute, out SearchContext searchContext, out Type objectType)
+        {
+            objectType = GetPropertyType(property);
+            searchContext = CreateContextFromAttribute(searchContextAttribute);
         }
 
         static SearchContext CreateContextFromAttribute(SearchContextAttribute attribute)
@@ -66,6 +73,12 @@ namespace UnityEditor.Search
             }
 
             return null;
+        }
+
+        static Type GetPropertyType(SerializedProperty property)
+        {
+            ScriptAttributeUtility.GetFieldInfoFromProperty(property, out var type);
+            return type;
         }
     }
 }
