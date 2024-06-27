@@ -460,8 +460,7 @@ namespace UnityEditor
                         if (!view.in2DMode && !view.isRotationLocked)
                         {
                             OrbitCameraBehavior(view);
-                            // todo gizmo update label
-                            // view.m_OrientationGizmo.UpdateGizmoLabel(view, view.rotation * Vector3.forward, view.m_Ortho.target);
+                            view.UpdateOrientationGizmos();
                         }
                     }
                     break;
@@ -495,8 +494,7 @@ namespace UnityEditor
                                 OrbitCameraBehavior(view);
                             }
 
-                            // todo gizmo update label
-                            // view.m_OrientationGizmo.UpdateGizmoLabel(view, view.rotation * Vector3.forward, view.m_Ortho.target);
+                            view.UpdateOrientationGizmos();
                         }
                     }
                     break;

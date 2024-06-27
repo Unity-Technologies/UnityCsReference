@@ -198,10 +198,11 @@ namespace UnityEditor
             var xAssemblyIsUnity = xAssemblyName.StartsWith("Unity.") || xAssemblyName.StartsWith("UnityEditor.") || xAssemblyName.StartsWith("UnityEngine.");
             var yAssemblyIsUnity = yAssemblyName.StartsWith("Unity.") || yAssemblyName.StartsWith("UnityEditor.") || yAssemblyName.StartsWith("UnityEngine.");
 
-            if ((xAssemblyIsUnity && yAssemblyIsUnity) || (!xAssemblyIsUnity && !yAssemblyIsUnity)) return 0;
-            else if (xAssemblyIsUnity && !yAssemblyIsUnity) return 1;
-            else if (!xAssemblyIsUnity && yAssemblyIsUnity) return -1;
-            return string.CompareOrdinal(typeA.m_InspectorType.FullName, typeB.m_InspectorType.FullName);
+            if ((xAssemblyIsUnity && yAssemblyIsUnity) || (!xAssemblyIsUnity && !yAssemblyIsUnity))
+                return string.CompareOrdinal(typeA.m_InspectorType.FullName, typeB.m_InspectorType.FullName);
+            else if (xAssemblyIsUnity) return 1;
+            else
+                return -1;
         }
     }
 }
