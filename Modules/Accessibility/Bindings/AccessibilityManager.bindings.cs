@@ -185,24 +185,22 @@ namespace UnityEngine.Accessibility
 
         // Returns a struct with information from the managed AccessibilityNode.
         [RequiredByNativeCode]
-        internal static void Internal_GetNode(int id, ref AccessibilityNodeData nodeData)
+        internal static bool Internal_GetNode(int id, ref AccessibilityNodeData nodeData)
         {
             var service = AssistiveSupport.GetService<AccessibilityHierarchyService>();
 
             if (service == null)
             {
-                nodeData.id = AccessibilityNodeManager.k_InvalidNodeId;
-                return;
+                return false;
             }
 
             if (service.TryGetNode(id, out var node))
             {
                 node.GetNodeData(ref nodeData);
+                return true;
             }
-            else
-            {
-                nodeData.id = AccessibilityNodeManager.k_InvalidNodeId;
-            }
+            
+            return false;
         }
 
         [RequiredByNativeCode]

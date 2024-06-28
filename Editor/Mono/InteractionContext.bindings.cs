@@ -3,13 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Assertions;
 
 namespace UnityEditor
 {
     [NativeType(Header = "Editor/Src/InteractionContext.h")]
-    internal partial class InteractionContext
+    internal partial class InteractionContext: IDisposable
     {
         [Flags]
         public enum Flags
@@ -34,7 +35,19 @@ namespace UnityEditor
 
         ~InteractionContext()
         {
-            Internal_Destroy(m_NativePtr);
+            if (m_NativePtr != IntPtr.Zero)
+            {
+                Dispose();
+            }
+        }
+
+        public virtual void Dispose()
+        {
+            if (m_NativePtr != IntPtr.Zero)
+            {
+                Internal_Destroy(m_NativePtr);
+                m_NativePtr = IntPtr.Zero;
+            }
         }
 
         public extern bool IsUndoEnabled();
@@ -72,7 +85,7 @@ namespace UnityEditor
             SetGlobalInteractionContext(this);
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             try
             {
@@ -86,6 +99,7 @@ namespace UnityEditor
             {
                 ClearGlobalInteractionContext();
             }
+            base.Dispose();
         }
 
         [FreeFunction("SetGlobalInteractionContext")]

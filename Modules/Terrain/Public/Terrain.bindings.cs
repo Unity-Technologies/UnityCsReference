@@ -340,7 +340,7 @@ namespace UnityEngine
         public int doRipple;
         public int doShimmer;
         public int lodFade;
-        public int pad;
+        public float importScale;
 
         public SpeedTreeWindConfig9()
         {
@@ -374,7 +374,7 @@ namespace UnityEngine
             doRipple            = 0 /*false */;
             doShimmer           = 0 /*false */;
             lodFade             = 0 /*false */;
-            pad                 = 0;
+            importScale         = 1.0f;
         }
 
         public readonly bool IsWindEnabled => (doShared != 0 || doBranch1 != 0 || doBranch2 != 0 || doRipple != 0);

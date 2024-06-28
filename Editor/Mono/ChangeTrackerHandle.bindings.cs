@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -10,51 +11,121 @@ namespace UnityEditor
 {
     [NativeHeader("Editor/Src/Utility/ChangeTracker.h")]
     [RequiredByNativeCode]
-    internal struct ChangeTrackerHandle
+    internal class SerializedObjectChangeTracker: IDisposable
     {
         IntPtr m_Handle;
 
-        internal static ChangeTrackerHandle AcquireTracker(UnityEngine.Object obj)
+        // This is so the garbage collector won't clean up SerializedObject behind the scenes.
+        internal SerializedObject m_SerializedObject;
+
+        private SerializedProperty[] m_ModifiedTrackedProperties;
+        private static readonly SerializedProperty[] s_EmptyPropertyArray = new SerializedProperty[] { };
+
+        public SerializedObjectChangeTracker(SerializedObject obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException("Not a valid unity engine object");
-            return new ChangeTrackerHandle() { m_Handle = Internal_AcquireTracker(obj) };
+            m_SerializedObject= obj;
+            m_Handle = Internal_AcquireTracker(obj);
+            m_ModifiedTrackedProperties = s_EmptyPropertyArray;
         }
 
-        [FreeFunction("ChangeTrackerRegistry::AcquireTracker")]
-        private static extern IntPtr Internal_AcquireTracker(UnityEngine.Object o);
+        ~SerializedObjectChangeTracker() { Dispose(); }
 
-        internal void ReleaseTracker()
+        [ThreadAndSerializationSafe()]
+        public void Dispose()
         {
-            if (m_Handle == IntPtr.Zero)
-                throw new ArgumentNullException("Not a valid handle, has it been released already?");
-
-            Internal_ReleaseTracker(m_Handle);
-            m_Handle = IntPtr.Zero;
+            if (m_Handle != IntPtr.Zero)
+            {
+                ClearModifiedTrackedProperties();
+                Internal_ReleaseTracker(m_Handle);
+                m_Handle = IntPtr.Zero;
+                m_SerializedObject = null;
+            }
         }
 
-        [FreeFunction("ChangeTrackerRegistry::ReleaseTracker")]
+
+        public SerializedProperty[] GetModifiedTrackedProperties()
+        {
+            return m_ModifiedTrackedProperties;
+        }
+
+        public void ClearModifiedTrackedProperties()
+        {
+            if (m_ModifiedTrackedProperties.Length > 0)
+            {
+                for (int i = 0; i < m_ModifiedTrackedProperties.Length; ++i)
+                {
+                    m_ModifiedTrackedProperties[i].Dispose();
+                }
+
+                m_ModifiedTrackedProperties = s_EmptyPropertyArray;
+            }
+        }
+
+        public bool HasModifiedTrackedProperties()
+        {
+            return m_ModifiedTrackedProperties.Length > 0;
+        }
+
+        [NativeName("GetSyncedTrackedProperties")]
+        public extern int[] GetSyncedTrackedProperties();
+
+        [NativeName("HasModifiedTrackedProperties")]
+        internal extern bool HasModifiedTrackedPropertiesInternal();
+
+        [NativeName("GetModifiedTrackedProperties")]
+        private extern SerializedProperty[] GetModifiedTrackedPropertiesInternal();
+
+        [NativeName("ClearModifiedTrackedProperties")]
+        private extern void ClearModifiedTrackedPropertiesInternal();
+
+        [FreeFunction("SerializedObjectChangeTracker::AcquireTracker")]
+        private static extern IntPtr Internal_AcquireTracker(UnityEditor.SerializedObject o);
+
+        [FreeFunction("SerializedObjectChangeTracker::ReleaseTracker", IsThreadSafe = true)]
         private static extern void Internal_ReleaseTracker(IntPtr handle);
 
         // returns true if object changed since last poll
-        internal bool PollForChanges()
+        internal bool PollForChanges(bool updateSerializedObject)
         {
             if (m_Handle == IntPtr.Zero)
                 throw new ArgumentNullException("Not a valid handle, has it been released already?");
-            return Internal_PollChanges(m_Handle);
+            bool result = Internal_PollChanges(updateSerializedObject);
+
+            if (HasModifiedTrackedPropertiesInternal())
+            {
+                m_ModifiedTrackedProperties = GetModifiedTrackedPropertiesInternal();
+                for (int i = 0; i < m_ModifiedTrackedProperties.Length; ++i)
+                {
+                    m_ModifiedTrackedProperties[i].m_SerializedObject = m_SerializedObject;
+                }
+
+                ClearModifiedTrackedPropertiesInternal();
+            }
+            else
+            {
+                m_ModifiedTrackedProperties = s_EmptyPropertyArray;
+            }
+
+            return result;
         }
 
-        [FreeFunction("ChangeTrackerRegistry::PollChanges")]
-        private static extern bool Internal_PollChanges(IntPtr handle);
+        [NativeName("PollChanges")]
+        private extern bool Internal_PollChanges(bool updateSerializedObject);
 
-        internal void ForceDirtyNextPoll()
+        [NativeName("TrackPropertyValue")]
+        internal extern void AddPropertyTracking(SerializedProperty property);
+
+        internal void RemovePropertyTracking(SerializedProperty property)
         {
-            if (m_Handle == IntPtr.Zero)
-                throw new ArgumentNullException("Not a valid handle, has it been released already?");
-            Internal_ForceUpdate(m_Handle);
+            RemovePropertyTracking(property.hashCodeForPropertyPath);
         }
 
-        [FreeFunction("ChangeTrackerRegistry::ForceUpdate")]
-        private static extern void Internal_ForceUpdate(IntPtr handle);
+        [NativeName("UntrackPropertyValue")]
+        internal extern void RemovePropertyTracking(int propertyPathHash);
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(UnityEditor.SerializedObjectChangeTracker obj) => obj.m_Handle;
+        }
+
     }
 }

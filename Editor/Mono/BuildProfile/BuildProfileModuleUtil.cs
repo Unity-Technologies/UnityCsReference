@@ -40,6 +40,12 @@ namespace UnityEditor.Build.Profile
             GetModuleDisplayName(platformId);
 
         /// <summary>
+        /// Platform description.
+        /// </summary>
+        public static string GetPlatformDescription(string platformGuid) =>
+            BuildTargetDiscovery.BuildPlatformDescription(new GUID(platformGuid));
+
+        /// <summary>
         /// Fetch default editor platform icon texture.
         /// </summary>
         public static Texture2D GetPlatformIcon(string platformId)
