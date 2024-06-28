@@ -107,7 +107,7 @@ namespace UnityEngine
             var handle = GCHandle.Alloc(proxy);
             try
             {
-                return _AndroidJNIHelper.CreateJavaProxy(AndroidApp.UnityPlayerRaw, GCHandle.ToIntPtr(handle), proxy);
+                return _AndroidJNIHelper.CreateJavaProxy(AndroidApplication.UnityPlayerRaw, GCHandle.ToIntPtr(handle), proxy);
             }
             catch
             {
@@ -391,6 +391,12 @@ namespace UnityEngine
         // Detaches the current thread from a Java (Dalvik) VM.
         [ThreadSafe]
         public static extern int DetachCurrentThread();
+
+        [RequiredByNativeCode]
+        private static void InvokeAction(Action action) => action();
+
+        [ThreadSafe]
+        public static extern void InvokeAttached(Action action);
 
         // Returns the version of the native method interface.
         [ThreadSafe]

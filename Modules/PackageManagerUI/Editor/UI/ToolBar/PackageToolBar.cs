@@ -41,8 +41,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IPackage m_Package;
         private IPackageVersion m_Version;
 
-        private IList<PackageToolBarButton> m_BuiltInToolBarButtons;
-        private IList<PackageToolBarButton> m_ProgressControlButtons;
+        private IList<IPackageToolBarButton> m_BuiltInToolBarButtons;
+        private IList<IPackageToolBarButton> m_ProgressControlButtons;
 
         private VisualElement m_MainContainer;
         private VisualElement m_ProgressContainer;
@@ -85,7 +85,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void InitializeButtons()
         {
-            m_BuiltInToolBarButtons = new PackageToolBarButton[]
+            m_BuiltInToolBarButtons = new IPackageToolBarButton[]
             {
                 new PackageToolBarSimpleButton(new UnlockAction(m_PageManager)),
                 new PackageToolBarSimpleButton(new SignInAction(m_UnityConnect, m_Application)),
@@ -101,11 +101,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var button in m_BuiltInToolBarButtons)
             {
                 button.onActionTriggered += Refresh;
-                m_BuiltInActionsContainer.Add(button);
+                m_BuiltInActionsContainer.Add(button.element);
             }
 
             // Since pause, resume, cancel buttons are only used to control the download progress, we want to put them in the progress container instead
-            m_ProgressControlButtons = new PackageToolBarButton[]
+            m_ProgressControlButtons = new IPackageToolBarButton[]
             {
                 new PackageToolBarIconOnlyButton(new ResumeDownloadAction(m_OperationDispatcher, m_AssetStoreDownloadManager, m_Application)),
                 new PackageToolBarIconOnlyButton(new PauseDownloadAction(m_OperationDispatcher, m_AssetStoreDownloadManager, m_Application)),
@@ -115,7 +115,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var button in m_ProgressControlButtons)
             {
                 button.onActionTriggered += Refresh;
-                m_ProgressContainer.Add(button);
+                m_ProgressContainer.Add(button.element);
             }
         }
 

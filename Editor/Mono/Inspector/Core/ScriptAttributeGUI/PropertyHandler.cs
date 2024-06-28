@@ -96,20 +96,10 @@ namespace UnityEditor
                 return;
             }
 
-            if (attribute.applyToCollection)
-            {
-                // Do not apply this to array elements
-                if (!property.isArray)
-                    return;
-
-                if (!propertyType.IsArrayOrList())
-                {
-                    throw new NotSupportedException($"Cannot apply {nameof(attribute)} on a field of type {propertyType.Name}." +
-                        $"\nPlease use this attribute on a collection.");
-                }
-            }
-
-
+            // When `attribute.applyToCollection` is set to true, we need to early return for any non-collection fields within a collection.
+            // Collections and fields that are not part of a collection should comply with the attribute.
+            if (attribute.applyToCollection && !propertyType.IsArrayOrList() && property.propertyPath.Contains("["))
+                return;
 
             // Look for its drawer type of this attribute
             HandleDrawnType(property, attribute.GetType(), propertyType, field, attribute);

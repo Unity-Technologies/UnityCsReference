@@ -60,6 +60,8 @@ namespace UnityEngine.UIElements
             public Vector2 bottomRightRadius;
             public Vector2 bottomLeftRadius;
 
+            public Rect backgroundRepeatRect;
+
             public IntPtr texture;
             public IntPtr sprite;
             public IntPtr vectorImage;

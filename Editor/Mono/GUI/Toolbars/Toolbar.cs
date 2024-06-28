@@ -33,7 +33,8 @@ namespace UnityEditor
     // The main toolbar
     class Toolbar : GUIView
     {
-        const float k_ToolbarHeight = 30f;
+        public const float k_ToolbarHeight = 36f;
+        private const string k_MainToolbarUSSClassName = "unity-editor-main-toolbar";
 
         static class Styles
         {
@@ -115,9 +116,6 @@ namespace UnityEditor
         {
             if (Event.current.type == EventType.Repaint)
                 Styles.appToolbar.Draw(new Rect(0, 0, position.width, position.height), false, false, false, false);
-
-            //BeginOffsetArea(GetToolbarPosition(), GUIContent.none, GUIStyle.none);
-            //EndOffsetArea();
         }
 
         static VisualElement CreateRoot()
@@ -131,7 +129,10 @@ namespace UnityEditor
                 renderHints = RenderHints.ClipWithScissors
             };
             root.pseudoStates |= PseudoStates.Root;
+            root.AddToClassList(k_MainToolbarUSSClassName);
+
             UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
+            root.StretchToParentSize();
             root.style.overflow = Overflow.Hidden;
             return root;
         }

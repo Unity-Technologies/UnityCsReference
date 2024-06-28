@@ -341,6 +341,11 @@ sealed class AudioContainerWindowState
 
     void OnEditorPauseStateChanged(PauseState state)
     {
+        if (m_AudioContainer == null || m_IsSuspended)
+        {
+            return;
+        }
+
         EditorPauseStateChanged?.Invoke(this, EventArgs.Empty);
     }
 

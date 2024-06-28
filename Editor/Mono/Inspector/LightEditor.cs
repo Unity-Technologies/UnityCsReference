@@ -123,6 +123,7 @@ namespace UnityEditor
                 public static readonly GUIContent CookiePointCubemapTextureWarning = EditorGUIUtility.TrTextContent("Cookie support for baked lights is not enabled. Please enable it in Project Settings > Editor > Enable baked cookies support");
                 public static readonly GUIContent MixedUnsupportedWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. The current render pipeline doesn't support Mixed mode and/or any of the lighting modes.");
                 public static readonly GUIContent BakedUnsupportedWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. The current render pipeline doesn't support Baked mode.");
+                public static readonly GUIContent ShadowMaskConvertedToBakedWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Baked mode because too many lights overlap in the scene. Shadowmask mode only supports a maximum of 4 overlapping lights.");
 
                 public static readonly GUIContent[] LightmapBakeTypeTitles = { EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("Mixed"), EditorGUIUtility.TrTextContent("Baked") };
                 public static readonly int[] LightmapBakeTypeValues = { (int)LightmapBakeType.Realtime, (int)LightmapBakeType.Mixed, (int)LightmapBakeType.Baked };
@@ -170,6 +171,8 @@ namespace UnityEditor
                 }
             }
             internal bool showBakingWarning { get { return !isPrefabAsset && !Lightmapping.GetLightingSettingsOrDefaultsFallback().bakedGI && lightmappingTypeIsSame && isBakedOrMixed; } }
+
+            internal bool showShadowMaskConvertedToBakedWarning { get { return isMixed && Lightmapping.GetLightingSettingsOrDefaultsFallback().mixedBakeMode == MixedLightingMode.Shadowmask && light.bakingOutput.occlusionMaskChannel == -1; } }
 
             internal bool showCookieSpotRepeatWarning
             {
@@ -471,6 +474,8 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(Styles.BakedUnsupportedWarning.text, MessageType.Warning);
                 else if (showBakingWarning)
                     EditorGUILayout.HelpBox(Styles.BakingWarning.text, MessageType.Warning);
+                else if(showShadowMaskConvertedToBakedWarning)
+                    EditorGUILayout.HelpBox(Styles.ShadowMaskConvertedToBakedWarning.text, MessageType.Warning);
             }
 
             internal void CheckLightmappingConsistency()

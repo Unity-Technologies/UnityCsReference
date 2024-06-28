@@ -243,7 +243,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Synchronizes the internal data with the a ToggleButtonGroupState from a FlagsAttribute.
+        /// Synchronizes the internal data with the ToggleButtonGroupState from a FlagsAttribute.
         /// </summary>
         /// <param name="options">The option set to be synced against.</param>
         /// <param name="acceptsLengthMismatch">The ability to synchronize two option sets of different sizes.</param>

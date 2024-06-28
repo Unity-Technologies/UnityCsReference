@@ -294,11 +294,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                         return;
                     }
 
-
-                    if (m_OperationDispatcher.isInstallOrUninstallInProgress)
+                    if (!m_OperationDispatcher.InstallFromPath(m_IOProxy.GetParentDirectory(path), out var tempPackageId))
                         return;
 
-                    m_OperationDispatcher.InstallFromPath(m_IOProxy.GetParentDirectory(path), out var tempPackageId);
                     PackageManagerWindowAnalytics.SendEvent("addFromDisk");
                     SelectPackageInProject(tempPackageId);
                 }
@@ -314,9 +312,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownItem.action = () =>
             {
                 var path = m_Application.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "Package tarball", "tgz, tar.gz" });
-                if (string.IsNullOrEmpty(path) || m_OperationDispatcher.isInstallOrUninstallInProgress)
+
+                if ((string.IsNullOrEmpty(path)) || !m_OperationDispatcher.InstallFromPath(path, out var tempPackageId))
                     return;
-                m_OperationDispatcher.InstallFromPath(path, out var tempPackageId);
+
                 PackageManagerWindowAnalytics.SendEvent("addFromTarball");
                 SelectPackageInProject(tempPackageId);
             };
@@ -334,9 +333,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     submitButtonText = L10n.Tr("Install"),
                     onInputSubmitted = url =>
                     {
-                        if (m_OperationDispatcher.isInstallOrUninstallInProgress)
+                        if (!m_OperationDispatcher.InstallFromUrl(url))
                             return;
-                        m_OperationDispatcher.InstallFromUrl(url);
+
                         PackageManagerWindowAnalytics.SendEvent("addFromGitUrl", url);
                         SelectPackageInProject(url);
                     },
@@ -364,7 +363,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // relation to package manager we can compensate this by subtracting contextual menu origin.
                 rect.y -= worldBound.yMax;
 
-                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance) { position = rect };
+                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, PackageManagerWindow.instance) { position = rect };
                 DropdownContainer.ShowDropdown(dropdown);
             };
         }

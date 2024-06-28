@@ -97,6 +97,7 @@ namespace UnityEditor.PackageManager.UI
             var upmClient = container.Resolve<IUpmClient>();
             var assetStoreCachePathProxy = container.Resolve<IAssetStoreCachePathProxy>();
             var pageRefreshHandler = container.Resolve<IPageRefreshHandler>();
+            var operationDispatcher = container.Resolve<IPackageOperationDispatcher>();
 
             // Adding the ScrollView object here because it really need to be the first child under rootVisualElement for it to work properly.
             // Since the StyleSheet is added to PackageManagerRoot, the css is exceptionally added directly to the object
@@ -108,7 +109,7 @@ namespace UnityEditor.PackageManager.UI
                     flexGrow = 1
                 }
             };
-            m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler);
+            m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler, operationDispatcher);
             try
             {
                 m_Root.OnEnable();

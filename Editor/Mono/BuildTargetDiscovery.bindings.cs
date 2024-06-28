@@ -206,6 +206,7 @@ namespace UnityEditor
         static readonly GUID s_platform_45 = new("f1d7bec2fd7f42f481c66ef512f47845");
         static readonly GUID s_platform_46 = new("99ef95e1e9b048fa9628d7eed27a8646");
         static readonly GUID s_platform_47 = new("53916e6f1f7240d992977ffa2322b047");
+        static readonly GUID s_platform_48 = new("25a09d2ed10c42f789b61d99b4d9bf83");
         static readonly GUID s_platform_100 = new("8d1e1bca926649cba89d37a4c66e8b3d");
         static readonly GUID s_platform_101 = new("91d938b35f6f4798811e41f2acf9377f");
         static readonly GUID s_platform_102 = new("8659dec1db6b4fac86149f99f2fa4291");
@@ -232,6 +233,7 @@ namespace UnityEditor
             s_platform_42,
             s_platform_43,
             s_platform_38,
+            s_platform_48,
             // then others
             s_platform_20,
             s_platform_21,
@@ -261,6 +263,7 @@ namespace UnityEditor
             s_platform_45,
             s_platform_46,
             s_platform_47,
+            s_platform_48,
             s_platform_100,
             s_platform_101,
             s_platform_102,
@@ -325,6 +328,7 @@ namespace UnityEditor
             s_platform_31,
             s_platform_44,
             s_platform_38,
+            s_platform_48,
         };
 
         static GUID[] ExternalDownloadForBuildTarget { get; } = new GUID[]
@@ -332,6 +336,7 @@ namespace UnityEditor
             s_platform_31,
             s_platform_43,
             s_platform_44,
+            s_platform_48,
         };
 
         // Changes here should be synced with the usage of
@@ -345,6 +350,7 @@ namespace UnityEditor
             s_platform_45,
             s_platform_46,
             s_platform_47,
+            s_platform_48,
         };
 
         static Dictionary<BuildTarget, GUID> s_PlatformGUIDData = new()
@@ -367,6 +373,7 @@ namespace UnityEditor
             { BuildTarget.EmbeddedLinux, s_platform_45 },
             { BuildTarget.QNX, s_platform_46 },
             { BuildTarget.VisionOS, s_platform_47 },
+            { BuildTarget.ReservedCFE, s_platform_48 },
         };
 
         static readonly Dictionary<GUID, (BuildTarget, StandaloneBuildSubtarget)> k_PlatformBuildTargetAndSubtargetGUIDData = new()
@@ -388,6 +395,7 @@ namespace UnityEditor
             { s_platform_45, (BuildTarget.EmbeddedLinux, StandaloneBuildSubtarget.Default) },
             { s_platform_46, (BuildTarget.QNX, StandaloneBuildSubtarget.Default) },
             { s_platform_47, (BuildTarget.VisionOS, StandaloneBuildSubtarget.Default) },
+            { s_platform_48, (BuildTarget.ReservedCFE, StandaloneBuildSubtarget.Default) },
             { s_platform_101, (BuildTarget.StandaloneLinux64, StandaloneBuildSubtarget.Server) },
             { s_platform_100, (BuildTarget.StandaloneWindows64, StandaloneBuildSubtarget.Server) },
             { s_platform_102, (BuildTarget.StandaloneOSX, StandaloneBuildSubtarget.Server) },
@@ -408,19 +416,21 @@ namespace UnityEditor
             {  s_platform_02, L10n.Tr("Take advantage of Unity’s support for the latest Mac devices with M series chips. The Mac Standalone platform also supports Intel-based Mac devices.") },
             {  s_platform_05, L10n.Tr("Access an ecosystem of Unity-supported game development solutions to reach the vast PC gamer audience around the world. Leverage DirectX 12 and inline ray tracing support for cutting edge visual fidelity. Use the Microsoft GDK packages to further unlock the Microsoft gaming ecosystem.") },
             {  s_platform_09, L10n.Tr("Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for iOS games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth.") },
-            {  s_platform_13, L10n.Tr("Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle with tools and services for rapid iteration, performance optimization, player engagement, and revenue growth.") },
-            {  s_platform_20, L10n.Tr("Leverage Unity’s web solutions to offer your players near-instant access to their favorite games, no matter where they want to play. Our web platform support includes key advances that reduce friction for more devices, and take advantage of the latest graphics API to ensure smooth frame rates and exceptional performance for even the most ambitious web games.") },
+            {  s_platform_13, L10n.Tr("Android is a large and varied device ecosystem with over 3bn active devices. Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for Android games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth.") },
+            {  s_platform_20, L10n.Tr("Leverage Unity’s web solutions to offer your players near-instant access to their favorite games, no matter where they want to play. Our web platform includes support for desktop and mobile browsers.") },
             {  s_platform_21, L10n.Tr("Benefit from Unity’s runtime support for UWP, ensuring you’re able to reach as many users as possible in the Microsoft ecosystem. UWP is used for HoloLens and Windows 10 and 11 devices, among others.") },
             {  s_platform_24, L10n.Tr("Leverage Unity’s platform support for Linux, including an ecosystem of game development solutions for creators of all skill levels.") },
-            {  s_platform_31, L10n.Tr("Create your game with a comprehensive game development platform for PlayStation®4. Discover powerful creation tools to take your PlayStation game development to the next level.") },
+            {  s_platform_31, L10n.Tr("Create your game with a comprehensive development platform for PlayStation®4. Discover powerful creation tools to take your PlayStation game to the next level.") },
             {  s_platform_37, L10n.Tr("Choose tvOS if you’re planning to develop applications for Apple TVs. tvOS is based on the iOS operating system and has many similar frameworks, technologies, and concepts.") },
-            {  s_platform_38, L10n.Tr("Bring your game to Nintendo Switch™ with Unity’s platform support for workflows, integration, and more, plus a dedicated forum.") },
-            {  s_platform_41, L10n.Tr("") },
+            {  s_platform_38, L10n.Tr("Bring your game to Nintendo Switch™ with Unity’s optimized platform support as well as a dedicated forum.") },
+            {  s_platform_41, L10n.Tr("Utilize Unity’s headless Linux editor to deploy high-fidelity simulations at scale in cloud environments.") },
             {  s_platform_42, L10n.Tr("Attract players around the world on the latest generation of Xbox: Xbox Series X|S. Push the graphical fidelity of your games with inline ray tracing, all while maintaining performance with the latest optimizations for DirectX 12.") },
             {  s_platform_43, L10n.Tr("Attract and engage over 50 million players around the world on Xbox One.") },
-            {  s_platform_44, L10n.Tr("Create your game with a comprehensive game development platform for PlayStation®5. Discover powerful creation tools to take your PlayStation game development to the next level.") },
+            {  s_platform_44, L10n.Tr("Create your game with a comprehensive development platform for PlayStation®5. Discover powerful creation tools to take your PlayStation game to the next level.") },
             {  s_platform_45, L10n.Tr("Choose Embedded Linux, a compact version of Linux, if you are planning to build applications for embedded devices and appliances.") },
             {  s_platform_46, L10n.Tr("Deploy the Unity runtime to automotive and other embedded systems utilizing the Blackberry® QNX® real-time operating system.") },
+            {  s_platform_47, L10n.Tr("Build for Apple Vision Pro today.\nBe among the first to create games, lifestyle experiences, and industry apps for Apple's all-new platform. Familiar frameworks and tools. Get ready to design and build an entirely new universe of apps and games for Apple Vision Pro.")},
+            {  s_platform_48, L10n.Tr("Benefit from Unity’s support for developing games and applications on this platform") },
             {  s_platform_100, L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Windows Server platform, including publishing multiplayer games.") },
             {  s_platform_101, L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Linux Server platform, including publishing multiplayer games.") },
             {  s_platform_102, L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Mac Server platform, including publishing multiplayer games.") },
@@ -434,6 +444,7 @@ namespace UnityEditor
             {  s_platform_42, L10n.Tr("Register as an Xbox developer / https://www.xbox.com/en-US/developers/id ") },
             {  s_platform_43, L10n.Tr("Register as an Xbox developer / https://www.xbox.com/en-US/developers/id ") },
             {  s_platform_44, L10n.Tr("Register as a PlayStation developer / https://partners.playstation.net/ ") },
+            {  s_platform_48, L10n.Tr("More details coming soon") },
         };
 
         static Dictionary<GUID, string> s_PlatformInstructions = new()
@@ -455,6 +466,7 @@ namespace UnityEditor
             {  s_platform_45, L10n.Tr("As the Embedded Linux platform for Unity is not yet available to download from the Unity website, contact your Account Manager or the Unity Sales team to get access.") },
             {  s_platform_46, L10n.Tr("As the QNX platform for Unity is not yet available to download from the Unity website, contact your Account Manager or the Unity Sales team to get access.") },
             {  s_platform_47, L10n.Tr("*standard install form hub") },
+            {  s_platform_48, L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more.") },
             {  s_platform_100, L10n.Tr("*standard install form hub") },
             {  s_platform_101, L10n.Tr("*standard install form hub") },
             {  s_platform_102, L10n.Tr("*standard install form hub") },
@@ -480,6 +492,7 @@ namespace UnityEditor
             {  s_platform_45, "Embedded Linux" },
             {  s_platform_46, "QNX®" },
             {  s_platform_47, "visionOS" },
+            {  s_platform_48, "ReservedCFE" },
             {  s_platform_100, "Windows Server" },
             {  s_platform_101, "Linux Server" },
             {  s_platform_102, "macOS Server" },
@@ -505,6 +518,7 @@ namespace UnityEditor
             { s_platform_45, "BuildSettings.EmbeddedLinux" },
             { s_platform_46, "BuildSettings.QNX" },
             { s_platform_47, "BuildSettings.visionOS" },
+            { s_platform_48, "BuildSettings.DedicatedServer" },
             { s_platform_100, "BuildSettings.DedicatedServer" },
             { s_platform_101, "BuildSettings.DedicatedServer" },
             { s_platform_102, "BuildSettings.DedicatedServer" },
@@ -756,7 +770,7 @@ namespace UnityEditor
             if (s_PlatformDescription.TryGetValue(GetGUIDFromBuildTarget(platform), out string description))
                 return description;
 
-            return "";
+            return string.Empty;
         }
 
         public static string BuildPlatformDescription(IBuildTarget platform)
@@ -764,7 +778,15 @@ namespace UnityEditor
             if (s_PlatformDescription.TryGetValue(platform.Guid, out string description))
                 return description;
 
-            return "";
+            return string.Empty;
+        }
+
+        public static string BuildPlatformDescription(GUID platformGuid)
+        {
+            if (s_PlatformDescription.TryGetValue(platformGuid, out string description))
+                return description;
+
+            return string.Empty;
         }
 
         [System.Obsolete("BuildPlatformDocumentationLink(BuildTarget) is obsolete. Use BuildPlatformDocumentationLink(IBuildTarget) instead.", false)]
@@ -815,7 +837,7 @@ namespace UnityEditor
             if (s_PlatformDisplayName.TryGetValue(platformGuid, out string displayName))
                 return displayName;
 
-            return "";
+            return string.Empty;
         }
 
         [System.Obsolete("BuildPlatformDisplayName(BuildTarget) is obsolete. Use BuildPlatformDisplayName(IBuildTarget) instead.", false)]

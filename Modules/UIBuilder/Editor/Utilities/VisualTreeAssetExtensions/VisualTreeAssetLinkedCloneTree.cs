@@ -90,17 +90,17 @@ namespace Unity.UI.Builder
 
                 foreach (VisualElementAsset childVea in children)
                 {
-                    var isNamedTemplate = false;
-                    if (childVea is TemplateAsset && childVea.TryGetAttributeValue("name", out _))
+                    var isTemplate = false;
+                    if (childVea is TemplateAsset)
                     {
                         context.veaIdsPath.Add(childVea.id);
-                        isNamedTemplate = true;
+                        isTemplate = true;
                     }
 
                     // this will fill the slotInsertionPoints mapping
                     var childVe = CloneSetupRecursively(vta, childVea, idToChildren, context);
 
-                    if (isNamedTemplate)
+                    if (isTemplate)
                     {
                         context.veaIdsPath.Remove(childVea.id);
                     }

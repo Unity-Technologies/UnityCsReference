@@ -9,15 +9,7 @@ using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal abstract class PackageToolBarButton : VisualElement
-    {
-        public abstract void Refresh(IPackageVersion version);
-
-        public abstract void Refresh(IEnumerable<IPackage> packages);
-        public abstract event Action onActionTriggered;
-    }
-
-    internal abstract class PackageToolBarButtonSingleAction : PackageToolBarButton
+    internal abstract class PackageToolBarButtonSingleAction : VisualElement, IPackageToolBarButton
     {
         private readonly List<IPackageVersion> m_Versions = new();
         private readonly PackageAction m_Action;
@@ -28,11 +20,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected abstract string text { set; }
 
-        public override event Action onActionTriggered
+        public event Action onActionTriggered
         {
             add => m_Action.onActionTriggered += value;
             remove => m_Action.onActionTriggered -= value;
         }
+
+        public VisualElement element => this;
 
         private void SetPackageVersion(IPackageVersion version)
         {
@@ -46,7 +40,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Versions.AddRange(versions);
         }
 
-        public override void Refresh(IEnumerable<IPackage> packages)
+        public void Refresh(IEnumerable<IPackage> packages)
         {
             SetPackageVersions(packages.Select(p => p.versions.primary));
             if (m_Versions.Count == 0)
@@ -62,7 +56,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             tooltip = temporaryDisableCondition?.tooltip ?? string.Empty;
         }
 
-        public override void Refresh(IPackageVersion version)
+        public void Refresh(IPackageVersion version)
         {
             SetPackageVersion(version);
 

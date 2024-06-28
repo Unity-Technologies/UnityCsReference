@@ -281,7 +281,7 @@ namespace UnityEditor
 
             [Obsolete("resizableWindow has been deprecated and renamed to match Android documentation. Please use resizeableActivity instead. (UnityUpgradable) -> resizeableActivity", false)]
             // Should application resizing be allowed (deprecated old naming).
-            public static bool resizeableWindow
+            public static bool resizableWindow
             {
                 set => resizeableActivity = value;
                 get => resizeableActivity;

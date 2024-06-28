@@ -231,7 +231,7 @@ namespace UnityEditor.Toolbars
             {
                 if (value && m_TargetTool == Tool.Custom)
                     ToolManager.RestorePreviousTool();
-                else    
+                else
                     ToolManager.SetActiveTool(currentVariant);
             }
 
@@ -250,6 +250,8 @@ namespace UnityEditor.Toolbars
                 Tools.viewToolChanged += UpdateViewToolContent;
                 UpdateViewToolContent();
             }
+            
+            EditorApplication.delayCall += UpdateState;
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -332,7 +334,7 @@ namespace UnityEditor.Toolbars
                     break;
             }
         }
-        
+
         void ClearButtonClassList()
         {
             RemoveFromClassList(s_UssClassName_MoveTool);
@@ -353,12 +355,20 @@ namespace UnityEditor.Toolbars
 
             var missing = EditorToolUtility.GetEditorToolWithEnum(m_TargetTool) is NoneTool;
             var display = missing ? DisplayStyle.None : DisplayStyle.Flex;
+            var enabled = currentVariant.IsAvailable();
 
             if (style.display != display)
             {
                 style.display = display;
                 displayChanged?.Invoke();
             }
+
+            if (enabledSelf != enabled)
+                enabledSelf = enabled;
+            
+            // Break the delayCall chain if button's dettached from panel
+            if (panel != null)
+                EditorApplication.delayCall += UpdateState;
         }
 
         bool IsActiveTool()

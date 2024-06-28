@@ -138,6 +138,16 @@ namespace Unity.UI.Builder
             m_Root.Add(m_DummyElementForStyleChangeNotifications);
         }
 
+        internal VisualElement GetFirstSelectedElement()
+        {
+            foreach (var element in m_Selection)
+            {
+                return element;
+            }
+
+            return null;
+        }
+
         public void AssignNotifiers(IEnumerable<IBuilderSelectionNotifier> notifiers)
         {
             m_Notifiers.Clear();

@@ -2986,15 +2986,26 @@ namespace UnityEditor
 
         void HandleMouseCursor()
         {
+            // In case multiple scene views are opened, we only want to set the cursor for the one being hovered
+            if (mouseOverWindow is SceneView && mouseOverWindow != this)
+                return;
+
             Event evt = Event.current;
             Rect cursorRect = new Rect(0, 0, position.width, position.height);
-            var checkMouseRects = evt.type == EventType.MouseMove || evt.type == EventType.Repaint;
+            var checkMouseRects = evt.type == EventType.Repaint;
 
             // Determine if mouse is inside a new cursor rect
             if (checkMouseRects)
             {
                 bool repaintView = false;
                 MouseCursor cursor = MouseCursor.Arrow;
+
+                //Reset the cursor if the mouse is over an overlay or an area that should not use a custom cursor
+                if (mouseOverWindow is SceneView view && !view.sceneViewMotion.viewportsUnderMouse)
+                {
+                    InternalEditorUtility.ResetCursor();
+                    return;
+                }
 
                 foreach (CursorRect r in s_MouseRects)
                 {
@@ -3531,6 +3542,11 @@ namespace UnityEditor
             }
 
             m_OrientationGizmo?.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
+        }
+
+        internal void UpdateOrientationGizmos()
+        {
+            m_OrientationGizmo?.UpdateGizmoLabel(this, rotation * Vector3.forward, m_Ortho.target);
         }
 
         void DefaultHandles()

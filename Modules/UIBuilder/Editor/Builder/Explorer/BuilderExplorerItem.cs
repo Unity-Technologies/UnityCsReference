@@ -66,6 +66,12 @@ namespace Unity.UI.Builder
 
         void FocusOnRenameTextField()
         {
+            if (IsRenamingActive())
+            {
+                m_RenameTextField.Focus();
+                return;
+            }
+
             var nameLabel = this.Q<Label>(classes: BuilderConstants.ExplorerItemNameLabelClassName);
             var labelContainer = this.Q(classes: BuilderConstants.ExplorerItemSelectorLabelContClassName);
 
@@ -89,6 +95,26 @@ namespace Unity.UI.Builder
             }
         }
 
+        public void ResetRenamingField()
+        {
+            var documentElement =
+                GetProperty(BuilderConstants.ElementLinkedDocumentVisualElementVEPropertyName) as VisualElement;
+            SetRenameTextFieldValueFromDocumentElement(documentElement);
+            m_RenameTextField.textEdition.SaveValueAndText();
+        }
+
+        private void SetRenameTextFieldValueFromDocumentElement(VisualElement documentElement)
+        {
+            if (BuilderSharedStyles.IsSelectorElement(documentElement))
+            {
+                m_RenameTextField.SetValueWithoutNotify(BuilderSharedStyles.GetSelectorString(documentElement));
+            }
+            else
+            {
+                m_RenameTextField.SetValueWithoutNotify(documentElement.name);
+            }
+        }
+
         public TextField CreateRenamingTextField(VisualElement documentElement, Label nameLabel, BuilderSelection selection)
         {
             m_RenameTextField = new TextField()
@@ -98,14 +124,8 @@ namespace Unity.UI.Builder
             };
             m_RenameTextField.AddToClassList(BuilderConstants.ExplorerItemRenameTextfieldClassName);
 
-            if (BuilderSharedStyles.IsSelectorElement(documentElement))
-            {
-                m_RenameTextField.SetValueWithoutNotify(BuilderSharedStyles.GetSelectorString(documentElement));
-            }
-            else
-            {
-                m_RenameTextField.SetValueWithoutNotify(documentElement.name);
-            }
+            SetRenameTextFieldValueFromDocumentElement(documentElement);
+
             m_RenameTextField.AddToClassList(BuilderConstants.HiddenStyleClassName);
 
             m_RenameTextField.RegisterCallback<KeyDownEvent>((e) =>
@@ -138,11 +158,44 @@ namespace Unity.UI.Builder
             return m_RenameTextField;
         }
 
+        internal bool IsRenameTextValid()
+        {
+            var documentElement = GetProperty(BuilderConstants.ElementLinkedDocumentVisualElementVEPropertyName) as VisualElement;
+            var value = m_RenameTextField.text ?? documentElement.name;
+
+            if (documentElement.IsSelector())
+            {
+                value = value.Trim();
+                return BuilderNameUtilities.styleSelectorRegex.IsMatch(value);
+            }
+
+            value = value.Trim();
+            value = value.TrimStart('#');
+            return BuilderNameUtilities.attributeRegex.IsMatch(value);
+        }
+
         void OnEditTextFinished(VisualElement documentElement, Label nameLabel,
             BuilderSelection selection)
         {
             var vea = documentElement.GetVisualElementAsset();
             var value = m_RenameTextField.text ?? documentElement.name;
+
+            if (!IsRenameTextValid() && (selection.isEmpty || selection.selectionCount > 1 || selection.GetFirstSelectedElement() != documentElement))
+            {
+                // Selection changed while renaming and renaming is invalid. Cancel renaming.
+                m_RenameTextField.AddToClassList(BuilderConstants.HiddenStyleClassName);
+                if (documentElement.IsSelector())
+                {
+                    Builder.ShowWarning(string.Format(BuilderConstants.StyleSelectorValidationSpacialCharacters, "Name"));
+                    selection.NotifyOfStylingChange();
+                }
+                else
+                {
+                    Builder.ShowWarning(string.Format(BuilderConstants.AttributeValidationSpacialCharacters, "Name"));
+                }
+                selection.NotifyOfHierarchyChange();
+                return;
+            }
 
             if (documentElement.IsSelector())
             {

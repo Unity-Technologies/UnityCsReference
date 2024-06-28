@@ -66,6 +66,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string noModuleFoundWarning = L10n.Tr("No module found for the selected profile.");
         public static readonly string notSupportedWarning = L10n.Tr("Target platform does not currently support build profiles.");
         public static readonly string active = L10n.Tr("Active");
+        public static readonly string description = L10n.Tr("Description");
 
         // Asset Import Overrides Window
         public static readonly string assetImportOverrideTitle = L10n.Tr("Asset Import Overrides");

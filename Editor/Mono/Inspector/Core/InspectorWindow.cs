@@ -22,7 +22,7 @@ namespace UnityEditor
         static readonly List<InspectorWindow> m_AllInspectors = new List<InspectorWindow>();
         static bool s_AllOptimizedGUIBlocksNeedsRebuild;
 
-        [SerializeField] EditorGUIUtility.EditorLockTracker m_LockTracker = new EditorGUIUtility.EditorLockTracker();
+        [SerializeField] EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker m_LockTracker = new EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker();
         [SerializeField] PreviewWindow m_PreviewWindow;
 
         readonly HashSet<DataMode> m_UserSupportedDataModes = new(4);
@@ -33,10 +33,14 @@ namespace UnityEditor
         {
             get
             {
+                //this makes sure the getter for InspectorWindow.tracker gets called and creates an ActiveEditorTracker if needed
+                m_LockTracker.tracker = tracker;
                 return m_LockTracker.isLocked;
             }
             set
             {
+                //this makes sure the getter for InspectorWindow.tracker gets called and creates an ActiveEditorTracker if needed
+                m_LockTracker.tracker = tracker;
                 m_LockTracker.isLocked = value;
             }
         }
@@ -82,8 +86,11 @@ namespace UnityEditor
             RestoreLockStateFromSerializedData();
 
             if (m_LockTracker == null)
-                m_LockTracker = new EditorGUIUtility.EditorLockTracker();
+            {
+                m_LockTracker = new EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker();
+            }
 
+            m_LockTracker.tracker = tracker;
             m_LockTracker.lockStateChanged.AddListener(LockStateChanged);
             m_Tracker.dataMode = GetDataModeController_Internal().dataMode;
 
@@ -237,22 +244,28 @@ namespace UnityEditor
             // The inspector window doesn't not track the object name.
         }
 
-        protected override void EnsureAppropriateTrackerIsInUse()
-        {
-            if (m_InspectorMode == InspectorMode.Normal && !isLocked)
-                m_Tracker = ActiveEditorTracker.sharedTracker;
-            else if (m_Tracker is null || m_Tracker.Equals(ActiveEditorTracker.sharedTracker))
-                m_Tracker = new ActiveEditorTracker();
-        }
-
         protected override void CreateTracker()
         {
-            if (m_Tracker != null && m_Tracker.inspectorMode == m_InspectorMode)
+            if (m_Tracker != null)
+            {
+                // Ensure that inspector mode
+                // This shouldn't be necessary but there are some non-reproducable bugs objects showing up as not able to multi-edit
+                // because this state goes out of sync.
+                m_Tracker.inspectorMode = m_InspectorMode;
                 return;
+            }
 
-            EnsureAppropriateTrackerIsInUse();
+            m_Tracker = sharedTrackerInUse ? new ActiveEditorTracker() : ActiveEditorTracker.sharedTracker;
             m_Tracker.inspectorMode = m_InspectorMode;
             m_Tracker.RebuildIfNecessary();
+        }
+
+        bool sharedTrackerInUse
+        {
+            get
+            {
+                return m_AllInspectors.Any(i => i.m_Tracker != null && i.m_Tracker.Equals(ActiveEditorTracker.sharedTracker));
+            }
         }
 
         protected virtual void ShowButton(Rect r)
@@ -262,25 +275,16 @@ namespace UnityEditor
 
         private void LockStateChanged(bool lockState)
         {
-            EnsureAppropriateTrackerIsInUse();
-
-            m_Tracker.isLocked = lockState; // Update the lock state of the ActiveEditorTracker in use
-            if (m_Tracker.isLocked != lockState)
+            if (lockState)
             {
-                // Sync LockTracker lock state if m_Tracker failed to lock e.g. if user tried to lock Packages folder https://fogbugz.unity3d.com/f/cases/1173185/
-                m_LockTracker.isLocked = m_Tracker.isLocked;
-                return;
+                PrepareLockedObjectsForSerialization();
+            }
+            else
+            {
+                ClearSerializedLockedObjects();
             }
 
-            if (lockState)
-                PrepareLockedObjectsForSerialization();
-            else
-                ClearSerializedLockedObjects();
-
-            if (lockState)
-                tracker.RebuildIfNecessary();
-            else
-                tracker.ForceRebuild();
+            tracker.RebuildIfNecessary();
         }
 
         protected override bool CloseIfEmpty()
@@ -477,7 +481,9 @@ namespace UnityEditor
         private void RestoreLockStateFromSerializedData()
         {
             if (m_Tracker == null)
+            {
                 return;
+            }
 
             // try to retrieve all Objects from their stored instance ids in the list.
             // this is only used for non persistent objects (scene objects)
@@ -503,11 +509,9 @@ namespace UnityEditor
                 }
             }
 
-            // set the tracker to the serialized list. if it contains nulls or is empty, the tracker will be set to unlocked
+            // set the tracker to the serialized list. if it contains nulls or is empty, the tracker won't lock
             // this fixes case 775007
             m_Tracker.SetObjectsLockedByThisTracker(m_ObjectsLockedBeforeSerialization);
-            // Sync LockTracker lock state with m_Tracker lock state in case m_ObjectsLockedBeforeSerialization is empty
-            m_LockTracker.isLocked = m_Tracker.isLocked;
             // since this method likely got called during OnEnable, and rebuilding the tracker could call OnDisable on all Editors,
             // some of which might not have gotten their enable yet, the rebuilding needs to happen delayed in EditorApplication.update
             EditorApplication.CallDelayed(tracker.RebuildIfNecessary, 0f);

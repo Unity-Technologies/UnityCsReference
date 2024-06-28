@@ -215,15 +215,19 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
 
+            GUI.enabled = !m_Tree.isAllItemsEnabled;
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("All"), GUILayout.Width(50)))
             {
                 m_Tree.SetAllEnabled(PackageImportTreeView.EnabledState.All);
             }
+            GUI.enabled = true;
 
+            GUI.enabled = m_Tree.isAnyItemEnabled;
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("None"), GUILayout.Width(50)))
             {
                 m_Tree.SetAllEnabled(PackageImportTreeView.EnabledState.None);
             }
+            GUI.enabled = true;
 
             GUILayout.Space(10);
             GUILayout.EndHorizontal();
@@ -252,6 +256,7 @@ namespace UnityEditor
                 PackageImportWizard.instance.DoPreviousStep(m_ImportPackageItems);
             }
             var buttonText = isSecondStep || !PackageImportWizard.instance.IsMultiStepWizard ? "Import" : "Next";
+            GUI.enabled = m_Tree.isAnyItemEnabled;
             if (GUILayout.Button(EditorGUIUtility.TrTextContent(buttonText)))
             {
                 if (m_ImportPackageItems != null)
@@ -259,6 +264,7 @@ namespace UnityEditor
                 else
                     PackageImportWizard.instance.CloseImportWindow();
             }
+            GUI.enabled = true;
 
             GUILayout.Space(10);
             GUILayout.EndHorizontal();

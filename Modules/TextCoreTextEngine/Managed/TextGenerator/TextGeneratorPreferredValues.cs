@@ -662,22 +662,10 @@ namespace UnityEngine.TextCore.Text
 
                 if (charCode == k_Tab || charCode == k_ZeroWidthSpace || ((textWrapMode == TextWrappingMode.PreserveWhitespace || textWrapMode == TextWrappingMode.PreserveWhitespaceNoWrap) && (isWhiteSpace || charCode == k_ZeroWidthSpace)) || (isWhiteSpace == false && charCode != k_ZeroWidthSpace && charCode != k_SoftHyphen && charCode != k_EndOfText) || (charCode == k_SoftHyphen && isSoftHyphenIgnored == false) || m_TextElementType == TextElementType.Sprite)
                 {
-                    //float marginLeft = m_MarginLeft;
-                    //float marginRight = m_MarginRight;
-
-                    // Injected characters do not override margins
-                    //if (isInjectedCharacter)
-                    //{
-                    //    marginLeft = textInfo.lineInfo[m_LineNumber].marginLeft;
-                    //    marginRight = textInfo.lineInfo[m_LineNumber].marginRight;
-                    //}
-
                     widthOfTextArea = m_Width != -1 ? Mathf.Min(marginWidth + 0.0001f - m_MarginLeft - m_MarginRight, m_Width) : marginWidth + 0.0001f - m_MarginLeft - m_MarginRight;
 
                     // Calculate the line breaking width of the text.
                     textWidth = Mathf.Abs(m_XAdvance) + currentGlyphMetrics.horizontalAdvance * (1 - m_CharWidthAdjDelta) * (charCode == k_SoftHyphen ? currentElementUnmodifiedScale : currentElementScale);
-
-                    int testedCharacterCount = m_CharacterCount;
 
                     // Handling of Horizontal Bounds
 
@@ -867,7 +855,13 @@ namespace UnityEngine.TextCore.Text
                     }
                     else if (m_MonoSpacing != 0)
                     {
-                        m_XAdvance += (m_MonoSpacing - monoAdvance + ((m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment) * currentEmScale) + m_CSpacing) * (1 - m_CharWidthAdjDelta);
+                        float monoAdjustment;
+                        if (m_DuoSpace && (charCode == '.' || charCode == ':' || charCode == ','))
+                            monoAdjustment = m_MonoSpacing / 2 - monoAdvance;
+                        else
+                            monoAdjustment = m_MonoSpacing - monoAdvance;
+
+                        m_XAdvance += (monoAdjustment + ((m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment) * currentEmScale) + m_CSpacing) * (1 - m_CharWidthAdjDelta);
 
                         if (isWhiteSpace || charCode == k_ZeroWidthSpace)
                             m_XAdvance += generationSettings.wordSpacing * currentEmScale;
@@ -1082,9 +1076,11 @@ namespace UnityEngine.TextCore.Text
             renderedHeight += generationSettings.margins.y > 0 ? generationSettings.margins.y : 0;
             renderedHeight += generationSettings.margins.w > 0 ? generationSettings.margins.w : 0;
 
-            // Round Preferred Values to nearest 5/100.
-            renderedWidth = (int)(renderedWidth * 100 + 1f) / 100f;
-            renderedHeight = (int)(renderedHeight * 100 + 1f) / 100f;
+            // Round Preferred Values to nearest 1/100.
+            if (renderedWidth != 0.0f)
+                renderedWidth = (int)(renderedWidth * 100 + 1f) / 100f;
+            if (renderedHeight != 0.0f)
+                renderedHeight = (int)(renderedHeight * 100 + 1f) / 100f;
 
             Profiler.EndSample();
 

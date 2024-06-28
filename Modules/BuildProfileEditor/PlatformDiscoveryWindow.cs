@@ -22,6 +22,8 @@ namespace UnityEditor.Build.Profile
         BuildProfileCard m_SelectedCard;
         Image m_SelectedCardImage;
         Label m_SelectedDisplayNameLabel;
+        Foldout m_SelectedDescriptionFoldout;
+        Label m_SelectedDescriptionLabel;
         Button m_AddBuildProfileButton;
         BuildProfilePlatformBrowserClosed m_CloseEvent;
 
@@ -55,9 +57,12 @@ namespace UnityEditor.Build.Profile
             m_SelectedDisplayNameLabel = rootVisualElement.Q<Label>("selected-card-name");
             m_SelectedCardImage = rootVisualElement.Q<Image>("selected-card-icon");
             m_CardWarningHelpBox = rootVisualElement.Q<HelpBox>("helpbox-card-warning");
+            m_SelectedDescriptionFoldout = rootVisualElement.Q<Foldout>("platform-description-foldout");
+            m_SelectedDescriptionLabel = rootVisualElement.Q<Label>("platform-description-label");
 
             // Apply localized text to static elements.
             rootVisualElement.Q<ToolbarButton>("toolbar-filter-all").text = TrText.all;
+            m_SelectedDescriptionFoldout.text = TrText.description;
             m_AddBuildProfileButton.text = TrText.addBuildProfile;
 
             // Build dynamic visual elements.
@@ -92,6 +97,15 @@ namespace UnityEditor.Build.Profile
             m_SelectedDisplayNameLabel.text = card.displayName;
             m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIcon(card.platformId);
             Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId);
+
+            string description = BuildProfileModuleUtil.GetPlatformDescription(card.platformId);
+            if (string.IsNullOrEmpty(description))
+                m_SelectedDescriptionFoldout.Hide();
+            else
+            {
+                m_SelectedDescriptionFoldout.Show();
+                m_SelectedDescriptionLabel.text = description;
+            }
         }
 
         ListView CreateCardListView()

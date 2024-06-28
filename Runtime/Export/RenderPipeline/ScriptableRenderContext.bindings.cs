@@ -42,6 +42,12 @@ namespace UnityEngine.Rendering
         [FreeFunction("InitializeSortSettings")]
         internal static extern void InitializeSortSettings(Camera camera, out SortingSettings sortingSettings);
 
+        [FreeFunction("ScriptableRenderContext::PushDisableApiRenderers")]
+        extern static public void PushDisableApiRenderers();
+
+        [FreeFunction("ScriptableRenderContext::PopDisableApiRenderers")]
+        extern static public void PopDisableApiRenderers();
+
         extern private void Submit_Internal();
         extern private bool SubmitForRenderPassValidation_Internal();
 

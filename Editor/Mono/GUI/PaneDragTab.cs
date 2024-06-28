@@ -37,7 +37,7 @@ namespace UnityEditor
             public static GUIStyle view = "TabWindowBackground";
             public static readonly GUIStyle tabLabel = new GUIStyle("dragtab") { name = "dragtab-label" };
 
-            public static readonly SVC<Color> backgroundColor = new SVC<Color>("--theme-background-color");
+            public static readonly SVC<Color> backgroundColor = new SVC<Color>("--unity-colors-app_toolbar-background");
         }
 
         static public PaneDragTab get

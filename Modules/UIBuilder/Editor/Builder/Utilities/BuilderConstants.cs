@@ -291,7 +291,7 @@ namespace Unity.UI.Builder
             {"flex", ""},
             {"flex-basis", "Initial main size of a flex item, on the main flex axis. The final layout might be smaller or larger, according to the flex shrinking and growing determined by the other flex properties."},
             {"flex-direction", "Direction of the main axis to layout children in a container."},
-            {"flex-grow", "Specifies how the item will shrink relative to the rest of the flexible items inside the same container."},
+            {"flex-grow", "Specifies how the item will grow relative to the rest of the flexible items inside the same container."},
             {"flex-shrink", "Specifies how the item will shrink relative to the rest of the flexible items inside the same container."},
             {"flex-wrap", "Placement of children over multiple lines if not enough space is available in this container."},
             {"font-size", "Font size to draw the element's text."},

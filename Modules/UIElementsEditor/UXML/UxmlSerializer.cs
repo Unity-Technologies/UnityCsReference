@@ -809,8 +809,9 @@ namespace UnityEditor.UIElements
                 if (ta.TryGetAttributeValue(nameof(VisualElement.name), out var elementName))
                 {
                     namesCopy.Add(elementName);
-                    idsCopy.Add(ta.id);
                 }
+
+                idsCopy.Add(ta.id);
 
                 var templateContext = new CreationContext(null, overrideRanges, null, vta, null, null, namesCopy);
 

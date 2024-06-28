@@ -45,6 +45,16 @@ namespace UnityEditor
         const string k_layerMatrixFoldoutPref = "project-settings-collision-matrix-unfold";
         const int k_MaxLayers = 32;
 
+        static class Content
+        {
+            public static readonly string classicWarning = EditorGUIUtility.TrTextContent("You have changed the active physics SDK integration. For the change to take effect please restart the Editor.").text;
+            public static readonly string classicFallbackWarning = EditorGUIUtility.TrTextContent($"{classicWarning} \nNote: Setting this value to 'None' will cause all physics APIs and Components to no longer work.").text;
+
+            public static readonly string classicDropDownTooltip = EditorGUIUtility.TrTextContent($"The current physics SDK integration used by Unity's GameObject API. {dropDownTooltipBase}").text;
+            public static readonly string entitiesDropDownTooltip = EditorGUIUtility.TrTextContent($"The current physics SDK integration used by Unity's Entities API. {dropDownTooltipBase}").text;
+            const string dropDownTooltipBase = "Changing this value to another SDK integration has the potential to change the behavior of your physics Components. \nTweaking your physics simulation might be necessary due to behavior differences between different physics SDKs.";
+        }
+
         static SerializedObject LoadGameManagerAssetAtPath(string path)
         {
             var found = AssetDatabase.LoadAllAssetsAtPath(path);
@@ -84,56 +94,58 @@ namespace UnityEditor
 
                     var classicEngineDropdown = rootElement.Q<DropdownField>(name: "classic-dropdown");
                     var classicEngineHelpboxWarning = rootElement.Q<HelpBox>(name: "classic-helpbox-warning");
-                    classicEngineHelpboxWarning.text = "You've changed the active physics SDK integration. This requires a restart of the Editor for the change to take effect.";
-                    classicEngineHelpboxWarning.visible = false;
 
                     int currentChoiceIndex = 0;
+                    uint currentSerializedId = serializedObject.FindProperty("m_CurrentBackendId").uintValue;
                     uint currentId = Physics.GetCurrentIntegrationId();
+
                     for (int i = 0; i < infos.Length; ++i)
                     {
                         IntegrationInfo info = infos[i];
                         classicEngineDropdown.choices.Add(info.Name);
-                        if (currentId == info.Id)
+                        if (currentSerializedId == info.Id)
                             currentChoiceIndex = i;
                     }
 
                     classicEngineDropdown.value = classicEngineDropdown.choices[currentChoiceIndex];
+                    classicEngineDropdown.tooltip = Content.classicDropDownTooltip;
 
-                    if (!Unsupported.IsDeveloperMode() || Application.isPlaying)
-                        classicEngineDropdown.SetEnabled(false);
-                    else
+                    classicEngineHelpboxWarning.text = currentSerializedId == IntegrationInfo.k_FallbackIntegrationId ? Content.classicFallbackWarning : Content.classicWarning;
+                    classicEngineHelpboxWarning.visible = currentId != currentSerializedId;
+
+                    classicEngineDropdown.RegisterValueChangedCallback((evt) =>
                     {
-                        classicEngineDropdown.RegisterValueChangedCallback((evt) =>
+                        if (evt.newValue == evt.previousValue)
+                            return;
+
+                        uint oldIntegrationId = Physics.GetCurrentIntegrationId();
+                        uint newIntegrationId = 0;
+                        ReadOnlySpan<IntegrationInfo> integrationInfos = Physics.GetIntegrationInfos();
+                        for (int i = 0; i < integrationInfos.Length; ++i)
                         {
-                            if (evt.newValue == evt.previousValue)
-                                return;
-
-                            uint oldIntegrationId = Physics.GetCurrentIntegrationId();
-                            uint newIntegrationId = 0;
-                            ReadOnlySpan<IntegrationInfo> integrationInfos = Physics.GetIntegrationInfos();
-                            for (int i = 0; i < integrationInfos.Length; ++i)
+                            IntegrationInfo info = integrationInfos[i];
+                            if (info.Name == evt.newValue)
                             {
-                                IntegrationInfo info = integrationInfos[i];
-                                if (info.Name == evt.newValue)
-                                {
-                                    newIntegrationId = info.Id;
-                                }
+                                newIntegrationId = info.Id;
                             }
+                        }
 
-                            var idProp = serializedObject.FindProperty("m_CurrentBackendId");
-                            idProp.uintValue = newIntegrationId;
+                        var idProp = serializedObject.FindProperty("m_CurrentBackendId");
+                        idProp.uintValue = newIntegrationId;
 
-                            //force apply the property here as we want to ensure that the change is done immediately
-                            serializedObject.ApplyModifiedProperties();
+                        //force apply the property here as we want to ensure that the change is done immediately
+                        serializedObject.ApplyModifiedProperties();
 
-                            //enable warning box if we are swapping
-                            classicEngineHelpboxWarning.visible = newIntegrationId != Physics.GetCurrentIntegrationId();
-                        });
-                    }
+                        //enable warning box if we are swapping and set the correct text depending on integration
+                        classicEngineHelpboxWarning.text = newIntegrationId == IntegrationInfo.k_FallbackIntegrationId? Content.classicFallbackWarning : Content.classicWarning;
+                        classicEngineHelpboxWarning.visible = newIntegrationId != Physics.GetCurrentIntegrationId();
+                    });
 
                     var ecsEngineDropdown = rootElement.Q<DropdownField>(name: "ecs-dropdown");
                     var ecsEngineHelpboxInfo = rootElement.Q<HelpBox>(name: "ecs-helpbox-info");
                     var ecsEngineHelpboxWarning = rootElement.Q<HelpBox>(name: "ecs-helpbox-warning");
+
+                    ecsEngineDropdown.tooltip = Content.entitiesDropDownTooltip;
 
                     if (EcsExtension != null)
                     {
@@ -490,7 +502,7 @@ namespace UnityEditor
             if (EcsExtension == null)
                 return;
 
-            var tab = new Tab() { label = "ECS", name = "tab__ecs" };
+            var tab = new Tab() { label = "Entities", name = "tab__ecs" };
             var tabContent = new VisualElement() { name = "tab-content__ecs" };
             tabContent.AddToClassList("project-settings__physics__tab-content");
 

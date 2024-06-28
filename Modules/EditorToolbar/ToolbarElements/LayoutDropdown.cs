@@ -18,6 +18,8 @@ namespace UnityEditor.Toolbars
             clicked += () => OpenLayoutWindow(worldBound);
             tooltip = L10n.Tr("Select editor layout");
 
+            this.Q<Image>(className: EditorToolbar.elementIconClassName).style.display = DisplayStyle.Flex;
+
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             EditorApplication.delayCall += CheckAvailability; //Immediately after a domain reload, calling check availability sometimes returns the wrong value

@@ -105,6 +105,8 @@ namespace UnityEditor.EditorTools
                 if (tool == null)
                     throw new InvalidOperationException("The current selection does not contain any objects editable " +
                         $"by the component tool of type: {type}");
+                if (!tool.IsAvailable())
+                    throw new InvalidOperationException($"Cannot activate {type} tool because it is currently not available (the tool's IsAvailable() method returned false).");
                 SetActiveTool(tool);
                 return;
             }

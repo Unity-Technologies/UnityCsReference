@@ -4,6 +4,7 @@
 
 ﻿using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
@@ -17,6 +18,7 @@ internal class SerializedObjectBindingContext
     public ulong lastRevision { get; private set; }
     private SerializedObject serializedObject { get; set; }
 
+    private SerializedObjectChangeTracker changeTracker;
     private bool wasUpdated { get; set; }
 
     // Used in tests to ensure that we do not call `SerializedObject.UpdateIfRequiredOrScript` more than
@@ -32,6 +34,7 @@ internal class SerializedObjectBindingContext
     {
         this.serializedObject = so;
         this.lastRevision = so.objectVersion;
+        changeTracker = new SerializedObjectChangeTracker(so);
     }
 
     public bool TargetsSerializedObject(SerializedObject obj)
@@ -587,13 +590,18 @@ internal class SerializedObjectBindingContext
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal void UpdateRevision()
     {
-        var previousRevision = lastRevision;
         if (IsValid())
         {
-            lastRevision = serializedObject.objectVersion;
+            bool hasChanges = false;
 
-            if (previousRevision != lastRevision)
+            using (k_ChangeTracking.Auto())
             {
+                hasChanges = changeTracker.PollForChanges(false);
+            }
+
+            if(hasChanges)
+            {
+                lastRevision = serializedObject.objectVersion;
                 OnSerializedObjectChanged();
             }
         }
@@ -607,13 +615,22 @@ internal class SerializedObjectBindingContext
         return serializedObject.isValid;
     }
 
+    private static readonly ProfilerMarker k_SerializedObjectUpdater = new ProfilerMarker("BindingContext.UpdateSerializedObject");
+    private static readonly ProfilerMarker k_ChangeTracking = new ProfilerMarker("BindingContext.ChangeTracking");
+    private static readonly ProfilerMarker k_SyncVersion = new ProfilerMarker("BindingContext.SyncChangeVersion");
+    private static readonly ProfilerMarker k_NotifyChanges = new ProfilerMarker("BindingContext.NotifyChanges");
+
     internal void UpdateIfNecessary(VisualElement element)
     {
         if (!wasUpdated && IsValid())
         {
             if (element.elementPanel?.GetUpdater(VisualTreeUpdatePhase.DataBinding) is VisualTreeDataBindingsUpdater updater && m_LastFrame != updater.frame)
             {
-                serializedObject.UpdateIfRequiredOrScript();
+                using (var p = k_SerializedObjectUpdater.Auto())
+                {
+                    serializedObject.UpdateIfRequiredOrScript();
+                }
+
                 ++updateCount;
                 UpdateRevision();
                 m_LastFrame = updater.frame;
@@ -644,49 +661,30 @@ internal class SerializedObjectBindingContext
     #region Property Value Tracking
     class TrackedValue
     {
-        public uint contentHash;
-        public bool hasMultipleDifferentValues;
         public Action<object, SerializedProperty> onChangeCallback;
-        public Action<object, SerializedProperty> onUpdateCallback;
+        public Action<object> onUpdateCallback;
         public object cookie;
 
         public SerializedPropertyType originalPropType;
-        public int propertyHash;
-        public string propertyPath;
 
-        public TrackedValue(SerializedProperty property, Action<object, SerializedProperty> changeCB, Action<object, SerializedProperty> updateCB)
+        public TrackedValue(SerializedProperty property, Action<object, SerializedProperty> changeCB, Action<object> updateCB)
         {
-            contentHash = property.contentHash;
             originalPropType = property.propertyType;
-            propertyHash = property.hashCodeForPropertyPath;
-            propertyPath = property.propertyPath;
             onChangeCallback = changeCB;
             onUpdateCallback = updateCB;
         }
 
-        public bool Update(SerializedObjectBindingContext context, SerializedProperty currentProp, List<(object, SerializedProperty, Action<object, SerializedProperty>)> pendingCallbacks)
+        public void InvokeUpdateCallback()
         {
-            if (currentProp.propertyType != originalPropType)
+            onUpdateCallback?.Invoke(cookie);
+        }
+
+        public void InvokeOnChangeCallback(SerializedProperty prop)
+        {
+            if (prop.propertyType == originalPropType)
             {
-                return false;
+                onChangeCallback?.Invoke(cookie, prop);
             }
-
-            onUpdateCallback?.Invoke(cookie, currentProp);
-
-            var newContentHash = currentProp.contentHash;
-            var newHasMultipleDifferentValues = currentProp.hasMultipleDifferentValues;
-
-            // We check if the value has changed or if the multiple different values state has changed.
-            if (contentHash != newContentHash || hasMultipleDifferentValues != newHasMultipleDifferentValues)
-            {
-                contentHash = newContentHash;
-                hasMultipleDifferentValues = newHasMultipleDifferentValues;
-
-                // We execute the change callbacks after updating the tracked properties as its possible the callback will make changes to the serialized object.
-                pendingCallbacks.Add((cookie, currentProp.Copy(), onChangeCallback));
-            }
-
-            return true;
         }
     }
 
@@ -695,11 +693,7 @@ internal class SerializedObjectBindingContext
         // MultiValueDictionary?
         private Dictionary<int, List<TrackedValue>> m_TrackedValues = new Dictionary<int, List<TrackedValue>>();
 
-        public TrackedValues()
-        {
-        }
-
-        public void Add(SerializedProperty prop, object cookie, Action<object, SerializedProperty> onChangeCallback, Action<object, SerializedProperty> onUpdateCallback)
+        public void Add(SerializedProperty prop, object cookie, Action<object, SerializedProperty> onChangeCallback, Action<object> onUpdateCallback)
         {
             var hash = prop.hashCodeForPropertyPath;
 
@@ -714,8 +708,9 @@ internal class SerializedObjectBindingContext
             values.Add(t);
         }
 
-        public void Remove(int propertyPathHash, object cookie)
+        public bool Remove(int propertyPathHash, object cookie)
         {
+            bool removed = false;
             if (m_TrackedValues.TryGetValue(propertyPathHash, out var values))
             {
                 for (int i = values.Count - 1; i >= 0; i--)
@@ -725,6 +720,7 @@ internal class SerializedObjectBindingContext
                     if (ReferenceEquals(t.cookie, cookie))
                     {
                         values.RemoveAt(i);
+                        removed = true;
                     }
                 }
 
@@ -733,59 +729,36 @@ internal class SerializedObjectBindingContext
                     m_TrackedValues.Remove(propertyPathHash);
                 }
             }
+
+            return removed;
         }
 
-        private HashSet<int> unvisitedProperties = new HashSet<int>();
-        public void BeginUpdate()
+        public void SyncUpdateCallbacks(int hash)
         {
-            unvisitedProperties.Clear();
-            var keys = m_TrackedValues.Keys;
-            foreach (var i in keys)
+            if (m_TrackedValues.TryGetValue(hash, out var values))
             {
-                unvisitedProperties.Add(i);
-            }
-        }
-
-        public void EndUpdate(SerializedObjectBindingContext context, List<(object, SerializedProperty, Action<object, SerializedProperty>)> pendingCallbacks)
-        {
-            // We must check the un-visited properties.
-            // This can happen when objects serialized with SerializedReference are present multiple times and we
-            // happen to track the repeated occurrence instead of the first one. We then must go the slow way of
-            // finding the property iterator and comparing the values there.
-            foreach (var hash in unvisitedProperties)
-            {
-                if (m_TrackedValues.TryGetValue(hash, out var values))
+                for (int i = 0; i < values.Count; ++i)
                 {
-                    if (values.Count > 0)
-                    {
-                        var propertyPath = values[0].propertyPath;
-
-                        var currentProperty = context.serializedObject.FindProperty(propertyPath);
-
-                        if (currentProperty != null)
-                        {
-                            for (int i = 0; i < values.Count; ++i)
-                            {
-                                values[i].Update(context, currentProperty, pendingCallbacks);
-                            }
-                        }
-                    }
+                    values[i].InvokeUpdateCallback();
                 }
             }
-            unvisitedProperties.Clear();
         }
-        public void Update(SerializedObjectBindingContext context, SerializedProperty currentProperty, List<(object, SerializedProperty, Action<object, SerializedProperty>)> pendingCallbacks)
+
+        public void NotifyValueChanged(SerializedObjectBindingContext context, SerializedProperty currentProperty)
         {
             var hash = currentProperty.hashCodeForPropertyPath;
 
             if (m_TrackedValues.TryGetValue(hash, out var values))
             {
-                unvisitedProperties.Remove(hash);
                 for (int i = 0; i < values.Count; ++i)
                 {
-                    values[i].Update(context, currentProperty, pendingCallbacks);
+                    values[i].InvokeOnChangeCallback(currentProperty);
                 }
             }
+            // else
+            // {
+            //     Debug.LogWarning("Received PropertyChange for untracked property?");
+            // }
         }
     }
 
@@ -799,12 +772,14 @@ internal class SerializedObjectBindingContext
         Action<object, SerializedProperty> valueChangedCallback)
     {
         m_ValueTracker.Add(property, cookie, valueChangedCallback, null);
+        changeTracker.AddPropertyTracking(property);
         return true;
     }
 
     public void UnregisterSerializedPropertyChangeCallback(object cookie, int propertyPathHash)
     {
         m_ValueTracker.Remove(propertyPathHash, cookie);
+        changeTracker.RemovePropertyTracking(propertyPathHash);
     }
 
     public SerializedObjectBindingContextUpdater AddBindingUpdater(VisualElement element)
@@ -832,7 +807,7 @@ internal class SerializedObjectBindingContext
         }
     }
 
-    private static void OnPropertyUpdate(object cookie, SerializedProperty changedProp)
+    private static void OnPropertyUpdate(object cookie)
     {
         if (cookie is SerializedObjectBindingBase binding)
         {
@@ -847,7 +822,8 @@ internal class SerializedObjectBindingContext
 
             if (b.ResolveProperty())
             {
-                m_ValueTracker.Add(b.boundProperty, b, (o, p) => DefaultOnPropertyChange(o, p), (o, p) => OnPropertyUpdate(o, p));
+                m_ValueTracker.Add(b.boundProperty, b, (o, p) => DefaultOnPropertyChange(o, p), (o) => OnPropertyUpdate(o));
+                changeTracker.AddPropertyTracking(b.boundProperty);
             }
         }
     }
@@ -857,73 +833,49 @@ internal class SerializedObjectBindingContext
         if (b.boundPropertyHash != 0)
         {
             m_ValueTracker.Remove(b.boundPropertyHash, b);
+            changeTracker.RemovePropertyTracking(b.boundPropertyHash);
         }
 
         m_RegisteredBindings.Remove(b);
     }
 
-    HashSet<long> visited = new HashSet<long>();
-    List<(object cookie, SerializedProperty p, Action<object, SerializedProperty> onChange)> m_PendingCallbacks = new();
-
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static Action PostProcessTrackedPropertyChanges;
+
     void UpdateTrackedProperties()
     {
-        // Iterating over the entire object, as gathering valid property names hashes is faster than querying
-        // each saved SerializedProperty.isValid
-        var iterator = serializedObject.GetIterator();
-        iterator.unsafeMode = true;
-
-        visited.Clear();
+        using (k_SyncVersion.Auto())
         {
-            m_ValueTracker.BeginUpdate();
-            var visitChild = true;
-            while (iterator.Next(visitChild))
-            {
-                visitChild = true;
+            var syncPropertyPathHashes = changeTracker.GetSyncedTrackedProperties();
 
-                switch (iterator.propertyType)
+            for(int i = 0; i < syncPropertyPathHashes.Length;++i)
+                m_ValueTracker.SyncUpdateCallbacks(syncPropertyPathHashes[i]);
+        }
+
+        if (changeTracker.HasModifiedTrackedProperties())
+        {
+            using (k_NotifyChanges.Auto())
+            {
+                try
                 {
-                    case SerializedPropertyType.ManagedReference:
+                    var changedProperties = changeTracker.GetModifiedTrackedProperties();
+
+                    for (int i = 0; i < changedProperties.Length; ++i)
                     {
-                        // Managed reference objects can form a cyclical graph, so need to track visited objects
-                        long refId = iterator.managedReferenceId;
-
-                        if (!visited.Add(refId))
-                        {
-                            visitChild = false;
-                        }
-
-                        break;
+                        m_ValueTracker.NotifyValueChanged(this, changedProperties[i]);
                     }
-                    case SerializedPropertyType.String:
-                        visitChild = false;
-                        break;
-                    default:
-                        break;
+
+                    PostProcessTrackedPropertyChanges?.Invoke();
                 }
-
-                m_ValueTracker.Update(this, iterator, m_PendingCallbacks);
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+                finally
+                {
+                    changeTracker.ClearModifiedTrackedProperties();
+                }
             }
-            m_ValueTracker.EndUpdate(this, m_PendingCallbacks);
         }
-
-        // We batch the change callbacks after updating the tracked properties as its possible
-        // the callback will make changes to the serialized object which breaks our iteration during Update.
-        try
-        {
-            foreach (var cb in m_PendingCallbacks)
-            {
-                cb.onChange(cb.cookie, cb.p);
-            }
-            PostProcessTrackedPropertyChanges?.Invoke();
-        }
-        catch (Exception e)
-        {
-            Debug.LogException(e);
-        }
-
-        m_PendingCallbacks.Clear();
-        visited.Clear();
     }
 }

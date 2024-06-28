@@ -120,17 +120,40 @@ namespace UnityEditor
     [Flags]
     public enum iOSBackgroundMode: uint
     {
-        None = 0,
-        Audio = 1 << 0,
-        Location = 1 << 1,
-        VOIP = 1 << 2,
-        NewsstandContent = 1 << 3,
-        ExternalAccessory = 1 << 4,
-        BluetoothCentral = 1 << 5,
-        BluetoothPeripheral = 1 << 6,
-        Fetch = 1 << 7,
-        RemoteNotification = 1 << 8,
-        Processing = 1 << 9,
+        None                            = 0,
+        AudioAirplayPiP                 = 1 << 0,
+        LocationUpdates                 = 1 << 1,
+        VoiceOverIP                     = 1 << 2,
+        NewsstandDownloads              = 1 << 3,
+        ExternalAccessoryCommunication  = 1 << 4,
+        UsesBluetoothLEAccessory        = 1 << 5,
+        ActsAsABluetoothLEAccessory     = 1 << 6,
+        BackgroundFetch                 = 1 << 7,
+        RemoteNotifications             = 1 << 8,
+        Processing                      = 1 << 9,
+        NearbyInteraction               = 1 << 10,
+        NetworkAuthentication           = 1 << 11,
+        PushToTalk                      = 1 << 12,
+
+        // Obsolete/renamed values
+        [Obsolete("iOSBackgroundMode.Audio has been deprecated. Use AudioAirplayPiP instead (UnityUpgradable) -> AudioAirplayPiP", true)]
+        Audio                           = AudioAirplayPiP,
+        [Obsolete("iOSBackgroundMode.Location has been deprecated. Use LocationUpdates instead (UnityUpgradable) -> LocationUpdates", true)]
+        Location                        = LocationUpdates,
+        [Obsolete("iOSBackgroundMode.VoIP has been deprecated. Use VoiceOverIP instead (UnityUpgradable) -> VoiceOverIP", true)]
+        VoIP                            = VoiceOverIP,
+        [Obsolete("iOSBackgroundMode.NewsstandContent has been deprecated. Use NewsstandDownloads instead (UnityUpgradable) -> NewsstandDownloads", true)]
+        NewsstandContent                = NewsstandDownloads,
+        [Obsolete("iOSBackgroundMode.ExternalAccessory has been deprecated. Use ExternalAccessoryCommunication instead (UnityUpgradable) -> ExternalAccessoryCommunication", true)]
+        ExternalAccessory               = ExternalAccessoryCommunication,
+        [Obsolete("iOSBackgroundMode.BluetoothCentral has been deprecated. Use UsesBluetoothLEAccessory instead (UnityUpgradable) -> UsesBluetoothLEAccessory", true)]
+        BluetoothCentral                = UsesBluetoothLEAccessory,
+        [Obsolete("iOSBackgroundMode.BluetoothPeripheral has been deprecated. Use ActsAsABluetoothLEAccessory instead (UnityUpgradable) -> ActsAsABluetoothLEAccessory", true)]
+        BluetoothPeripheral             = ActsAsABluetoothLEAccessory,
+        [Obsolete("iOSBackgroundMode.Fetch has been deprecated. Use BackgroundFetch instead (UnityUpgradable) -> BackgroundFetch", true)]
+        Fetch                           = BackgroundFetch,
+        [Obsolete("iOSBackgroundMode.RemoteNotification has been deprecated. Use RemoteNotifications instead (UnityUpgradable) -> RemoteNotifications", true)]
+        RemoteNotification              = RemoteNotifications,
     }
 
     public enum iOSLaunchScreenImageType

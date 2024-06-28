@@ -228,10 +228,10 @@ namespace UnityEditor.SpeedTree.Importer
         private void CacheTreeImporterValues(string assetPath)
         {
             // Variables used a lot are cached, since accessing any Reader array has a non-negligeable cost. 
+            m_LODCount = (uint)m_Tree.Lod.Length;
             m_HasFacingData = TreeHasFacingData();
             m_HasBranch2Data = m_Tree.Wind.DoBranch2;
             m_LastLodIsBillboard = m_Tree.BillboardInfo.LastLodIsBillboard;
-            m_LODCount = (uint)m_Tree.Lod.Length;
             m_CollisionObjectsCount = (uint)m_Tree.CollisionObjects.Length;
 
             WindConfigSDK windCfg = m_Tree.Wind;
@@ -349,13 +349,13 @@ namespace UnityEditor.SpeedTree.Importer
 
             if (!isBillboard)
             {
-                if (m_HasBranch2Data || m_HasFacingData)
+                if (m_HasBranch2Data || m_HasFacingData) // If Branch2 is available:
                 {
-                    mesh.SetUVs(2, sTMeshGeometry.uvs[2]);
+                    mesh.SetUVs(2, sTMeshGeometry.uvs[2]); // Branch2Pos, Branch2Dir, Branch2Weight, <Unused>
                 }
-                if (m_HasBranch2Data && m_HasFacingData)
+                if (m_HasBranch2Data && m_HasFacingData) // If camera-facing geom is available:
                 {
-                    mesh.SetUVs(3, sTMeshGeometry.uvs[3]);
+                    mesh.SetUVs(3, sTMeshGeometry.uvs[3]); // 2/3 Anchor XYZ, FacingFlag
                 }
             }
 
@@ -405,16 +405,11 @@ namespace UnityEditor.SpeedTree.Importer
                 STVertex vertex = vertices[i];
 
                 sTMeshGeometry.vertices[i].Set(
-                    vertex.Anchor.X + vertex.Offset.X,
+                    vertex.Anchor.X + (vertex.CameraFacing ? -vertex.Offset.X : vertex.Offset.X),
                     vertex.Anchor.Y + vertex.Offset.Y,
                     vertex.Anchor.Z + vertex.Offset.Z);
 
                 sTMeshGeometry.vertices[i] *= m_MeshSettings.scaleFactor;
-
-                if (vertex.CameraFacing)
-                {
-                    sTMeshGeometry.vertices[i].x = vertex.Anchor.X - vertex.Offset.X;
-                }
 
                 sTMeshGeometry.normals[i].Set(vertex.Normal.X, vertex.Normal.Y, vertex.Normal.Z);
 
@@ -1264,6 +1259,7 @@ namespace UnityEditor.SpeedTree.Importer
             // st9
             cfg.branch1StretchLimit = wind.Branch1StretchLimit * scaleFactor;
             cfg.branch2StretchLimit = wind.Branch2StretchLimit * scaleFactor;
+            cfg.importScale = scaleFactor;
             cfg.treeExtentX = (treeBounds.Max.X - treeBounds.Min.X) * scaleFactor;
             cfg.treeExtentY = (treeBounds.Max.Y - treeBounds.Min.Y) * scaleFactor;
             cfg.treeExtentZ = (treeBounds.Max.Z - treeBounds.Min.Z) * scaleFactor;
@@ -1277,7 +1273,7 @@ namespace UnityEditor.SpeedTree.Importer
                 CopyCurve(shared.Turbulence, cfg.turbulenceShared);
                 CopyCurve(shared.Flexibility, cfg.flexibilityShared);
                 cfg.independenceShared = shared.Independence;
-                cfg.sharedHeightStart = wind.SharedStartHeight * scaleFactor;
+                cfg.sharedHeightStart = wind.SharedStartHeight; // this is a % value
                 if (BranchHasAllCurvesValid(in shared))
                 {
                     cfg.doShared = 1;
@@ -1347,29 +1343,25 @@ namespace UnityEditor.SpeedTree.Importer
         #region Others
         private void CalculateScaleFactorFromUnit()
         {
-            float scaleFactor = m_MeshSettings.scaleFactor;
-
             switch (m_MeshSettings.unitConversion)
             {
                 // Use units in the imported file without any conversion.
                 case STUnitConversion.kLeaveAsIs:
-                    scaleFactor = 1.0f;
+                    m_MeshSettings.scaleFactor = 1.0f;
                     break;
                 case STUnitConversion.kFeetToMeters:
-                    scaleFactor = SpeedTreeConstants.kFeetToMetersRatio;
+                    m_MeshSettings.scaleFactor = SpeedTreeConstants.kFeetToMetersRatio;
                     break;
                 case STUnitConversion.kCentimetersToMeters:
-                    scaleFactor = SpeedTreeConstants.kCentimetersToMetersRatio;
+                    m_MeshSettings.scaleFactor = SpeedTreeConstants.kCentimetersToMetersRatio;
                     break;
                 case STUnitConversion.kInchesToMeters:
-                    scaleFactor = SpeedTreeConstants.kInchesToMetersRatio;
+                    m_MeshSettings.scaleFactor = SpeedTreeConstants.kInchesToMetersRatio;
                     break;
                 case STUnitConversion.kCustomConversion:
                     /* no-op */
                     break;
             }
-
-            m_MeshSettings.scaleFactor = scaleFactor;
         }
 
         private bool TreeHasFacingData()

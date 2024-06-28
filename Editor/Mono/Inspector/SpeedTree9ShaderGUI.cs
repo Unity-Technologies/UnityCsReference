@@ -104,8 +104,8 @@ namespace UnityEditor
 
                 // wind
                 MaterialProperty propWindShared  = FindProperty("_WIND_SHARED", properties);
-                MaterialProperty propWindBranch2 = !hasBillboard ? FindProperty("_WIND_BRANCH1", properties) : null;
-                MaterialProperty propWindBranch1 = !hasBillboard ? FindProperty("_WIND_BRANCH2", properties) : null;
+                MaterialProperty propWindBranch1 = !hasBillboard ? FindProperty("_WIND_BRANCH1", properties) : null;
+                MaterialProperty propWindBranch2 = !hasBillboard ? FindProperty("_WIND_BRANCH2", properties) : null;
                 MaterialProperty propWindRipple  = !hasBillboard ? FindProperty("_WIND_RIPPLE" , properties) : null;
                 MaterialProperty propWindShimmer = !hasBillboard ? FindProperty("_WIND_SHIMMER", properties) : null;
                 const bool DOUBLE_WIDE = true;
