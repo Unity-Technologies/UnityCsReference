@@ -537,6 +537,7 @@ namespace UnityEngine.UIElements
 
             ComputeValueFromKey(sliderKey, evt.shiftKey);
             evt.StopPropagation();
+            evt.PreventDefault();
         }
 
         internal virtual void ComputeValueAndDirectionFromClick(float sliderLength, float dragElementLength, float dragElementPos, float dragElementLastPos)
