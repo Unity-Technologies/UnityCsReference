@@ -23,6 +23,8 @@ namespace UnityEditor
             public static GUIContent logLevel = new GUIContent("Log Level");
             public static GUIContent automaticAdd = new GUIContent("Automatic Add",
                 "Automatically add newly created assets to version control.");
+            public static GUIContent scanLocalPackagesOnConnect = new GUIContent("Scan Local Packages on Connect",
+                "Scan local packages during the version control initialization to automatically add newly created assets to source control.");
             public static GUIContent smartMerge = new GUIContent("Smart merge");
             public static GUIContent vcsConnect = new GUIContent("Connect");
             public static GUIContent vcsReconnect = new GUIContent("Reconnect");
@@ -380,6 +382,9 @@ namespace UnityEditor
 
                 EditorUserSettings.AutomaticAdd =
                     EditorGUILayout.Toggle(Styles.automaticAdd, EditorUserSettings.AutomaticAdd);
+
+                EditorUserSettings.scanLocalPackagesOnConnect =
+                    EditorGUILayout.Toggle(Styles.scanLocalPackagesOnConnect, EditorUserSettings.scanLocalPackagesOnConnect);
 
                 if (Provider.requiresNetwork)
                     EditorUserSettings.allowAsyncStatusUpdate = EditorGUILayout.Toggle(Styles.allowAsyncUpdate,
